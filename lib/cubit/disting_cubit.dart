@@ -5,6 +5,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/request_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
@@ -90,126 +91,51 @@ class DistingCubit extends Cubit<DistingState> {
 
           switch (event.key.messageType) {
             case DistingNTRespMessageType.respNumAlgorithms:
-              fetchAlgorithmInfo(event.value);
+              _handleNumAlgorithms(event);
               break;
             case DistingNTRespMessageType.respAlgorithmInfo:
-              emit(state.copyWith(
-                  algorithms: replaceOrExtend(state.algorithms, event.value,
-                      index: event.key.algorithmIndex!, filler: AlgorithmInfo.filler())));
+              _handleAlgorithmInfo(state, event);
               break;
             case DistingNTRespMessageType.respMessage:
-              emit(state.copyWith(distingVersion: event.value));
+              _handleMessage(state, event);
               break;
             case DistingNTRespMessageType.respScreenshot:
               // TODO: Handle this case.
               throw UnimplementedError();
             case DistingNTRespMessageType.respAlgorithmGuid:
-              emit(state.copyWith(
-                  slots: updateSlot(event.key.algorithmIndex!, state.slots,
-                      (slot) => slot.copyWith(algorithmGuid: event.value))));
+              _handleAlgorithmGuid(state, event);
               break;
             case DistingNTRespMessageType.respPresetName:
-              emit(state.copyWith(patchName: event.value));
+              _handlePresetName(state, event);
               break;
             case DistingNTRespMessageType.respNumParameters:
-              fetchParameterInfos(event.key.algorithmIndex!,
-                  (event.value as NumParameters).numParameters);
+              _handleNumParameters(event, state);
               break;
             case DistingNTRespMessageType.respParameterInfo:
-              emit(state.copyWith(
-                  slots: updateSlot(
-                      event.key.algorithmIndex!,
-                      state.slots,
-                      (slot) => slot.copyWith(
-                              parameters: replaceOrExtend(
-                            slot.parameters,
-                            event.value,
-                            index: event.key.parameterNumber!,
-                            filler: ParameterInfo.filler(),
-                          )))));
+              _handleParameterInfo(state, event);
               break;
             case DistingNTRespMessageType.respAllParameterValues:
               throw UnimplementedError();
             case DistingNTRespMessageType.respParameterValue:
-              emit(state.copyWith(
-                  slots: updateSlot(
-                      event.key.algorithmIndex!,
-                      state.slots,
-                      (slot) => slot.copyWith(
-                              values: replaceOrExtend(
-                            slot.values,
-                            event.value,
-                            index: event.key.parameterNumber!,
-                            filler: ParameterValue.filler(),
-                          )))));
+              _handleParameterValue(state, event);
               break;
             case DistingNTRespMessageType.respUnitStrings:
-              emit(state.copyWith(unitStrings: event.value));
+              _handleUnitStrings(state, event);
               break;
             case DistingNTRespMessageType.respEnumStrings:
-              emit(state.copyWith(
-                  slots: updateSlot(
-                      event.key.algorithmIndex!,
-                      state.slots,
-                      (slot) => slot.copyWith(
-                          enums: replaceOrExtend(slot.enums, event.value,
-                              index: event.key.parameterNumber!,
-                              filler: ParameterEnumStrings.filler())))));
+              _handleEnumStrings(state, event);
               break;
             case DistingNTRespMessageType.respMapping:
-              emit(state.copyWith(
-                  slots: updateSlot(
-                      event.key.algorithmIndex!,
-                      state.slots,
-                      (slot) => slot.copyWith(
-                              mappings: replaceOrExtend(
-                            slot.mappings,
-                            event.value,
-                            index: event.key.parameterNumber!,
-                            filler: Mapping.filler(),
-                          )))));
+              _handleMapping(state, event);
               break;
             case DistingNTRespMessageType.respParameterValueString:
-              emit(state.copyWith(
-                  slots: updateSlot(
-                      event.key.algorithmIndex!,
-                      state.slots,
-                      (slot) => slot.copyWith(
-                              valueStrings: replaceOrExtend(
-                            slot.valueStrings,
-                            event.value,
-                            index: event.key.parameterNumber!,
-                            filler: ParameterValueString.filler(),
-                          )))));
+              _handleParameterValueString(state, event);
               break;
             case DistingNTRespMessageType.respNumAlgorithmsInPreset:
-              var numAlgorithmsInPreset = event.value;
-              emit(state.copyWith(
-                  slots: List.generate(
-                      numAlgorithmsInPreset,
-                      (index) => Slot(
-                            algorithmGuid: AlgorithmGuid(
-                                algorithmIndex: index, guid: "guid"),
-                            parameters: [],
-                            values: [],
-                            enums: [],
-                            mappings: [],
-                            valueStrings: [],
-                          ))));
-              fetchSlots(numAlgorithmsInPreset);
+              _handleNumAlgorithmsInPreset(event, state);
               break;
             case DistingNTRespMessageType.respRouting:
-              emit(state.copyWith(
-                  slots: updateSlot(
-                      event.key.algorithmIndex!,
-                      state.slots,
-                          (slot) => slot.copyWith(
-                          valueStrings: replaceOrExtend(
-                            slot.valueStrings,
-                            event.value,
-                            index: event.key.parameterNumber!,
-                            filler: ParameterValueString.filler(),
-                          )))));
+              _handleParameterValueString(state, event);
               break;
             case DistingNTRespMessageType.unknown:
               throw UnimplementedError();
@@ -227,6 +153,147 @@ class DistingCubit extends Cubit<DistingState> {
     } catch (e) {
       // Handle error state if necessary
     }
+  }
+
+  void _handleParameterValueString(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        slots: updateSlot(
+            event.key.algorithmIndex!,
+            state.slots,
+            (slot) => slot.copyWith(
+                    valueStrings: replaceInList(
+                  slot.valueStrings,
+                  event.value,
+                  index: event.key.parameterNumber!,
+                )))));
+  }
+
+  void _handleMapping(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        slots: updateSlot(
+            event.key.algorithmIndex!,
+            state.slots,
+            (slot) => slot.copyWith(
+                    mappings: replaceInList(
+                  slot.mappings,
+                  event.value,
+                  index: event.key.parameterNumber!,
+                )))));
+  }
+
+  void _handleEnumStrings(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        slots: updateSlot(
+            event.key.algorithmIndex!,
+            state.slots,
+            (slot) => slot.copyWith(
+                    enums: replaceInList(
+                  slot.enums,
+                  event.value,
+                  index: event.key.parameterNumber!,
+                )))));
+  }
+
+  void _handleUnitStrings(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(unitStrings: event.value));
+  }
+
+  void _handleParameterValue(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        slots: updateSlot(
+            event.key.algorithmIndex!,
+            state.slots,
+            (slot) => slot.copyWith(
+                    values: replaceInList(
+                  slot.values,
+                  event.value,
+                  index: event.key.parameterNumber!,
+                )))));
+  }
+
+  void _handleParameterInfo(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        slots: updateSlot(
+            event.key.algorithmIndex!,
+            state.slots,
+            (slot) => slot.copyWith(
+                    parameters: replaceInList(
+                  slot.parameters,
+                  event.value,
+                  index: event.key.parameterNumber!,
+                )))));
+  }
+
+  void _handleNumParameters(MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
+    var numberOfParameters =
+        (event.value as NumParameters).numParameters;
+
+    emit(state.copyWith(
+        slots: updateSlot(
+            event.key.algorithmIndex!,
+            state.slots,
+            (slot) => slot.copyWith(
+                parameters: List.filled(
+                    numberOfParameters, ParameterInfo.filler()),
+                values: List.filled(
+                  numberOfParameters,
+                  ParameterValue.filler(),
+                ),
+                valueStrings: List.filled(numberOfParameters,
+                    ParameterValueString.filler()),
+                mappings:
+                    List.filled(numberOfParameters, Mapping.filler()),
+                enums: List.filled(
+                  numberOfParameters,
+                  ParameterEnumStrings.filler(),
+                )))));
+
+    fetchParameterInfos(
+        event.key.algorithmIndex!, numberOfParameters);
+  }
+
+  void _handlePresetName(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(patchName: event.value));
+  }
+
+  void _handleAlgorithmGuid(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        slots: updateSlot(event.key.algorithmIndex!, state.slots,
+            (slot) => slot.copyWith(algorithmGuid: event.value))));
+  }
+
+  void _handleMessage(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(distingVersion: event.value));
+  }
+
+  void _handleAlgorithmInfo(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        algorithms: replaceInList(
+      state.algorithms,
+      event.value,
+      index: event.key.algorithmIndex!,
+    )));
+  }
+
+  void _handleNumAlgorithms(MapEntry<RequestKey, dynamic> event) {
+    fetchAlgorithmInfo(event.value);
+  }
+
+  void _handleNumAlgorithmsInPreset(MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
+    var numAlgorithmsInPreset = event.value;
+    emit(state.copyWith(
+        slots: List.generate(
+            numAlgorithmsInPreset,
+            (index) => Slot(
+                  algorithmGuid:
+                      AlgorithmGuid(algorithmIndex: index, guid: ""),
+                  parameters: [],
+                  values: [],
+                  enums: [],
+                  mappings: [],
+                  valueStrings: [],
+                ))));
+    fetchSlots(numAlgorithmsInPreset);
   }
 
   Future<void> synchronizeDevice() async {
@@ -311,8 +378,8 @@ class DistingCubit extends Cubit<DistingState> {
   void fetchParameterInfos(int algorithmIndex, int numberOfParameters) {
     final disting = requireDisting();
     for (int parameterNumber = 0;
-    parameterNumber < numberOfParameters;
-    parameterNumber++) {
+        parameterNumber < numberOfParameters;
+        parameterNumber++) {
       disting.requestParameterInfo(algorithmIndex, parameterNumber);
       disting.requestParameterValue(algorithmIndex, parameterNumber);
       disting.requestParameterValueString(algorithmIndex, parameterNumber);
@@ -320,56 +387,21 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  List<T> replaceOrExtend<T>(
-      List<T> original,
-      T element, {
-        required int index,
-        required T filler,
-      }) {
-    if (index < 0) {
-      throw RangeError.index(index, original, "index cannot be negative");
+  List<T> replaceInList<T>(
+    List<T> original,
+    T element, {
+    required int index,
+  }) {
+    if (index < 0 || index > original.length) {
+      throw RangeError.index(index, original, "index out of bounds");
     }
 
-    // Create a copy of the original list
-    List<T> result = List<T>.from(original);
-
-    // Extend the list if needed
-    if (index >= result.length) {
-      result.addAll(List<T>.generate(index - result.length + 1, (_) => filler));
-    }
-
-    // Replace the element at the given index
-    result[index] = element;
-
-    return result;
+    return [
+      ...original.sublist(0, index),
+      element,
+      ...original.sublist(index + 1)
+    ];
   }
-
-  // List<T> insertInto<T>(
-  //     List<T> original,
-  //     T element, {
-  //       required int index,
-  //       required T filler,
-  //     }) {
-  //   // Validate the index
-  //   if (index < 0) {
-  //     throw RangeError.index(index, original, "index cannot be negative");
-  //   }
-  //
-  //   // Create a copy of the original list
-  //   List<T> extendedList = List<T>.from(original);
-  //
-  //   // Extend the list if needed
-  //   if (index >= extendedList.length) {
-  //     extendedList.addAll(
-  //       List<T>.generate(index - extendedList.length, (_) => filler),
-  //     );
-  //   }
-  //
-  //   // Insert the element
-  //   extendedList.insert(index, element);
-  //
-  //   return extendedList;
-  // }
 
   @override
   void onChange(Change<DistingState> change) {

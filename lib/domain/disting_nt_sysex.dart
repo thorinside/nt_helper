@@ -134,11 +134,12 @@ class Specification {
   final int defaultValue;
   final int type;
 
-  Specification(
-      {required this.min,
-      required this.max,
-      required this.defaultValue,
-      required this.type});
+  Specification({
+    required this.min,
+    required this.max,
+    required this.defaultValue,
+    required this.type,
+  });
 
   @override
   String toString() {
@@ -157,14 +158,15 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   final int unit;
   final String name;
 
-  ParameterInfo(
-      {required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.min,
-      required this.max,
-      required this.defaultValue,
-      required this.unit,
-      required this.name});
+  ParameterInfo({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.min,
+    required this.max,
+    required this.defaultValue,
+    required this.unit,
+    required this.name,
+  });
 
   /// Factory constructor for default `filler` instance
   factory ParameterInfo.filler() {
@@ -175,7 +177,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
       max: 0,
       defaultValue: 0,
       unit: 0,
-      name: 'Filler',
+      name: '',
     );
   }
 
@@ -200,10 +202,11 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
   final int parameterNumber;
   final int value;
 
-  ParameterValue(
-      {required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.value});
+  ParameterValue({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.value,
+  });
 
   /// Factory constructor for default `filler` instance
   factory ParameterValue.filler() {
@@ -222,14 +225,15 @@ class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
   final int parameterNumber;
   final String value;
 
-  ParameterValueString(
-      {required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.value});
+  ParameterValueString({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.value,
+  });
 
   factory ParameterValueString.filler() {
     return ParameterValueString(
-        algorithmIndex: -1, parameterNumber: -1, value: "filler");
+        algorithmIndex: -1, parameterNumber: -1, value: '');
   }
 }
 
@@ -241,11 +245,12 @@ class Mapping implements HasAlgorithmIndex, HasParameterNumber {
   final PackedMappingData packedMappingData;
   final int version;
 
-  Mapping(
-      {required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.packedMappingData,
-      required this.version});
+  Mapping({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.packedMappingData,
+    required this.version,
+  });
 
   factory Mapping.filler() {
     return Mapping(
@@ -263,10 +268,11 @@ class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
   final int parameterNumber;
   final List<String> values;
 
-  ParameterEnumStrings(
-      {required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.values});
+  ParameterEnumStrings({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.values,
+  });
 
   factory ParameterEnumStrings.filler() {
     return ParameterEnumStrings(
@@ -283,13 +289,14 @@ class AlgorithmInfo implements HasAlgorithmIndex {
   final String name;
   final String specificationName;
 
-  AlgorithmInfo(
-      {required this.algorithmIndex,
-      required this.guid,
-      required this.numSpecifications,
-      required this.specifications,
-      required this.name,
-      required this.specificationName});
+  AlgorithmInfo({
+    required this.algorithmIndex,
+    required this.guid,
+    required this.numSpecifications,
+    required this.specifications,
+    required this.name,
+    required this.specificationName,
+  });
 
   factory AlgorithmInfo.filler() {
     return AlgorithmInfo(

@@ -6,9 +6,11 @@ class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
   final List<AlgorithmInfo> algorithms;
 
-  const SynchronizedScreen(
-      {Key? key, required this.slots, required this.algorithms})
-      : super(key: key);
+  const SynchronizedScreen({
+    super.key,
+    required this.slots,
+    required this.algorithms,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +43,7 @@ class SynchronizedScreen extends StatelessWidget {
 class SlotDetailView extends StatelessWidget {
   final Slot slot;
 
-  const SlotDetailView({Key? key, required this.slot}) : super(key: key);
+  const SlotDetailView({super.key, required this.slot});
 
   @override
   Widget build(BuildContext context) {
@@ -58,20 +60,45 @@ class SlotDetailView extends StatelessWidget {
           margin: const EdgeInsets.all(8.0),
           child: ListTile(
             title: Text(parameter!.name),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Value: ${value?.value}'),
-                if (enumStrings?.values.isNotEmpty == true)
-                  Text('Enum: ${enumStrings?.values.join(", ")}'),
-                Text('Mapping: ${mapping?.packedMappingData.toString()}'),
-                if (valueString?.value.isNotEmpty == true)
-                  Text('String: ${valueString?.value}'),
-              ],
+            subtitle: ParameterEditorView(
+              parameterInfo: parameter,
+              value: value,
+              enumStrings: enumStrings,
+              mapping: mapping,
+              valueString: valueString,
             ),
           ),
         );
       },
     );
   }
+}
+
+class ParameterEditorView extends StatelessWidget {
+  final ParameterInfo? parameterInfo;
+  final ParameterValue? value;
+  final ParameterEnumStrings? enumStrings;
+  final Mapping? mapping;
+  final ParameterValueString? valueString;
+
+  const ParameterEditorView({
+    super.key,
+    required this.parameterInfo,
+    required this.value,
+    required this.enumStrings,
+    required this.mapping,
+    required this.valueString,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Text('Value: ${value?.value}'),
+          if (enumStrings?.values.isNotEmpty == true)
+            Text('Enum: ${enumStrings?.values.join(", ")}'),
+          Text('Mapping: ${mapping?.packedMappingData.toString()}'),
+          if (valueString?.value.isNotEmpty == true)
+            Text('String: ${valueString?.value}'),
+        ],
+      );
 }
