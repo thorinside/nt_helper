@@ -307,7 +307,8 @@ mixin _$DistingState {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)
+            List<String> unitStrings,
+            bool complete)
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -328,7 +329,8 @@ mixin _$DistingState {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -349,7 +351,8 @@ mixin _$DistingState {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
     required TResult orElse(),
   }) =>
@@ -509,7 +512,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)
+            List<String> unitStrings,
+            bool complete)
         synchronized,
   }) {
     return initial(midiCommand);
@@ -533,7 +537,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
   }) {
     return initial?.call(midiCommand);
@@ -557,7 +562,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -725,7 +731,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)
+            List<String> unitStrings,
+            bool complete)
         synchronized,
   }) {
     return selectDevice(midiCommand, devices);
@@ -749,7 +756,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
   }) {
     return selectDevice?.call(midiCommand, devices);
@@ -773,7 +781,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -960,7 +969,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)
+            List<String> unitStrings,
+            bool complete)
         synchronized,
   }) {
     return connected(midiCommand, device, sysExId, disting);
@@ -984,7 +994,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
   }) {
     return connected?.call(midiCommand, device, sysExId, disting);
@@ -1008,7 +1019,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1095,7 +1107,8 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
       String patchName,
       List<AlgorithmInfo> algorithms,
       List<Slot> slots,
-      List<String> unitStrings});
+      List<String> unitStrings,
+      bool complete});
 }
 
 /// @nodoc
@@ -1121,6 +1134,7 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? algorithms = null,
     Object? slots = null,
     Object? unitStrings = null,
+    Object? complete = null,
   }) {
     return _then(_$DistingStateSynchronizedImpl(
       midiCommand: null == midiCommand
@@ -1159,6 +1173,10 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
           ? _value._unitStrings
           : unitStrings // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      complete: null == complete
+          ? _value.complete
+          : complete // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1175,7 +1193,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
       required this.patchName,
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
-      required final List<String> unitStrings})
+      required final List<String> unitStrings,
+      this.complete = false})
       : _algorithms = algorithms,
         _slots = slots,
         _unitStrings = unitStrings;
@@ -1217,8 +1236,12 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   }
 
   @override
+  @JsonKey()
+  final bool complete;
+
+  @override
   String toString() {
-    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, patchName: $patchName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings)';
+    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, patchName: $patchName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, complete: $complete)';
   }
 
   @override
@@ -1239,7 +1262,9 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
                 .equals(other._algorithms, _algorithms) &&
             const DeepCollectionEquality().equals(other._slots, _slots) &&
             const DeepCollectionEquality()
-                .equals(other._unitStrings, _unitStrings));
+                .equals(other._unitStrings, _unitStrings) &&
+            (identical(other.complete, complete) ||
+                other.complete == complete));
   }
 
   @override
@@ -1253,7 +1278,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
       patchName,
       const DeepCollectionEquality().hash(_algorithms),
       const DeepCollectionEquality().hash(_slots),
-      const DeepCollectionEquality().hash(_unitStrings));
+      const DeepCollectionEquality().hash(_unitStrings),
+      complete);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1282,11 +1308,12 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)
+            List<String> unitStrings,
+            bool complete)
         synchronized,
   }) {
     return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-        patchName, algorithms, slots, unitStrings);
+        patchName, algorithms, slots, unitStrings, complete);
   }
 
   @override
@@ -1307,11 +1334,12 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
   }) {
     return synchronized?.call(midiCommand, device, sysExId, disting,
-        distingVersion, patchName, algorithms, slots, unitStrings);
+        distingVersion, patchName, algorithms, slots, unitStrings, complete);
   }
 
   @override
@@ -1332,13 +1360,14 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             String patchName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
-            List<String> unitStrings)?
+            List<String> unitStrings,
+            bool complete)?
         synchronized,
     required TResult orElse(),
   }) {
     if (synchronized != null) {
       return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-          patchName, algorithms, slots, unitStrings);
+          patchName, algorithms, slots, unitStrings, complete);
     }
     return orElse();
   }
@@ -1383,16 +1412,16 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
 
 abstract class DistingStateSynchronized implements DistingState {
   const factory DistingStateSynchronized(
-          {required final MidiCommand midiCommand,
-          required final MidiDevice device,
-          required final int sysExId,
-          required final DistingMidiManager disting,
-          required final String distingVersion,
-          required final String patchName,
-          required final List<AlgorithmInfo> algorithms,
-          required final List<Slot> slots,
-          required final List<String> unitStrings}) =
-      _$DistingStateSynchronizedImpl;
+      {required final MidiCommand midiCommand,
+      required final MidiDevice device,
+      required final int sysExId,
+      required final DistingMidiManager disting,
+      required final String distingVersion,
+      required final String patchName,
+      required final List<AlgorithmInfo> algorithms,
+      required final List<Slot> slots,
+      required final List<String> unitStrings,
+      final bool complete}) = _$DistingStateSynchronizedImpl;
 
   @override
   MidiCommand get midiCommand;
@@ -1404,6 +1433,7 @@ abstract class DistingStateSynchronized implements DistingState {
   List<AlgorithmInfo> get algorithms;
   List<Slot> get slots;
   List<String> get unitStrings;
+  bool get complete;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.

@@ -18,6 +18,7 @@ class DistingCubit extends Cubit<DistingState> {
 
   final Future<SharedPreferences> _prefs;
   late final StreamSubscription? _subscription;
+  int numAlgorithmsInPreset = -1;
 
   @override
   Future<void> close() {
@@ -83,6 +84,7 @@ class DistingCubit extends Cubit<DistingState> {
       final disting = DistingMidiManager(
           midiCommand: state.midiCommand, device: device, sysExId: sysExId);
       disting.startListening();
+
       _subscription = disting.decodedMessages.listen(
         (event) {
           if (this.state is! DistingStateSynchronized) return;
@@ -91,7 +93,7 @@ class DistingCubit extends Cubit<DistingState> {
 
           switch (event.key.messageType) {
             case DistingNTRespMessageType.respNumAlgorithms:
-              _handleNumAlgorithms(event);
+              _handleNumAlgorithms(state, event);
               break;
             case DistingNTRespMessageType.respAlgorithmInfo:
               _handleAlgorithmInfo(state, event);
@@ -132,6 +134,7 @@ class DistingCubit extends Cubit<DistingState> {
               _handleParameterValueString(state, event);
               break;
             case DistingNTRespMessageType.respNumAlgorithmsInPreset:
+              numAlgorithmsInPreset = event.value;
               _handleNumAlgorithmsInPreset(event, state);
               break;
             case DistingNTRespMessageType.respRouting:
@@ -155,7 +158,8 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  void _handleParameterValueString(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleParameterValueString(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
         slots: updateSlot(
             event.key.algorithmIndex!,
@@ -168,7 +172,8 @@ class DistingCubit extends Cubit<DistingState> {
                 )))));
   }
 
-  void _handleMapping(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleMapping(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
         slots: updateSlot(
             event.key.algorithmIndex!,
@@ -181,7 +186,8 @@ class DistingCubit extends Cubit<DistingState> {
                 )))));
   }
 
-  void _handleEnumStrings(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleEnumStrings(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
         slots: updateSlot(
             event.key.algorithmIndex!,
@@ -194,11 +200,15 @@ class DistingCubit extends Cubit<DistingState> {
                 )))));
   }
 
-  void _handleUnitStrings(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleUnitStrings(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(unitStrings: event.value));
   }
 
-  void _handleParameterValue(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleParameterValue(
+    DistingStateSynchronized state,
+    MapEntry<RequestKey, dynamic> event,
+  ) {
     emit(state.copyWith(
         slots: updateSlot(
             event.key.algorithmIndex!,
@@ -211,8 +221,10 @@ class DistingCubit extends Cubit<DistingState> {
                 )))));
   }
 
-  void _handleParameterInfo(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleParameterInfo(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
+        complete: state.complete ? true : event.key.algorithmIndex == (numAlgorithmsInPreset - 1),
         slots: updateSlot(
             event.key.algorithmIndex!,
             state.slots,
@@ -222,51 +234,57 @@ class DistingCubit extends Cubit<DistingState> {
                   event.value,
                   index: event.key.parameterNumber!,
                 )))));
+
+    fetchParameterValue(event.key.algorithmIndex!, event.key.parameterNumber!);
+    fetchParameterValueString(event.key.algorithmIndex!, event.key.parameterNumber!);
+    fetchParameterEnumStrings(event.key.algorithmIndex!, event.key.parameterNumber!);
   }
 
-  void _handleNumParameters(MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
-    var numberOfParameters =
-        (event.value as NumParameters).numParameters;
+  void _handleNumParameters(
+      MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
+    var numberOfParameters = (event.value as NumParameters).numParameters;
 
     emit(state.copyWith(
         slots: updateSlot(
             event.key.algorithmIndex!,
             state.slots,
             (slot) => slot.copyWith(
-                parameters: List.filled(
-                    numberOfParameters, ParameterInfo.filler()),
+                parameters:
+                    List.filled(numberOfParameters, ParameterInfo.filler()),
                 values: List.filled(
                   numberOfParameters,
                   ParameterValue.filler(),
                 ),
-                valueStrings: List.filled(numberOfParameters,
-                    ParameterValueString.filler()),
-                mappings:
-                    List.filled(numberOfParameters, Mapping.filler()),
+                valueStrings: List.filled(
+                    numberOfParameters, ParameterValueString.filler()),
+                mappings: List.filled(numberOfParameters, Mapping.filler()),
                 enums: List.filled(
                   numberOfParameters,
                   ParameterEnumStrings.filler(),
                 )))));
 
-    fetchParameterInfos(
-        event.key.algorithmIndex!, numberOfParameters);
+    fetchParameterInfos(event.key.algorithmIndex!, numberOfParameters);
   }
 
-  void _handlePresetName(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handlePresetName(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(patchName: event.value));
   }
 
-  void _handleAlgorithmGuid(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleAlgorithmGuid(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
         slots: updateSlot(event.key.algorithmIndex!, state.slots,
             (slot) => slot.copyWith(algorithmGuid: event.value))));
   }
 
-  void _handleMessage(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleMessage(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(distingVersion: event.value));
   }
 
-  void _handleAlgorithmInfo(DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+  void _handleAlgorithmInfo(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
         algorithms: replaceInList(
       state.algorithms,
@@ -275,18 +293,21 @@ class DistingCubit extends Cubit<DistingState> {
     )));
   }
 
-  void _handleNumAlgorithms(MapEntry<RequestKey, dynamic> event) {
+  void _handleNumAlgorithms(
+      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
+    emit(state.copyWith(
+        algorithms: List.filled(event.value, AlgorithmInfo.filler())));
     fetchAlgorithmInfo(event.value);
   }
 
-  void _handleNumAlgorithmsInPreset(MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
+  void _handleNumAlgorithmsInPreset(
+      MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
     var numAlgorithmsInPreset = event.value;
     emit(state.copyWith(
         slots: List.generate(
             numAlgorithmsInPreset,
             (index) => Slot(
-                  algorithmGuid:
-                      AlgorithmGuid(algorithmIndex: index, guid: ""),
+                  algorithmGuid: AlgorithmGuid(algorithmIndex: index, guid: ""),
                   parameters: [],
                   values: [],
                   enums: [],
@@ -381,10 +402,22 @@ class DistingCubit extends Cubit<DistingState> {
         parameterNumber < numberOfParameters;
         parameterNumber++) {
       disting.requestParameterInfo(algorithmIndex, parameterNumber);
-      disting.requestParameterValue(algorithmIndex, parameterNumber);
-      disting.requestParameterValueString(algorithmIndex, parameterNumber);
-      disting.requestParameterEnumStrings(algorithmIndex, parameterNumber);
     }
+  }
+
+  void fetchParameterValue(int algorithmIndex, int parameterNumber) {
+    final disting = requireDisting();
+    disting.requestParameterValue(algorithmIndex, parameterNumber);
+  }
+
+  void fetchParameterValueString(int algorithmIndex, int parameterNumber) {
+    final disting = requireDisting();
+    disting.requestParameterValueString(algorithmIndex, parameterNumber);
+  }
+
+  void fetchParameterEnumStrings(int algorithmIndex, int parameterNumber) {
+    final disting = requireDisting();
+    disting.requestParameterEnumStrings(algorithmIndex, parameterNumber);
   }
 
   List<T> replaceInList<T>(
@@ -401,16 +434,6 @@ class DistingCubit extends Cubit<DistingState> {
       element,
       ...original.sublist(index + 1)
     ];
-  }
-
-  @override
-  void onChange(Change<DistingState> change) {
-    print(
-        "_____________________________________________________________________");
-    print(change);
-    print(
-        "_____________________________________________________________________");
-    super.onChange(change);
   }
 
   List<Slot> updateSlot(int algorithmIndex, List<Slot> slots,

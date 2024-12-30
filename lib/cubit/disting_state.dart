@@ -30,18 +30,6 @@ class DistingState with _$DistingState {
     required DistingMidiManager disting,
   }) = DistingStateConnected;
 
-  // const factory DistingState.synchronizing({
-  //   required MidiCommand midiCommand,
-  //   required MidiDevice device,
-  //   required int sysExId,
-  //   required DistingMidiManager disting,
-  //   required String? distingVersion,
-  //   required String? patchName,
-  //   required List<AlgorithmInfo> algorithms,
-  //   required List<Slot> slots,
-  //   required List<String> unitStrings,
-  // }) = DistingStateSynchronizing;
-
   const factory DistingState.synchronized({
     required MidiCommand midiCommand,
     required MidiDevice device,
@@ -52,5 +40,6 @@ class DistingState with _$DistingState {
     required List<AlgorithmInfo> algorithms,
     required List<Slot> slots,
     required List<String> unitStrings,
+    @Default(false) bool complete,
   }) = DistingStateSynchronized;
 }

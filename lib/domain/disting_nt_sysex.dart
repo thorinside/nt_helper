@@ -216,6 +216,11 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
       value: 0,
     );
   }
+
+  @override
+  String toString() {
+    return "ParameterValue(algorithmIndex=$algorithmIndex, parameterNumber=$parameterNumber, value=$value)";
+  }
 }
 
 class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
@@ -234,6 +239,12 @@ class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
   factory ParameterValueString.filler() {
     return ParameterValueString(
         algorithmIndex: -1, parameterNumber: -1, value: '');
+  }
+
+  // Write toString
+  @override
+  String toString() {
+    return "ParameterValueString(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, value: '$value')";
   }
 }
 
@@ -259,6 +270,11 @@ class Mapping implements HasAlgorithmIndex, HasParameterNumber {
         packedMappingData: PackedMappingData.filler(),
         version: -1);
   }
+
+  @override
+  String toString() {
+    return "Mapping(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, packedMappingData: $packedMappingData, version: $version)";
+  }
 }
 
 class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
@@ -277,6 +293,11 @@ class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
   factory ParameterEnumStrings.filler() {
     return ParameterEnumStrings(
         algorithmIndex: -1, parameterNumber: -1, values: List.empty());
+  }
+
+  @override
+  String toString() {
+    return "ParameterEnumStrings(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, values: $values)";
   }
 }
 
@@ -381,11 +402,14 @@ class DistingNT {
   }
 
   /// The reverse: parse 3 bytes of 7-bit data into a 16-bit integer.
-  static int decode16(List<int> bytes, int offset) {
-    final int ms2 = bytes[offset + 0] & 0x03;
-    final int mid7 = bytes[offset + 1] & 0x7F;
-    final int ls7 = bytes[offset + 2] & 0x7F;
-    return (ms2 << 14) | (mid7 << 7) | ls7;
+  static int decode16(List<int> data, int offset) {
+    var v =
+        (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
+    // Ensure the value is treated as a signed 16-bit integer
+    if (v & 0x8000 != 0) {
+      v -= 0x10000;
+    }
+    return v;
   }
 
   /// Similar approach for 32-bit if needed (e.g. set real-time clock).

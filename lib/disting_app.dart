@@ -31,7 +31,6 @@ class DistingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Disting Controller")),
       body: BlocBuilder<DistingCubit, DistingState>(
         builder: (context, state) {
           if (state is DistingStateInitial) {
@@ -65,11 +64,13 @@ class DistingPage extends StatelessWidget {
                 ],
               ),
             );
-          } else if (state is DistingStateSynchronized) {
+          } else if (state is DistingStateSynchronized && state.complete == true) {
             return SynchronizedScreen(
               slots: state.slots,
               algorithms: state.algorithms,
             );
+          } else if (state is DistingStateSynchronized) {
+            return Center(child: CircularProgressIndicator());
           } else {
             return Center(child: Text("Unknown State"));
           }
