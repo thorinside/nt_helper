@@ -241,6 +241,11 @@ class DistingMidiManager {
     _sendSysExMessage(packet);
   }
 
+  void requestAddAlgorithm(AlgorithmInfo algorithm, List<int> specifications) {
+    final packet = DistingNT.encodeAddAlgorithm(sysExId, algorithm.guid, specifications);
+    _sendSysExMessage(packet);
+  }
+
   /// Requests routing information for a given algorithm
 // Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {
 //   final packet = DistingNT.encodeRequestRouting(sysExId, algorithmIndex);

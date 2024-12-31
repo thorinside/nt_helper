@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
@@ -53,6 +54,22 @@ class SynchronizedScreen extends StatelessWidget {
               onPressed: () {
                 context.read<DistingCubit>().refresh();
               },
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_rounded),
+              tooltip: 'Add Algorithm',
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddAlgorithmScreen(algorithms: algorithms)),
+                );
+
+                if (result != null) {
+                  context.read<DistingCubit>().onAlgorithmSelected(
+                    result['algorithm'],
+                    result['specValues'],
+                  );
+                }              },
             ),
           ],
           elevation: 0,

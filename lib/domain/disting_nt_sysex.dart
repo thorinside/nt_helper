@@ -655,6 +655,16 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
+  static Uint8List encodeAddAlgorithm(int distingSysExId, String guid, List<int> specifications) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.addAlgorithm.value,
+      ...guid.codeUnits,
+      for (int i = 0; i < specifications.length; i++) ...encode16(specifications[i]),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
   static AlgorithmInfo decodeAlgorithmInfo(Uint8List data) {
     var algorithmIndex = decode16(data, 0);
     var guid = String.fromCharCodes(data.sublist(3, 7));

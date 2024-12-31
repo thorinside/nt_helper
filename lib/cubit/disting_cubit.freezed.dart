@@ -308,7 +308,8 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)
+            bool complete,
+            bool selectAlgorithm)
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -330,7 +331,8 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -352,7 +354,8 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
     required TResult orElse(),
   }) =>
@@ -513,7 +516,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)
+            bool complete,
+            bool selectAlgorithm)
         synchronized,
   }) {
     return initial(midiCommand);
@@ -538,7 +542,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
   }) {
     return initial?.call(midiCommand);
@@ -563,7 +568,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -732,7 +738,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)
+            bool complete,
+            bool selectAlgorithm)
         synchronized,
   }) {
     return selectDevice(midiCommand, devices);
@@ -757,7 +764,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
   }) {
     return selectDevice?.call(midiCommand, devices);
@@ -782,7 +790,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -970,7 +979,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)
+            bool complete,
+            bool selectAlgorithm)
         synchronized,
   }) {
     return connected(midiCommand, device, sysExId, disting);
@@ -995,7 +1005,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
   }) {
     return connected?.call(midiCommand, device, sysExId, disting);
@@ -1020,7 +1031,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1108,7 +1120,8 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
       List<AlgorithmInfo> algorithms,
       List<Slot> slots,
       List<String> unitStrings,
-      bool complete});
+      bool complete,
+      bool selectAlgorithm});
 }
 
 /// @nodoc
@@ -1135,6 +1148,7 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? slots = null,
     Object? unitStrings = null,
     Object? complete = null,
+    Object? selectAlgorithm = null,
   }) {
     return _then(_$DistingStateSynchronizedImpl(
       midiCommand: null == midiCommand
@@ -1177,6 +1191,10 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
           ? _value.complete
           : complete // ignore: cast_nullable_to_non_nullable
               as bool,
+      selectAlgorithm: null == selectAlgorithm
+          ? _value.selectAlgorithm
+          : selectAlgorithm // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1194,7 +1212,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
-      this.complete = false})
+      this.complete = false,
+      this.selectAlgorithm = false})
       : _algorithms = algorithms,
         _slots = slots,
         _unitStrings = unitStrings;
@@ -1238,10 +1257,13 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @override
   @JsonKey()
   final bool complete;
+  @override
+  @JsonKey()
+  final bool selectAlgorithm;
 
   @override
   String toString() {
-    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, patchName: $patchName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, complete: $complete)';
+    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, patchName: $patchName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, complete: $complete, selectAlgorithm: $selectAlgorithm)';
   }
 
   @override
@@ -1264,7 +1286,9 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             const DeepCollectionEquality()
                 .equals(other._unitStrings, _unitStrings) &&
             (identical(other.complete, complete) ||
-                other.complete == complete));
+                other.complete == complete) &&
+            (identical(other.selectAlgorithm, selectAlgorithm) ||
+                other.selectAlgorithm == selectAlgorithm));
   }
 
   @override
@@ -1279,7 +1303,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
       const DeepCollectionEquality().hash(_algorithms),
       const DeepCollectionEquality().hash(_slots),
       const DeepCollectionEquality().hash(_unitStrings),
-      complete);
+      complete,
+      selectAlgorithm);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1309,11 +1334,12 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)
+            bool complete,
+            bool selectAlgorithm)
         synchronized,
   }) {
     return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-        patchName, algorithms, slots, unitStrings, complete);
+        patchName, algorithms, slots, unitStrings, complete, selectAlgorithm);
   }
 
   @override
@@ -1335,11 +1361,22 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
   }) {
-    return synchronized?.call(midiCommand, device, sysExId, disting,
-        distingVersion, patchName, algorithms, slots, unitStrings, complete);
+    return synchronized?.call(
+        midiCommand,
+        device,
+        sysExId,
+        disting,
+        distingVersion,
+        patchName,
+        algorithms,
+        slots,
+        unitStrings,
+        complete,
+        selectAlgorithm);
   }
 
   @override
@@ -1361,13 +1398,14 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            bool complete)?
+            bool complete,
+            bool selectAlgorithm)?
         synchronized,
     required TResult orElse(),
   }) {
     if (synchronized != null) {
       return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-          patchName, algorithms, slots, unitStrings, complete);
+          patchName, algorithms, slots, unitStrings, complete, selectAlgorithm);
     }
     return orElse();
   }
@@ -1421,7 +1459,8 @@ abstract class DistingStateSynchronized implements DistingState {
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
-      final bool complete}) = _$DistingStateSynchronizedImpl;
+      final bool complete,
+      final bool selectAlgorithm}) = _$DistingStateSynchronizedImpl;
 
   @override
   MidiCommand get midiCommand;
@@ -1434,6 +1473,7 @@ abstract class DistingStateSynchronized implements DistingState {
   List<Slot> get slots;
   List<String> get unitStrings;
   bool get complete;
+  bool get selectAlgorithm;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.

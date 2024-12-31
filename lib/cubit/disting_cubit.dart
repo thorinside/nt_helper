@@ -469,4 +469,22 @@ class DistingCubit extends Cubit<DistingState> {
     }
     fetchAlgorithms();
   }
+
+  void onAddAlgorithm() {
+    if (state is DistingStateSynchronized) {
+      emit((state as DistingStateSynchronized).copyWith(selectAlgorithm: true));
+    }
+  }
+
+  void onAlgorithmSelected(AlgorithmInfo algorithm, List<int> specifications) {
+    if (state is DistingStateSynchronized) {
+      emit((state as DistingStateSynchronized).copyWith(selectAlgorithm: false));
+
+      final disting = requireDisting();
+      disting.requestAddAlgorithm(algorithm, specifications);
+
+      emit((state as DistingStateSynchronized).copyWith(complete: false));
+      fetchAlgorithms();
+    }
+  }
 }

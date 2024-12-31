@@ -41,5 +41,6 @@ class DistingState with _$DistingState {
     required List<Slot> slots,
     required List<String> unitStrings,
     @Default(false) bool complete,
+    @Default(false) bool selectAlgorithm,
   }) = DistingStateSynchronized;
 }
