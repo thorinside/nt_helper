@@ -68,6 +68,7 @@ class DistingPage extends StatelessWidget {
             return SynchronizedScreen(
               slots: state.slots,
               algorithms: state.algorithms,
+              units: state.unitStrings,
             );
           } else if (state is DistingStateSynchronized) {
             return Center(child: CircularProgressIndicator());

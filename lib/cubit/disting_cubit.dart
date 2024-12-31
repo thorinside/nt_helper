@@ -211,13 +211,13 @@ class DistingCubit extends Cubit<DistingState> {
   ) {
     emit(state.copyWith(
         slots: updateSlot(
-            event.key.algorithmIndex!,
+            event.value.algorithmIndex!,
             state.slots,
             (slot) => slot.copyWith(
                     values: replaceInList(
                   slot.values,
                   event.value,
-                  index: event.key.parameterNumber!,
+                  index: event.value.parameterNumber,
                 )))));
   }
 
@@ -443,5 +443,17 @@ class DistingCubit extends Cubit<DistingState> {
       updateFunction(slots[algorithmIndex]),
       ...slots.sublist(algorithmIndex + 1),
     ];
+  }
+
+  void updateParameterValue({required int algorithmIndex, required int parameterNumber, required int value}) {
+    final disting = requireDisting();
+    disting.setParameterValue(algorithmIndex, parameterNumber, value);
+    disting.requestParameterValue(algorithmIndex, parameterNumber);
+    disting.requestParameterValueString(algorithmIndex, parameterNumber);
+  }
+
+  @override
+  void onChange(Change<DistingState> change) {
+    super.onChange(change);
   }
 }

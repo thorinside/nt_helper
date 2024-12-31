@@ -230,19 +230,11 @@ class DistingMidiManager {
     _sendSysExMessage(packet);
   }
 
-  /// Sets a parameter value
-// Future<void> setParameterValue(
-//     int algorithmIndex, int parameterNumber, int value) async {
-//   final packet = DistingNT.encodeSetParameterValue(
-//       sysExId, algorithmIndex, parameterNumber, value);
-//   final key = RequestKey(
-//     sysExId: sysExId,
-//     algorithmIndex: algorithmIndex,
-//     propertyIndex: parameterNumber,
-//     messageType: DistingNTRespMessageType.unknown, // No response expected
-//   );
-//   await _sendRequest<void>(packet, key);
-// }
+  void setParameterValue(int algorithmIndex, int parameterNumber, int value) {
+    final packet = DistingNT.encodeSetParameterValue(
+        sysExId, algorithmIndex, parameterNumber, value);
+    _sendSysExMessage(packet);
+  }
 
   /// Requests routing information for a given algorithm
 // Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {

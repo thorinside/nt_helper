@@ -42,14 +42,14 @@ void main() {
         ...DistingNT.encode16(2),
         ...DistingNT.encode16(3),
         ...DistingNT.encode16(4),
-        ...DistingNT.encode16(45000),
+        ...DistingNT.encode16(32763),
       ]);
 
       var allParameterValues = DistingNT.decodeAllParameterValues(message);
 
       expect(allParameterValues.algorithmIndex, equals(1));
       expect(allParameterValues.values.length, equals(5));
-      expect(allParameterValues.values, equals([1, 2, 3, 4, 45000]));
+      expect(allParameterValues.values, equals([1, 2, 3, 4, 32763]));
     });
 
     test("can decode a single parameter value", () {
@@ -59,14 +59,14 @@ void main() {
       final message = Uint8List.fromList([
         2,
         ...DistingNT.encode16(88),
-        ...DistingNT.encode16(65534),
+        ...DistingNT.encode16(-2),
       ]);
 
       var parameterValue = DistingNT.decodeParameterValue(message);
 
       expect(parameterValue.algorithmIndex, equals(2));
       expect(parameterValue.parameterNumber, equals(88));
-      expect(parameterValue.value, equals(65534));
+      expect(parameterValue.value, equals(-2));
     });
 
     test("can decode unit strings", () {

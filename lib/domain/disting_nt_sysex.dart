@@ -221,6 +221,22 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
   String toString() {
     return "ParameterValue(algorithmIndex=$algorithmIndex, parameterNumber=$parameterNumber, value=$value)";
   }
+
+  /// Override == operator for equality comparison
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    if (other is! ParameterValue) return false;
+
+    return algorithmIndex == other.algorithmIndex &&
+        parameterNumber == other.parameterNumber &&
+        value == other.value;
+  }
+
+  /// Override hashCode for using instances in hash-based collections
+  @override
+  int get hashCode => Object.hash(algorithmIndex, parameterNumber, value);
 }
 
 class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
@@ -403,6 +419,10 @@ class DistingNT {
 
   /// The reverse: parse 3 bytes of 7-bit data into a 16-bit integer.
   static int decode16(List<int> data, int offset) {
+    // int v = (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
+    // v = (v << 16) >> 16;
+    // return v;
+
     var v =
         (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
     // Ensure the value is treated as a signed 16-bit integer
@@ -613,6 +633,23 @@ class DistingNT {
       DistingNTRequestMessageType.requestParameterValueString.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static Uint8List encodeSetParameterValue(
+    int distingSysExId,
+    int algorithmIndex,
+    int parameterNumber,
+    int value,
+  ) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.setParameterValue.value,
+      algorithmIndex & 0x7F,
+      ...encode16(parameterNumber),
+      ...encode16(value),
       ..._buildFooter(),
     ];
     return Uint8List.fromList(bytes);

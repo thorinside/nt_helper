@@ -1,15 +1,20 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
   final List<AlgorithmInfo> algorithms;
+  final List<String> units;
 
   const SynchronizedScreen({
     super.key,
     required this.slots,
     required this.algorithms,
+    required this.units,
   });
 
   @override
@@ -32,7 +37,7 @@ class SynchronizedScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: slots.map((slot) {
-            return SlotDetailView(slot: slot);
+            return SlotDetailView(slot: slot, units: units);
           }).toList(),
         ),
       ),
@@ -42,8 +47,9 @@ class SynchronizedScreen extends StatelessWidget {
 
 class SlotDetailView extends StatelessWidget {
   final Slot slot;
+  final List<String> units;
 
-  const SlotDetailView({super.key, required this.slot});
+  const SlotDetailView({super.key, required this.slot, required this.units});
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +62,9 @@ class SlotDetailView extends StatelessWidget {
         final enumStrings = slot.enums.elementAt(index);
         final mapping = slot.mappings.elementAtOrNull(index);
         final valueString = slot.valueStrings.elementAt(index);
+        final unit = parameter.unit > 0
+            ? units.elementAtOrNull(parameter.unit - 1)
+            : null;
 
         return ParameterEditorView(
           parameterInfo: parameter,
@@ -63,6 +72,7 @@ class SlotDetailView extends StatelessWidget {
           enumStrings: enumStrings,
           mapping: mapping,
           valueString: valueString,
+          unit: unit,
         );
       },
     );
@@ -75,6 +85,7 @@ class ParameterEditorView extends StatelessWidget {
   final ParameterEnumStrings enumStrings;
   final Mapping? mapping;
   final ParameterValueString valueString;
+  final String? unit;
 
   const ParameterEditorView({
     super.key,
@@ -83,6 +94,7 @@ class ParameterEditorView extends StatelessWidget {
     required this.enumStrings,
     required this.mapping,
     required this.valueString,
+    this.unit,
   });
 
   @override
@@ -90,6 +102,8 @@ class ParameterEditorView extends StatelessWidget {
         name: parameterInfo.name,
         min: parameterInfo.min,
         max: parameterInfo.max,
+        algorithmIndex: parameterInfo.algorithmIndex,
+        parameterNumber: parameterInfo.parameterNumber,
         defaultValue: parameterInfo.defaultValue,
         displayString: valueString.value.isNotEmpty ? valueString.value : null,
         dropdownItems:
@@ -97,7 +111,11 @@ class ParameterEditorView extends StatelessWidget {
         isOnOff: enumStrings.values.isNotEmpty &&
             enumStrings.values[0] == "Off" &&
             enumStrings.values[1] == "On",
-        initialValue: value.value,
+        initialValue: (value.value >= parameterInfo.min &&
+                value.value <= parameterInfo.max)
+            ? value.value
+            : parameterInfo.defaultValue,
+        unit: unit,
       );
 }
 
@@ -108,21 +126,27 @@ class ParameterViewRow extends StatefulWidget {
   final int defaultValue;
   final String?
       displayString; // For additional display string instead of dropdown
+  final String? unit;
   final List<String>? dropdownItems; // For enums as a dropdown
   final bool isOnOff; // Whether the parameter is an "on/off" type
   final int initialValue;
+  final int algorithmIndex;
+  final int parameterNumber;
 
   const ParameterViewRow({
-    Key? key,
+    super.key,
     required this.name,
     required this.min,
     required this.max,
     required this.defaultValue,
+    required this.parameterNumber,
+    required this.algorithmIndex,
+    this.unit,
     this.displayString,
     this.dropdownItems,
     this.isOnOff = false,
     required this.initialValue,
-  }) : super(key: key);
+  });
 
   @override
   State<ParameterViewRow> createState() => _ParameterViewRowState();
@@ -140,18 +164,39 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   }
 
   @override
+  void didUpdateWidget(covariant ParameterViewRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Update internal state when the widget is updated
+    if (widget.initialValue != oldWidget.initialValue) {
+      setState(() {
+        currentValue = widget.initialValue;
+        isChecked = widget.isOnOff && currentValue == 1;
+      });
+    }
+  }
+
+  void _updateCubitValue(int value) {
+    // Send updated value to the Cubit
+    context.read<DistingCubit>().updateParameterValue(
+          algorithmIndex: widget.algorithmIndex,
+          parameterNumber: widget.parameterNumber,
+          value: value,
+        );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-      // Less horizontal padding
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Name column with reduced width
           Expanded(
-            flex: 1, // Reduced flex for the name column
+            flex: 2, // Reduced flex for the name column
             child: Text(
               widget.name,
               overflow: TextOverflow.ellipsis,
@@ -172,13 +217,14 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   currentValue = value.toInt();
                   if (widget.isOnOff) isChecked = currentValue == 1;
                 });
+                _updateCubitValue(currentValue);
               },
             ),
           ),
 
           // Control column
           Expanded(
-            flex: 1, // Slightly larger control column
+            flex: 3, // Slightly larger control column
             child: Align(
               alignment: Alignment.centerLeft,
               child: widget.isOnOff
@@ -189,36 +235,50 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                           isChecked = value!;
                           currentValue = isChecked ? 1 : 0;
                         });
+                        _updateCubitValue(currentValue);
                       },
                     )
                   : widget.dropdownItems != null
                       ? DropdownMenu(
-                          initialSelection:
-                              widget.dropdownItems![currentValue - widget.min],
+                          initialSelection: widget.dropdownItems![currentValue],
                           dropdownMenuEntries: widget.dropdownItems!
                               .map((item) =>
                                   DropdownMenuEntry(value: item, label: item))
                               .toList(),
                           onSelected: (value) {
                             setState(() {
-                              currentValue =
-                                  widget.dropdownItems!.indexOf(value!) +
-                                      widget.min;
+                              currentValue = min(
+                                  max(widget.dropdownItems!.indexOf(value!),
+                                      widget.min),
+                                  widget.max);
                             });
+                            _updateCubitValue(
+                                min(max(currentValue, widget.min), widget.max));
                           },
                         )
                       : widget.displayString != null
                           ? Text(
                               widget.displayString!,
                               overflow: TextOverflow.ellipsis,
-                              style: textTheme
-                                  .bodyLarge, // Larger body style for strings
+                              style: textTheme.bodyLarge,
                             )
-                          : const SizedBox.shrink(),
+                          : widget.unit != null
+                              ? Text(formatWithUnit(currentValue, min: widget.min, max: widget.max, unit: widget.unit))
+                              : const SizedBox.shrink(),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+String formatWithUnit(int currentValue, {required int min, required int max, String? unit}) {
+  if (unit == null) return currentValue.toString();
+  if (unit == '%') {
+    if (max == 1000) {
+      return '${((currentValue / (max - min)) * 100).toStringAsFixed(2)} $unit';
+    }
+  }
+  return '$currentValue $unit';
 }
