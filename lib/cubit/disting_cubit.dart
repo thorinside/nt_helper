@@ -146,13 +146,14 @@ class DistingCubit extends Cubit<DistingState> {
         },
       );
 
-      // Transition to the connected state
+      // // Transition to the connected state
       emit(DistingState.connected(
         midiCommand: state.midiCommand,
         device: device,
         sysExId: sysExId,
         disting: disting,
       ));
+      synchronizeDevice();
     } catch (e) {
       // Handle error state if necessary
     }
@@ -455,5 +456,17 @@ class DistingCubit extends Cubit<DistingState> {
   @override
   void onChange(Change<DistingState> change) {
     super.onChange(change);
+  }
+
+  void wakeDevice() {
+    final disting = requireDisting();
+    disting.requestWake();
+  }
+
+  void refresh() {
+    if (state is DistingStateSynchronized) {
+      emit((state as DistingStateSynchronized).copyWith(complete: false));
+    }
+    fetchAlgorithms();
   }
 }

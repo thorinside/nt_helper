@@ -473,7 +473,7 @@ class DistingNT {
   /// Build a 'Wake' SysEx message.
   ///
   /// F0 00 21 27 6D <SysEx ID> 07 F7
-  static Uint8List buildWake(int distingSysExId) {
+  static Uint8List encodeWake(int distingSysExId) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
       DistingNTRequestMessageType.wake.value,

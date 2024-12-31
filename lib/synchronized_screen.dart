@@ -9,12 +9,16 @@ class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
   final List<AlgorithmInfo> algorithms;
   final List<String> units;
+  final String presetName;
+  final String distingVersion;
 
   const SynchronizedScreen({
     super.key,
     required this.slots,
     required this.algorithms,
     required this.units,
+    required this.presetName,
+    required this.distingVersion,
   });
 
   @override
@@ -23,7 +27,59 @@ class SynchronizedScreen extends StatelessWidget {
       length: slots.length,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Disting NT Preset Editor'),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Disting NT Preset Editor'),
+              Text(
+                'Preset: $presetName',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.alarm_on_rounded),
+              tooltip: 'Wake',
+              onPressed: () {
+                context.read<DistingCubit>().wakeDevice();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Refresh',
+              onPressed: () {
+                context.read<DistingCubit>().refresh();
+              },
+            ),
+          ],
+          elevation: 0,
+          // Initial elevation
+          scrolledUnderElevation: 6,
+          // Elevation when scrolled
+          notificationPredicate: (ScrollNotification notification) =>
+              notification.depth == 1,
+          flexibleSpace: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    distingVersion,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           bottom: TabBar(
             isScrollable: true,
             tabs: slots.map((slot) {
@@ -263,7 +319,10 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                               style: textTheme.bodyLarge,
                             )
                           : widget.unit != null
-                              ? Text(formatWithUnit(currentValue, min: widget.min, max: widget.max, unit: widget.unit))
+                              ? Text(formatWithUnit(currentValue,
+                                  min: widget.min,
+                                  max: widget.max,
+                                  unit: widget.unit))
                               : const SizedBox.shrink(),
             ),
           ),
@@ -273,7 +332,8 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   }
 }
 
-String formatWithUnit(int currentValue, {required int min, required int max, String? unit}) {
+String formatWithUnit(int currentValue,
+    {required int min, required int max, String? unit}) {
   if (unit == null) return currentValue.toString();
   if (unit == '%') {
     if (max == 1000) {

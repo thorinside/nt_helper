@@ -9,12 +9,38 @@ class DistingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.fromSeed(seedColor: Colors.tealAccent)
+        .copyWith(surfaceTint: Colors.transparent);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
+          colorScheme: colorScheme,
+          appBarTheme: AppBarTheme(
+            elevation: 4.0,
+            shadowColor: colorScheme.shadow,
+            backgroundColor: colorScheme.surface,
+            foregroundColor: colorScheme.onSurface,
+          ),
+          tabBarTheme: TabBarTheme(
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(
+                color: colorScheme.secondary,
+                width: 2.0,
+              ),
+            ),
+            labelColor: colorScheme.secondary,
+            unselectedLabelColor:
+                colorScheme.secondary.withAlpha(170),
+            labelStyle: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+          )),
       home: BlocProvider(
         create: (_) {
           final cubit = DistingCubit();
@@ -64,11 +90,14 @@ class DistingPage extends StatelessWidget {
                 ],
               ),
             );
-          } else if (state is DistingStateSynchronized && state.complete == true) {
+          } else if (state is DistingStateSynchronized &&
+              state.complete == true) {
             return SynchronizedScreen(
               slots: state.slots,
               algorithms: state.algorithms,
               units: state.unitStrings,
+              distingVersion: state.distingVersion,
+              presetName: state.patchName,
             );
           } else if (state is DistingStateSynchronized) {
             return Center(child: CircularProgressIndicator());
