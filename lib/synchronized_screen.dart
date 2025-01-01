@@ -6,6 +6,7 @@ import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -32,51 +33,6 @@ class SynchronizedScreen extends StatelessWidget {
           title: const Text('NT Helper'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.alarm_on_rounded),
-              tooltip: 'Wake',
-              onPressed: () {
-                context.read<DistingCubit>().wakeDevice();
-              },
-            ),
-            Builder(
-              builder: (context) => IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  tooltip: 'Remove Algorithm',
-                  onPressed: () async {
-                    context.read<DistingCubit>().onRemoveAlgorithm(
-                        DefaultTabController.of(context).index);
-                  }),
-            ),
-            IconButton(
-              icon: const Icon(Icons.save_alt_rounded),
-              tooltip: 'Save Preset',
-              onPressed: () {
-                context.read<DistingCubit>().save();
-              },
-            ),
-            Builder(
-              builder: (context) {
-                return IconButton(
-                  icon: const Icon(Icons.arrow_upward_rounded),
-                  tooltip: 'Move Algorithm Up',
-                  onPressed: () {
-                    context.read<DistingCubit>().moveAlgorithmUp(DefaultTabController.of(context).index);
-                  },
-                );
-              }
-            ),
-            Builder(
-              builder: (context) {
-                return IconButton(
-                  icon: const Icon(Icons.arrow_downward_rounded),
-                  tooltip: 'Move Algorithm Down',
-                  onPressed: () {
-                    context.read<DistingCubit>().moveAlgorithmDown(DefaultTabController.of(context).index);
-                  },
-                );
-              }
-            ),
-            IconButton(
               icon: const Icon(Icons.add_circle_rounded),
               tooltip: 'Add Algorithm',
               onPressed: () async {
@@ -95,12 +51,88 @@ class SynchronizedScreen extends StatelessWidget {
                 }
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              tooltip: 'Refresh',
-              onPressed: () {
-                context.read<DistingCubit>().refresh();
-              },
+            Builder(builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.arrow_upward_rounded),
+                tooltip: 'Move Algorithm Up',
+                onPressed: () {
+                  context
+                      .read<DistingCubit>()
+                      .moveAlgorithmUp(DefaultTabController.of(context).index);
+                },
+              );
+            }),
+            Builder(builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.arrow_downward_rounded),
+                tooltip: 'Move Algorithm Down',
+                onPressed: () {
+                  context.read<DistingCubit>().moveAlgorithmDown(
+                      DefaultTabController.of(context).index);
+                },
+              );
+            }),
+            Builder(
+              builder: (context) => IconButton(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  tooltip: 'Remove Algorithm',
+                  onPressed: () async {
+                    context.read<DistingCubit>().onRemoveAlgorithm(
+                        DefaultTabController.of(context).index);
+                  }),
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: "wake",
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [Text('Wake'), Icon(Icons.alarm_on_rounded)]),
+                  onTap: () {
+                    context.read<DistingCubit>().wakeDevice();
+                  },
+                ),
+                PopupMenuItem(
+                  value: "save",
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Save Preset'),
+                        Icon(Icons.save_alt_rounded)
+                      ]),
+                  onTap: () {
+                    context.read<DistingCubit>().save();
+                  },
+                ),
+                PopupMenuItem(
+                  value: 'refresh',
+                  onTap: () {
+                    context.read<DistingCubit>().refresh();
+                  },
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
+                ),
+                PopupMenuItem(
+                  value: 'about',
+                  child: Text('About'),
+                  onTap: () async {
+                    final info = await PackageInfo.fromPlatform();
+
+                    showDialog<String>(
+                      context: context,
+                      builder: (context) => AboutDialog(
+                        applicationName: "NT Helper",
+                        applicationVersion:
+                            "${info.version} (${info.buildNumber})",
+                        applicationLegalese:
+                            "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
           elevation: 0,
