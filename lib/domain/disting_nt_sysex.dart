@@ -678,6 +678,28 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
+  static Uint8List encodeSetFocus(
+      int distingSysExId, int algorithmIndex, int parameterNumber) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.setFocus.value,
+      algorithmIndex & 0x7F,
+      ...encode16(parameterNumber),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static encodeSetPresetName(int sysExId, String newName) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.setPresetName.value,
+      ...encodeNullTerminatedAscii(newName),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
   static AlgorithmInfo decodeAlgorithmInfo(Uint8List data) {
     int offset = 0;
 

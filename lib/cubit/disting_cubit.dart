@@ -346,8 +346,8 @@ class DistingCubit extends Cubit<DistingState> {
       ));
 
       // Begin to synchronize with the device
-      fetchDistingVersion(connectedState.device);
-      fetchPresetName(connectedState.device);
+      fetchDistingVersion();
+      fetchPresetName();
       fetchUnitStrings();
       fetchAlgorithms();
       fetchNumAlgorithmsInPreset();
@@ -366,11 +366,11 @@ class DistingCubit extends Cubit<DistingState> {
     throw Exception("Device is not connected.");
   }
 
-  void fetchDistingVersion(MidiDevice device) async {
+  void fetchDistingVersion() async {
     requireDisting().requestVersionString();
   }
 
-  void fetchPresetName(MidiDevice device) async {
+  void fetchPresetName() async {
     requireDisting().requestPresetName();
   }
 
@@ -511,5 +511,18 @@ class DistingCubit extends Cubit<DistingState> {
       await Future.delayed(Duration(milliseconds: 50));
       refresh();
     }
+  }
+
+  void onFocusParameter({required int algorithmIndex, required int parameterNumber}) {
+    final disting = requireDisting();
+    disting.requestSetFocus(algorithmIndex, parameterNumber);
+  }
+
+  void renamePreset(String newName) async {
+    final disting = requireDisting();
+    disting.requestSetPresetName(newName);
+
+    await Future.delayed(Duration(milliseconds: 250));
+    fetchPresetName();
   }
 }

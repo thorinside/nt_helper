@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/rename_preset_dialog.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -28,18 +29,7 @@ class SynchronizedScreen extends StatelessWidget {
       length: slots.length,
       child: Scaffold(
         appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Disting NT Preset Editor'),
-              Text(
-                'Preset: $presetName',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ],
-          ),
+          title: const Text('Disting NT Preset Editor'),
           actions: [
             IconButton(
               icon: const Icon(Icons.alarm_on_rounded),
@@ -85,38 +75,88 @@ class SynchronizedScreen extends StatelessWidget {
             ),
           ],
           elevation: 0,
-          // Initial elevation
           scrolledUnderElevation: 6,
-          // Elevation when scrolled
           notificationPredicate: (ScrollNotification notification) =>
               notification.depth == 1,
-          flexibleSpace: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
-            child: Align(
-              alignment: Alignment.bottomRight,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    distingVersion,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          bottom: PreferredSize(
+            // Set the total height you need for your text + tab bar.
+            preferredSize: const Size.fromHeight(100.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Your text
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          // 1) Show an AlertDialog with a text field to rename the preset.
+                          final newName = await showDialog<String>(
+                            context: context,
+                            builder: (context) => RenamePresetDialog(
+                              initialName: presetName,
+                            ),
+                          );
+
+                          // 2) If the user pressed OK (instead of Cancel), newName will be non-null.
+                          if (newName != null && newName.isNotEmpty && newName != presetName) {
+                            context.read<DistingCubit>().renamePreset(newName);
+                          }
+
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          // Shrinks to fit content
+                          children: [
+                            Text(
+                              'Preset: ${presetName.trim()}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.edit,
+                              size: 16,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ],
                         ),
+                      ),
+                      Text(distingVersion,
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  )),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                // The TabBar
+                TabBar(
+                  isScrollable: true,
+                  tabs: slots.map((slot) {
+                    final algorithmName = algorithms
+                        .where((element) =>
+                            element.guid == slot.algorithmGuid.guid)
+                        .firstOrNull
+                        ?.name;
+                    return Tab(text: algorithmName ?? "");
+                  }).toList(),
+                ),
+              ],
             ),
-          ),
-          bottom: TabBar(
-            isScrollable: true,
-            tabs: slots.map((slot) {
-              final algorithmName = algorithms
-                  .where((element) => element.guid == slot.algorithmGuid.guid)
-                  .firstOrNull
-                  ?.name;
-              return Tab(text: algorithmName ?? "");
-            }).toList(),
           ),
         ),
         body: TabBarView(
@@ -281,10 +321,18 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           // Name column with reduced width
           Expanded(
             flex: 2, // Reduced flex for the name column
-            child: Text(
-              widget.name,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.titleMedium, // Larger title for the name
+            child: GestureDetector(
+              onLongPress: () {
+                context.read<DistingCubit>().onFocusParameter(
+                    // Call the Cubit method for long press
+                    algorithmIndex: widget.algorithmIndex,
+                    parameterNumber: widget.parameterNumber);
+              },
+              child: Text(
+                widget.name,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleMedium, // Larger title for the name
+              ),
             ),
           ),
 

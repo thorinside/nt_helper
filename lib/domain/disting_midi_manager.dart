@@ -251,6 +251,16 @@ class DistingMidiManager {
     _sendSysExMessage(packet);
   }
 
+  void requestSetFocus(int algorithmIndex, int parameterNumber) {
+    final packet = DistingNT.encodeSetFocus(sysExId, algorithmIndex, parameterNumber);
+    _sendSysExMessage(packet);
+  }
+
+  void requestSetPresetName(String newName) {
+    final packet = DistingNT.encodeSetPresetName(sysExId, newName);
+    _sendSysExMessage(packet);
+  }
+
   /// Requests routing information for a given algorithm
 // Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {
 //   final packet = DistingNT.encodeRequestRouting(sysExId, algorithmIndex);
