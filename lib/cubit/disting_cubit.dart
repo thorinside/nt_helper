@@ -102,8 +102,8 @@ class DistingCubit extends Cubit<DistingState> {
               _handleMessage(state, event);
               break;
             case DistingNTRespMessageType.respScreenshot:
-              // TODO: Handle this case.
-              throw UnimplementedError();
+              // TODO: Fill this in
+              break;
             case DistingNTRespMessageType.respAlgorithmGuid:
               _handleAlgorithmGuid(state, event);
               break;
@@ -117,7 +117,8 @@ class DistingCubit extends Cubit<DistingState> {
               _handleParameterInfo(state, event);
               break;
             case DistingNTRespMessageType.respAllParameterValues:
-              throw UnimplementedError();
+              // TODO: Fill this in
+              break;
             case DistingNTRespMessageType.respParameterValue:
               _handleParameterValue(state, event);
               break;
@@ -138,7 +139,7 @@ class DistingCubit extends Cubit<DistingState> {
               _handleNumAlgorithmsInPreset(event, state);
               break;
             case DistingNTRespMessageType.respRouting:
-              _handleParameterValueString(state, event);
+              // TODO: Fill this in
               break;
             case DistingNTRespMessageType.unknown:
               throw UnimplementedError();
@@ -225,7 +226,10 @@ class DistingCubit extends Cubit<DistingState> {
   void _handleParameterInfo(
       DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
     emit(state.copyWith(
-        complete: state.complete ? true : event.key.algorithmIndex == (numAlgorithmsInPreset - 1),
+        complete: state.complete
+            ? true
+            : (event.key.algorithmIndex == (numAlgorithmsInPreset - 1)) &&
+                state.unitStrings.isNotEmpty,
         slots: updateSlot(
             event.key.algorithmIndex!,
             state.slots,
@@ -237,8 +241,10 @@ class DistingCubit extends Cubit<DistingState> {
                 )))));
 
     fetchParameterValue(event.key.algorithmIndex!, event.key.parameterNumber!);
-    fetchParameterValueString(event.key.algorithmIndex!, event.key.parameterNumber!);
-    fetchParameterEnumStrings(event.key.algorithmIndex!, event.key.parameterNumber!);
+    fetchParameterValueString(
+        event.key.algorithmIndex!, event.key.parameterNumber!);
+    fetchParameterEnumStrings(
+        event.key.algorithmIndex!, event.key.parameterNumber!);
   }
 
   void _handleNumParameters(
@@ -326,11 +332,6 @@ class DistingCubit extends Cubit<DistingState> {
 
       final connectedState = state as DistingStateConnected;
 
-      // Begin to synchronize with the device
-      fetchDistingVersion(connectedState.device);
-      fetchPresetName(connectedState.device);
-      fetchAlgorithms();
-
       // Transition to the synchronizing state
       emit(DistingState.synchronized(
         midiCommand: connectedState.midiCommand,
@@ -343,6 +344,13 @@ class DistingCubit extends Cubit<DistingState> {
         slots: [],
         unitStrings: [],
       ));
+
+      // Begin to synchronize with the device
+      fetchDistingVersion(connectedState.device);
+      fetchPresetName(connectedState.device);
+      fetchUnitStrings();
+      fetchAlgorithms();
+      fetchNumAlgorithmsInPreset();
     } catch (e) {
       // Handle error state if necessary
     }
@@ -366,11 +374,19 @@ class DistingCubit extends Cubit<DistingState> {
     requireDisting().requestPresetName();
   }
 
+  void fetchUnitStrings() async {
+    final disting = requireDisting();
+    disting.requestUnitStrings();
+  }
+
   void fetchAlgorithms() async {
     final disting = requireDisting();
     disting.requestNumberOfAlgorithms();
+  }
+
+  void fetchNumAlgorithmsInPreset() async {
+    final disting = requireDisting();
     disting.requestNumAlgorithmsInPreset();
-    disting.requestUnitStrings();
   }
 
   void fetchAlgorithmInfo(int numAlgorithms) {
@@ -390,11 +406,6 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     disting.requestNumberOfParameters(algorithmIndex);
     disting.requestAlgorithmGuid(algorithmIndex);
-  }
-
-  void fetchUnitStrings() async {
-    final disting = requireDisting();
-    disting.requestUnitStrings();
   }
 
   void fetchParameterInfos(int algorithmIndex, int numberOfParameters) {
@@ -446,7 +457,10 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
-  void updateParameterValue({required int algorithmIndex, required int parameterNumber, required int value}) {
+  void updateParameterValue(
+      {required int algorithmIndex,
+      required int parameterNumber,
+      required int value}) {
     final disting = requireDisting();
     disting.setParameterValue(algorithmIndex, parameterNumber, value);
     disting.requestParameterValue(algorithmIndex, parameterNumber);
@@ -463,28 +477,39 @@ class DistingCubit extends Cubit<DistingState> {
     disting.requestWake();
   }
 
-  void refresh() {
+  void refresh() async {
     if (state is DistingStateSynchronized) {
-      emit((state as DistingStateSynchronized).copyWith(complete: false));
+      emit((state as DistingStateSynchronized).copyWith(
+        complete: false,
+        slots: [],
+        unitStrings: [],
+      ));
+      fetchNumAlgorithmsInPreset();
+
+      fetchUnitStrings();
     }
-    fetchAlgorithms();
   }
 
-  void onAddAlgorithm() {
+  void onAlgorithmSelected(AlgorithmInfo algorithm, List<int> specifications) async {
     if (state is DistingStateSynchronized) {
-      emit((state as DistingStateSynchronized).copyWith(selectAlgorithm: true));
-    }
-  }
-
-  void onAlgorithmSelected(AlgorithmInfo algorithm, List<int> specifications) {
-    if (state is DistingStateSynchronized) {
-      emit((state as DistingStateSynchronized).copyWith(selectAlgorithm: false));
-
       final disting = requireDisting();
       disting.requestAddAlgorithm(algorithm, specifications);
 
-      emit((state as DistingStateSynchronized).copyWith(complete: false));
-      fetchAlgorithms();
+      // Sleep for 50ms
+      await Future.delayed(Duration(milliseconds: 50));
+
+      refresh();
+    }
+  }
+
+  void onRemoveAlgorithm(int algorithmIndex) async {
+    if (state is DistingStateSynchronized) {
+      final disting = requireDisting();
+      disting.requestRemoveAlgorithm(algorithmIndex);
+
+      // Sleep for 50ms
+      await Future.delayed(Duration(milliseconds: 50));
+      refresh();
     }
   }
 }

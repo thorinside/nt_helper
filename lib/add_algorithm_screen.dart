@@ -51,7 +51,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         numSpecifications: _selectedAlgorithm!.numSpecifications,
         specifications: _selectedAlgorithm!.specifications,
         name: _selectedAlgorithm!.name,
-        specificationName: _selectedAlgorithm!.specificationName,
       );
 
       // Pop with two pieces: the chosen AlgorithmInfo and the user’s specs
@@ -77,7 +76,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
               /// Dropdown to select the algorithm
               DropdownButtonFormField<AlgorithmInfo>(
@@ -123,8 +122,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         controller: _specControllers[index],
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText:
-                              '${_selectedAlgorithm!.specificationName} #${index + 1}',
+                          labelText: spec.name,
                           hintText:
                               'Enter a value between ${spec.min} and ${spec.max}',
                           border: const OutlineInputBorder(),
@@ -163,7 +161,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                     child: const Text('Cancel'),
                   ),
                   const SizedBox(width: 16),
-                  FilledButton(
+                  ElevatedButton(
                     onPressed: _onAdd,
                     child: const Text('Add'),
                   ),

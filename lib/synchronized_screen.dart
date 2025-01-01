@@ -61,15 +61,27 @@ class SynchronizedScreen extends StatelessWidget {
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => AddAlgorithmScreen(algorithms: algorithms)),
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          AddAlgorithmScreen(algorithms: algorithms)),
                 );
 
                 if (result != null) {
                   context.read<DistingCubit>().onAlgorithmSelected(
-                    result['algorithm'],
-                    result['specValues'],
-                  );
-                }              },
+                        result['algorithm'],
+                        result['specValues'],
+                      );
+                }
+              },
+            ),
+            Builder(
+              builder: (context) => IconButton(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  tooltip: 'Remove Algorithm',
+                  onPressed: () async {
+                    context.read<DistingCubit>().onRemoveAlgorithm(
+                        DefaultTabController.of(context).index);
+                  }),
             ),
           ],
           elevation: 0,
@@ -79,8 +91,7 @@ class SynchronizedScreen extends StatelessWidget {
           notificationPredicate: (ScrollNotification notification) =>
               notification.depth == 1,
           flexibleSpace: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
             child: Align(
               alignment: Alignment.bottomRight,
               child: Column(
@@ -181,9 +192,9 @@ class ParameterEditorView extends StatelessWidget {
         displayString: valueString.value.isNotEmpty ? valueString.value : null,
         dropdownItems:
             enumStrings.values.isNotEmpty ? enumStrings.values : null,
-        isOnOff: enumStrings.values.isNotEmpty &&
+        isOnOff: (enumStrings.values.isNotEmpty &&
             enumStrings.values[0] == "Off" &&
-            enumStrings.values[1] == "On",
+            enumStrings.values[1] == "On"),
         initialValue: (value.value >= parameterInfo.min &&
                 value.value <= parameterInfo.max)
             ? value.value
@@ -284,7 +295,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               value: currentValue.toDouble(),
               min: widget.min.toDouble(),
               max: widget.max.toDouble(),
-              divisions: widget.max - widget.min,
+              divisions: (widget.max - widget.min > 0)
+                  ? widget.max - widget.min
+                  : null,
               onChanged: (value) {
                 setState(() {
                   currentValue = value.toInt();
@@ -357,5 +370,8 @@ String formatWithUnit(int currentValue,
       return '${((currentValue / (max - min)) * 100).toStringAsFixed(2)} $unit';
     }
   }
-  return '$currentValue $unit';
+  if (unit == ' BPM') {
+    return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
+  }
+  return '$currentValue ${unit.trim()}';
 }

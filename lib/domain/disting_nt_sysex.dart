@@ -129,12 +129,14 @@ class AlgorithmGuid implements HasAlgorithmIndex {
 }
 
 class Specification {
+  final String name;
   final int min;
   final int max;
   final int defaultValue;
   final int type;
 
   Specification({
+    required this.name,
     required this.min,
     required this.max,
     required this.defaultValue,
@@ -324,7 +326,6 @@ class AlgorithmInfo implements HasAlgorithmIndex {
   final int numSpecifications;
   final List<Specification> specifications;
   final String name;
-  final String specificationName;
 
   AlgorithmInfo({
     required this.algorithmIndex,
@@ -332,7 +333,6 @@ class AlgorithmInfo implements HasAlgorithmIndex {
     required this.numSpecifications,
     required this.specifications,
     required this.name,
-    required this.specificationName,
   });
 
   factory AlgorithmInfo.filler() {
@@ -342,7 +342,6 @@ class AlgorithmInfo implements HasAlgorithmIndex {
       numSpecifications: 0,
       specifications: List.empty(),
       name: "name",
-      specificationName: "specificationName",
     );
   }
 
@@ -655,44 +654,103 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static Uint8List encodeAddAlgorithm(int distingSysExId, String guid, List<int> specifications) {
+  static Uint8List encodeAddAlgorithm(
+      int distingSysExId, String guid, List<int> specifications) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
       DistingNTRequestMessageType.addAlgorithm.value,
       ...guid.codeUnits,
-      for (int i = 0; i < specifications.length; i++) ...encode16(specifications[i]),
+      for (int i = 0; i < specifications.length; i++)
+        ...encode16(specifications[i]),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static Uint8List encodeRemoveAlgorithm(
+      int distingSysExId, int algorithmIndex) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.removeAlgorithm.value,
+      algorithmIndex & 0x7F,
+      ..._buildFooter(),
     ];
     return Uint8List.fromList(bytes);
   }
 
   static AlgorithmInfo decodeAlgorithmInfo(Uint8List data) {
-    var algorithmIndex = decode16(data, 0);
-    var guid = String.fromCharCodes(data.sublist(3, 7));
-    var numSpecifications = data[3 + 4].toInt();
-    List<Specification> specifications =
-        List.generate(numSpecifications, (index) {
-      int offset = 3 + 4 + 1;
-      int specOffset = index * 10 + offset;
+    int offset = 0;
 
-      int min = decode16(data, specOffset);
-      int max = decode16(data, specOffset + 3);
-      int defaultValue = decode16(data, specOffset + 3 + 3);
-      int type = data[specOffset + 3 + 3 + 3];
+    // 1) Decode the 16-bit algorithm index (2 bytes).
+    final algorithmIndex = decode16(data, offset);
+    offset += 2;
+
+    // 2) Skip 1 byte at index 2 (if your data format specifies this gap).
+    offset += 1;
+
+    // 3) Decode the 4-byte GUID.
+    final guid = String.fromCharCodes(data.sublist(offset, offset + 4));
+    offset += 4;
+
+    // 4) Decode the number of specifications (1 byte).
+    final numSpecifications = data[offset];
+    offset += 1;
+
+    // 5) Decode each specification, each occupying 3 + 3 + 3 + 1 = 10 bytes.
+    final specs = List.generate(numSpecifications, (_) {
+      final min = decode16(data, offset);
+      offset += 3;
+
+      final max = decode16(data, offset);
+      offset += 3;
+
+      final defaultValue = decode16(data, offset);
+      offset += 3;
+
+      final type = data[offset];
+      offset += 1;
 
       return Specification(
-          min: min, max: max, defaultValue: defaultValue, type: type);
+        min: min,
+        max: max,
+        defaultValue: defaultValue,
+        type: type,
+        name: "", // We'll fill in names next
+      );
     });
-    var str =
-        decodeNullTerminatedAscii(data, 3 + 4 + 1 + numSpecifications * 10);
-    var str2 = decodeNullTerminatedAscii(data, str.nextOffset);
 
+    // 6) Decode the main algorithm name (null-terminated ASCII).
+    final nameStr = decodeNullTerminatedAscii(data, offset);
+    offset = nameStr.nextOffset;
+    final algorithmName = nameStr.value;
+
+    // 7) Decode each specification’s display name (also null-terminated).
+    final specNames = List.generate(numSpecifications, (_) {
+      final str = decodeNullTerminatedAscii(data, offset);
+      offset = str.nextOffset;
+      return str.value;
+    });
+
+    // 8) Attach the names to the corresponding Specifications.
+    final updatedSpecs = specs.asMap().entries.map((entry) {
+      final i = entry.key;
+      final spec = entry.value;
+      return Specification(
+        min: spec.min,
+        max: spec.max,
+        defaultValue: spec.defaultValue,
+        type: spec.type,
+        name: specNames[i],
+      );
+    }).toList();
+
+    // 9) Build and return the final AlgorithmInfo object.
     return AlgorithmInfo(
       algorithmIndex: algorithmIndex,
       guid: guid,
       numSpecifications: numSpecifications,
-      specifications: specifications,
-      name: str.value,
-      specificationName: str2.value,
+      specifications: updatedSpecs,
+      name: algorithmName,
     );
   }
 

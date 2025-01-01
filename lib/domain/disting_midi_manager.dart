@@ -246,6 +246,11 @@ class DistingMidiManager {
     _sendSysExMessage(packet);
   }
 
+  void requestRemoveAlgorithm(int algorithmIndex) {
+    final packet = DistingNT.encodeRemoveAlgorithm(sysExId, algorithmIndex);
+    _sendSysExMessage(packet);
+  }
+
   /// Requests routing information for a given algorithm
 // Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {
 //   final packet = DistingNT.encodeRequestRouting(sysExId, algorithmIndex);
