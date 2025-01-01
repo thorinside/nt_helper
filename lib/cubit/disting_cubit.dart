@@ -525,4 +525,25 @@ class DistingCubit extends Cubit<DistingState> {
     await Future.delayed(Duration(milliseconds: 250));
     fetchPresetName();
   }
+
+  void save() async {
+    final disting = requireDisting();
+    disting.requestSavePreset();
+  }
+
+  void moveAlgorithmUp(int algorithmIndex) async {
+    final disting = requireDisting();
+    disting.requestMoveAlgorithmUp(algorithmIndex);
+    await Future.delayed(Duration(milliseconds: 50));
+
+    refresh();
+  }
+
+  void moveAlgorithmDown(int algorithmIndex) async {
+    final disting = requireDisting();
+    disting.requestMoveAlgorithmDown(algorithmIndex);
+    await Future.delayed(Duration(milliseconds: 50));
+
+    refresh();
+  }
 }

@@ -690,7 +690,7 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetPresetName(int sysExId, String newName) {
+  static Uint8List encodeSetPresetName(int sysExId, String newName) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
       DistingNTRequestMessageType.setPresetName.value,
@@ -699,6 +699,30 @@ class DistingNT {
     ];
     return Uint8List.fromList(bytes);
   }
+
+  // The option value can be 0 (prompt for file overwrite), 1 (never overwrite), or 2
+  // (always overwrite)
+  static Uint8List encodeSavePreset(int sysExId, int option) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.savePreset.value,
+      option & 0x7F,
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static Uint8List encodeMoveAlgorithm(int sysExId, int algorithmIndex, int i) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.moveAlgorithm.value,
+      algorithmIndex & 0x7F,
+      i & 0x7F,
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
 
   static AlgorithmInfo decodeAlgorithmInfo(Uint8List data) {
     int offset = 0;

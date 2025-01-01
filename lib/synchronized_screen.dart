@@ -29,7 +29,7 @@ class SynchronizedScreen extends StatelessWidget {
       length: slots.length,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Disting NT Preset Editor'),
+          title: const Text('NT Helper'),
           actions: [
             IconButton(
               icon: const Icon(Icons.alarm_on_rounded),
@@ -38,12 +38,43 @@ class SynchronizedScreen extends StatelessWidget {
                 context.read<DistingCubit>().wakeDevice();
               },
             ),
+            Builder(
+              builder: (context) => IconButton(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  tooltip: 'Remove Algorithm',
+                  onPressed: () async {
+                    context.read<DistingCubit>().onRemoveAlgorithm(
+                        DefaultTabController.of(context).index);
+                  }),
+            ),
             IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              tooltip: 'Refresh',
+              icon: const Icon(Icons.save_alt_rounded),
+              tooltip: 'Save Preset',
               onPressed: () {
-                context.read<DistingCubit>().refresh();
+                context.read<DistingCubit>().save();
               },
+            ),
+            Builder(
+              builder: (context) {
+                return IconButton(
+                  icon: const Icon(Icons.arrow_upward_rounded),
+                  tooltip: 'Move Algorithm Up',
+                  onPressed: () {
+                    context.read<DistingCubit>().moveAlgorithmUp(DefaultTabController.of(context).index);
+                  },
+                );
+              }
+            ),
+            Builder(
+              builder: (context) {
+                return IconButton(
+                  icon: const Icon(Icons.arrow_downward_rounded),
+                  tooltip: 'Move Algorithm Down',
+                  onPressed: () {
+                    context.read<DistingCubit>().moveAlgorithmDown(DefaultTabController.of(context).index);
+                  },
+                );
+              }
             ),
             IconButton(
               icon: const Icon(Icons.add_circle_rounded),
@@ -64,18 +95,16 @@ class SynchronizedScreen extends StatelessWidget {
                 }
               },
             ),
-            Builder(
-              builder: (context) => IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  tooltip: 'Remove Algorithm',
-                  onPressed: () async {
-                    context.read<DistingCubit>().onRemoveAlgorithm(
-                        DefaultTabController.of(context).index);
-                  }),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Refresh',
+              onPressed: () {
+                context.read<DistingCubit>().refresh();
+              },
             ),
           ],
           elevation: 0,
-          scrolledUnderElevation: 6,
+          scrolledUnderElevation: 3,
           notificationPredicate: (ScrollNotification notification) =>
               notification.depth == 1,
           bottom: PreferredSize(
@@ -102,10 +131,11 @@ class SynchronizedScreen extends StatelessWidget {
                           );
 
                           // 2) If the user pressed OK (instead of Cancel), newName will be non-null.
-                          if (newName != null && newName.isNotEmpty && newName != presetName) {
+                          if (newName != null &&
+                              newName.isNotEmpty &&
+                              newName != presetName) {
                             context.read<DistingCubit>().renamePreset(newName);
                           }
-
                         },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -159,10 +189,24 @@ class SynchronizedScreen extends StatelessWidget {
             ),
           ),
         ),
-        body: TabBarView(
-          children: slots.map((slot) {
-            return SlotDetailView(slot: slot, units: units);
-          }).toList(),
+        body: AnimatedSwitcher(
+          duration: Duration(seconds: 1),
+          child: slots.isNotEmpty
+              ? TabBarView(
+                  children: slots.map((slot) {
+                    return SlotDetailView(slot: slot, units: units);
+                  }).toList(),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      "No algorithms",
+                      style: Theme.of(context).textTheme.displaySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -339,20 +383,26 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           // Slider column
           Expanded(
             flex: 4, // Proportionally larger space for the slider
-            child: Slider(
-              value: currentValue.toDouble(),
-              min: widget.min.toDouble(),
-              max: widget.max.toDouble(),
-              divisions: (widget.max - widget.min > 0)
-                  ? widget.max - widget.min
-                  : null,
-              onChanged: (value) {
-                setState(() {
-                  currentValue = value.toInt();
-                  if (widget.isOnOff) isChecked = currentValue == 1;
-                });
+            child: GestureDetector(
+              onDoubleTap: () => setState(() {
+                currentValue = widget.defaultValue;
                 _updateCubitValue(currentValue);
-              },
+              }),
+              child: Slider(
+                value: currentValue.toDouble(),
+                min: widget.min.toDouble(),
+                max: widget.max.toDouble(),
+                divisions: (widget.max - widget.min > 0)
+                    ? widget.max - widget.min
+                    : null,
+                onChanged: (value) {
+                  setState(() {
+                    currentValue = value.toInt();
+                    if (widget.isOnOff) isChecked = currentValue == 1;
+                  });
+                  _updateCubitValue(currentValue);
+                },
+              ),
             ),
           ),
 
@@ -401,7 +451,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                   min: widget.min,
                                   max: widget.max,
                                   unit: widget.unit))
-                              : const SizedBox.shrink(),
+                              : Text(currentValue.toString()),
             ),
           ),
         ],
@@ -412,14 +462,22 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
 String formatWithUnit(int currentValue,
     {required int min, required int max, String? unit}) {
-  if (unit == null) return currentValue.toString();
+  if (unit == null || unit.isEmpty) return currentValue.toString();
   if (unit == '%') {
-    if (max == 1000) {
-      return '${((currentValue / (max - min)) * 100).toStringAsFixed(2)} $unit';
+    if (max > 100) {
+      return '${((currentValue / 10).toStringAsFixed(1))} $unit';
+    } else if (max == 100) {
+      return '${((currentValue).toStringAsFixed(0))} $unit';
     }
   }
   if (unit == ' BPM') {
     return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
+  }
+  if (unit == 'V') {
+    return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
+  }
+  if (unit == 'Hz') {
+    return '${((currentValue / 1000)).toStringAsFixed(3)} ${unit.trim()}';
   }
   return '$currentValue ${unit.trim()}';
 }

@@ -261,7 +261,22 @@ class DistingMidiManager {
     _sendSysExMessage(packet);
   }
 
-  /// Requests routing information for a given algorithm
+  void requestSavePreset() {
+    final packet = DistingNT.encodeSavePreset(sysExId, 2);
+    _sendSysExMessage(packet);
+  }
+
+  void requestMoveAlgorithmUp(int algorithmIndex) {
+    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, algorithmIndex - 1);
+    _sendSysExMessage(packet);
+  }
+
+  void requestMoveAlgorithmDown(int algorithmIndex) {
+    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, algorithmIndex + 1);
+    _sendSysExMessage(packet);
+  }
+
+/// Requests routing information for a given algorithm
 // Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {
 //   final packet = DistingNT.encodeRequestRouting(sysExId, algorithmIndex);
 //   final key = RequestKey(

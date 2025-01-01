@@ -90,8 +90,7 @@ class DistingPage extends StatelessWidget {
                 ],
               ),
             );
-          } else if (state is DistingStateSynchronized &&
-              state.complete == true) {
+          } else if (state is DistingStateSynchronized) {
             return SynchronizedScreen(
               slots: state.slots,
               algorithms: state.algorithms,
@@ -99,8 +98,6 @@ class DistingPage extends StatelessWidget {
               distingVersion: state.distingVersion,
               presetName: state.patchName,
             );
-          } else if (state is DistingStateSynchronized) {
-            return Center(child: CircularProgressIndicator());
           } else {
             return Center(child: Text("Unknown State"));
           }
