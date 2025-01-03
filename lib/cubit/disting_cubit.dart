@@ -5,7 +5,6 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
-import 'package:nt_helper/domain/request_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
@@ -17,13 +16,10 @@ class DistingCubit extends Cubit<DistingState> {
         super(DistingState.initial(midiCommand: MidiCommand()));
 
   final Future<SharedPreferences> _prefs;
-  late final StreamSubscription? _subscription;
-  int numAlgorithmsInPreset = -1;
 
   @override
   Future<void> close() {
-    // TODO: implement close
-    _subscription?.cancel();
+    disting()?.dispose();
     return super.close();
   }
 
@@ -83,71 +79,8 @@ class DistingCubit extends Cubit<DistingState> {
 
       final disting = DistingMidiManager(
           midiCommand: state.midiCommand, device: device, sysExId: sysExId);
-      disting.startListening();
 
-      _subscription = disting.decodedMessages.listen(
-        (event) {
-          if (this.state is! DistingStateSynchronized) return;
-
-          final state = this.state as DistingStateSynchronized;
-
-          switch (event.key.messageType) {
-            case DistingNTRespMessageType.respNumAlgorithms:
-              _handleNumAlgorithms(state, event);
-              break;
-            case DistingNTRespMessageType.respAlgorithmInfo:
-              _handleAlgorithmInfo(state, event);
-              break;
-            case DistingNTRespMessageType.respMessage:
-              _handleMessage(state, event);
-              break;
-            case DistingNTRespMessageType.respScreenshot:
-              // TODO: Fill this in
-              break;
-            case DistingNTRespMessageType.respAlgorithmGuid:
-              _handleAlgorithmGuid(state, event);
-              break;
-            case DistingNTRespMessageType.respPresetName:
-              _handlePresetName(state, event);
-              break;
-            case DistingNTRespMessageType.respNumParameters:
-              _handleNumParameters(event, state);
-              break;
-            case DistingNTRespMessageType.respParameterInfo:
-              _handleParameterInfo(state, event);
-              break;
-            case DistingNTRespMessageType.respAllParameterValues:
-              // TODO: Fill this in
-              break;
-            case DistingNTRespMessageType.respParameterValue:
-              _handleParameterValue(state, event);
-              break;
-            case DistingNTRespMessageType.respUnitStrings:
-              _handleUnitStrings(state, event);
-              break;
-            case DistingNTRespMessageType.respEnumStrings:
-              _handleEnumStrings(state, event);
-              break;
-            case DistingNTRespMessageType.respMapping:
-              _handleMapping(state, event);
-              break;
-            case DistingNTRespMessageType.respParameterValueString:
-              _handleParameterValueString(state, event);
-              break;
-            case DistingNTRespMessageType.respNumAlgorithmsInPreset:
-              numAlgorithmsInPreset = event.value;
-              _handleNumAlgorithmsInPreset(event, state);
-              break;
-            case DistingNTRespMessageType.respRouting:
-              // TODO: Fill this in
-              break;
-            case DistingNTRespMessageType.unknown:
-              throw UnimplementedError();
-          }
-        },
-      );
-
-      // // Transition to the connected state
+      // Transition to the connected state
       emit(DistingState.connected(
         midiCommand: state.midiCommand,
         device: device,
@@ -160,170 +93,6 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  void _handleParameterValueString(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        slots: updateSlot(
-            event.key.algorithmIndex!,
-            state.slots,
-            (slot) => slot.copyWith(
-                    valueStrings: replaceInList(
-                  slot.valueStrings,
-                  event.value,
-                  index: event.key.parameterNumber!,
-                )))));
-  }
-
-  void _handleMapping(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        slots: updateSlot(
-            event.key.algorithmIndex!,
-            state.slots,
-            (slot) => slot.copyWith(
-                    mappings: replaceInList(
-                  slot.mappings,
-                  event.value,
-                  index: event.key.parameterNumber!,
-                )))));
-  }
-
-  void _handleEnumStrings(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        slots: updateSlot(
-            event.key.algorithmIndex!,
-            state.slots,
-            (slot) => slot.copyWith(
-                    enums: replaceInList(
-                  slot.enums,
-                  event.value,
-                  index: event.key.parameterNumber!,
-                )))));
-  }
-
-  void _handleUnitStrings(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(unitStrings: event.value));
-  }
-
-  void _handleParameterValue(
-    DistingStateSynchronized state,
-    MapEntry<RequestKey, dynamic> event,
-  ) {
-    emit(state.copyWith(
-        slots: updateSlot(
-            event.value.algorithmIndex!,
-            state.slots,
-            (slot) => slot.copyWith(
-                    values: replaceInList(
-                  slot.values,
-                  event.value,
-                  index: event.value.parameterNumber,
-                )))));
-  }
-
-  void _handleParameterInfo(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        complete: state.complete
-            ? true
-            : (event.key.algorithmIndex == (numAlgorithmsInPreset - 1)) &&
-                state.unitStrings.isNotEmpty,
-        slots: updateSlot(
-            event.key.algorithmIndex!,
-            state.slots,
-            (slot) => slot.copyWith(
-                    parameters: replaceInList(
-                  slot.parameters,
-                  event.value,
-                  index: event.key.parameterNumber!,
-                )))));
-
-    fetchParameterValue(event.key.algorithmIndex!, event.key.parameterNumber!);
-    fetchParameterValueString(
-        event.key.algorithmIndex!, event.key.parameterNumber!);
-    fetchParameterEnumStrings(
-        event.key.algorithmIndex!, event.key.parameterNumber!);
-  }
-
-  void _handleNumParameters(
-      MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
-    var numberOfParameters = (event.value as NumParameters).numParameters;
-
-    emit(state.copyWith(
-        slots: updateSlot(
-            event.key.algorithmIndex!,
-            state.slots,
-            (slot) => slot.copyWith(
-                parameters:
-                    List.filled(numberOfParameters, ParameterInfo.filler()),
-                values: List.filled(
-                  numberOfParameters,
-                  ParameterValue.filler(),
-                ),
-                valueStrings: List.filled(
-                    numberOfParameters, ParameterValueString.filler()),
-                mappings: List.filled(numberOfParameters, Mapping.filler()),
-                enums: List.filled(
-                  numberOfParameters,
-                  ParameterEnumStrings.filler(),
-                )))));
-
-    fetchParameterInfos(event.key.algorithmIndex!, numberOfParameters);
-  }
-
-  void _handlePresetName(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(patchName: event.value));
-  }
-
-  void _handleAlgorithmGuid(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        slots: updateSlot(event.key.algorithmIndex!, state.slots,
-            (slot) => slot.copyWith(algorithmGuid: event.value))));
-  }
-
-  void _handleMessage(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(distingVersion: event.value));
-  }
-
-  void _handleAlgorithmInfo(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        algorithms: replaceInList(
-      state.algorithms,
-      event.value,
-      index: event.key.algorithmIndex!,
-    )));
-  }
-
-  void _handleNumAlgorithms(
-      DistingStateSynchronized state, MapEntry<RequestKey, dynamic> event) {
-    emit(state.copyWith(
-        algorithms: List.filled(event.value, AlgorithmInfo.filler())));
-    fetchAlgorithmInfo(event.value);
-  }
-
-  void _handleNumAlgorithmsInPreset(
-      MapEntry<RequestKey, dynamic> event, DistingStateSynchronized state) {
-    var numAlgorithmsInPreset = event.value;
-    emit(state.copyWith(
-        slots: List.generate(
-            numAlgorithmsInPreset,
-            (index) => Slot(
-                  algorithmGuid: AlgorithmGuid(algorithmIndex: index, guid: ""),
-                  parameters: [],
-                  values: [],
-                  enums: [],
-                  mappings: [],
-                  valueStrings: [],
-                ))));
-    fetchSlots(numAlgorithmsInPreset);
-  }
-
   Future<void> synchronizeDevice() async {
     try {
       if (state is! DistingStateConnected) {
@@ -332,28 +101,90 @@ class DistingCubit extends Cubit<DistingState> {
 
       final connectedState = state as DistingStateConnected;
 
+      final disting = requireDisting();
+
+      final numAlgorithms = (await disting.requestNumberOfAlgorithms())!;
+      final algorithms = [
+        for (int i = 0; i < numAlgorithms; i++)
+          (await disting.requestAlgorithmInfo(i))!
+      ];
+      final numAlgorithmsInPreset =
+          (await disting.requestNumAlgorithmsInPreset())!;
+      final distingVersion = await disting.requestVersionString() ?? "";
+      final presetName = await disting.requestPresetName() ?? "";
+
+      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+
       // Transition to the synchronizing state
       emit(DistingState.synchronized(
         midiCommand: connectedState.midiCommand,
         device: connectedState.device,
         sysExId: connectedState.sysExId,
         disting: connectedState.disting,
-        distingVersion: "",
-        patchName: "",
-        algorithms: [],
-        slots: [],
-        unitStrings: [],
+        distingVersion: distingVersion,
+        patchName: presetName,
+        algorithms: algorithms,
+        slots: slots,
+        unitStrings: await disting.requestUnitStrings() ?? [],
       ));
-
-      // Begin to synchronize with the device
-      fetchDistingVersion();
-      fetchPresetName();
-      fetchUnitStrings();
-      fetchAlgorithms();
-      fetchNumAlgorithmsInPreset();
     } catch (e) {
       // Handle error state if necessary
     }
+  }
+
+  Future<List<Slot>> fetchSlots(
+      int numAlgorithmsInPreset, DistingMidiManager disting) async {
+    final slotsFutures =
+        List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
+      int numParametersInAlgorithm =
+          (await disting.requestNumberOfParameters(algorithmIndex))!;
+      return Slot(
+        algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
+        parameters: [
+          for (int parameterNumber = 0;
+              parameterNumber < numParametersInAlgorithm;
+              parameterNumber++)
+            await disting.requestParameterInfo(
+                    algorithmIndex, parameterNumber) ??
+                ParameterInfo.filler()
+        ],
+        values: [
+          for (int parameterNumber = 0;
+              parameterNumber < numParametersInAlgorithm;
+              parameterNumber++)
+            await disting.requestParameterValue(
+                    algorithmIndex, parameterNumber) ??
+                ParameterValue.filler()
+        ],
+        enums: [
+          for (int parameterNumber = 0;
+              parameterNumber < numParametersInAlgorithm;
+              parameterNumber++)
+            await disting.requestParameterEnumStrings(
+                    algorithmIndex, parameterNumber) ??
+                ParameterEnumStrings.filler()
+        ],
+        mappings: [
+          for (int parameterNumber = 0;
+              parameterNumber < numParametersInAlgorithm;
+              parameterNumber++)
+            await disting.requestMappings(algorithmIndex, parameterNumber) ??
+                Mapping.filler()
+        ],
+        valueStrings: [
+          for (int parameterNumber = 0;
+              parameterNumber < numParametersInAlgorithm;
+              parameterNumber++)
+            await disting.requestParameterValueString(
+                    algorithmIndex, parameterNumber) ??
+                ParameterValueString.filler()
+        ],
+      );
+    });
+
+    // Finish off the requests
+    final slots = await Future.wait(slotsFutures);
+    return slots;
   }
 
   DistingMidiManager requireDisting() {
@@ -366,70 +197,14 @@ class DistingCubit extends Cubit<DistingState> {
     throw Exception("Device is not connected.");
   }
 
-  void fetchDistingVersion() async {
-    requireDisting().requestVersionString();
-  }
-
-  void fetchPresetName() async {
-    requireDisting().requestPresetName();
-  }
-
-  void fetchUnitStrings() async {
-    final disting = requireDisting();
-    disting.requestUnitStrings();
-  }
-
-  void fetchAlgorithms() async {
-    final disting = requireDisting();
-    disting.requestNumberOfAlgorithms();
-  }
-
-  void fetchNumAlgorithmsInPreset() async {
-    final disting = requireDisting();
-    disting.requestNumAlgorithmsInPreset();
-  }
-
-  void fetchAlgorithmInfo(int numAlgorithms) {
-    final disting = requireDisting();
-    for (int i = 0; i < numAlgorithms; i++) {
-      disting.requestAlgorithmInfo(i);
+  DistingMidiManager? disting() {
+    if (state is DistingStateConnected) {
+      return (state as DistingStateConnected).disting;
     }
-  }
-
-  void fetchSlots(int numAlgorithmsInPreset) {
-    for (int i = 0; i < numAlgorithmsInPreset; i++) {
-      fetchSlot(i);
+    if (state is DistingStateSynchronized) {
+      return (state as DistingStateSynchronized).disting;
     }
-  }
-
-  void fetchSlot(int algorithmIndex) {
-    final disting = requireDisting();
-    disting.requestNumberOfParameters(algorithmIndex);
-    disting.requestAlgorithmGuid(algorithmIndex);
-  }
-
-  void fetchParameterInfos(int algorithmIndex, int numberOfParameters) {
-    final disting = requireDisting();
-    for (int parameterNumber = 0;
-        parameterNumber < numberOfParameters;
-        parameterNumber++) {
-      disting.requestParameterInfo(algorithmIndex, parameterNumber);
-    }
-  }
-
-  void fetchParameterValue(int algorithmIndex, int parameterNumber) {
-    final disting = requireDisting();
-    disting.requestParameterValue(algorithmIndex, parameterNumber);
-  }
-
-  void fetchParameterValueString(int algorithmIndex, int parameterNumber) {
-    final disting = requireDisting();
-    disting.requestParameterValueString(algorithmIndex, parameterNumber);
-  }
-
-  void fetchParameterEnumStrings(int algorithmIndex, int parameterNumber) {
-    final disting = requireDisting();
-    disting.requestParameterEnumStrings(algorithmIndex, parameterNumber);
+    return null;
   }
 
   List<T> replaceInList<T>(
@@ -457,40 +232,65 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
-  void updateParameterValue(
-      {required int algorithmIndex,
-      required int parameterNumber,
-      required int value}) {
-    final disting = requireDisting();
-    disting.setParameterValue(algorithmIndex, parameterNumber, value);
-    disting.requestParameterValue(algorithmIndex, parameterNumber);
-    disting.requestParameterValueString(algorithmIndex, parameterNumber);
-  }
+  void updateParameterValue({
+    required int algorithmIndex,
+    required int parameterNumber,
+    required int value,
+  }) async {
+    if (state is DistingStateSynchronized) {
+      var disting = requireDisting();
+      disting.setParameterValue(
+        algorithmIndex,
+        parameterNumber,
+        value,
+      );
+      final newValue = await disting.requestParameterValue(
+        algorithmIndex,
+        parameterNumber,
+      );
+      final newValueString = await disting.requestParameterValueString(
+        algorithmIndex,
+        parameterNumber,
+      );
 
-  @override
-  void onChange(Change<DistingState> change) {
-    super.onChange(change);
-  }
+      final state = (this.state as DistingStateSynchronized);
 
-  void wakeDevice() {
-    final disting = requireDisting();
-    disting.requestWake();
+      emit(state.copyWith(
+        slots: updateSlot(
+          algorithmIndex,
+          state.slots,
+          (slot) {
+            return slot.copyWith(
+                values: replaceInList(
+                  slot.values,
+                  newValue!,
+                  index: parameterNumber,
+                ),
+                valueStrings: replaceInList(
+                  slot.valueStrings,
+                  newValueString ?? ParameterValueString.filler(),
+                  index: parameterNumber,
+                ));
+          },
+        ),
+      ));
+    }
   }
 
   void refresh() async {
     if (state is DistingStateSynchronized) {
-      emit((state as DistingStateSynchronized).copyWith(
-        complete: false,
-        slots: [],
-        unitStrings: [],
-      ));
-      fetchNumAlgorithmsInPreset();
+      var disting = requireDisting();
+      final numAlgorithmsInPreset =
+          (await disting.requestNumAlgorithmsInPreset())!;
 
-      fetchUnitStrings();
+      emit((state as DistingStateSynchronized).copyWith(
+        slots: await fetchSlots(numAlgorithmsInPreset, disting),
+      ));
     }
   }
 
-  void onAlgorithmSelected(AlgorithmInfo algorithm, List<int> specifications) async {
+  void onAlgorithmSelected(
+      AlgorithmInfo algorithm, List<int> specifications) async {
     if (state is DistingStateSynchronized) {
       final disting = requireDisting();
       disting.requestAddAlgorithm(algorithm, specifications);
@@ -513,17 +313,21 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  void onFocusParameter({required int algorithmIndex, required int parameterNumber}) {
+  void onFocusParameter(
+      {required int algorithmIndex, required int parameterNumber}) {
     final disting = requireDisting();
     disting.requestSetFocus(algorithmIndex, parameterNumber);
   }
 
   void renamePreset(String newName) async {
-    final disting = requireDisting();
-    disting.requestSetPresetName(newName);
+    if (state is DistingStateSynchronized) {
+      final disting = requireDisting();
+      disting.requestSetPresetName(newName);
 
-    await Future.delayed(Duration(milliseconds: 250));
-    fetchPresetName();
+      await Future.delayed(Duration(milliseconds: 250));
+      emit((state as DistingStateSynchronized)
+          .copyWith(patchName: await disting.requestPresetName() ?? ""));
+    }
   }
 
   void save() async {
@@ -545,5 +349,10 @@ class DistingCubit extends Cubit<DistingState> {
     await Future.delayed(Duration(milliseconds: 50));
 
     refresh();
+  }
+
+  void wakeDevice() async {
+    final disting = requireDisting();
+    disting.requestWake();
   }
 }

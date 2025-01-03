@@ -1,282 +1,378 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:nt_helper/domain/disting_message_scheduler.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
 
 class DistingMidiManager {
-  final MidiCommand midiCommand;
-  final MidiDevice device;
+  final DistingMessageScheduler _scheduler;
   final int sysExId;
 
-  StreamSubscription<MidiPacket>? _subscription;
-
-  final StreamController<MapEntry<RequestKey, dynamic>> _decodedStreamController =
-  StreamController.broadcast();
-  Stream<MapEntry<RequestKey, dynamic>> get decodedMessages =>
-      _decodedStreamController.stream;
-
   DistingMidiManager({
-    required this.midiCommand,
-    required this.device,
+    required MidiCommand midiCommand,
+    required MidiDevice device,
     required this.sysExId,
-  });
+  }) : _scheduler = DistingMessageScheduler(
+          midiCommand: midiCommand,
+          device: device,
+          sysExId: sysExId,
+        );
 
-  void startListening() {
-    _subscription = midiCommand.onMidiDataReceived?.listen((data) {
-      final parsedMessage = DistingNT.decodeDistingNTSysEx(data.data);
-      if (parsedMessage != null && parsedMessage.sysExId == sysExId) {
-        final decodedResponse = _decodeResponse(parsedMessage);
-        _handleDecodedMessage(parsedMessage, decodedResponse);
-      }
-    });
-  }
-
-  void stopListening() {
-    _subscription?.cancel();
-    _decodedStreamController.close();
-  }
-
-  /// Decodes a response and sends it to the stream.
-  void _handleDecodedMessage(
-      DistingNTParsedMessage parsedMessage, dynamic decodedResponse) {
-    final responseKey = RequestKey(
-      sysExId: sysExId,
-      messageType: parsedMessage.messageType,
-      algorithmIndex: (decodedResponse is HasAlgorithmIndex)
-          ? decodedResponse.algorithmIndex
-          : null,
-      parameterNumber: (decodedResponse is HasParameterNumber)
-          ? decodedResponse.parameterNumber
-          : null,
-    );
-
-    _decodedStreamController.add(MapEntry(responseKey, decodedResponse));
-  }
-
-  dynamic _decodeResponse(DistingNTParsedMessage parsedMessage) {
-    try {
-      // Extract relevant details from the parsed message
-      final messageType = parsedMessage.messageType;
-      final payload = parsedMessage.payload;
-
-      // Handle response types and decode accordingly
-      switch (messageType) {
-        case DistingNTRespMessageType.respNumAlgorithms:
-          return DistingNT.decodeNumberOfAlgorithms(payload);
-
-        case DistingNTRespMessageType.respNumAlgorithmsInPreset:
-          return DistingNT.decodeNumberOfAlgorithmsInPreset(payload);
-
-        case DistingNTRespMessageType.respAlgorithmInfo:
-          return DistingNT.decodeAlgorithmInfo(payload);
-
-        case DistingNTRespMessageType.respPresetName:
-          return DistingNT.decodeMessage(payload);
-
-        case DistingNTRespMessageType.respNumParameters:
-          return DistingNT.decodeNumParameters(payload);
-
-        case DistingNTRespMessageType.respParameterInfo:
-          return DistingNT.decodeParameterInfo(payload);
-
-        case DistingNTRespMessageType.respAllParameterValues:
-          return DistingNT.decodeAllParameterValues(payload);
-
-        case DistingNTRespMessageType.respParameterValue:
-          return DistingNT.decodeParameterValue(payload);
-
-        case DistingNTRespMessageType.respParameterValueString:
-          return DistingNT.decodeParameterValueString(payload);
-
-        case DistingNTRespMessageType.respEnumStrings:
-          return DistingNT.decodeEnumStrings(payload);
-
-        case DistingNTRespMessageType.respMapping:
-          return DistingNT.decodeMapping(payload);
-
-        case DistingNTRespMessageType.respRouting:
-          return DistingNT.decodeRoutingInformation(payload);
-
-        case DistingNTRespMessageType.respMessage:
-          return DistingNT.decodeMessage(payload);
-
-        case DistingNTRespMessageType.respAlgorithmGuid:
-          return DistingNT.decodeAlgorithmGuid(payload);
-
-        case DistingNTRespMessageType.respUnitStrings:
-          return DistingNT.decodeStrings(payload);
-
-        default:
-          print("Unknown or unsupported message type: $messageType");
-          return null; // Unhandled message type
-      }
-    } catch (e) {
-      print("Error decoding response: $e");
-      return null;
-    }
-  }
-
-  void _sendSysExMessage(Uint8List message) {
-    midiCommand.sendData(message, deviceId: device.id);
-    print("Sent SysEx message: $message");
+  void dispose() {
+    _scheduler.dispose();
   }
 
   /// Sends a screenshot request and waits for the screenshot response
-  void requestScreenshot() async {
-    _sendSysExMessage(DistingNT.encodeTakeScreenshot(sysExId));
-  }
+  // void requestScreenshot() async {
+  //   _sendSysExMessage(DistingNT.encodeTakeScreenshot(sysExId));
+  // }
 
   /// Sets the real-time clock
-  void setRealTimeClock(int unixTimeSeconds) async {
+  Future<void> setRealTimeClock(int unixTimeSeconds) async {
     final packet = DistingNT.encodeSetRealTimeClock(sysExId, unixTimeSeconds);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+    return await _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
   /// Requests the version string
-  void requestVersionString() async {
+  Future<String?> requestVersionString() async {
     final packet = DistingNT.encodeRequestVersionString(sysExId);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respMessage,
+    );
+
+    return await _scheduler.sendRequest<String>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   /// Requests the number of algorithms
-  void requestNumberOfAlgorithms() async {
+  Future<int?> requestNumberOfAlgorithms() async {
     final packet = DistingNT.encodeRequestNumAlgorithms(sysExId);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respNumAlgorithms,
+    );
+
+    return await _scheduler.sendRequest<int>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   /// Requests the number of algorithms in the preset
-  void requestNumAlgorithmsInPreset() async {
+  Future<int?> requestNumAlgorithmsInPreset() async {
     final packet = DistingNT.encodeNumAlgorithmsInPreset(sysExId);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respNumAlgorithmsInPreset,
+    );
+    return await _scheduler.sendRequest<int>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   /// Requests algorithm information by index
-  void requestAlgorithmInfo(int algorithmIndex) async {
+  Future<AlgorithmInfo?> requestAlgorithmInfo(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestAlgorithmInfo(sysExId, algorithmIndex);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+      messageType: DistingNTRespMessageType.respAlgorithmInfo,
+    );
+    return await _scheduler.sendRequest<AlgorithmInfo>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
-  /// Loads a preset by name
-  // Future<void> loadPreset(String presetName) async {
-  //   final packet = DistingNT.encodeLoadPreset(sysExId, presetName);
-  //   final key = RequestKey(
-  //     sysExId: sysExId,
-  //     messageType: DistingNTRespMessageType.unknown, // No response expected
-  //   );
-  //   await _sendRequest<void>(packet, key);
-  // }
-
   /// Requests the preset name
-  void requestPresetName() async {
+  Future<String?> requestPresetName() async {
     final packet = DistingNT.encodeRequestPresetName(sysExId);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respPresetName,
+    );
+    return await _scheduler.sendRequest<String>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   /// Requests the number of parameters for an algorithm
-  void requestNumberOfParameters(int algorithmIndex) async {
+  Future<int?> requestNumberOfParameters(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestNumParameters(sysExId, algorithmIndex);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+      messageType: DistingNTRespMessageType.respNumParameters,
+    );
+    return await _scheduler.sendRequest<int>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   /// Requests parameter info for a given parameter
-  void requestParameterInfo(
+  Future<ParameterInfo?> requestParameterInfo(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestParameterInfo(
         sysExId, algorithmIndex, parameterNumber);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      messageType: DistingNTRespMessageType.respParameterInfo,
+    );
+    return await _scheduler.sendRequest<ParameterInfo>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   /// Requests the parameter value for a given parameter
-  void requestParameterValue(
+  Future<ParameterValue?> requestParameterValue(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestParameterValue(
         sysExId, algorithmIndex, parameterNumber);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+      messageType: DistingNTRespMessageType.respParameterValue,
+    );
+    return await _scheduler.sendRequest<ParameterValue>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
-  void requestUnitStrings() async {
+  Future<List<String>?> requestUnitStrings() async {
     final packet = DistingNT.encodeRequestUnitStrings(sysExId);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respUnitStrings,
+    );
+    return await _scheduler.sendRequest<List<String>>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
-  void requestParameterEnumStrings(
+  Future<ParameterEnumStrings?> requestParameterEnumStrings(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestEnumStrings(
         sysExId, algorithmIndex, parameterNumber);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respEnumStrings,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+    );
+
+    // `optional` => no error if no response arrives within the timeout.
+    return await _scheduler.sendRequest<ParameterEnumStrings>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.optional,
+    );
   }
 
-  void requestMappings(
+  Future<Mapping?> requestMappings(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestMappings(
         sysExId, algorithmIndex, parameterNumber);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respMapping,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+    );
+
+    // `optional` => no error if no response arrives within the timeout.
+    return await _scheduler.sendRequest<Mapping>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.optional,
+    );
   }
 
-  void requestParameterValueString(
+  Future<ParameterValueString?> requestParameterValueString(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestParameterValueString(
         sysExId, algorithmIndex, parameterNumber);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respParameterValueString,
+      algorithmIndex: algorithmIndex,
+      parameterNumber: parameterNumber,
+    );
+
+    return await _scheduler.sendRequest<ParameterValueString>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.optional,
+    );
   }
 
-  void requestAlgorithmGuid(int algorithmIndex) async {
+  Future<AlgorithmGuid?> requestAlgorithmGuid(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestAlgorithmGuid(sysExId, algorithmIndex);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respAlgorithmGuid,
+      algorithmIndex: algorithmIndex,
+    );
+
+    return await _scheduler.sendRequest<AlgorithmGuid>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
-  void setParameterValue(int algorithmIndex, int parameterNumber, int value) {
+  Future<void> setParameterValue(
+      int algorithmIndex, int parameterNumber, int value) {
     final packet = DistingNT.encodeSetParameterValue(
         sysExId, algorithmIndex, parameterNumber, value);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestWake() {
+  Future<void> requestWake() {
     final packet = DistingNT.encodeWake(sysExId);
-    _sendSysExMessage(packet);
+    return _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(sysExId: sysExId),
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestAddAlgorithm(AlgorithmInfo algorithm, List<int> specifications) {
-    final packet = DistingNT.encodeAddAlgorithm(sysExId, algorithm.guid, specifications);
-    _sendSysExMessage(packet);
+  Future<void> requestAddAlgorithm(
+      AlgorithmInfo algorithm, List<int> specifications) {
+    final packet =
+        DistingNT.encodeAddAlgorithm(sysExId, algorithm.guid, specifications);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestRemoveAlgorithm(int algorithmIndex) {
+  Future<void> requestRemoveAlgorithm(int algorithmIndex) {
     final packet = DistingNT.encodeRemoveAlgorithm(sysExId, algorithmIndex);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestSetFocus(int algorithmIndex, int parameterNumber) {
-    final packet = DistingNT.encodeSetFocus(sysExId, algorithmIndex, parameterNumber);
-    _sendSysExMessage(packet);
+  Future<void> requestSetFocus(int algorithmIndex, int parameterNumber) {
+    final packet =
+        DistingNT.encodeSetFocus(sysExId, algorithmIndex, parameterNumber);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestSetPresetName(String newName) {
+  Future<void> requestSetPresetName(String newName) {
     final packet = DistingNT.encodeSetPresetName(sysExId, newName);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestSavePreset() {
+  Future<void> requestSavePreset() {
     final packet = DistingNT.encodeSavePreset(sysExId, 2);
-    _sendSysExMessage(packet);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestMoveAlgorithmUp(int algorithmIndex) {
-    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, algorithmIndex - 1);
-    _sendSysExMessage(packet);
+  Future<void> requestMoveAlgorithmUp(int algorithmIndex) {
+    final packet = DistingNT.encodeMoveAlgorithm(
+        sysExId, algorithmIndex, algorithmIndex - 1);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-  void requestMoveAlgorithmDown(int algorithmIndex) {
-    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, algorithmIndex + 1);
-    _sendSysExMessage(packet);
+  Future<void> requestMoveAlgorithmDown(int algorithmIndex) {
+    final packet = DistingNT.encodeMoveAlgorithm(
+        sysExId, algorithmIndex, algorithmIndex + 1);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
-/// Requests routing information for a given algorithm
+  /// Requests routing information for a given algorithm
 // Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {
 //   final packet = DistingNT.encodeRequestRouting(sysExId, algorithmIndex);
 //   final key = RequestKey(

@@ -2,13 +2,14 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class RequestKey {
   final int sysExId;
-  final DistingNTRespMessageType messageType; // Required
+  final DistingNTRespMessageType?
+      messageType; // Optional in the case of messages that don't return a value
   final int? algorithmIndex; // Optional
   final int? parameterNumber; // Optional
 
   RequestKey({
     required this.sysExId,
-    required this.messageType,
+    this.messageType,
     this.algorithmIndex,
     this.parameterNumber,
   });
