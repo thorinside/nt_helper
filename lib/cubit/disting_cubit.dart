@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
@@ -65,6 +66,11 @@ class DistingCubit extends Cubit<DistingState> {
     } catch (e) {
       // Handle error state if necessary
     }
+  }
+
+  Future<Uint8List?> screenshot() async {
+    final disting = requireDisting();
+    return await disting.encodeTakeScreenshot();
   }
 
   Future<void> disconnect() async {

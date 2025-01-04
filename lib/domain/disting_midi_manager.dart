@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/domain/disting_message_scheduler.dart';
@@ -252,9 +253,10 @@ class DistingMidiManager {
     );
   }
 
-  Future<AllParameterValues?> requestAllParameterValues(int algorithmIndex) async {
+  Future<AllParameterValues?> requestAllParameterValues(
+      int algorithmIndex) async {
     final packet =
-    DistingNT.encodeRequestAllParameterValues(sysExId, algorithmIndex);
+        DistingNT.encodeRequestAllParameterValues(sysExId, algorithmIndex);
     final key = RequestKey(
       sysExId: sysExId,
       messageType: DistingNTRespMessageType.respAllParameterValues,
@@ -385,6 +387,24 @@ class DistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  Future<Uint8List?> encodeTakeScreenshot() {
+    final packet = DistingNT.encodeTakeScreenshot(sysExId);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respScreenshot,
+    );
+
+    return _scheduler
+        .sendRequest<Uint8List>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+      timeout: Duration(milliseconds: 500),
+      maxRetries: 5,
+      retryDelay: Duration(milliseconds: 50),
     );
   }
 

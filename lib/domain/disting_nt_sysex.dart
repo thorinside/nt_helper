@@ -879,6 +879,7 @@ class DistingNT {
 
   // Generates a bitmap from the screenshot response payload
   static Uint8List decodeBitmap(Uint8List screenshotData) {
+    print("ScreenshotData.length=${screenshotData.length}");
     try {
       // Define screenshot properties (adjust based on actual format)
       const int width = 256; // Example width

@@ -6,6 +6,7 @@ import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
+import 'package:nt_helper/screenshot_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
@@ -113,6 +114,23 @@ class SynchronizedScreen extends StatelessWidget {
                   child: const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
+                ),
+                PopupMenuItem(
+                  value: 'screenshot',
+                  onTap: () async {
+                    final screenshot = await context.read<DistingCubit>().screenshot();
+                    if (screenshot != null) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                ScreenshotScreen(screenshot: screenshot)),
+                      );
+                    }
+                  },
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [Text('Screenshot'), Icon(Icons.screenshot)]),
                 ),
                 PopupMenuItem(
                   value: 'Switch Devices',

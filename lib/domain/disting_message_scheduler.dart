@@ -324,6 +324,9 @@ class DistingMessageScheduler {
         case DistingNTRespMessageType.respUnitStrings:
           return DistingNT.decodeStrings(payload);
 
+        case DistingNTRespMessageType.respScreenshot:
+          return DistingNT.decodeBitmap(payload);
+
         default:
           print("Unknown or unsupported message type: $messageType");
           return null; // Unhandled message type
