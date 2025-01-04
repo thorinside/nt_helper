@@ -116,7 +116,7 @@ class DistingMidiManager {
   }
 
   /// Requests the number of parameters for an algorithm
-  Future<int?> requestNumberOfParameters(int algorithmIndex) async {
+  Future<NumParameters?> requestNumberOfParameters(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestNumParameters(sysExId, algorithmIndex);
     final key = RequestKey(
@@ -124,7 +124,7 @@ class DistingMidiManager {
       algorithmIndex: algorithmIndex,
       messageType: DistingNTRespMessageType.respNumParameters,
     );
-    return await _scheduler.sendRequest<int>(
+    return await _scheduler.sendRequest<NumParameters>(
       packet,
       key,
       responseExpectation: ResponseExpectation.required,

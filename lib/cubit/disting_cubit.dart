@@ -137,7 +137,8 @@ class DistingCubit extends Cubit<DistingState> {
     final slotsFutures =
         List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
       int numParametersInAlgorithm =
-          (await disting.requestNumberOfParameters(algorithmIndex))!;
+          (await disting.requestNumberOfParameters(algorithmIndex))!
+              .numParameters;
       return Slot(
         algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
         parameters: [
@@ -236,6 +237,7 @@ class DistingCubit extends Cubit<DistingState> {
     required int algorithmIndex,
     required int parameterNumber,
     required int value,
+    required bool userIsChangingTheValue,
   }) async {
     if (state is DistingStateSynchronized) {
       var disting = requireDisting();
@@ -244,36 +246,39 @@ class DistingCubit extends Cubit<DistingState> {
         parameterNumber,
         value,
       );
-      final newValue = await disting.requestParameterValue(
-        algorithmIndex,
-        parameterNumber,
-      );
-      final newValueString = await disting.requestParameterValueString(
-        algorithmIndex,
-        parameterNumber,
-      );
 
-      final state = (this.state as DistingStateSynchronized);
-
-      emit(state.copyWith(
-        slots: updateSlot(
+      if (!userIsChangingTheValue) {
+        final newValue = await disting.requestParameterValue(
           algorithmIndex,
-          state.slots,
-          (slot) {
-            return slot.copyWith(
-                values: replaceInList(
-                  slot.values,
-                  newValue!,
-                  index: parameterNumber,
-                ),
-                valueStrings: replaceInList(
-                  slot.valueStrings,
-                  newValueString ?? ParameterValueString.filler(),
-                  index: parameterNumber,
-                ));
-          },
-        ),
-      ));
+          parameterNumber,
+        );
+        final newValueString = await disting.requestParameterValueString(
+          algorithmIndex,
+          parameterNumber,
+        );
+
+        final state = (this.state as DistingStateSynchronized);
+
+        emit(state.copyWith(
+          slots: updateSlot(
+            algorithmIndex,
+            state.slots,
+            (slot) {
+              return slot.copyWith(
+                  values: replaceInList(
+                    slot.values,
+                    newValue!,
+                    index: parameterNumber,
+                  ),
+                  valueStrings: replaceInList(
+                    slot.valueStrings,
+                    newValueString ?? ParameterValueString.filler(),
+                    index: parameterNumber,
+                  ));
+            },
+          ),
+        ));
+      }
     }
   }
 

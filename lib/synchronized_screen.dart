@@ -355,6 +355,7 @@ class ParameterViewRow extends StatefulWidget {
 class _ParameterViewRowState extends State<ParameterViewRow> {
   late int currentValue;
   late bool isChecked;
+  late bool isChanging;
 
   @override
   void initState() {
@@ -382,7 +383,20 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           algorithmIndex: widget.algorithmIndex,
           parameterNumber: widget.parameterNumber,
           value: value,
+          userIsChangingTheValue: isChanging,
         );
+  }
+
+  DateTime? _lastSent;
+  Duration throttleDuration = const Duration(milliseconds: 100);
+
+  void onSliderChanged(int value) {
+    final now = DateTime.now();
+    if (_lastSent == null || now.difference(_lastSent!) > throttleDuration) {
+      // Enough time has passed -> proceed
+      _lastSent = now;
+      _updateCubitValue(value);
+    }
   }
 
   @override
@@ -427,12 +441,24 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                 divisions: (widget.max - widget.min > 0)
                     ? widget.max - widget.min
                     : null,
-                onChanged: (value) {
+                onChangeStart: (value) {
+                  isChanging = true;
+                },
+                onChangeEnd: (value) {
+                  isChanging = false;
                   setState(() {
                     currentValue = value.toInt();
                     if (widget.isOnOff) isChecked = currentValue == 1;
                   });
                   _updateCubitValue(currentValue);
+                },
+                onChanged: (value) {
+                  setState(() {
+                    currentValue = value.toInt();
+                    if (widget.isOnOff) isChecked = currentValue == 1;
+                  });
+                  // Throttle a bit
+                  onSliderChanged(currentValue);
                 },
               ),
             ),
@@ -472,18 +498,21 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                 min(max(currentValue, widget.min), widget.max));
                           },
                         )
-                      : widget.displayString != null
-                          ? Text(
-                              widget.displayString!,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.bodyLarge,
-                            )
-                          : widget.unit != null
-                              ? Text(formatWithUnit(currentValue,
-                                  min: widget.min,
-                                  max: widget.max,
-                                  unit: widget.unit))
-                              : Text(currentValue.toString()),
+                      : widget.name == "Note"
+                          ? Text(midiNoteToNoteString(currentValue))
+                          : widget.displayString != null
+                              ? Text(
+                                  widget.displayString!,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textTheme.bodyLarge,
+                                )
+                              : widget.unit != null
+                                  ? Text(formatWithUnit(currentValue,
+                                      name: widget.name,
+                                      min: widget.min,
+                                      max: widget.max,
+                                      unit: widget.unit))
+                                  : Text(currentValue.toString()),
             ),
           ),
         ],
@@ -493,7 +522,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 }
 
 String formatWithUnit(int currentValue,
-    {required int min, required int max, String? unit}) {
+    {required int min, required int max, required String name, String? unit}) {
   if (unit == null || unit.isEmpty) return currentValue.toString();
   if (unit == '%') {
     if (max > 100) {
@@ -509,7 +538,38 @@ String formatWithUnit(int currentValue,
     return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
   }
   if (unit == 'Hz') {
+    if (name == 'Frequency') {
+      return '${currentValue.toStringAsFixed(0)} ${unit.trim()}';
+    }
     return '${((currentValue / 1000)).toStringAsFixed(3)} ${unit.trim()}';
   }
   return '$currentValue ${unit.trim()}';
+}
+
+String midiNoteToNoteString(int midiNoteNumber) {
+  if (midiNoteNumber < 0 || midiNoteNumber > 127) {
+    throw ArgumentError('MIDI note number must be between 0 and 127.');
+  }
+
+  // Note names
+  List<String> noteNames = [
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B'
+  ];
+
+  // Calculate the octave and note index
+  int octave = (midiNoteNumber ~/ 12) - 1;
+  String note = noteNames[midiNoteNumber % 12];
+
+  return '$note$octave';
 }
