@@ -355,7 +355,7 @@ class ParameterViewRow extends StatefulWidget {
 class _ParameterViewRowState extends State<ParameterViewRow> {
   late int currentValue;
   late bool isChecked;
-  late bool isChanging;
+  bool isChanging = false;
 
   @override
   void initState() {
@@ -494,8 +494,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                       widget.min),
                                   widget.max);
                             });
-                            _updateCubitValue(
-                                min(max(currentValue, widget.min), widget.max));
+                            _updateCubitValue(currentValue);
                           },
                         )
                       : widget.name == "Note"
