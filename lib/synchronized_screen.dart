@@ -115,6 +115,16 @@ class SynchronizedScreen extends StatelessWidget {
                       children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
                 ),
                 PopupMenuItem(
+                  value: 'Switch Devices',
+                  onTap: () {
+                    context.read<DistingCubit>().disconnect();
+                    context.read<DistingCubit>().loadDevices();
+                  },
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [Text('Switch'), Icon(Icons.login_rounded)]),
+                ),
+                PopupMenuItem(
                   value: 'about',
                   child: Text('About'),
                   onTap: () async {

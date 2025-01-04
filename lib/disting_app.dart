@@ -30,8 +30,7 @@ class DistingApp extends StatelessWidget {
               ),
             ),
             labelColor: colorScheme.secondary,
-            unselectedLabelColor:
-                colorScheme.secondary.withAlpha(170),
+            unselectedLabelColor: colorScheme.secondary.withAlpha(170),
             labelStyle: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -74,18 +73,19 @@ class DistingPage extends StatelessWidget {
               onDeviceSelected: (device, sysExId) {
                 context.read<DistingCubit>().connectToDevice(device, sysExId);
               },
+              onRefresh: () {
+                context.read<DistingCubit>().loadDevices();
+              },
             );
           } else if (state is DistingStateConnected) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Connected to: ${state.device.name}"),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<DistingCubit>().synchronizeDevice();
-                    },
-                    child: Text("Synchronize Device"),
+                  Text("Connected to: ${state.device.name}", style: Theme.of(context).textTheme.titleLarge),
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: CircularProgressIndicator(),
                   ),
                 ],
               ),
@@ -110,11 +110,13 @@ class DistingPage extends StatelessWidget {
 class _DeviceSelectionView extends StatefulWidget {
   final List<MidiDevice> devices;
   final Function(MidiDevice, int) onDeviceSelected;
+  final Function() onRefresh;
 
   const _DeviceSelectionView({
     Key? key,
     required this.devices,
     required this.onDeviceSelected,
+    required this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -129,53 +131,76 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Dropdown for selecting the MIDI device
-          DropdownButton<MidiDevice>(
-            value: selectedDevice,
-            hint: Text("Select MIDI Device"),
-            items: widget.devices.map((device) {
-              return DropdownMenuItem(
-                value: device,
-                child: Text(device.name),
-              );
-            }).toList(),
-            onChanged: (device) {
-              setState(() {
-                selectedDevice = device;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          // Dropdown for selecting the SysEx ID
-          DropdownButton<int>(
-            value: selectedSysExId,
-            hint: Text("Select SysEx ID"),
-            items: List.generate(128, (index) => index).map((id) {
-              return DropdownMenuItem(
-                value: id,
-                child: Text(id.toString()),
-              );
-            }).toList(),
-            onChanged: (id) {
-              setState(() {
-                selectedSysExId = id;
-              });
-            },
-          ),
-          const SizedBox(height: 32),
-          // Button to confirm selection
-          ElevatedButton(
-            onPressed: (selectedDevice != null && selectedSysExId != null)
-                ? () {
-                    widget.onDeviceSelected(selectedDevice!, selectedSysExId!);
-                  }
-                : null,
-            child: Text("Connect to Device"),
-          ),
-        ],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                "Select your Disting NT from the midi device list, or hit refresh to look for devices again.",
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            ),
+            // Dropdown for selecting the MIDI device
+            DropdownButton<MidiDevice>(
+              value: selectedDevice,
+              hint: Text("Select MIDI Device"),
+              items: widget.devices.map((device) {
+                return DropdownMenuItem(
+                  value: device,
+                  child: Text(device.name),
+                );
+              }).toList(),
+              onChanged: (device) {
+                setState(() {
+                  selectedDevice = device;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            // Dropdown for selecting the SysEx ID
+            DropdownButton<int>(
+              value: selectedSysExId,
+              hint: Text("Select SysEx ID"),
+              items: List.generate(128, (index) => index).map((id) {
+                return DropdownMenuItem(
+                  value: id,
+                  child: Text(id.toString()),
+                );
+              }).toList(),
+              onChanged: (id) {
+                setState(() {
+                  selectedSysExId = id;
+                });
+              },
+            ),
+            const SizedBox(height: 32),
+            // Button to confirm selection
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
+              spacing: 16,
+              children: [
+                ElevatedButton(
+                  onPressed: (selectedDevice != null && selectedSysExId != null)
+                      ? () {
+                          widget.onDeviceSelected(
+                              selectedDevice!, selectedSysExId!);
+                        }
+                      : null,
+                  child: Text("Connect to Device"),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    widget.onRefresh();
+                  },
+                  child: Text("Refresh"),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

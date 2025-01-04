@@ -67,6 +67,13 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  Future<void> disconnect() async {
+    if (state is DistingStateSynchronized) {
+      final device = (state as DistingStateSynchronized).device;
+      state.midiCommand.disconnectDevice(device);
+    }
+  }
+
   Future<void> connectToDevice(MidiDevice device, int sysExId) async {
     try {
       // Connect to the selected device
