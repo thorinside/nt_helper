@@ -149,14 +149,8 @@ class DistingCubit extends Cubit<DistingState> {
                     algorithmIndex, parameterNumber) ??
                 ParameterInfo.filler()
         ],
-        values: [
-          for (int parameterNumber = 0;
-              parameterNumber < numParametersInAlgorithm;
-              parameterNumber++)
-            await disting.requestParameterValue(
-                    algorithmIndex, parameterNumber) ??
-                ParameterValue.filler()
-        ],
+        values:
+            (await disting.requestAllParameterValues(algorithmIndex))!.values,
         enums: [
           for (int parameterNumber = 0;
               parameterNumber < numParametersInAlgorithm;

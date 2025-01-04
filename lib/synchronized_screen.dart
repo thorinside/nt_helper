@@ -383,7 +383,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           algorithmIndex: widget.algorithmIndex,
           parameterNumber: widget.parameterNumber,
           value: value,
-          userIsChangingTheValue: isChanging,
+          userIsChangingTheValue: widget.displayString?.isNotEmpty == true ? false : isChanging,
         );
   }
 

@@ -252,6 +252,22 @@ class DistingMidiManager {
     );
   }
 
+  Future<AllParameterValues?> requestAllParameterValues(int algorithmIndex) async {
+    final packet =
+    DistingNT.encodeRequestAllParameterValues(sysExId, algorithmIndex);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respAllParameterValues,
+      algorithmIndex: algorithmIndex,
+    );
+
+    return await _scheduler.sendRequest<AllParameterValues>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
+  }
+
   Future<void> setParameterValue(
       int algorithmIndex, int parameterNumber, int value) {
     final packet = DistingNT.encodeSetParameterValue(

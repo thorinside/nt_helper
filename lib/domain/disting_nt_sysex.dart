@@ -192,7 +192,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
 class AllParameterValues implements HasAlgorithmIndex {
   @override
   final int algorithmIndex;
-  final List<int> values;
+  final List<ParameterValue> values;
 
   AllParameterValues({required this.algorithmIndex, required this.values});
 }
@@ -543,6 +543,16 @@ class DistingNT {
       ..._buildHeader(distingSysExId),
       DistingNTRequestMessageType.requestAlgorithmInfo.value,
       ...encode16(index),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static Uint8List encodeRequestAllParameterValues(int distingSysExId, int index) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.requestAllParameterValues.value,
+      index & 0x7F,
       ..._buildFooter(),
     ];
     return Uint8List.fromList(bytes);
@@ -948,11 +958,12 @@ class DistingNT {
   }
 
   static AllParameterValues decodeAllParameterValues(Uint8List message) {
+    var algorithmIndex = decode8(message.sublist(0, 1));
     return AllParameterValues(
-      algorithmIndex: decode8(message.sublist(0, 1)),
+      algorithmIndex: algorithmIndex,
       values: [
         for (int offset = 1; offset < message.length; offset += 3)
-          decode16(message, offset)
+          ParameterValue(algorithmIndex: algorithmIndex, parameterNumber: offset ~/ 3, value: decode16(message, offset) ),
       ],
     );
   }
