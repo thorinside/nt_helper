@@ -5,7 +5,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 
 class DistingApp extends StatelessWidget {
-  DistingApp();
+  const DistingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +53,8 @@ class DistingApp extends StatelessWidget {
 }
 
 class DistingPage extends StatelessWidget {
+  const DistingPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,11 +117,10 @@ class _DeviceSelectionView extends StatefulWidget {
   final Function() onRefresh;
 
   const _DeviceSelectionView({
-    Key? key,
     required this.devices,
     required this.onDeviceSelected,
     required this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   State<_DeviceSelectionView> createState() => _DeviceSelectionViewState();

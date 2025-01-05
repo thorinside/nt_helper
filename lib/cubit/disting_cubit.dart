@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
