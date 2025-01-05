@@ -89,8 +89,8 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
             // Screenshot display
             AnimatedContainer(
               duration: const Duration(milliseconds: 100),
-              width: _isExpanded ? 512 : 256,
-              height: _isExpanded ? 150 : 75,
+              width: _isExpanded ? 384 : 256,
+              height: _isExpanded ? 112 : 75,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(5),
                 color: Theme.of(context).colorScheme.surface,
