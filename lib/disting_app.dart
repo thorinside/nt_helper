@@ -90,6 +90,12 @@ class DistingPage extends StatelessWidget {
                     padding: const EdgeInsets.all(24.0),
                     child: CircularProgressIndicator(),
                   ),
+                  OutlinedButton(
+                    onPressed: () {
+                      context.read<DistingCubit>().cancelSync();
+                    },
+                    child: Text("Cancel"),
+                  )
                 ],
               ),
             );

@@ -117,6 +117,11 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  Future<void> cancelSync() async {
+    await disconnect();
+    loadDevices();
+  }
+
   Future<void> synchronizeDevice() async {
     try {
       if (state is! DistingStateConnected) {
