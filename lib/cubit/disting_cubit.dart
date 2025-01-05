@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
@@ -58,6 +59,10 @@ class DistingCubit extends Cubit<DistingState> {
       // Fetch available MIDI devices asynchronously
       final devices = await state.midiCommand.devices;
 
+      devices?.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+
       // Transition to the select device state
       emit(DistingState.selectDevice(
         midiCommand: state.midiCommand,
@@ -68,9 +73,16 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<Uint8List?> screenshot() async {
+  Future<void> updateScreenshot() async {
     final disting = requireDisting();
-    return await disting.encodeTakeScreenshot();
+    final screenshot = await disting.encodeTakeScreenshot();
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        emit(syncstate.copyWith(screenshot: screenshot));
+        break;
+      default:
+      // Handle other cases or errors
+    }
   }
 
   Future<void> disconnect() async {
@@ -366,5 +378,16 @@ class DistingCubit extends Cubit<DistingState> {
   void wakeDevice() async {
     final disting = requireDisting();
     disting.requestWake();
+  }
+
+  void closeScreenshot() {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        emit(syncstate.copyWith(screenshot: null));
+        break;
+      default:
+      // Handle other cases or errors
+    }
+
   }
 }

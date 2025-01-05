@@ -16,11 +16,13 @@ class Slot with _$Slot {
 class DistingState with _$DistingState {
   const factory DistingState.initial({
     required MidiCommand midiCommand,
+    Uint8List? screenshot,
   }) = DistingStateInitial;
 
   const factory DistingState.selectDevice({
     required MidiCommand midiCommand,
     required List<MidiDevice> devices,
+    Uint8List? screenshot,
   }) = DistingStateSelectDevice;
 
   const factory DistingState.connected({
@@ -28,6 +30,7 @@ class DistingState with _$DistingState {
     required MidiDevice device,
     required int sysExId,
     required DistingMidiManager disting,
+    Uint8List? screenshot,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({
@@ -40,6 +43,6 @@ class DistingState with _$DistingState {
     required List<AlgorithmInfo> algorithms,
     required List<Slot> slots,
     required List<String> unitStrings,
-    @Default(false) bool complete,
+    Uint8List? screenshot,
   }) = DistingStateSynchronized;
 }

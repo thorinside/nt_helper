@@ -1,12 +1,13 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
+import 'package:nt_helper/floating_screenshot_overlay.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
-import 'package:nt_helper/screenshot_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
@@ -15,6 +16,7 @@ class SynchronizedScreen extends StatelessWidget {
   final List<String> units;
   final String presetName;
   final String distingVersion;
+  final Uint8List? screenshot;
 
   const SynchronizedScreen({
     super.key,
@@ -23,6 +25,7 @@ class SynchronizedScreen extends StatelessWidget {
     required this.units,
     required this.presetName,
     required this.distingVersion,
+    required this.screenshot,
   });
 
   @override
@@ -117,20 +120,15 @@ class SynchronizedScreen extends StatelessWidget {
                 ),
                 PopupMenuItem(
                   value: 'screenshot',
-                  onTap: () async {
-                    final screenshot = await context.read<DistingCubit>().screenshot();
-                    if (screenshot != null) {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                ScreenshotScreen(screenshot: screenshot)),
-                      );
-                    }
+                  onTap: () {
+                    _showScreenshotOverlay(context);
                   },
                   child: const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [Text('Screenshot'), Icon(Icons.screenshot)]),
+                      children: [
+                        Text('Screenshot'),
+                        Icon(Icons.screenshot_monitor_rounded),
+                      ]),
                 ),
                 PopupMenuItem(
                   value: 'Switch Devices',
@@ -271,7 +269,26 @@ class SynchronizedScreen extends StatelessWidget {
       ),
     );
   }
-}
+
+
+  void _showScreenshotOverlay(BuildContext context) {
+    final cubit = context.read<DistingCubit>();
+
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 16,
+        right: 16,
+        child: FloatingScreenshotOverlay(
+          overlayEntry: overlayEntry,
+          cubit: cubit,
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+  }}
 
 class SlotDetailView extends StatelessWidget {
   final Slot slot;
@@ -411,7 +428,8 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           algorithmIndex: widget.algorithmIndex,
           parameterNumber: widget.parameterNumber,
           value: value,
-          userIsChangingTheValue: widget.displayString?.isNotEmpty == true ? false : isChanging,
+          userIsChangingTheValue:
+              widget.displayString?.isNotEmpty == true ? false : isChanging,
         );
   }
 
