@@ -87,10 +87,10 @@ class DistingMessageScheduler {
     required this.midiCommand,
     required this.device,
     required this.sysExId,
-    this.defaultTimeout = const Duration(milliseconds: 40),
+    this.defaultTimeout = const Duration(milliseconds: 25),
     this.messageInterval = const Duration(milliseconds: 5),
     this.defaultMaxRetries = 5,
-    this.defaultRetryDelay = const Duration(milliseconds: 30),
+    this.defaultRetryDelay = const Duration(milliseconds: 15),
   }) {
     // Start listening for incoming MIDI data.
     _subscription = midiCommand.onMidiDataReceived?.listen(_handleIncomingMidi);
