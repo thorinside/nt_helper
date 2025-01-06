@@ -4,9 +4,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
-import 'package:nt_helper/floating_screenshot_overlay.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/floating_screenshot_overlay.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -270,7 +270,6 @@ class SynchronizedScreen extends StatelessWidget {
     );
   }
 
-
   void _showScreenshotOverlay(BuildContext context) {
     final cubit = context.read<DistingCubit>();
 
@@ -288,7 +287,8 @@ class SynchronizedScreen extends StatelessWidget {
     );
 
     Overlay.of(context).insert(overlayEntry);
-  }}
+  }
+}
 
 class SlotDetailView extends StatelessWidget {
   final Slot slot;
@@ -401,6 +401,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   late int currentValue;
   late bool isChecked;
   bool isChanging = false;
+  bool _showAlternateEditor = false;
 
   @override
   void initState() {
@@ -474,42 +475,78 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
           // Slider column
           Expanded(
-            flex: 4, // Proportionally larger space for the slider
-            child: GestureDetector(
-              onDoubleTap: () => setState(() {
-                currentValue = widget.defaultValue;
-                _updateCubitValue(currentValue);
-              }),
-              child: Slider(
-                value: currentValue.toDouble(),
-                min: widget.min.toDouble(),
-                max: widget.max.toDouble(),
-                divisions: (widget.max - widget.min > 0)
-                    ? widget.max - widget.min
-                    : null,
-                onChangeStart: (value) {
-                  isChanging = true;
-                },
-                onChangeEnd: (value) {
-                  isChanging = false;
-                  setState(() {
-                    currentValue = value.toInt();
-                    if (widget.isOnOff) isChecked = currentValue == 1;
-                  });
+              flex: 4, // Proportionally larger space for the slider
+              child: GestureDetector(
+                onDoubleTap: () => _showAlternateEditor ? {} : setState(() {
+                  currentValue = widget.defaultValue;
                   _updateCubitValue(currentValue);
-                },
-                onChanged: (value) {
-                  setState(() {
-                    currentValue = value.toInt();
-                    if (widget.isOnOff) isChecked = currentValue == 1;
-                  });
-                  // Throttle a bit
-                  onSliderChanged(currentValue);
-                },
-              ),
-            ),
-          ),
-
+                }),
+                child: AnimatedSwitcher(
+                  duration: Duration(milliseconds: 150),
+                  child: SizedBox(
+                    height: 45,
+                    child: _showAlternateEditor
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            spacing: 16,
+                            children: [
+                                OutlinedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      currentValue = min(
+                                          max(currentValue - 1, widget.min),
+                                          widget.max);
+                                    });
+                                    _updateCubitValue(currentValue);
+                                  },
+                                  child: Text("-"),
+                                ),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      currentValue = min(
+                                          max(currentValue + 1, widget.min),
+                                          widget.max);
+                                    });
+                                    _updateCubitValue(currentValue);
+                                  },
+                                  child: Text("+"),
+                                )
+                              ])
+                        : Slider(
+                            value: currentValue.toDouble(),
+                            min: widget.min.toDouble(),
+                            max: widget.max.toDouble(),
+                            divisions: (widget.max - widget.min > 0)
+                                ? widget.max - widget.min
+                                : null,
+                            onChangeStart: (value) {
+                              isChanging = true;
+                            },
+                            onChangeEnd: (value) {
+                              isChanging = false;
+                              setState(() {
+                                currentValue = value.toInt();
+                                if (widget.isOnOff) {
+                                  isChecked = currentValue == 1;
+                                }
+                              });
+                              _updateCubitValue(currentValue);
+                            },
+                            onChanged: (value) {
+                              setState(() {
+                                currentValue = value.toInt();
+                                if (widget.isOnOff) {
+                                  isChecked = currentValue == 1;
+                                }
+                              });
+                              // Throttle a bit
+                              onSliderChanged(currentValue);
+                            },
+                          ),
+                  ),
+                ),
+              )),
           // Control column
           Expanded(
             flex: 3, // Slightly larger control column
@@ -546,10 +583,17 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                       : widget.name == "Note"
                           ? Text(midiNoteToNoteString(currentValue))
                           : widget.displayString != null
-                              ? Text(
-                                  widget.displayString!,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.bodyLarge,
+                              ? GestureDetector(
+                                  onLongPress: () => setState(() {
+                                    // Show alternate editor
+                                    _showAlternateEditor =
+                                        !_showAlternateEditor;
+                                  }),
+                                  child: Text(
+                                    widget.displayString!,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodyLarge,
+                                  ),
                                 )
                               : widget.unit != null
                                   ? Text(formatWithUnit(currentValue,
