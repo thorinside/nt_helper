@@ -177,39 +177,51 @@ class DistingCubit extends Cubit<DistingState> {
     int numParametersInAlgorithm =
         (await disting.requestNumberOfParameters(algorithmIndex))!
             .numParameters;
-    return Slot(
-      algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
-      parameters: [
-        for (int parameterNumber = 0;
-            parameterNumber < numParametersInAlgorithm;
-            parameterNumber++)
-          await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
-              ParameterInfo.filler()
-      ],
-      values: (await disting.requestAllParameterValues(algorithmIndex))!.values,
-      enums: [
-        for (int parameterNumber = 0;
-            parameterNumber < numParametersInAlgorithm;
-            parameterNumber++)
+    var parameters = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
+            ParameterInfo.filler()
+    ];
+    var parameterValues =
+        (await disting.requestAllParameterValues(algorithmIndex))!.values;
+    var enums = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        if (parameters[parameterNumber].unit == 1)
           await disting.requestParameterEnumStrings(
                   algorithmIndex, parameterNumber) ??
               ParameterEnumStrings.filler()
-      ],
-      mappings: [
-        for (int parameterNumber = 0;
-            parameterNumber < numParametersInAlgorithm;
-            parameterNumber++)
-          await disting.requestMappings(algorithmIndex, parameterNumber) ??
-              Mapping.filler()
-      ],
-      valueStrings: [
-        for (int parameterNumber = 0;
-            parameterNumber < numParametersInAlgorithm;
-            parameterNumber++)
+        else
+          ParameterEnumStrings.filler()
+    ];
+    var mappings = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        await disting.requestMappings(algorithmIndex, parameterNumber) ??
+            Mapping.filler()
+    ];
+    var valueStrings = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        if ([13, 14, 17].contains(parameters[parameterNumber].unit))
           await disting.requestParameterValueString(
                   algorithmIndex, parameterNumber) ??
               ParameterValueString.filler()
-      ],
+        else
+          ParameterValueString.filler()
+    ];
+    return Slot(
+      algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
+      parameters: parameters,
+      values: parameterValues,
+      enums: enums,
+      mappings: mappings,
+      valueStrings: valueStrings,
     );
   }
 
