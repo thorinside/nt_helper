@@ -278,11 +278,29 @@ class DistingCubit extends Cubit<DistingState> {
   }) async {
     if (state is DistingStateSynchronized) {
       var disting = requireDisting();
+      final state = (this.state as DistingStateSynchronized);
+
       disting.setParameterValue(
         algorithmIndex,
         parameterNumber,
         value,
       );
+
+      // Special case for switching programs in 3pot algorithms
+      if (_isThreePotProgram(state, algorithmIndex, parameterNumber)) {
+        final updatedSlot = await fetchSlot(disting, algorithmIndex);
+
+        emit(state.copyWith(
+          slots: updateSlot(
+            algorithmIndex,
+            state.slots,
+                (slot) {
+              return updatedSlot;
+            },
+          ),
+        ));
+        return;
+      }
 
       if (!userIsChangingTheValue) {
         final newValue = await disting.requestParameterValue(
@@ -430,4 +448,7 @@ class DistingCubit extends Cubit<DistingState> {
       // Handle other cases or errors
     }
   }
+
+  bool _isThreePotProgram(DistingStateSynchronized state, int algorithmIndex, int parameterNumber) =>
+      (state.slots[algorithmIndex].parameters[parameterNumber].name == "Program") && ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
 }
