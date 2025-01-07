@@ -36,31 +36,34 @@ class SynchronizedScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('NT Helper'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.add_circle_rounded),
-              tooltip: 'Add Algorithm',
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          AddAlgorithmScreen(algorithms: algorithms)),
-                );
+            Builder(builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.add_circle_rounded),
+                tooltip: 'Add Algorithm',
+                onPressed: () async {
+                  final cubit = context.read<DistingCubit>();
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            AddAlgorithmScreen(algorithms: algorithms)),
+                  );
 
-                if (result != null) {
-                  context.read<DistingCubit>().onAlgorithmSelected(
-                        result['algorithm'],
-                        result['specValues'],
-                      );
-                }
-              },
-            ),
+                  if (result != null) {
+                    await cubit.onAlgorithmSelected(
+                      result['algorithm'],
+                      result['specValues'],
+                    );
+                  }
+                },
+              );
+            }),
             Builder(builder: (context) {
               return IconButton(
                 icon: const Icon(Icons.arrow_upward_rounded),
                 tooltip: 'Move Algorithm Up',
-                onPressed: () {
-                  context
+                onPressed: () async {
+                  DefaultTabController.of(context).index = await context
                       .read<DistingCubit>()
                       .moveAlgorithmUp(DefaultTabController.of(context).index);
                 },
@@ -70,9 +73,11 @@ class SynchronizedScreen extends StatelessWidget {
               return IconButton(
                 icon: const Icon(Icons.arrow_downward_rounded),
                 tooltip: 'Move Algorithm Down',
-                onPressed: () {
-                  context.read<DistingCubit>().moveAlgorithmDown(
-                      DefaultTabController.of(context).index);
+                onPressed: () async {
+                  DefaultTabController.of(context).index = await context
+                      .read<DistingCubit>()
+                      .moveAlgorithmDown(
+                          DefaultTabController.of(context).index);
                 },
               );
             }),
@@ -477,10 +482,12 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           Expanded(
               flex: 4, // Proportionally larger space for the slider
               child: GestureDetector(
-                onDoubleTap: () => _showAlternateEditor ? {} : setState(() {
-                  currentValue = widget.defaultValue;
-                  _updateCubitValue(currentValue);
-                }),
+                onDoubleTap: () => _showAlternateEditor
+                    ? {}
+                    : setState(() {
+                        currentValue = widget.defaultValue;
+                        _updateCubitValue(currentValue);
+                      }),
                 child: AnimatedSwitcher(
                   duration: Duration(milliseconds: 150),
                   child: SizedBox(

@@ -165,50 +165,52 @@ class DistingCubit extends Cubit<DistingState> {
       int numAlgorithmsInPreset, DistingMidiManager disting) async {
     final slotsFutures =
         List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
-      int numParametersInAlgorithm =
-          (await disting.requestNumberOfParameters(algorithmIndex))!
-              .numParameters;
-      return Slot(
-        algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
-        parameters: [
-          for (int parameterNumber = 0;
-              parameterNumber < numParametersInAlgorithm;
-              parameterNumber++)
-            await disting.requestParameterInfo(
-                    algorithmIndex, parameterNumber) ??
-                ParameterInfo.filler()
-        ],
-        values:
-            (await disting.requestAllParameterValues(algorithmIndex))!.values,
-        enums: [
-          for (int parameterNumber = 0;
-              parameterNumber < numParametersInAlgorithm;
-              parameterNumber++)
-            await disting.requestParameterEnumStrings(
-                    algorithmIndex, parameterNumber) ??
-                ParameterEnumStrings.filler()
-        ],
-        mappings: [
-          for (int parameterNumber = 0;
-              parameterNumber < numParametersInAlgorithm;
-              parameterNumber++)
-            await disting.requestMappings(algorithmIndex, parameterNumber) ??
-                Mapping.filler()
-        ],
-        valueStrings: [
-          for (int parameterNumber = 0;
-              parameterNumber < numParametersInAlgorithm;
-              parameterNumber++)
-            await disting.requestParameterValueString(
-                    algorithmIndex, parameterNumber) ??
-                ParameterValueString.filler()
-        ],
-      );
+      return await fetchSlot(disting, algorithmIndex);
     });
 
     // Finish off the requests
     final slots = await Future.wait(slotsFutures);
     return slots;
+  }
+
+  Future<Slot> fetchSlot(DistingMidiManager disting, int algorithmIndex) async {
+    int numParametersInAlgorithm =
+        (await disting.requestNumberOfParameters(algorithmIndex))!
+            .numParameters;
+    return Slot(
+      algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
+      parameters: [
+        for (int parameterNumber = 0;
+            parameterNumber < numParametersInAlgorithm;
+            parameterNumber++)
+          await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
+              ParameterInfo.filler()
+      ],
+      values: (await disting.requestAllParameterValues(algorithmIndex))!.values,
+      enums: [
+        for (int parameterNumber = 0;
+            parameterNumber < numParametersInAlgorithm;
+            parameterNumber++)
+          await disting.requestParameterEnumStrings(
+                  algorithmIndex, parameterNumber) ??
+              ParameterEnumStrings.filler()
+      ],
+      mappings: [
+        for (int parameterNumber = 0;
+            parameterNumber < numParametersInAlgorithm;
+            parameterNumber++)
+          await disting.requestMappings(algorithmIndex, parameterNumber) ??
+              Mapping.filler()
+      ],
+      valueStrings: [
+        for (int parameterNumber = 0;
+            parameterNumber < numParametersInAlgorithm;
+            parameterNumber++)
+          await disting.requestParameterValueString(
+                  algorithmIndex, parameterNumber) ??
+              ParameterValueString.filler()
+      ],
+    );
   }
 
   DistingMidiManager requireDisting() {
@@ -317,27 +319,35 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  void onAlgorithmSelected(
+  Future<void> onAlgorithmSelected(
       AlgorithmInfo algorithm, List<int> specifications) async {
     if (state is DistingStateSynchronized) {
       final disting = requireDisting();
-      disting.requestAddAlgorithm(algorithm, specifications);
+      await disting.requestAddAlgorithm(algorithm, specifications);
 
-      // Sleep for 50ms
-      await Future.delayed(Duration(milliseconds: 50));
+      await Future.delayed(Duration(milliseconds: 100));
 
-      refresh();
+      // Add a slot at the end of the slots list, and then ask to update that
+      // slot. The rest should remain the same, so we don't have to update
+      // everything.
+      var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
+      slots.add(await fetchSlot(disting, slots.length));
+      emit((state as DistingStateSynchronized).copyWith(slots: slots));
     }
   }
 
-  void onRemoveAlgorithm(int algorithmIndex) async {
+  Future<void> onRemoveAlgorithm(int algorithmIndex) async {
     if (state is DistingStateSynchronized) {
       final disting = requireDisting();
-      disting.requestRemoveAlgorithm(algorithmIndex);
+      await disting.requestRemoveAlgorithm(algorithmIndex);
 
-      // Sleep for 50ms
-      await Future.delayed(Duration(milliseconds: 50));
-      refresh();
+      // Just remove the slot from state since the message
+      // succeeded, filter the slot out of the list, the index in the list
+      // will be the same as algorithmIndex
+      // Emit the new state with the updated slots
+      var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
+      slots.removeAt(algorithmIndex);
+      emit((state as DistingStateSynchronized).copyWith(slots: slots));
     }
   }
 
@@ -363,20 +373,35 @@ class DistingCubit extends Cubit<DistingState> {
     disting.requestSavePreset();
   }
 
-  void moveAlgorithmUp(int algorithmIndex) async {
+  Future<int> moveAlgorithmUp(int algorithmIndex) async {
+    if (algorithmIndex == 0) return 0;
+
     final disting = requireDisting();
-    disting.requestMoveAlgorithmUp(algorithmIndex);
+    await disting.requestMoveAlgorithmUp(algorithmIndex);
     await Future.delayed(Duration(milliseconds: 50));
 
-    refresh();
+    var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
+    var slot = slots.removeAt(algorithmIndex);
+    slots.insert(algorithmIndex - 1, slot);
+    emit((state as DistingStateSynchronized).copyWith(slots: slots));
+    return algorithmIndex - 1;
   }
 
-  void moveAlgorithmDown(int algorithmIndex) async {
+  Future<int> moveAlgorithmDown(int algorithmIndex) async {
     final disting = requireDisting();
-    disting.requestMoveAlgorithmDown(algorithmIndex);
+    await disting.requestMoveAlgorithmDown(algorithmIndex);
     await Future.delayed(Duration(milliseconds: 50));
 
-    refresh();
+    var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
+
+    // If we are not on the last slot, move the slot to the next space in the list
+    if (algorithmIndex == slots.length) return algorithmIndex;
+
+    var slot = slots.removeAt(algorithmIndex);
+    slots.insert(algorithmIndex + 1, slot);
+    emit((state as DistingStateSynchronized).copyWith(slots: slots));
+
+    return algorithmIndex + 1;
   }
 
   void wakeDevice() async {
@@ -392,6 +417,5 @@ class DistingCubit extends Cubit<DistingState> {
       default:
       // Handle other cases or errors
     }
-
   }
 }
