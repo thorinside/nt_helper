@@ -74,6 +74,7 @@ class DistingCubit extends Cubit<DistingState> {
 
   Future<void> updateScreenshot() async {
     final disting = requireDisting();
+    await disting.requestWake();
     final screenshot = await disting.encodeTakeScreenshot();
     switch (state) {
       case DistingStateSynchronized syncstate:

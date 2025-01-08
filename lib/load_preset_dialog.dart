@@ -74,30 +74,37 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       // Ensure your app’s theme is set to Material 3:
       // MaterialApp(theme: ThemeData(useMaterial3: true), ...)
       title: const Text('Load Preset'),
-      content: DropdownMenu<String>(
-        // Ties our external controller to the internal text field.
-        controller: _controller,
-        // Let the text field be editable/filterable.
-        enableFilter: true,
-        // Provide the “initial selection” so the dropdown text
-        // starts with the initial name if it’s in the list.
-        initialSelection: _history.contains(widget.initialName.trim())
-            ? widget.initialName.trim()
-            : null,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          DropdownMenu<String>(
+            // Ties our external controller to the internal text field.
+            controller: _controller,
+            // Let the text field be editable/filterable.
+            enableFilter: true,
+            width: 250,
+            // Provide the “initial selection” so the dropdown text
+            // starts with the initial name if it’s in the list.
+            initialSelection: _history.contains(widget.initialName.trim())
+                ? widget.initialName.trim()
+                : null,
 
-        label: const Text('Preset Name'),
+            label: const Text('Preset Name'),
 
-        // Convert each history item into an entry for the dropdown.
-        dropdownMenuEntries: _history
-            .map((name) => DropdownMenuEntry(value: name, label: name))
-            .toList(),
+            // Convert each history item into an entry for the dropdown.
+            dropdownMenuEntries: _history
+                .map((name) => DropdownMenuEntry(value: name, label: name))
+                .toList(),
 
-        // When user picks an item from the dropdown list:
-        onSelected: (String? value) {
-          if (value != null) {
-            setState(() => _controller.text = value);
-          }
-        },
+            // When user picks an item from the dropdown list:
+            onSelected: (String? value) {
+              if (value != null) {
+                setState(() => _controller.text = value);
+              }
+            },
+          ),
+        ],
       ),
       actions: [
         TextButton(
