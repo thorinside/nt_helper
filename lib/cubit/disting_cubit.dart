@@ -141,6 +141,7 @@ class DistingCubit extends Cubit<DistingState> {
           (await disting.requestNumAlgorithmsInPreset())!;
       final distingVersion = await disting.requestVersionString() ?? "";
       final presetName = await disting.requestPresetName() ?? "";
+      var unitStrings = await disting.requestUnitStrings() ?? [];
 
       List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
 
@@ -154,7 +155,7 @@ class DistingCubit extends Cubit<DistingState> {
         patchName: presetName,
         algorithms: algorithms,
         slots: slots,
-        unitStrings: await disting.requestUnitStrings() ?? [],
+        unitStrings: unitStrings,
       ));
     } catch (e) {
       // Handle error state if necessary
@@ -294,7 +295,7 @@ class DistingCubit extends Cubit<DistingState> {
           slots: updateSlot(
             algorithmIndex,
             state.slots,
-                (slot) {
+            (slot) {
               return updatedSlot;
             },
           ),
@@ -449,6 +450,63 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  bool _isThreePotProgram(DistingStateSynchronized state, int algorithmIndex, int parameterNumber) =>
-      (state.slots[algorithmIndex].parameters[parameterNumber].name == "Program") && ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
+  Future<void> newPreset() async {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = requireDisting();
+
+        await disting.requestNewPreset();
+
+        await Future.delayed(Duration(milliseconds: 100));
+
+        final numAlgorithmsInPreset =
+            (await disting.requestNumAlgorithmsInPreset())!;
+        final presetName = await disting.requestPresetName() ?? "";
+
+        List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+
+        // Transition to the synchronizing state
+        emit(syncstate.copyWith(
+          patchName: presetName,
+          slots: slots,
+        ));
+
+        break;
+      default:
+      // Handle other cases or errors
+    }
+  }
+
+  Future<void> loadPreset(String name, bool append) async {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = requireDisting();
+
+        await disting.requestLoadPreset(name, append);
+
+        await Future.delayed(Duration(milliseconds: 100));
+
+        final numAlgorithmsInPreset =
+            (await disting.requestNumAlgorithmsInPreset())!;
+        final presetName = await disting.requestPresetName() ?? "";
+
+        List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+
+        // Transition to the synchronizing state
+        emit(syncstate.copyWith(
+          patchName: presetName,
+          slots: slots,
+        ));
+
+        break;
+      default:
+      // Handle other cases or errors
+    }
+  }
+
+  bool _isThreePotProgram(DistingStateSynchronized state, int algorithmIndex,
+          int parameterNumber) =>
+      (state.slots[algorithmIndex].parameters[parameterNumber].name ==
+          "Program") &&
+      ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
 }

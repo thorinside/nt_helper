@@ -548,7 +548,8 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static Uint8List encodeRequestAllParameterValues(int distingSysExId, int index) {
+  static Uint8List encodeRequestAllParameterValues(
+      int distingSysExId, int index) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
       DistingNTRequestMessageType.requestAllParameterValues.value,
@@ -733,6 +734,25 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
+  static Uint8List encodeNewPreset(int sysExId) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.newPreset.value,
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static encodeLoadPreset(int sysExId, String presetName, bool append) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.loadPreset.value,
+      append ? 1 : 0,
+      ...encodeNullTerminatedAscii(presetName),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
 
   static AlgorithmInfo decodeAlgorithmInfo(Uint8List data) {
     int offset = 0;
@@ -964,7 +984,10 @@ class DistingNT {
       algorithmIndex: algorithmIndex,
       values: [
         for (int offset = 1; offset < message.length; offset += 3)
-          ParameterValue(algorithmIndex: algorithmIndex, parameterNumber: offset ~/ 3, value: decode16(message, offset) ),
+          ParameterValue(
+              algorithmIndex: algorithmIndex,
+              parameterNumber: offset ~/ 3,
+              value: decode16(message, offset)),
       ],
     );
   }

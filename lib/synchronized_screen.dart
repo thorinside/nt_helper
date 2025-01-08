@@ -7,6 +7,7 @@ import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/floating_screenshot_overlay.dart';
+import 'package:nt_helper/load_preset_dialog.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -100,6 +101,38 @@ class SynchronizedScreen extends StatelessWidget {
                       children: [Text('Wake'), Icon(Icons.alarm_on_rounded)]),
                   onTap: () {
                     context.read<DistingCubit>().wakeDevice();
+                  },
+                ),
+                PopupMenuItem(
+                  value: "new",
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('New Preset'),
+                        Icon(Icons.fiber_new_rounded)
+                      ]),
+                  onTap: () {
+                    context.read<DistingCubit>().newPreset();
+                  },
+                ),
+                PopupMenuItem(
+                  value: "load",
+                  child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Load Preset'),
+                        Icon(Icons.file_upload_rounded)
+                      ]),
+                  onTap: () async {
+                    final preset = await showDialog<dynamic>(
+                      context: context,
+                      builder: (context) => LoadPresetDialog(
+                        initialName: "",
+                      ),
+                    );
+                    if (preset == null) return;
+
+                    context.read<DistingCubit>().loadPreset(preset["name"] as String, preset["append"] as bool);
                   },
                 ),
                 PopupMenuItem(

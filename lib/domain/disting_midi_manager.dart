@@ -397,14 +397,37 @@ class DistingMidiManager {
       messageType: DistingNTRespMessageType.respScreenshot,
     );
 
-    return _scheduler
-        .sendRequest<Uint8List>(
+    return _scheduler.sendRequest<Uint8List>(
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
       timeout: Duration(milliseconds: 500),
       maxRetries: 5,
       retryDelay: Duration(milliseconds: 50),
+    );
+  }
+
+  Future<void> requestNewPreset() {
+    final packet = DistingNT.encodeNewPreset(sysExId);
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  Future<void> requestLoadPreset(String presetName, bool append) {
+    final packet = DistingNT.encodeLoadPreset(sysExId, presetName, append);
+
+    final key = RequestKey(sysExId: sysExId);
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
     );
   }
 
