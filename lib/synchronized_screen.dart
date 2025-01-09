@@ -132,7 +132,8 @@ class SynchronizedScreen extends StatelessWidget {
                     );
                     if (preset == null) return;
 
-                    context.read<DistingCubit>().loadPreset(preset["name"] as String, preset["append"] as bool);
+                    context.read<DistingCubit>().loadPreset(
+                        preset["name"] as String, preset["append"] as bool);
                   },
                 ),
                 PopupMenuItem(
@@ -654,17 +655,28 @@ String formatWithUnit(int currentValue,
     {required int min, required int max, required String name, String? unit}) {
   if (unit == null || unit.isEmpty) return currentValue.toString();
   if (unit == '%') {
-    if (max > 100) {
-      return '${((currentValue / 10).toStringAsFixed(1))} $unit';
-    } else if (max == 100) {
+    if (max < 1000) {
       return '${((currentValue).toStringAsFixed(0))} $unit';
+    } else if (max < 10000) {
+      return '${((currentValue / 10).toStringAsFixed(1))} $unit';
+    }
+  }
+  if (unit == 'dB') {
+    if (min < -100) {
+      return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
+    } else {
+      return '${((currentValue)).toStringAsFixed(0)} ${unit.trim()}';
     }
   }
   if (unit == ' BPM') {
     return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
   }
   if (unit == 'V') {
-    return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
+    if (max < 120) {
+      return '${((currentValue / 10).toStringAsFixed(1))} $unit';
+    } else if (max < 1000) {
+      return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
+    }
   }
   if (unit == 'Hz') {
     if (name == 'Frequency') {

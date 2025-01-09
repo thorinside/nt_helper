@@ -307,7 +307,7 @@ mixin _$DistingState {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -330,7 +330,7 @@ mixin _$DistingState {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -353,7 +353,7 @@ mixin _$DistingState {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -531,7 +531,7 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -557,7 +557,7 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -583,7 +583,7 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -775,7 +775,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -801,7 +801,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -827,7 +827,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1030,7 +1030,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1056,7 +1056,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1082,7 +1082,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1173,7 +1173,7 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
       int sysExId,
       DistingMidiManager disting,
       String distingVersion,
-      String patchName,
+      String presetName,
       List<AlgorithmInfo> algorithms,
       List<Slot> slots,
       List<String> unitStrings,
@@ -1199,7 +1199,7 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? sysExId = null,
     Object? disting = null,
     Object? distingVersion = null,
-    Object? patchName = null,
+    Object? presetName = null,
     Object? algorithms = null,
     Object? slots = null,
     Object? unitStrings = null,
@@ -1226,9 +1226,9 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
           ? _value.distingVersion
           : distingVersion // ignore: cast_nullable_to_non_nullable
               as String,
-      patchName: null == patchName
-          ? _value.patchName
-          : patchName // ignore: cast_nullable_to_non_nullable
+      presetName: null == presetName
+          ? _value.presetName
+          : presetName // ignore: cast_nullable_to_non_nullable
               as String,
       algorithms: null == algorithms
           ? _value._algorithms
@@ -1259,7 +1259,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
       required this.sysExId,
       required this.disting,
       required this.distingVersion,
-      required this.patchName,
+      required this.presetName,
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
@@ -1279,7 +1279,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @override
   final String distingVersion;
   @override
-  final String patchName;
+  final String presetName;
   final List<AlgorithmInfo> _algorithms;
   @override
   List<AlgorithmInfo> get algorithms {
@@ -1309,7 +1309,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
 
   @override
   String toString() {
-    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, patchName: $patchName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot)';
+    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot)';
   }
 
   @override
@@ -1324,8 +1324,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             (identical(other.disting, disting) || other.disting == disting) &&
             (identical(other.distingVersion, distingVersion) ||
                 other.distingVersion == distingVersion) &&
-            (identical(other.patchName, patchName) ||
-                other.patchName == patchName) &&
+            (identical(other.presetName, presetName) ||
+                other.presetName == presetName) &&
             const DeepCollectionEquality()
                 .equals(other._algorithms, _algorithms) &&
             const DeepCollectionEquality().equals(other._slots, _slots) &&
@@ -1343,7 +1343,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
       sysExId,
       disting,
       distingVersion,
-      patchName,
+      presetName,
       const DeepCollectionEquality().hash(_algorithms),
       const DeepCollectionEquality().hash(_slots),
       const DeepCollectionEquality().hash(_unitStrings),
@@ -1375,7 +1375,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1383,7 +1383,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
         synchronized,
   }) {
     return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-        patchName, algorithms, slots, unitStrings, screenshot);
+        presetName, algorithms, slots, unitStrings, screenshot);
   }
 
   @override
@@ -1402,7 +1402,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1410,7 +1410,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
         synchronized,
   }) {
     return synchronized?.call(midiCommand, device, sysExId, disting,
-        distingVersion, patchName, algorithms, slots, unitStrings, screenshot);
+        distingVersion, presetName, algorithms, slots, unitStrings, screenshot);
   }
 
   @override
@@ -1429,7 +1429,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             int sysExId,
             DistingMidiManager disting,
             String distingVersion,
-            String patchName,
+            String presetName,
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
@@ -1439,7 +1439,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   }) {
     if (synchronized != null) {
       return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-          patchName, algorithms, slots, unitStrings, screenshot);
+          presetName, algorithms, slots, unitStrings, screenshot);
     }
     return orElse();
   }
@@ -1489,7 +1489,7 @@ abstract class DistingStateSynchronized implements DistingState {
       required final int sysExId,
       required final DistingMidiManager disting,
       required final String distingVersion,
-      required final String patchName,
+      required final String presetName,
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
@@ -1501,7 +1501,7 @@ abstract class DistingStateSynchronized implements DistingState {
   int get sysExId;
   DistingMidiManager get disting;
   String get distingVersion;
-  String get patchName;
+  String get presetName;
   List<AlgorithmInfo> get algorithms;
   List<Slot> get slots;
   List<String> get unitStrings;

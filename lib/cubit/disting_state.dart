@@ -39,7 +39,7 @@ class DistingState with _$DistingState {
     required int sysExId,
     required DistingMidiManager disting,
     required String distingVersion,
-    required String patchName,
+    required String presetName,
     required List<AlgorithmInfo> algorithms,
     required List<Slot> slots,
     required List<String> unitStrings,

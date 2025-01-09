@@ -153,7 +153,7 @@ class DistingCubit extends Cubit<DistingState> {
         sysExId: connectedState.sysExId,
         disting: connectedState.disting,
         distingVersion: distingVersion,
-        patchName: presetName,
+        presetName: presetName,
         algorithms: algorithms,
         slots: slots,
         unitStrings: unitStrings,
@@ -345,7 +345,10 @@ class DistingCubit extends Cubit<DistingState> {
       final numAlgorithmsInPreset =
           (await disting.requestNumAlgorithmsInPreset())!;
 
+      final presetName = await disting.requestPresetName() ?? "";
+
       emit((state as DistingStateSynchronized).copyWith(
+        presetName: presetName,
         slots: await fetchSlots(numAlgorithmsInPreset, disting),
       ));
     }
@@ -380,6 +383,10 @@ class DistingCubit extends Cubit<DistingState> {
       var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
       slots.removeAt(algorithmIndex);
       emit((state as DistingStateSynchronized).copyWith(slots: slots));
+
+      await Future.delayed(Duration(milliseconds: 50));
+
+      refresh();
     }
   }
 
@@ -396,7 +403,7 @@ class DistingCubit extends Cubit<DistingState> {
 
       await Future.delayed(Duration(milliseconds: 250));
       emit((state as DistingStateSynchronized)
-          .copyWith(patchName: await disting.requestPresetName() ?? ""));
+          .copyWith(presetName: await disting.requestPresetName() ?? ""));
     }
   }
 
@@ -416,6 +423,9 @@ class DistingCubit extends Cubit<DistingState> {
     var slot = slots.removeAt(algorithmIndex);
     slots.insert(algorithmIndex - 1, slot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
+
+    refresh();
+
     return algorithmIndex - 1;
   }
 
@@ -432,6 +442,8 @@ class DistingCubit extends Cubit<DistingState> {
     var slot = slots.removeAt(algorithmIndex);
     slots.insert(algorithmIndex + 1, slot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
+
+    refresh();
 
     return algorithmIndex + 1;
   }
@@ -468,7 +480,7 @@ class DistingCubit extends Cubit<DistingState> {
 
         // Transition to the synchronizing state
         emit(syncstate.copyWith(
-          patchName: presetName,
+          presetName: presetName,
           slots: slots,
         ));
 
@@ -493,9 +505,8 @@ class DistingCubit extends Cubit<DistingState> {
 
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
 
-        // Transition to the synchronizing state
         emit(syncstate.copyWith(
-          patchName: presetName,
+          presetName: presetName,
           slots: slots,
         ));
 

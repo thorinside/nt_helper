@@ -105,7 +105,7 @@ class DistingPage extends StatelessWidget {
               algorithms: state.algorithms,
               units: state.unitStrings,
               distingVersion: state.distingVersion,
-              presetName: state.patchName,
+              presetName: state.presetName,
               screenshot: state.screenshot,
             );
           } else {
