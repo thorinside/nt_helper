@@ -1,0 +1,48 @@
+#!/bin/zsh
+
+# Get the version line from pubspec.yaml
+version_line=$(grep -E "^version:" pubspec.yaml)
+
+# Extract current version (e.g., 1.2.3+4)
+current_version=${version_line#version: }
+IFS='.' read -r major minor patch_plus <<< "${current_version}"
+IFS='+' read -r patch build <<< "${patch_plus}"
+
+# Determine which part to roll (minor is default)
+roll_type=${1:-minor}
+
+case "$roll_type" in
+  major)
+    major=$((major + 1))
+    minor=0
+    patch=0
+    ;;
+  minor)
+    minor=$((minor + 1))
+    patch=0
+    ;;
+  patch)
+    patch=$((patch + 1))
+    ;;
+  *)
+    echo "Invalid argument: Use [major|minor|patch]"
+    exit 1
+    ;;
+esac
+
+# Always increment the build number
+build=$((build + 1))
+
+# New version string
+new_version="${major}.${minor}.${patch}+${build}"
+
+# Update pubspec.yaml
+sed -i "" "s/^version: .*/version: ${new_version}/" pubspec.yaml
+
+# Commit changes
+git add pubspec.yaml
+git commit -m "Bump version to ${new_version}"
+
+# Output the new version
+echo "Version bumped to ${new_version}"
+
