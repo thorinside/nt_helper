@@ -754,6 +754,45 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
+  static encodeSetCVMapping(int sysExId, int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.setMapping.value,
+      algorithmIndex & 0x7F,
+      ...encode16(parameterNumber),
+      1, // version
+      ...data.encodeCVPackedData(),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static encodeSetMIDIMapping(int sysExId, int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.setMidiMapping.value,
+      algorithmIndex & 0x7F,
+      ...encode16(parameterNumber),
+      1, // version
+      ...data.encodeMidiPackedData(),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static encodeSetI2CMapping(int sysExId, int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.setI2CMapping.value,
+      algorithmIndex & 0x7F,
+      ...encode16(parameterNumber),
+      1, // version
+      ...data.encodeI2CPackedData(),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
   static AlgorithmInfo decodeAlgorithmInfo(Uint8List data) {
     int offset = 0;
 

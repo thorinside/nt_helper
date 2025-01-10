@@ -5,6 +5,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/domain/disting_message_scheduler.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
 
 class DistingMidiManager {
   final DistingMessageScheduler _scheduler;
@@ -429,6 +430,35 @@ class DistingMidiManager {
       key,
       responseExpectation: ResponseExpectation.none,
     );
+  }
+
+  Future<void> requestSetMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    final cvPacket = DistingNT.encodeSetCVMapping(
+        sysExId, algorithmIndex, parameterNumber, data);
+    final midiPacket = DistingNT.encodeSetMIDIMapping(
+        sysExId, algorithmIndex, parameterNumber, data);
+    final i2cPacket = DistingNT.encodeSetI2CMapping(
+        sysExId, algorithmIndex, parameterNumber, data);
+    final key = RequestKey(sysExId: sysExId);
+
+    return Future.wait([
+      _scheduler.sendRequest<void>(
+        cvPacket,
+        key,
+        responseExpectation: ResponseExpectation.none,
+      ),
+      _scheduler.sendRequest<void>(
+        midiPacket,
+        key,
+        responseExpectation: ResponseExpectation.none,
+      ),
+      _scheduler.sendRequest<void>(
+        i2cPacket,
+        key,
+        responseExpectation: ResponseExpectation.none,
+      ),
+    ]);
   }
 
   /// Requests routing information for a given algorithm

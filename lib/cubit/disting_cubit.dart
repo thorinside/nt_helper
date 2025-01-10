@@ -6,6 +6,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
@@ -479,10 +480,12 @@ class DistingCubit extends Cubit<DistingState> {
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
 
         // Transition to the synchronizing state
-        emit(syncstate.copyWith(
-          presetName: presetName,
-          slots: slots,
-        ));
+        emit(
+          syncstate.copyWith(
+            presetName: presetName,
+            slots: slots,
+          ),
+        );
 
         break;
       default:
@@ -505,11 +508,50 @@ class DistingCubit extends Cubit<DistingState> {
 
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
 
-        emit(syncstate.copyWith(
-          presetName: presetName,
-          slots: slots,
-        ));
+        emit(
+          syncstate.copyWith(
+            presetName: presetName,
+            slots: slots,
+          ),
+        );
 
+        break;
+      default:
+      // Handle other cases or errors
+    }
+  }
+
+  Future<void> saveMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = requireDisting();
+
+        await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
+
+        await Future.delayed(Duration(milliseconds: 100));
+
+        emit(
+          syncstate.copyWith(
+            slots: updateSlot(
+              algorithmIndex,
+              syncstate.slots,
+              (slot) {
+                return slot.copyWith(
+                  mappings: replaceInList(
+                    slot.mappings,
+                    Mapping(
+                        algorithmIndex: algorithmIndex,
+                        parameterNumber: parameterNumber,
+                        packedMappingData: data,
+                        version: 1),
+                    index: parameterNumber,
+                  ),
+                );
+              },
+            ),
+          ),
+        );
         break;
       default:
       // Handle other cases or errors

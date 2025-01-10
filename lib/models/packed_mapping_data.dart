@@ -119,6 +119,46 @@ class PackedMappingData {
     );
   }
 
+  Uint8List encodeCVPackedData() {
+    final bytes = <int>[];
+
+    // Encode CV Mapping
+    bytes.add(cvInput);
+    bytes.add((isUnipolar ? 1 : 0) | (isGate ? 2 : 0));
+    bytes.add(volts);
+    bytes.addAll(DistingNT.encode16(delta));
+
+    return Uint8List.fromList(bytes);
+  }
+
+  Uint8List encodeMidiPackedData() {
+    final bytes = <int>[];
+
+    // Encode MIDI Mapping
+    bytes.add(midiCC);
+    bytes.add((isMidiEnabled ? 1 : 0) |
+    (isMidiSymmetric ? 2 : 0) |
+    ((midiChannel & 0xF) << 3));
+    bytes.addAll(DistingNT.encode16(midiMin));
+    bytes.addAll(DistingNT.encode16(midiMax));
+
+    return Uint8List.fromList(bytes);
+
+  }
+
+  Uint8List encodeI2CPackedData() {
+    final bytes = <int>[];
+
+    // Encode I2C Mapping
+    bytes.add(i2cCC);
+    bytes.add((isI2cEnabled ? 1 : 0) | (isI2cSymmetric ? 2 : 0));
+    bytes.addAll(DistingNT.encode16(i2cMin));
+    bytes.addAll(DistingNT.encode16(i2cMax));
+
+    return Uint8List.fromList(bytes);
+
+  }
+
   // Convert back to Uint8List
   Uint8List toBytes() {
     final bytes = <int>[];
@@ -189,5 +229,9 @@ class PackedMappingData {
       i2cMin,
       i2cMax,
     );
+  }
+
+  bool isMapped() {
+    return (cvInput != 0) || isMidiEnabled || isI2cEnabled;
   }
 }

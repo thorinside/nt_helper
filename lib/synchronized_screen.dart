@@ -8,6 +8,8 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/floating_screenshot_overlay.dart';
 import 'package:nt_helper/load_preset_dialog.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/packed_mapping_data_editor.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -400,6 +402,7 @@ class ParameterEditorView extends StatelessWidget {
             ? value.value
             : parameterInfo.defaultValue,
         unit: unit,
+        mappingData: mapping?.packedMappingData,
       );
 }
 
@@ -416,6 +419,7 @@ class ParameterViewRow extends StatefulWidget {
   final int initialValue;
   final int algorithmIndex;
   final int parameterNumber;
+  final PackedMappingData? mappingData;
 
   const ParameterViewRow({
     super.key,
@@ -429,6 +433,7 @@ class ParameterViewRow extends StatefulWidget {
     this.displayString,
     this.dropdownItems,
     this.isOnOff = false,
+    this.mappingData,
     required this.initialValue,
   });
 
@@ -490,10 +495,11 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          MappingEditButton(widget: widget),
           // Name column with reduced width
           Expanded(
             flex: 2, // Reduced flex for the name column
@@ -621,7 +627,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                             _updateCubitValue(currentValue);
                           },
                         )
-                      : widget.name == "Note"
+                      : widget.name.toLowerCase().contains("mote")
                           ? Text(midiNoteToNoteString(currentValue))
                           : widget.displayString != null
                               ? GestureDetector(
@@ -646,6 +652,72 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class MappingEditButton extends StatelessWidget {
+  const MappingEditButton({
+    super.key,
+    required this.widget,
+  });
+
+  final ParameterViewRow widget;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.scale(
+      scale: 0.6,
+      child: Builder(
+        builder: (context) {
+          final bool hasMapping = widget.mappingData != null &&
+              widget.mappingData != PackedMappingData.filler() &&
+              widget.mappingData?.isMapped() == true;
+
+          // Define your two styles:
+          final ButtonStyle defaultStyle = IconButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+          );
+          final ButtonStyle mappedStyle = IconButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer, // or any color you prefer
+          );
+
+          return IconButton.filledTonal(
+            // Decide which style to use based on `hasMapping`
+            style: hasMapping ? mappedStyle : defaultStyle,
+            icon: const Icon(Icons.map_sharp),
+            tooltip: 'Edit mapping',
+            onPressed: () async {
+              final cubit = context.read<DistingCubit>();
+              final data =
+                  widget.mappingData ?? PackedMappingData.filler();
+              final updatedData = await showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) {
+                  return PackedMappingDataEditor(
+                    initialData: data,
+                    onSave: (updatedData) {
+                      // do something with updatedData
+                      Navigator.of(context).pop(updatedData);
+                    },
+                  );
+                },
+              );
+
+              if (updatedData != null) {
+                cubit.saveMapping(
+                  widget.algorithmIndex,
+                  widget.parameterNumber,
+                  updatedData,
+                );
+              }
+            },
+          );
+        },
       ),
     );
   }
