@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 
-/// A widget that displays a 3-tab interface for editing:
-///  - CV settings
-///  - MIDI settings
-///  - I2C settings
-///
-/// This widget is intended to be shown inside a bottom sheet and
-/// returns an updated [PackedMappingData] via [onSave] when the user presses "Save".
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
   final ValueChanged<PackedMappingData> onSave;
 
   const PackedMappingDataEditor({
-    super.key,
+    Key? key,
     required this.initialData,
     required this.onSave,
-  });
+  }) : super(key: key);
 
   @override
   PackedMappingDataEditorState createState() => PackedMappingDataEditorState();
@@ -26,35 +19,81 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // We'll keep a local copy of the data that we can edit.
+  // We'll keep a local copy of the data that we can edit
   late PackedMappingData _data;
+
+  // Controllers for numeric TextFields:
+  // CV
+  late TextEditingController _voltsController;
+  late TextEditingController _deltaController;
+
+  // MIDI
+  late TextEditingController _midiCcController;
+  late TextEditingController _midiMinController;
+  late TextEditingController _midiMaxController;
+
+  // I2C
+  late TextEditingController _i2cCcController;
+  late TextEditingController _i2cMinController;
+  late TextEditingController _i2cMaxController;
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 3, vsync: this);
     _data = widget.initialData;
+
+    // Initialize controllers with the existing data
+    _voltsController = TextEditingController(text: _data.volts.toString());
+    _deltaController = TextEditingController(text: _data.delta.toString());
+    _midiCcController = TextEditingController(text: _data.midiCC.toString());
+    _midiMinController = TextEditingController(text: _data.midiMin.toString());
+    _midiMaxController = TextEditingController(text: _data.midiMax.toString());
+    _i2cCcController = TextEditingController(text: _data.i2cCC.toString());
+    _i2cMinController = TextEditingController(text: _data.i2cMin.toString());
+    _i2cMaxController = TextEditingController(text: _data.i2cMax.toString());
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+
+    // Dispose controllers
+    _voltsController.dispose();
+    _deltaController.dispose();
+    _midiCcController.dispose();
+    _midiMinController.dispose();
+    _midiMaxController.dispose();
+    _i2cCcController.dispose();
+    _i2cMinController.dispose();
+    _i2cMaxController.dispose();
+
     super.dispose();
   }
 
   void _onSavePressed() {
-    // Return the updated data to the parent via callback
+    // One last clamp/parse just in case the user didn't press "done"
+    // for the last edited field:
+    _updateVoltsFromController();
+    _updateDeltaFromController();
+    _updateMidiCcFromController();
+    _updateMidiMinFromController();
+    _updateMidiMaxFromController();
+    _updateI2cCcFromController();
+    _updateI2cMinFromController();
+    _updateI2cMaxFromController();
+
+    // Return updated data
     widget.onSave(_data);
   }
 
   @override
   Widget build(BuildContext context) {
-    // We use a fixed-height container to keep the bottom sheet from being too tall.
     return SizedBox(
-      height: 400,
+      height: 400, // keep the bottom sheet from being too tall
       child: Column(
         children: [
-          // Tab bar
           TabBar(
             controller: _tabController,
             labelColor: Theme.of(context).primaryColor,
@@ -65,7 +104,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               Tab(text: 'I2C'),
             ],
           ),
-          // Tab views
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -76,7 +114,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ],
             ),
           ),
-          // Save button
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
@@ -89,22 +126,52 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     );
   }
 
-  /// --- CV Editor ---
+  /// ---------------------
+  /// CV Editor
+  /// ---------------------
   Widget _buildCvEditor() {
+    // Safely clamp the current CV input to 0..12 for display
+    final cvInputValue = (_data.cvInput >= 0 && _data.cvInput <= 12)
+        ? _data.cvInput
+        : 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          _labelAndField(
-            label: 'CV Input',
-            initialValue: _data.cvInput.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.cvInput;
-              setState(() {
-                _data = _data.copyWith(cvInput: parsed);
-              });
-            },
+          // Dropdown for CV Input
+          Row(
+            children: [
+              const Text('CV Input: '),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButton<int>(
+                  isExpanded: true,
+                  value: cvInputValue,
+                  items: List.generate(13, (index) {
+                    if (index == 0) {
+                      return const DropdownMenuItem(
+                        value: 0,
+                        child: Text('None'),
+                      );
+                    } else {
+                      return DropdownMenuItem(
+                        value: index,
+                        child: Text('Input $index'),
+                      );
+                    }
+                  }),
+                  onChanged: (newValue) {
+                    if (newValue == null) return;
+                    setState(() {
+                      _data = _data.copyWith(cvInput: newValue);
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
           Row(
             children: [
               const Text('Unipolar'),
@@ -131,60 +198,89 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
             ],
           ),
-          _labelAndField(
+          _buildNumericField(
             label: 'Volts',
-            initialValue: _data.volts.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.volts;
-              setState(() {
-                _data = _data.copyWith(volts: parsed);
-              });
-            },
+            controller: _voltsController,
+            onSubmit: _updateVoltsFromController,
           ),
-          _labelAndField(
+          _buildNumericField(
             label: 'Delta',
-            initialValue: _data.delta.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.delta;
-              setState(() {
-                _data = _data.copyWith(delta: parsed);
-              });
-            },
+            controller: _deltaController,
+            onSubmit: _updateDeltaFromController,
           ),
         ],
       ),
     );
   }
 
-  /// --- MIDI Editor ---
+  void _updateVoltsFromController() {
+    final parsed = int.tryParse(_voltsController.text) ?? _data.volts;
+    setState(() {
+      _data = _data.copyWith(volts: parsed);
+      // If desired, clamp or reassign the controller's text
+      _voltsController.text = _data.volts.toString();
+    });
+  }
+
+  void _updateDeltaFromController() {
+    final parsed = int.tryParse(_deltaController.text) ?? _data.delta;
+    setState(() {
+      _data = _data.copyWith(delta: parsed);
+      _deltaController.text = _data.delta.toString();
+    });
+  }
+
+  /// ---------------------
+  /// MIDI Editor
+  /// ---------------------
   Widget _buildMidiEditor() {
+    // Safely clamp the current MIDI channel to 0..16
+    final midiChannelValue =
+    (_data.midiChannel >= 0 && _data.midiChannel <= 16)
+        ? _data.midiChannel
+        : 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          _labelAndField(
-            label: 'MIDI Channel (1-16)',
-            initialValue: (_data.midiChannel + 1).toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.midiChannel;
-              // clamp to 1..16, if needed
-              final clamped = parsed.clamp(1, 16);
-              setState(() {
-                _data = _data.copyWith(midiChannel: clamped - 1);
-              });
-            },
+          // Dropdown for MIDI Channel (0 = All, 1..16)
+          Row(
+            children: [
+              const Text('MIDI Channel: '),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButton<int>(
+                  isExpanded: true,
+                  value: midiChannelValue,
+                  items: List.generate(17, (index) {
+                    if (index == 0) {
+                      return const DropdownMenuItem(
+                        value: 0,
+                        child: Text('All'),
+                      );
+                    } else {
+                      return DropdownMenuItem(
+                        value: index,
+                        child: Text('Ch $index'),
+                      );
+                    }
+                  }),
+                  onChanged: (newValue) {
+                    if (newValue == null) return;
+                    setState(() {
+                      _data = _data.copyWith(midiChannel: newValue);
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
-          _labelAndField(
+          const SizedBox(height: 12),
+          _buildNumericField(
             label: 'MIDI CC (0-127)',
-            initialValue: _data.midiCC.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.midiCC;
-              // clamp to 0..127
-              final clamped = parsed.clamp(0, 127);
-              setState(() {
-                _data = _data.copyWith(midiCC: clamped);
-              });
-            },
+            controller: _midiCcController,
+            onSubmit: _updateMidiCcFromController,
           ),
           Row(
             children: [
@@ -212,50 +308,60 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
             ],
           ),
-          _labelAndField(
+          _buildNumericField(
             label: 'MIDI Min (0-127)',
-            initialValue: _data.midiMin.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.midiMin;
-              // clamp to 0..127
-              final clamped = parsed.clamp(0, 127);
-              setState(() {
-                _data = _data.copyWith(midiMin: clamped);
-              });
-            },
+            controller: _midiMinController,
+            onSubmit: _updateMidiMinFromController,
           ),
-          _labelAndField(
+          _buildNumericField(
             label: 'MIDI Max (0-127)',
-            initialValue: _data.midiMax.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.midiMax;
-              // clamp to 0..127
-              final clamped = parsed.clamp(0, 127);
-              setState(() {
-                _data = _data.copyWith(midiMax: clamped);
-              });
-            },
+            controller: _midiMaxController,
+            onSubmit: _updateMidiMaxFromController,
           ),
         ],
       ),
     );
   }
 
-  /// --- I2C Editor ---
+  void _updateMidiCcFromController() {
+    final parsed = int.tryParse(_midiCcController.text) ?? _data.midiCC;
+    final clamped = parsed.clamp(0, 127);
+    setState(() {
+      _data = _data.copyWith(midiCC: clamped);
+      _midiCcController.text = _data.midiCC.toString();
+    });
+  }
+
+  void _updateMidiMinFromController() {
+    final parsed = int.tryParse(_midiMinController.text) ?? _data.midiMin;
+    final clamped = parsed.clamp(0, 127);
+    setState(() {
+      _data = _data.copyWith(midiMin: clamped);
+      _midiMinController.text = _data.midiMin.toString();
+    });
+  }
+
+  void _updateMidiMaxFromController() {
+    final parsed = int.tryParse(_midiMaxController.text) ?? _data.midiMax;
+    final clamped = parsed.clamp(0, 127);
+    setState(() {
+      _data = _data.copyWith(midiMax: clamped);
+      _midiMaxController.text = _data.midiMax.toString();
+    });
+  }
+
+  /// ---------------------
+  /// I2C Editor
+  /// ---------------------
   Widget _buildI2cEditor() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          _labelAndField(
+          _buildNumericField(
             label: 'I2C CC',
-            initialValue: _data.i2cCC.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.i2cCC;
-              setState(() {
-                _data = _data.copyWith(i2cCC: parsed);
-              });
-            },
+            controller: _i2cCcController,
+            onSubmit: _updateI2cCcFromController,
           ),
           Row(
             children: [
@@ -283,54 +389,72 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
             ],
           ),
-          _labelAndField(
+          _buildNumericField(
             label: 'I2C Min',
-            initialValue: _data.i2cMin.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.i2cMin;
-              setState(() {
-                _data = _data.copyWith(i2cMin: parsed);
-              });
-            },
+            controller: _i2cMinController,
+            onSubmit: _updateI2cMinFromController,
           ),
-          _labelAndField(
+          _buildNumericField(
             label: 'I2C Max',
-            initialValue: _data.i2cMax.toString(),
-            onChanged: (value) {
-              final parsed = int.tryParse(value) ?? _data.i2cMax;
-              setState(() {
-                _data = _data.copyWith(i2cMax: parsed);
-              });
-            },
+            controller: _i2cMaxController,
+            onSubmit: _updateI2cMaxFromController,
           ),
         ],
       ),
     );
   }
 
-  /// Helper widget to build a labeled TextField quickly
-  Widget _labelAndField({
+  void _updateI2cCcFromController() {
+    final parsed = int.tryParse(_i2cCcController.text) ?? _data.i2cCC;
+    setState(() {
+      _data = _data.copyWith(i2cCC: parsed);
+      _i2cCcController.text = _data.i2cCC.toString();
+    });
+  }
+
+  void _updateI2cMinFromController() {
+    final parsed = int.tryParse(_i2cMinController.text) ?? _data.i2cMin;
+    setState(() {
+      _data = _data.copyWith(i2cMin: parsed);
+      _i2cMinController.text = _data.i2cMin.toString();
+    });
+  }
+
+  void _updateI2cMaxFromController() {
+    final parsed = int.tryParse(_i2cMaxController.text) ?? _data.i2cMax;
+    setState(() {
+      _data = _data.copyWith(i2cMax: parsed);
+      _i2cMaxController.text = _data.i2cMax.toString();
+    });
+  }
+
+  /// ---------------------
+  /// Helpers
+  /// ---------------------
+  /// Builds a labeled numeric TextField that calls [onSubmit] when the user
+  /// presses the "done" button on the keyboard
+  Widget _buildNumericField({
     required String label,
-    required String initialValue,
-    required ValueChanged<String> onChanged,
+    required TextEditingController controller,
+    required VoidCallback onSubmit,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: TextField(
         keyboardType: TextInputType.number,
+        controller: controller,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(),
+          border: const OutlineInputBorder(),
         ),
-        controller: TextEditingController(text: initialValue),
-        onChanged: onChanged,
+        onSubmitted: (_) => onSubmit(),
       ),
     );
   }
 }
 
+/// CopyWith extension
 extension on PackedMappingData {
-  /// A convenience extension method for copying the data with updated fields.
   PackedMappingData copyWith({
     int? cvInput,
     bool? isUnipolar,
