@@ -11,6 +11,7 @@ import 'package:nt_helper/load_preset_dialog.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/packed_mapping_data_editor.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
+import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -341,6 +342,11 @@ class SlotDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final view = AlgorithmViewRegistry.findViewFor(slot);
+
+    if (view != null) return view;
+
     return ListView.builder(
       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       itemCount: slot.parameters.length,
