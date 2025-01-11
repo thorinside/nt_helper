@@ -69,7 +69,7 @@ class PackedMappingData {
   factory PackedMappingData.fromBytes(Uint8List data) {
     int offset = 0;
 
-    // Decode CV Mapping
+    // --- Decode CV Mapping ---
     final cvInput = data[offset++];
     final cvFlags = data[offset++];
     final isUnipolar = (cvFlags & 1) != 0;
@@ -78,8 +78,8 @@ class PackedMappingData {
     final delta = DistingNT.decode16(data, offset);
     offset += 3;
 
-    // Decode MIDI Mapping
-    var midiCC = data[offset++];
+    // --- Decode MIDI Mapping ---
+    final midiCC = data[offset++];
     final midiFlags = data[offset++];
     final midiChannel = (midiFlags >> 3) & 0xF;
     final isMidiEnabled = (midiFlags & 1) != 0;
@@ -89,7 +89,7 @@ class PackedMappingData {
     final midiMax = DistingNT.decode16(data, offset);
     offset += 3;
 
-    // Decode I2C Mapping
+    // --- Decode I2C Mapping ---
     final i2cCC = data[offset++];
     final i2cFlags = data[offset++];
     final isI2cEnabled = (i2cFlags & 1) != 0;
@@ -99,6 +99,7 @@ class PackedMappingData {
     final i2cMax = DistingNT.decode16(data, offset);
     offset += 3;
 
+    // Return the decoded mapping data
     return PackedMappingData(
       cvInput: cvInput,
       isUnipolar: isUnipolar,
@@ -120,43 +121,64 @@ class PackedMappingData {
   }
 
   Uint8List encodeCVPackedData() {
-    final bytes = <int>[];
+    // Compute the flags
+    int flags = (isUnipolar ? 1 : 0) | (isGate ? 2 : 0);
 
-    // Encode CV Mapping
-    bytes.add(cvInput);
-    bytes.add((isUnipolar ? 1 : 0) | (isGate ? 2 : 0));
-    bytes.add(volts);
-    bytes.addAll(DistingNT.encode16(delta));
+    // Build the packed payload (starting after the version byte)
+    final payload = [
+      cvInput & 0x7F, // CV input number
+      flags & 0x7F, // Flags for unipolar/gate settings
+      volts & 0x7F, // Voltage setting (0-127)
+      ...DistingNT.encode16(delta), // Encode 'delta' as 7-bit chunks
+    ];
 
-    return Uint8List.fromList(bytes);
+    return Uint8List.fromList(payload);
   }
 
   Uint8List encodeMidiPackedData() {
-    final bytes = <int>[];
+    var adjustedCC = midiCC;
+    var min = midiMin;
+    var max = midiMax;
 
-    // Encode MIDI Mapping
-    bytes.add(midiCC);
-    bytes.add((isMidiEnabled ? 1 : 0) |
-    (isMidiSymmetric ? 2 : 0) |
-    ((midiChannel & 0xF) << 3));
-    bytes.addAll(DistingNT.encode16(midiMin));
-    bytes.addAll(DistingNT.encode16(midiMax));
+    // Compute the flags
+    int flags = (isMidiEnabled ? 1 : 0) |
+        (isMidiSymmetric ? 2 : 0) |
+        ((midiChannel & 0xF) << 3);
 
-    return Uint8List.fromList(bytes);
+    // Adjust the CC number and flags if necessary
+    if (adjustedCC == 128) {
+      adjustedCC = 0;
+      flags |= (1 << 2);
+    }
 
+    // Build the packed payload (starting after the version byte)
+    final payload = [
+      adjustedCC & 0x7F, // MIDI CC number
+      flags & 0x7F, // Flags
+      ...DistingNT.encode16(min), // Encode 'min' as 7-bit chunks
+      ...DistingNT.encode16(max), // Encode 'max' as 7-bit chunks
+    ];
+
+    return Uint8List.fromList(payload);
   }
 
   Uint8List encodeI2CPackedData() {
-    final bytes = <int>[];
+    var adjustedCC = i2cCC;
+    var min = i2cMin;
+    var max = i2cMax;
 
-    // Encode I2C Mapping
-    bytes.add(i2cCC);
-    bytes.add((isI2cEnabled ? 1 : 0) | (isI2cSymmetric ? 2 : 0));
-    bytes.addAll(DistingNT.encode16(i2cMin));
-    bytes.addAll(DistingNT.encode16(i2cMax));
+    // Compute the flags
+    int flags = (isI2cEnabled ? 1 : 0) | (isI2cSymmetric ? 2 : 0);
 
-    return Uint8List.fromList(bytes);
+    // Build the packed payload (starting after the version byte)
+    final payload = [
+      adjustedCC & 0x7F, // I2C control code
+      flags & 0x7F, // Flags
+      ...DistingNT.encode16(min), // Encode 'min' as 7-bit chunks
+      ...DistingNT.encode16(max), // Encode 'max' as 7-bit chunks
+    ];
 
+    return Uint8List.fromList(payload);
   }
 
   // Convert back to Uint8List

@@ -1,6 +1,6 @@
 import 'dart:math';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
@@ -678,11 +678,14 @@ class MappingEditButton extends StatelessWidget {
           // Define your two styles:
           final ButtonStyle defaultStyle = IconButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.onSurface,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
           );
           final ButtonStyle mappedStyle = IconButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer, // or any color you prefer
+            backgroundColor: Theme.of(context)
+                .colorScheme
+                .primaryContainer, // or any color you prefer
           );
 
           return IconButton.filledTonal(
@@ -692,8 +695,7 @@ class MappingEditButton extends StatelessWidget {
             tooltip: 'Edit mapping',
             onPressed: () async {
               final cubit = context.read<DistingCubit>();
-              final data =
-                  widget.mappingData ?? PackedMappingData.filler();
+              final data = widget.mappingData ?? PackedMappingData.filler();
               final updatedData = await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -725,36 +727,49 @@ class MappingEditButton extends StatelessWidget {
 
 String formatWithUnit(int currentValue,
     {required int min, required int max, required String name, String? unit}) {
+  if (kDebugMode) {
+    print("formatWithUnit(name='$name' min=$min max=$max unit=$unit)");
+  }
+
   if (unit == null || unit.isEmpty) return currentValue.toString();
-  if (unit == '%') {
-    if (max < 1000) {
-      return '${((currentValue).toStringAsFixed(0))} $unit';
-    } else if (max < 10000) {
-      return '${((currentValue / 10).toStringAsFixed(1))} $unit';
-    }
-  }
-  if (unit == 'dB') {
-    if (min < -100) {
+
+  switch (unit) {
+    case 'ms':
+      if (min == 0 && max == 100) {
+        return '${((currentValue / 10).toStringAsFixed(1))} $unit';
+      }
+      break;
+    case '%':
+      if (max < 1000) {
+        return '${((currentValue).toStringAsFixed(0))} $unit';
+      } else if (max < 10000) {
+        return '${((currentValue / 10).toStringAsFixed(1))} $unit';
+      }
+      break;
+    case 'dB':
+      if (min < -100) {
+        return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
+      } else {
+        return '${((currentValue)).toStringAsFixed(0)} ${unit.trim()}';
+      }
+    case ' BPM':
       return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
-    } else {
-      return '${((currentValue)).toStringAsFixed(0)} ${unit.trim()}';
-    }
-  }
-  if (unit == ' BPM') {
-    return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
-  }
-  if (unit == 'V') {
-    if (max < 120) {
-      return '${((currentValue / 10).toStringAsFixed(1))} $unit';
-    } else if (max < 1000) {
-      return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
-    }
-  }
-  if (unit == 'Hz') {
-    if (name == 'Frequency') {
-      return '${currentValue.toStringAsFixed(0)} ${unit.trim()}';
-    }
-    return '${((currentValue / 1000)).toStringAsFixed(3)} ${unit.trim()}';
+    case 'V':
+      if (min == -10 && max == 10) {
+        return '${(currentValue.toStringAsFixed(0))} $unit';
+      }
+      if (min == -100 && max == 100) {
+        return '${((currentValue / 10).toStringAsFixed(1))} $unit';
+      }
+      if (min == -1000 && max == 1000) {
+        return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
+      }
+      return '${(currentValue.toStringAsFixed(0))} $unit';
+    case 'Hz':
+      if (name == 'Frequency') {
+        return '${currentValue.toStringAsFixed(0)} ${unit.trim()}';
+      }
+      return '${((currentValue / 1000)).toStringAsFixed(3)} ${unit.trim()}';
   }
   return '$currentValue ${unit.trim()}';
 }

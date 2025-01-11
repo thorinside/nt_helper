@@ -310,12 +310,21 @@ class DistingCubit extends Cubit<DistingState> {
           algorithmIndex,
           parameterNumber,
         );
-        final newValueString = await disting.requestParameterValueString(
-          algorithmIndex,
-          parameterNumber,
-        );
 
         final state = (this.state as DistingStateSynchronized);
+
+        var valueStrings = [
+          for (int parameterNumber = 0;
+              parameterNumber < state.slots[algorithmIndex].valueStrings.length;
+              parameterNumber++)
+            if ([13, 14, 17].contains(
+                state.slots[algorithmIndex].parameters[parameterNumber].unit))
+              await disting.requestParameterValueString(
+                      algorithmIndex, parameterNumber) ??
+                  ParameterValueString.filler()
+            else
+              ParameterValueString.filler()
+        ];
 
         emit(state.copyWith(
           slots: updateSlot(
@@ -328,11 +337,7 @@ class DistingCubit extends Cubit<DistingState> {
                     newValue!,
                     index: parameterNumber,
                   ),
-                  valueStrings: replaceInList(
-                    slot.valueStrings,
-                    newValueString ?? ParameterValueString.filler(),
-                    index: parameterNumber,
-                  ));
+                  valueStrings: valueStrings);
             },
           ),
         ));

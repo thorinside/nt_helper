@@ -23,7 +23,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   late PackedMappingData _data;
 
   // Controllers for numeric TextFields:
-  // CV
   late TextEditingController _voltsController;
   late TextEditingController _deltaController;
 
@@ -41,8 +40,30 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   void initState() {
     super.initState();
 
-    _tabController = TabController(length: 3, vsync: this);
     _data = widget.initialData;
+
+    // Decide which tab should be displayed first.
+    int initialIndex;
+    if (_data.cvInput != 0) {
+      // CV is in use
+      initialIndex = 0;
+    } else if (_data.isMidiEnabled) {
+      // MIDI is in use
+      initialIndex = 1;
+    } else if (_data.isI2cEnabled) {
+      // I2C is in use
+      initialIndex = 2;
+    } else {
+      // No CV, MIDI, or I2C in use, default to CV tab
+      initialIndex = 0;
+    }
+
+    // Create the TabController with initialIndex set to the matching page.
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
 
     // Initialize controllers with the existing data
     _voltsController = TextEditingController(text: _data.volts.toString());
@@ -73,8 +94,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   }
 
   void _onSavePressed() {
-    // One last clamp/parse just in case the user didn't press "done"
-    // for the last edited field:
+    // Final clamp/parse before saving
     _updateVoltsFromController();
     _updateDeltaFromController();
     _updateMidiCcFromController();
@@ -84,14 +104,13 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     _updateI2cMinFromController();
     _updateI2cMaxFromController();
 
-    // Return updated data
     widget.onSave(_data);
   }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 400, // keep the bottom sheet from being too tall
+      height: 450, // keep the bottom sheet from being too tall
       child: Column(
         children: [
           TabBar(
@@ -136,40 +155,35 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
         : 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         children: [
-          // Dropdown for CV Input
-          Row(
-            children: [
-              const Text('CV Input: '),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButton<int>(
-                  isExpanded: true,
-                  value: cvInputValue,
-                  items: List.generate(13, (index) {
-                    if (index == 0) {
-                      return const DropdownMenuItem(
-                        value: 0,
-                        child: Text('None'),
-                      );
-                    } else {
-                      return DropdownMenuItem(
-                        value: index,
-                        child: Text('Input $index'),
-                      );
-                    }
-                  }),
-                  onChanged: (newValue) {
-                    if (newValue == null) return;
-                    setState(() {
-                      _data = _data.copyWith(cvInput: newValue);
-                    });
-                  },
-                ),
-              ),
-            ],
+          // Material 3 DropdownMenu for CV Input, filling width and removing redundant labels
+          SizedBox(
+            width: double.infinity,
+            child: DropdownMenu<int>(
+              initialSelection: cvInputValue,
+              label: Text('CV Input'), // optional text if you want a hint
+              onSelected: (newValue) {
+                if (newValue == null) return;
+                setState(() {
+                  _data = _data.copyWith(cvInput: newValue);
+                });
+              },
+              dropdownMenuEntries: List.generate(13, (index) {
+                if (index == 0) {
+                  return const DropdownMenuEntry<int>(
+                    value: 0,
+                    label: 'None',
+                  );
+                } else {
+                  return DropdownMenuEntry<int>(
+                    value: index,
+                    label: 'Input $index',
+                  );
+                }
+              }),
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -217,7 +231,6 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final parsed = int.tryParse(_voltsController.text) ?? _data.volts;
     setState(() {
       _data = _data.copyWith(volts: parsed);
-      // If desired, clamp or reassign the controller's text
       _voltsController.text = _data.volts.toString();
     });
   }
@@ -234,51 +247,40 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// MIDI Editor
   /// ---------------------
   Widget _buildMidiEditor() {
-    // Safely clamp the current MIDI channel to 0..16
+    // Safely clamp the current MIDI channel to 0..15
     final midiChannelValue =
-    (_data.midiChannel >= 0 && _data.midiChannel <= 16)
+    (_data.midiChannel >= 0 && _data.midiChannel <= 15)
         ? _data.midiChannel
         : 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         children: [
-          // Dropdown for MIDI Channel (0 = All, 1..16)
-          Row(
-            children: [
-              const Text('MIDI Channel: '),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButton<int>(
-                  isExpanded: true,
-                  value: midiChannelValue,
-                  items: List.generate(17, (index) {
-                    if (index == 0) {
-                      return const DropdownMenuItem(
-                        value: 0,
-                        child: Text('All'),
-                      );
-                    } else {
-                      return DropdownMenuItem(
-                        value: index,
-                        child: Text('Ch $index'),
-                      );
-                    }
-                  }),
-                  onChanged: (newValue) {
-                    if (newValue == null) return;
-                    setState(() {
-                      _data = _data.copyWith(midiChannel: newValue);
-                    });
-                  },
-                ),
-              ),
-            ],
+          // Material 3 DropdownMenu for MIDI Channel
+          SizedBox(
+            width: double.infinity,
+            child: DropdownMenu<int>(
+              initialSelection: midiChannelValue,
+              label: Text("MIDI Channel"),
+              onSelected: (newValue) {
+                if (newValue == null) return;
+                setState(() {
+                  _data = _data.copyWith(midiChannel: newValue);
+                });
+              },
+              dropdownMenuEntries: List.generate(16, (index) {
+                // 0..15 = Ch 1..16
+                  return DropdownMenuEntry<int>(
+                    value: index,
+                    label: 'Ch ${index + 1}',
+                  );
+              }),
+            ),
           ),
           const SizedBox(height: 12),
           _buildNumericField(
-            label: 'MIDI CC (0-127)',
+            label: 'MIDI CC (0–128)',
             controller: _midiCcController,
             onSubmit: _updateMidiCcFromController,
           ),
@@ -309,12 +311,12 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             ],
           ),
           _buildNumericField(
-            label: 'MIDI Min (0-127)',
+            label: 'MIDI Min',
             controller: _midiMinController,
             onSubmit: _updateMidiMinFromController,
           ),
           _buildNumericField(
-            label: 'MIDI Max (0-127)',
+            label: 'MIDI Max',
             controller: _midiMaxController,
             onSubmit: _updateMidiMaxFromController,
           ),
@@ -325,7 +327,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   void _updateMidiCcFromController() {
     final parsed = int.tryParse(_midiCcController.text) ?? _data.midiCC;
-    final clamped = parsed.clamp(0, 127);
+    final clamped = parsed.clamp(0, 128);
     setState(() {
       _data = _data.copyWith(midiCC: clamped);
       _midiCcController.text = _data.midiCC.toString();
@@ -334,7 +336,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   void _updateMidiMinFromController() {
     final parsed = int.tryParse(_midiMinController.text) ?? _data.midiMin;
-    final clamped = parsed.clamp(0, 127);
+    final clamped = parsed.clamp(-32768, 32767);
     setState(() {
       _data = _data.copyWith(midiMin: clamped);
       _midiMinController.text = _data.midiMin.toString();
@@ -343,7 +345,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
   void _updateMidiMaxFromController() {
     final parsed = int.tryParse(_midiMaxController.text) ?? _data.midiMax;
-    final clamped = parsed.clamp(0, 127);
+    final clamped = parsed.clamp(-32768, 32767);
     setState(() {
       _data = _data.copyWith(midiMax: clamped);
       _midiMaxController.text = _data.midiMax.toString();
@@ -355,7 +357,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   Widget _buildI2cEditor() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Column(
         children: [
           _buildNumericField(
@@ -431,8 +433,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   /// Helpers
   /// ---------------------
-  /// Builds a labeled numeric TextField that calls [onSubmit] when the user
-  /// presses the "done" button on the keyboard
+  /// Builds a labeled numeric TextField that calls [onSubmit]
+  /// when the user presses the "done" button on the keyboard
   Widget _buildNumericField({
     required String label,
     required TextEditingController controller,

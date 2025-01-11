@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
 // Domain classes
@@ -166,7 +167,12 @@ class DistingMessageScheduler {
 
     // Send the SysEx data
     midiCommand.sendData(current.sysExMessage, deviceId: device.id);
-    print('Sent SysEx (attempt ${current.attemptCount}): ${current.sysExMessage}');
+    if (kDebugMode) {
+      print(
+        'Sent SysEx (attempt ${current.attemptCount}): '
+            '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}'
+    );
+    }
 
     // If no response expected → complete immediately (after the rate-limit delay).
     if (current.responseExpectation == ResponseExpectation.none) {
