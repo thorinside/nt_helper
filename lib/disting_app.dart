@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/synchronized_screen.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
 class DistingApp extends StatelessWidget {
   const DistingApp({super.key});
@@ -58,60 +59,63 @@ class DistingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<DistingCubit, DistingState>(
-        builder: (context, state) {
-          if (state is DistingStateInitial) {
-            return Center(
-              child: ElevatedButton(
-                onPressed: () {
+      body: BlocProvider(
+        create: (context) => MidiListenerCubit(),
+        child: BlocBuilder<DistingCubit, DistingState>(
+          builder: (context, state) {
+            if (state is DistingStateInitial) {
+              return Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    context.read<DistingCubit>().loadDevices();
+                  },
+                  child: Text("Load Devices"),
+                ),
+              );
+            } else if (state is DistingStateSelectDevice) {
+              return _DeviceSelectionView(
+                devices: state.devices,
+                onDeviceSelected: (device, sysExId) {
+                  context.read<DistingCubit>().connectToDevice(device, sysExId);
+                },
+                onRefresh: () {
                   context.read<DistingCubit>().loadDevices();
                 },
-                child: Text("Load Devices"),
-              ),
-            );
-          } else if (state is DistingStateSelectDevice) {
-            return _DeviceSelectionView(
-              devices: state.devices,
-              onDeviceSelected: (device, sysExId) {
-                context.read<DistingCubit>().connectToDevice(device, sysExId);
-              },
-              onRefresh: () {
-                context.read<DistingCubit>().loadDevices();
-              },
-            );
-          } else if (state is DistingStateConnected) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Connected to: ${state.device.name}",
-                      style: Theme.of(context).textTheme.titleLarge),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      context.read<DistingCubit>().cancelSync();
-                    },
-                    child: Text("Cancel"),
-                  )
-                ],
-              ),
-            );
-          } else if (state is DistingStateSynchronized) {
-            return SynchronizedScreen(
-              slots: state.slots,
-              algorithms: state.algorithms,
-              units: state.unitStrings,
-              distingVersion: state.distingVersion,
-              presetName: state.presetName,
-              screenshot: state.screenshot,
-            );
-          } else {
-            return Center(child: Text("Unknown State"));
-          }
-        },
+              );
+            } else if (state is DistingStateConnected) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Connected to: ${state.device.name}",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                    OutlinedButton(
+                      onPressed: () {
+                        context.read<DistingCubit>().cancelSync();
+                      },
+                      child: Text("Cancel"),
+                    )
+                  ],
+                ),
+              );
+            } else if (state is DistingStateSynchronized) {
+              return SynchronizedScreen(
+                slots: state.slots,
+                algorithms: state.algorithms,
+                units: state.unitStrings,
+                distingVersion: state.distingVersion,
+                presetName: state.presetName,
+                screenshot: state.screenshot,
+              );
+            } else {
+              return Center(child: Text("Unknown State"));
+            }
+          },
+        ),
       ),
     );
   }
@@ -146,9 +150,10 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
     selectedDevice = widget.devices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-    )
+        )
         .firstOrNull;
   }
+
   @override
   void didUpdateWidget(covariant _DeviceSelectionView oldWidget) {
     if (oldWidget.devices != widget.devices) {

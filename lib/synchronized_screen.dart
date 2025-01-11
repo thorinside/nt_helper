@@ -11,6 +11,7 @@ import 'package:nt_helper/load_preset_dialog.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/packed_mapping_data_editor.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
@@ -696,16 +697,20 @@ class MappingEditButton extends StatelessWidget {
             onPressed: () async {
               final cubit = context.read<DistingCubit>();
               final data = widget.mappingData ?? PackedMappingData.filler();
+              final myMidiCubit = context.read<MidiListenerCubit>();
               final updatedData = await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 builder: (context) {
-                  return PackedMappingDataEditor(
-                    initialData: data,
-                    onSave: (updatedData) {
-                      // do something with updatedData
-                      Navigator.of(context).pop(updatedData);
-                    },
+                  return BlocProvider.value(
+                    value: myMidiCubit,
+                    child: PackedMappingDataEditor(
+                      initialData: data,
+                      onSave: (updatedData) {
+                        // do something with updatedData
+                        Navigator.of(context).pop(updatedData);
+                      },
+                    ),
                   );
                 },
               );

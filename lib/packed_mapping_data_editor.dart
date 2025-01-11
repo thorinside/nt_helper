@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
@@ -319,6 +320,19 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             label: 'MIDI Max',
             controller: _midiMaxController,
             onSubmit: _updateMidiMaxFromController,
+          ),
+          // Add the MIDI Detector
+          MidiDetectorWidget(
+            onCcFound: ({cc, channel}) {
+              // When we’ve detected 10 consecutive hits of the same CC,
+              // automatically fill in the CC number, and midi channel in your form data
+              // and assume we want to enable the midi mapping.
+              setState(() {
+                _data = _data.copyWith(midiCC: cc, midiChannel: channel, isMidiEnabled: true);
+              });
+              // Also update the text field / controller if necessary
+              _midiCcController.text = cc.toString();
+            },
           ),
         ],
       ),
