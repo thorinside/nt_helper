@@ -37,6 +37,7 @@ class SynchronizedScreen extends StatelessWidget {
     return DefaultTabController(
       length: slots.length,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         appBar: AppBar(
           title: const Text('NT Helper'),
           actions: [
@@ -702,15 +703,9 @@ class MappingEditButton extends StatelessWidget {
                 context: context,
                 isScrollControlled: true,
                 builder: (context) {
-                  return BlocProvider.value(
-                    value: myMidiCubit,
-                    child: PackedMappingDataEditor(
-                      initialData: data,
-                      onSave: (updatedData) {
-                        // do something with updatedData
-                        Navigator.of(context).pop(updatedData);
-                      },
-                    ),
+                  return MappingEditorBottomSheet(
+                    myMidiCubit: myMidiCubit,
+                    data: data,
                   );
                 },
               );
@@ -725,6 +720,44 @@ class MappingEditButton extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class MappingEditorBottomSheet extends StatelessWidget {
+  const MappingEditorBottomSheet({
+    super.key,
+    required this.myMidiCubit,
+    required this.data,
+  });
+
+  final MidiListenerCubit myMidiCubit;
+  final PackedMappingData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom > 0
+              ? MediaQuery.of(context).viewInsets.bottom
+              : MediaQuery.of(context).padding.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: BlocProvider.value(
+            value: myMidiCubit,
+            child: PackedMappingDataEditor(
+              initialData: data,
+              onSave: (updatedData) {
+                // do something with updatedData
+                Navigator.of(context).pop(updatedData);
+              },
+            ),
+          ),
+        ),
       ),
     );
   }

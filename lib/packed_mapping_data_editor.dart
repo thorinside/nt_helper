@@ -157,73 +157,75 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Column(
-        children: [
-          // Material 3 DropdownMenu for CV Input, filling width and removing redundant labels
-          SizedBox(
-            width: double.infinity,
-            child: DropdownMenu<int>(
-              initialSelection: cvInputValue,
-              label: Text('CV Input'), // optional text if you want a hint
-              onSelected: (newValue) {
-                if (newValue == null) return;
-                setState(() {
-                  _data = _data.copyWith(cvInput: newValue);
-                });
-              },
-              dropdownMenuEntries: List.generate(13, (index) {
-                if (index == 0) {
-                  return const DropdownMenuEntry<int>(
-                    value: 0,
-                    label: 'None',
-                  );
-                } else {
-                  return DropdownMenuEntry<int>(
-                    value: index,
-                    label: 'Input $index',
-                  );
-                }
-              }),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Material 3 DropdownMenu for CV Input, filling width and removing redundant labels
+            SizedBox(
+              width: double.infinity,
+              child: DropdownMenu<int>(
+                initialSelection: cvInputValue,
+                label: Text('CV Input'), // optional text if you want a hint
+                onSelected: (newValue) {
+                  if (newValue == null) return;
+                  setState(() {
+                    _data = _data.copyWith(cvInput: newValue);
+                  });
+                },
+                dropdownMenuEntries: List.generate(13, (index) {
+                  if (index == 0) {
+                    return const DropdownMenuEntry<int>(
+                      value: 0,
+                      label: 'None',
+                    );
+                  } else {
+                    return DropdownMenuEntry<int>(
+                      value: index,
+                      label: 'Input $index',
+                    );
+                  }
+                }),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('Unipolar'),
-              Switch(
-                value: _data.isUnipolar,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isUnipolar: val);
-                  });
-                },
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('Gate'),
-              Switch(
-                value: _data.isGate,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isGate: val);
-                  });
-                },
-              ),
-            ],
-          ),
-          _buildNumericField(
-            label: 'Volts',
-            controller: _voltsController,
-            onSubmit: _updateVoltsFromController,
-          ),
-          _buildNumericField(
-            label: 'Delta',
-            controller: _deltaController,
-            onSubmit: _updateDeltaFromController,
-          ),
-        ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Text('Unipolar'),
+                Switch(
+                  value: _data.isUnipolar,
+                  onChanged: (val) {
+                    setState(() {
+                      _data = _data.copyWith(isUnipolar: val);
+                    });
+                  },
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Text('Gate'),
+                Switch(
+                  value: _data.isGate,
+                  onChanged: (val) {
+                    setState(() {
+                      _data = _data.copyWith(isGate: val);
+                    });
+                  },
+                ),
+              ],
+            ),
+            _buildNumericField(
+              label: 'Volts',
+              controller: _voltsController,
+              onSubmit: _updateVoltsFromController,
+            ),
+            _buildNumericField(
+              label: 'Delta',
+              controller: _deltaController,
+              onSubmit: _updateDeltaFromController,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -458,6 +460,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: TextField(
         keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.done,
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
