@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
@@ -47,7 +48,7 @@ class DistingApp extends StatelessWidget {
           cubit.initialize(); // Load settings and auto-connect if possible
           return cubit;
         },
-        child: DistingPage(),
+        child: RoutingPage(),
       ),
     );
   }

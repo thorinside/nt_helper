@@ -207,6 +207,8 @@ class DistingCubit extends Cubit<DistingState> {
         await disting.requestMappings(algorithmIndex, parameterNumber) ??
             Mapping.filler()
     ];
+    var routing =
+        await disting.requestRoutingInformation(algorithmIndex) ?? RoutingInfo.filler();
     var valueStrings = [
       for (int parameterNumber = 0;
           parameterNumber < numParametersInAlgorithm;
@@ -225,6 +227,7 @@ class DistingCubit extends Cubit<DistingState> {
       enums: enums,
       mappings: mappings,
       valueStrings: valueStrings,
+      routing: routing,
     );
   }
 
@@ -560,6 +563,23 @@ class DistingCubit extends Cubit<DistingState> {
         break;
       default:
       // Handle other cases or errors
+    }
+  }
+
+  Future<void> _fetchRouting(int algorithmIndex) async {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = requireDisting();
+
+        final slots = await disting.requestRoutingInformation(algorithmIndex).then(
+              (value) => updateSlot(
+                algorithmIndex,
+                syncstate.slots,
+                (slot) => value != null ? slot.copyWith(routing: value) : slot,
+              ),
+            );
+
+        emit(syncstate.copyWith(slots: slots));
     }
   }
 

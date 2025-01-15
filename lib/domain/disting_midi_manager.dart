@@ -461,14 +461,14 @@ class DistingMidiManager {
     ]);
   }
 
-  /// Requests routing information for a given algorithm
-// Future<RoutingInfo> requestRoutingInformation(int algorithmIndex) async {
-//   final packet = DistingNT.encodeRequestRouting(sysExId, algorithmIndex);
-//   final key = RequestKey(
-//     sysExId: sysExId,
-//     algorithmIndex: algorithmIndex,
-//     messageType: DistingNTRespMessageType.respRouting,
-//   );
-//   return await _sendRequest<RoutingInfo>(packet, key);
-// }
+  Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex) async {
+    final packet = DistingNT.encodeRequestRoutingInformation(sysExId, algorithmIndex);
+
+    final key = RequestKey(sysExId: sysExId, algorithmIndex: algorithmIndex);
+    return _scheduler.sendRequest<RoutingInfo>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
+  }
 }

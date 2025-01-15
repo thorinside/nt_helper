@@ -2,6 +2,6 @@
 class Assets {
   Assets._();
 
-  static const String testTestSysexDecode = 'test/test_sysex_decode.dart';
+  static const String testTestSysexDecode = 'test/sysex_decode_test.dart';
 
 }

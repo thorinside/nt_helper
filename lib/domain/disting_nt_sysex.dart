@@ -357,6 +357,13 @@ class RoutingInfo implements HasAlgorithmIndex {
   final List<int> routingInfo;
 
   RoutingInfo({required this.algorithmIndex, required this.routingInfo});
+
+  factory RoutingInfo.filler() {
+    return RoutingInfo(
+      algorithmIndex: -1,
+      routingInfo: List.empty(),
+    );
+  }
 }
 
 class NumParameters implements HasAlgorithmIndex {
@@ -436,25 +443,39 @@ class DistingNT {
   /// 7-bit splitting. The existing tools do typically use 7-bit expansions.
   /// Here is a hypothetical approach:
   static List<int> encode32(int value) {
-    // We'll do it as 5 bytes:
-    //
-    //  <most significant 4 bits> <middle 7 bits> <middle 7 bits> <middle 7 bits> <least significant 7 bits>
+    // Force into 32-bit range (in Dart, int can be bigger).
     final v = value & 0xFFFFFFFF;
-    final int ms4 = (v >> 28) & 0x0F; // top 4 bits
-    final int next7_1 = (v >> 21) & 0x7F;
-    final int next7_2 = (v >> 14) & 0x7F;
-    final int next7_3 = (v >> 7) & 0x7F;
-    final int ls7 = v & 0x7F;
-    return [ms4, next7_1, next7_2, next7_3, ls7];
+
+    // The JS shifts by multiples of 7 bits.
+    // That implies each of the "middle" bytes is storing 7 bits,
+    // and the last byte stores up to 4 bits (to make a total of 32).
+    //
+    // bit layout: [bits 28..31] [bits 21..27] [bits 14..20] [bits 7..13] [bits 0..6]
+    //
+    // Starting from the least-significant bits:
+    final b0 = v & 0x7F; // bits 0..6
+    final b1 = (v >> 7) & 0x7F; // bits 7..13
+    final b2 = (v >> 14) & 0x7F; // bits 14..20
+    final b3 = (v >> 21) & 0x7F; // bits 21..27
+    final b4 = (v >> 28) & 0x0F; // bits 28..31
+
+    return [b0, b1, b2, b3, b4];
   }
 
   static int decode32(List<int> bytes, int offset) {
-    final ms4 = bytes[offset + 0] & 0x0F;
-    final n7_1 = bytes[offset + 1] & 0x7F;
-    final n7_2 = bytes[offset + 2] & 0x7F;
-    final n7_3 = bytes[offset + 3] & 0x7F;
-    final ls7 = bytes[offset + 4] & 0x7F;
-    return (ms4 << 28) | (n7_1 << 21) | (n7_2 << 14) | (n7_3 << 7) | ls7;
+    final b0 = bytes[offset + 0];
+    final b1 = bytes[offset + 1];
+    final b2 = bytes[offset + 2];
+    final b3 = bytes[offset + 3];
+    final b4 = bytes[offset + 4];
+
+    // The & 0xFF is optional in Dart if you're sure each value is already 0..255,
+    // but including it ensures we're only using the lower 8 bits of each byte.
+    return (b0 & 0xFF) |
+        ((b1 & 0xFF) << 7) |
+        ((b2 & 0xFF) << 14) |
+        ((b3 & 0xFF) << 21) |
+        ((b4 & 0xFF) << 28);
   }
 
   /// Build a 'Take screenshot' SysEx message.
@@ -532,6 +553,17 @@ class DistingNT {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
       DistingNTRequestMessageType.requestAlgorithmGuid.value,
+      (index & 0x7F),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static Uint8List encodeRequestRoutingInformation(
+      int distingSysExId, int index) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.requestRouting.value,
       (index & 0x7F),
       ..._buildFooter(),
     ];
@@ -754,7 +786,8 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetCVMapping(int sysExId, int algorithmIndex, int parameterNumber, PackedMappingData data) {
+  static encodeSetCVMapping(int sysExId, int algorithmIndex,
+      int parameterNumber, PackedMappingData data) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
       DistingNTRequestMessageType.setMapping.value,
@@ -767,7 +800,8 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetMIDIMapping(int sysExId, int algorithmIndex, int parameterNumber, PackedMappingData data) {
+  static encodeSetMIDIMapping(int sysExId, int algorithmIndex,
+      int parameterNumber, PackedMappingData data) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
       DistingNTRequestMessageType.setMidiMapping.value,
@@ -780,7 +814,8 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetI2CMapping(int sysExId, int algorithmIndex, int parameterNumber, PackedMappingData data) {
+  static encodeSetI2CMapping(int sysExId, int algorithmIndex,
+      int parameterNumber, PackedMappingData data) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
       DistingNTRequestMessageType.setI2CMapping.value,
