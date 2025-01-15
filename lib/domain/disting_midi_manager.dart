@@ -462,13 +462,21 @@ class DistingMidiManager {
   }
 
   Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex) async {
-    final packet = DistingNT.encodeRequestRoutingInformation(sysExId, algorithmIndex);
+    final packet =
+        DistingNT.encodeRequestRoutingInformation(sysExId, algorithmIndex);
 
-    final key = RequestKey(sysExId: sysExId, algorithmIndex: algorithmIndex);
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respRouting,
+      algorithmIndex: algorithmIndex,
+    );
     return _scheduler.sendRequest<RoutingInfo>(
+      maxRetries: 10,
+      timeout: Duration(milliseconds: 2500),
+      retryDelay: Duration(milliseconds: 250),
       packet,
       key,
-      responseExpectation: ResponseExpectation.required,
+      responseExpectation: ResponseExpectation.optional,
     );
   }
 }

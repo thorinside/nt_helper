@@ -1,11 +1,12 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/routing_information.dart';
 
 class RoutingTableWidget extends StatelessWidget {
   final List<RoutingInformation> routing;
-  final Color color1;       // Base color for level=1 signals
-  final Color color2;       // Base color for level=2 signals
+  final Color color1; // Base color for level=1 signals
+  final Color color2; // Base color for level=2 signals
   final bool showSignals;
   final bool showMappings;
 
@@ -14,13 +15,13 @@ class RoutingTableWidget extends StatelessWidget {
   static const double _cellHeight = 24;
 
   const RoutingTableWidget({
-    Key? key,
+    super.key,
     required this.routing,
     this.color1 = const Color(0xffffc000), // Similar to JS "golden"
     this.color2 = const Color(0xff40c0ff), // Similar to JS "lightBlue-ish"
     this.showSignals = true,
     this.showMappings = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -109,13 +110,13 @@ class RoutingTableWidget extends StatelessWidget {
     final mainAreaRows = <TableRow>[];
 
     for (final row in allRows) {
-      if (row.children == null || row.children!.isEmpty) {
+      if (row.children.isEmpty) {
         pinnedColumnRows.add(TableRow(children: [const SizedBox()]));
         mainAreaRows.add(TableRow(children: [const SizedBox()]));
         continue;
       }
-      final pinnedCell = row.children!.first;
-      final otherCells = row.children!.skip(1).toList();
+      final pinnedCell = row.children.first;
+      final otherCells = row.children.skip(1).toList();
 
       pinnedColumnRows.add(TableRow(children: [pinnedCell]));
       mainAreaRows.add(TableRow(children: otherCells));
@@ -151,7 +152,7 @@ class RoutingTableWidget extends StatelessWidget {
                 horizontalInside: BorderSide(color: Colors.grey.shade300),
               ),
               columnWidths: {
-                for (int i = 1; i <= 28; i++)
+                for (int i = 0; i <= 28; i++)
                   i: const FixedColumnWidth(_cellWidth),
               },
               defaultVerticalAlignment: TableCellVerticalAlignment.middle,
@@ -167,19 +168,43 @@ class RoutingTableWidget extends StatelessWidget {
   // 1) Build forward "signals"
   //----------------------------------------------------------------------------
   List<List<int>> _buildForwardSignals(int slotCount) {
-    // signals[s][ch] => signal level after slot s finishes
-    final signals = List.generate(
-      slotCount + 1,
-          (_) => List<int>.filled(29, 0),
-    );
-    // Mark top 12 channels = 1
-    for (int ch = 1; ch <= 12; ch++) {
-      signals[0][ch] = 1;
-    }
+    final signals = [
+      [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ];
 
     for (int s = 0; s < slotCount; s++) {
       final info = routing[s];
-      final rowBefore = signals[s];
+      final rowBefore = signals.last;
       final rowAfter = List<int>.from(rowBefore);
 
       final outMask = info.routingInfo[1];
@@ -189,6 +214,7 @@ class RoutingTableWidget extends StatelessWidget {
         int v = rowBefore[ch];
         final hasOutput = (outMask & (1 << ch)) != 0;
         final replaced = (replaceMask & (1 << ch)) != 0;
+
         if (hasOutput) {
           if (replaced) {
             v = v + 1;
@@ -199,8 +225,9 @@ class RoutingTableWidget extends StatelessWidget {
         }
         rowAfter[ch] = v;
       }
-      signals[s + 1] = rowAfter;
+      signals.add(rowAfter);
     }
+
     return signals;
   }
 
@@ -209,6 +236,9 @@ class RoutingTableWidget extends StatelessWidget {
   //----------------------------------------------------------------------------
   void _applyStripSignals(int slotCount, List<List<int>> signals) {
     for (int ch = 1; ch <= 28; ch++) {
+      if ( showSignals && ( ch == 13 ) ) {
+        ch = 21;
+      }
       bool hasInput = false;
       for (int s = slotCount; s >= 0; s--) {
         if (s < slotCount) {
@@ -235,7 +265,7 @@ class RoutingTableWidget extends StatelessWidget {
   List<List<bool>> _buildUsageNeeded(int slotCount) {
     final usageNeeded = List.generate(
       slotCount + 1,
-          (_) => List<bool>.filled(29, false),
+      (_) => List<bool>.filled(29, false),
     );
     for (int s = slotCount - 1; s >= 0; s--) {
       final info = routing[s];
@@ -258,8 +288,7 @@ class RoutingTableWidget extends StatelessWidget {
     return TableRow(
       children: [
         _buildHeaderCell('Algorithm'),
-        for (int ch = 1; ch <= 28; ch++)
-          _buildHeaderCell(_channelLabel(ch)),
+        for (int ch = 1; ch <= 28; ch++) _buildHeaderCell(_channelLabel(ch)),
       ],
     );
   }
@@ -343,7 +372,8 @@ class RoutingTableWidget extends StatelessWidget {
     required List<int> signalsAfter,
     required List<bool> usageNeededAfter,
   }) {
-    final usedMask = info.routingInfo[0] | info.routingInfo[1] | info.routingInfo[5];
+    final usedMask =
+        info.routingInfo[0] | info.routingInfo[1] | info.routingInfo[5];
     final outMask = info.routingInfo[1];
 
     final levelBefore = signalsBefore[channel];
@@ -365,7 +395,7 @@ class RoutingTableWidget extends StatelessWidget {
         label,
         style: TextStyle(
           fontSize: 10,
-          color: orphaned ? Colors.orange.shade800 : Colors.black,
+          //color: orphaned ? Colors.orange.shade800 : Colors.black,
           fontWeight: orphaned ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -373,7 +403,7 @@ class RoutingTableWidget extends StatelessWidget {
   }
 
   //----------------------------------------------------------------------------
-  // "Below" row cell => "+" or "╋" if output mask is set
+  // "Below" row cell => "+" or "┳" if output mask is set
   //----------------------------------------------------------------------------
   Widget _buildSignalBelowCell({
     required int slotIndex,
@@ -385,7 +415,7 @@ class RoutingTableWidget extends StatelessWidget {
     final replaceMask = info.routingInfo[2];
     final hasOutput = (outMask & (1 << channel)) != 0;
     final replaced = (replaceMask & (1 << channel)) != 0;
-    final symbol = hasOutput ? (replaced ? '╋' : '+') : '';
+    final symbol = hasOutput ? (replaced ? '┳' : '+') : '';
 
     final bgColor = _cellColor(signalLevel, channel);
 
@@ -425,12 +455,11 @@ class RoutingTableWidget extends StatelessWidget {
   }
 
   Color _darken(Color c, [double factor = 0.9]) {
-    return Color.fromARGB(
-      c.alpha,
-      max(0, (c.red * factor).round()),
-      max(0, (c.green * factor).round()),
-      max(0, (c.blue * factor).round()),
-    );
+    return Color.from(
+        alpha: c.a,
+        red: max(0, c.r * factor),
+        green: max(0, c.g * factor),
+        blue: max(0, c.b * factor));
   }
 
   //----------------------------------------------------------------------------

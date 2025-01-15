@@ -330,6 +330,14 @@ class DistingCubit extends Cubit<DistingState> {
               ParameterValueString.filler()
         ];
 
+        final routings = !([
+          13,
+          14,
+          17,
+        ].contains(state.slots[algorithmIndex].parameters[parameterNumber].unit))
+            ? await disting.requestRoutingInformation(algorithmIndex)
+            : state.slots[algorithmIndex].routing;
+
         emit(state.copyWith(
           slots: updateSlot(
             algorithmIndex,
@@ -341,6 +349,7 @@ class DistingCubit extends Cubit<DistingState> {
                     newValue!,
                     index: parameterNumber,
                   ),
+                  routing: routings ?? state.slots[algorithmIndex].routing,
                   valueStrings: valueStrings);
             },
           ),
@@ -571,6 +580,7 @@ class DistingCubit extends Cubit<DistingState> {
     switch (state) {
       case DistingStateSynchronized syncstate:
         return syncstate.slots
+            .where((slot) => slot.routing.algorithmIndex != -1)
             .map((slot) => RoutingInformation(
                 algorithmIndex: slot.routing.algorithmIndex,
                 routingInfo: slot.routing.routingInfo,

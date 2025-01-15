@@ -17,10 +17,8 @@ class RoutingPage extends StatelessWidget {
           scrollDirection: Axis.vertical,
           child: RoutingTableWidget(
             routing: routing,
-            color1: Colors.yellow,
-            color2: Colors.green,
             showSignals: true,
-            showMappings: true,
+            showMappings: false,
           ),
         ),
       ),

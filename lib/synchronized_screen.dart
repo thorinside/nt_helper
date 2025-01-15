@@ -70,13 +70,9 @@ class SynchronizedScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_upward_rounded),
                 tooltip: 'Move Algorithm Up',
                 onPressed: () async {
-                  DefaultTabController
-                      .of(context)
-                      .index = await context
+                  DefaultTabController.of(context).index = await context
                       .read<DistingCubit>()
-                      .moveAlgorithmUp(DefaultTabController
-                      .of(context)
-                      .index);
+                      .moveAlgorithmUp(DefaultTabController.of(context).index);
                 },
               );
             }),
@@ -85,33 +81,25 @@ class SynchronizedScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_downward_rounded),
                 tooltip: 'Move Algorithm Down',
                 onPressed: () async {
-                  DefaultTabController
-                      .of(context)
-                      .index = await context
+                  DefaultTabController.of(context).index = await context
                       .read<DistingCubit>()
                       .moveAlgorithmDown(
-                      DefaultTabController
-                          .of(context)
-                          .index);
+                          DefaultTabController.of(context).index);
                 },
               );
             }),
             Builder(
-              builder: (context) =>
-                  IconButton(
-                      icon: const Icon(Icons.delete_forever_rounded),
-                      tooltip: 'Remove Algorithm',
-                      onPressed: () async {
-                        context.read<DistingCubit>().onRemoveAlgorithm(
-                            DefaultTabController
-                                .of(context)
-                                .index);
-                      }),
+              builder: (context) => IconButton(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  tooltip: 'Remove Algorithm',
+                  onPressed: () async {
+                    context.read<DistingCubit>().onRemoveAlgorithm(
+                        DefaultTabController.of(context).index);
+                  }),
             ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
-              itemBuilder: (context) =>
-              [
+              itemBuilder: (context) => [
                 PopupMenuItem(
                   value: "wake",
                   child: const Row(
@@ -142,16 +130,17 @@ class SynchronizedScreen extends StatelessWidget {
                         Icon(Icons.file_upload_rounded)
                       ]),
                   onTap: () async {
+                    var cubit = context.read<DistingCubit>();
+
                     final preset = await showDialog<dynamic>(
                       context: context,
-                      builder: (context) =>
-                          LoadPresetDialog(
-                            initialName: "",
-                          ),
+                      builder: (context) => LoadPresetDialog(
+                        initialName: "",
+                      ),
                     );
                     if (preset == null) return;
 
-                    context.read<DistingCubit>().loadPreset(
+                    cubit.loadPreset(
                         preset["name"] as String, preset["append"] as bool);
                   },
                 ),
@@ -177,22 +166,20 @@ class SynchronizedScreen extends StatelessWidget {
                       children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
                 ),
                 PopupMenuItem(
-                    value: 'routing',
-                    onTap:
-                        () async {
-                      final cubit = context.read<DistingCubit>();
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                RoutingPage(routing: context.read<DistingCubit>().buildRoutingInformation())),
-                      );
-                    },
+                  value: 'routing',
+                  onTap: () async {
+                    final routingInformation =
+                        context.read<DistingCubit>().buildRoutingInformation();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              RoutingPage(routing: routingInformation)),
+                    );
+                  },
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Routing'), Icon(Icons.route_rounded)
-                    ],
+                    children: [Text('Routing'), Icon(Icons.route_rounded)],
                   ),
                 ),
                 PopupMenuItem(
@@ -225,14 +212,13 @@ class SynchronizedScreen extends StatelessWidget {
 
                     showDialog<String>(
                       context: context,
-                      builder: (context) =>
-                          AboutDialog(
-                            applicationName: "NT Helper",
-                            applicationVersion:
+                      builder: (context) => AboutDialog(
+                        applicationName: "NT Helper",
+                        applicationVersion:
                             "${info.version} (${info.buildNumber})",
-                            applicationLegalese:
+                        applicationLegalese:
                             "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
-                          ),
+                      ),
                     );
                   },
                 ),
@@ -242,7 +228,7 @@ class SynchronizedScreen extends StatelessWidget {
           elevation: 0,
           scrolledUnderElevation: 3,
           notificationPredicate: (ScrollNotification notification) =>
-          notification.depth == 1,
+              notification.depth == 1,
           bottom: PreferredSize(
             // Set the total height you need for your text + tab bar.
             preferredSize: const Size.fromHeight(100.0),
@@ -261,10 +247,9 @@ class SynchronizedScreen extends StatelessWidget {
                           // 1) Show an AlertDialog with a text field to rename the preset.
                           final newName = await showDialog<String>(
                             context: context,
-                            builder: (context) =>
-                                RenamePresetDialog(
-                                  initialName: presetName,
-                                ),
+                            builder: (context) => RenamePresetDialog(
+                              initialName: presetName,
+                            ),
                           );
 
                           // 2) If the user pressed OK (instead of Cancel), newName will be non-null.
@@ -280,23 +265,20 @@ class SynchronizedScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Preset: ${presetName.trim()}',
-                              style: Theme
-                                  .of(context)
+                              style: Theme.of(context)
                                   .textTheme
                                   .labelLarge
                                   ?.copyWith(
-                                color: Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                             ),
                             const SizedBox(width: 8),
                             Icon(
                               Icons.edit,
                               size: 16,
-                              color: Theme
-                                  .of(context)
+                              color: Theme.of(context)
                                   .colorScheme
                                   .onSurfaceVariant,
                             ),
@@ -305,16 +287,11 @@ class SynchronizedScreen extends StatelessWidget {
                       ),
                       Text(distingVersion,
                           style:
-                          Theme
-                              .of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                            color: Theme
-                                .of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          )),
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  )),
                     ],
                   ),
                 ),
@@ -324,7 +301,7 @@ class SynchronizedScreen extends StatelessWidget {
                   tabs: slots.map((slot) {
                     final algorithmName = algorithms
                         .where((element) =>
-                    element.guid == slot.algorithmGuid.guid)
+                            element.guid == slot.algorithmGuid.guid)
                         .firstOrNull
                         ?.name;
                     return Tab(text: algorithmName ?? "");
@@ -338,23 +315,20 @@ class SynchronizedScreen extends StatelessWidget {
           duration: Duration(seconds: 1),
           child: slots.isNotEmpty
               ? TabBarView(
-            children: slots.map((slot) {
-              return SlotDetailView(slot: slot, units: units);
-            }).toList(),
-          )
+                  children: slots.map((slot) {
+                    return SlotDetailView(slot: slot, units: units);
+                  }).toList(),
+                )
               : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                "No algorithms",
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .displaySmall,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      "No algorithms",
+                      style: Theme.of(context).textTheme.displaySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -366,15 +340,14 @@ class SynchronizedScreen extends StatelessWidget {
     late OverlayEntry overlayEntry;
 
     overlayEntry = OverlayEntry(
-      builder: (context) =>
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingScreenshotOverlay(
-              overlayEntry: overlayEntry,
-              cubit: cubit,
-            ),
-          ),
+      builder: (context) => Positioned(
+        bottom: 16,
+        right: 16,
+        child: FloatingScreenshotOverlay(
+          overlayEntry: overlayEntry,
+          cubit: cubit,
+        ),
+      ),
     );
 
     Overlay.of(context).insert(overlayEntry);
@@ -438,8 +411,7 @@ class ParameterEditorView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) =>
-      ParameterViewRow(
+  Widget build(BuildContext context) => ParameterViewRow(
         name: parameterInfo.name,
         min: parameterInfo.min,
         max: parameterInfo.max,
@@ -448,12 +420,12 @@ class ParameterEditorView extends StatelessWidget {
         defaultValue: parameterInfo.defaultValue,
         displayString: valueString.value.isNotEmpty ? valueString.value : null,
         dropdownItems:
-        enumStrings.values.isNotEmpty ? enumStrings.values : null,
+            enumStrings.values.isNotEmpty ? enumStrings.values : null,
         isOnOff: (enumStrings.values.isNotEmpty &&
             enumStrings.values[0] == "Off" &&
             enumStrings.values[1] == "On"),
         initialValue: (value.value >= parameterInfo.min &&
-            value.value <= parameterInfo.max)
+                value.value <= parameterInfo.max)
             ? value.value
             : parameterInfo.defaultValue,
         unit: unit,
@@ -467,7 +439,7 @@ class ParameterViewRow extends StatefulWidget {
   final int max;
   final int defaultValue;
   final String?
-  displayString; // For additional display string instead of dropdown
+      displayString; // For additional display string instead of dropdown
   final String? unit;
   final List<String>? dropdownItems; // For enums as a dropdown
   final bool isOnOff; // Whether the parameter is an "on/off" type
@@ -525,12 +497,12 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   void _updateCubitValue(int value) {
     // Send updated value to the Cubit
     context.read<DistingCubit>().updateParameterValue(
-      algorithmIndex: widget.algorithmIndex,
-      parameterNumber: widget.parameterNumber,
-      value: value,
-      userIsChangingTheValue:
-      widget.displayString?.isNotEmpty == true ? false : isChanging,
-    );
+          algorithmIndex: widget.algorithmIndex,
+          parameterNumber: widget.parameterNumber,
+          value: value,
+          userIsChangingTheValue:
+              widget.displayString?.isNotEmpty == true ? false : isChanging,
+        );
   }
 
   DateTime? _lastSent;
@@ -547,9 +519,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme
-        .of(context)
-        .textTheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
@@ -563,7 +533,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             child: GestureDetector(
               onLongPress: () {
                 context.read<DistingCubit>().onFocusParameter(
-                  // Call the Cubit method for long press
+                    // Call the Cubit method for long press
                     algorithmIndex: widget.algorithmIndex,
                     parameterNumber: widget.parameterNumber);
               },
@@ -579,76 +549,75 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           Expanded(
               flex: 4, // Proportionally larger space for the slider
               child: GestureDetector(
-                onDoubleTap: () =>
-                _showAlternateEditor
+                onDoubleTap: () => _showAlternateEditor
                     ? {}
                     : setState(() {
-                  currentValue = widget.defaultValue;
-                  _updateCubitValue(currentValue);
-                }),
+                        currentValue = widget.defaultValue;
+                        _updateCubitValue(currentValue);
+                      }),
                 child: AnimatedSwitcher(
                   duration: Duration(milliseconds: 150),
                   child: SizedBox(
                     height: 45,
                     child: _showAlternateEditor
                         ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        spacing: 16,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                currentValue = min(
-                                    max(currentValue - 1, widget.min),
-                                    widget.max);
-                              });
-                              _updateCubitValue(currentValue);
-                            },
-                            child: Text("-"),
-                          ),
-                          OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                currentValue = min(
-                                    max(currentValue + 1, widget.min),
-                                    widget.max);
-                              });
-                              _updateCubitValue(currentValue);
-                            },
-                            child: Text("+"),
-                          )
-                        ])
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            spacing: 16,
+                            children: [
+                                OutlinedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      currentValue = min(
+                                          max(currentValue - 1, widget.min),
+                                          widget.max);
+                                    });
+                                    _updateCubitValue(currentValue);
+                                  },
+                                  child: Text("-"),
+                                ),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      currentValue = min(
+                                          max(currentValue + 1, widget.min),
+                                          widget.max);
+                                    });
+                                    _updateCubitValue(currentValue);
+                                  },
+                                  child: Text("+"),
+                                )
+                              ])
                         : Slider(
-                      value: currentValue.toDouble(),
-                      min: widget.min.toDouble(),
-                      max: widget.max.toDouble(),
-                      divisions: (widget.max - widget.min > 0)
-                          ? widget.max - widget.min
-                          : null,
-                      onChangeStart: (value) {
-                        isChanging = true;
-                      },
-                      onChangeEnd: (value) {
-                        isChanging = false;
-                        setState(() {
-                          currentValue = value.toInt();
-                          if (widget.isOnOff) {
-                            isChecked = currentValue == 1;
-                          }
-                        });
-                        _updateCubitValue(currentValue);
-                      },
-                      onChanged: (value) {
-                        setState(() {
-                          currentValue = value.toInt();
-                          if (widget.isOnOff) {
-                            isChecked = currentValue == 1;
-                          }
-                        });
-                        // Throttle a bit
-                        onSliderChanged(currentValue);
-                      },
-                    ),
+                            value: currentValue.toDouble(),
+                            min: widget.min.toDouble(),
+                            max: widget.max.toDouble(),
+                            divisions: (widget.max - widget.min > 0)
+                                ? widget.max - widget.min
+                                : null,
+                            onChangeStart: (value) {
+                              isChanging = true;
+                            },
+                            onChangeEnd: (value) {
+                              isChanging = false;
+                              setState(() {
+                                currentValue = value.toInt();
+                                if (widget.isOnOff) {
+                                  isChecked = currentValue == 1;
+                                }
+                              });
+                              _updateCubitValue(currentValue);
+                            },
+                            onChanged: (value) {
+                              setState(() {
+                                currentValue = value.toInt();
+                                if (widget.isOnOff) {
+                                  isChecked = currentValue == 1;
+                                }
+                              });
+                              // Throttle a bit
+                              onSliderChanged(currentValue);
+                            },
+                          ),
                   ),
                 ),
               )),
@@ -659,55 +628,54 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               alignment: Alignment.centerLeft,
               child: widget.isOnOff
                   ? Checkbox(
-                value: isChecked,
-                onChanged: (value) {
-                  setState(() {
-                    isChecked = value!;
-                    currentValue = isChecked ? 1 : 0;
-                  });
-                  _updateCubitValue(currentValue);
-                },
-              )
+                      value: isChecked,
+                      onChanged: (value) {
+                        setState(() {
+                          isChecked = value!;
+                          currentValue = isChecked ? 1 : 0;
+                        });
+                        _updateCubitValue(currentValue);
+                      },
+                    )
                   : widget.dropdownItems != null
-                  ? DropdownMenu(
-                initialSelection: widget.dropdownItems![currentValue],
-                dropdownMenuEntries: widget.dropdownItems!
-                    .map((item) =>
-                    DropdownMenuEntry(value: item, label: item))
-                    .toList(),
-                onSelected: (value) {
-                  setState(() {
-                    currentValue = min(
-                        max(widget.dropdownItems!.indexOf(value!),
-                            widget.min),
-                        widget.max);
-                  });
-                  _updateCubitValue(currentValue);
-                },
-              )
-                  : widget.name.toLowerCase().contains("mote")
-                  ? Text(midiNoteToNoteString(currentValue))
-                  : widget.displayString != null
-                  ? GestureDetector(
-                onLongPress: () =>
-                    setState(() {
-                      // Show alternate editor
-                      _showAlternateEditor =
-                      !_showAlternateEditor;
-                    }),
-                child: Text(
-                  widget.displayString!,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge,
-                ),
-              )
-                  : widget.unit != null
-                  ? Text(formatWithUnit(currentValue,
-                  name: widget.name,
-                  min: widget.min,
-                  max: widget.max,
-                  unit: widget.unit))
-                  : Text(currentValue.toString()),
+                      ? DropdownMenu(
+                          initialSelection: widget.dropdownItems![currentValue],
+                          dropdownMenuEntries: widget.dropdownItems!
+                              .map((item) =>
+                                  DropdownMenuEntry(value: item, label: item))
+                              .toList(),
+                          onSelected: (value) {
+                            setState(() {
+                              currentValue = min(
+                                  max(widget.dropdownItems!.indexOf(value!),
+                                      widget.min),
+                                  widget.max);
+                            });
+                            _updateCubitValue(currentValue);
+                          },
+                        )
+                      : widget.name.toLowerCase().contains("mote")
+                          ? Text(midiNoteToNoteString(currentValue))
+                          : widget.displayString != null
+                              ? GestureDetector(
+                                  onLongPress: () => setState(() {
+                                    // Show alternate editor
+                                    _showAlternateEditor =
+                                        !_showAlternateEditor;
+                                  }),
+                                  child: Text(
+                                    widget.displayString!,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodyLarge,
+                                  ),
+                                )
+                              : widget.unit != null
+                                  ? Text(formatWithUnit(currentValue,
+                                      name: widget.name,
+                                      min: widget.min,
+                                      max: widget.max,
+                                      unit: widget.unit))
+                                  : Text(currentValue.toString()),
             ),
           ),
         ],
@@ -736,23 +704,13 @@ class MappingEditButton extends StatelessWidget {
 
           // Define your two styles:
           final ButtonStyle defaultStyle = IconButton.styleFrom(
-            foregroundColor: Theme
-                .of(context)
-                .colorScheme
-                .onSurface,
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
             backgroundColor:
-            Theme
-                .of(context)
-                .colorScheme
-                .surfaceContainerHighest,
+                Theme.of(context).colorScheme.surfaceContainerHighest,
           );
           final ButtonStyle mappedStyle = IconButton.styleFrom(
-            foregroundColor: Theme
-                .of(context)
-                .colorScheme
-                .onPrimaryContainer,
-            backgroundColor: Theme
-                .of(context)
+            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+            backgroundColor: Theme.of(context)
                 .colorScheme
                 .primaryContainer, // or any color you prefer
           );
@@ -809,18 +767,9 @@ class MappingEditorBottomSheet extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery
-              .of(context)
-              .viewInsets
-              .bottom > 0
-              ? MediaQuery
-              .of(context)
-              .viewInsets
-              .bottom
-              : MediaQuery
-              .of(context)
-              .padding
-              .bottom,
+          bottom: MediaQuery.of(context).viewInsets.bottom > 0
+              ? MediaQuery.of(context).viewInsets.bottom
+              : MediaQuery.of(context).padding.bottom,
         ),
         child: SingleChildScrollView(
           child: BlocProvider.value(
