@@ -576,7 +576,7 @@ class DistingCubit extends Cubit<DistingState> {
                 routingInfo: slot.routing.routingInfo,
                 algorithmName: syncstate.algorithms
                     .firstWhere(
-                      (element) => element.guid == slot.algorithmGuid,
+                      (element) => element.guid == slot.algorithmGuid.guid,
                     )
                     .name))
             .toList();
