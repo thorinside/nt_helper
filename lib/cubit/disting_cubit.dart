@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/routing_information.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
@@ -207,8 +208,8 @@ class DistingCubit extends Cubit<DistingState> {
         await disting.requestMappings(algorithmIndex, parameterNumber) ??
             Mapping.filler()
     ];
-    var routing =
-        await disting.requestRoutingInformation(algorithmIndex) ?? RoutingInfo.filler();
+    var routing = await disting.requestRoutingInformation(algorithmIndex) ??
+        RoutingInfo.filler();
     var valueStrings = [
       for (int parameterNumber = 0;
           parameterNumber < numParametersInAlgorithm;
@@ -566,20 +567,21 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> _fetchRouting(int algorithmIndex) async {
+  List<RoutingInformation> buildRoutingInformation() {
     switch (state) {
       case DistingStateSynchronized syncstate:
-        final disting = requireDisting();
-
-        final slots = await disting.requestRoutingInformation(algorithmIndex).then(
-              (value) => updateSlot(
-                algorithmIndex,
-                syncstate.slots,
-                (slot) => value != null ? slot.copyWith(routing: value) : slot,
-              ),
-            );
-
-        emit(syncstate.copyWith(slots: slots));
+        return syncstate.slots
+            .map((slot) => RoutingInformation(
+                algorithmIndex: slot.routing.algorithmIndex,
+                routingInfo: slot.routing.routingInfo,
+                algorithmName: syncstate.algorithms
+                    .firstWhere(
+                      (element) => element.guid == slot.algorithmGuid,
+                    )
+                    .name))
+            .toList();
+      default:
+        return [];
     }
   }
 

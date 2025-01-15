@@ -48,7 +48,7 @@ class DistingApp extends StatelessWidget {
           cubit.initialize(); // Load settings and auto-connect if possible
           return cubit;
         },
-        child: RoutingPage(),
+        child: DistingPage(),
       ),
     );
   }
