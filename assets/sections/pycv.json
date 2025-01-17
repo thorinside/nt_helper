@@ -1,0 +1,52 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Outputs": [
+    "voices",
+    "*output*",
+    "pitch mode",
+    "velocity mode",
+    "gate mode",
+    "min vel gate"
+  ],
+  "Microtuning": [
+    "microtuning",
+    "*scala*",
+    "*MTS*",
+    "*kbm*"
+  ],
+  "Chord/Arp": [
+    "chord enable",
+    "shape",
+    "inversion",
+    "key",
+    "mode",
+    "scale",
+    "*root*",
+    "cantus*",
+    "position",
+    "arpeggio",
+    "range",
+    "arp reset",
+    "break time",
+    "break dir"
+  ],
+  "MIDI/I2C": [
+    "*midi*",
+    "*mpe*",
+    "*channel*",
+    "*voices*",
+    "transpose",
+    "fine tune",
+    "sustain*",
+    "bend*",
+    "unison*"
+  ],
+  "CV/Gate": [
+    "*gate*"
+  ],
+  "Other": [
+    "*"
+  ]
+}

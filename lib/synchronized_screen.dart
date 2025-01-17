@@ -14,6 +14,7 @@ import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/section_builder.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
@@ -362,10 +363,113 @@ class SlotDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Provide a full replacement view
     final view = AlgorithmViewRegistry.findViewFor(slot);
-
     if (view != null) return view;
 
+    // Create a set of list sections for the parameters of the
+    // algorithm initially based off Os' organization on the module firmware.
+
+    return FutureBuilder<Map<String, List<ParameterInfo>>?>(
+      future: SectionBuilder(slot: slot).buildSections(),
+      builder: (context, snapshot) {
+        // Handle different states of the Future
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox.shrink();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}'); // Show error message
+        } else if (snapshot.hasData) {
+          return SectionParameterListView(
+            slot: slot,
+            units: units,
+            sections: snapshot.data!,
+          );
+        } else {
+          return ParameterListView(slot: slot, units: units);
+        }
+      },
+    );
+  }
+}
+
+class SectionParameterListView extends StatelessWidget {
+  final Slot slot;
+  final List<String> units;
+  final Map<String, List<ParameterInfo>> sections;
+
+  const SectionParameterListView({
+    super.key,
+    required this.slot,
+    required this.units,
+    required this.sections,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTileTheme(
+      data: ListTileThemeData(
+        titleTextStyle: Theme.of(context).textTheme.titleLarge,
+      ),
+      child: ExpansionTileTheme(
+        data: ExpansionTileThemeData(
+
+          shape: RoundedRectangleBorder(
+            side: BorderSide.none,
+          ),
+        ),
+        child: ListView.builder(
+          padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          itemCount: sections.length,
+          itemBuilder: (context, index) {
+            final element = sections.entries.elementAt(index);
+
+            return ExpansionTile(
+              initiallyExpanded: true,
+              title: Text(element.key),
+              children: element.value.map(
+                (parameter) {
+                  final value =
+                      slot.values.elementAt(parameter.parameterNumber);
+                  final enumStrings =
+                      slot.enums.elementAt(parameter.parameterNumber);
+                  final mapping =
+                      slot.mappings.elementAtOrNull(parameter.parameterNumber);
+                  final valueString =
+                      slot.valueStrings.elementAt(parameter.parameterNumber);
+                  final unit = parameter.unit > 0
+                      ? units.elementAtOrNull(parameter.unit - 1)
+                      : null;
+
+                  return ParameterEditorView(
+                    parameterInfo: parameter,
+                    value: value,
+                    enumStrings: enumStrings,
+                    mapping: mapping,
+                    valueString: valueString,
+                    unit: unit,
+                  );
+                },
+              ).toList(),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class ParameterListView extends StatelessWidget {
+  final Slot slot;
+  final List<String> units;
+
+  const ParameterListView({
+    super.key,
+    required this.slot,
+    required this.units,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       itemCount: slot.parameters.length,

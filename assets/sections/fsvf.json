@@ -1,0 +1,19 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Filter": [
+    "blend",
+    "sweep",
+    "resonance",
+    "saturate"
+  ],
+  "Gain": ["*gain"],
+  "Routing": [
+    "*input*",
+    "*output*",
+    "* mode",
+    "width"
+  ],
+  "Other": ["*"]
+}

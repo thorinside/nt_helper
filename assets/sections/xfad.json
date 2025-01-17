@@ -1,0 +1,13 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*",
+    "*width*"
+  ],
+  "Crossfader": [
+    "*"
+  ]
+}

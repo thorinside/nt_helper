@@ -107,3 +107,4 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
     - test/
+    - assets/sections/

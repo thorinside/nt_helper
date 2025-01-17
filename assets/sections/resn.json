@@ -1,0 +1,28 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Rings": [
+    "mode",
+    "synth effect",
+    "polyphony",
+    "coarse tune",
+    "fine tune",
+    "structure",
+    "brightness",
+    "damping",
+    "position",
+    "chord",
+    "noise gate",
+    "input gain"
+  ],
+  "Inputs": [
+    "*input*"
+  ],
+  "Outputs": [
+    "*output*"
+  ],
+  "Control": [
+    "*"
+  ]
+}

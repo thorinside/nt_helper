@@ -1,0 +1,12 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Routing": [
+    "*input",
+    "*output*"
+  ],
+  "Delay": [
+    "*"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "VCO": [
+    "waveshape",
+    "octave",
+    "transpose",
+    "fine tune",
+    "oversampling",
+    "fm scale"
+  ],
+  "Gain": [
+    "*amplitude",
+    "*gain"
+  ],
+  "Routing": [
+    "*input*",
+    "*output",
+    "* mode"
+  ],
+  "Other": ["*"]
+}

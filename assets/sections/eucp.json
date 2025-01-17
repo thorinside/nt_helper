@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Globals": [
+    "clock input",
+    "reset input"
+  ],
+  "Routing *": [
+    "*output",
+    "*output mode"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}

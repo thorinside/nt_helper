@@ -1,0 +1,36 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Tape": [
+    "*inertia*",
+    "*pitch*",
+    "*tape*",
+    "*bit depth*",
+    "clear loop"
+  ],
+  "Mix": [
+    "*gain*",
+    "Input level"
+  ],
+  "Delay": [
+    "*time*",
+    "*delay*",
+    "*feedback*",
+    "*level*",
+    "Mono-ize",
+    "Initial pan"
+  ],
+  "Filter/Sat": [
+    "*filt*",
+    "*sat*"
+  ],
+  "Tempo": [
+    "*clock*",
+    "*tap*"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Channel *": [
+    "*"
+  ],
+  "Common": [
+    "*"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Playback": [
+    "which recording",
+    "gain"
+  ],
+  "Record": [
+    "bit depth",
+    "normalisation"
+  ],
+  "File *": [
+    "enable",
+    "*input*",
+    "playback"
+  ],
+  "Transport": [
+    "*"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Inputs": [
+    "*input*"
+  ],
+  "Trigger": [
+    "*trigger*",
+    "time range"
+  ],
+  "Display": [
+    "*"
+  ]
+}

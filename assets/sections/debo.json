@@ -1,0 +1,11 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Globals": [
+    "time"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}

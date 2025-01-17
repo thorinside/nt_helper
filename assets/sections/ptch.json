@@ -1,0 +1,15 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Pitch": [
+    "pitch mode",
+    "note",
+    "frequency"
+  ],
+  "Output": [
+    "*output*",
+    "amplitude",
+    "gain"
+  ]
+}

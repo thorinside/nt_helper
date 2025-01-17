@@ -1,0 +1,15 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Tuner": [
+    "channel *"
+  ],
+  "Microtuning": [
+    "microtuning",
+    "*scala*",
+    "*MTS*",
+    "*kbm*"
+  ],
+  "Other": ["*"]
+}

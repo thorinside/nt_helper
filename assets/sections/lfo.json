@@ -1,0 +1,21 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Globals": [
+    "quality",
+    "clock input"
+  ],
+  "Routing *": [
+    "*input*",
+    "*output*"
+  ],
+  "Sync *": [
+    "Sync",
+    "clock multiplier",
+    "midi divisor"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}

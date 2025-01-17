@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Common": [
+    "sync",
+    "clock input",
+    "output to breakout",
+    "output to select bus",
+    "output to USB",
+    "output to internal"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}

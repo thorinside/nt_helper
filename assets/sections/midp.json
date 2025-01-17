@@ -1,0 +1,36 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Transport": [
+    "folder",
+    "file",
+    "play",
+    "start from bar",
+    "file change",
+    "file restart"
+  ],
+  "Tracks": [
+    "track mode*"
+  ],
+  "MIDI/CV": [
+    "convert live*",
+    "1 *",
+    "2 *",
+    "3 *",
+    "4 *",
+    "trigger length",
+    "drum*"
+  ],
+  "Clock": [
+    "*clock*",
+    "*reset*"
+  ],
+  "Input": [
+    "*input*"
+  ],
+  "Outputs": [
+    "*output*",
+    "*gain*"
+  ]
+}

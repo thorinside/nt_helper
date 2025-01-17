@@ -1,0 +1,24 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Probabilities": [
+    "Pitch Up",
+    "Pitch Down",
+    "Fifths",
+    "Reverse",
+    "Glide",
+    "Stutter",
+    "Triplet",
+    "Play"
+  ],
+  "Tweaks": [
+    "* offset",
+    "fade"
+  ],
+  "Mix": ["*gain*", "*pan*" ],
+  "Routing": ["*input*", "*output*"],
+  "Jumps": [
+    "*"
+  ]
+}

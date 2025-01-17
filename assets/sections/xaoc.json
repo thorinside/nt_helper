@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*"
+  ],
+  "Scale/Offset": [
+    "*scale*",
+    "*offset*"
+  ],
+  "Chaos": [
+    "*"
+  ]
+}

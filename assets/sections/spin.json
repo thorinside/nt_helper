@@ -1,0 +1,19 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*"
+  ],
+  "Mix": [
+    "*mix*",
+    "*gain*"
+  ],
+  "Sample rate": [
+    "*rate*"
+  ],
+  "Program": [
+    "*"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Freeze": [
+    "*freeze *"
+  ],
+  "Movement": [
+    "movement",
+    "rate",
+    "depth",
+    "offset"
+  ],
+  "Changes": [
+    "etherization",
+    "live process",
+    "attack",
+    "release",
+    "coarse shift",
+    "fine shift"
+  ],
+  "Voice *": [
+    "*"
+  ],
+  "Routing": [
+    "*input*",
+    "*output"
+  ]
+}

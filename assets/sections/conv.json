@@ -1,0 +1,15 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Mix": [
+    "*gain*"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*"
+  ],
+  "Convolver": [
+    "*"
+  ]
+}

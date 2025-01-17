@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Quantizer": ["quantize mode", "input transpose", "shift", "key", "mode", "scale", "output transpose", "output gate mode", "gate offset", "midi channel"],
+  "Microtuning": [
+    "microtuning",
+    "*scala*",
+    "*MTS*",
+    "*kbm*"
+  ],
+  "Channel *": ["*"],
+  "Other": [
+    "*"
+  ]
+}

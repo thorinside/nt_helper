@@ -187,6 +187,25 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   String toString() {
     return "ParameterInfo: min=$min, max=$max, defaultValue=$defaultValue, unit=$unit, name=$name";
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+
+    return other is ParameterInfo &&
+        other.algorithmIndex == algorithmIndex &&
+        other.parameterNumber == parameterNumber &&
+        other.min == min &&
+        other.max == max &&
+        other.defaultValue == defaultValue &&
+        other.unit == unit &&
+        other.name == name;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      algorithmIndex, parameterNumber, min, max, defaultValue, unit, name);
 }
 
 class AllParameterValues implements HasAlgorithmIndex {

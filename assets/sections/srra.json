@@ -1,0 +1,23 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Register": [
+    "unrandomness",
+    "direction",
+    "length"
+  ],
+  "CV" : ["scale", "offset"],
+  "Trigger": [
+    "cause",
+    "type",
+    "length *"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*"
+  ],
+  "Channel": [
+    "*"
+  ]
+}

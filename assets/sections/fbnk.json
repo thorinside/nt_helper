@@ -1,0 +1,51 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Globals": [
+    "audio input",
+    "width",
+    "mode"
+  ],
+  "Microtuning": [
+    "microtuning",
+    "*scala*",
+    "*MTS*",
+    "*kbm*"
+  ],
+  "Chord/Arp": [
+    "enable",
+    "key",
+    "mode",
+    "scale",
+    "*root*",
+    "cantus*",
+    "position",
+    "arpeggio",
+    "range",
+    "arp reset",
+    "break time",
+    "break dir"
+  ],
+  "MIDI/I2C": [
+    "*midi*",
+    "*mpe*",
+    "*channel*",
+    "*voices*",
+    "transpose",
+    "fine tune",
+    "sustain*",
+    "bend*",
+    "unison*"
+  ],
+  "Channel *": [
+    "*"
+  ],
+  "CV/Gate": [
+    "*gate*"
+  ],
+  "Routing *": [
+    "*output",
+    "*output mode"
+  ]
+}

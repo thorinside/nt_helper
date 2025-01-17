@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Effects": [
+    "diffuser *",
+    "reverb *",
+    "sample rate"
+  ],
+  "Routings": [
+    "*input*",
+    "*output*"],
+  "Other": [
+    "*"
+  ]
+}

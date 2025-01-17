@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Common": [
+    "*output*"
+  ],
+  "Send *": [
+    "Destination",
+    "Pre/post",
+    "width"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Setup": [
+    "*mode"
+  ],
+  "Countdown" : ["hours", "minutes", "seconds"],
+  "Controls": [
+    "start/stop",
+    "reset"
+  ]
+}

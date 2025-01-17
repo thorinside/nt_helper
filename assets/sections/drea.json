@@ -1,0 +1,34 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Wavetable": [
+    "*wave*"
+  ],
+  "Pitches": [
+    "prime*",
+    "*numerator*",
+    "*denominator*",
+    "octave",
+    "transpose",
+    "Fundamental"
+  ],
+  "Gates": [
+    "*gate*"
+  ],
+  "Mix": [
+    "*gain*",
+    "*pan*"
+  ],
+  "Other": [
+    "*attack*",
+    "*decay*",
+    "FM*",
+    "Frequency slew",
+    "Crossfade time"
+  ],
+  "Routing": [
+    "*input*",
+    "*output*"
+  ]
+}

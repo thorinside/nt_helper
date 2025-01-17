@@ -1,0 +1,9 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Routing": [
+    "USB channel*"
+  ],
+  "Other": ["*"]
+}

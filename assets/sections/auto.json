@@ -1,0 +1,22 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Recording": [
+    "*input*",
+    "*folder*",
+    "bit depth",
+    "normalisation"
+  ],
+  "Outputs": [
+    "*output*",
+    "*midi*"
+  ],
+  "Activate": [
+    "activate",
+    "test"
+  ],
+  "Setup": [
+    "*"
+  ]
+}

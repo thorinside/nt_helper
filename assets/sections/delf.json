@@ -1,0 +1,16 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Common": [
+    "disable all",
+    "detection"
+  ],
+  "Routing *": [
+    "*input*",
+    "*output*"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}

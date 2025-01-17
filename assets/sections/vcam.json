@@ -1,0 +1,14 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Common": [
+    "input",
+    "clamp to 0V",
+    "divider"
+  ],
+  "Channel *": [
+    "*"
+  ],
+  "Other": ["*"]
+}

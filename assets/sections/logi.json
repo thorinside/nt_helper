@@ -1,0 +1,13 @@
+{
+  "Algorithm": [
+    "bypass"
+  ],
+  "Globals": [
+    "threshold",
+    "hysteresis",
+    "output true"
+  ],
+  "Channel *": [
+    "*"
+  ]
+}
