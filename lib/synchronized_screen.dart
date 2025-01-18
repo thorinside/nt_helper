@@ -355,23 +355,44 @@ class SynchronizedScreen extends StatelessWidget {
   }
 }
 
-class SlotDetailView extends StatelessWidget {
+class SlotDetailView extends StatefulWidget {
   final Slot slot;
   final List<String> units;
 
   const SlotDetailView({super.key, required this.slot, required this.units});
 
   @override
+  State<SlotDetailView> createState() => _SlotDetailViewState();
+}
+
+class _SlotDetailViewState extends State<SlotDetailView> {
+  late Future<Map<String, List<ParameterInfo>>?> sectionsFuture;
+
+  @override
+  void initState() {
+    sectionsFuture = SectionBuilder(slot: widget.slot).buildSections();
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant SlotDetailView oldWidget) {
+    if (oldWidget.slot != widget.slot) {
+      //sectionsFuture = SectionBuilder(slot: widget.slot).buildSections();
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Provide a full replacement view
-    final view = AlgorithmViewRegistry.findViewFor(slot);
+    final view = AlgorithmViewRegistry.findViewFor(widget.slot);
     if (view != null) return view;
 
     // Create a set of list sections for the parameters of the
     // algorithm initially based off Os' organization on the module firmware.
 
     return FutureBuilder<Map<String, List<ParameterInfo>>?>(
-      future: SectionBuilder(slot: slot).buildSections(),
+      future: sectionsFuture,
       builder: (context, snapshot) {
         // Handle different states of the Future
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -380,12 +401,12 @@ class SlotDetailView extends StatelessWidget {
           return Text('Error: ${snapshot.error}'); // Show error message
         } else if (snapshot.hasData) {
           return SectionParameterListView(
-            slot: slot,
-            units: units,
+            slot: widget.slot,
+            units: widget.units,
             sections: snapshot.data!,
           );
         } else {
-          return ParameterListView(slot: slot, units: units);
+          return ParameterListView(slot: widget.slot, units: widget.units);
         }
       },
     );

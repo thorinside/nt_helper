@@ -33,6 +33,7 @@ class Assets {
   static const String sectionsLfo = 'assets/sections/lfo.json';
   static const String sectionsLogi = 'assets/sections/logi.json';
   static const String sectionsLoop = 'assets/sections/loop.json';
+  static const String sectionsLua = 'assets/sections/lua.json';
   static const String sectionsMac2 = 'assets/sections/mac2.json';
   static const String sectionsMidp = 'assets/sections/midp.json';
   static const String sectionsMix1 = 'assets/sections/mix1.json';

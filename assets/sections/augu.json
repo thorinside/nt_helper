@@ -31,6 +31,10 @@
   ],
   "Routing": [
     "*input*",
-    "*output*"
+    "*output*",
+    "*loop*"
+  ],
+  "Other": [
+    "*"
   ]
 }

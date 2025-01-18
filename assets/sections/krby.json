@@ -14,7 +14,13 @@
   ],
   "Tweaks": [
     "* offset",
-    "fade"
+    "fade",
+    "*seed*",
+    "mutate"
+  ],
+  "Transients": [
+    "detect",
+    "sensitivity"
   ],
   "Mix": ["*gain*", "*pan*" ],
   "Routing": ["*input*", "*output*"],
