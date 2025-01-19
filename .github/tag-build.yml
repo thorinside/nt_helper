@@ -1,0 +1,147 @@
+name: Multi-Platform Build
+
+on:
+  push:
+    tags:
+      - 'v*' # Match tags starting with 'v', e.g., v1.0, v2.1.0
+
+jobs:
+  android:
+    name: Build and Sign Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        env:
+          KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --dart-define=KEYSTORE_PATH=${KEYSTORE_PATH} \
+            --dart-define=KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} \
+            --dart-define=KEY_ALIAS=${KEY_ALIAS} \
+            --dart-define=KEY_PASSWORD=${KEY_PASSWORD}
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  ios:
+    name: Build and Sign iOS IPA
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Set up Code Signing
+        run: |
+          echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > certificate.p12
+          echo "${{ secrets.MOBILEPROVISION }}" | base64 --decode > profile.mobileprovision
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          MOBILEPROVISION: ${{ secrets.MOBILEPROVISION }}
+
+      - name: Build iOS IPA
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+        run: |
+          flutter build ipa \
+            --release \
+            --export-options-plist=exportOptions.plist
+          xcrun altool --upload-app --type ios --file build/ios/ipa/*.ipa --username "${APPLE_ID}" --password "${APP_SPECIFIC_PASSWORD}"
+
+  windows:
+    name: Build Windows App
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows
+
+      - name: Upload Windows App
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-app
+          path: build/windows/runner/Release/
+
+  macos:
+    name: Build macOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos
+
+      - name: Upload macOS App
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-app
+          path: build/macos/Build/Products/Release/
+
+  linux:
+    name: Build Linux App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Linux
+        run: flutter build linux
+
+      - name: Upload Linux App
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-app
+          path: build/linux/x64/release/
+
