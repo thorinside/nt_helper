@@ -375,14 +375,6 @@ class _SlotDetailViewState extends State<SlotDetailView> {
   }
 
   @override
-  void didUpdateWidget(covariant SlotDetailView oldWidget) {
-    if (oldWidget.slot != widget.slot) {
-      //sectionsFuture = SectionBuilder(slot: widget.slot).buildSections();
-    }
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
   Widget build(BuildContext context) {
     // Provide a full replacement view
     final view = AlgorithmViewRegistry.findViewFor(widget.slot);
