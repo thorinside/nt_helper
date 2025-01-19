@@ -15,6 +15,7 @@ import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/section_builder.dart';
+import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
@@ -316,8 +317,12 @@ class SynchronizedScreen extends StatelessWidget {
           duration: Duration(seconds: 1),
           child: slots.isNotEmpty
               ? TabBarView(
-                  children: slots.map((slot) {
-                    return SlotDetailView(slot: slot, units: units);
+                  children: slots.mapIndexed((index, slot) {
+                    return SlotDetailView(
+                      key: ValueKey("$index - ${slot.algorithmGuid.guid}"),
+                      slot: slot,
+                      units: units,
+                    );
                   }).toList(),
                 )
               : Column(
@@ -365,7 +370,8 @@ class SlotDetailView extends StatefulWidget {
   State<SlotDetailView> createState() => _SlotDetailViewState();
 }
 
-class _SlotDetailViewState extends State<SlotDetailView> {
+class _SlotDetailViewState extends State<SlotDetailView>
+    with AutomaticKeepAliveClientMixin {
   late Future<Map<String, List<ParameterInfo>>?> sectionsFuture;
 
   @override
@@ -375,7 +381,12 @@ class _SlotDetailViewState extends State<SlotDetailView> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     // Provide a full replacement view
     final view = AlgorithmViewRegistry.findViewFor(widget.slot);
     if (view != null) return view;
@@ -425,7 +436,6 @@ class SectionParameterListView extends StatelessWidget {
       ),
       child: ExpansionTileTheme(
         data: ExpansionTileThemeData(
-
           shape: RoundedRectangleBorder(
             side: BorderSide.none,
           ),
