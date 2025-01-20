@@ -133,7 +133,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-app
-          path: build/macos/Build/Products/Release/nt_heloer.app
+          path: build/macos/Build/Products/Release/nt_helper.app
 
   linux:
     name: Build Linux App
