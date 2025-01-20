@@ -11,8 +11,8 @@ class RoutingTableWidget extends StatelessWidget {
   final bool showMappings;
 
   // We still fix each channel cell’s width + height for consistency
-  static const double _cellWidth = 24;
-  static const double _cellHeight = 24;
+  static const double _cellWidth = 32;
+  static const double _cellHeight = 32;
 
   const RoutingTableWidget({
     super.key,
@@ -300,7 +300,7 @@ class RoutingTableWidget extends StatelessWidget {
       height: _cellHeight,
       child: Text(
         text,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -321,7 +321,7 @@ class RoutingTableWidget extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         softWrap: false,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: slotName ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
