@@ -81,7 +81,8 @@ jobs:
         run: |
           flutter build ipa \
             --release \
-            --export-options-plist=ios/exportOptions.plist
+            --export-options-plist=ios/exportOptions.plist \
+            -allowProvisioningUpdates
           xcrun altool --upload-app --type ios --file build/ios/ipa/*.ipa --username "${APPLE_ID}" --password "${APP_SPECIFIC_PASSWORD}"
 
   windows:
