@@ -78,30 +78,28 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          DropdownMenu<String>(
-            // Ties our external controller to the internal text field.
-            controller: _controller,
-            // Let the text field be editable/filterable.
-            enableFilter: true,
-            width: 250,
-            // Provide the “initial selection” so the dropdown text
-            // starts with the initial name if it’s in the list.
-            initialSelection: _history.contains(widget.initialName.trim())
-                ? widget.initialName.trim()
-                : null,
-
-            label: const Text('Preset Name'),
-
-            // Convert each history item into an entry for the dropdown.
-            dropdownMenuEntries: _history
-                .map((name) => DropdownMenuEntry(value: name, label: name))
-                .toList(),
-
-            // When user picks an item from the dropdown list:
-            onSelected: (String? value) {
-              if (value != null) {
-                setState(() => _controller.text = value);
-              }
+          Autocomplete(
+            fieldViewBuilder:
+                (context, textEditingController, focusNode, onFieldSubmitted) {
+              return SizedBox(
+                width: 325,
+                child: TextField(
+                  decoration: InputDecoration(
+                      border: OutlineInputBorder(), labelText: 'Preset Path'),
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                ),
+              );
+            },
+            optionsMaxHeight: 400,
+            optionsViewOpenDirection: OptionsViewOpenDirection.down,
+            onSelected: (option) {
+              setState(() => _controller.text = option);
+            },
+            optionsBuilder: (textEditingValue) {
+              return _history.where(
+                (element) => element.contains(textEditingValue.text),
+              );
             },
           ),
         ],
