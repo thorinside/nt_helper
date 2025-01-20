@@ -21,24 +21,27 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Decode and Save Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release-key.jks
+
       - name: Build Android APK
         env:
-          KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_PATH }}
+          KEYSTORE_PATH: release-key.jks
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          flutter build apk --release \
-            --dart-define=KEYSTORE_PATH=${KEYSTORE_PATH} \
-            --dart-define=KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} \
-            --dart-define=KEY_ALIAS=${KEY_ALIAS} \
-            --dart-define=KEY_PASSWORD=${KEY_PASSWORD}
+        run: flutter build apk --release
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v3
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Cleanup Keystore
+        run: rm release-key.jks
+
 
   ios:
     name: Build and Sign iOS IPA
@@ -55,13 +58,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Set up Code Signing
+      - name: Decode and Save Signing Files
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > certificate.p12
           echo "${{ secrets.MOBILEPROVISION }}" | base64 --decode > profile.mobileprovision
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           MOBILEPROVISION: ${{ secrets.MOBILEPROVISION }}
+
+      - name: Install Signing Certificate
+        run: |
+          security import certificate.p12 -k ~/Library/Keychains/login.keychain-db -P "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+        env:
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
       - name: Build iOS IPA
         env:
