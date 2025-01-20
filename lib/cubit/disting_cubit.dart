@@ -11,6 +11,7 @@ import 'package:nt_helper/models/routing_information.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
+
 part 'disting_state.dart';
 
 class DistingCubit extends Cubit<DistingState> {
@@ -61,7 +62,7 @@ class DistingCubit extends Cubit<DistingState> {
       final devices = await state.midiCommand.devices;
 
       devices?.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
       // Transition to the select device state
@@ -141,7 +142,7 @@ class DistingCubit extends Cubit<DistingState> {
           (await disting.requestAlgorithmInfo(i))!
       ];
       final numAlgorithmsInPreset =
-          (await disting.requestNumAlgorithmsInPreset())!;
+      (await disting.requestNumAlgorithmsInPreset())!;
       final distingVersion = await disting.requestVersionString() ?? "";
       final presetName = await disting.requestPresetName() ?? "";
       var unitStrings = await disting.requestUnitStrings() ?? [];
@@ -165,10 +166,10 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<List<Slot>> fetchSlots(
-      int numAlgorithmsInPreset, DistingMidiManager disting) async {
+  Future<List<Slot>> fetchSlots(int numAlgorithmsInPreset,
+      DistingMidiManager disting) async {
     final slotsFutures =
-        List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
+    List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
       return await fetchSlot(disting, algorithmIndex);
     });
 
@@ -183,8 +184,8 @@ class DistingCubit extends Cubit<DistingState> {
             .numParameters;
     var parameters = [
       for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
+      parameterNumber < numParametersInAlgorithm;
+      parameterNumber++)
         await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
             ParameterInfo.filler()
     ];
@@ -192,19 +193,19 @@ class DistingCubit extends Cubit<DistingState> {
         (await disting.requestAllParameterValues(algorithmIndex))!.values;
     var enums = [
       for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
+      parameterNumber < numParametersInAlgorithm;
+      parameterNumber++)
         if (parameters[parameterNumber].unit == 1)
           await disting.requestParameterEnumStrings(
-                  algorithmIndex, parameterNumber) ??
+              algorithmIndex, parameterNumber) ??
               ParameterEnumStrings.filler()
         else
           ParameterEnumStrings.filler()
     ];
     var mappings = [
       for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
+      parameterNumber < numParametersInAlgorithm;
+      parameterNumber++)
         await disting.requestMappings(algorithmIndex, parameterNumber) ??
             Mapping.filler()
     ];
@@ -212,11 +213,11 @@ class DistingCubit extends Cubit<DistingState> {
         RoutingInfo.filler();
     var valueStrings = [
       for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
+      parameterNumber < numParametersInAlgorithm;
+      parameterNumber++)
         if ([13, 14, 17].contains(parameters[parameterNumber].unit))
           await disting.requestParameterValueString(
-                  algorithmIndex, parameterNumber) ??
+              algorithmIndex, parameterNumber) ??
               ParameterValueString.filler()
         else
           ParameterValueString.filler()
@@ -252,11 +253,10 @@ class DistingCubit extends Cubit<DistingState> {
     return null;
   }
 
-  List<T> replaceInList<T>(
-    List<T> original,
-    T element, {
-    required int index,
-  }) {
+  List<T> replaceInList<T>(List<T> original,
+      T element, {
+        required int index,
+      }) {
     if (index < 0 || index > original.length) {
       throw RangeError.index(index, original, "index out of bounds");
     }
@@ -301,7 +301,7 @@ class DistingCubit extends Cubit<DistingState> {
           slots: updateSlot(
             algorithmIndex,
             state.slots,
-            (slot) {
+                (slot) {
               return updatedSlot;
             },
           ),
@@ -319,12 +319,12 @@ class DistingCubit extends Cubit<DistingState> {
 
         var valueStrings = [
           for (int parameterNumber = 0;
-              parameterNumber < state.slots[algorithmIndex].valueStrings.length;
-              parameterNumber++)
+          parameterNumber < state.slots[algorithmIndex].valueStrings.length;
+          parameterNumber++)
             if ([13, 14, 17].contains(
                 state.slots[algorithmIndex].parameters[parameterNumber].unit))
               await disting.requestParameterValueString(
-                      algorithmIndex, parameterNumber) ??
+                  algorithmIndex, parameterNumber) ??
                   ParameterValueString.filler()
             else
               ParameterValueString.filler()
@@ -334,7 +334,8 @@ class DistingCubit extends Cubit<DistingState> {
           13,
           14,
           17,
-        ].contains(state.slots[algorithmIndex].parameters[parameterNumber].unit))
+        ].contains(
+            state.slots[algorithmIndex].parameters[parameterNumber].unit))
             ? await disting.requestRoutingInformation(algorithmIndex)
             : state.slots[algorithmIndex].routing;
 
@@ -342,7 +343,7 @@ class DistingCubit extends Cubit<DistingState> {
           slots: updateSlot(
             algorithmIndex,
             state.slots,
-            (slot) {
+                (slot) {
               return slot.copyWith(
                   values: replaceInList(
                     slot.values,
@@ -362,7 +363,7 @@ class DistingCubit extends Cubit<DistingState> {
     if (state is DistingStateSynchronized) {
       var disting = requireDisting();
       final numAlgorithmsInPreset =
-          (await disting.requestNumAlgorithmsInPreset())!;
+      (await disting.requestNumAlgorithmsInPreset())!;
 
       final presetName = await disting.requestPresetName() ?? "";
 
@@ -373,8 +374,8 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> onAlgorithmSelected(
-      AlgorithmInfo algorithm, List<int> specifications) async {
+  Future<void> onAlgorithmSelected(AlgorithmInfo algorithm,
+      List<int> specifications) async {
     if (state is DistingStateSynchronized) {
       final disting = requireDisting();
       await disting.requestAddAlgorithm(algorithm, specifications);
@@ -440,7 +441,13 @@ class DistingCubit extends Cubit<DistingState> {
 
     var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
     var slot = slots.removeAt(algorithmIndex);
+    var otherSlot = slots.removeAt(algorithmIndex - 1);
+
+    otherSlot = _fixAlgorithmIndex(otherSlot, algorithmIndex);
+    slot = _fixAlgorithmIndex(slot, algorithmIndex - 1);
+
     slots.insert(algorithmIndex - 1, slot);
+    slots.insert(algorithmIndex, otherSlot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
 
     refresh();
@@ -459,7 +466,13 @@ class DistingCubit extends Cubit<DistingState> {
     if (algorithmIndex == slots.length) return algorithmIndex;
 
     var slot = slots.removeAt(algorithmIndex);
-    slots.insert(algorithmIndex + 1, slot);
+    var otherSlot = slots.removeAt(algorithmIndex);
+
+    otherSlot = _fixAlgorithmIndex(otherSlot, algorithmIndex);
+    slot = _fixAlgorithmIndex(slot, algorithmIndex + 1);
+
+    slots.insert(algorithmIndex, slot);
+    slots.insert(algorithmIndex, otherSlot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
 
     refresh();
@@ -492,7 +505,7 @@ class DistingCubit extends Cubit<DistingState> {
         await Future.delayed(Duration(milliseconds: 100));
 
         final numAlgorithmsInPreset =
-            (await disting.requestNumAlgorithmsInPreset())!;
+        (await disting.requestNumAlgorithmsInPreset())!;
         final presetName = await disting.requestPresetName() ?? "";
 
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
@@ -521,7 +534,7 @@ class DistingCubit extends Cubit<DistingState> {
         await Future.delayed(Duration(milliseconds: 100));
 
         final numAlgorithmsInPreset =
-            (await disting.requestNumAlgorithmsInPreset())!;
+        (await disting.requestNumAlgorithmsInPreset())!;
         final presetName = await disting.requestPresetName() ?? "";
 
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
@@ -539,8 +552,8 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> saveMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
+  Future<void> saveMapping(int algorithmIndex, int parameterNumber,
+      PackedMappingData data) async {
     switch (state) {
       case DistingStateSynchronized syncstate:
         final disting = requireDisting();
@@ -554,7 +567,7 @@ class DistingCubit extends Cubit<DistingState> {
             slots: updateSlot(
               algorithmIndex,
               syncstate.slots,
-              (slot) {
+                  (slot) {
                 return slot.copyWith(
                   mappings: replaceInList(
                     slot.mappings,
@@ -581,13 +594,14 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateSynchronized syncstate:
         return syncstate.slots
             .where((slot) => slot.routing.algorithmIndex != -1)
-            .map((slot) => RoutingInformation(
+            .map((slot) =>
+            RoutingInformation(
                 algorithmIndex: slot.routing.algorithmIndex,
                 routingInfo: slot.routing.routingInfo,
                 algorithmName: syncstate.algorithms
                     .firstWhere(
                       (element) => element.guid == slot.algorithmGuid.guid,
-                    )
+                )
                     .name))
             .toList();
       default:
@@ -596,8 +610,44 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   bool _isThreePotProgram(DistingStateSynchronized state, int algorithmIndex,
-          int parameterNumber) =>
+      int parameterNumber) =>
       (state.slots[algorithmIndex].parameters[parameterNumber].name ==
           "Program") &&
-      ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
+          ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
+
+  Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
+    // Run through all of the parts of the slot and replace the algorithm index
+    // with the new one.
+    return Slot(
+      algorithmGuid: slot.algorithmGuid,
+      routing: RoutingInfo(algorithmIndex: algorithmIndex,
+          routingInfo: slot.routing.routingInfo),
+      parameters: slot.parameters.map(
+              (parameter) =>
+              ParameterInfo(algorithmIndex: algorithmIndex,
+                  parameterNumber: parameter.parameterNumber,
+                  min: parameter.min,
+                  max: parameter.max,
+                  defaultValue: parameter.defaultValue,
+                  unit: parameter.unit,
+                  name: parameter.name)).toList(),
+      values: slot.values.map((value) =>
+          ParameterValue(
+              algorithmIndex: algorithmIndex,
+              parameterNumber: value.parameterNumber,
+              value: value.value)).toList(),
+      enums: slot.enums.map((enums) =>
+          ParameterEnumStrings(algorithmIndex: algorithmIndex,
+              parameterNumber: enums.parameterNumber,
+              values: enums.values)).toList(),
+      mappings: slot.mappings.map((mapping) =>
+          Mapping(algorithmIndex: algorithmIndex,
+              parameterNumber: mapping.parameterNumber,
+              packedMappingData: mapping.packedMappingData,
+              version: mapping.version)).toList(),
+      valueStrings: slot.valueStrings.map((valueStrings) =>
+          ParameterValueString(algorithmIndex: algorithmIndex,
+              parameterNumber: valueStrings.parameterNumber,
+              value: valueStrings.value)).toList(),);
+  }
 }

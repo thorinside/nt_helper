@@ -674,7 +674,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
           // Slider column
           Expanded(
-              flex: 4, // Proportionally larger space for the slider
+              flex: 8, // Proportionally larger space for the slider
               child: GestureDetector(
                 onDoubleTap: () => _showAlternateEditor
                     ? {}
@@ -750,7 +750,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               )),
           // Control column
           Expanded(
-            flex: 3, // Slightly larger control column
+            flex: 2, // Slightly larger control column
             child: Align(
               alignment: Alignment.centerLeft,
               child: widget.isOnOff
@@ -781,7 +781,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                             _updateCubitValue(currentValue);
                           },
                         )
-                      : widget.name.toLowerCase().contains("mote")
+                      : widget.name.toLowerCase().contains("note")
                           ? Text(midiNoteToNoteString(currentValue))
                           : widget.displayString != null
                               ? GestureDetector(
