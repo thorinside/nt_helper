@@ -35,7 +35,7 @@ jobs:
         run: flutter build apk --release
 
       - name: Upload Android APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
@@ -104,10 +104,10 @@ jobs:
         run: flutter build windows
 
       - name: Upload Windows App
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-app
-          path: build/windows/runner/Release/
+          path: build/windows/x64/runner/Release/
 
   macos:
     name: Build macOS App
@@ -129,10 +129,10 @@ jobs:
         run: flutter build macos
 
       - name: Upload macOS App
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-app
-          path: build/macos/Build/Products/Release/
+          path: build/macos/Build/Products/Release/nt_heloer.app
 
   linux:
     name: Build Linux App
@@ -160,8 +160,8 @@ jobs:
         run: flutter build linux
 
       - name: Upload Linux App
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-app
-          path: build/linux/x64/release/
+          path: build/linux/x64/release/bundle/
 
