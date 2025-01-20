@@ -64,8 +64,10 @@ jobs:
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > certificate.p12
           echo "${{ secrets.MOBILEPROVISION }}" | base64 --decode > profile.mobileprovision
+          echo "${{ secrets.DEV_MOBILEPROVISIONING_PROFILE }}" | base64 --decode > profile-dev.mobileprovision
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp profile-dev.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           MOBILEPROVISION: ${{ secrets.MOBILEPROVISION }}
