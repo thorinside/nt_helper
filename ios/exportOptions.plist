@@ -11,11 +11,6 @@
     <key>uploadSymbols</key>
     <false/>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>dev.nosuch.ntHelper</key>
-        <string>nt_helper_provisioning_profile</string>
-    </dict>
+    <string>automatic</string>
 </dict>
 </plist>
