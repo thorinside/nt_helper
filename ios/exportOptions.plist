@@ -11,7 +11,7 @@
     <key>uploadSymbols</key>
     <false/>
     <key>signingStyle</key>
-    <string>manual</string>
+    <string>automatic</string>
     <key>provisioningProfiles</key>
     <dict>
         <key>dev.nosuch.ntHelper</key>
