@@ -81,7 +81,7 @@ jobs:
         run: |
           flutter build ipa \
             --release \
-            --export-options-plist=exportOptions.plist
+            --export-options-plist=ios/exportOptions.plist
           xcrun altool --upload-app --type ios --file build/ios/ipa/*.ipa --username "${APPLE_ID}" --password "${APP_SPECIFIC_PASSWORD}"
 
   windows:
@@ -147,7 +147,13 @@ jobs:
           channel: stable
           flutter-version: '3.27.2'
 
-      - name: Install dependencies
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+
+      - name: Install Flutter dependencies
         run: flutter pub get
 
       - name: Build Linux
