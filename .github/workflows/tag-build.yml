@@ -81,6 +81,10 @@ jobs:
         run: mv build/app/outputs/flutter-apk/app-release.apk \
           build/app/outputs/flutter-apk/nt_helper-${VERSION}.apk
 
+      - name: List build output
+        run: |
+          ls -R
+
       - name: Upload Android Artifact to Release
         uses: ncipollo/release-action@v1
         with:
@@ -124,6 +128,10 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r nt_helper-${VERSION}.zip nt_helper.app
 
+      - name: List build output
+        run: |
+          ls -R
+
       - name: Upload macOS Artifact to Release
         uses: ncipollo/release-action@v1
         with:
@@ -137,6 +145,7 @@ jobs:
   windows:
     name: Build Windows App
     runs-on: windows-latest
+    needs: create-release
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -166,6 +175,10 @@ jobs:
         run: |
           cd build/windows/x64/runner/Release
           Compress-Archive -Path * -DestinationPath "nt_helper-${env:VERSION}.zip"    
+
+      - name: List build output
+        run: |
+          ls -R
 
       - name: Upload Windows Artifact to Release
         uses: ncipollo/release-action@v1
@@ -212,6 +225,10 @@ jobs:
         run: |
           cd build/linux/x64/release/bundle
           zip -r nt_helper-${VERSION}.zip *
+
+      - name: List build output
+        run: |
+          ls -R
 
       - name: Upload Linux Artifact to Release
         uses: ncipollo/release-action@v1
