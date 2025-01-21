@@ -15,7 +15,7 @@ jobs:
 
       - name: Extract Version Name
         id: extract_version
-        run: echo "::set-output name=version::${{ github.ref_name#v }}"
+        run: echo "VERSION=${GITHUB_REF##*/}" | sed 's/^v//' >> $GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
@@ -59,14 +59,14 @@ jobs:
         run: flutter build apk --release
 
       - name: Rename Android APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/nt_helper-${{ needs.create-release.outputs.version }}.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
 
       - name: Upload Android Artifact to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/app/outputs/flutter-apk/nt_helper-${{ needs.create-release.outputs.version }}.apk
-          asset_name: nt_helper-${{ needs.create-release.outputs.version }}-android.apk
+          asset_path: build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
+          asset_name: nt_helper-${{ env.VERSION }}-android.apk
           asset_content_type: application/vnd.android.package-archive
 
   macos:
@@ -90,14 +90,14 @@ jobs:
         run: flutter build macos
 
       - name: Zip macOS App
-        run: cd build/macos/Build/Products/Release && zip -r nt_helper-${{ needs.create-release.outputs.version }}.zip nt_helper.app
+        run: cd build/macos/Build/Products/Release && zip -r nt_helper-${{ env.VERSION }}.zip nt_helper.app
 
       - name: Upload macOS Artifact to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/macos/Build/Products/Release/nt_helper-${{ needs.create-release.outputs.version }}.zip
-          asset_name: nt_helper-${{ needs.create-release.outputs.version }}-macos.zip
+          asset_path: build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip
+          asset_name: nt_helper-${{ env.VERSION }}-macos.zip
           asset_content_type: application/zip
 
   windows:
@@ -121,14 +121,14 @@ jobs:
         run: flutter build windows
 
       - name: Zip Windows App
-        run: cd build/windows/x64/runner/Release && zip -r nt_helper-${{ needs.create-release.outputs.version }}.zip *
+        run: cd build/windows/x64/runner/Release && zip -r nt_helper-${{ env.VERSION }}.zip *
 
       - name: Upload Windows Artifact to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/windows/x64/runner/Release/nt_helper-${{ needs.create-release.outputs.version }}.zip
-          asset_name: nt_helper-${{ needs.create-release.outputs.version }}-windows.zip
+          asset_path: build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip
+          asset_name: nt_helper-${{ env.VERSION }}-windows.zip
           asset_content_type: application/zip
 
   linux:
@@ -157,12 +157,12 @@ jobs:
         run: flutter build linux
 
       - name: Zip Linux App
-        run: cd build/linux/x64/release/bundle && zip -r nt_helper-${{ needs.create-release.outputs.version }}.zip *
+        run: cd build/linux/x64/release/bundle && zip -r nt_helper-${{ env.VERSION }}.zip *
 
       - name: Upload Linux Artifact to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/linux/x64/release/bundle/nt_helper-${{ needs.create-release.outputs.version }}.zip
-          asset_name: nt_helper-${{ needs.create-release.outputs.version }}-linux.zip
+          asset_path: build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip
+          asset_name: nt_helper-${{ env.VERSION }}-linux.zip
           asset_content_type: application/zip
