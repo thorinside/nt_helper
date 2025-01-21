@@ -33,11 +33,6 @@ jobs:
           body: "Automated release for version ${{ github.ref_name }}"
           draft: false
           prerelease: false
-          # We do NOT specify "createRelease", "releaseName" in this action,
-          # because those inputs are not recognized here.
-          # If you plan to re-run the workflow and want to update the existing
-          # release, you could also set allowUpdates: true
-          # but that can wait until the artifact steps.
 
   android:
     name: Build and Sign Android APK
@@ -88,9 +83,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
-          # Artifacts *must* be listed line-by-line:
-          artifacts: |
-            build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk => nt_helper-${{ env.VERSION }}-android.apk
+          artifacts: "**/nt_helper-${{ env.VERSION }}.apk"
 
   macos:
     name: Build macOS App
@@ -122,7 +115,7 @@ jobs:
       - name: Zip macOS App
         run: |
           cd build/macos/Build/Products/Release
-          zip -r nt_helper-${VERSION}.zip nt_helper.app
+          zip -r nt_helper-${VERSION}-macos.zip nt_helper.app
 
       - name: List build output (debug)
         run: ls -R build/macos/Build/Products/Release
@@ -133,8 +126,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
-          artifacts: |
-            build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip => nt_helper-${{ env.VERSION }}-macos.zip
+          artifacts: "/nt_helper-${{ env.VERSION }}-macos.zip"
 
   windows:
     name: Build Windows App
@@ -168,7 +160,7 @@ jobs:
         shell: pwsh
         run: |
           cd build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath "nt_helper-${env:VERSION}.zip"
+          Compress-Archive -Path * -DestinationPath "nt_helper-${env:VERSION}-windows.zip"
 
       - name: List build output (debug)
         run: ls -R build/windows/x64/runner/Release
@@ -179,8 +171,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
-          artifacts: |
-            build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip => nt_helper-${{ env.VERSION }}-windows.zip
+          artifacts: "**/nt_helper-${{ env.VERSION }}-windows.zip"
 
   linux:
     name: Build Linux App
@@ -215,7 +206,7 @@ jobs:
       - name: Zip Linux App
         run: |
           cd build/linux/x64/release/bundle
-          zip -r nt_helper-${VERSION}.zip *
+          zip -r nt_helper-${VERSION}-linux.zip *
 
       - name: List build output (debug)
         run: ls -R build/linux/x64/release/bundle
@@ -226,6 +217,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
-          # Each artifact path on its own line; rename with "=>"
-          artifacts: |
-            build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip => nt_helper-${{ env.VERSION }}-linux.zip
+          artifacts: "**/nt_helper-${{ env.VERSION }}-linux.zip"
