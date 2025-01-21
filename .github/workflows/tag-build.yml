@@ -3,11 +3,10 @@ name: Multi-Platform Build
 on:
   push:
     tags:
-      - 'v*' # Match tags starting with 'v', e.g., v1.0, v2.1.0
+      - 'v*'  # e.g., v1.0, v1.2.3, etc.
 
-# Ensure we have write permission for creating/updating releases
 permissions:
-  contents: write
+  contents: write  # Needed for creating/updating GitHub releases
 
 jobs:
   create-release:
@@ -17,14 +16,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # (Optional) If you want the create-release job itself
-      # to reference the version or do something with it.
       - name: Extract Version (for the create-release job)
         id: extract_version
         run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"  # remove leading "v"
-          echo "VERSION=$version" >> $GITHUB_ENV
+          # e.g. "v1.2.3" => "1.2.3"
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
@@ -35,9 +33,11 @@ jobs:
           body: "Automated release for version ${{ github.ref_name }}"
           draft: false
           prerelease: false
-          # No "createRelease" or "releaseName" (they are not valid inputs)
-          # "allowUpdates" not strictly needed here unless you want to re-run
-          # this same job to update an existing release.
+          # We do NOT specify "createRelease", "releaseName" in this action,
+          # because those inputs are not recognized here.
+          # If you plan to re-run the workflow and want to update the existing
+          # release, you could also set allowUpdates: true
+          # but that can wait until the artifact steps.
 
   android:
     name: Build and Sign Android APK
@@ -47,14 +47,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Repeat version extraction in this job:
       - name: Extract Version
         id: extract_version
-        shell: bash
         run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"
-          echo "VERSION=$version" >> $GITHUB_ENV
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -81,9 +79,8 @@ jobs:
         run: mv build/app/outputs/flutter-apk/app-release.apk \
           build/app/outputs/flutter-apk/nt_helper-${VERSION}.apk
 
-      - name: List build output
-        run: |
-          ls -R
+      - name: List build output (debug)
+        run: ls -R build/app/outputs/flutter-apk
 
       - name: Upload Android Artifact to Release
         uses: ncipollo/release-action@v1
@@ -91,9 +88,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
+          # Artifacts *must* be listed line-by-line:
           artifacts: |
-            - path: build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
-              name: nt_helper-${{ env.VERSION }}-android.apk
+            build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk => nt_helper-${{ env.VERSION }}-android.apk
 
   macos:
     name: Build macOS App
@@ -105,11 +102,10 @@ jobs:
 
       - name: Extract Version
         id: extract_version
-        shell: bash
         run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"
-          echo "VERSION=$version" >> $GITHUB_ENV
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -128,9 +124,8 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r nt_helper-${VERSION}.zip nt_helper.app
 
-      - name: List build output
-        run: |
-          ls -R
+      - name: List build output (debug)
+        run: ls -R build/macos/Build/Products/Release
 
       - name: Upload macOS Artifact to Release
         uses: ncipollo/release-action@v1
@@ -139,8 +134,7 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           artifacts: |
-            - path: build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip
-              name: nt_helper-${{ env.VERSION }}-macos.zip
+            build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip => nt_helper-${{ env.VERSION }}-macos.zip
 
   windows:
     name: Build Windows App
@@ -154,8 +148,8 @@ jobs:
         id: extract_version
         shell: bash
         run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
           echo "VERSION=$version" >> $GITHUB_ENV
 
       - name: Set up Flutter
@@ -174,11 +168,10 @@ jobs:
         shell: pwsh
         run: |
           cd build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath "nt_helper-${env:VERSION}.zip"    
+          Compress-Archive -Path * -DestinationPath "nt_helper-${env:VERSION}.zip"
 
-      - name: List build output
-        run: |
-          ls -R
+      - name: List build output (debug)
+        run: ls -R build/windows/x64/runner/Release
 
       - name: Upload Windows Artifact to Release
         uses: ncipollo/release-action@v1
@@ -187,8 +180,7 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           artifacts: |
-            - path: build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip
-              name: nt_helper-${{ env.VERSION }}-windows.zip
+            build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip => nt_helper-${{ env.VERSION }}-windows.zip
 
   linux:
     name: Build Linux App
@@ -200,11 +192,10 @@ jobs:
 
       - name: Extract Version
         id: extract_version
-        shell: bash
         run: |
-          version="${{ github.ref_name }}"
-          version="${version#v}"
-          echo "VERSION=$version" >> $GITHUB_ENV
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -226,9 +217,8 @@ jobs:
           cd build/linux/x64/release/bundle
           zip -r nt_helper-${VERSION}.zip *
 
-      - name: List build output
-        run: |
-          ls -R
+      - name: List build output (debug)
+        run: ls -R build/linux/x64/release/bundle
 
       - name: Upload Linux Artifact to Release
         uses: ncipollo/release-action@v1
@@ -236,7 +226,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
-          # Use proper YAML for 'artifacts'
+          # Each artifact path on its own line; rename with "=>"
           artifacts: |
-            - path: build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip
-              name: nt_helper-${{ env.VERSION }}-linux.zip
+            build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip => nt_helper-${{ env.VERSION }}-linux.zip
