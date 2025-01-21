@@ -68,6 +68,7 @@ class Assets {
   static const String sectionsWavr = 'assets/sections/wavr.json';
   static const String sectionsXaoc = 'assets/sections/xaoc.json';
   static const String sectionsXfad = 'assets/sections/xfad.json';
+  static const String testLoadPresetsDialogTest = 'test/load_presets_dialog_test.dart';
   static const String testSectionBuilderTest = 'test/section_builder_test.dart';
   static const String testSysexDecodeTest = 'test/sysex_decode_test.dart';
 

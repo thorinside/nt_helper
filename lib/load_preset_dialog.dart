@@ -3,10 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LoadPresetDialog extends StatefulWidget {
   final String initialName;
+  final SharedPreferences? preferences;
 
   const LoadPresetDialog({
     super.key,
     required this.initialName,
+    this.preferences,
   });
 
   @override
@@ -29,7 +31,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
   /// Loads the preset names from SharedPreferences.
   Future<void> _loadHistoryFromPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = widget.preferences ?? await SharedPreferences.getInstance();
     setState(() {
       _history = prefs.getStringList('presetHistory') ?? [];
     });
@@ -37,7 +39,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
   /// Persists the updated history list back to SharedPreferences.
   Future<void> _saveHistoryToPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = widget.preferences ?? await SharedPreferences.getInstance();
     await prefs.setStringList('presetHistory', _history);
   }
 
@@ -79,11 +81,20 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Autocomplete(
+            initialValue: TextEditingValue(text: widget.initialName),
             fieldViewBuilder:
                 (context, textEditingController, focusNode, onFieldSubmitted) {
               return SizedBox(
                 width: 325,
                 child: TextField(
+                  key: ValueKey('preset-name-text-field'),
+                  onSubmitted: (value) {
+                    _controller.text = value;
+                    onFieldSubmitted();
+                  },
+                  onChanged: (value) {
+                    _controller.text = value;
+                  },
                   decoration: InputDecoration(
                       border: OutlineInputBorder(), labelText: 'Preset Path'),
                   controller: textEditingController,
@@ -106,14 +117,17 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       ),
       actions: [
         TextButton(
+          key: ValueKey('load_preset_dialog_cancel_button'),
           onPressed: _onCancel,
           child: const Text('CANCEL'),
         ),
         ElevatedButton(
+          key: ValueKey('load_preset_dialog_append_button'),
           onPressed: _onAppend,
           child: const Text('APPEND'),
         ),
         ElevatedButton(
+          key: ValueKey('load_preset_dialog_load_button'),
           onPressed: _onLoad,
           child: const Text('LOAD'),
         ),
