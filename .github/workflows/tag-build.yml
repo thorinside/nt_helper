@@ -70,12 +70,12 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
 
-      - name: Rename Android APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk \
-          build/app/outputs/flutter-apk/nt_helper-${VERSION}.apk
-
       - name: List build output (debug)
         run: ls -R build/app/outputs/flutter-apk
+
+      - name: Rename Android APK
+        run: mv ./build/app/outputs/flutter-apk/app-release.apk \
+          ./build/app/outputs/flutter-apk/nt_helper-${VERSION}.apk
 
       - name: Upload Android Artifact to Release
         uses: ncipollo/release-action@v1
@@ -126,7 +126,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
-          artifacts: "/nt_helper-${{ env.VERSION }}-macos.zip"
+          artifacts: "**/nt_helper-${{ env.VERSION }}-macos.zip"
 
   windows:
     name: Build Windows App
@@ -137,12 +137,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Extract Version
-        id: extract_version
-        shell: bash
+        shell: pwsh
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          echo "VERSION=$version" >> $GITHUB_ENV
+          $version = '${{ github.ref_name }}'
+          $version = $version.Substring(1)  # strip leading 'v'
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
