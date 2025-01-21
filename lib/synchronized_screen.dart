@@ -315,26 +315,30 @@ class SynchronizedScreen extends StatelessWidget {
         ),
         body: AnimatedSwitcher(
           duration: Duration(seconds: 1),
-          child: slots.isNotEmpty
-              ? TabBarView(
-                  children: slots.mapIndexed((index, slot) {
-                    return SlotDetailView(
-                      key: ValueKey("$index - ${slot.algorithmGuid.guid}"),
-                      slot: slot,
-                      units: units,
+          child: Builder(
+            builder: (context) {
+              return slots.isNotEmpty
+                  ? TabBarView(
+                      children: slots.mapIndexed((index, slot) {
+                        return SlotDetailView(
+                          key: ValueKey("$index - ${slot.algorithmGuid.guid}"),
+                          slot: slot,
+                          units: units,
+                        );
+                      }).toList(),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          "No algorithms",
+                          style: Theme.of(context).textTheme.displaySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     );
-                  }).toList(),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      "No algorithms",
-                      style: Theme.of(context).textTheme.displaySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+            }
+          ),
         ),
       ),
     );
@@ -965,6 +969,8 @@ String formatWithUnit(int currentValue,
 }
 
 String midiNoteToNoteString(int midiNoteNumber) {
+  if (midiNoteNumber == -1) return "";
+
   if (midiNoteNumber < 0 || midiNoteNumber > 127) {
     throw ArgumentError('MIDI note number must be between 0 and 127.');
   }
