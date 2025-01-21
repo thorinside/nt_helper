@@ -92,7 +92,7 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           artifacts: |
-            path: build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
+            - path: build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
               name: nt_helper-${{ env.VERSION }}-android.apk
 
   macos:
@@ -139,7 +139,7 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           artifacts: |
-            path: build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip
+            - path: build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip
               name: nt_helper-${{ env.VERSION }}-macos.zip
 
   windows:
@@ -187,7 +187,7 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           artifacts: |
-            path: build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip
+            - path: build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip
               name: nt_helper-${{ env.VERSION }}-windows.zip
 
   linux:
@@ -236,6 +236,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           allowUpdates: true
+          # Use proper YAML for 'artifacts'
           artifacts: |
-            path: build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip
+            - path: build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip
               name: nt_helper-${{ env.VERSION }}-linux.zip
