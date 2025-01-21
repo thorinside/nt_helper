@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # Match tags starting with 'v', e.g., v1.0, v2.1.0
 
+permissions:
+  contents: write
+
 jobs:
   create-release:
     name: Create Release
