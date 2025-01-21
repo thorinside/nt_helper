@@ -3,8 +3,9 @@ name: Multi-Platform Build
 on:
   push:
     tags:
-      - 'v*' # Match tags starting with 'v', e.g., v1.0, v2.1.0
+      - 'v*' # Match tags starting with 'v', e.g. v1.0, v2.1.0
 
+# Ensure the workflow can create and update releases
 permissions:
   contents: write
 
@@ -18,19 +19,24 @@ jobs:
 
       - name: Extract Version Name
         id: extract_version
-        run: echo "VERSION=${GITHUB_REF##*/}" | sed 's/^v//' >> $GITHUB_ENV
+        run: |
+          # Read the raw tag (e.g. "v1.2.3") from github.ref_name
+          version="${{ github.ref_name }}"
+          # Strip leading "v" (if present)
+          version="${version#v}"
+          # Save to environment
+          echo "VERSION=$version" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          releaseName: "Release ${{ github.ref_name }}"
           body: "Automated release for version ${{ github.ref_name }}"
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   android:
     name: Build and Sign Android APK
@@ -62,15 +68,19 @@ jobs:
         run: flutter build apk --release
 
       - name: Rename Android APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk \
+          build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
 
       - name: Upload Android Artifact to Release
-        uses: actions/upload-release-asset@v1
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
-          asset_name: nt_helper-${{ env.VERSION }}-android.apk
-          asset_content_type: application/vnd.android.package-archive
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          createRelease: false       # Do not create a new release
+          allowUpdates: true         # Allow updating existing release
+          artifacts: |
+            path: build/app/outputs/flutter-apk/nt_helper-${{ env.VERSION }}.apk
+              name: nt_helper-${{ env.VERSION }}-android.apk
 
   macos:
     name: Build macOS App
@@ -96,12 +106,15 @@ jobs:
         run: cd build/macos/Build/Products/Release && zip -r nt_helper-${{ env.VERSION }}.zip nt_helper.app
 
       - name: Upload macOS Artifact to Release
-        uses: actions/upload-release-asset@v1
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip
-          asset_name: nt_helper-${{ env.VERSION }}-macos.zip
-          asset_content_type: application/zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          createRelease: false
+          allowUpdates: true
+          artifacts: |
+            path: build/macos/Build/Products/Release/nt_helper-${{ env.VERSION }}.zip
+              name: nt_helper-${{ env.VERSION }}-macos.zip
 
   windows:
     name: Build Windows App
@@ -127,12 +140,15 @@ jobs:
         run: cd build/windows/x64/runner/Release && zip -r nt_helper-${{ env.VERSION }}.zip *
 
       - name: Upload Windows Artifact to Release
-        uses: actions/upload-release-asset@v1
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip
-          asset_name: nt_helper-${{ env.VERSION }}-windows.zip
-          asset_content_type: application/zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          createRelease: false
+          allowUpdates: true
+          artifacts: |
+            path: build/windows/x64/runner/Release/nt_helper-${{ env.VERSION }}.zip
+              name: nt_helper-${{ env.VERSION }}-windows.zip
 
   linux:
     name: Build Linux App
@@ -163,9 +179,12 @@ jobs:
         run: cd build/linux/x64/release/bundle && zip -r nt_helper-${{ env.VERSION }}.zip *
 
       - name: Upload Linux Artifact to Release
-        uses: actions/upload-release-asset@v1
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip
-          asset_name: nt_helper-${{ env.VERSION }}-linux.zip
-          asset_content_type: application/zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          createRelease: false
+          allowUpdates: true
+          artifacts: |
+            path: build/linux/x64/release/bundle/nt_helper-${{ env.VERSION }}.zip
+              name: nt_helper-${{ env.VERSION }}-linux.zip
