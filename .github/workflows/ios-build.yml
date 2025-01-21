@@ -1,0 +1,138 @@
+name: iOS Build and Sign
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    name: Build & Sign iOS
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Print macOS & Xcode info (debug)
+        run: |
+          echo "macOS version:"
+          sw_vers
+          echo "Xcode version:"
+          xcodebuild -version
+          echo "Environment variables (sorted):"
+          env | sort
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.10.5'
+
+      - name: Flutter Doctor (debug)
+        run: flutter doctor -v
+
+      - name: Pub get
+        run: flutter pub get
+
+      # 1) Decode your .p12 certificate from secrets.APPLE_CERTIFICATE
+      - name: Decode iOS certificate from Base64
+        run: echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > ios_certificate.p12
+
+      # 2) Decode your mobile provisioning profile from secrets.DEV_MOBILEPROVISIONING_PROFILE
+      #    (or MOBILEPROVISION if that's your correct secret name)
+      - name: Decode provisioning profile from Base64
+        run: echo "${{ secrets.DEV_MOBILEPROVISIONING_PROFILE }}" | base64 --decode > MyApp_Dev.mobileprovision
+
+      - name: Debug list files
+        run: |
+          echo "Files in workspace:"
+          ls -la
+          echo "Certificate details:"
+          ls -la ios_certificate.p12 || true
+          echo "Provisioning profile details:"
+          ls -la MyApp_Dev.mobileprovision || true
+
+      # 3) Create a temporary keychain & import the .p12
+      - name: Create & unlock keychain
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          KEYCHAIN_PASSWORD=""  # or set one if you prefer
+
+          echo "Creating keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          # Keep the keychain unlocked for a while:
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+
+          echo "Unlocking keychain..."
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          echo "Setting $KEYCHAIN_NAME as default..."
+          security default-keychain -s "$KEYCHAIN_NAME"
+
+          echo "List of keychains now:"
+          security list-keychains
+        shell: bash
+
+      - name: Import certificate
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+
+          # The password for your .p12 is in APPLE_CERTIFICATE_PASSWORD:
+          security import ios_certificate.p12 \
+            -k "$KEYCHAIN_NAME" \
+            -P "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" \
+            -T /usr/bin/codesign
+
+          # Give codesign tools permission
+          security set-key-partition-list -S apple-tool:,apple: -k "" "$KEYCHAIN_NAME"
+
+          echo "Identities in keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
+
+      # 4) Install the provisioning profile
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp MyApp_Dev.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "Provisioning profiles in that folder:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      # 5) Build IPA via Flutter
+      - name: Flutter build IPA
+        run: |
+          set -x
+          flutter clean
+          flutter pub get
+          # For ad-hoc or release builds with code signing, typically:
+          flutter build ipa --release
+          # If you need a custom export-options plist, see:
+          #   flutter build ipa --export-options-plist=path/to/ExportOptions.plist
+
+      - name: Debug List final artifacts
+        run: ls -R build/ios/ipa || true
+
+      # 6) Optionally, use your Apple ID & app-specific password to upload
+      #    automatically to TestFlight/App Store. Example with fastlane:
+      #
+      # - name: Install fastlane (optional)
+      #   run: sudo gem install fastlane
+      #
+      # - name: Upload to TestFlight (optional)
+      #   run: |
+      #     fastlane pilot upload \
+      #       --ipa "./build/ios/ipa/Runner.ipa" \
+      #       --apple_id "${{ secrets.APPLE_ID }}" \
+      #       --itunes_connect_team_id "${{ secrets.APPLE_TEAM }}" \
+      #       --team_id "${{ secrets.APPLE_TEAM }}" \
+      #       --api_key_path "./fastlane_key.json" \
+      #       --app_identifier "com.your.bundleid"
+      #   shell: bash
+
+      # 7) Or simply upload the .ipa as an artifact on GitHub
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: MyApp-iOS-IPA
+          path: build/ios/ipa/*.ipa
