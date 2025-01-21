@@ -159,6 +159,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   final int defaultValue;
   final int unit;
   final String name;
+  final int powerOfTen;
 
   ParameterInfo({
     required this.algorithmIndex,
@@ -168,6 +169,7 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
     required this.defaultValue,
     required this.unit,
     required this.name,
+    required this.powerOfTen,
   });
 
   /// Factory constructor for default `filler` instance
@@ -180,12 +182,13 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
       defaultValue: 0,
       unit: 0,
       name: '',
+      powerOfTen: 0,
     );
   }
 
   @override
   String toString() {
-    return "ParameterInfo: min=$min, max=$max, defaultValue=$defaultValue, unit=$unit, name=$name";
+    return "ParameterInfo: min=$min, max=$max, defaultValue=$defaultValue, unit=$unit, name=$name, powerOfTen=$powerOfTen";
   }
 
   @override
@@ -200,12 +203,13 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
         other.max == max &&
         other.defaultValue == defaultValue &&
         other.unit == unit &&
-        other.name == name;
+        other.name == name &&
+        other.powerOfTen == powerOfTen;
   }
 
   @override
-  int get hashCode => Object.hash(
-      algorithmIndex, parameterNumber, min, max, defaultValue, unit, name);
+  int get hashCode => Object.hash(algorithmIndex, parameterNumber, min, max,
+      defaultValue, unit, name, powerOfTen);
 }
 
 class AllParameterValues implements HasAlgorithmIndex {
@@ -1068,6 +1072,7 @@ class DistingNT {
       defaultValue: decode16(messagePayload, 10),
       unit: decode8(messagePayload.sublist(13, 14)),
       name: decodeNullTerminatedAscii(messagePayload, 14).value,
+      powerOfTen: messagePayload.last,
     );
   }
 

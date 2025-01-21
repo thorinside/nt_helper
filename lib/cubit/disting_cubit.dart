@@ -630,7 +630,8 @@ class DistingCubit extends Cubit<DistingState> {
                   max: parameter.max,
                   defaultValue: parameter.defaultValue,
                   unit: parameter.unit,
-                  name: parameter.name)).toList(),
+                  name: parameter.name,
+                  powerOfTen: parameter.powerOfTen)).toList(),
       values: slot.values.map((value) =>
           ParameterValue(
               algorithmIndex: algorithmIndex,
