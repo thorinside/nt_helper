@@ -315,30 +315,28 @@ class SynchronizedScreen extends StatelessWidget {
         ),
         body: AnimatedSwitcher(
           duration: Duration(seconds: 1),
-          child: Builder(
-            builder: (context) {
-              return slots.isNotEmpty
-                  ? TabBarView(
-                      children: slots.mapIndexed((index, slot) {
-                        return SlotDetailView(
-                          key: ValueKey("$index - ${slot.algorithmGuid.guid}"),
-                          slot: slot,
-                          units: units,
-                        );
-                      }).toList(),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          "No algorithms",
-                          style: Theme.of(context).textTheme.displaySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    );
-            }
-          ),
+          child: Builder(builder: (context) {
+            return slots.isNotEmpty
+                ? TabBarView(
+                    children: slots.mapIndexed((index, slot) {
+                      return SlotDetailView(
+                        key: ValueKey("$index - ${slot.algorithmGuid.guid}"),
+                        slot: slot,
+                        units: units,
+                      );
+                    }).toList(),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        "No algorithms",
+                        style: Theme.of(context).textTheme.displaySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  );
+          }),
         ),
       ),
     );
@@ -548,6 +546,7 @@ class ParameterEditorView extends StatelessWidget {
         max: parameterInfo.max,
         algorithmIndex: parameterInfo.algorithmIndex,
         parameterNumber: parameterInfo.parameterNumber,
+        powerOfTen: parameterInfo.powerOfTen,
         defaultValue: parameterInfo.defaultValue,
         displayString: valueString.value.isNotEmpty ? valueString.value : null,
         dropdownItems:
@@ -572,6 +571,7 @@ class ParameterViewRow extends StatefulWidget {
   final String?
       displayString; // For additional display string instead of dropdown
   final String? unit;
+  final int powerOfTen;
   final List<String>? dropdownItems; // For enums as a dropdown
   final bool isOnOff; // Whether the parameter is an "on/off" type
   final int initialValue;
@@ -588,6 +588,7 @@ class ParameterViewRow extends StatefulWidget {
     required this.parameterNumber,
     required this.algorithmIndex,
     this.unit,
+    this.powerOfTen = 0,
     this.displayString,
     this.dropdownItems,
     this.isOnOff = false,
@@ -801,11 +802,14 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                   ),
                                 )
                               : widget.unit != null
-                                  ? Text(formatWithUnit(currentValue,
+                                  ? Text(formatWithUnit(
+                                      currentValue,
                                       name: widget.name,
                                       min: widget.min,
                                       max: widget.max,
-                                      unit: widget.unit))
+                                      unit: widget.unit,
+                                      powerOfTen: widget.powerOfTen,
+                                    ))
                                   : Text(currentValue.toString()),
             ),
           ),
@@ -919,53 +923,18 @@ class MappingEditorBottomSheet extends StatelessWidget {
   }
 }
 
-String formatWithUnit(int currentValue,
-    {required int min, required int max, required String name, String? unit}) {
-  if (kDebugMode) {
-    print("formatWithUnit(name='$name' min=$min max=$max unit=$unit)");
-  }
-
+String formatWithUnit(
+  int currentValue, {
+  required int min,
+  required int max,
+  required String name,
+  String? unit,
+  required int powerOfTen,
+}) {
   if (unit == null || unit.isEmpty) return currentValue.toString();
 
-  switch (unit) {
-    case 'ms':
-      if (min == 0 && max == 100) {
-        return '${((currentValue / 10).toStringAsFixed(1))} $unit';
-      }
-      break;
-    case '%':
-      if (max < 1000) {
-        return '${((currentValue).toStringAsFixed(0))} $unit';
-      } else if (max < 10000) {
-        return '${((currentValue / 10).toStringAsFixed(1))} $unit';
-      }
-      break;
-    case 'dB':
-      if (min < -100) {
-        return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
-      } else {
-        return '${((currentValue)).toStringAsFixed(0)} ${unit.trim()}';
-      }
-    case ' BPM':
-      return '${((currentValue / 10)).toStringAsFixed(1)} ${unit.trim()}';
-    case 'V':
-      if (min == -10 && max == 10) {
-        return '${(currentValue.toStringAsFixed(0))} $unit';
-      }
-      if (min == -100 && max == 100) {
-        return '${((currentValue / 10).toStringAsFixed(1))} $unit';
-      }
-      if (min == -1000 && max == 1000) {
-        return '${((currentValue / 100)).toStringAsFixed(2)} ${unit.trim()}';
-      }
-      return '${(currentValue.toStringAsFixed(0))} $unit';
-    case 'Hz':
-      if (name == 'Frequency') {
-        return '${currentValue.toStringAsFixed(0)} ${unit.trim()}';
-      }
-      return '${((currentValue / 1000)).toStringAsFixed(3)} ${unit.trim()}';
-  }
-  return '$currentValue ${unit.trim()}';
+  final trimmedUnit = unit.trim();
+  return '${((currentValue / pow(10, powerOfTen)).toStringAsFixed(powerOfTen))} $trimmedUnit';
 }
 
 String midiNoteToNoteString(int midiNoteNumber) {
