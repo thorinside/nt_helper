@@ -58,6 +58,7 @@ enum DistingNTRequestMessageType {
   setMidiMapping(0x4E),
   setI2CMapping(0x4F),
   requestParameterValueString(0x50),
+  setSlotName(0x51),
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
 
@@ -716,6 +717,17 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
+  static Uint8List encodeSendSlotName(int distingSysExId, int algorithmIndex, String name) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.setSlotName.value,
+      algorithmIndex & 0x7F,
+      ...encodeNullTerminatedAscii(name),
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
   static Uint8List encodeRemoveAlgorithm(
       int distingSysExId, int algorithmIndex) {
     final bytes = <int>[
@@ -973,11 +985,13 @@ class DistingNT {
     );
   }
 
-  static Algorithm decodeAlgorithm(Uint8List guidData) {
+  static Algorithm decodeAlgorithm(Uint8List algorithmData) {
     return Algorithm(
-      algorithmIndex: guidData[0].toInt(),
-      guid: String.fromCharCodes(guidData.sublist(1, 5)),
-      name: decodeNullTerminatedAscii(guidData, 5).value,
+      algorithmIndex: algorithmData[0].toInt(),
+      guid: String.fromCharCodes(algorithmData.sublist(1, 5)),
+      name: String.fromCharCodes(
+        algorithmData.sublist(5).takeWhile((value) => value != 0),
+      ),
     );
   }
 

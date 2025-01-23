@@ -3,7 +3,7 @@ part of 'disting_cubit.dart';
 @freezed
 class Slot with _$Slot {
   const factory Slot({
-    required Algorithm algorithmGuid,
+    required Algorithm algorithm,
     required RoutingInfo routing,
     required List<ParameterInfo> parameters,
     required List<ParameterValue> values,

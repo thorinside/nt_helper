@@ -10,7 +10,7 @@ void main() {
   group("SectionBuilder Tests", () {
     test("can build sections for spin algorithm", () async {
       final slot = Slot(
-        algorithmGuid: Algorithm(algorithmIndex: 1, guid: 'spin', name: 'Three Pot'),
+        algorithm: Algorithm(algorithmIndex: 1, guid: 'spin', name: 'Three Pot'),
         routing: RoutingInfo.filler(),
         parameters: [
           ParameterInfo(

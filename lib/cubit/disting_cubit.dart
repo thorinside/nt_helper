@@ -231,7 +231,7 @@ class DistingCubit extends Cubit<DistingState> {
           ParameterValueString.filler()
     ];
     return Slot(
-      algorithmGuid: (await disting.requestAlgorithmGuid(algorithmIndex))!,
+      algorithm: (await disting.requestAlgorithmGuid(algorithmIndex))!,
       parameters: parameters,
       values: parameterValues,
       enums: enums,
@@ -608,7 +608,7 @@ class DistingCubit extends Cubit<DistingState> {
                 routingInfo: slot.routing.routingInfo,
                 algorithmName: syncstate.algorithms
                     .firstWhere(
-                      (element) => element.guid == slot.algorithmGuid.guid,
+                      (element) => element.guid == slot.algorithm.guid,
                     )
                     .name))
             .toList();
@@ -621,13 +621,13 @@ class DistingCubit extends Cubit<DistingState> {
           int parameterNumber) =>
       (state.slots[algorithmIndex].parameters[parameterNumber].name ==
           "Program") &&
-      ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
+      ("spin" == state.slots[algorithmIndex].algorithm.guid);
 
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
     // Run through all of the parts of the slot and replace the algorithm index
     // with the new one.
     return Slot(
-      algorithmGuid: slot.algorithmGuid,
+      algorithm: slot.algorithm,
       routing: RoutingInfo(
           algorithmIndex: algorithmIndex,
           routingInfo: slot.routing.routingInfo),
@@ -668,5 +668,9 @@ class DistingCubit extends Cubit<DistingState> {
               value: valueStrings.value))
           .toList(),
     );
+  }
+
+  void renameSlot(int algorithmIndex, String newName) {
+      disting()?.requestSendSlotName(algorithmIndex, newName);
   }
 }

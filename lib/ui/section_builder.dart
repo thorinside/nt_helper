@@ -13,7 +13,7 @@ class SectionBuilder {
     try {
       // Load the JSON file based on the GUID of the algorithm in the slot
       String jsonString = await rootBundle.loadString(
-        'assets/sections/${slot.algorithmGuid.guid.trim()}.json',
+        'assets/sections/${slot.algorithm.guid.trim()}.json',
         cache: true,
       );
 

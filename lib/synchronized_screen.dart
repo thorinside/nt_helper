@@ -11,6 +11,7 @@ import 'package:nt_helper/load_preset_dialog.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/packed_mapping_data_editor.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
+import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
@@ -301,12 +302,27 @@ class SynchronizedScreen extends StatelessWidget {
                 TabBar(
                   isScrollable: true,
                   tabs: slots.map((slot) {
-                    final algorithmName = algorithms
-                        .where((element) =>
-                            element.guid == slot.algorithmGuid.guid)
-                        .firstOrNull
-                        ?.name;
-                    return Tab(text: algorithmName ?? "");
+                    final algorithmName = (slot.algorithm.name.isNotEmpty)
+                        ? slot.algorithm.name
+                        : algorithms
+                            .where((element) =>
+                                element.guid == slot.algorithm.guid)
+                            .firstOrNull
+                            ?.name;
+                    return GestureDetector(
+                      onLongPress: () async {
+                        final newName = await showDialog<String>(
+                          context: context,
+                          builder: (context) => RenameSlotDialog(
+                            initialName: algorithmName ?? "",
+                          ),
+                        );
+
+                        if (newName != null) {
+                          context.read<DistingCubit>().renameSlot(slot.algorithm.algorithmIndex, newName);
+                        }
+                      },
+                        child: Tab(text: algorithmName ?? ""));
                   }).toList(),
                 ),
               ],
@@ -320,7 +336,7 @@ class SynchronizedScreen extends StatelessWidget {
                 ? TabBarView(
                     children: slots.mapIndexed((index, slot) {
                       return SlotDetailView(
-                        key: ValueKey("$index - ${slot.algorithmGuid.guid}"),
+                        key: ValueKey("$index - ${slot.algorithm.guid}"),
                         slot: slot,
                         units: units,
                       );

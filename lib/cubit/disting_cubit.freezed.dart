@@ -16,7 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$Slot {
-  Algorithm get algorithmGuid => throw _privateConstructorUsedError;
+  Algorithm get algorithm => throw _privateConstructorUsedError;
   RoutingInfo get routing => throw _privateConstructorUsedError;
   List<ParameterInfo> get parameters => throw _privateConstructorUsedError;
   List<ParameterValue> get values => throw _privateConstructorUsedError;
@@ -37,7 +37,7 @@ abstract class $SlotCopyWith<$Res> {
       _$SlotCopyWithImpl<$Res, Slot>;
   @useResult
   $Res call(
-      {Algorithm algorithmGuid,
+      {Algorithm algorithm,
       RoutingInfo routing,
       List<ParameterInfo> parameters,
       List<ParameterValue> values,
@@ -61,7 +61,7 @@ class _$SlotCopyWithImpl<$Res, $Val extends Slot>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? algorithmGuid = null,
+    Object? algorithm = null,
     Object? routing = null,
     Object? parameters = null,
     Object? values = null,
@@ -70,9 +70,9 @@ class _$SlotCopyWithImpl<$Res, $Val extends Slot>
     Object? valueStrings = null,
   }) {
     return _then(_value.copyWith(
-      algorithmGuid: null == algorithmGuid
-          ? _value.algorithmGuid
-          : algorithmGuid // ignore: cast_nullable_to_non_nullable
+      algorithm: null == algorithm
+          ? _value.algorithm
+          : algorithm // ignore: cast_nullable_to_non_nullable
               as Algorithm,
       routing: null == routing
           ? _value.routing
@@ -110,7 +110,7 @@ abstract class _$$SlotImplCopyWith<$Res> implements $SlotCopyWith<$Res> {
   @override
   @useResult
   $Res call(
-      {Algorithm algorithmGuid,
+      {Algorithm algorithm,
       RoutingInfo routing,
       List<ParameterInfo> parameters,
       List<ParameterValue> values,
@@ -131,7 +131,7 @@ class __$$SlotImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? algorithmGuid = null,
+    Object? algorithm = null,
     Object? routing = null,
     Object? parameters = null,
     Object? values = null,
@@ -140,9 +140,9 @@ class __$$SlotImplCopyWithImpl<$Res>
     Object? valueStrings = null,
   }) {
     return _then(_$SlotImpl(
-      algorithmGuid: null == algorithmGuid
-          ? _value.algorithmGuid
-          : algorithmGuid // ignore: cast_nullable_to_non_nullable
+      algorithm: null == algorithm
+          ? _value.algorithm
+          : algorithm // ignore: cast_nullable_to_non_nullable
               as Algorithm,
       routing: null == routing
           ? _value.routing
@@ -176,7 +176,7 @@ class __$$SlotImplCopyWithImpl<$Res>
 
 class _$SlotImpl implements _Slot {
   const _$SlotImpl(
-      {required this.algorithmGuid,
+      {required this.algorithm,
       required this.routing,
       required final List<ParameterInfo> parameters,
       required final List<ParameterValue> values,
@@ -190,7 +190,7 @@ class _$SlotImpl implements _Slot {
         _valueStrings = valueStrings;
 
   @override
-  final Algorithm algorithmGuid;
+  final Algorithm algorithm;
   @override
   final RoutingInfo routing;
   final List<ParameterInfo> _parameters;
@@ -235,7 +235,7 @@ class _$SlotImpl implements _Slot {
 
   @override
   String toString() {
-    return 'Slot(algorithmGuid: $algorithmGuid, routing: $routing, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
+    return 'Slot(algorithm: $algorithm, routing: $routing, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
   }
 
   @override
@@ -243,8 +243,8 @@ class _$SlotImpl implements _Slot {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$SlotImpl &&
-            (identical(other.algorithmGuid, algorithmGuid) ||
-                other.algorithmGuid == algorithmGuid) &&
+            (identical(other.algorithm, algorithm) ||
+                other.algorithm == algorithm) &&
             (identical(other.routing, routing) || other.routing == routing) &&
             const DeepCollectionEquality()
                 .equals(other._parameters, _parameters) &&
@@ -258,7 +258,7 @@ class _$SlotImpl implements _Slot {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      algorithmGuid,
+      algorithm,
       routing,
       const DeepCollectionEquality().hash(_parameters),
       const DeepCollectionEquality().hash(_values),
@@ -277,7 +277,7 @@ class _$SlotImpl implements _Slot {
 
 abstract class _Slot implements Slot {
   const factory _Slot(
-      {required final Algorithm algorithmGuid,
+      {required final Algorithm algorithm,
       required final RoutingInfo routing,
       required final List<ParameterInfo> parameters,
       required final List<ParameterValue> values,
@@ -286,7 +286,7 @@ abstract class _Slot implements Slot {
       required final List<ParameterValueString> valueStrings}) = _$SlotImpl;
 
   @override
-  Algorithm get algorithmGuid;
+  Algorithm get algorithm;
   @override
   RoutingInfo get routing;
   @override

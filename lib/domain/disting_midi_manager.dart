@@ -481,4 +481,20 @@ class DistingMidiManager {
       responseExpectation: ResponseExpectation.optional,
     );
   }
+
+  Future<void> requestSendSlotName(int algorithmIndex, String name) async {
+    final packet = DistingNT.encodeSendSlotName(sysExId, algorithmIndex, name);
+
+    final key = RequestKey(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+    );
+    return _scheduler.sendRequest<void>(
+      maxRetries: 1,
+      retryDelay: Duration(milliseconds: 250),
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
 }

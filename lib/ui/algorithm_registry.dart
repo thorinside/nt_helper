@@ -3,7 +3,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 
 class AlgorithmViewRegistry {
   static Widget? findViewFor(Slot slot) {
-    switch (slot.algorithmGuid.guid) {
+    switch (slot.algorithm.guid) {
       case 'note':
         return NotesAlgorithmView(slot: slot);
     }
