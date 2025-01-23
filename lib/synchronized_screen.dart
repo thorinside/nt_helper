@@ -263,8 +263,8 @@ class SynchronizedScreen extends StatelessWidget {
                           }
                         },
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          // Shrinks to fit content
+                          mainAxisSize:
+                              MainAxisSize.min, // Shrinks to fit content
                           children: [
                             Text(
                               'Preset: ${presetName.trim()}',
@@ -297,8 +297,7 @@ class SynchronizedScreen extends StatelessWidget {
                                   )),
                     ],
                   ),
-                ),
-                // The TabBar
+                ), // The TabBar
                 TabBar(
                   isScrollable: true,
                   tabs: slots.map((slot) {
@@ -310,18 +309,19 @@ class SynchronizedScreen extends StatelessWidget {
                             .firstOrNull
                             ?.name;
                     return GestureDetector(
-                      onLongPress: () async {
-                        final newName = await showDialog<String>(
-                          context: context,
-                          builder: (context) => RenameSlotDialog(
-                            initialName: algorithmName ?? "",
-                          ),
-                        );
+                        onLongPress: () async {
+                          final newName = await showDialog<String>(
+                            context: context,
+                            builder: (context) => RenameSlotDialog(
+                              initialName: algorithmName ?? "",
+                            ),
+                          );
 
-                        if (newName != null) {
-                          context.read<DistingCubit>().renameSlot(slot.algorithm.algorithmIndex, newName);
-                        }
-                      },
+                          if (newName != null) {
+                            context.read<DistingCubit>().renameSlot(
+                                slot.algorithm.algorithmIndex, newName);
+                          }
+                        },
                         child: Tab(text: algorithmName ?? ""));
                   }).toList(),
                 ),
@@ -686,8 +686,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                     parameterNumber: widget.parameterNumber);
               },
               child: Text(
-                widget.name,
-                overflow: TextOverflow.ellipsis,
+                widget.name, overflow: TextOverflow.ellipsis,
                 style: textTheme.titleMedium, // Larger title for the name
               ),
             ),
