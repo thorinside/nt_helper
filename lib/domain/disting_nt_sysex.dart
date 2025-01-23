@@ -417,8 +417,7 @@ class DistingNT {
   /// given the 'SysEx ID' (the module’s own ID in its settings).
   static List<int> _buildHeader(int distingSysExId) {
     return [
-      kSysExStart,
-      ...kExpertSleepersManufacturerId, // 00 21 27
+      kSysExStart, ...kExpertSleepersManufacturerId, // 00 21 27
       kDistingNTPrefix, // 6D
       (distingSysExId & 0x7F), // <SysEx ID> is 7-bit
     ];
@@ -433,10 +432,6 @@ class DistingNT {
     return payload[0].toInt();
   }
 
-  /// A small utility to pack a 16-bit integer into 3 bytes of 7-bit data,
-  /// as described in the doc:
-  ///
-  ///  <most significant 2 bits> <middle 7 bits> <least significant 7 bits>
   static List<int> encode16(int value) {
     // Ensure 16-bit range
     final int v = value & 0xFFFF;
@@ -448,10 +443,6 @@ class DistingNT {
 
   /// The reverse: parse 3 bytes of 7-bit data into a 16-bit integer.
   static int decode16(List<int> data, int offset) {
-    // int v = (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
-    // v = (v << 16) >> 16;
-    // return v;
-
     var v =
         (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
     // Ensure the value is treated as a signed 16-bit integer
@@ -502,8 +493,6 @@ class DistingNT {
   }
 
   /// Build a 'Take screenshot' SysEx message.
-  ///
-  /// F0 00 21 27 6D <SysEx ID> 01 F7
   static Uint8List encodeTakeScreenshot(int distingSysExId) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
@@ -514,8 +503,6 @@ class DistingNT {
   }
 
   /// Build a 'Wake' SysEx message.
-  ///
-  /// F0 00 21 27 6D <SysEx ID> 07 F7
   static Uint8List encodeWake(int distingSysExId) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
@@ -526,10 +513,6 @@ class DistingNT {
   }
 
   /// Build a 'Set real-time clock' SysEx message.
-  ///
-  /// F0 00 21 27 6D <SysEx ID> 04 <time MSB> <time> <time> <time> <time LSB> F7
-  ///
-  /// The time is a 32-bit integer (seconds since epoch).
   static Uint8List encodeSetRealTimeClock(
       int distingSysExId, int unixTimeSeconds) {
     final timeBytes = encode32(unixTimeSeconds);
@@ -543,8 +526,6 @@ class DistingNT {
   }
 
   /// Example: Build a 'Request version string' SysEx message.
-  ///
-  /// F0 00 21 27 6D <SysEx ID> 22 F7
   static Uint8List encodeRequestVersionString(int distingSysExId) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
@@ -816,7 +797,8 @@ class DistingNT {
       DistingNTRequestMessageType.setMapping.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
-      1, // version
+      1,
+      // version
       ...data.encodeCVPackedData(),
       ..._buildFooter(),
     ];
@@ -830,7 +812,8 @@ class DistingNT {
       DistingNTRequestMessageType.setMidiMapping.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
-      1, // version
+      1,
+      // version
       ...data.encodeMidiPackedData(),
       ..._buildFooter(),
     ];
@@ -844,7 +827,8 @@ class DistingNT {
       DistingNTRequestMessageType.setI2CMapping.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
-      1, // version
+      1,
+      // version
       ...data.encodeI2CPackedData(),
       ..._buildFooter(),
     ];
@@ -982,8 +966,7 @@ class DistingNT {
       MidiCommand midiCommand, MidiDevice device, Uint8List data) {
     // Send the SysEx message
     midiCommand.sendData(
-      data,
-      deviceId: device.id, // Specify the target device ID
+      data, deviceId: device.id, // Specify the target device ID
       timestamp: null, // Timestamp if needed, or leave as null
     );
   }
@@ -996,7 +979,6 @@ class DistingNT {
 
   // Generates a bitmap from the screenshot response payload
   static Uint8List decodeBitmap(Uint8List screenshotData) {
-    print("ScreenshotData.length=${screenshotData.length}");
     try {
       // Define screenshot properties (adjust based on actual format)
       const int width = 256; // Example width
@@ -1050,7 +1032,6 @@ class DistingNT {
       // Encode the image as PNG
       return Uint8List.fromList(img.encodePng(borderedImage));
     } catch (e) {
-      print('Error generating bitmap: $e');
       return Uint8List(0); // Return empty on error
     }
   }
