@@ -11,6 +11,7 @@ import 'package:nt_helper/models/routing_information.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
+
 part 'disting_state.dart';
 
 class DistingCubit extends Cubit<DistingState> {
@@ -47,7 +48,8 @@ class DistingCubit extends Cubit<DistingState> {
           .firstOrNull;
 
       if (savedInputDevice != null && savedOutputDevice != null) {
-        await connectToDevices(savedInputDevice, savedOutputDevice, savedSysExId);
+        await connectToDevices(
+            savedInputDevice, savedOutputDevice, savedSysExId);
       } else {
         emit(DistingState.selectDevice(
           midiCommand: _midiCommand,
@@ -79,9 +81,9 @@ class DistingCubit extends Cubit<DistingState> {
       emit(DistingState.selectDevice(
         midiCommand: _midiCommand,
         inputDevices:
-        devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
+            devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
         outputDevices:
-        devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
+            devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
       ));
     } catch (e) {
       // Handle error state if necessary
@@ -107,7 +109,8 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> connectToDevices(MidiDevice inputDevice, MidiDevice outputDevice, int sysExId) async {
+  Future<void> connectToDevices(
+      MidiDevice inputDevice, MidiDevice outputDevice, int sysExId) async {
     try {
       // Connect to the selected device
       await _midiCommand.connectToDevice(inputDevice);
@@ -120,7 +123,10 @@ class DistingCubit extends Cubit<DistingState> {
       await prefs.setInt('selectedSysExId', sysExId);
 
       final disting = DistingMidiManager(
-          midiCommand: _midiCommand, inputDevice: inputDevice, outputDevice: outputDevice, sysExId: sysExId);
+          midiCommand: _midiCommand,
+          inputDevice: inputDevice,
+          outputDevice: outputDevice,
+          sysExId: sysExId);
 
       // Transition to the connected state
       emit(DistingState.connected(
@@ -384,7 +390,9 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> onAlgorithmSelected(
-      AlgorithmInfo algorithm, List<int> specifications) async {
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  ) async {
     if (state is DistingStateSynchronized) {
       final disting = requireDisting();
       await disting.requestAddAlgorithm(algorithm, specifications);
@@ -419,8 +427,10 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  void onFocusParameter(
-      {required int algorithmIndex, required int parameterNumber}) {
+  void onFocusParameter({
+    required int algorithmIndex,
+    required int parameterNumber,
+  }) {
     final disting = requireDisting();
     disting.requestSetFocus(algorithmIndex, parameterNumber);
   }
@@ -598,6 +608,18 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  void renameSlot(int algorithmIndex, String newName) async {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = requireDisting();
+        await disting.requestSendSlotName(algorithmIndex, newName);
+        await Future.delayed(Duration(milliseconds: 100));
+        final slot = await fetchSlot(requireDisting(), algorithmIndex);
+        emit(syncstate.copyWith(
+            slots: updateSlot(algorithmIndex, syncstate.slots, (_) => slot)));
+    }
+  }
+
   List<RoutingInformation> buildRoutingInformation() {
     switch (state) {
       case DistingStateSynchronized syncstate:
@@ -668,9 +690,5 @@ class DistingCubit extends Cubit<DistingState> {
               value: valueStrings.value))
           .toList(),
     );
-  }
-
-  void renameSlot(int algorithmIndex, String newName) {
-      disting()?.requestSendSlotName(algorithmIndex, newName);
   }
 }
