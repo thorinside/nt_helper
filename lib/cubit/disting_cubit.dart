@@ -11,7 +11,6 @@ import 'package:nt_helper/models/routing_information.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
-
 part 'disting_state.dart';
 
 class DistingCubit extends Cubit<DistingState> {
@@ -628,11 +627,13 @@ class DistingCubit extends Cubit<DistingState> {
             .map((slot) => RoutingInformation(
                 algorithmIndex: slot.routing.algorithmIndex,
                 routingInfo: slot.routing.routingInfo,
-                algorithmName: syncstate.algorithms
-                    .firstWhere(
-                      (element) => element.guid == slot.algorithm.guid,
-                    )
-                    .name))
+                algorithmName: (slot.algorithm.name.isNotEmpty)
+                    ? slot.algorithm.name
+                    : syncstate.algorithms
+                        .firstWhere(
+                          (element) => element.guid == slot.algorithm.guid,
+                        )
+                        .name))
             .toList();
       default:
         return [];
