@@ -16,7 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$Slot {
-  AlgorithmGuid get algorithmGuid => throw _privateConstructorUsedError;
+  Algorithm get algorithmGuid => throw _privateConstructorUsedError;
   RoutingInfo get routing => throw _privateConstructorUsedError;
   List<ParameterInfo> get parameters => throw _privateConstructorUsedError;
   List<ParameterValue> get values => throw _privateConstructorUsedError;
@@ -37,7 +37,7 @@ abstract class $SlotCopyWith<$Res> {
       _$SlotCopyWithImpl<$Res, Slot>;
   @useResult
   $Res call(
-      {AlgorithmGuid algorithmGuid,
+      {Algorithm algorithmGuid,
       RoutingInfo routing,
       List<ParameterInfo> parameters,
       List<ParameterValue> values,
@@ -73,7 +73,7 @@ class _$SlotCopyWithImpl<$Res, $Val extends Slot>
       algorithmGuid: null == algorithmGuid
           ? _value.algorithmGuid
           : algorithmGuid // ignore: cast_nullable_to_non_nullable
-              as AlgorithmGuid,
+              as Algorithm,
       routing: null == routing
           ? _value.routing
           : routing // ignore: cast_nullable_to_non_nullable
@@ -110,7 +110,7 @@ abstract class _$$SlotImplCopyWith<$Res> implements $SlotCopyWith<$Res> {
   @override
   @useResult
   $Res call(
-      {AlgorithmGuid algorithmGuid,
+      {Algorithm algorithmGuid,
       RoutingInfo routing,
       List<ParameterInfo> parameters,
       List<ParameterValue> values,
@@ -143,7 +143,7 @@ class __$$SlotImplCopyWithImpl<$Res>
       algorithmGuid: null == algorithmGuid
           ? _value.algorithmGuid
           : algorithmGuid // ignore: cast_nullable_to_non_nullable
-              as AlgorithmGuid,
+              as Algorithm,
       routing: null == routing
           ? _value.routing
           : routing // ignore: cast_nullable_to_non_nullable
@@ -190,7 +190,7 @@ class _$SlotImpl implements _Slot {
         _valueStrings = valueStrings;
 
   @override
-  final AlgorithmGuid algorithmGuid;
+  final Algorithm algorithmGuid;
   @override
   final RoutingInfo routing;
   final List<ParameterInfo> _parameters;
@@ -277,7 +277,7 @@ class _$SlotImpl implements _Slot {
 
 abstract class _Slot implements Slot {
   const factory _Slot(
-      {required final AlgorithmGuid algorithmGuid,
+      {required final Algorithm algorithmGuid,
       required final RoutingInfo routing,
       required final List<ParameterInfo> parameters,
       required final List<ParameterValue> values,
@@ -286,7 +286,7 @@ abstract class _Slot implements Slot {
       required final List<ParameterValueString> valueStrings}) = _$SlotImpl;
 
   @override
-  AlgorithmGuid get algorithmGuid;
+  Algorithm get algorithmGuid;
   @override
   RoutingInfo get routing;
   @override

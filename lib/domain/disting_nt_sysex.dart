@@ -42,7 +42,7 @@ enum DistingNTRequestMessageType {
   newPreset(0x35),
   savePreset(0x36),
   moveAlgorithm(0x37),
-  requestAlgorithmGuid(0x40),
+  requestAlgorithm(0x40),
   requestPresetName(0x41),
   requestNumParameters(0x42),
   requestParameterInfo(0x43),
@@ -86,7 +86,7 @@ enum DistingNTRespMessageType {
   respAlgorithmInfo(0x31),
   respMessage(0x32),
   respScreenshot(0x33),
-  respAlgorithmGuid(0x40),
+  respAlgorithm(0x40),
   respPresetName(0x41),
   respNumParameters(0x42),
   respParameterInfo(0x43),
@@ -115,16 +115,18 @@ enum DistingNTRespMessageType {
   }
 }
 
-class AlgorithmGuid implements HasAlgorithmIndex {
+class Algorithm implements HasAlgorithmIndex {
   @override
   final int algorithmIndex;
   final String guid;
+  final String name;
 
-  AlgorithmGuid({required this.algorithmIndex, required this.guid});
+  Algorithm(
+      {required this.algorithmIndex, required this.guid, required this.name});
 
   @override
   String toString() {
-    return "AlgorithmGuid: index=$algorithmIndex guid=$guid";
+    return "Algorithm: index=$algorithmIndex guid=$guid name=$name";
   }
 }
 
@@ -556,7 +558,7 @@ class DistingNT {
   static Uint8List encodeRequestAlgorithmGuid(int distingSysExId, int index) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
-      DistingNTRequestMessageType.requestAlgorithmGuid.value,
+      DistingNTRequestMessageType.requestAlgorithm.value,
       (index & 0x7F),
       ..._buildFooter(),
     ];
@@ -971,10 +973,12 @@ class DistingNT {
     );
   }
 
-  static AlgorithmGuid decodeGuid(Uint8List guidData) {
-    return AlgorithmGuid(
-        algorithmIndex: guidData[0].toInt(),
-        guid: String.fromCharCodes(guidData.sublist(1, guidData.length)));
+  static Algorithm decodeAlgorithm(Uint8List guidData) {
+    return Algorithm(
+      algorithmIndex: guidData[0].toInt(),
+      guid: String.fromCharCodes(guidData.sublist(1, 5)),
+      name: decodeNullTerminatedAscii(guidData, 5).value,
+    );
   }
 
   // Generates a bitmap from the screenshot response payload
@@ -1138,10 +1142,6 @@ class DistingNT {
         return value;
       }),
     );
-  }
-
-  static AlgorithmGuid decodeAlgorithmGuid(Uint8List payload) {
-    return decodeGuid(payload);
   }
 }
 

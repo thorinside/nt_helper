@@ -329,8 +329,8 @@ class DistingMessageScheduler {
         case DistingNTRespMessageType.respMessage:
           return DistingNT.decodeMessage(payload);
 
-        case DistingNTRespMessageType.respAlgorithmGuid:
-          return DistingNT.decodeAlgorithmGuid(payload);
+        case DistingNTRespMessageType.respAlgorithm:
+          return DistingNT.decodeAlgorithm(payload);
 
         case DistingNTRespMessageType.respUnitStrings:
           return DistingNT.decodeStrings(payload);

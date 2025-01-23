@@ -240,16 +240,16 @@ class DistingMidiManager {
     );
   }
 
-  Future<AlgorithmGuid?> requestAlgorithmGuid(int algorithmIndex) async {
+  Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestAlgorithmGuid(sysExId, algorithmIndex);
     final key = RequestKey(
       sysExId: sysExId,
-      messageType: DistingNTRespMessageType.respAlgorithmGuid,
+      messageType: DistingNTRespMessageType.respAlgorithm,
       algorithmIndex: algorithmIndex,
     );
 
-    return await _scheduler.sendRequest<AlgorithmGuid>(
+    return await _scheduler.sendRequest<Algorithm>(
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
