@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
@@ -75,9 +74,10 @@ class DistingPage extends StatelessWidget {
               );
             } else if (state is DistingStateSelectDevice) {
               return _DeviceSelectionView(
-                devices: state.devices,
-                onDeviceSelected: (device, sysExId) {
-                  context.read<DistingCubit>().connectToDevice(device, sysExId);
+                inputDevices: state.inputDevices,
+                outputDevices: state.outputDevices,
+                onDeviceSelected: (inputDevice, outputDevice, sysExId) {
+                  context.read<DistingCubit>().connectToDevices(inputDevice, outputDevice, sysExId);
                 },
                 onRefresh: () {
                   context.read<DistingCubit>().loadDevices();
@@ -88,7 +88,7 @@ class DistingPage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Connected to: ${state.device.name}",
+                    Text("Synchronizing...",
                         style: Theme.of(context).textTheme.titleLarge),
                     Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -123,12 +123,14 @@ class DistingPage extends StatelessWidget {
 }
 
 class _DeviceSelectionView extends StatefulWidget {
-  final List<MidiDevice> devices;
-  final Function(MidiDevice, int) onDeviceSelected;
+  final List<MidiDevice> inputDevices;
+  final List<MidiDevice> outputDevices;
+  final Function(MidiDevice, MidiDevice, int) onDeviceSelected;
   final Function() onRefresh;
 
   const _DeviceSelectionView({
-    required this.devices,
+    required this.inputDevices,
+    required this.outputDevices,
     required this.onDeviceSelected,
     required this.onRefresh,
   });
@@ -138,7 +140,8 @@ class _DeviceSelectionView extends StatefulWidget {
 }
 
 class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
-  MidiDevice? selectedDevice;
+  MidiDevice? selectedInputDevice;
+  MidiDevice? selectedOutputDevice;
   int? selectedSysExId = 0;
 
   @override
@@ -148,16 +151,21 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
   }
 
   void selectFirstDisting() {
-    selectedDevice = widget.devices
+    selectedInputDevice = widget.inputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
         )
+        .firstOrNull;
+    selectedOutputDevice = widget.outputDevices
+        .where(
+          (element) => element.name.toLowerCase().contains('disting'),
+    )
         .firstOrNull;
   }
 
   @override
   void didUpdateWidget(covariant _DeviceSelectionView oldWidget) {
-    if (oldWidget.devices != widget.devices) {
+    if (oldWidget.inputDevices != widget.inputDevices || oldWidget.outputDevices != widget.outputDevices) {
       selectFirstDisting();
     }
     super.didUpdateWidget(oldWidget);
@@ -181,15 +189,14 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ),
-              // Dropdown for selecting the MIDI device
               DropdownMenu<MidiDevice>(
                 width: 250,
-                initialSelection: selectedDevice,
+                initialSelection: selectedInputDevice,
                 enabled: true,
                 enableSearch: false,
                 enableFilter: false,
-                label: const Text("MIDI Device"),
-                dropdownMenuEntries: widget.devices.map((device) {
+                label: const Text("Input MIDI Device"),
+                dropdownMenuEntries: widget.inputDevices.map((device) {
                   return DropdownMenuEntry<MidiDevice>(
                     value: device,
                     label: device.name,
@@ -197,7 +204,27 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 }).toList(),
                 onSelected: (device) {
                   setState(() {
-                    selectedDevice = device;
+                    selectedInputDevice = device;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownMenu<MidiDevice>(
+                width: 250,
+                initialSelection: selectedOutputDevice,
+                enabled: true,
+                enableSearch: false,
+                enableFilter: false,
+                label: const Text("Output MIDI Device"),
+                dropdownMenuEntries: widget.outputDevices.map((device) {
+                  return DropdownMenuEntry<MidiDevice>(
+                    value: device,
+                    label: device.name,
+                  );
+                }).toList(),
+                onSelected: (device) {
+                  setState(() {
+                    selectedOutputDevice = device;
                   });
                 },
               ),
@@ -234,13 +261,13 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ),
                   ElevatedButton(
                     onPressed:
-                        (selectedDevice != null && selectedSysExId != null)
+                        (selectedInputDevice != null && selectedOutputDevice != null && selectedSysExId != null)
                             ? () {
                                 widget.onDeviceSelected(
-                                    selectedDevice!, selectedSysExId!);
+                                    selectedInputDevice!, selectedOutputDevice!, selectedSysExId!);
                               }
                             : null,
-                    child: Text("Connect to Device"),
+                    child: Text("Connect"),
                   ),
                 ],
               ),

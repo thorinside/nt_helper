@@ -16,28 +16,22 @@ class Slot with _$Slot {
 @freezed
 class DistingState with _$DistingState {
   const factory DistingState.initial({
-    required MidiCommand midiCommand,
     Uint8List? screenshot,
   }) = DistingStateInitial;
 
   const factory DistingState.selectDevice({
     required MidiCommand midiCommand,
-    required List<MidiDevice> devices,
+    required List<MidiDevice> inputDevices,
+    required List<MidiDevice> outputDevices,
     Uint8List? screenshot,
   }) = DistingStateSelectDevice;
 
   const factory DistingState.connected({
-    required MidiCommand midiCommand,
-    required MidiDevice device,
-    required int sysExId,
     required DistingMidiManager disting,
     Uint8List? screenshot,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({
-    required MidiCommand midiCommand,
-    required MidiDevice device,
-    required int sysExId,
     required DistingMidiManager disting,
     required String distingVersion,
     required String presetName,

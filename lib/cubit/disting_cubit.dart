@@ -11,15 +11,15 @@ import 'package:nt_helper/models/routing_information.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
-
 part 'disting_state.dart';
 
 class DistingCubit extends Cubit<DistingState> {
   DistingCubit()
       : _prefs = SharedPreferences.getInstance(),
-        super(DistingState.initial(midiCommand: MidiCommand()));
+        super(DistingState.initial());
 
   final Future<SharedPreferences> _prefs;
+  final MidiCommand _midiCommand = MidiCommand();
 
   @override
   Future<void> close() {
@@ -29,22 +29,32 @@ class DistingCubit extends Cubit<DistingState> {
 
   Future<void> initialize() async {
     final prefs = await _prefs;
-    final savedDeviceName = prefs.getString('selectedMidiDevice');
+    final savedInputDeviceName = prefs.getString('selectedInputMidiDevice');
+    final savedOutputDeviceName = prefs.getString('selectedOutputMidiDevice');
     final savedSysExId = prefs.getInt('selectedSysExId');
 
-    if (savedDeviceName != null && savedSysExId != null) {
+    if (savedOutputDeviceName != null &&
+        savedInputDeviceName != null &&
+        savedSysExId != null) {
       // Try to connect to the saved device
-      final devices = await state.midiCommand.devices;
-      final MidiDevice? savedDevice = devices
-          ?.where((device) => device.name == savedDeviceName)
+      final devices = await _midiCommand.devices;
+      final MidiDevice? savedInputDevice = devices
+          ?.where((device) => device.name == savedInputDeviceName)
           .firstOrNull;
 
-      if (savedDevice != null) {
-        await connectToDevice(savedDevice, savedSysExId);
+      final MidiDevice? savedOutputDevice = devices
+          ?.where((device) => device.name == savedOutputDeviceName)
+          .firstOrNull;
+
+      if (savedInputDevice != null && savedOutputDevice != null) {
+        await connectToDevices(savedInputDevice, savedOutputDevice, savedSysExId);
       } else {
         emit(DistingState.selectDevice(
-          midiCommand: state.midiCommand,
-          devices: devices!,
+          midiCommand: _midiCommand,
+          inputDevices:
+              devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
+          outputDevices:
+              devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
         ));
       }
     } else {
@@ -56,19 +66,22 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> loadDevices() async {
     try {
       // Transition to a loading state if needed
-      emit(DistingState.initial(midiCommand: state.midiCommand));
+      emit(DistingState.initial());
 
       // Fetch available MIDI devices asynchronously
-      final devices = await state.midiCommand.devices;
+      final devices = await _midiCommand.devices;
 
       devices?.sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
       // Transition to the select device state
       emit(DistingState.selectDevice(
-        midiCommand: state.midiCommand,
-        devices: devices!,
+        midiCommand: _midiCommand,
+        inputDevices:
+        devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
+        outputDevices:
+        devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
       ));
     } catch (e) {
       // Handle error state if necessary
@@ -90,29 +103,27 @@ class DistingCubit extends Cubit<DistingState> {
 
   Future<void> disconnect() async {
     if (state is DistingStateSynchronized) {
-      final device = (state as DistingStateSynchronized).device;
-      state.midiCommand.disconnectDevice(device);
+      (state as DistingStateSynchronized).disting.dispose();
     }
   }
 
-  Future<void> connectToDevice(MidiDevice device, int sysExId) async {
+  Future<void> connectToDevices(MidiDevice inputDevice, MidiDevice outputDevice, int sysExId) async {
     try {
       // Connect to the selected device
-      await state.midiCommand.connectToDevice(device);
+      await _midiCommand.connectToDevice(inputDevice);
+      await _midiCommand.connectToDevice(outputDevice);
 
       // Save the device name and SysEx ID to persistent storage
       final prefs = await _prefs;
-      await prefs.setString('selectedMidiDevice', device.name);
+      await prefs.setString('selectedInputMidiDevice', inputDevice.name);
+      await prefs.setString('selectedOutputMidiDevice', outputDevice.name);
       await prefs.setInt('selectedSysExId', sysExId);
 
       final disting = DistingMidiManager(
-          midiCommand: state.midiCommand, device: device, sysExId: sysExId);
+          midiCommand: _midiCommand, inputDevice: inputDevice, outputDevice: outputDevice, sysExId: sysExId);
 
       // Transition to the connected state
       emit(DistingState.connected(
-        midiCommand: state.midiCommand,
-        device: device,
-        sysExId: sysExId,
         disting: disting,
       ));
       synchronizeDevice();
@@ -142,7 +153,7 @@ class DistingCubit extends Cubit<DistingState> {
           (await disting.requestAlgorithmInfo(i))!
       ];
       final numAlgorithmsInPreset =
-      (await disting.requestNumAlgorithmsInPreset())!;
+          (await disting.requestNumAlgorithmsInPreset())!;
       final distingVersion = await disting.requestVersionString() ?? "";
       final presetName = await disting.requestPresetName() ?? "";
       var unitStrings = await disting.requestUnitStrings() ?? [];
@@ -151,9 +162,6 @@ class DistingCubit extends Cubit<DistingState> {
 
       // Transition to the synchronizing state
       emit(DistingState.synchronized(
-        midiCommand: connectedState.midiCommand,
-        device: connectedState.device,
-        sysExId: connectedState.sysExId,
         disting: connectedState.disting,
         distingVersion: distingVersion,
         presetName: presetName,
@@ -166,10 +174,10 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<List<Slot>> fetchSlots(int numAlgorithmsInPreset,
-      DistingMidiManager disting) async {
+  Future<List<Slot>> fetchSlots(
+      int numAlgorithmsInPreset, DistingMidiManager disting) async {
     final slotsFutures =
-    List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
+        List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
       return await fetchSlot(disting, algorithmIndex);
     });
 
@@ -184,8 +192,8 @@ class DistingCubit extends Cubit<DistingState> {
             .numParameters;
     var parameters = [
       for (int parameterNumber = 0;
-      parameterNumber < numParametersInAlgorithm;
-      parameterNumber++)
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
         await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
             ParameterInfo.filler()
     ];
@@ -193,19 +201,19 @@ class DistingCubit extends Cubit<DistingState> {
         (await disting.requestAllParameterValues(algorithmIndex))!.values;
     var enums = [
       for (int parameterNumber = 0;
-      parameterNumber < numParametersInAlgorithm;
-      parameterNumber++)
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
         if (parameters[parameterNumber].unit == 1)
           await disting.requestParameterEnumStrings(
-              algorithmIndex, parameterNumber) ??
+                  algorithmIndex, parameterNumber) ??
               ParameterEnumStrings.filler()
         else
           ParameterEnumStrings.filler()
     ];
     var mappings = [
       for (int parameterNumber = 0;
-      parameterNumber < numParametersInAlgorithm;
-      parameterNumber++)
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
         await disting.requestMappings(algorithmIndex, parameterNumber) ??
             Mapping.filler()
     ];
@@ -213,11 +221,11 @@ class DistingCubit extends Cubit<DistingState> {
         RoutingInfo.filler();
     var valueStrings = [
       for (int parameterNumber = 0;
-      parameterNumber < numParametersInAlgorithm;
-      parameterNumber++)
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
         if ([13, 14, 17].contains(parameters[parameterNumber].unit))
           await disting.requestParameterValueString(
-              algorithmIndex, parameterNumber) ??
+                  algorithmIndex, parameterNumber) ??
               ParameterValueString.filler()
         else
           ParameterValueString.filler()
@@ -253,10 +261,11 @@ class DistingCubit extends Cubit<DistingState> {
     return null;
   }
 
-  List<T> replaceInList<T>(List<T> original,
-      T element, {
-        required int index,
-      }) {
+  List<T> replaceInList<T>(
+    List<T> original,
+    T element, {
+    required int index,
+  }) {
     if (index < 0 || index > original.length) {
       throw RangeError.index(index, original, "index out of bounds");
     }
@@ -301,7 +310,7 @@ class DistingCubit extends Cubit<DistingState> {
           slots: updateSlot(
             algorithmIndex,
             state.slots,
-                (slot) {
+            (slot) {
               return updatedSlot;
             },
           ),
@@ -319,12 +328,12 @@ class DistingCubit extends Cubit<DistingState> {
 
         var valueStrings = [
           for (int parameterNumber = 0;
-          parameterNumber < state.slots[algorithmIndex].valueStrings.length;
-          parameterNumber++)
+              parameterNumber < state.slots[algorithmIndex].valueStrings.length;
+              parameterNumber++)
             if ([13, 14, 17].contains(
                 state.slots[algorithmIndex].parameters[parameterNumber].unit))
               await disting.requestParameterValueString(
-                  algorithmIndex, parameterNumber) ??
+                      algorithmIndex, parameterNumber) ??
                   ParameterValueString.filler()
             else
               ParameterValueString.filler()
@@ -335,7 +344,7 @@ class DistingCubit extends Cubit<DistingState> {
           14,
           17,
         ].contains(
-            state.slots[algorithmIndex].parameters[parameterNumber].unit))
+                state.slots[algorithmIndex].parameters[parameterNumber].unit))
             ? await disting.requestRoutingInformation(algorithmIndex)
             : state.slots[algorithmIndex].routing;
 
@@ -343,7 +352,7 @@ class DistingCubit extends Cubit<DistingState> {
           slots: updateSlot(
             algorithmIndex,
             state.slots,
-                (slot) {
+            (slot) {
               return slot.copyWith(
                   values: replaceInList(
                     slot.values,
@@ -363,7 +372,7 @@ class DistingCubit extends Cubit<DistingState> {
     if (state is DistingStateSynchronized) {
       var disting = requireDisting();
       final numAlgorithmsInPreset =
-      (await disting.requestNumAlgorithmsInPreset())!;
+          (await disting.requestNumAlgorithmsInPreset())!;
 
       final presetName = await disting.requestPresetName() ?? "";
 
@@ -374,8 +383,8 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> onAlgorithmSelected(AlgorithmInfo algorithm,
-      List<int> specifications) async {
+  Future<void> onAlgorithmSelected(
+      AlgorithmInfo algorithm, List<int> specifications) async {
     if (state is DistingStateSynchronized) {
       final disting = requireDisting();
       await disting.requestAddAlgorithm(algorithm, specifications);
@@ -505,7 +514,7 @@ class DistingCubit extends Cubit<DistingState> {
         await Future.delayed(Duration(milliseconds: 100));
 
         final numAlgorithmsInPreset =
-        (await disting.requestNumAlgorithmsInPreset())!;
+            (await disting.requestNumAlgorithmsInPreset())!;
         final presetName = await disting.requestPresetName() ?? "";
 
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
@@ -534,7 +543,7 @@ class DistingCubit extends Cubit<DistingState> {
         await Future.delayed(Duration(milliseconds: 100));
 
         final numAlgorithmsInPreset =
-        (await disting.requestNumAlgorithmsInPreset())!;
+            (await disting.requestNumAlgorithmsInPreset())!;
         final presetName = await disting.requestPresetName() ?? "";
 
         List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
@@ -552,8 +561,8 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> saveMapping(int algorithmIndex, int parameterNumber,
-      PackedMappingData data) async {
+  Future<void> saveMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
     switch (state) {
       case DistingStateSynchronized syncstate:
         final disting = requireDisting();
@@ -567,7 +576,7 @@ class DistingCubit extends Cubit<DistingState> {
             slots: updateSlot(
               algorithmIndex,
               syncstate.slots,
-                  (slot) {
+              (slot) {
                 return slot.copyWith(
                   mappings: replaceInList(
                     slot.mappings,
@@ -594,14 +603,13 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateSynchronized syncstate:
         return syncstate.slots
             .where((slot) => slot.routing.algorithmIndex != -1)
-            .map((slot) =>
-            RoutingInformation(
+            .map((slot) => RoutingInformation(
                 algorithmIndex: slot.routing.algorithmIndex,
                 routingInfo: slot.routing.routingInfo,
                 algorithmName: syncstate.algorithms
                     .firstWhere(
                       (element) => element.guid == slot.algorithmGuid.guid,
-                )
+                    )
                     .name))
             .toList();
       default:
@@ -610,45 +618,55 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   bool _isThreePotProgram(DistingStateSynchronized state, int algorithmIndex,
-      int parameterNumber) =>
+          int parameterNumber) =>
       (state.slots[algorithmIndex].parameters[parameterNumber].name ==
           "Program") &&
-          ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
+      ("spin" == state.slots[algorithmIndex].algorithmGuid.guid);
 
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
     // Run through all of the parts of the slot and replace the algorithm index
     // with the new one.
     return Slot(
       algorithmGuid: slot.algorithmGuid,
-      routing: RoutingInfo(algorithmIndex: algorithmIndex,
+      routing: RoutingInfo(
+          algorithmIndex: algorithmIndex,
           routingInfo: slot.routing.routingInfo),
-      parameters: slot.parameters.map(
-              (parameter) =>
-              ParameterInfo(algorithmIndex: algorithmIndex,
-                  parameterNumber: parameter.parameterNumber,
-                  min: parameter.min,
-                  max: parameter.max,
-                  defaultValue: parameter.defaultValue,
-                  unit: parameter.unit,
-                  name: parameter.name,
-                  powerOfTen: parameter.powerOfTen)).toList(),
-      values: slot.values.map((value) =>
-          ParameterValue(
+      parameters: slot.parameters
+          .map((parameter) => ParameterInfo(
+              algorithmIndex: algorithmIndex,
+              parameterNumber: parameter.parameterNumber,
+              min: parameter.min,
+              max: parameter.max,
+              defaultValue: parameter.defaultValue,
+              unit: parameter.unit,
+              name: parameter.name,
+              powerOfTen: parameter.powerOfTen))
+          .toList(),
+      values: slot.values
+          .map((value) => ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: value.parameterNumber,
-              value: value.value)).toList(),
-      enums: slot.enums.map((enums) =>
-          ParameterEnumStrings(algorithmIndex: algorithmIndex,
+              value: value.value))
+          .toList(),
+      enums: slot.enums
+          .map((enums) => ParameterEnumStrings(
+              algorithmIndex: algorithmIndex,
               parameterNumber: enums.parameterNumber,
-              values: enums.values)).toList(),
-      mappings: slot.mappings.map((mapping) =>
-          Mapping(algorithmIndex: algorithmIndex,
+              values: enums.values))
+          .toList(),
+      mappings: slot.mappings
+          .map((mapping) => Mapping(
+              algorithmIndex: algorithmIndex,
               parameterNumber: mapping.parameterNumber,
               packedMappingData: mapping.packedMappingData,
-              version: mapping.version)).toList(),
-      valueStrings: slot.valueStrings.map((valueStrings) =>
-          ParameterValueString(algorithmIndex: algorithmIndex,
+              version: mapping.version))
+          .toList(),
+      valueStrings: slot.valueStrings
+          .map((valueStrings) => ParameterValueString(
+              algorithmIndex: algorithmIndex,
               parameterNumber: valueStrings.parameterNumber,
-              value: valueStrings.value)).toList(),);
+              value: valueStrings.value))
+          .toList(),
+    );
   }
 }

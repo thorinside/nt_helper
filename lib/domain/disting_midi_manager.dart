@@ -13,11 +13,13 @@ class DistingMidiManager {
 
   DistingMidiManager({
     required MidiCommand midiCommand,
-    required MidiDevice device,
+    required MidiDevice inputDevice,
+    required MidiDevice outputDevice,
     required this.sysExId,
   }) : _scheduler = DistingMessageScheduler(
           midiCommand: midiCommand,
-          device: device,
+          inputDevice: inputDevice,
+          outputDevice: outputDevice,
           sysExId: sysExId,
         );
 

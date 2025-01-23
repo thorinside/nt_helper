@@ -58,7 +58,8 @@ class _ScheduledRequest<T> {
 
 class DistingMessageScheduler {
   final MidiCommand midiCommand;
-  final MidiDevice device;
+  final MidiDevice inputDevice;
+  final MidiDevice outputDevice;
   final int sysExId;
 
   /// Default amount of time to wait for a response (if `required` or `optional`).
@@ -86,7 +87,8 @@ class DistingMessageScheduler {
 
   DistingMessageScheduler({
     required this.midiCommand,
-    required this.device,
+    required this.inputDevice,
+    required this.outputDevice,
     required this.sysExId,
     this.defaultTimeout = const Duration(milliseconds: 100),
     this.messageInterval = const Duration(milliseconds: 30),
@@ -99,6 +101,9 @@ class DistingMessageScheduler {
 
   /// Dispose/stop the scheduler.
   void dispose() {
+    midiCommand.disconnectDevice(inputDevice);
+    midiCommand.disconnectDevice(outputDevice);
+
     _subscription?.cancel();
 
     // Clean up the current request's timer if any.
@@ -166,7 +171,7 @@ class DistingMessageScheduler {
     current.attemptCount++;
 
     // Send the SysEx data
-    midiCommand.sendData(current.sysExMessage, deviceId: device.id);
+    midiCommand.sendData(current.sysExMessage, deviceId: outputDevice.id);
     if (kDebugMode) {
       print(
         'Sent SysEx (attempt ${current.attemptCount}): '

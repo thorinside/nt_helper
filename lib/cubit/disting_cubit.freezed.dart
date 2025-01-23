@@ -310,22 +310,19 @@ abstract class _Slot implements Slot {
 
 /// @nodoc
 mixin _$DistingState {
-  MidiCommand get midiCommand => throw _privateConstructorUsedError;
   Uint8List? get screenshot => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(MidiCommand midiCommand, Uint8List? screenshot)
-        initial,
-    required TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)
-        selectDevice,
-    required TResult Function(MidiCommand midiCommand, MidiDevice device,
-            int sysExId, DistingMidiManager disting, Uint8List? screenshot)
-        connected,
+    required TResult Function(Uint8List? screenshot) initial,
     required TResult Function(
             MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot)
+        selectDevice,
+    required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
+        connected,
+    required TResult Function(
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -338,17 +335,13 @@ mixin _$DistingState {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult? Function(Uint8List? screenshot)? initial,
+    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult? Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult? Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -361,17 +354,13 @@ mixin _$DistingState {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult Function(Uint8List? screenshot)? initial,
+    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -422,7 +411,7 @@ abstract class $DistingStateCopyWith<$Res> {
           DistingState value, $Res Function(DistingState) then) =
       _$DistingStateCopyWithImpl<$Res, DistingState>;
   @useResult
-  $Res call({MidiCommand midiCommand, Uint8List? screenshot});
+  $Res call({Uint8List? screenshot});
 }
 
 /// @nodoc
@@ -440,14 +429,9 @@ class _$DistingStateCopyWithImpl<$Res, $Val extends DistingState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? midiCommand = null,
     Object? screenshot = freezed,
   }) {
     return _then(_value.copyWith(
-      midiCommand: null == midiCommand
-          ? _value.midiCommand
-          : midiCommand // ignore: cast_nullable_to_non_nullable
-              as MidiCommand,
       screenshot: freezed == screenshot
           ? _value.screenshot
           : screenshot // ignore: cast_nullable_to_non_nullable
@@ -464,7 +448,7 @@ abstract class _$$DistingStateInitialImplCopyWith<$Res>
       __$$DistingStateInitialImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({MidiCommand midiCommand, Uint8List? screenshot});
+  $Res call({Uint8List? screenshot});
 }
 
 /// @nodoc
@@ -480,14 +464,9 @@ class __$$DistingStateInitialImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? midiCommand = null,
     Object? screenshot = freezed,
   }) {
     return _then(_$DistingStateInitialImpl(
-      midiCommand: null == midiCommand
-          ? _value.midiCommand
-          : midiCommand // ignore: cast_nullable_to_non_nullable
-              as MidiCommand,
       screenshot: freezed == screenshot
           ? _value.screenshot
           : screenshot // ignore: cast_nullable_to_non_nullable
@@ -499,16 +478,14 @@ class __$$DistingStateInitialImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$DistingStateInitialImpl implements DistingStateInitial {
-  const _$DistingStateInitialImpl({required this.midiCommand, this.screenshot});
+  const _$DistingStateInitialImpl({this.screenshot});
 
-  @override
-  final MidiCommand midiCommand;
   @override
   final Uint8List? screenshot;
 
   @override
   String toString() {
-    return 'DistingState.initial(midiCommand: $midiCommand, screenshot: $screenshot)';
+    return 'DistingState.initial(screenshot: $screenshot)';
   }
 
   @override
@@ -516,15 +493,13 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$DistingStateInitialImpl &&
-            (identical(other.midiCommand, midiCommand) ||
-                other.midiCommand == midiCommand) &&
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, midiCommand,
-      const DeepCollectionEquality().hash(screenshot));
+  int get hashCode =>
+      Object.hash(runtimeType, const DeepCollectionEquality().hash(screenshot));
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -538,18 +513,16 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(MidiCommand midiCommand, Uint8List? screenshot)
-        initial,
-    required TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)
-        selectDevice,
-    required TResult Function(MidiCommand midiCommand, MidiDevice device,
-            int sysExId, DistingMidiManager disting, Uint8List? screenshot)
-        connected,
+    required TResult Function(Uint8List? screenshot) initial,
     required TResult Function(
             MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot)
+        selectDevice,
+    required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
+        connected,
+    required TResult Function(
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -559,23 +532,19 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             Uint8List? screenshot)
         synchronized,
   }) {
-    return initial(midiCommand, screenshot);
+    return initial(screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult? Function(Uint8List? screenshot)? initial,
+    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult? Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult? Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -585,23 +554,19 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
             Uint8List? screenshot)?
         synchronized,
   }) {
-    return initial?.call(midiCommand, screenshot);
+    return initial?.call(screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult Function(Uint8List? screenshot)? initial,
+    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -613,7 +578,7 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
     required TResult orElse(),
   }) {
     if (initial != null) {
-      return initial(midiCommand, screenshot);
+      return initial(screenshot);
     }
     return orElse();
   }
@@ -657,12 +622,9 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
 }
 
 abstract class DistingStateInitial implements DistingState {
-  const factory DistingStateInitial(
-      {required final MidiCommand midiCommand,
-      final Uint8List? screenshot}) = _$DistingStateInitialImpl;
+  const factory DistingStateInitial({final Uint8List? screenshot}) =
+      _$DistingStateInitialImpl;
 
-  @override
-  MidiCommand get midiCommand;
   @override
   Uint8List? get screenshot;
 
@@ -685,7 +647,8 @@ abstract class _$$DistingStateSelectDeviceImplCopyWith<$Res>
   @useResult
   $Res call(
       {MidiCommand midiCommand,
-      List<MidiDevice> devices,
+      List<MidiDevice> inputDevices,
+      List<MidiDevice> outputDevices,
       Uint8List? screenshot});
 }
 
@@ -704,7 +667,8 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? midiCommand = null,
-    Object? devices = null,
+    Object? inputDevices = null,
+    Object? outputDevices = null,
     Object? screenshot = freezed,
   }) {
     return _then(_$DistingStateSelectDeviceImpl(
@@ -712,9 +676,13 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
           ? _value.midiCommand
           : midiCommand // ignore: cast_nullable_to_non_nullable
               as MidiCommand,
-      devices: null == devices
-          ? _value._devices
-          : devices // ignore: cast_nullable_to_non_nullable
+      inputDevices: null == inputDevices
+          ? _value._inputDevices
+          : inputDevices // ignore: cast_nullable_to_non_nullable
+              as List<MidiDevice>,
+      outputDevices: null == outputDevices
+          ? _value._outputDevices
+          : outputDevices // ignore: cast_nullable_to_non_nullable
               as List<MidiDevice>,
       screenshot: freezed == screenshot
           ? _value.screenshot
@@ -729,18 +697,28 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
 class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   const _$DistingStateSelectDeviceImpl(
       {required this.midiCommand,
-      required final List<MidiDevice> devices,
+      required final List<MidiDevice> inputDevices,
+      required final List<MidiDevice> outputDevices,
       this.screenshot})
-      : _devices = devices;
+      : _inputDevices = inputDevices,
+        _outputDevices = outputDevices;
 
   @override
   final MidiCommand midiCommand;
-  final List<MidiDevice> _devices;
+  final List<MidiDevice> _inputDevices;
   @override
-  List<MidiDevice> get devices {
-    if (_devices is EqualUnmodifiableListView) return _devices;
+  List<MidiDevice> get inputDevices {
+    if (_inputDevices is EqualUnmodifiableListView) return _inputDevices;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_devices);
+    return EqualUnmodifiableListView(_inputDevices);
+  }
+
+  final List<MidiDevice> _outputDevices;
+  @override
+  List<MidiDevice> get outputDevices {
+    if (_outputDevices is EqualUnmodifiableListView) return _outputDevices;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_outputDevices);
   }
 
   @override
@@ -748,7 +726,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
 
   @override
   String toString() {
-    return 'DistingState.selectDevice(midiCommand: $midiCommand, devices: $devices, screenshot: $screenshot)';
+    return 'DistingState.selectDevice(midiCommand: $midiCommand, inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot)';
   }
 
   @override
@@ -758,7 +736,10 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             other is _$DistingStateSelectDeviceImpl &&
             (identical(other.midiCommand, midiCommand) ||
                 other.midiCommand == midiCommand) &&
-            const DeepCollectionEquality().equals(other._devices, _devices) &&
+            const DeepCollectionEquality()
+                .equals(other._inputDevices, _inputDevices) &&
+            const DeepCollectionEquality()
+                .equals(other._outputDevices, _outputDevices) &&
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot));
   }
@@ -767,7 +748,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   int get hashCode => Object.hash(
       runtimeType,
       midiCommand,
-      const DeepCollectionEquality().hash(_devices),
+      const DeepCollectionEquality().hash(_inputDevices),
+      const DeepCollectionEquality().hash(_outputDevices),
       const DeepCollectionEquality().hash(screenshot));
 
   /// Create a copy of DistingState
@@ -782,18 +764,16 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(MidiCommand midiCommand, Uint8List? screenshot)
-        initial,
-    required TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)
-        selectDevice,
-    required TResult Function(MidiCommand midiCommand, MidiDevice device,
-            int sysExId, DistingMidiManager disting, Uint8List? screenshot)
-        connected,
+    required TResult Function(Uint8List? screenshot) initial,
     required TResult Function(
             MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot)
+        selectDevice,
+    required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
+        connected,
+    required TResult Function(
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -803,23 +783,19 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             Uint8List? screenshot)
         synchronized,
   }) {
-    return selectDevice(midiCommand, devices, screenshot);
+    return selectDevice(midiCommand, inputDevices, outputDevices, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult? Function(Uint8List? screenshot)? initial,
+    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult? Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult? Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -829,23 +805,20 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             Uint8List? screenshot)?
         synchronized,
   }) {
-    return selectDevice?.call(midiCommand, devices, screenshot);
+    return selectDevice?.call(
+        midiCommand, inputDevices, outputDevices, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult Function(Uint8List? screenshot)? initial,
+    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -857,7 +830,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
     required TResult orElse(),
   }) {
     if (selectDevice != null) {
-      return selectDevice(midiCommand, devices, screenshot);
+      return selectDevice(midiCommand, inputDevices, outputDevices, screenshot);
     }
     return orElse();
   }
@@ -903,12 +876,13 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
 abstract class DistingStateSelectDevice implements DistingState {
   const factory DistingStateSelectDevice(
       {required final MidiCommand midiCommand,
-      required final List<MidiDevice> devices,
+      required final List<MidiDevice> inputDevices,
+      required final List<MidiDevice> outputDevices,
       final Uint8List? screenshot}) = _$DistingStateSelectDeviceImpl;
 
-  @override
   MidiCommand get midiCommand;
-  List<MidiDevice> get devices;
+  List<MidiDevice> get inputDevices;
+  List<MidiDevice> get outputDevices;
   @override
   Uint8List? get screenshot;
 
@@ -929,12 +903,7 @@ abstract class _$$DistingStateConnectedImplCopyWith<$Res>
       __$$DistingStateConnectedImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {MidiCommand midiCommand,
-      MidiDevice device,
-      int sysExId,
-      DistingMidiManager disting,
-      Uint8List? screenshot});
+  $Res call({DistingMidiManager disting, Uint8List? screenshot});
 }
 
 /// @nodoc
@@ -950,25 +919,10 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? midiCommand = null,
-    Object? device = null,
-    Object? sysExId = null,
     Object? disting = null,
     Object? screenshot = freezed,
   }) {
     return _then(_$DistingStateConnectedImpl(
-      midiCommand: null == midiCommand
-          ? _value.midiCommand
-          : midiCommand // ignore: cast_nullable_to_non_nullable
-              as MidiCommand,
-      device: null == device
-          ? _value.device
-          : device // ignore: cast_nullable_to_non_nullable
-              as MidiDevice,
-      sysExId: null == sysExId
-          ? _value.sysExId
-          : sysExId // ignore: cast_nullable_to_non_nullable
-              as int,
       disting: null == disting
           ? _value.disting
           : disting // ignore: cast_nullable_to_non_nullable
@@ -984,19 +938,8 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$DistingStateConnectedImpl implements DistingStateConnected {
-  const _$DistingStateConnectedImpl(
-      {required this.midiCommand,
-      required this.device,
-      required this.sysExId,
-      required this.disting,
-      this.screenshot});
+  const _$DistingStateConnectedImpl({required this.disting, this.screenshot});
 
-  @override
-  final MidiCommand midiCommand;
-  @override
-  final MidiDevice device;
-  @override
-  final int sysExId;
   @override
   final DistingMidiManager disting;
   @override
@@ -1004,7 +947,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
 
   @override
   String toString() {
-    return 'DistingState.connected(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, screenshot: $screenshot)';
+    return 'DistingState.connected(disting: $disting, screenshot: $screenshot)';
   }
 
   @override
@@ -1012,18 +955,14 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$DistingStateConnectedImpl &&
-            (identical(other.midiCommand, midiCommand) ||
-                other.midiCommand == midiCommand) &&
-            (identical(other.device, device) || other.device == device) &&
-            (identical(other.sysExId, sysExId) || other.sysExId == sysExId) &&
             (identical(other.disting, disting) || other.disting == disting) &&
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, midiCommand, device, sysExId,
-      disting, const DeepCollectionEquality().hash(screenshot));
+  int get hashCode => Object.hash(
+      runtimeType, disting, const DeepCollectionEquality().hash(screenshot));
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1037,18 +976,16 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(MidiCommand midiCommand, Uint8List? screenshot)
-        initial,
-    required TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)
-        selectDevice,
-    required TResult Function(MidiCommand midiCommand, MidiDevice device,
-            int sysExId, DistingMidiManager disting, Uint8List? screenshot)
-        connected,
+    required TResult Function(Uint8List? screenshot) initial,
     required TResult Function(
             MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot)
+        selectDevice,
+    required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
+        connected,
+    required TResult Function(
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -1058,23 +995,19 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             Uint8List? screenshot)
         synchronized,
   }) {
-    return connected(midiCommand, device, sysExId, disting, screenshot);
+    return connected(disting, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult? Function(Uint8List? screenshot)? initial,
+    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult? Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult? Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -1084,23 +1017,19 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
             Uint8List? screenshot)?
         synchronized,
   }) {
-    return connected?.call(midiCommand, device, sysExId, disting, screenshot);
+    return connected?.call(disting, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult Function(Uint8List? screenshot)? initial,
+    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -1112,7 +1041,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
     required TResult orElse(),
   }) {
     if (connected != null) {
-      return connected(midiCommand, device, sysExId, disting, screenshot);
+      return connected(disting, screenshot);
     }
     return orElse();
   }
@@ -1157,16 +1086,9 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
 
 abstract class DistingStateConnected implements DistingState {
   const factory DistingStateConnected(
-      {required final MidiCommand midiCommand,
-      required final MidiDevice device,
-      required final int sysExId,
-      required final DistingMidiManager disting,
+      {required final DistingMidiManager disting,
       final Uint8List? screenshot}) = _$DistingStateConnectedImpl;
 
-  @override
-  MidiCommand get midiCommand;
-  MidiDevice get device;
-  int get sysExId;
   DistingMidiManager get disting;
   @override
   Uint8List? get screenshot;
@@ -1189,10 +1111,7 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {MidiCommand midiCommand,
-      MidiDevice device,
-      int sysExId,
-      DistingMidiManager disting,
+      {DistingMidiManager disting,
       String distingVersion,
       String presetName,
       List<AlgorithmInfo> algorithms,
@@ -1215,9 +1134,6 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? midiCommand = null,
-    Object? device = null,
-    Object? sysExId = null,
     Object? disting = null,
     Object? distingVersion = null,
     Object? presetName = null,
@@ -1227,18 +1143,6 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? screenshot = freezed,
   }) {
     return _then(_$DistingStateSynchronizedImpl(
-      midiCommand: null == midiCommand
-          ? _value.midiCommand
-          : midiCommand // ignore: cast_nullable_to_non_nullable
-              as MidiCommand,
-      device: null == device
-          ? _value.device
-          : device // ignore: cast_nullable_to_non_nullable
-              as MidiDevice,
-      sysExId: null == sysExId
-          ? _value.sysExId
-          : sysExId // ignore: cast_nullable_to_non_nullable
-              as int,
       disting: null == disting
           ? _value.disting
           : disting // ignore: cast_nullable_to_non_nullable
@@ -1275,10 +1179,7 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
 
 class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   const _$DistingStateSynchronizedImpl(
-      {required this.midiCommand,
-      required this.device,
-      required this.sysExId,
-      required this.disting,
+      {required this.disting,
       required this.distingVersion,
       required this.presetName,
       required final List<AlgorithmInfo> algorithms,
@@ -1289,12 +1190,6 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
         _slots = slots,
         _unitStrings = unitStrings;
 
-  @override
-  final MidiCommand midiCommand;
-  @override
-  final MidiDevice device;
-  @override
-  final int sysExId;
   @override
   final DistingMidiManager disting;
   @override
@@ -1330,7 +1225,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
 
   @override
   String toString() {
-    return 'DistingState.synchronized(midiCommand: $midiCommand, device: $device, sysExId: $sysExId, disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot)';
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot)';
   }
 
   @override
@@ -1338,10 +1233,6 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$DistingStateSynchronizedImpl &&
-            (identical(other.midiCommand, midiCommand) ||
-                other.midiCommand == midiCommand) &&
-            (identical(other.device, device) || other.device == device) &&
-            (identical(other.sysExId, sysExId) || other.sysExId == sysExId) &&
             (identical(other.disting, disting) || other.disting == disting) &&
             (identical(other.distingVersion, distingVersion) ||
                 other.distingVersion == distingVersion) &&
@@ -1359,9 +1250,6 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      midiCommand,
-      device,
-      sysExId,
       disting,
       distingVersion,
       presetName,
@@ -1382,18 +1270,16 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(MidiCommand midiCommand, Uint8List? screenshot)
-        initial,
-    required TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)
-        selectDevice,
-    required TResult Function(MidiCommand midiCommand, MidiDevice device,
-            int sysExId, DistingMidiManager disting, Uint8List? screenshot)
-        connected,
+    required TResult Function(Uint8List? screenshot) initial,
     required TResult Function(
             MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot)
+        selectDevice,
+    required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
+        connected,
+    required TResult Function(
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -1403,24 +1289,20 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             Uint8List? screenshot)
         synchronized,
   }) {
-    return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-        presetName, algorithms, slots, unitStrings, screenshot);
+    return synchronized(disting, distingVersion, presetName, algorithms, slots,
+        unitStrings, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult? Function(Uint8List? screenshot)? initial,
+    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult? Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult? Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -1430,24 +1312,20 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
             Uint8List? screenshot)?
         synchronized,
   }) {
-    return synchronized?.call(midiCommand, device, sysExId, disting,
-        distingVersion, presetName, algorithms, slots, unitStrings, screenshot);
+    return synchronized?.call(disting, distingVersion, presetName, algorithms,
+        slots, unitStrings, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(MidiCommand midiCommand, Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> devices,
-            Uint8List? screenshot)?
+    TResult Function(Uint8List? screenshot)? initial,
+    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
-    TResult Function(MidiCommand midiCommand, MidiDevice device, int sysExId,
-            DistingMidiManager disting, Uint8List? screenshot)?
+    TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
         connected,
     TResult Function(
-            MidiCommand midiCommand,
-            MidiDevice device,
-            int sysExId,
             DistingMidiManager disting,
             String distingVersion,
             String presetName,
@@ -1459,8 +1337,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
     required TResult orElse(),
   }) {
     if (synchronized != null) {
-      return synchronized(midiCommand, device, sysExId, disting, distingVersion,
-          presetName, algorithms, slots, unitStrings, screenshot);
+      return synchronized(disting, distingVersion, presetName, algorithms,
+          slots, unitStrings, screenshot);
     }
     return orElse();
   }
@@ -1505,10 +1383,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
 
 abstract class DistingStateSynchronized implements DistingState {
   const factory DistingStateSynchronized(
-      {required final MidiCommand midiCommand,
-      required final MidiDevice device,
-      required final int sysExId,
-      required final DistingMidiManager disting,
+      {required final DistingMidiManager disting,
       required final String distingVersion,
       required final String presetName,
       required final List<AlgorithmInfo> algorithms,
@@ -1516,10 +1391,6 @@ abstract class DistingStateSynchronized implements DistingState {
       required final List<String> unitStrings,
       final Uint8List? screenshot}) = _$DistingStateSynchronizedImpl;
 
-  @override
-  MidiCommand get midiCommand;
-  MidiDevice get device;
-  int get sysExId;
   DistingMidiManager get disting;
   String get distingVersion;
   String get presetName;
