@@ -497,4 +497,19 @@ class DistingMidiManager {
       responseExpectation: ResponseExpectation.none,
     );
   }
+
+  Future<void> requestSetDisplayMode(DisplayMode displayMode) async {
+    final packet = DistingNT.encodeSetDisplayMode(sysExId, displayMode);
+
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+    return _scheduler.sendRequest<void>(
+      maxRetries: 1,
+      retryDelay: Duration(milliseconds: 250),
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
 }

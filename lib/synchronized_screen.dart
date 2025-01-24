@@ -43,319 +43,398 @@ class SynchronizedScreen extends StatelessWidget {
       length: slots.length,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        appBar: AppBar(
-          title: const Text('NT Helper'),
-          actions: [
-            Builder(builder: (context) {
-              return IconButton(
-                icon: const Icon(Icons.add_circle_rounded),
-                tooltip: 'Add Algorithm',
-                onPressed: () async {
-                  final cubit = context.read<DistingCubit>();
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            AddAlgorithmScreen(algorithms: algorithms)),
+        appBar: _buildAppBar(context),
+        body: _buildBody(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
+        floatingActionButton: _buildFloatingActionButton(),
+        bottomNavigationBar: _buildBottomAppBar(),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return Builder(
+      builder: (context) {
+        return FloatingActionButton.small(
+          tooltip: "Add Algorithm to Preset",
+          onPressed: () async {
+            final cubit = context.read<DistingCubit>();
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      AddAlgorithmScreen(algorithms: algorithms)),
+            );
+
+            if (result != null) {
+              await cubit.onAlgorithmSelected(
+                result['algorithm'],
+                result['specValues'],
+              );
+            }
+          },
+          child: Icon(Icons.add_circle_rounded),
+        );
+      }
+    );
+  }
+
+  BottomAppBar _buildBottomAppBar() {
+    return BottomAppBar(
+      child: Row(
+        children: [
+          Builder(builder: (context) {
+            return IconButton(
+              tooltip: "Parameter View",
+              onPressed: () {
+                context
+                    .read<DistingCubit>()
+                    .setDisplayMode(DisplayMode.parameters);
+              },
+              icon: Icon(Icons.list_alt_rounded),
+            );
+          }),
+          Builder(builder: (context) {
+            return IconButton(
+              tooltip: "Algorithm UI",
+              onPressed: () {
+                context
+                    .read<DistingCubit>()
+                    .setDisplayMode(DisplayMode.algorithmUI);
+              },
+              icon: Icon(Icons.line_axis_rounded),
+            );
+          }),
+          Builder(builder: (context) {
+            return IconButton(
+              tooltip: "Overview UI",
+              onPressed: () {
+                context
+                    .read<DistingCubit>()
+                    .setDisplayMode(DisplayMode.overview);
+              },
+              icon: Icon(Icons.line_weight_rounded),
+            );
+          }),
+          Builder(builder: (context) {
+            return IconButton(
+              tooltip: "Overview VU Meters",
+              onPressed: () {
+                context
+                    .read<DistingCubit>()
+                    .setDisplayMode(DisplayMode.overviewVUs);
+              },
+              icon: Icon(Icons.leaderboard_rounded),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  AnimatedSwitcher _buildBody() {
+    return AnimatedSwitcher(
+      duration: Duration(seconds: 1),
+      child: Builder(builder: (context) {
+        return slots.isNotEmpty
+            ? TabBarView(
+                children: slots.mapIndexed((index, slot) {
+                  return SlotDetailView(
+                    key: ValueKey("$index - ${slot.algorithm.guid}"),
+                    slot: slot,
+                    units: units,
                   );
-
-                  if (result != null) {
-                    await cubit.onAlgorithmSelected(
-                      result['algorithm'],
-                      result['specValues'],
-                    );
-                  }
-                },
-              );
-            }),
-            Builder(builder: (context) {
-              return IconButton(
-                icon: const Icon(Icons.arrow_upward_rounded),
-                tooltip: 'Move Algorithm Up',
-                onPressed: () async {
-                  DefaultTabController.of(context).index = await context
-                      .read<DistingCubit>()
-                      .moveAlgorithmUp(DefaultTabController.of(context).index);
-                },
-              );
-            }),
-            Builder(builder: (context) {
-              return IconButton(
-                icon: const Icon(Icons.arrow_downward_rounded),
-                tooltip: 'Move Algorithm Down',
-                onPressed: () async {
-                  DefaultTabController.of(context).index = await context
-                      .read<DistingCubit>()
-                      .moveAlgorithmDown(
-                          DefaultTabController.of(context).index);
-                },
-              );
-            }),
-            Builder(
-              builder: (context) => IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  tooltip: 'Remove Algorithm',
-                  onPressed: () async {
-                    context.read<DistingCubit>().onRemoveAlgorithm(
-                        DefaultTabController.of(context).index);
-                  }),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: "wake",
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [Text('Wake'), Icon(Icons.alarm_on_rounded)]),
-                  onTap: () {
-                    context.read<DistingCubit>().wakeDevice();
-                  },
-                ),
-                PopupMenuItem(
-                  value: "new",
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('New Preset'),
-                        Icon(Icons.fiber_new_rounded)
-                      ]),
-                  onTap: () {
-                    context.read<DistingCubit>().newPreset();
-                  },
-                ),
-                PopupMenuItem(
-                  value: "load",
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Load Preset'),
-                        Icon(Icons.file_upload_rounded)
-                      ]),
-                  onTap: () async {
-                    var cubit = context.read<DistingCubit>();
-
-                    final preset = await showDialog<dynamic>(
-                      context: context,
-                      builder: (context) => LoadPresetDialog(
-                        initialName: "",
-                      ),
-                    );
-                    if (preset == null) return;
-
-                    cubit.loadPreset(
-                        preset["name"] as String, preset["append"] as bool);
-                  },
-                ),
-                PopupMenuItem(
-                  value: "save",
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Save Preset'),
-                        Icon(Icons.save_alt_rounded)
-                      ]),
-                  onTap: () {
-                    context.read<DistingCubit>().save();
-                  },
-                ),
-                PopupMenuItem(
-                  value: 'refresh',
-                  onTap: () {
-                    context.read<DistingCubit>().refresh();
-                  },
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
-                ),
-                PopupMenuItem(
-                  value: 'routing',
-                  onTap: () async {
-                    final routingInformation =
-                        context.read<DistingCubit>().buildRoutingInformation();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              RoutingPage(routing: routingInformation)),
-                    );
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text('Routing'), Icon(Icons.route_rounded)],
+                }).toList(),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    "No algorithms",
+                    style: Theme.of(context).textTheme.displaySmall,
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'screenshot',
-                  onTap: () {
-                    _showScreenshotOverlay(context);
-                  },
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Screenshot'),
-                        Icon(Icons.screenshot_monitor_rounded),
-                      ]),
-                ),
-                PopupMenuItem(
-                  value: 'Switch Devices',
-                  onTap: () {
-                    context.read<DistingCubit>().disconnect();
-                    context.read<DistingCubit>().loadDevices();
-                  },
-                  child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [Text('Switch'), Icon(Icons.login_rounded)]),
-                ),
-                PopupMenuItem(
-                  value: 'about',
-                  child: Text('About'),
-                  onTap: () async {
-                    final info = await PackageInfo.fromPlatform();
+                ],
+              );
+      }),
+    );
+  }
 
-                    showDialog<String>(
-                      context: context,
-                      builder: (context) => AboutDialog(
-                        applicationName: "NT Helper",
-                        applicationVersion:
-                            "${info.version} (${info.buildNumber})",
-                        applicationLegalese:
-                            "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
-                      ),
-                    );
-                  },
-                ),
-              ],
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('NT Helper'),
+      actions: _buildAppBarActions(),
+      elevation: 0,
+      scrolledUnderElevation: 3,
+      notificationPredicate: (ScrollNotification notification) =>
+          notification.depth == 1,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(42.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            _buildPresetInfoEditor(context), // The TabBar
+            Expanded(
+              flex: 1,
+              child: _buildTabBar(context),
             ),
           ],
-          elevation: 0,
-          scrolledUnderElevation: 3,
-          notificationPredicate: (ScrollNotification notification) =>
-              notification.depth == 1,
-          bottom: PreferredSize(
-            // Set the total height you need for your text + tab bar.
-            preferredSize: const Size.fromHeight(100.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Your text
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      InkWell(
-                        onTap: () async {
-                          // 1) Show an AlertDialog with a text field to rename the preset.
-                          final newName = await showDialog<String>(
-                            context: context,
-                            builder: (context) => RenamePresetDialog(
-                              initialName: presetName,
-                            ),
-                          );
-
-                          // 2) If the user pressed OK (instead of Cancel), newName will be non-null.
-                          if (newName != null &&
-                              newName.isNotEmpty &&
-                              newName != presetName) {
-                            context.read<DistingCubit>().renamePreset(newName);
-                          }
-                        },
-                        child: Row(
-                          mainAxisSize:
-                              MainAxisSize.min, // Shrinks to fit content
-                          children: [
-                            Text(
-                              'Preset: ${presetName.trim()}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(distingVersion,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  )),
-                    ],
-                  ),
-                ), // The TabBar
-                TabBar(
-                  isScrollable: true,
-                  tabs: slots.map((slot) {
-                    final algorithmName = (slot.algorithm.name.isNotEmpty)
-                        ? slot.algorithm.name
-                        : algorithms
-                            .where((element) =>
-                                element.guid == slot.algorithm.guid)
-                            .firstOrNull
-                            ?.name;
-                    return GestureDetector(
-                        onLongPress: () async {
-                          final newName = await showDialog<String>(
-                            context: context,
-                            builder: (context) => RenameSlotDialog(
-                              initialName: algorithmName ?? "",
-                            ),
-                          );
-
-                          if (newName != null) {
-                            context.read<DistingCubit>().renameSlot(
-                                slot.algorithm.algorithmIndex, newName);
-                          }
-                        },
-                        child: Tab(text: algorithmName ?? ""));
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        body: AnimatedSwitcher(
-          duration: Duration(seconds: 1),
-          child: Builder(builder: (context) {
-            return slots.isNotEmpty
-                ? TabBarView(
-                    children: slots.mapIndexed((index, slot) {
-                      return SlotDetailView(
-                        key: ValueKey("$index - ${slot.algorithm.guid}"),
-                        slot: slot,
-                        units: units,
-                      );
-                    }).toList(),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        "No algorithms",
-                        style: Theme.of(context).textTheme.displaySmall,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  );
-          }),
         ),
       ),
     );
+  }
+
+  List<Widget> _buildAppBarActions() {
+    return [
+      Builder(builder: (context) {
+        return IconButton(
+          icon: const Icon(Icons.arrow_upward_rounded),
+          tooltip: 'Move Algorithm Up',
+          onPressed: () async {
+            DefaultTabController.of(context).index = await context
+                .read<DistingCubit>()
+                .moveAlgorithmUp(DefaultTabController.of(context).index);
+          },
+        );
+      }),
+      Builder(builder: (context) {
+        return IconButton(
+          icon: const Icon(Icons.arrow_downward_rounded),
+          tooltip: 'Move Algorithm Down',
+          onPressed: () async {
+            DefaultTabController.of(context).index = await context
+                .read<DistingCubit>()
+                .moveAlgorithmDown(DefaultTabController.of(context).index);
+          },
+        );
+      }),
+      Builder(
+        builder: (context) => IconButton(
+            icon: const Icon(Icons.delete_forever_rounded),
+            tooltip: 'Remove Algorithm',
+            onPressed: () async {
+              context
+                  .read<DistingCubit>()
+                  .onRemoveAlgorithm(DefaultTabController.of(context).index);
+            }),
+      ),
+      PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: "wake",
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Wake'), Icon(Icons.alarm_on_rounded)]),
+            onTap: () {
+              context.read<DistingCubit>().wakeDevice();
+            },
+          ),
+          PopupMenuItem(
+            value: "new",
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('New Preset'),
+                  Icon(Icons.fiber_new_rounded)
+                ]),
+            onTap: () {
+              context.read<DistingCubit>().newPreset();
+            },
+          ),
+          PopupMenuItem(
+            value: "load",
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Load Preset'),
+                  Icon(Icons.file_upload_rounded)
+                ]),
+            onTap: () async {
+              var cubit = context.read<DistingCubit>();
+
+              final preset = await showDialog<dynamic>(
+                context: context,
+                builder: (context) => LoadPresetDialog(
+                  initialName: "",
+                ),
+              );
+              if (preset == null) return;
+
+              cubit.loadPreset(
+                  preset["name"] as String, preset["append"] as bool);
+            },
+          ),
+          PopupMenuItem(
+            value: "save",
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Save Preset'),
+                  Icon(Icons.save_alt_rounded)
+                ]),
+            onTap: () {
+              context.read<DistingCubit>().save();
+            },
+          ),
+          PopupMenuItem(
+            value: 'refresh',
+            onTap: () {
+              context.read<DistingCubit>().refresh();
+            },
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
+          ),
+          PopupMenuItem(
+            value: 'routing',
+            onTap: () async {
+              final routingInformation =
+                  context.read<DistingCubit>().buildRoutingInformation();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        RoutingPage(routing: routingInformation)),
+              );
+            },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Routing'), Icon(Icons.route_rounded)],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'screenshot',
+            onTap: () {
+              _showScreenshotOverlay(context);
+            },
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Screenshot'),
+                  Icon(Icons.screenshot_monitor_rounded),
+                ]),
+          ),
+          PopupMenuItem(
+            value: 'Switch Devices',
+            onTap: () {
+              context.read<DistingCubit>().disconnect();
+              context.read<DistingCubit>().loadDevices();
+            },
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Switch'), Icon(Icons.login_rounded)]),
+          ),
+          PopupMenuItem(
+            value: 'about',
+            child: Text('About'),
+            onTap: () async {
+              final info = await PackageInfo.fromPlatform();
+
+              showDialog<String>(
+                context: context,
+                builder: (context) => AboutDialog(
+                  applicationName: "NT Helper",
+                  applicationVersion: "${info.version} (${info.buildNumber})",
+                  applicationLegalese:
+                      "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Padding _buildPresetInfoEditor(BuildContext context) {
+    return Padding(
+            padding:
+                const EdgeInsets.only(left: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  onTap: () async {
+                    var cubit = context.read<DistingCubit>();
+
+                    final newName = await showDialog<String>(
+                      context: context,
+                      builder: (context) => RenamePresetDialog(
+                        initialName: presetName,
+                      ),
+                    );
+
+                    if (newName != null &&
+                        newName.isNotEmpty &&
+                        newName != presetName) {
+                      cubit.renamePreset(newName);
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min, // Shrinks to fit content
+                    children: [
+                      Text(
+                        'Preset: ${presetName.trim()}',
+                        style:
+                            Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.edit,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+                Text(distingVersion,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        )),
+              ],
+            ),
+          );
+  }
+
+  TabBar _buildTabBar(BuildContext context) {
+    return TabBar(
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorAnimation: TabIndicatorAnimation.elastic,
+              indicatorWeight: 1,
+              enableFeedback: true,
+              dividerHeight: 0,
+              isScrollable: true,
+              tabs: slots.map((slot) {
+                final algorithmName = (slot.algorithm.name.isNotEmpty)
+                    ? slot.algorithm.name
+                    : algorithms
+                        .where((element) => element.guid == slot.algorithm.guid)
+                        .firstOrNull
+                        ?.name;
+                return GestureDetector(
+                    onLongPress: () async {
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (context) => RenameSlotDialog(
+                          initialName: algorithmName ?? "",
+                        ),
+                      );
+
+                      if (newName != null) {
+                        context
+                            .read<DistingCubit>()
+                            .renameSlot(slot.algorithm.algorithmIndex, newName);
+                      }
+                    },
+                    child: Tab(text: algorithmName ?? ""));
+              }).toList(),
+            );
   }
 
   void _showScreenshotOverlay(BuildContext context) {
@@ -692,11 +771,13 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                     parameterNumber: widget.parameterNumber);
               },
               child: Text(
-                cleanTitle(widget.name), overflow: TextOverflow.ellipsis,
+                cleanTitle(widget.name),
+                overflow: TextOverflow.ellipsis,
                 maxLines: 3,
                 softWrap: false,
                 textAlign: TextAlign.start,
-                style: widescreen ? textTheme.titleMedium : textTheme.labelMedium,
+                style:
+                    widescreen ? textTheme.titleMedium : textTheme.labelMedium,
               ),
             ),
           ),
@@ -797,7 +878,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   : widget.dropdownItems != null
                       ? DropdownMenu(
                           initialSelection: widget.dropdownItems![currentValue],
-                          textStyle: widescreen ? textTheme.labelLarge : textTheme.labelMedium,
+                          textStyle: widescreen
+                              ? textTheme.labelLarge
+                              : textTheme.labelMedium,
                           dropdownMenuEntries: widget.dropdownItems!
                               .map((item) =>
                                   DropdownMenuEntry(value: item, label: item))
@@ -824,19 +907,31 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                   child: Text(
                                     widget.displayString!,
                                     overflow: TextOverflow.ellipsis,
-                                    style: widescreen ? textTheme.labelLarge : textTheme.labelSmall,
+                                    style: widescreen
+                                        ? textTheme.labelLarge
+                                        : textTheme.labelSmall,
                                   ),
                                 )
                               : widget.unit != null
-                                  ? Text(formatWithUnit(
-                                      currentValue,
-                                      name: widget.name,
-                                      min: widget.min,
-                                      max: widget.max,
-                                      unit: widget.unit,
-                                      powerOfTen: widget.powerOfTen,
-                                    ), style: widescreen ? textTheme.labelLarge : textTheme.labelSmall,)
-                                  : Text(currentValue.toString(), style: widescreen ? textTheme.labelLarge : textTheme.labelSmall,),
+                                  ? Text(
+                                      formatWithUnit(
+                                        currentValue,
+                                        name: widget.name,
+                                        min: widget.min,
+                                        max: widget.max,
+                                        unit: widget.unit,
+                                        powerOfTen: widget.powerOfTen,
+                                      ),
+                                      style: widescreen
+                                          ? textTheme.labelLarge
+                                          : textTheme.labelSmall,
+                                    )
+                                  : Text(
+                                      currentValue.toString(),
+                                      style: widescreen
+                                          ? textTheme.labelLarge
+                                          : textTheme.labelSmall,
+                                    ),
             ),
           ),
         ],

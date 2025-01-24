@@ -9,6 +9,7 @@ import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
+import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'disting_cubit.freezed.dart';
@@ -701,5 +702,12 @@ class DistingCubit extends Cubit<DistingState> {
               value: valueStrings.value))
           .toList(),
     );
+  }
+
+  void setDisplayMode(DisplayMode displayMode) {
+    requireDisting().let((disting) {
+      disting.requestWake();
+      disting.requestSetDisplayMode(displayMode);
+    });
   }
 }

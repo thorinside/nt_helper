@@ -25,6 +25,18 @@ abstract class HasParameterNumber {
   int get parameterNumber;
 }
 
+enum DisplayMode {
+  parameters(0),
+  algorithmUI(1),
+  overview(2),
+  overviewVUs(3),
+  ;
+
+  final int value;
+
+  const DisplayMode(this.value);
+}
+
 /// Enum of all known 'Sent SysEx messages' (requests)
 enum DistingNTRequestMessageType {
   // Sent messages (going TO the disting)
@@ -33,6 +45,7 @@ enum DistingNTRequestMessageType {
   wake(0x07),
   sclFile(0x11),
   kbmFile(0x12),
+  setDisplayMode(0x20),
   requestVersionString(0x22),
   requestNumAlgorithms(0x30),
   requestAlgorithmInfo(0x31),
@@ -717,7 +730,8 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static Uint8List encodeSendSlotName(int distingSysExId, int algorithmIndex, String name) {
+  static Uint8List encodeSendSlotName(
+      int distingSysExId, int algorithmIndex, String name) {
     final bytes = <int>[
       ..._buildHeader(distingSysExId),
       DistingNTRequestMessageType.setSlotName.value,
@@ -793,7 +807,8 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeLoadPreset(int sysExId, String presetName, bool append) {
+  static Uint8List encodeLoadPreset(
+      int sysExId, String presetName, bool append) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
       DistingNTRequestMessageType.loadPreset.value,
@@ -804,7 +819,7 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetCVMapping(int sysExId, int algorithmIndex,
+  static Uint8List encodeSetCVMapping(int sysExId, int algorithmIndex,
       int parameterNumber, PackedMappingData data) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
@@ -819,7 +834,7 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetMIDIMapping(int sysExId, int algorithmIndex,
+  static Uint8List encodeSetMIDIMapping(int sysExId, int algorithmIndex,
       int parameterNumber, PackedMappingData data) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
@@ -834,7 +849,7 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
-  static encodeSetI2CMapping(int sysExId, int algorithmIndex,
+  static Uint8List encodeSetI2CMapping(int sysExId, int algorithmIndex,
       int parameterNumber, PackedMappingData data) {
     final bytes = <int>[
       ..._buildHeader(sysExId),
@@ -845,6 +860,16 @@ class DistingNT {
       // version
       ...data.encodeI2CPackedData(),
       ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
+  static Uint8List encodeSetDisplayMode(int sysExId, DisplayMode displayMode) {
+    final bytes = <int>[
+      ..._buildHeader(sysExId),
+      DistingNTRequestMessageType.setDisplayMode.value,
+      displayMode.value & 0x7F,
+      ..._buildFooter()
     ];
     return Uint8List.fromList(bytes);
   }
