@@ -396,15 +396,17 @@ class SynchronizedScreen extends StatelessWidget {
       enableFeedback: true,
       dividerHeight: 0,
       isScrollable: true,
-      tabs: slots.map((slot) {
-        final algorithmName = (slot.algorithm.name.isNotEmpty)
-            ? slot.algorithm.name
-            : algorithms
-                .where((element) => element.guid == slot.algorithm.guid)
-                .firstOrNull
-                ?.name;
-        return GestureDetector(
+      tabs: slots.map(
+        (slot) {
+          final algorithmName = (slot.algorithm.name.isNotEmpty)
+              ? slot.algorithm.name
+              : algorithms
+                  .where((element) => element.guid == slot.algorithm.guid)
+                  .firstOrNull
+                  ?.name;
+          return GestureDetector(
             onLongPress: () async {
+              var cubit = context.read<DistingCubit>();
               final newName = await showDialog<String>(
                 context: context,
                 builder: (context) => RenameSlotDialog(
@@ -413,13 +415,13 @@ class SynchronizedScreen extends StatelessWidget {
               );
 
               if (newName != null) {
-                context
-                    .read<DistingCubit>()
-                    .renameSlot(slot.algorithm.algorithmIndex, newName);
+                cubit.renameSlot(slot.algorithm.algorithmIndex, newName);
               }
             },
-            child: Tab(text: algorithmName ?? ""));
-      }).toList(),
+            child: Tab(text: algorithmName ?? ""),
+          );
+        },
+      ).toList(),
     );
   }
 
