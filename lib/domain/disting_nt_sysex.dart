@@ -72,6 +72,7 @@ enum DistingNTRequestMessageType {
   setI2CMapping(0x4F),
   requestParameterValueString(0x50),
   setSlotName(0x51),
+  requestParameterPages(0x52),
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
 
@@ -110,6 +111,7 @@ enum DistingNTRespMessageType {
   respEnumStrings(0x49),
   respMapping(0x4B),
   respParameterValueString(0x50),
+  respParameterPages(0x52),
   respNumAlgorithmsInPreset(0x60),
   respRouting(0x61),
 
@@ -234,6 +236,25 @@ class AllParameterValues implements HasAlgorithmIndex {
   final List<ParameterValue> values;
 
   AllParameterValues({required this.algorithmIndex, required this.values});
+}
+
+class ParameterPage {
+  final String name;
+  final List<int> parameters;
+
+  ParameterPage({required this.name, required this.parameters});
+}
+
+class ParameterPages implements HasAlgorithmIndex {
+  @override
+  final int algorithmIndex;
+  final List<ParameterPage> pages;
+
+  ParameterPages({required this.algorithmIndex, required this.pages});
+
+  factory ParameterPages.filler() {
+    return ParameterPages(algorithmIndex: -1, pages: []);
+  }
 }
 
 class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
@@ -631,6 +652,17 @@ class DistingNT {
     return Uint8List.fromList(bytes);
   }
 
+  static Uint8List encodeRequestParameterPages(
+      int distingSysExId, int algorithmIndex) {
+    final bytes = <int>[
+      ..._buildHeader(distingSysExId),
+      DistingNTRequestMessageType.requestParameterPages.value,
+      algorithmIndex & 0x7F,
+      ..._buildFooter(),
+    ];
+    return Uint8List.fromList(bytes);
+  }
+
   static Uint8List encodeRequestParameterInfo(
       int distingSysExId, int algorithmIndex, int parameterNumber) {
     final bytes = <int>[
@@ -957,6 +989,28 @@ class DistingNT {
     return NumParameters(
       algorithmIndex: algorithmIndex,
       numParameters: numParameters,
+    );
+  }
+
+  static ParameterPages decodeParameterPages(Uint8List data) {
+    var algorithmIndex = data[0].toInt();
+    var numPages = data[1].toInt();
+
+    int offset = 2;
+    return ParameterPages(
+      algorithmIndex: algorithmIndex,
+      pages: List.generate(
+        numPages,
+        (_) {
+          final strInfo = decodeNullTerminatedAscii(data, offset);
+          offset = strInfo.nextOffset;
+          final name = strInfo.value;
+          final numParameters = data[offset++].toInt();
+          final parameterNumbers =
+              List.generate(numParameters, (_) => data[offset++]);
+          return ParameterPage(name: name, parameters: parameterNumbers);
+        },
+      ),
     );
   }
 

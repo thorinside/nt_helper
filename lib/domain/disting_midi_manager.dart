@@ -512,4 +512,22 @@ class DistingMidiManager {
       responseExpectation: ResponseExpectation.none,
     );
   }
+
+  Future<ParameterPages?> requestParameterPages(int algorithmIndex) {
+    final packet = DistingNT.encodeRequestParameterPages(sysExId, algorithmIndex);
+
+    final key = RequestKey(
+      sysExId: sysExId,
+      algorithmIndex: algorithmIndex,
+      messageType: DistingNTRespMessageType.respParameterPages,
+    );
+    return _scheduler.sendRequest<ParameterPages>(
+      maxRetries: 5,
+      timeout: Duration(milliseconds: 150),
+      retryDelay: Duration(milliseconds: 250),
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
+  }
 }

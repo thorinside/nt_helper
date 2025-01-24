@@ -15,7 +15,6 @@ import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/ui/section_builder.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -469,13 +468,6 @@ class SlotDetailView extends StatefulWidget {
 
 class _SlotDetailViewState extends State<SlotDetailView>
     with AutomaticKeepAliveClientMixin {
-  late Future<Map<String, List<ParameterInfo>>?> sectionsFuture;
-
-  @override
-  void initState() {
-    sectionsFuture = SectionBuilder(slot: widget.slot).buildSections();
-    super.initState();
-  }
 
   @override
   bool get wantKeepAlive => true;
@@ -492,25 +484,11 @@ class _SlotDetailViewState extends State<SlotDetailView>
     // algorithm initially based off Os' organization on the module firmware.
 
     return SafeArea(
-      child: FutureBuilder<Map<String, List<ParameterInfo>>?>(
-        future: sectionsFuture,
-        builder: (context, snapshot) {
-          // Handle different states of the Future
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return SizedBox.shrink();
-          } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}'); // Show error message
-          } else if (snapshot.hasData) {
-            return SectionParameterListView(
+      child: SectionParameterListView(
               slot: widget.slot,
               units: widget.units,
-              sections: snapshot.data!,
-            );
-          } else {
-            return ParameterListView(slot: widget.slot, units: widget.units);
-          }
-        },
-      ),
+              pages: widget.slot.pages,
+            ),
     );
   }
 }
@@ -518,13 +496,13 @@ class _SlotDetailViewState extends State<SlotDetailView>
 class SectionParameterListView extends StatelessWidget {
   final Slot slot;
   final List<String> units;
-  final Map<String, List<ParameterInfo>> sections;
+  final ParameterPages pages;
 
   const SectionParameterListView({
     super.key,
     required this.slot,
     required this.units,
-    required this.sections,
+    required this.pages,
   });
 
   @override
@@ -541,29 +519,30 @@ class SectionParameterListView extends StatelessWidget {
         ),
         child: ListView.builder(
           padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-          itemCount: sections.length,
+          itemCount: pages.pages.length,
           itemBuilder: (context, index) {
-            final element = sections.entries.elementAt(index);
+            final page = pages.pages.elementAt(index);
 
             return ExpansionTile(
               initiallyExpanded: true,
-              title: Text(element.key),
-              children: element.value.map(
-                (parameter) {
+              title: Text(page.name),
+              children: page.parameters.map(
+                (parameterNumber) {
                   final value =
-                      slot.values.elementAt(parameter.parameterNumber);
+                      slot.values.elementAt(parameterNumber);
                   final enumStrings =
-                      slot.enums.elementAt(parameter.parameterNumber);
+                      slot.enums.elementAt(parameterNumber);
                   final mapping =
-                      slot.mappings.elementAtOrNull(parameter.parameterNumber);
+                      slot.mappings.elementAtOrNull(parameterNumber);
                   final valueString =
-                      slot.valueStrings.elementAt(parameter.parameterNumber);
-                  final unit = parameter.unit > 0
-                      ? units.elementAtOrNull(parameter.unit - 1)
+                      slot.valueStrings.elementAt(parameterNumber);
+                  var parameterInfo = slot.parameters.elementAt(parameterNumber);
+                  final unit = parameterInfo.unit > 0
+                      ? units.elementAtOrNull(parameterInfo.unit - 1)
                       : null;
 
                   return ParameterEditorView(
-                    parameterInfo: parameter,
+                    parameterInfo: parameterInfo,
                     value: value,
                     enumStrings: enumStrings,
                     mapping: mapping,

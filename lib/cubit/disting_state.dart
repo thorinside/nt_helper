@@ -5,6 +5,7 @@ class Slot with _$Slot {
   const factory Slot({
     required Algorithm algorithm,
     required RoutingInfo routing,
+    required ParameterPages pages,
     required List<ParameterInfo> parameters,
     required List<ParameterValue> values,
     required List<ParameterEnumStrings> enums,

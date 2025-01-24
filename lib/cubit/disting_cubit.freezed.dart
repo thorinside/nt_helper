@@ -18,6 +18,7 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$Slot {
   Algorithm get algorithm => throw _privateConstructorUsedError;
   RoutingInfo get routing => throw _privateConstructorUsedError;
+  ParameterPages get pages => throw _privateConstructorUsedError;
   List<ParameterInfo> get parameters => throw _privateConstructorUsedError;
   List<ParameterValue> get values => throw _privateConstructorUsedError;
   List<ParameterEnumStrings> get enums => throw _privateConstructorUsedError;
@@ -39,6 +40,7 @@ abstract class $SlotCopyWith<$Res> {
   $Res call(
       {Algorithm algorithm,
       RoutingInfo routing,
+      ParameterPages pages,
       List<ParameterInfo> parameters,
       List<ParameterValue> values,
       List<ParameterEnumStrings> enums,
@@ -63,6 +65,7 @@ class _$SlotCopyWithImpl<$Res, $Val extends Slot>
   $Res call({
     Object? algorithm = null,
     Object? routing = null,
+    Object? pages = null,
     Object? parameters = null,
     Object? values = null,
     Object? enums = null,
@@ -78,6 +81,10 @@ class _$SlotCopyWithImpl<$Res, $Val extends Slot>
           ? _value.routing
           : routing // ignore: cast_nullable_to_non_nullable
               as RoutingInfo,
+      pages: null == pages
+          ? _value.pages
+          : pages // ignore: cast_nullable_to_non_nullable
+              as ParameterPages,
       parameters: null == parameters
           ? _value.parameters
           : parameters // ignore: cast_nullable_to_non_nullable
@@ -112,6 +119,7 @@ abstract class _$$SlotImplCopyWith<$Res> implements $SlotCopyWith<$Res> {
   $Res call(
       {Algorithm algorithm,
       RoutingInfo routing,
+      ParameterPages pages,
       List<ParameterInfo> parameters,
       List<ParameterValue> values,
       List<ParameterEnumStrings> enums,
@@ -133,6 +141,7 @@ class __$$SlotImplCopyWithImpl<$Res>
   $Res call({
     Object? algorithm = null,
     Object? routing = null,
+    Object? pages = null,
     Object? parameters = null,
     Object? values = null,
     Object? enums = null,
@@ -148,6 +157,10 @@ class __$$SlotImplCopyWithImpl<$Res>
           ? _value.routing
           : routing // ignore: cast_nullable_to_non_nullable
               as RoutingInfo,
+      pages: null == pages
+          ? _value.pages
+          : pages // ignore: cast_nullable_to_non_nullable
+              as ParameterPages,
       parameters: null == parameters
           ? _value._parameters
           : parameters // ignore: cast_nullable_to_non_nullable
@@ -178,6 +191,7 @@ class _$SlotImpl implements _Slot {
   const _$SlotImpl(
       {required this.algorithm,
       required this.routing,
+      required this.pages,
       required final List<ParameterInfo> parameters,
       required final List<ParameterValue> values,
       required final List<ParameterEnumStrings> enums,
@@ -193,6 +207,8 @@ class _$SlotImpl implements _Slot {
   final Algorithm algorithm;
   @override
   final RoutingInfo routing;
+  @override
+  final ParameterPages pages;
   final List<ParameterInfo> _parameters;
   @override
   List<ParameterInfo> get parameters {
@@ -235,7 +251,7 @@ class _$SlotImpl implements _Slot {
 
   @override
   String toString() {
-    return 'Slot(algorithm: $algorithm, routing: $routing, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
+    return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
   }
 
   @override
@@ -246,6 +262,7 @@ class _$SlotImpl implements _Slot {
             (identical(other.algorithm, algorithm) ||
                 other.algorithm == algorithm) &&
             (identical(other.routing, routing) || other.routing == routing) &&
+            (identical(other.pages, pages) || other.pages == pages) &&
             const DeepCollectionEquality()
                 .equals(other._parameters, _parameters) &&
             const DeepCollectionEquality().equals(other._values, _values) &&
@@ -260,6 +277,7 @@ class _$SlotImpl implements _Slot {
       runtimeType,
       algorithm,
       routing,
+      pages,
       const DeepCollectionEquality().hash(_parameters),
       const DeepCollectionEquality().hash(_values),
       const DeepCollectionEquality().hash(_enums),
@@ -279,6 +297,7 @@ abstract class _Slot implements Slot {
   const factory _Slot(
       {required final Algorithm algorithm,
       required final RoutingInfo routing,
+      required final ParameterPages pages,
       required final List<ParameterInfo> parameters,
       required final List<ParameterValue> values,
       required final List<ParameterEnumStrings> enums,
@@ -289,6 +308,8 @@ abstract class _Slot implements Slot {
   Algorithm get algorithm;
   @override
   RoutingInfo get routing;
+  @override
+  ParameterPages get pages;
   @override
   List<ParameterInfo> get parameters;
   @override

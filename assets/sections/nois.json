@@ -1,9 +1,0 @@
-{
-  "Algorithm": [
-    "bypass"
-  ],
-  "Globals": ["gain"],
-  "Channel *": [
-    "*"
-  ]
-}

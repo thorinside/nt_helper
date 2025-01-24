@@ -1,9 +1,0 @@
-{
-  "Algorithm": [
-    "bypass"
-  ],
-  "Routing": [
-    "*"
-  ],
-  "Other": ["*"]
-}
