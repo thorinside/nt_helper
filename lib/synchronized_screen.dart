@@ -762,7 +762,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           MappingEditButton(widget: widget),
           // Name column with reduced width
           Expanded(
-            flex: widescreen ? 4 : 3,
+            flex: widescreen ? 2 : 3,
             child: GestureDetector(
               onLongPress: () {
                 context.read<DistingCubit>().onFocusParameter(
