@@ -49,7 +49,8 @@ void main() {
 
       expect(allParameterValues.algorithmIndex, equals(1));
       expect(allParameterValues.values.length, equals(5));
-      expect(allParameterValues.values.map((e) => e.value), equals([1, 2, 3, 4, 32763]));
+      expect(allParameterValues.values.map((e) => e.value),
+          equals([1, 2, 3, 4, 32763]));
     });
 
     test("can decode a single parameter value", () {

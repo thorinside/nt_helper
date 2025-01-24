@@ -151,9 +151,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   Widget _buildCvEditor() {
     // Safely clamp the current CV input to 0..12 for display
-    final cvInputValue = (_data.cvInput >= 0 && _data.cvInput <= 12)
-        ? _data.cvInput
-        : 0;
+    final cvInputValue =
+        (_data.cvInput >= 0 && _data.cvInput <= 12) ? _data.cvInput : 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -251,8 +250,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   Widget _buildMidiEditor() {
     // Safely clamp the current MIDI channel to 0..15
-    final midiChannelValue =
-    (_data.midiChannel >= 0 && _data.midiChannel <= 15)
+    final midiChannelValue = (_data.midiChannel >= 0 && _data.midiChannel <= 15)
         ? _data.midiChannel
         : 0;
 
@@ -274,10 +272,10 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               },
               dropdownMenuEntries: List.generate(16, (index) {
                 // 0..15 = Ch 1..16
-                  return DropdownMenuEntry<int>(
-                    value: index,
-                    label: 'Ch ${index + 1}',
-                  );
+                return DropdownMenuEntry<int>(
+                  value: index,
+                  label: 'Ch ${index + 1}',
+                );
               }),
             ),
           ),
@@ -330,7 +328,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               // automatically fill in the CC number, and midi channel in your form data
               // and assume we want to enable the midi mapping.
               setState(() {
-                _data = _data.copyWith(midiCC: cc, midiChannel: channel, isMidiEnabled: true);
+                _data = _data.copyWith(
+                    midiCC: cc, midiChannel: channel, isMidiEnabled: true);
               });
               // Also update the text field / controller if necessary
               _midiCcController.text = cc.toString();

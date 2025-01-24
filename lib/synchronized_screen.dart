@@ -52,30 +52,28 @@ class SynchronizedScreen extends StatelessWidget {
   }
 
   Widget _buildFloatingActionButton() {
-    return Builder(
-      builder: (context) {
-        return FloatingActionButton.small(
-          tooltip: "Add Algorithm to Preset",
-          onPressed: () async {
-            final cubit = context.read<DistingCubit>();
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      AddAlgorithmScreen(algorithms: algorithms)),
-            );
+    return Builder(builder: (context) {
+      return FloatingActionButton.small(
+        tooltip: "Add Algorithm to Preset",
+        onPressed: () async {
+          final cubit = context.read<DistingCubit>();
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    AddAlgorithmScreen(algorithms: algorithms)),
+          );
 
-            if (result != null) {
-              await cubit.onAlgorithmSelected(
-                result['algorithm'],
-                result['specValues'],
-              );
-            }
-          },
-          child: Icon(Icons.add_circle_rounded),
-        );
-      }
-    );
+          if (result != null) {
+            await cubit.onAlgorithmSelected(
+              result['algorithm'],
+              result['specValues'],
+            );
+          }
+        },
+        child: Icon(Icons.add_circle_rounded),
+      );
+    });
   }
 
   BottomAppBar _buildBottomAppBar() {
@@ -233,10 +231,7 @@ class SynchronizedScreen extends StatelessWidget {
             value: "new",
             child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('New Preset'),
-                  Icon(Icons.fiber_new_rounded)
-                ]),
+                children: [Text('New Preset'), Icon(Icons.fiber_new_rounded)]),
             onTap: () {
               context.read<DistingCubit>().newPreset();
             },
@@ -268,10 +263,7 @@ class SynchronizedScreen extends StatelessWidget {
             value: "save",
             child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Save Preset'),
-                  Icon(Icons.save_alt_rounded)
-                ]),
+                children: [Text('Save Preset'), Icon(Icons.save_alt_rounded)]),
             onTap: () {
               context.read<DistingCubit>().save();
             },
@@ -348,92 +340,87 @@ class SynchronizedScreen extends StatelessWidget {
 
   Padding _buildPresetInfoEditor(BuildContext context) {
     return Padding(
-            padding:
-                const EdgeInsets.only(left: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(left: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () async {
+              var cubit = context.read<DistingCubit>();
+
+              final newName = await showDialog<String>(
+                context: context,
+                builder: (context) => RenamePresetDialog(
+                  initialName: presetName,
+                ),
+              );
+
+              if (newName != null &&
+                  newName.isNotEmpty &&
+                  newName != presetName) {
+                cubit.renamePreset(newName);
+              }
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min, // Shrinks to fit content
               children: [
-                InkWell(
-                  onTap: () async {
-                    var cubit = context.read<DistingCubit>();
-
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (context) => RenamePresetDialog(
-                        initialName: presetName,
-                      ),
-                    );
-
-                    if (newName != null &&
-                        newName.isNotEmpty &&
-                        newName != presetName) {
-                      cubit.renamePreset(newName);
-                    }
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min, // Shrinks to fit content
-                    children: [
-                      Text(
-                        'Preset: ${presetName.trim()}',
-                        style:
-                            Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.edit,
-                        size: 16,
+                Text(
+                  'Preset: ${presetName.trim()}',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
                 ),
-                Text(distingVersion,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                        )),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.edit,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
-          );
+          ),
+          Text(distingVersion,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  )),
+        ],
+      ),
+    );
   }
 
   TabBar _buildTabBar(BuildContext context) {
     return TabBar(
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorAnimation: TabIndicatorAnimation.elastic,
-              indicatorWeight: 1,
-              enableFeedback: true,
-              dividerHeight: 0,
-              isScrollable: true,
-              tabs: slots.map((slot) {
-                final algorithmName = (slot.algorithm.name.isNotEmpty)
-                    ? slot.algorithm.name
-                    : algorithms
-                        .where((element) => element.guid == slot.algorithm.guid)
-                        .firstOrNull
-                        ?.name;
-                return GestureDetector(
-                    onLongPress: () async {
-                      final newName = await showDialog<String>(
-                        context: context,
-                        builder: (context) => RenameSlotDialog(
-                          initialName: algorithmName ?? "",
-                        ),
-                      );
+      indicatorSize: TabBarIndicatorSize.tab,
+      indicatorAnimation: TabIndicatorAnimation.elastic,
+      indicatorWeight: 1,
+      enableFeedback: true,
+      dividerHeight: 0,
+      isScrollable: true,
+      tabs: slots.map((slot) {
+        final algorithmName = (slot.algorithm.name.isNotEmpty)
+            ? slot.algorithm.name
+            : algorithms
+                .where((element) => element.guid == slot.algorithm.guid)
+                .firstOrNull
+                ?.name;
+        return GestureDetector(
+            onLongPress: () async {
+              final newName = await showDialog<String>(
+                context: context,
+                builder: (context) => RenameSlotDialog(
+                  initialName: algorithmName ?? "",
+                ),
+              );
 
-                      if (newName != null) {
-                        context
-                            .read<DistingCubit>()
-                            .renameSlot(slot.algorithm.algorithmIndex, newName);
-                      }
-                    },
-                    child: Tab(text: algorithmName ?? ""));
-              }).toList(),
-            );
+              if (newName != null) {
+                context
+                    .read<DistingCubit>()
+                    .renameSlot(slot.algorithm.algorithmIndex, newName);
+              }
+            },
+            child: Tab(text: algorithmName ?? ""));
+      }).toList(),
+    );
   }
 
   void _showScreenshotOverlay(BuildContext context) {
@@ -468,7 +455,6 @@ class SlotDetailView extends StatefulWidget {
 
 class _SlotDetailViewState extends State<SlotDetailView>
     with AutomaticKeepAliveClientMixin {
-
   @override
   bool get wantKeepAlive => true;
 
@@ -485,10 +471,10 @@ class _SlotDetailViewState extends State<SlotDetailView>
 
     return SafeArea(
       child: SectionParameterListView(
-              slot: widget.slot,
-              units: widget.units,
-              pages: widget.slot.pages,
-            ),
+        slot: widget.slot,
+        units: widget.units,
+        pages: widget.slot.pages,
+      ),
     );
   }
 }
@@ -528,15 +514,14 @@ class SectionParameterListView extends StatelessWidget {
               title: Text(page.name),
               children: page.parameters.map(
                 (parameterNumber) {
-                  final value =
-                      slot.values.elementAt(parameterNumber);
-                  final enumStrings =
-                      slot.enums.elementAt(parameterNumber);
+                  final value = slot.values.elementAt(parameterNumber);
+                  final enumStrings = slot.enums.elementAt(parameterNumber);
                   final mapping =
                       slot.mappings.elementAtOrNull(parameterNumber);
                   final valueString =
                       slot.valueStrings.elementAt(parameterNumber);
-                  var parameterInfo = slot.parameters.elementAt(parameterNumber);
+                  var parameterInfo =
+                      slot.parameters.elementAt(parameterNumber);
                   final unit = parameterInfo.unit > 0
                       ? units.elementAtOrNull(parameterInfo.unit - 1)
                       : null;

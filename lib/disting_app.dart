@@ -77,7 +77,9 @@ class DistingPage extends StatelessWidget {
                 inputDevices: state.inputDevices,
                 outputDevices: state.outputDevices,
                 onDeviceSelected: (inputDevice, outputDevice, sysExId) {
-                  context.read<DistingCubit>().connectToDevices(inputDevice, outputDevice, sysExId);
+                  context
+                      .read<DistingCubit>()
+                      .connectToDevices(inputDevice, outputDevice, sysExId);
                 },
                 onRefresh: () {
                   context.read<DistingCubit>().loadDevices();
@@ -159,13 +161,14 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
     selectedOutputDevice = widget.outputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-    )
+        )
         .firstOrNull;
   }
 
   @override
   void didUpdateWidget(covariant _DeviceSelectionView oldWidget) {
-    if (oldWidget.inputDevices != widget.inputDevices || oldWidget.outputDevices != widget.outputDevices) {
+    if (oldWidget.inputDevices != widget.inputDevices ||
+        oldWidget.outputDevices != widget.outputDevices) {
       selectFirstDisting();
     }
     super.didUpdateWidget(oldWidget);
@@ -260,13 +263,14 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                     child: Text("Refresh"),
                   ),
                   ElevatedButton(
-                    onPressed:
-                        (selectedInputDevice != null && selectedOutputDevice != null && selectedSysExId != null)
-                            ? () {
-                                widget.onDeviceSelected(
-                                    selectedInputDevice!, selectedOutputDevice!, selectedSysExId!);
-                              }
-                            : null,
+                    onPressed: (selectedInputDevice != null &&
+                            selectedOutputDevice != null &&
+                            selectedSysExId != null)
+                        ? () {
+                            widget.onDeviceSelected(selectedInputDevice!,
+                                selectedOutputDevice!, selectedSysExId!);
+                          }
+                        : null,
                     child: Text("Connect"),
                   ),
                 ],

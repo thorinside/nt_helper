@@ -236,7 +236,7 @@ class RoutingTableWidget extends StatelessWidget {
   //----------------------------------------------------------------------------
   void _applyStripSignals(int slotCount, List<List<int>> signals) {
     for (int ch = 1; ch <= 28; ch++) {
-      if ( showSignals && ( ch == 13 ) ) {
+      if (showSignals && (ch == 13)) {
         ch = 21;
       }
       bool hasInput = false;

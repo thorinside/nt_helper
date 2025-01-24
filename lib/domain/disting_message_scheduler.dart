@@ -127,13 +127,13 @@ class DistingMessageScheduler {
   ///
   /// [timeout] is per-attempt, not total. Each retry gets its own timer.
   Future<T?> sendRequest<T>(
-      Uint8List sysExMessage,
-      RequestKey requestKey, {
-        ResponseExpectation responseExpectation = ResponseExpectation.required,
-        Duration? timeout,
-        int? maxRetries,
-        Duration? retryDelay,
-      }) {
+    Uint8List sysExMessage,
+    RequestKey requestKey, {
+    ResponseExpectation responseExpectation = ResponseExpectation.required,
+    Duration? timeout,
+    int? maxRetries,
+    Duration? retryDelay,
+  }) {
     final completer = Completer<T?>();
     final req = _ScheduledRequest<T>(
       sysExMessage: sysExMessage,
@@ -172,10 +172,8 @@ class DistingMessageScheduler {
     // Send the SysEx data
     midiCommand.sendData(current.sysExMessage, deviceId: outputDevice.id);
     if (kDebugMode) {
-      print(
-        'Sent SysEx (attempt ${current.attemptCount}): '
-            '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}'
-    );
+      print('Sent SysEx (attempt ${current.attemptCount}): '
+          '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
     }
 
     // If no response expected → complete immediately (after the rate-limit delay).
@@ -208,7 +206,8 @@ class DistingMessageScheduler {
             _tryProcessNext();
           } else {
             // We can try again
-            print('No response in time, retrying (attempt ${current.attemptCount + 1})...');
+            print(
+                'No response in time, retrying (attempt ${current.attemptCount + 1})...');
             _scheduleRetry(current.retryDelay);
           }
         } else {
@@ -345,4 +344,5 @@ class DistingMessageScheduler {
       print("Error decoding response: $e");
       return null;
     }
-  }}
+  }
+}

@@ -514,7 +514,8 @@ class DistingMidiManager {
   }
 
   Future<ParameterPages?> requestParameterPages(int algorithmIndex) {
-    final packet = DistingNT.encodeRequestParameterPages(sysExId, algorithmIndex);
+    final packet =
+        DistingNT.encodeRequestParameterPages(sysExId, algorithmIndex);
 
     final key = RequestKey(
       sysExId: sysExId,

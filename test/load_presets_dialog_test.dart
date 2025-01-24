@@ -109,49 +109,49 @@ void main() {
 
     testWidgets(
         'When load button pushed, widget returns text and indicates to load',
-            (WidgetTester tester) async {
-          late dynamic value;
-          SharedPreferences preferences = MockSharedPreferences();
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Material(
-                child: Builder(builder: (context) {
-                  return ElevatedButton(
-                      onPressed: () async {
-                        value = await showDialog(
-                            context: context,
-                            builder: (context) => LoadPresetDialog(
+        (WidgetTester tester) async {
+      late dynamic value;
+      SharedPreferences preferences = MockSharedPreferences();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: Builder(builder: (context) {
+              return ElevatedButton(
+                  onPressed: () async {
+                    value = await showDialog(
+                        context: context,
+                        builder: (context) => LoadPresetDialog(
                               initialName: "",
                               preferences: preferences,
                             ));
-                      },
-                      child: Text("Show"));
-                }),
-              ),
-            ),
-          );
+                  },
+                  child: Text("Show"));
+            }),
+          ),
+        ),
+      );
 
-          when(preferences.setStringList("presetHistory", ["/presets/Turing.json"]))
-              .thenAnswer((_) => Future.value(true));
+      when(preferences.setStringList("presetHistory", ["/presets/Turing.json"]))
+          .thenAnswer((_) => Future.value(true));
 
-          final showButton = find.text("Show");
-          await tester.tap(showButton);
-          await tester.pumpAndSettle();
+      final showButton = find.text("Show");
+      await tester.tap(showButton);
+      await tester.pumpAndSettle();
 
-          final titleInputText = find.byKey(const Key('preset-name-text-field'));
-          expect(titleInputText, findsOneWidget);
+      final titleInputText = find.byKey(const Key('preset-name-text-field'));
+      expect(titleInputText, findsOneWidget);
 
-          await tester.enterText(titleInputText, "/presets/Turing.json   ");
+      await tester.enterText(titleInputText, "/presets/Turing.json   ");
 
-          final appendButton =
+      final appendButton =
           find.byKey(const Key('load_preset_dialog_load_button'));
-          expect(appendButton, findsOneWidget);
-          await tester.tap(appendButton);
-          await tester.pumpAndSettle();
+      expect(appendButton, findsOneWidget);
+      await tester.tap(appendButton);
+      await tester.pumpAndSettle();
 
-          expect(value, isNotNull);
-          expect(value,
-              equals({"name": "/presets/Turing.json   ".trim(), "append": false}));
-        });
+      expect(value, isNotNull);
+      expect(value,
+          equals({"name": "/presets/Turing.json   ".trim(), "append": false}));
+    });
   });
 }

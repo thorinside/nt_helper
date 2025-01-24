@@ -247,7 +247,7 @@ class DistingCubit extends Cubit<DistingState> {
           ParameterValueString.filler()
     ];
     var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
-      ParameterPages.filler();
+        ParameterPages.filler();
     return Slot(
       algorithm: (await disting.requestAlgorithmGuid(algorithmIndex))!,
       pages: parameterPages,
@@ -668,7 +668,8 @@ class DistingCubit extends Cubit<DistingState> {
       routing: RoutingInfo(
           algorithmIndex: algorithmIndex,
           routingInfo: slot.routing.routingInfo),
-      pages: ParameterPages(algorithmIndex: algorithmIndex, pages: slot.pages.pages),
+      pages: ParameterPages(
+          algorithmIndex: algorithmIndex, pages: slot.pages.pages),
       parameters: slot.parameters
           .map((parameter) => ParameterInfo(
               algorithmIndex: algorithmIndex,

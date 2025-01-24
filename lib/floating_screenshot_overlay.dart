@@ -101,7 +101,7 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
                     ? Image.memory(
                         _screenshot!,
                         fit: BoxFit.fitHeight,
-                  gaplessPlayback: true,
+                        gaplessPlayback: true,
                       )
                     : const Center(
                         child: CircularProgressIndicator(),

@@ -5,7 +5,7 @@ class Assets {
   static const String iconIcon = 'assets/icon/icon.png';
   static const String iconIconBackground = 'assets/icon/icon-background.png';
   static const String iconIconForeground = 'assets/icon/icon-foreground.png';
-  static const String testLoadPresetsDialogTest = 'test/load_presets_dialog_test.dart';
+  static const String testLoadPresetsDialogTest =
+      'test/load_presets_dialog_test.dart';
   static const String testSysexDecodeTest = 'test/sysex_decode_test.dart';
-
 }
