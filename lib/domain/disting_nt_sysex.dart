@@ -282,7 +282,7 @@ class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
 
   factory ParameterValueString.filler() {
     return ParameterValueString(
-        algorithmIndex: -1, parameterNumber: -1, value: "--");
+        algorithmIndex: -1, parameterNumber: -1, value: '');
   }
 
   // Write toString
