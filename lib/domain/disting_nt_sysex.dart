@@ -991,7 +991,7 @@ class DistingNT {
       guid: String.fromCharCodes(algorithmData.sublist(1, 5)),
       name: String.fromCharCodes(
         algorithmData.sublist(5).takeWhile((value) => value != 0),
-      ),
+      ).trim(),
     );
   }
 

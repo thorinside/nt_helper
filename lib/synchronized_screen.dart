@@ -671,15 +671,19 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
+    // Check if we are on a wide screen or a smaller screen
+    bool widescreen = MediaQuery.of(context).size.width > 600;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
       child: Row(
+        key: ValueKey(widescreen),
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           MappingEditButton(widget: widget),
           // Name column with reduced width
           Expanded(
-            flex: 2, // Reduced flex for the name column
+            flex: widescreen ? 2 : 4, // Reduced flex for the name column
             child: GestureDetector(
               onLongPress: () {
                 context.read<DistingCubit>().onFocusParameter(
@@ -696,7 +700,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
           // Slider column
           Expanded(
-              flex: 8, // Proportionally larger space for the slider
+              flex: widescreen ? 7 : 5, // Proportionally larger space for the slider
               child: GestureDetector(
                 onDoubleTap: () => _showAlternateEditor
                     ? {}
@@ -772,7 +776,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               )),
           // Control column
           Expanded(
-            flex: 2, // Slightly larger control column
+            flex: widescreen ? 3 : 4, // Slightly larger control column
             child: Align(
               alignment: Alignment.centerLeft,
               child: widget.isOnOff
