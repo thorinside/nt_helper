@@ -412,24 +412,26 @@ class _SlotDetailViewState extends State<SlotDetailView>
     // Create a set of list sections for the parameters of the
     // algorithm initially based off Os' organization on the module firmware.
 
-    return FutureBuilder<Map<String, List<ParameterInfo>>?>(
-      future: sectionsFuture,
-      builder: (context, snapshot) {
-        // Handle different states of the Future
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return SizedBox.shrink();
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}'); // Show error message
-        } else if (snapshot.hasData) {
-          return SectionParameterListView(
-            slot: widget.slot,
-            units: widget.units,
-            sections: snapshot.data!,
-          );
-        } else {
-          return ParameterListView(slot: widget.slot, units: widget.units);
-        }
-      },
+    return SafeArea(
+      child: FutureBuilder<Map<String, List<ParameterInfo>>?>(
+        future: sectionsFuture,
+        builder: (context, snapshot) {
+          // Handle different states of the Future
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return SizedBox.shrink();
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}'); // Show error message
+          } else if (snapshot.hasData) {
+            return SectionParameterListView(
+              slot: widget.slot,
+              units: widget.units,
+              sections: snapshot.data!,
+            );
+          } else {
+            return ParameterListView(slot: widget.slot, units: widget.units);
+          }
+        },
+      ),
     );
   }
 }

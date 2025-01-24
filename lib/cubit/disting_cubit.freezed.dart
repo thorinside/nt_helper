@@ -314,11 +314,8 @@ mixin _$DistingState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot) initial,
-    required TResult Function(
-            MidiCommand midiCommand,
-            List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices,
-            Uint8List? screenshot)
+    required TResult Function(List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)
         selectDevice,
     required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
         connected,
@@ -336,7 +333,7 @@ mixin _$DistingState {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult? Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -355,7 +352,7 @@ mixin _$DistingState {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -514,11 +511,8 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot) initial,
-    required TResult Function(
-            MidiCommand midiCommand,
-            List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices,
-            Uint8List? screenshot)
+    required TResult Function(List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)
         selectDevice,
     required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
         connected,
@@ -539,7 +533,7 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult? Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -561,7 +555,7 @@ class _$DistingStateInitialImpl implements DistingStateInitial {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -646,8 +640,7 @@ abstract class _$$DistingStateSelectDeviceImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {MidiCommand midiCommand,
-      List<MidiDevice> inputDevices,
+      {List<MidiDevice> inputDevices,
       List<MidiDevice> outputDevices,
       Uint8List? screenshot});
 }
@@ -666,16 +659,11 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? midiCommand = null,
     Object? inputDevices = null,
     Object? outputDevices = null,
     Object? screenshot = freezed,
   }) {
     return _then(_$DistingStateSelectDeviceImpl(
-      midiCommand: null == midiCommand
-          ? _value.midiCommand
-          : midiCommand // ignore: cast_nullable_to_non_nullable
-              as MidiCommand,
       inputDevices: null == inputDevices
           ? _value._inputDevices
           : inputDevices // ignore: cast_nullable_to_non_nullable
@@ -696,15 +684,12 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
 
 class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   const _$DistingStateSelectDeviceImpl(
-      {required this.midiCommand,
-      required final List<MidiDevice> inputDevices,
+      {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
       this.screenshot})
       : _inputDevices = inputDevices,
         _outputDevices = outputDevices;
 
-  @override
-  final MidiCommand midiCommand;
   final List<MidiDevice> _inputDevices;
   @override
   List<MidiDevice> get inputDevices {
@@ -726,7 +711,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
 
   @override
   String toString() {
-    return 'DistingState.selectDevice(midiCommand: $midiCommand, inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot)';
+    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot)';
   }
 
   @override
@@ -734,8 +719,6 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$DistingStateSelectDeviceImpl &&
-            (identical(other.midiCommand, midiCommand) ||
-                other.midiCommand == midiCommand) &&
             const DeepCollectionEquality()
                 .equals(other._inputDevices, _inputDevices) &&
             const DeepCollectionEquality()
@@ -747,7 +730,6 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      midiCommand,
       const DeepCollectionEquality().hash(_inputDevices),
       const DeepCollectionEquality().hash(_outputDevices),
       const DeepCollectionEquality().hash(screenshot));
@@ -765,11 +747,8 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot) initial,
-    required TResult Function(
-            MidiCommand midiCommand,
-            List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices,
-            Uint8List? screenshot)
+    required TResult Function(List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)
         selectDevice,
     required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
         connected,
@@ -783,14 +762,14 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             Uint8List? screenshot)
         synchronized,
   }) {
-    return selectDevice(midiCommand, inputDevices, outputDevices, screenshot);
+    return selectDevice(inputDevices, outputDevices, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult? Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -805,15 +784,14 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
             Uint8List? screenshot)?
         synchronized,
   }) {
-    return selectDevice?.call(
-        midiCommand, inputDevices, outputDevices, screenshot);
+    return selectDevice?.call(inputDevices, outputDevices, screenshot);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -830,7 +808,7 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
     required TResult orElse(),
   }) {
     if (selectDevice != null) {
-      return selectDevice(midiCommand, inputDevices, outputDevices, screenshot);
+      return selectDevice(inputDevices, outputDevices, screenshot);
     }
     return orElse();
   }
@@ -875,12 +853,10 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
 
 abstract class DistingStateSelectDevice implements DistingState {
   const factory DistingStateSelectDevice(
-      {required final MidiCommand midiCommand,
-      required final List<MidiDevice> inputDevices,
+      {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
       final Uint8List? screenshot}) = _$DistingStateSelectDeviceImpl;
 
-  MidiCommand get midiCommand;
   List<MidiDevice> get inputDevices;
   List<MidiDevice> get outputDevices;
   @override
@@ -977,11 +953,8 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot) initial,
-    required TResult Function(
-            MidiCommand midiCommand,
-            List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices,
-            Uint8List? screenshot)
+    required TResult Function(List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)
         selectDevice,
     required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
         connected,
@@ -1002,7 +975,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult? Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -1024,7 +997,7 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -1271,11 +1244,8 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot) initial,
-    required TResult Function(
-            MidiCommand midiCommand,
-            List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices,
-            Uint8List? screenshot)
+    required TResult Function(List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices, Uint8List? screenshot)
         selectDevice,
     required TResult Function(DistingMidiManager disting, Uint8List? screenshot)
         connected,
@@ -1297,7 +1267,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot)? initial,
-    TResult? Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult? Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult? Function(DistingMidiManager disting, Uint8List? screenshot)?
@@ -1320,7 +1290,7 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot)? initial,
-    TResult Function(MidiCommand midiCommand, List<MidiDevice> inputDevices,
+    TResult Function(List<MidiDevice> inputDevices,
             List<MidiDevice> outputDevices, Uint8List? screenshot)?
         selectDevice,
     TResult Function(DistingMidiManager disting, Uint8List? screenshot)?

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
@@ -19,7 +20,7 @@ class DistingCubit extends Cubit<DistingState> {
         super(DistingState.initial());
 
   final Future<SharedPreferences> _prefs;
-  final MidiCommand _midiCommand = MidiCommand();
+  MidiCommand _midiCommand = MidiCommand();
 
   @override
   Future<void> close() {
@@ -51,7 +52,6 @@ class DistingCubit extends Cubit<DistingState> {
             savedInputDevice, savedOutputDevice, savedSysExId);
       } else {
         emit(DistingState.selectDevice(
-          midiCommand: _midiCommand,
           inputDevices:
               devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
           outputDevices:
@@ -78,7 +78,6 @@ class DistingCubit extends Cubit<DistingState> {
 
       // Transition to the select device state
       emit(DistingState.selectDevice(
-        midiCommand: _midiCommand,
         inputDevices:
             devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
         outputDevices:
@@ -102,10 +101,17 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  Future<void> disconnect() async {
-    if (state is DistingStateSynchronized) {
-      (state as DistingStateSynchronized).disting.dispose();
+  void disconnect() {
+    switch (state) {
+      case DistingStateConnected connectedState:
+        connectedState.disting.dispose();
+        break;
+      case DistingStateSynchronized syncstate:
+        syncstate.disting.dispose();
+        break;
     }
+    _midiCommand.dispose();
+    _midiCommand = MidiCommand();
   }
 
   Future<void> connectToDevices(
@@ -113,7 +119,9 @@ class DistingCubit extends Cubit<DistingState> {
     try {
       // Connect to the selected device
       await _midiCommand.connectToDevice(inputDevice);
-      await _midiCommand.connectToDevice(outputDevice);
+      if (inputDevice != outputDevice) {
+        await _midiCommand.connectToDevice(outputDevice);
+      }
 
       // Save the device name and SysEx ID to persistent storage
       final prefs = await _prefs;
@@ -134,11 +142,13 @@ class DistingCubit extends Cubit<DistingState> {
       synchronizeDevice();
     } catch (e) {
       // Handle error state if necessary
+      print("Error connecting: ${e.toString()}");
+      debugPrintStack();
     }
   }
 
   Future<void> cancelSync() async {
-    await disconnect();
+    disconnect();
     loadDevices();
   }
 

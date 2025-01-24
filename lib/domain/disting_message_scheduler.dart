@@ -101,8 +101,7 @@ class DistingMessageScheduler {
 
   /// Dispose/stop the scheduler.
   void dispose() {
-    midiCommand.disconnectDevice(inputDevice);
-    midiCommand.disconnectDevice(outputDevice);
+    midiCommand.teardown();
 
     _subscription?.cancel();
 

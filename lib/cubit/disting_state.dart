@@ -20,7 +20,6 @@ class DistingState with _$DistingState {
   }) = DistingStateInitial;
 
   const factory DistingState.selectDevice({
-    required MidiCommand midiCommand,
     required List<MidiDevice> inputDevices,
     required List<MidiDevice> outputDevices,
     Uint8List? screenshot,
