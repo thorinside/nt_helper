@@ -506,6 +506,7 @@ class SectionParameterListView extends StatelessWidget {
           ),
         ),
         child: ListView.builder(
+          cacheExtent: double.infinity,
           padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
           itemCount: pages.pages.length,
           itemBuilder: (context, index) {
@@ -559,6 +560,7 @@ class ParameterListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      cacheExtent: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       itemCount: slot.parameters.length,
       itemBuilder: (context, index) {
