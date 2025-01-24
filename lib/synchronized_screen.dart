@@ -461,7 +461,7 @@ class SectionParameterListView extends StatelessWidget {
           ),
         ),
         child: ListView.builder(
-          padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
           itemCount: sections.length,
           itemBuilder: (context, index) {
             final element = sections.entries.elementAt(index);
@@ -683,7 +683,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           MappingEditButton(widget: widget),
           // Name column with reduced width
           Expanded(
-            flex: widescreen ? 2 : 4, // Reduced flex for the name column
+            flex: widescreen ? 4 : 3,
             child: GestureDetector(
               onLongPress: () {
                 context.read<DistingCubit>().onFocusParameter(
@@ -692,15 +692,19 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                     parameterNumber: widget.parameterNumber);
               },
               child: Text(
-                widget.name, overflow: TextOverflow.ellipsis,
-                style: textTheme.titleMedium, // Larger title for the name
+                cleanTitle(widget.name), overflow: TextOverflow.ellipsis,
+                maxLines: 3,
+                softWrap: false,
+                textAlign: TextAlign.start,
+                style: widescreen ? textTheme.titleMedium : textTheme.labelMedium,
               ),
             ),
           ),
 
           // Slider column
           Expanded(
-              flex: widescreen ? 7 : 5, // Proportionally larger space for the slider
+              flex: widescreen ? 8 : 6,
+              // Proportionally larger space for the slider
               child: GestureDetector(
                 onDoubleTap: () => _showAlternateEditor
                     ? {}
@@ -793,6 +797,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   : widget.dropdownItems != null
                       ? DropdownMenu(
                           initialSelection: widget.dropdownItems![currentValue],
+                          textStyle: widescreen ? textTheme.labelLarge : textTheme.labelMedium,
                           dropdownMenuEntries: widget.dropdownItems!
                               .map((item) =>
                                   DropdownMenuEntry(value: item, label: item))
@@ -819,7 +824,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                   child: Text(
                                     widget.displayString!,
                                     overflow: TextOverflow.ellipsis,
-                                    style: textTheme.bodyLarge,
+                                    style: widescreen ? textTheme.labelLarge : textTheme.labelSmall,
                                   ),
                                 )
                               : widget.unit != null
@@ -830,13 +835,19 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                       max: widget.max,
                                       unit: widget.unit,
                                       powerOfTen: widget.powerOfTen,
-                                    ))
-                                  : Text(currentValue.toString()),
+                                    ), style: widescreen ? textTheme.labelLarge : textTheme.labelSmall,)
+                                  : Text(currentValue.toString(), style: widescreen ? textTheme.labelLarge : textTheme.labelSmall,),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String cleanTitle(String name) {
+    // If name starts with a number followed by a colon, strip that off
+    final RegExp regex = RegExp(r'^\d+:\s*');
+    return name.replaceAll(regex, '');
   }
 }
 

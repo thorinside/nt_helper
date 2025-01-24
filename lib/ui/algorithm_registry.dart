@@ -23,15 +23,19 @@ class NotesAlgorithmView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < slot.valueStrings.length; i++)
-            Text(
-              slot.valueStrings[i].value,
-              style: Theme.of(context).textTheme.titleMedium,
-            )
-        ],
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (int i = 0; i < slot.valueStrings.length; i++)
+              Text(
+                slot.valueStrings[i].value.trim(),
+                textAlign: TextAlign.start,
+                style: Theme.of(context).textTheme.bodyLarge,
+              )
+          ],
+        ),
       ),
     );
   }
