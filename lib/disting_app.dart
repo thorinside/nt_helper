@@ -10,44 +10,62 @@ class DistingApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: Colors.tealAccent)
-        .copyWith(surfaceTint: Colors.transparent);
+    final lightTheme = buildThemeData(ColorScheme.fromSeed(
+      seedColor: Colors.tealAccent,
+      brightness: Brightness.light,
+    ).copyWith(surfaceTint: Colors.transparent));
+
+    final darkTheme = buildThemeData(ColorScheme.fromSeed(
+      seedColor: Colors.tealAccent,
+      brightness: Brightness.dark,
+    ).copyWith(surfaceTint: Colors.transparent));
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-          colorScheme: colorScheme,
-          appBarTheme: AppBarTheme(
-            elevation: 4.0,
-            shadowColor: colorScheme.shadow,
-            backgroundColor: colorScheme.surface,
-            foregroundColor: colorScheme.onSurface,
-          ),
-          tabBarTheme: TabBarTheme(
-            indicator: UnderlineTabIndicator(
-              borderSide: BorderSide(
-                color: colorScheme.secondary,
-                width: 2.0,
-              ),
-            ),
-            labelColor: colorScheme.secondary,
-            unselectedLabelColor: colorScheme.secondary.withAlpha(170),
-            labelStyle: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
-          )),
+      theme: lightTheme,
+      // Light theme
+      darkTheme: darkTheme,
+      // Dark theme using copyWith
+      themeMode: ThemeMode.system,
+      // Follow system settings
       home: BlocProvider(
         create: (_) {
           final cubit = DistingCubit();
           cubit.initialize(); // Load settings and auto-connect if possible
           return cubit;
         },
-        child: DistingPage(),
+        child: Material(child: DistingPage()),
+      ),
+    );
+  }
+
+  ThemeData buildThemeData(ColorScheme baseColorScheme) {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: baseColorScheme,
+      appBarTheme: AppBarTheme(
+        elevation: 4.0,
+        shadowColor: baseColorScheme.shadow,
+        backgroundColor: baseColorScheme.surface,
+        foregroundColor: baseColorScheme.onSurface,
+      ),
+      tabBarTheme: TabBarTheme(
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(
+            color: baseColorScheme.secondary,
+            width: 2.0,
+          ),
+        ),
+        labelColor: baseColorScheme.secondary,
+        unselectedLabelColor: baseColorScheme.secondary.withAlpha(170),
+        labelStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
       ),
     );
   }
