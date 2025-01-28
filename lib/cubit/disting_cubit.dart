@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
@@ -143,7 +142,9 @@ class DistingCubit extends Cubit<DistingState> {
       synchronizeDevice();
     } catch (e) {
       // Handle error state if necessary
-      print("Error connecting: ${e.toString()}");
+      if (kDebugMode) {
+        print("Error connecting: ${e.toString()}");
+      }
       debugPrintStack();
     }
   }

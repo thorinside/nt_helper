@@ -1,6 +1,6 @@
 import 'dart:math';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:image/image.dart' as img;
 import 'package:nt_helper/domain/ascii.dart';
@@ -254,6 +254,11 @@ class ParameterPages implements HasAlgorithmIndex {
 
   factory ParameterPages.filler() {
     return ParameterPages(algorithmIndex: -1, pages: []);
+  }
+
+  @override
+  String toString() {
+    return "ParameterPages(algorithmIndex=$algorithmIndex, pages=[$pages])";
   }
 }
 
@@ -995,7 +1000,6 @@ class DistingNT {
   static ParameterPages decodeParameterPages(Uint8List data) {
     var algorithmIndex = data[0].toInt();
     var numPages = data[1].toInt();
-
     int offset = 2;
     return ParameterPages(
       algorithmIndex: algorithmIndex,
@@ -1005,9 +1009,10 @@ class DistingNT {
           final strInfo = decodeNullTerminatedAscii(data, offset);
           offset = strInfo.nextOffset;
           final name = strInfo.value;
-          final numParameters = data[offset++].toInt();
-          final parameterNumbers =
-              List.generate(numParameters, (_) => data[offset++]);
+          final numParameters = data[offset++];
+          final parameterNumbers = List.generate(numParameters, (_) {
+            return data[offset++] << 7 | data[offset++];
+          });
           return ParameterPage(name: name, parameters: parameterNumbers);
         },
       ),
@@ -1204,8 +1209,7 @@ class DistingNT {
       algorithmIndex: decode8(message),
       parameterNumber: decode16(message, 1),
       version: decode8(message.sublist(4, 5)),
-      packedMappingData:
-          PackedMappingData.fromBytes(message.sublist(5, message.length)),
+      packedMappingData: PackedMappingData.fromBytes(message.sublist(5)),
     );
   }
 
@@ -1255,6 +1259,6 @@ class DistingNTParsedMessage {
   @override
   String toString() {
     return 'DistingNTParsedMessage(sysExId: $sysExId, '
-        'type: $messageType, payloadLen: ${payload.length})';
+        'type: $messageType, payloadLen: ${payload.length}, raw: ${rawBytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')})';
   }
 }

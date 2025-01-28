@@ -90,10 +90,10 @@ class DistingMessageScheduler {
     required this.inputDevice,
     required this.outputDevice,
     required this.sysExId,
-    this.defaultTimeout = const Duration(milliseconds: 100),
-    this.messageInterval = const Duration(milliseconds: 30),
+    this.defaultTimeout = const Duration(milliseconds: 200),
+    this.messageInterval = const Duration(milliseconds: 50),
     this.defaultMaxRetries = 5,
-    this.defaultRetryDelay = const Duration(milliseconds: 30),
+    this.defaultRetryDelay = const Duration(milliseconds: 50),
   }) {
     // Start listening for incoming MIDI data.
     _subscription = midiCommand.onMidiDataReceived?.listen(_handleIncomingMidi);
@@ -173,7 +173,7 @@ class DistingMessageScheduler {
     midiCommand.sendData(current.sysExMessage, deviceId: outputDevice.id);
     if (kDebugMode) {
       print('Sent SysEx (attempt ${current.attemptCount}): '
-          '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
+          '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')} ${_currentRequest?.requestKey}');
     }
 
     // If no response expected → complete immediately (after the rate-limit delay).
@@ -281,11 +281,11 @@ class DistingMessageScheduler {
   }
 
   dynamic _decodeResponse(DistingNTParsedMessage parsedMessage) {
-    try {
-      // Extract relevant details from the parsed message
-      final messageType = parsedMessage.messageType;
-      final payload = parsedMessage.payload;
+    // Extract relevant details from the parsed message
+    final messageType = parsedMessage.messageType;
+    final payload = parsedMessage.payload;
 
+    try {
       // Handle response types and decode accordingly
       switch (messageType) {
         case DistingNTRespMessageType.respNumAlgorithms:
@@ -340,11 +340,15 @@ class DistingMessageScheduler {
           return DistingNT.decodeParameterPages(payload);
 
         default:
-          print("Unknown or unsupported message type: $messageType");
+          if (kDebugMode) {
+            print("Unknown or unsupported message type: $messageType");
+          }
           return null; // Unhandled message type
       }
     } catch (e) {
-      print("Error decoding response: $e");
+      if (kDebugMode) {
+        print("Error decoding response: $e in $parsedMessage");
+      }
       return null;
     }
   }

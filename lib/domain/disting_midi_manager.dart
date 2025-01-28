@@ -524,7 +524,7 @@ class DistingMidiManager {
     );
     return _scheduler.sendRequest<ParameterPages>(
       maxRetries: 5,
-      timeout: Duration(milliseconds: 150),
+      timeout: Duration(milliseconds: 200),
       retryDelay: Duration(milliseconds: 250),
       packet,
       key,
