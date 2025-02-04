@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import for Clipboard
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:pasteboard/pasteboard.dart';
 
 class FloatingScreenshotOverlay extends StatefulWidget {
   final OverlayEntry overlayEntry;
@@ -60,6 +61,15 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
     });
   }
 
+  Future<void> _copyToClipboard() async {
+    if (_screenshot != null) {
+      Pasteboard.writeImage(_screenshot);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Screenshot copied to clipboard')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -72,7 +82,6 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Toolbar with close button
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
@@ -87,7 +96,6 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
                   },
                 ),
               ),
-              // Screenshot display
               AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
                 width: _isExpanded ? 384 : 256,
@@ -99,14 +107,17 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   child: _screenshot != null
-                      ? Image.memory(
-                          _screenshot!,
-                          fit: BoxFit.fitHeight,
-                          gaplessPlayback: true,
-                        )
+                      ? GestureDetector(
+                    onLongPress: _copyToClipboard,
+                    child: Image.memory(
+                      _screenshot!,
+                      fit: BoxFit.fitHeight,
+                      gaplessPlayback: true,
+                    ),
+                  )
                       : const Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                    child: CircularProgressIndicator(),
+                  ),
                 ),
               ),
             ],

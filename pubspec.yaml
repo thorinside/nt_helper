@@ -48,6 +48,7 @@ dependencies:
   shared_preferences: ^2.0.18
   package_info_plus: ^8.1.2
   flutter_launcher_icons: ^0.14.2
+  pasteboard: ^0.3.0
 
 dev_dependencies:
   flutter_test:
