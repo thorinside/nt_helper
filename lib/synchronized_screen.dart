@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
+import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/floating_screenshot_overlay.dart';
@@ -16,6 +17,7 @@ import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/util/extensions.dart';
+import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SynchronizedScreen extends StatelessWidget {
@@ -124,6 +126,12 @@ class SynchronizedScreen extends StatelessWidget {
               icon: Icon(Icons.leaderboard_rounded),
             );
           }),
+          SizedBox.fromSize(
+            size: Size.fromWidth(24),
+          ),
+          DistingVersion(
+              distingVersion: distingVersion,
+              requiredVersion: Constants.requiredDistingVersion),
         ],
       ),
     );
@@ -378,11 +386,7 @@ class SynchronizedScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          Text(distingVersion,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )),
+          )
         ],
       ),
     );
@@ -442,6 +446,31 @@ class SynchronizedScreen extends StatelessWidget {
     );
 
     Overlay.of(context).insert(overlayEntry);
+  }
+}
+
+class DistingVersion extends StatelessWidget {
+  const DistingVersion({
+    super.key,
+    required this.distingVersion,
+    required this.requiredVersion,
+  });
+
+  final String distingVersion;
+  final String requiredVersion;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNotSupported = isVersionUnsupported(distingVersion, requiredVersion);
+    return Tooltip(
+      message: isNotSupported ? "nt_helper requires at least $requiredVersion" : "",
+      child: Text(distingVersion,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: isNotSupported
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              )),
+    );
   }
 }
 
