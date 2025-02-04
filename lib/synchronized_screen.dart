@@ -174,14 +174,18 @@ class SynchronizedScreen extends StatelessWidget {
       notificationPredicate: (ScrollNotification notification) =>
           notification.depth == 1,
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(42.0),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
+        preferredSize: const Size.fromHeight(66.0),
+        child: Column(
           children: [
             _buildPresetInfoEditor(context), // The TabBar
-            Expanded(
-              flex: 1,
-              child: _buildTabBar(context),
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: _buildTabBar(context),
+                ),
+              ],
             ),
           ],
         ),
@@ -337,6 +341,16 @@ class SynchronizedScreen extends StatelessWidget {
                   applicationVersion: "${info.version} (${info.buildNumber})",
                   applicationLegalese:
                       "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          Text("Disting Firmware: $distingVersion", style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -372,11 +386,24 @@ class SynchronizedScreen extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min, // Shrinks to fit content
               children: [
-                Text(
-                  'Preset: ${presetName.trim()}',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Preset:\u2007',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold, // Make 'Preset: ' bold
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
+                      TextSpan(
+                        text: presetName.trim(),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Icon(
@@ -436,7 +463,7 @@ class SynchronizedScreen extends StatelessWidget {
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
-        bottom: 16,
+        bottom: kBottomNavigationBarHeight + 16,
         right: 16,
         child: FloatingScreenshotOverlay(
           overlayEntry: overlayEntry,

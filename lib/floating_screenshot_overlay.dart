@@ -62,53 +62,55 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _toggleSize,
-      child: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // Toolbar with close button
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(6),
+    return SafeArea(
+      child: GestureDetector(
+        onTap: _toggleSize,
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Toolbar with close button
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(6),
+                  ),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    widget.overlayEntry.remove();
+                  },
                 ),
               ),
-              child: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  widget.overlayEntry.remove();
-                },
+              // Screenshot display
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                width: _isExpanded ? 384 : 256,
+                height: _isExpanded ? 112 : 75,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: _screenshot != null
+                      ? Image.memory(
+                          _screenshot!,
+                          fit: BoxFit.fitHeight,
+                          gaplessPlayback: true,
+                        )
+                      : const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                ),
               ),
-            ),
-            // Screenshot display
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 100),
-              width: _isExpanded ? 384 : 256,
-              height: _isExpanded ? 112 : 75,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                color: Theme.of(context).colorScheme.surface,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: _screenshot != null
-                    ? Image.memory(
-                        _screenshot!,
-                        fit: BoxFit.fitHeight,
-                        gaplessPlayback: true,
-                      )
-                    : const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
