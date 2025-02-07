@@ -95,7 +95,7 @@ jobs:
       - name: Install provisioning profile
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp MyApp_Dev.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp nt_helper_dev_profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
