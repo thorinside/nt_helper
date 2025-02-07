@@ -120,7 +120,6 @@ jobs:
           fastlane pilot upload \
           --ipa "./build/ios/ipa/nt_helper.ipa" \
           --apple_id "${{ secrets.APPLE_ID }}" \
-          --itunes_connect_team_id "${{ secrets.APPLE_TEAM }}" \
           --team_id "${{ secrets.APPLE_TEAM }}" \
           --app_specific_password "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
           --app_identifier "dev.nosuch.ntHelper"
