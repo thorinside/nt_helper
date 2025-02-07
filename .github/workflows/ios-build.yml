@@ -117,11 +117,11 @@ jobs:
         run: sudo gem install fastlane
       - name: Upload to TestFlight
         run: |
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD="${{ secrets.APP_SPECIFIC_PASSWORD }}"
           fastlane pilot upload \
           --ipa "./build/ios/ipa/nt_helper.ipa" \
           --apple_id "${{ secrets.APPLE_ID }}" \
           --team_id "${{ secrets.APPLE_TEAM }}" \
-          --app_specific_password "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
           --app_identifier "dev.nosuch.ntHelper"
 
       # 7) Or simply upload the .ipa as an artifact on GitHub
