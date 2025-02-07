@@ -27,7 +27,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.3'
+          flutter-version: '3.27.4'
 
       - name: Flutter Doctor (debug)
         run: flutter doctor -v
@@ -95,7 +95,7 @@ jobs:
       - name: Install provisioning profile
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp nt_helper_dev_profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp MyApp_Dev.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
@@ -105,8 +105,7 @@ jobs:
           set -x
           flutter clean
           flutter pub get
-          # For ad-hoc or release builds with code signing, typically:
-          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+          flutter build ipa --export-options-plist=ios/ExportOptions.plist
 
       - name: Debug List final artifacts
         run: ls -R build/ios/ipa || true
