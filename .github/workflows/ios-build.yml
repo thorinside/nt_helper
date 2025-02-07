@@ -105,7 +105,8 @@ jobs:
           set -x
           flutter clean
           flutter pub get
-          flutter build ipa --export-options-plist=ios/ExportOptions.plist
+          flutter build ios -v
+          flutter build ipa --export-options-plist=ios/ExportOptions.plist -v
 
       - name: Debug List final artifacts
         run: ls -R build/ios/ipa || true
