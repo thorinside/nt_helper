@@ -113,19 +113,19 @@ jobs:
       # 6) Optionally, use your Apple ID & app-specific password to upload
       #    automatically to TestFlight/App Store. Example with fastlane:
       #
-      # - name: Install fastlane (optional)
-      #   run: sudo gem install fastlane
-      #
-      # - name: Upload to TestFlight (optional)
-      #   run: |
-      #     fastlane pilot upload \
-      #       --ipa "./build/ios/ipa/Runner.ipa" \
-      #       --apple_id "${{ secrets.APPLE_ID }}" \
-      #       --itunes_connect_team_id "${{ secrets.APPLE_TEAM }}" \
-      #       --team_id "${{ secrets.APPLE_TEAM }}" \
-      #       --api_key_path "./fastlane_key.json" \
-      #       --app_identifier "com.your.bundleid"
-      #   shell: bash
+      - name: Install fastlane (optional)
+        run: sudo gem install fastlane
+
+      - name: Upload to TestFlight (optional)
+        run: |
+          fastlane pilot upload \
+          --ipa "./build/ios/ipa/nt_helper.ipa" \
+          --apple_id "${{ secrets.APPLE_ID }}" \
+          --itunes_connect_team_id "${{ secrets.APPLE_TEAM }}" \
+          --team_id "${{ secrets.APPLE_TEAM }}" \
+          --app_specific_password "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
+          --app_identifier "dev.nosuch.ntHelper"
+         shell: bash
 
       # 7) Or simply upload the .ipa as an artifact on GitHub
       - name: Upload IPA
