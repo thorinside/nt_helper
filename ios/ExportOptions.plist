@@ -16,5 +16,10 @@
 	<string>KN424RZG26</string>
 	<key>uploadSymbols</key>
 	<true/>
+        <key>provisioningProfiles</key>
+          <dict>
+            <key>dev.nosuch.ntHelper</key>
+            <string>nt-helper-dev-profile</string>
+          </dict>
 </dict>
 </plist>
