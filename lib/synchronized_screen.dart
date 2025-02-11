@@ -346,7 +346,8 @@ class SynchronizedScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(24.0),
                       child: Column(
                         children: [
-                          Text("Disting Firmware: $distingVersion", style: Theme.of(context).textTheme.bodySmall),
+                          Text("Disting Firmware: $distingVersion",
+                              style: Theme.of(context).textTheme.bodySmall),
                         ],
                       ),
                     ),
@@ -392,15 +393,20 @@ class SynchronizedScreen extends StatelessWidget {
                       TextSpan(
                         text: 'Preset:\u2007',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold, // Make 'Preset: ' bold
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              fontWeight:
+                                  FontWeight.bold, // Make 'Preset: ' bold
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                       TextSpan(
                         text: presetName.trim(),
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -488,9 +494,11 @@ class DistingVersion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNotSupported = isVersionUnsupported(distingVersion, requiredVersion);
+    final isNotSupported =
+        isVersionUnsupported(distingVersion, requiredVersion);
     return Tooltip(
-      message: isNotSupported ? "nt_helper requires at least $requiredVersion" : "",
+      message:
+          isNotSupported ? "nt_helper requires at least $requiredVersion" : "",
       child: Text(distingVersion,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: isNotSupported
@@ -537,7 +545,7 @@ class _SlotDetailViewState extends State<SlotDetailView>
   }
 }
 
-class SectionParameterListView extends StatelessWidget {
+class SectionParameterListView extends StatefulWidget {
   final Slot slot;
   final List<String> units;
   final ParameterPages pages;
@@ -548,6 +556,31 @@ class SectionParameterListView extends StatelessWidget {
     required this.units,
     required this.pages,
   });
+
+  @override
+  State<SectionParameterListView> createState() =>
+      _SectionParameterListViewState();
+}
+
+class _SectionParameterListViewState extends State<SectionParameterListView> {
+  late final List<ExpansionTileController> _tileControllers;
+  var _isCollapsed = false;
+
+  @override
+  void initState() {
+    _tileControllers = List.generate(
+        widget.pages.pages.length, (_) => ExpansionTileController());
+    super.initState();
+  }
+
+  void _collapseAllTiles() {
+    for (var element in _tileControllers) {
+      _isCollapsed ? element.expand() : element.collapse();
+    }
+    setState(() {
+      _isCollapsed = !_isCollapsed;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -561,42 +594,65 @@ class SectionParameterListView extends StatelessWidget {
             side: BorderSide.none,
           ),
         ),
-        child: ListView.builder(
-          cacheExtent: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-          itemCount: pages.pages.length,
-          itemBuilder: (context, index) {
-            final page = pages.pages.elementAt(index);
-
-            return ExpansionTile(
-              initiallyExpanded: true,
-              title: Text(page.name),
-              children: page.parameters.map(
-                (parameterNumber) {
-                  final value = slot.values.elementAt(parameterNumber);
-                  final enumStrings = slot.enums.elementAt(parameterNumber);
-                  final mapping =
-                      slot.mappings.elementAtOrNull(parameterNumber);
-                  final valueString =
-                      slot.valueStrings.elementAt(parameterNumber);
-                  var parameterInfo =
-                      slot.parameters.elementAt(parameterNumber);
-                  final unit = parameterInfo.unit > 0
-                      ? units.elementAtOrNull(parameterInfo.unit - 1)
-                      : null;
-
-                  return ParameterEditorView(
-                    parameterInfo: parameterInfo,
-                    value: value,
-                    enumStrings: enumStrings,
-                    mapping: mapping,
-                    valueString: valueString,
-                    unit: unit,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton.filledTonal(
+                    onPressed: () {_collapseAllTiles();},
+                    enableFeedback: true,
+                    icon: _isCollapsed
+                        ? Icon(Icons.keyboard_double_arrow_down_sharp)
+                        : Icon(Icons.keyboard_double_arrow_up_sharp),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                cacheExtent: double.infinity,
+                padding: EdgeInsets.only(bottom: 24, left: 8, right: 8),
+                itemCount: widget.pages.pages.length,
+                itemBuilder: (context, index) {
+                  final page = widget.pages.pages.elementAt(index);
+                  return ExpansionTile(
+                    initiallyExpanded: true,
+                    controller: _tileControllers.elementAt(index),
+                    title: Text(page.name),
+                    children: page.parameters.map(
+                      (parameterNumber) {
+                        final value =
+                            widget.slot.values.elementAt(parameterNumber);
+                        final enumStrings =
+                            widget.slot.enums.elementAt(parameterNumber);
+                        final mapping =
+                            widget.slot.mappings.elementAtOrNull(parameterNumber);
+                        final valueString =
+                            widget.slot.valueStrings.elementAt(parameterNumber);
+                        var parameterInfo =
+                            widget.slot.parameters.elementAt(parameterNumber);
+                        final unit = parameterInfo.unit > 0
+                            ? widget.units.elementAtOrNull(parameterInfo.unit - 1)
+                            : null;
+              
+                        return ParameterEditorView(
+                          parameterInfo: parameterInfo,
+                          value: value,
+                          enumStrings: enumStrings,
+                          mapping: mapping,
+                          valueString: valueString,
+                          unit: unit,
+                        );
+                      },
+                    ).toList(),
                   );
                 },
-              ).toList(),
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
