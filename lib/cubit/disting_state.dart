@@ -15,6 +15,18 @@ class Slot with _$Slot {
 }
 
 @freezed
+class MappedParameter with _$MappedParameter {
+  const factory MappedParameter({
+    required final ParameterInfo parameter,
+    required final ParameterValue value,
+    required final ParameterEnumStrings enums,
+    required final ParameterValueString valueString,
+    required final Mapping mapping,
+    required final Algorithm algorithm,
+}) = _MappedParameter;
+}
+
+@freezed
 class DistingState with _$DistingState {
   const factory DistingState.initial({
     Uint8List? screenshot,

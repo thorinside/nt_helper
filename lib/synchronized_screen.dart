@@ -11,6 +11,7 @@ import 'package:nt_helper/floating_screenshot_overlay.dart';
 import 'package:nt_helper/load_preset_dialog.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/packed_mapping_data_editor.dart';
+import 'package:nt_helper/performance_screen.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
@@ -319,6 +320,36 @@ class SynchronizedScreen extends StatelessWidget {
                 ]),
           ),
           PopupMenuItem(
+            value: 'perform',
+            onTap: () {
+              final cubit = context.read<DistingCubit>();
+              final midiListener = context.read<MidiListenerCubit>();
+              final mappings = cubit.buildMappedParameterList();
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => MultiBlocProvider(
+                          providers: [
+                            BlocProvider(
+                              create: (context) => cubit,
+                            ),
+                            BlocProvider(
+                              create: (context) => midiListener,
+                            ),
+                          ],
+                          child: PerformanceScreen(mappedParameters: mappings),
+                        )),
+              );
+            },
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Perform'),
+                  Icon(Icons.library_music),
+                ]),
+          ),
+          PopupMenuItem(
             value: 'Switch Devices',
             onTap: () {
               context.read<DistingCubit>().disconnect();
@@ -604,7 +635,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                   Tooltip(
                     message: _isCollapsed ? 'Expand all' : 'Collapse all',
                     child: IconButton.filledTonal(
-                      onPressed: () {_collapseAllTiles();},
+                      onPressed: () {
+                        _collapseAllTiles();
+                      },
                       enableFeedback: true,
                       icon: _isCollapsed
                           ? Icon(Icons.keyboard_double_arrow_down_sharp)
@@ -631,16 +664,17 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                             widget.slot.values.elementAt(parameterNumber);
                         final enumStrings =
                             widget.slot.enums.elementAt(parameterNumber);
-                        final mapping =
-                            widget.slot.mappings.elementAtOrNull(parameterNumber);
+                        final mapping = widget.slot.mappings
+                            .elementAtOrNull(parameterNumber);
                         final valueString =
                             widget.slot.valueStrings.elementAt(parameterNumber);
                         var parameterInfo =
                             widget.slot.parameters.elementAt(parameterNumber);
                         final unit = parameterInfo.unit > 0
-                            ? widget.units.elementAtOrNull(parameterInfo.unit - 1)
+                            ? widget.units
+                                .elementAtOrNull(parameterInfo.unit - 1)
                             : null;
-              
+
                         return ParameterEditorView(
                           parameterInfo: parameterInfo,
                           value: value,

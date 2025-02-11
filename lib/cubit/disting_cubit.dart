@@ -716,4 +716,34 @@ class DistingCubit extends Cubit<DistingState> {
       disting.requestSetDisplayMode(displayMode);
     });
   }
+
+  List<MappedParameter> buildMappedParameterList() {
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        // return a list of parameters that have active mappings
+        // from the state.
+        return syncstate.slots.fold(
+          List<MappedParameter>.empty(growable: true),
+          (acc, slot) {
+            acc.addAll(slot.mappings
+                .where((mapping) => mapping.packedMappingData.isMapped())
+                .map(
+              (mapping) {
+                var parameterNumber = mapping.parameterNumber;
+                return MappedParameter(
+                    parameter: slot.parameters[parameterNumber],
+                    value: slot.values[parameterNumber],
+                    enums: slot.enums[parameterNumber],
+                    valueString: slot.valueStrings[parameterNumber],
+                    mapping: mapping,
+                    algorithm: slot.algorithm);
+              },
+            ).toList());
+            return acc;
+          },
+        );
+      default:
+        return [];
+    }
+  }
 }

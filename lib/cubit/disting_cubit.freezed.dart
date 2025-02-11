@@ -187,7 +187,7 @@ class __$$SlotImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$SlotImpl implements _Slot {
+class _$SlotImpl with DiagnosticableTreeMixin implements _Slot {
   const _$SlotImpl(
       {required this.algorithm,
       required this.routing,
@@ -250,8 +250,23 @@ class _$SlotImpl implements _Slot {
   }
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'Slot'))
+      ..add(DiagnosticsProperty('algorithm', algorithm))
+      ..add(DiagnosticsProperty('routing', routing))
+      ..add(DiagnosticsProperty('pages', pages))
+      ..add(DiagnosticsProperty('parameters', parameters))
+      ..add(DiagnosticsProperty('values', values))
+      ..add(DiagnosticsProperty('enums', enums))
+      ..add(DiagnosticsProperty('mappings', mappings))
+      ..add(DiagnosticsProperty('valueStrings', valueStrings));
   }
 
   @override
@@ -326,6 +341,258 @@ abstract class _Slot implements Slot {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SlotImplCopyWith<_$SlotImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+mixin _$MappedParameter {
+  ParameterInfo get parameter => throw _privateConstructorUsedError;
+  ParameterValue get value => throw _privateConstructorUsedError;
+  ParameterEnumStrings get enums => throw _privateConstructorUsedError;
+  ParameterValueString get valueString => throw _privateConstructorUsedError;
+  Mapping get mapping => throw _privateConstructorUsedError;
+  Algorithm get algorithm => throw _privateConstructorUsedError;
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $MappedParameterCopyWith<MappedParameter> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MappedParameterCopyWith<$Res> {
+  factory $MappedParameterCopyWith(
+          MappedParameter value, $Res Function(MappedParameter) then) =
+      _$MappedParameterCopyWithImpl<$Res, MappedParameter>;
+  @useResult
+  $Res call(
+      {ParameterInfo parameter,
+      ParameterValue value,
+      ParameterEnumStrings enums,
+      ParameterValueString valueString,
+      Mapping mapping,
+      Algorithm algorithm});
+}
+
+/// @nodoc
+class _$MappedParameterCopyWithImpl<$Res, $Val extends MappedParameter>
+    implements $MappedParameterCopyWith<$Res> {
+  _$MappedParameterCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? parameter = null,
+    Object? value = null,
+    Object? enums = null,
+    Object? valueString = null,
+    Object? mapping = null,
+    Object? algorithm = null,
+  }) {
+    return _then(_value.copyWith(
+      parameter: null == parameter
+          ? _value.parameter
+          : parameter // ignore: cast_nullable_to_non_nullable
+              as ParameterInfo,
+      value: null == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as ParameterValue,
+      enums: null == enums
+          ? _value.enums
+          : enums // ignore: cast_nullable_to_non_nullable
+              as ParameterEnumStrings,
+      valueString: null == valueString
+          ? _value.valueString
+          : valueString // ignore: cast_nullable_to_non_nullable
+              as ParameterValueString,
+      mapping: null == mapping
+          ? _value.mapping
+          : mapping // ignore: cast_nullable_to_non_nullable
+              as Mapping,
+      algorithm: null == algorithm
+          ? _value.algorithm
+          : algorithm // ignore: cast_nullable_to_non_nullable
+              as Algorithm,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$MappedParameterImplCopyWith<$Res>
+    implements $MappedParameterCopyWith<$Res> {
+  factory _$$MappedParameterImplCopyWith(_$MappedParameterImpl value,
+          $Res Function(_$MappedParameterImpl) then) =
+      __$$MappedParameterImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {ParameterInfo parameter,
+      ParameterValue value,
+      ParameterEnumStrings enums,
+      ParameterValueString valueString,
+      Mapping mapping,
+      Algorithm algorithm});
+}
+
+/// @nodoc
+class __$$MappedParameterImplCopyWithImpl<$Res>
+    extends _$MappedParameterCopyWithImpl<$Res, _$MappedParameterImpl>
+    implements _$$MappedParameterImplCopyWith<$Res> {
+  __$$MappedParameterImplCopyWithImpl(
+      _$MappedParameterImpl _value, $Res Function(_$MappedParameterImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? parameter = null,
+    Object? value = null,
+    Object? enums = null,
+    Object? valueString = null,
+    Object? mapping = null,
+    Object? algorithm = null,
+  }) {
+    return _then(_$MappedParameterImpl(
+      parameter: null == parameter
+          ? _value.parameter
+          : parameter // ignore: cast_nullable_to_non_nullable
+              as ParameterInfo,
+      value: null == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as ParameterValue,
+      enums: null == enums
+          ? _value.enums
+          : enums // ignore: cast_nullable_to_non_nullable
+              as ParameterEnumStrings,
+      valueString: null == valueString
+          ? _value.valueString
+          : valueString // ignore: cast_nullable_to_non_nullable
+              as ParameterValueString,
+      mapping: null == mapping
+          ? _value.mapping
+          : mapping // ignore: cast_nullable_to_non_nullable
+              as Mapping,
+      algorithm: null == algorithm
+          ? _value.algorithm
+          : algorithm // ignore: cast_nullable_to_non_nullable
+              as Algorithm,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$MappedParameterImpl
+    with DiagnosticableTreeMixin
+    implements _MappedParameter {
+  const _$MappedParameterImpl(
+      {required this.parameter,
+      required this.value,
+      required this.enums,
+      required this.valueString,
+      required this.mapping,
+      required this.algorithm});
+
+  @override
+  final ParameterInfo parameter;
+  @override
+  final ParameterValue value;
+  @override
+  final ParameterEnumStrings enums;
+  @override
+  final ParameterValueString valueString;
+  @override
+  final Mapping mapping;
+  @override
+  final Algorithm algorithm;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MappedParameter(parameter: $parameter, value: $value, enums: $enums, valueString: $valueString, mapping: $mapping, algorithm: $algorithm)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'MappedParameter'))
+      ..add(DiagnosticsProperty('parameter', parameter))
+      ..add(DiagnosticsProperty('value', value))
+      ..add(DiagnosticsProperty('enums', enums))
+      ..add(DiagnosticsProperty('valueString', valueString))
+      ..add(DiagnosticsProperty('mapping', mapping))
+      ..add(DiagnosticsProperty('algorithm', algorithm));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MappedParameterImpl &&
+            (identical(other.parameter, parameter) ||
+                other.parameter == parameter) &&
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.enums, enums) || other.enums == enums) &&
+            (identical(other.valueString, valueString) ||
+                other.valueString == valueString) &&
+            (identical(other.mapping, mapping) || other.mapping == mapping) &&
+            (identical(other.algorithm, algorithm) ||
+                other.algorithm == algorithm));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, parameter, value, enums, valueString, mapping, algorithm);
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MappedParameterImplCopyWith<_$MappedParameterImpl> get copyWith =>
+      __$$MappedParameterImplCopyWithImpl<_$MappedParameterImpl>(
+          this, _$identity);
+}
+
+abstract class _MappedParameter implements MappedParameter {
+  const factory _MappedParameter(
+      {required final ParameterInfo parameter,
+      required final ParameterValue value,
+      required final ParameterEnumStrings enums,
+      required final ParameterValueString valueString,
+      required final Mapping mapping,
+      required final Algorithm algorithm}) = _$MappedParameterImpl;
+
+  @override
+  ParameterInfo get parameter;
+  @override
+  ParameterValue get value;
+  @override
+  ParameterEnumStrings get enums;
+  @override
+  ParameterValueString get valueString;
+  @override
+  Mapping get mapping;
+  @override
+  Algorithm get algorithm;
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$MappedParameterImplCopyWith<_$MappedParameterImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -495,15 +762,25 @@ class __$$DistingStateInitialImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$DistingStateInitialImpl implements DistingStateInitial {
+class _$DistingStateInitialImpl
+    with DiagnosticableTreeMixin
+    implements DistingStateInitial {
   const _$DistingStateInitialImpl({this.screenshot});
 
   @override
   final Uint8List? screenshot;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'DistingState.initial(screenshot: $screenshot)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'DistingState.initial'))
+      ..add(DiagnosticsProperty('screenshot', screenshot));
   }
 
   @override
@@ -703,7 +980,9 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
+class _$DistingStateSelectDeviceImpl
+    with DiagnosticableTreeMixin
+    implements DistingStateSelectDevice {
   const _$DistingStateSelectDeviceImpl(
       {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
@@ -731,8 +1010,18 @@ class _$DistingStateSelectDeviceImpl implements DistingStateSelectDevice {
   final Uint8List? screenshot;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'DistingState.selectDevice'))
+      ..add(DiagnosticsProperty('inputDevices', inputDevices))
+      ..add(DiagnosticsProperty('outputDevices', outputDevices))
+      ..add(DiagnosticsProperty('screenshot', screenshot));
   }
 
   @override
@@ -934,7 +1223,9 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$DistingStateConnectedImpl implements DistingStateConnected {
+class _$DistingStateConnectedImpl
+    with DiagnosticableTreeMixin
+    implements DistingStateConnected {
   const _$DistingStateConnectedImpl({required this.disting, this.screenshot});
 
   @override
@@ -943,8 +1234,17 @@ class _$DistingStateConnectedImpl implements DistingStateConnected {
   final Uint8List? screenshot;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'DistingState.connected(disting: $disting, screenshot: $screenshot)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'DistingState.connected'))
+      ..add(DiagnosticsProperty('disting', disting))
+      ..add(DiagnosticsProperty('screenshot', screenshot));
   }
 
   @override
@@ -1171,7 +1471,9 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
+class _$DistingStateSynchronizedImpl
+    with DiagnosticableTreeMixin
+    implements DistingStateSynchronized {
   const _$DistingStateSynchronizedImpl(
       {required this.disting,
       required this.distingVersion,
@@ -1218,8 +1520,22 @@ class _$DistingStateSynchronizedImpl implements DistingStateSynchronized {
   final Uint8List? screenshot;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'DistingState.synchronized'))
+      ..add(DiagnosticsProperty('disting', disting))
+      ..add(DiagnosticsProperty('distingVersion', distingVersion))
+      ..add(DiagnosticsProperty('presetName', presetName))
+      ..add(DiagnosticsProperty('algorithms', algorithms))
+      ..add(DiagnosticsProperty('slots', slots))
+      ..add(DiagnosticsProperty('unitStrings', unitStrings))
+      ..add(DiagnosticsProperty('screenshot', screenshot));
   }
 
   @override
