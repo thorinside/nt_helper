@@ -597,16 +597,19 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton.filledTonal(
-                    onPressed: () {_collapseAllTiles();},
-                    enableFeedback: true,
-                    icon: _isCollapsed
-                        ? Icon(Icons.keyboard_double_arrow_down_sharp)
-                        : Icon(Icons.keyboard_double_arrow_up_sharp),
+                  Tooltip(
+                    message: _isCollapsed ? 'Expand all' : 'Collapse all',
+                    child: IconButton.filledTonal(
+                      onPressed: () {_collapseAllTiles();},
+                      enableFeedback: true,
+                      icon: _isCollapsed
+                          ? Icon(Icons.keyboard_double_arrow_down_sharp)
+                          : Icon(Icons.keyboard_double_arrow_up_sharp),
+                    ),
                   ),
                 ],
               ),
