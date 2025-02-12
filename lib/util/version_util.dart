@@ -1,6 +1,7 @@
 import 'dart:math';
 
-bool isVersionUnsupported(String currentVersion, String minimumSupportedVersion) {
+bool isVersionUnsupported(
+    String currentVersion, String minimumSupportedVersion) {
   final current = parseVersion(currentVersion);
   final minimum = parseVersion(minimumSupportedVersion);
   final length = max(current.length, minimum.length);

@@ -389,17 +389,24 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   void refresh() async {
-    if (state is DistingStateSynchronized) {
-      var disting = requireDisting();
-      final numAlgorithmsInPreset =
-          (await disting.requestNumAlgorithmsInPreset())!;
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        var disting = syncstate.disting;
 
-      final presetName = await disting.requestPresetName() ?? "";
+        emit(syncstate.copyWith(loading: true));
 
-      emit((state as DistingStateSynchronized).copyWith(
-        presetName: presetName,
-        slots: await fetchSlots(numAlgorithmsInPreset, disting),
-      ));
+        final numAlgorithmsInPreset =
+            (await disting.requestNumAlgorithmsInPreset())!;
+
+        final presetName = await disting.requestPresetName() ?? "";
+
+        emit((state as DistingStateSynchronized).copyWith(
+          loading: false,
+          presetName: presetName,
+          slots: await fetchSlots(numAlgorithmsInPreset, disting),
+        ));
+
+        break;
     }
   }
 
@@ -731,12 +738,13 @@ class DistingCubit extends Cubit<DistingState> {
               (mapping) {
                 var parameterNumber = mapping.parameterNumber;
                 return MappedParameter(
-                    parameter: slot.parameters[parameterNumber],
-                    value: slot.values[parameterNumber],
-                    enums: slot.enums[parameterNumber],
-                    valueString: slot.valueStrings[parameterNumber],
-                    mapping: mapping,
-                    algorithm: slot.algorithm);
+                  parameter: slot.parameters[parameterNumber],
+                  value: slot.values[parameterNumber],
+                  enums: slot.enums[parameterNumber],
+                  valueString: slot.valueStrings[parameterNumber],
+                  mapping: mapping,
+                  algorithm: slot.algorithm,
+                );
               },
             ).toList());
             return acc;

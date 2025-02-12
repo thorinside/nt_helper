@@ -117,7 +117,8 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           TabBar(
             controller: _tabController,
             labelColor: Theme.of(context).colorScheme.onSurface,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withAlpha(64),
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurface.withAlpha(64),
             tabs: const [
               Tab(text: 'CV'),
               Tab(text: 'MIDI'),

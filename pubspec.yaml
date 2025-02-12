@@ -49,6 +49,7 @@ dependencies:
   package_info_plus: ^8.1.2
   flutter_launcher_icons: ^0.14.2
   pasteboard: ^0.3.0
+  retry: ^3.1.2
 
 dev_dependencies:
   flutter_test:

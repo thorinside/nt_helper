@@ -3,9 +3,11 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 
 class PerformanceScreen extends StatelessWidget {
-  const PerformanceScreen({super.key, required this.mappedParameters});
+  const PerformanceScreen(
+      {super.key, required this.mappedParameters, required this.units});
 
   final List<MappedParameter> mappedParameters;
+  final List<String> units;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,7 @@ class PerformanceScreen extends StatelessWidget {
                   mapping: item.mapping,
                   value: item.value,
                   valueString: item.valueString,
+                  unit: item.parameter.getUnitString(units),
                 ),
               ],
             );

@@ -105,19 +105,20 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
                   color: Theme.of(context).colorScheme.surface,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   child: _screenshot != null
                       ? GestureDetector(
-                    onLongPress: _copyToClipboard,
-                    child: Image.memory(
-                      _screenshot!,
-                      fit: BoxFit.fitHeight,
-                      gaplessPlayback: true,
-                    ),
-                  )
+                          onLongPress: _copyToClipboard,
+                          child: Image.memory(
+                            _screenshot!,
+                            fit: BoxFit.fitHeight,
+                            gaplessPlayback: true,
+                          ),
+                        )
                       : const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                          child: CircularProgressIndicator(),
+                        ),
                 ),
               ),
             ],

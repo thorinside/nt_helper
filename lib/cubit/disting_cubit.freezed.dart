@@ -614,7 +614,8 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)
+            Uint8List? screenshot,
+            bool loading)
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -633,7 +634,8 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -652,7 +654,8 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
     required TResult orElse(),
   }) =>
@@ -821,7 +824,8 @@ class _$DistingStateInitialImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)
+            Uint8List? screenshot,
+            bool loading)
         synchronized,
   }) {
     return initial(screenshot);
@@ -843,7 +847,8 @@ class _$DistingStateInitialImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
   }) {
     return initial?.call(screenshot);
@@ -865,7 +870,8 @@ class _$DistingStateInitialImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1069,7 +1075,8 @@ class _$DistingStateSelectDeviceImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)
+            Uint8List? screenshot,
+            bool loading)
         synchronized,
   }) {
     return selectDevice(inputDevices, outputDevices, screenshot);
@@ -1091,7 +1098,8 @@ class _$DistingStateSelectDeviceImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
   }) {
     return selectDevice?.call(inputDevices, outputDevices, screenshot);
@@ -1113,7 +1121,8 @@ class _$DistingStateSelectDeviceImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1286,7 +1295,8 @@ class _$DistingStateConnectedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)
+            Uint8List? screenshot,
+            bool loading)
         synchronized,
   }) {
     return connected(disting, screenshot);
@@ -1308,7 +1318,8 @@ class _$DistingStateConnectedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
   }) {
     return connected?.call(disting, screenshot);
@@ -1330,7 +1341,8 @@ class _$DistingStateConnectedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1411,7 +1423,8 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
       List<AlgorithmInfo> algorithms,
       List<Slot> slots,
       List<String> unitStrings,
-      Uint8List? screenshot});
+      Uint8List? screenshot,
+      bool loading});
 }
 
 /// @nodoc
@@ -1435,6 +1448,7 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? slots = null,
     Object? unitStrings = null,
     Object? screenshot = freezed,
+    Object? loading = null,
   }) {
     return _then(_$DistingStateSynchronizedImpl(
       disting: null == disting
@@ -1465,6 +1479,10 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
           ? _value.screenshot
           : screenshot // ignore: cast_nullable_to_non_nullable
               as Uint8List?,
+      loading: null == loading
+          ? _value.loading
+          : loading // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1481,7 +1499,8 @@ class _$DistingStateSynchronizedImpl
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
-      this.screenshot})
+      this.screenshot,
+      this.loading = false})
       : _algorithms = algorithms,
         _slots = slots,
         _unitStrings = unitStrings;
@@ -1518,10 +1537,13 @@ class _$DistingStateSynchronizedImpl
 
   @override
   final Uint8List? screenshot;
+  @override
+  @JsonKey()
+  final bool loading;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot)';
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot, loading: $loading)';
   }
 
   @override
@@ -1535,7 +1557,8 @@ class _$DistingStateSynchronizedImpl
       ..add(DiagnosticsProperty('algorithms', algorithms))
       ..add(DiagnosticsProperty('slots', slots))
       ..add(DiagnosticsProperty('unitStrings', unitStrings))
-      ..add(DiagnosticsProperty('screenshot', screenshot));
+      ..add(DiagnosticsProperty('screenshot', screenshot))
+      ..add(DiagnosticsProperty('loading', loading));
   }
 
   @override
@@ -1554,7 +1577,8 @@ class _$DistingStateSynchronizedImpl
             const DeepCollectionEquality()
                 .equals(other._unitStrings, _unitStrings) &&
             const DeepCollectionEquality()
-                .equals(other.screenshot, screenshot));
+                .equals(other.screenshot, screenshot) &&
+            (identical(other.loading, loading) || other.loading == loading));
   }
 
   @override
@@ -1566,7 +1590,8 @@ class _$DistingStateSynchronizedImpl
       const DeepCollectionEquality().hash(_algorithms),
       const DeepCollectionEquality().hash(_slots),
       const DeepCollectionEquality().hash(_unitStrings),
-      const DeepCollectionEquality().hash(screenshot));
+      const DeepCollectionEquality().hash(screenshot),
+      loading);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1593,11 +1618,12 @@ class _$DistingStateSynchronizedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)
+            Uint8List? screenshot,
+            bool loading)
         synchronized,
   }) {
     return synchronized(disting, distingVersion, presetName, algorithms, slots,
-        unitStrings, screenshot);
+        unitStrings, screenshot, loading);
   }
 
   @override
@@ -1616,11 +1642,12 @@ class _$DistingStateSynchronizedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
   }) {
     return synchronized?.call(disting, distingVersion, presetName, algorithms,
-        slots, unitStrings, screenshot);
+        slots, unitStrings, screenshot, loading);
   }
 
   @override
@@ -1639,13 +1666,14 @@ class _$DistingStateSynchronizedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
-            Uint8List? screenshot)?
+            Uint8List? screenshot,
+            bool loading)?
         synchronized,
     required TResult orElse(),
   }) {
     if (synchronized != null) {
       return synchronized(disting, distingVersion, presetName, algorithms,
-          slots, unitStrings, screenshot);
+          slots, unitStrings, screenshot, loading);
     }
     return orElse();
   }
@@ -1696,7 +1724,8 @@ abstract class DistingStateSynchronized implements DistingState {
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
-      final Uint8List? screenshot}) = _$DistingStateSynchronizedImpl;
+      final Uint8List? screenshot,
+      final bool loading}) = _$DistingStateSynchronizedImpl;
 
   DistingMidiManager get disting;
   String get distingVersion;
@@ -1706,6 +1735,7 @@ abstract class DistingStateSynchronized implements DistingState {
   List<String> get unitStrings;
   @override
   Uint8List? get screenshot;
+  bool get loading;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.

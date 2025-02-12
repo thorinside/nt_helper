@@ -228,6 +228,10 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   @override
   int get hashCode => Object.hash(algorithmIndex, parameterNumber, min, max,
       defaultValue, unit, name, powerOfTen);
+
+  String? getUnitString(List<String> units) {
+    return unit > 0 ? units.elementAtOrNull(unit - 1) : null;
+  }
 }
 
 class AllParameterValues implements HasAlgorithmIndex {

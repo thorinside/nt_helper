@@ -28,6 +28,7 @@ class SynchronizedScreen extends StatelessWidget {
   final String presetName;
   final String distingVersion;
   final Uint8List? screenshot;
+  final bool loading;
 
   const SynchronizedScreen({
     super.key,
@@ -37,6 +38,7 @@ class SynchronizedScreen extends StatelessWidget {
     required this.presetName,
     required this.distingVersion,
     required this.screenshot,
+    required this.loading,
   });
 
   @override
@@ -198,6 +200,17 @@ class SynchronizedScreen extends StatelessWidget {
     return [
       Builder(builder: (context) {
         return IconButton(
+          icon: Icon(Icons.refresh_rounded),
+          tooltip: 'Refresh',
+          onPressed: loading
+              ? null
+              : () {
+                  context.read<DistingCubit>().refresh();
+                },
+        );
+      }),
+      Builder(builder: (context) {
+        return IconButton(
           icon: const Icon(Icons.arrow_upward_rounded),
           tooltip: 'Move Algorithm Up',
           onPressed: () async {
@@ -282,15 +295,6 @@ class SynchronizedScreen extends StatelessWidget {
             },
           ),
           PopupMenuItem(
-            value: 'refresh',
-            onTap: () {
-              context.read<DistingCubit>().refresh();
-            },
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Refresh'), Icon(Icons.refresh_rounded)]),
-          ),
-          PopupMenuItem(
             value: 'routing',
             onTap: () async {
               final routingInformation =
@@ -338,7 +342,8 @@ class SynchronizedScreen extends StatelessWidget {
                               create: (context) => midiListener,
                             ),
                           ],
-                          child: PerformanceScreen(mappedParameters: mappings),
+                          child: PerformanceScreen(
+                              mappedParameters: mappings, units: units),
                         )),
               );
             },
@@ -670,10 +675,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                             widget.slot.valueStrings.elementAt(parameterNumber);
                         var parameterInfo =
                             widget.slot.parameters.elementAt(parameterNumber);
-                        final unit = parameterInfo.unit > 0
-                            ? widget.units
-                                .elementAtOrNull(parameterInfo.unit - 1)
-                            : null;
+                        final unit = parameterInfo.getUnitString(widget.units);
 
                         return ParameterEditorView(
                           parameterInfo: parameterInfo,
@@ -718,9 +720,7 @@ class ParameterListView extends StatelessWidget {
         final enumStrings = slot.enums.elementAt(index);
         final mapping = slot.mappings.elementAtOrNull(index);
         final valueString = slot.valueStrings.elementAt(index);
-        final unit = parameter.unit > 0
-            ? units.elementAtOrNull(parameter.unit - 1)
-            : null;
+        final unit = parameter.getUnitString(units);
 
         return ParameterEditorView(
           parameterInfo: parameter,

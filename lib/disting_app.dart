@@ -131,6 +131,7 @@ class DistingPage extends StatelessWidget {
                 distingVersion: state.distingVersion,
                 presetName: state.presetName,
                 screenshot: state.screenshot,
+                loading: state.loading,
               );
             } else {
               return Center(child: Text("Unknown State"));

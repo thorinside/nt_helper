@@ -23,7 +23,7 @@ class MappedParameter with _$MappedParameter {
     required final ParameterValueString valueString,
     required final Mapping mapping,
     required final Algorithm algorithm,
-}) = _MappedParameter;
+  }) = _MappedParameter;
 }
 
 @freezed
@@ -51,5 +51,6 @@ class DistingState with _$DistingState {
     required List<Slot> slots,
     required List<String> unitStrings,
     Uint8List? screenshot,
+    @Default(false) bool loading,
   }) = DistingStateSynchronized;
 }
