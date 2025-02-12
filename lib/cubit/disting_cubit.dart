@@ -569,6 +569,12 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateSynchronized syncstate:
         final disting = requireDisting();
 
+        emit(
+          syncstate.copyWith(
+            loading: true,
+          ),
+        );
+
         await disting.requestLoadPreset(name, append);
 
         await Future.delayed(Duration(milliseconds: 100));
@@ -581,6 +587,7 @@ class DistingCubit extends Cubit<DistingState> {
 
         emit(
           syncstate.copyWith(
+            loading: false,
             presetName: presetName,
             slots: slots,
           ),
