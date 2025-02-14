@@ -328,23 +328,22 @@ class SynchronizedScreen extends StatelessWidget {
             onTap: () {
               final cubit = context.read<DistingCubit>();
               final midiListener = context.read<MidiListenerCubit>();
-              final mappings = cubit.buildMappedParameterList();
 
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => MultiBlocProvider(
-                          providers: [
-                            BlocProvider(
-                              create: (context) => cubit,
-                            ),
-                            BlocProvider(
-                              create: (context) => midiListener,
-                            ),
-                          ],
-                          child: PerformanceScreen(
-                              mappedParameters: mappings, units: units),
-                        )),
+                  builder: (context) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider(
+                        create: (context) => cubit,
+                      ),
+                      BlocProvider(
+                        create: (context) => midiListener,
+                      ),
+                    ],
+                    child: PerformanceScreen(units: units),
+                  ),
+                ),
               );
             },
             child: const Row(

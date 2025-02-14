@@ -14,6 +14,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 part 'disting_cubit.freezed.dart';
 part 'disting_state.dart';
 
+// A helper class to track each parameter’s polling state.
+class _PollingTask {
+  bool active = true;
+  int noChangeCount = 0;
+
+  _PollingTask();
+}
+
 class DistingCubit extends Cubit<DistingState> {
   DistingCubit()
       : _prefs = SharedPreferences.getInstance(),
@@ -759,6 +767,93 @@ class DistingCubit extends Cubit<DistingState> {
         );
       default:
         return [];
+    }
+  }
+
+  // Map to hold an active polling task for each mapped parameter,
+  // keyed by a composite key (e.g. "algorithmIndex_parameterNumber").
+  final Map<String, _PollingTask> _pollingTasks = {};
+
+  // Starts polling for each mapped parameter.
+  void startPollingMappedParameters() {
+    stopPollingMappedParameters(); // Clear any previous tasks.
+    if (state is! DistingStateSynchronized) return;
+    final mappedParams = buildMappedParameterList();
+    for (final param in mappedParams) {
+      final key =
+          '${param.parameter.algorithmIndex}_${param.parameter.parameterNumber}';
+      _pollingTasks[key] = _PollingTask();
+      _pollIndividualParameter(param, key);
+    }
+  }
+
+  // Stops all polling tasks.
+  void stopPollingMappedParameters() {
+    _pollingTasks.clear();
+  }
+
+  // Polls a single mapped parameter recursively.
+  Future<void> _pollIndividualParameter(
+      MappedParameter mapped, String key) async {
+    // If the task has been cancelled or state is not synchronized, stop.
+    final task = _pollingTasks[key];
+    if (task == null || !task.active || state is! DistingStateSynchronized) {
+      return;
+    }
+
+    // Define intervals and threshold.
+    const Duration fastInterval = Duration(milliseconds: 100);
+    const Duration slowInterval = Duration(milliseconds: 1000);
+    const int fastToSlowThreshold = 3;
+
+    try {
+      final disting = requireDisting();
+      // Request the current parameter value.
+      final newValue = await disting.requestParameterValue(
+        mapped.parameter.algorithmIndex,
+        mapped.parameter.parameterNumber,
+      );
+      if (newValue == null) return;
+
+      final currentState = state;
+      if (currentState is DistingStateSynchronized) {
+        final currentSlot = currentState.slots[mapped.parameter.algorithmIndex];
+        final currentValue =
+            currentSlot.values[mapped.parameter.parameterNumber];
+        if (newValue.value != currentValue.value) {
+          // A change was detected: update state and reset no-change count.
+          final updatedSlots = updateSlot(
+            mapped.parameter.algorithmIndex,
+            currentState.slots,
+            (slot) => slot.copyWith(
+              values: replaceInList(
+                slot.values,
+                newValue,
+                index: mapped.parameter.parameterNumber,
+              ),
+            ),
+          );
+          emit(currentState.copyWith(slots: updatedSlots));
+          task.noChangeCount = 0;
+          // Continue polling quickly.
+          await Future.delayed(fastInterval);
+        } else {
+          // No change: increment counter and choose interval.
+          task.noChangeCount++;
+          final delay = (task.noChangeCount >= fastToSlowThreshold)
+              ? slowInterval
+              : fastInterval;
+          await Future.delayed(delay);
+        }
+      }
+    } catch (e) {
+      // In case of an error, wait a bit before retrying.
+      await Future.delayed(slowInterval);
+    }
+
+    // Continue polling this parameter if it’s still active.
+    if (_pollingTasks.containsKey(key)) {
+      _pollIndividualParameter(mapped, key);
     }
   }
 }
