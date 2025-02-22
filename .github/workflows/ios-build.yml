@@ -118,7 +118,7 @@ jobs:
       - name: Upload to TestFlight
         run: |
           export FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD="${{ secrets.APP_SPECIFIC_PASSWORD }}"
-          export FASTLANE_PASSWORD="${{ secrets.APP_SPECIFIC_PASSWORD }}"
+          export FASTLANE_PASSWORD="${{ secrets.FASTLANE_PASSWORD }}"
           export FASTLANE_USER="neal.sanche@gmail.com"
           fastlane pilot upload \
           --ipa "./build/ios/ipa/nt_helper.ipa" \
