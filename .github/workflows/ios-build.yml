@@ -2,8 +2,8 @@ name: iOS Build and Sign
 
 on:
   push:
-    branches:
-      - ios
+    tags:
+      - 'v*'  # e.g., v1.0, v1.2.3, etc.
 
 jobs:
   build-ios:
