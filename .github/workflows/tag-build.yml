@@ -53,7 +53,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.4'
+          flutter-version: '3.29.0'
 
       - name: Install dependencies
         run: flutter pub get
@@ -103,13 +103,82 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.4'
+          flutter-version: '3.29.0'
 
       - name: Install dependencies
         run: flutter pub get
 
+      # 1) Decode your .p12 certificate from secrets.APPLE_CERTIFICATE
+      - name: Decode iOS certificate from Base64
+        run: echo "${{ secrets.APPLE_CERTIFICATES }}" | base64 --decode > apple_certificates.p12
+
+      # 3) Create a temporary keychain & import the .p12
+      - name: Create & unlock keychain
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          KEYCHAIN_PASSWORD=""  # or set one if you prefer
+
+          echo "Creating keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          # Keep the keychain unlocked for a while:
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_NAME"
+
+          echo "Unlocking keychain..."
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+
+          echo "Setting $KEYCHAIN_NAME as default..."
+          security default-keychain -s "$KEYCHAIN_NAME"
+
+          echo "List of keychains now:"
+          security list-keychains
+        shell: bash
+
+      - name: Import certificate
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+
+          # The password for this .p12 is in APPLE_CERTIFICATES_PASSWORD:
+          security import apple_certificates.p12 \
+            -k "$KEYCHAIN_NAME" \
+            -P "${{ secrets.APPLE_CERTIFICATES_PASSWORD }}" \
+            -T /usr/bin/codesign
+
+          # Give codesign tools permission
+          security set-key-partition-list -S apple-tool:,apple: -k "" "$KEYCHAIN_NAME"
+
+          echo "Identities in keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
+
       - name: Build macOS
         run: flutter build macos
+
+      - name: Codesign the macOS App
+        run: |
+          codesign --deep --force --verbose --options runtime \
+            --sign "Developer ID Application: Neal Sanche (KN424RZG26)" \
+            build/macos/Build/Products/Release/nt_helper.app
+
+      - name: Zip the macOS App for Notarization
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --keepParent nt_helper.app nt_helper.zip
+
+      - name: Notarize the macOS App
+        env:
+          MACOS_APPLE_ID: ${{ secrets.MACOS_APPLE_ID }}
+          MACOS_APPLE_ID_PASSWORD: ${{ secrets.MACOS_APPLE_ID_PASSWORD }}
+          MACOS_APPLE_TEAM_ID: ${{ secrets.MACOS_APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit build/macos/Build/Products/Release/nt_helper.zip \
+            --apple-id "$MACOS_APPLE_ID" \
+            --password "$MACOS_APPLE_ID_PASSWORD" \
+            --team-id "$MACOS_APPLE_TEAM_ID" \
+            --wait
+
+      - name: Staple Notarization to the App
+        run: |
+          xcrun stapler staple build/macos/Build/Products/Release/nt_helper.app
 
       - name: Zip macOS App
         run: |
@@ -126,6 +195,11 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           artifacts: "**/nt_helper-${{ env.VERSION }}-macos.zip"
+
+      - name: Delete temporary keychain
+        if: always() # ensures this step runs regardless of success/failure above
+        run: |
+          security delete-keychain build.keychain
 
   windows:
     name: Build Windows App
@@ -146,7 +220,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.4'
+          flutter-version: '3.29.0'
 
       - name: Install dependencies
         run: flutter pub get
@@ -190,7 +264,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.4'
+          flutter-version: '3.29.0'
 
       - name: Install dependencies
         run: |

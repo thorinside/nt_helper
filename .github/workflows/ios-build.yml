@@ -3,7 +3,7 @@ name: iOS Build and Sign
 on:
   push:
     branches:
-      - main
+      - ios
 
 jobs:
   build-ios:
@@ -27,7 +27,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.27.4'
+          flutter-version: '3.29.0'
 
       - name: Flutter Doctor (debug)
         run: flutter doctor -v
@@ -37,21 +37,21 @@ jobs:
 
       # 1) Decode your .p12 certificate from secrets.APPLE_CERTIFICATE
       - name: Decode iOS certificate from Base64
-        run: echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > ios_certificate.p12
+        run: echo "${{ secrets.APPLE_CERTIFICATES }}" | base64 --decode > apple_certificates.p12
 
       # 2) Decode your mobile provisioning profile from secrets.DEV_MOBILEPROVISIONING_PROFILE
       #    (or MOBILEPROVISION if that's your correct secret name)
       - name: Decode provisioning profile from Base64
-        run: echo "${{ secrets.DEV_MOBILEPROVISIONING_PROFILE }}" | base64 --decode > nt_helper_dev_profile.mobileprovision
+        run: echo "${{ secrets.APP_STORE_MOBILEPROVISION }}" | base64 --decode > distribution.mobileprovision
 
       - name: Debug list files
         run: |
           echo "Files in workspace:"
           ls -la
           echo "Certificate details:"
-          ls -la ios_certificate.p12 || true
+          ls -la apple_certificates.p12 || true
           echo "Provisioning profile details:"
-          ls -la MyApp_Dev.mobileprovision || true
+          ls -la distribution.mobileprovision || true
 
       # 3) Create a temporary keychain & import the .p12
       - name: Create & unlock keychain
@@ -79,10 +79,10 @@ jobs:
         run: |
           KEYCHAIN_NAME="build.keychain"
 
-          # The password for your .p12 is in APPLE_CERTIFICATE_PASSWORD:
-          security import ios_certificate.p12 \
+          # The password for your .p12 is in APPLE_CERTIFICATES_PASSWORD:
+          security import apple_certificates.p12 \
             -k "$KEYCHAIN_NAME" \
-            -P "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" \
+            -P "${{ secrets.APPLE_CERTIFICATES_PASSWORD }}" \
             -T /usr/bin/codesign
 
           # Give codesign tools permission
@@ -95,7 +95,7 @@ jobs:
       - name: Install provisioning profile
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp nt_helper_dev_profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp distribution.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
@@ -131,3 +131,8 @@ jobs:
         with:
           name: MyApp-iOS-IPA
           path: build/ios/ipa/*.ipa
+
+      - name: Delete temporary keychain
+        if: always() # ensures this step runs regardless of success/failure above
+        run: |
+          security delete-keychain build.keychain

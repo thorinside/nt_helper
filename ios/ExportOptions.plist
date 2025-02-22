@@ -7,7 +7,7 @@
 	<key>manageAppVersionAndBuildNumber</key>
 	<true/>
 	<key>method</key>
-	<string>development</string>
+	<string>app-store-connect</string>
 	<key>signingStyle</key>
 	<string>manual</string>
 	<key>stripSwiftSymbols</key>
@@ -19,7 +19,7 @@
         <key>provisioningProfiles</key>
           <dict>
             <key>dev.nosuch.ntHelper</key>
-            <string>nt_helper_dev_profile</string>
+            <string>ntHelper App Store Connect Provisioning</string>
           </dict>
 </dict>
 </plist>
