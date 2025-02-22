@@ -3,6 +3,10 @@ import 'dart:typed_data';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class PackedMappingData {
+
+  // Version
+  final int version;
+
   // CV Mapping
   final int cvInput; // Input source for CV
   final bool isUnipolar; // Unipolar or bipolar mapping
@@ -15,6 +19,7 @@ class PackedMappingData {
   final int midiCC; // MIDI control change number
   final bool isMidiEnabled; // MIDI mapping enabled
   final bool isMidiSymmetric; // MIDI mapping symmetric
+  final bool isMidiRelative; // MIDI mapping relative
   final int midiMin; // Minimum MIDI value
   final int midiMax; // Maximum MIDI value
 
@@ -36,6 +41,7 @@ class PackedMappingData {
     required this.midiCC,
     required this.isMidiEnabled,
     required this.isMidiSymmetric,
+    required this.isMidiRelative,
     required this.midiMin,
     required this.midiMax,
     required this.i2cCC,
@@ -43,6 +49,7 @@ class PackedMappingData {
     required this.isI2cSymmetric,
     required this.i2cMin,
     required this.i2cMax,
+    required this.version,
   });
 
   factory PackedMappingData.filler() {
@@ -56,17 +63,21 @@ class PackedMappingData {
         midiCC: -1,
         isMidiEnabled: false,
         isMidiSymmetric: false,
+        isMidiRelative: false,
         midiMin: -1,
         midiMax: -1,
         i2cCC: -1,
         isI2cEnabled: false,
         isI2cSymmetric: false,
         i2cMin: -1,
-        i2cMax: -1);
+        i2cMax: -1,
+        version: -1);
   }
 
   // Decode from packed Uint8List
-  factory PackedMappingData.fromBytes(Uint8List data) {
+  factory PackedMappingData.fromBytes(int version, Uint8List data) {
+    if (version < 1 || version > 2) throw Exception("unknown_mapping_data_version");
+
     int offset = 0;
 
     // --- Decode CV Mapping ---
@@ -81,9 +92,11 @@ class PackedMappingData {
     // --- Decode MIDI Mapping ---
     final midiCC = data[offset++];
     final midiFlags = data[offset++];
+    final midiFlags2 = version >= 2 ? data[offset++] : 0;
     final midiChannel = (midiFlags >> 3) & 0xF;
     final isMidiEnabled = (midiFlags & 1) != 0;
     final isMidiSymmetric = (midiFlags & 2) != 0;
+    final isMidiRelative = (midiFlags2 & 1) != 0;
     final midiMin = DistingNT.decode16(data, offset);
     offset += 3;
     final midiMax = DistingNT.decode16(data, offset);
@@ -110,6 +123,7 @@ class PackedMappingData {
       midiCC: midiCC,
       isMidiEnabled: isMidiEnabled,
       isMidiSymmetric: isMidiSymmetric,
+      isMidiRelative: isMidiRelative,
       midiMin: midiMin,
       midiMax: midiMax,
       i2cCC: i2cCC,
@@ -117,6 +131,7 @@ class PackedMappingData {
       isI2cSymmetric: isI2cSymmetric,
       i2cMin: i2cMin,
       i2cMax: i2cMax,
+      version: version,
     );
   }
 
@@ -145,6 +160,8 @@ class PackedMappingData {
         (isMidiSymmetric ? 2 : 0) |
         ((midiChannel & 0xF) << 3);
 
+    int flags2 = (isMidiRelative ? 1 : 0);
+
     // Adjust the CC number and flags if necessary
     if (adjustedCC == 128) {
       adjustedCC = 0;
@@ -155,6 +172,7 @@ class PackedMappingData {
     final payload = [
       adjustedCC & 0x7F, // MIDI CC number
       flags & 0x7F, // Flags
+      if (version >= 2) flags2 & 0x7F,
       ...DistingNT.encode16(min), // Encode 'min' as 7-bit chunks
       ...DistingNT.encode16(max), // Encode 'max' as 7-bit chunks
     ];
@@ -196,6 +214,9 @@ class PackedMappingData {
     bytes.add((isMidiEnabled ? 1 : 0) |
         (isMidiSymmetric ? 2 : 0) |
         ((midiChannel & 0xF) << 3));
+    if (version >= 2) {
+      bytes.add((isMidiRelative ? 1 : 0));
+    }
     bytes.addAll(DistingNT.encode16(midiMin));
     bytes.addAll(DistingNT.encode16(midiMax));
 

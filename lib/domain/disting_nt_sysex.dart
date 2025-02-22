@@ -341,26 +341,23 @@ class Mapping implements HasAlgorithmIndex, HasParameterNumber {
   @override
   final int parameterNumber;
   final PackedMappingData packedMappingData;
-  final int version;
 
   Mapping({
     required this.algorithmIndex,
     required this.parameterNumber,
     required this.packedMappingData,
-    required this.version,
   });
 
   factory Mapping.filler() {
     return Mapping(
         algorithmIndex: -1,
         parameterNumber: -1,
-        packedMappingData: PackedMappingData.filler(),
-        version: -1);
+        packedMappingData: PackedMappingData.filler());
   }
 
   @override
   String toString() {
-    return "Mapping(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, packedMappingData: $packedMappingData, version: $version)";
+    return "Mapping(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, packedMappingData: $packedMappingData)";
   }
 }
 
@@ -1212,8 +1209,7 @@ class DistingNT {
     return Mapping(
       algorithmIndex: decode8(message),
       parameterNumber: decode16(message, 1),
-      version: decode8(message.sublist(4, 5)),
-      packedMappingData: PackedMappingData.fromBytes(message.sublist(5)),
+      packedMappingData: PackedMappingData.fromBytes(decode8(message.sublist(4, 5)), message.sublist(5)),
     );
   }
 

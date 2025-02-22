@@ -629,8 +629,7 @@ class DistingCubit extends Cubit<DistingState> {
                     Mapping(
                         algorithmIndex: algorithmIndex,
                         parameterNumber: parameterNumber,
-                        packedMappingData: data,
-                        version: 1),
+                        packedMappingData: data),
                     index: parameterNumber,
                   ),
                 );
@@ -718,10 +717,10 @@ class DistingCubit extends Cubit<DistingState> {
           .toList(),
       mappings: slot.mappings
           .map((mapping) => Mapping(
-              algorithmIndex: algorithmIndex,
-              parameterNumber: mapping.parameterNumber,
-              packedMappingData: mapping.packedMappingData,
-              version: mapping.version))
+                algorithmIndex: algorithmIndex,
+                parameterNumber: mapping.parameterNumber,
+                packedMappingData: mapping.packedMappingData,
+              ))
           .toList(),
       valueStrings: slot.valueStrings
           .map((valueStrings) => ParameterValueString(

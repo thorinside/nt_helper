@@ -312,6 +312,19 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               ),
             ],
           ),
+          Row(
+            children: [
+              const Text('MIDI Relative'),
+              Switch(
+                value: _data.isMidiRelative,
+                onChanged: (val) {
+                  setState(() {
+                    _data = _data.copyWith(isMidiRelative: val);
+                  });
+                },
+              ),
+            ],
+          ),
           _buildNumericField(
             label: 'MIDI Min',
             controller: _midiMinController,
@@ -484,6 +497,7 @@ extension on PackedMappingData {
     int? midiCC,
     bool? isMidiEnabled,
     bool? isMidiSymmetric,
+    bool? isMidiRelative,
     int? midiMin,
     int? midiMax,
     int? i2cCC,
@@ -491,6 +505,7 @@ extension on PackedMappingData {
     bool? isI2cSymmetric,
     int? i2cMin,
     int? i2cMax,
+    int? version,
   }) {
     return PackedMappingData(
       cvInput: cvInput ?? this.cvInput,
@@ -502,6 +517,7 @@ extension on PackedMappingData {
       midiCC: midiCC ?? this.midiCC,
       isMidiEnabled: isMidiEnabled ?? this.isMidiEnabled,
       isMidiSymmetric: isMidiSymmetric ?? this.isMidiSymmetric,
+      isMidiRelative: isMidiRelative ?? this.isMidiRelative,
       midiMin: midiMin ?? this.midiMin,
       midiMax: midiMax ?? this.midiMax,
       i2cCC: i2cCC ?? this.i2cCC,
@@ -509,6 +525,7 @@ extension on PackedMappingData {
       isI2cSymmetric: isI2cSymmetric ?? this.isI2cSymmetric,
       i2cMin: i2cMin ?? this.i2cMin,
       i2cMax: i2cMax ?? this.i2cMax,
+      version: version ?? this.version,
     );
   }
 }

@@ -111,7 +111,7 @@ void main() {
       }
     });
 
-    test("can decode mapping data for a parameter", () {
+    test("can decode V1 mapping data for a parameter", () {
       // 4BH – Mapping
       // F0 00 21 27 6D <SysEx ID> 4B <algorithm index> <16 bit parameter number> <version number>
       // <mapping data> F7
@@ -126,6 +126,7 @@ void main() {
         midiCC: 64,
         isMidiEnabled: true,
         isMidiSymmetric: false,
+        isMidiRelative: false,
         midiMin: 0,
         midiMax: 127,
         i2cCC: 10,
@@ -133,6 +134,7 @@ void main() {
         isI2cSymmetric: true,
         i2cMin: 2,
         i2cMax: 16384,
+        version: 1,
       );
 
       final message = Uint8List.fromList([
@@ -146,8 +148,50 @@ void main() {
 
       expect(mapping.algorithmIndex, equals(5));
       expect(mapping.parameterNumber, equals(99));
-      expect(mapping.version, equals(1));
+      expect(mapping.packedMappingData.version, equals(1));
       expect(mapping.packedMappingData, equals(data));
+    });
+
+    test("can decode V2 mapping data for a parameter", () {
+      // 4BH – Mapping
+      // F0 00 21 27 6D <SysEx ID> 4B <algorithm index> <16 bit parameter number> <version number>
+      // <mapping data> F7
+
+      PackedMappingData data = PackedMappingData(
+        cvInput: 1,
+        isUnipolar: true,
+        isGate: false,
+        volts: 5,
+        delta: 100,
+        midiChannel: 2,
+        midiCC: 64,
+        isMidiEnabled: true,
+        isMidiSymmetric: false,
+        isMidiRelative: true,
+        midiMin: 0,
+        midiMax: 127,
+        i2cCC: 10,
+        isI2cEnabled: true,
+        isI2cSymmetric: true,
+        i2cMin: 2,
+        i2cMax: 16384,
+        version: 2,
+      );
+
+      final message = Uint8List.fromList([
+        5,
+        ...DistingNT.encode16(99),
+        2,
+        ...data.toBytes(),
+      ]);
+
+      var mapping = DistingNT.decodeMapping(message);
+
+      expect(mapping.algorithmIndex, equals(5));
+      expect(mapping.parameterNumber, equals(99));
+      expect(mapping.packedMappingData.version, equals(2));
+      expect(mapping.packedMappingData, equals(data));
+      expect(mapping.packedMappingData.isMidiRelative, equals(true));
     });
 
     test("Can decode parameter value string", () {
