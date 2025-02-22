@@ -864,8 +864,7 @@ class DistingNT {
       DistingNTRequestMessageType.setMapping.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
-      1,
-      // version
+      data.version & 0x7F,
       ...data.encodeCVPackedData(),
       ..._buildFooter(),
     ];
@@ -879,8 +878,7 @@ class DistingNT {
       DistingNTRequestMessageType.setMidiMapping.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
-      1,
-      // version
+      data.version & 0x7F,
       ...data.encodeMidiPackedData(),
       ..._buildFooter(),
     ];
@@ -894,8 +892,7 @@ class DistingNT {
       DistingNTRequestMessageType.setI2CMapping.value,
       algorithmIndex & 0x7F,
       ...encode16(parameterNumber),
-      1,
-      // version
+      data.version & 0x7F,
       ...data.encodeI2CPackedData(),
       ..._buildFooter(),
     ];
