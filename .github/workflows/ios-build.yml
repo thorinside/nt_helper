@@ -35,12 +35,9 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      # 1) Decode your .p12 certificate from secrets.APPLE_CERTIFICATE
       - name: Decode iOS certificate from Base64
         run: echo "${{ secrets.APPLE_CERTIFICATES }}" | base64 --decode > apple_certificates.p12
 
-      # 2) Decode your mobile provisioning profile from secrets.DEV_MOBILEPROVISIONING_PROFILE
-      #    (or MOBILEPROVISION if that's your correct secret name)
       - name: Decode provisioning profile from Base64
         run: echo "${{ secrets.APP_STORE_MOBILEPROVISION }}" | base64 --decode > distribution.mobileprovision
 
@@ -53,7 +50,6 @@ jobs:
           echo "Provisioning profile details:"
           ls -la distribution.mobileprovision || true
 
-      # 3) Create a temporary keychain & import the .p12
       - name: Create & unlock keychain
         run: |
           KEYCHAIN_NAME="build.keychain"
@@ -91,7 +87,6 @@ jobs:
           echo "Identities in keychain:"
           security find-identity -v -p codesigning "$KEYCHAIN_NAME" || true
 
-      # 4) Install the provisioning profile
       - name: Install provisioning profile
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -99,7 +94,6 @@ jobs:
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      # 5) Build IPA via Flutter
       - name: Flutter build IPA
         run: |
           set -x
@@ -110,28 +104,14 @@ jobs:
       - name: Debug List final artifacts
         run: ls -R build/ios/ipa || true
 
-      # 6) Optionally, use your Apple ID & app-specific password to upload
-      #    automatically to TestFlight/App Store. Example with fastlane:
-      #
-      - name: Install fastlane
-        run: sudo gem install fastlane
       - name: Upload to TestFlight
         run: |
-          export FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD="${{ secrets.APP_SPECIFIC_PASSWORD }}"
-          export FASTLANE_PASSWORD="${{ secrets.FASTLANE_PASSWORD }}"
-          export FASTLANE_USER="neal.sanche@gmail.com"
-          fastlane pilot upload \
-          --ipa "./build/ios/ipa/nt_helper.ipa" \
-          --apple_id "${{ secrets.APPLE_ID }}"
-          --team_id "${{ secrets.APPLE_TEAM }}" \
-          --app_identifier "dev.nosuch.ntHelper"
-
-      # 7) Or simply upload the .ipa as an artifact on GitHub
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: MyApp-iOS-IPA
-          path: build/ios/ipa/*.ipa
+          xcrun altool --upload-app \
+            --type ios \
+            --file "./build/ios/ipa/nt_helper.ipa" \
+            --username "${{ secrets.MACOS_APPLE_ID }}" \
+            --password "${{ secrets.APP_SPECIFIC_PASSWORD }}" \
+            --verbose
 
       - name: Delete temporary keychain
         if: always() # ensures this step runs regardless of success/failure above
