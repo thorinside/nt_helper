@@ -28,5 +28,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>This app cannot use Bluetooth midi, as it needs to be connected to the device via a USB cable.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app cannot connect to the device over the network, it requires a USB cable.</string>
+    <key> ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>

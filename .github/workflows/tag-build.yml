@@ -183,7 +183,7 @@ jobs:
       - name: Zip macOS App
         run: |
           cd build/macos/Build/Products/Release
-          zip -r nt_helper-${VERSION}-macos.zip nt_helper.app
+          ditto -c -k --keepParent nt_helper.app nt_helper-${VERSION}-macos.zip
 
       - name: List build output (debug)
         run: ls -R build/macos/Build/Products/Release
