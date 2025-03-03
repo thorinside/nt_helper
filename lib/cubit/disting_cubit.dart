@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:async/async.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
@@ -29,6 +30,7 @@ class DistingCubit extends Cubit<DistingState> {
 
   final Future<SharedPreferences> _prefs;
   MidiCommand _midiCommand = MidiCommand();
+  CancelableOperation<void>? _programSlotUpdate;
 
   @override
   Future<void> close() {
@@ -320,95 +322,108 @@ class DistingCubit extends Cubit<DistingState> {
     required int value,
     required bool userIsChangingTheValue,
   }) async {
-    if (state is DistingStateSynchronized) {
-      var disting = requireDisting();
-      final state = (this.state as DistingStateSynchronized);
+    if (kDebugMode) {
+      print("value = $value, userChanging = $userIsChangingTheValue");
+    }
 
-      disting.setParameterValue(
-        algorithmIndex,
-        parameterNumber,
-        value,
-      );
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        var disting = requireDisting();
 
-      // Special case for switching programs in 3pot algorithms
-      if (_isThreePotProgram(state, algorithmIndex, parameterNumber)) {
-        final updatedSlot = await fetchSlot(disting, algorithmIndex);
-
-        emit(state.copyWith(
-          slots: updateSlot(
-            algorithmIndex,
-            state.slots,
-            (slot) {
-              return updatedSlot;
-            },
-          ),
-        ));
-        return;
-      }
-
-      if (!userIsChangingTheValue) {
-        final newValue = await disting.requestParameterValue(
+        disting.setParameterValue(
           algorithmIndex,
           parameterNumber,
+          value,
         );
 
-        final state = (this.state as DistingStateSynchronized);
+        if (!userIsChangingTheValue) {
+          // Special case for switching programs
+          if (_isProgramParameter(syncstate, algorithmIndex, parameterNumber)) {
+            _programSlotUpdate?.cancel();
 
-        var valueStrings = [
-          for (int parameterNumber = 0;
-              parameterNumber < state.slots[algorithmIndex].valueStrings.length;
-              parameterNumber++)
-            if ([13, 14, 17].contains(
-                state.slots[algorithmIndex].parameters[parameterNumber].unit))
-              await disting.requestParameterValueString(
-                      algorithmIndex, parameterNumber) ??
-                  ParameterValueString.filler()
-            else
-              ParameterValueString.filler()
-        ];
+            _programSlotUpdate = CancelableOperation.fromFuture(Future.delayed(
+              Duration(seconds: 2),
+              () async {
+                final updatedSlot = await fetchSlot(disting, algorithmIndex);
 
-        final routings = !([
-          13,
-          14,
-          17,
-        ].contains(
-                state.slots[algorithmIndex].parameters[parameterNumber].unit))
-            ? await disting.requestRoutingInformation(algorithmIndex)
-            : state.slots[algorithmIndex].routing;
-
-        emit(state.copyWith(
-          slots: updateSlot(
-            algorithmIndex,
-            state.slots,
-            (slot) {
-              return slot.copyWith(
-                  values: replaceInList(
-                    slot.values,
-                    newValue!,
-                    index: parameterNumber,
+                emit(syncstate.copyWith(
+                  slots: updateSlot(
+                    algorithmIndex,
+                    syncstate.slots,
+                    (slot) {
+                      return updatedSlot;
+                    },
                   ),
-                  routing: routings ?? state.slots[algorithmIndex].routing,
-                  valueStrings: valueStrings);
-            },
-          ),
-        ));
-      }
+                ));
+              },
+            ));
+          }
+
+          final newValue = await disting.requestParameterValue(
+            algorithmIndex,
+            parameterNumber,
+          );
+
+          final state = (this.state as DistingStateSynchronized);
+
+          var valueStrings = [
+            for (int parameterNumber = 0;
+                parameterNumber <
+                    state.slots[algorithmIndex].valueStrings.length;
+                parameterNumber++)
+              if ([13, 14, 17].contains(
+                  state.slots[algorithmIndex].parameters[parameterNumber].unit))
+                await disting.requestParameterValueString(
+                        algorithmIndex, parameterNumber) ??
+                    ParameterValueString.filler()
+              else
+                ParameterValueString.filler()
+          ];
+
+          final routings = !([
+            13,
+            14,
+            17,
+          ].contains(
+                  state.slots[algorithmIndex].parameters[parameterNumber].unit))
+              ? await disting.requestRoutingInformation(algorithmIndex)
+              : state.slots[algorithmIndex].routing;
+
+          emit(state.copyWith(
+            slots: updateSlot(
+              algorithmIndex,
+              state.slots,
+              (slot) {
+                return slot.copyWith(
+                    values: replaceInList(
+                      slot.values,
+                      newValue!,
+                      index: parameterNumber,
+                    ),
+                    routing: routings ?? state.slots[algorithmIndex].routing,
+                    valueStrings: valueStrings);
+              },
+            ),
+          ));
+        }
     }
   }
 
-  void refresh() async {
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        var disting = syncstate.disting;
+  void refresh({Duration delay = const Duration(milliseconds: 250)}) async {
+    await Future.delayed(delay);
 
-        emit(syncstate.copyWith(loading: true));
+    switch (state) {
+      case DistingStateSynchronized state:
+        var disting = state.disting;
+
+        emit(state.copyWith(loading: true));
 
         final numAlgorithmsInPreset =
             (await disting.requestNumAlgorithmsInPreset())!;
 
         final presetName = await disting.requestPresetName() ?? "";
 
-        emit((state as DistingStateSynchronized).copyWith(
+        emit(state.copyWith(
           loading: false,
           presetName: presetName,
           slots: await fetchSlots(numAlgorithmsInPreset, disting),
@@ -422,37 +437,56 @@ class DistingCubit extends Cubit<DistingState> {
     AlgorithmInfo algorithm,
     List<int> specifications,
   ) async {
-    if (state is DistingStateSynchronized) {
-      final disting = requireDisting();
-      await disting.requestAddAlgorithm(algorithm, specifications);
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = syncstate.disting;
+        await disting.requestAddAlgorithm(algorithm, specifications);
 
-      await Future.delayed(Duration(milliseconds: 100));
+        int currentNumAlgorithms = syncstate.slots.length;
 
-      // Add a slot at the end of the slots list, and then ask to update that
-      // slot. The rest should remain the same, so we don't have to update
-      // everything.
-      var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
-      slots.add(await fetchSlot(disting, slots.length));
-      emit((state as DistingStateSynchronized).copyWith(slots: slots));
+        // Wait until number of algorithms in preset changes
+        await _waitForSlotCountChange(disting, currentNumAlgorithms);
+
+        // Add a slot at the end of the slots list, and then ask to update that
+        // slot. The rest should remain the same, so we don't have to update
+        // everything.
+        var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
+        slots.add(await fetchSlot(disting, slots.length));
+        emit((state as DistingStateSynchronized).copyWith(slots: slots));
+    }
+  }
+
+  Future<void> _waitForSlotCountChange(
+      DistingMidiManager disting, int currentNumAlgorithms) async {
+    // Wait until number of algorithms in preset changes
+    var startTime = DateTime.timestamp();
+    while ((await disting.requestNumAlgorithmsInPreset()) ==
+            currentNumAlgorithms &&
+        DateTime.timestamp().difference(startTime) < Duration(seconds: 10)) {
+      await Future.delayed(Duration(milliseconds: 150));
     }
   }
 
   Future<void> onRemoveAlgorithm(int algorithmIndex) async {
-    if (state is DistingStateSynchronized) {
-      final disting = requireDisting();
-      await disting.requestRemoveAlgorithm(algorithmIndex);
+    switch (state) {
+      case DistingStateSynchronized syncstate:
+        final disting = requireDisting();
+        await disting.requestRemoveAlgorithm(algorithmIndex);
 
-      // Just remove the slot from state since the message
-      // succeeded, filter the slot out of the list, the index in the list
-      // will be the same as algorithmIndex
-      // Emit the new state with the updated slots
-      var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
-      slots.removeAt(algorithmIndex);
-      emit((state as DistingStateSynchronized).copyWith(slots: slots));
+        int currentNumAlgorithms = syncstate.slots.length;
 
-      await Future.delayed(Duration(milliseconds: 50));
+        // Wait until number of algorithms in preset changes
+        await _waitForSlotCountChange(disting, currentNumAlgorithms);
 
-      refresh();
+        var slots = List<Slot>.from(syncstate.slots);
+
+        var updatedSlots = [
+          ...slots.sublist(0, algorithmIndex),
+          ...slots.sublist(algorithmIndex + 1).mapIndexed((index, element) =>
+              _fixAlgorithmIndex(element, algorithmIndex + index))
+        ];
+
+        emit((state as DistingStateSynchronized).copyWith(slots: updatedSlots));
     }
   }
 
@@ -485,7 +519,6 @@ class DistingCubit extends Cubit<DistingState> {
 
     final disting = requireDisting();
     await disting.requestMoveAlgorithmUp(algorithmIndex);
-    await Future.delayed(Duration(milliseconds: 50));
 
     var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
     var slot = slots.removeAt(algorithmIndex);
@@ -498,15 +531,12 @@ class DistingCubit extends Cubit<DistingState> {
     slots.insert(algorithmIndex, otherSlot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
 
-    refresh();
-
     return algorithmIndex - 1;
   }
 
   Future<int> moveAlgorithmDown(int algorithmIndex) async {
     final disting = requireDisting();
     await disting.requestMoveAlgorithmDown(algorithmIndex);
-    await Future.delayed(Duration(milliseconds: 50));
 
     var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
 
@@ -522,8 +552,6 @@ class DistingCubit extends Cubit<DistingState> {
     slots.insert(algorithmIndex, slot);
     slots.insert(algorithmIndex, otherSlot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
-
-    refresh();
 
     return algorithmIndex + 1;
   }
@@ -550,21 +578,7 @@ class DistingCubit extends Cubit<DistingState> {
 
         await disting.requestNewPreset();
 
-        await Future.delayed(Duration(milliseconds: 100));
-
-        final numAlgorithmsInPreset =
-            (await disting.requestNumAlgorithmsInPreset())!;
-        final presetName = await disting.requestPresetName() ?? "";
-
-        List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
-
-        // Transition to the synchronizing state
-        emit(
-          syncstate.copyWith(
-            presetName: presetName,
-            slots: slots,
-          ),
-        );
+        await _refreshPreset(disting, syncstate);
 
         break;
       default:
@@ -585,26 +599,34 @@ class DistingCubit extends Cubit<DistingState> {
 
         await disting.requestLoadPreset(name, append);
 
-        await Future.delayed(Duration(milliseconds: 100));
-
-        final numAlgorithmsInPreset =
-            (await disting.requestNumAlgorithmsInPreset())!;
-        final presetName = await disting.requestPresetName() ?? "";
-
-        List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
-
-        emit(
-          syncstate.copyWith(
-            loading: false,
-            presetName: presetName,
-            slots: slots,
-          ),
-        );
+        await _refreshPreset(disting, syncstate);
 
         break;
       default:
       // Handle other cases or errors
     }
+  }
+
+  Future<void> _refreshPreset(
+    DistingMidiManager disting,
+    DistingStateSynchronized state, {
+    Duration delay = const Duration(milliseconds: 250),
+  }) async {
+    await Future.delayed(delay);
+
+    final numAlgorithmsInPreset =
+        (await disting.requestNumAlgorithmsInPreset())!;
+    final presetName = await disting.requestPresetName() ?? "";
+
+    List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+
+    emit(
+      state.copyWith(
+        loading: false,
+        presetName: presetName,
+        slots: slots,
+      ),
+    );
   }
 
   Future<void> saveMapping(
@@ -614,8 +636,6 @@ class DistingCubit extends Cubit<DistingState> {
         final disting = requireDisting();
 
         await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
-
-        await Future.delayed(Duration(milliseconds: 100));
 
         emit(
           syncstate.copyWith(
@@ -676,11 +696,12 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  bool _isThreePotProgram(DistingStateSynchronized state, int algorithmIndex,
+  bool _isProgramParameter(DistingStateSynchronized state, int algorithmIndex,
           int parameterNumber) =>
       (state.slots[algorithmIndex].parameters[parameterNumber].name ==
           "Program") &&
-      ("spin" == state.slots[algorithmIndex].algorithm.guid);
+      (("spin" == state.slots[algorithmIndex].algorithm.guid) ||
+          ("lua " == state.slots[algorithmIndex].algorithm.guid));
 
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
     // Run through all of the parts of the slot and replace the algorithm index

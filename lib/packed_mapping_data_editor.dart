@@ -153,7 +153,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   Widget _buildCvEditor() {
     // Safely clamp the current CV input to 0..12 for display
     final cvInputValue =
-        (_data.cvInput >= 0 && _data.cvInput <= 12) ? _data.cvInput : 0;
+        (_data.cvInput >= 0 && _data.cvInput <= 29) ? _data.cvInput : 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -172,16 +172,26 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                     _data = _data.copyWith(cvInput: newValue);
                   });
                 },
-                dropdownMenuEntries: List.generate(13, (index) {
+                dropdownMenuEntries: List.generate(29, (index) {
                   if (index == 0) {
                     return const DropdownMenuEntry<int>(
                       value: 0,
                       label: 'None',
                     );
-                  } else {
+                  } else if (index >= 1 && index <= 12) {
                     return DropdownMenuEntry<int>(
                       value: index,
                       label: 'Input $index',
+                    );
+                  } else if (index >= 13 && index <= 20) {
+                    return DropdownMenuEntry<int>(
+                      value: index,
+                      label: 'Output ${index - 12}',
+                    );
+                  } else {
+                    return DropdownMenuEntry<int>(
+                      value: index,
+                      label: 'Aux ${index - 20}',
                     );
                   }
                 }),
