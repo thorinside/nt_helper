@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 
@@ -102,6 +103,9 @@ class DistingPage extends StatelessWidget {
                 onRefresh: () {
                   context.read<DistingCubit>().loadDevices();
                 },
+                onSettingsPressed: () async {
+                  await context.showSettingsDialog();
+                },
               );
             } else if (state is DistingStateConnected) {
               return Center(
@@ -148,12 +152,14 @@ class _DeviceSelectionView extends StatefulWidget {
   final List<MidiDevice> outputDevices;
   final Function(MidiDevice, MidiDevice, int) onDeviceSelected;
   final Function() onRefresh;
+  final Function() onSettingsPressed; // Added callback for settings
 
   const _DeviceSelectionView({
     required this.inputDevices,
     required this.outputDevices,
     required this.onDeviceSelected,
     required this.onRefresh,
+    required this.onSettingsPressed, // Added required parameter
   });
 
   @override
@@ -175,12 +181,12 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
     selectedInputDevice = widget.inputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-        )
+    )
         .firstOrNull;
     selectedOutputDevice = widget.outputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-        )
+    )
         .firstOrNull;
   }
 
@@ -204,13 +210,24 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24.0),
-                child: Text(
-                  "Select your Disting NT from the midi device list, or hit refresh to look for devices again.",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
+              // Title row with settings button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Select your Disting NT from the midi device list, or hit refresh to look for devices again.",
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    tooltip: 'Settings',
+                    onPressed: widget.onSettingsPressed,
+                  ),
+                ],
               ),
+              const SizedBox(height: 24),
               DropdownMenu<MidiDevice>(
                 width: 250,
                 initialSelection: selectedInputDevice,
@@ -272,25 +289,23 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
               // Button to confirm selection
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                mainAxisSize: MainAxisSize.min,
-                spacing: 16,
                 children: [
                   OutlinedButton(
                     onPressed: () {
                       widget.onRefresh();
                     },
-                    child: Text("Refresh"),
+                    child: const Text("Refresh"),
                   ),
                   ElevatedButton(
                     onPressed: (selectedInputDevice != null &&
-                            selectedOutputDevice != null &&
-                            selectedSysExId != null)
+                        selectedOutputDevice != null &&
+                        selectedSysExId != null)
                         ? () {
-                            widget.onDeviceSelected(selectedInputDevice!,
-                                selectedOutputDevice!, selectedSysExId!);
-                          }
+                      widget.onDeviceSelected(selectedInputDevice!,
+                          selectedOutputDevice!, selectedSysExId!);
+                    }
                         : null,
-                    child: Text("Connect"),
+                    child: const Text("Connect"),
                   ),
                 ],
               ),
