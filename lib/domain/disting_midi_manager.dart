@@ -6,6 +6,7 @@ import 'package:nt_helper/domain/disting_message_scheduler.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/services/settings_service.dart';
 
 class DistingMidiManager {
   final DistingMessageScheduler _scheduler;
@@ -21,6 +22,8 @@ class DistingMidiManager {
           inputDevice: inputDevice,
           outputDevice: outputDevice,
           sysExId: sysExId,
+          defaultTimeout: Duration(milliseconds: SettingsService().requestTimeout),
+          defaultRetryDelay: Duration(milliseconds: SettingsService().interMessageDelay),
         );
 
   void dispose() {

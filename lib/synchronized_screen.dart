@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -15,6 +16,7 @@ import 'package:nt_helper/performance_screen.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/util/extensions.dart';
@@ -362,6 +364,15 @@ class SynchronizedScreen extends StatelessWidget {
             child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [Text('Switch'), Icon(Icons.login_rounded)]),
+          ),
+          PopupMenuItem(
+            value: 'Settings',
+            onTap: () async {
+              await context.showSettingsDialog();
+            },
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Settings'), Icon(Icons.settings)]),
           ),
           PopupMenuItem(
             value: 'about',
@@ -853,12 +864,16 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   DateTime? _lastSent;
   Duration throttleDuration = const Duration(milliseconds: 100);
 
-  void onSliderChanged(int value) {
+  void onSliderChanged(int value) async {
     final now = DateTime.now();
     if (_lastSent == null || now.difference(_lastSent!) > throttleDuration) {
       // Enough time has passed -> proceed
       _lastSent = now;
       _updateCubitValue(value);
+    }
+
+    if (SettingsService().hapticsEnabled) {
+      Haptics.vibrate(HapticsType.light);
     }
   }
 

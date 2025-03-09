@@ -2,6 +2,8 @@ PODS:
   - Flutter (1.0.0)
   - flutter_midi_command (0.4.2):
     - Flutter
+  - haptic_feedback (0.5.1):
+    - Flutter
   - package_info_plus (0.4.5):
     - Flutter
   - pasteboard (0.0.1):
@@ -16,6 +18,7 @@ PODS:
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_midi_command (from `.symlinks/plugins/flutter_midi_command/ios`)
+  - haptic_feedback (from `.symlinks/plugins/haptic_feedback/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - pasteboard (from `.symlinks/plugins/pasteboard/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -26,6 +29,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_midi_command:
     :path: ".symlinks/plugins/flutter_midi_command/ios"
+  haptic_feedback:
+    :path: ".symlinks/plugins/haptic_feedback/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   pasteboard:
@@ -38,6 +43,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_midi_command: 28d867d5701407d94917c4c35ca0172d362e1611
+  haptic_feedback: fd1d8509833f58f164fc12122c0357fa9b2750e0
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   pasteboard: 49088aeb6119d51f976a421db60d8e1ab079b63c
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
