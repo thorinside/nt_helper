@@ -876,4 +876,22 @@ class DistingCubit extends Cubit<DistingState> {
       _pollIndividualParameter(mapped, key);
     }
   }
+
+  Future<void> resetOutputs(Slot slot, int outputIndex) async {
+    final disting = requireDisting();
+
+    slot.parameters
+        .where((p) =>
+            p.name.toLowerCase().contains("output") &&
+            p.min == 0 &&
+            p.max == 28)
+        .forEach(
+          (p) => disting.setParameterValue(
+            p.algorithmIndex,
+            p.parameterNumber,
+            outputIndex,
+          ),
+        );
+    refresh();
+  }
 }

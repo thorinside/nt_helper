@@ -19,6 +19,7 @@ import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -644,23 +645,33 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Tooltip(
-                    message: _isCollapsed ? 'Expand all' : 'Collapse all',
-                    child: IconButton.filledTonal(
-                      onPressed: () {
-                        _collapseAllTiles();
-                      },
-                      enableFeedback: true,
-                      icon: _isCollapsed
-                          ? Icon(Icons.keyboard_double_arrow_down_sharp)
-                          : Icon(Icons.keyboard_double_arrow_up_sharp),
-                    ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                Tooltip(
+                  message: _isCollapsed ? 'Expand all' : 'Collapse all',
+                  child: IconButton.filledTonal(
+                    onPressed: () {
+                      _collapseAllTiles();
+                    },
+                    enableFeedback: true,
+                    icon: _isCollapsed
+                        ? Icon(Icons.keyboard_double_arrow_down_sharp)
+                        : Icon(Icons.keyboard_double_arrow_up_sharp),
                   ),
-                ],
-              ),
+                ),
+                PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'Reset Outputs',
+                        onTap: () {
+                          showResetOutputsDialog(context: context, initialCvInput: 0, onReset: (outputIndex) {
+                            context.read<DistingCubit>().resetOutputs(widget.slot, outputIndex);
+                          },);
+                        },
+                        child: Text('Reset Outputs'),
+                      ),
+                    ]),
+              ]),
             ),
             Expanded(
               child: ListView.builder(
