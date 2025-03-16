@@ -12,12 +12,14 @@ class DistingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lightTheme = buildThemeData(ColorScheme.fromSeed(
-      seedColor: Colors.tealAccent,
+      seedColor: Colors.tealAccent.shade700,
+      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
       brightness: Brightness.light,
     ).copyWith(surfaceTint: Colors.transparent));
 
     final darkTheme = buildThemeData(ColorScheme.fromSeed(
-      seedColor: Colors.tealAccent,
+      seedColor: Colors.tealAccent.shade100,
+      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
       brightness: Brightness.dark,
     ).copyWith(surfaceTint: Colors.transparent));
 
