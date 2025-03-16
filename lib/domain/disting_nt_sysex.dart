@@ -144,6 +144,15 @@ class Algorithm implements HasAlgorithmIndex {
   String toString() {
     return "Algorithm: index=$algorithmIndex guid=$guid name=$name";
   }
+
+  // Write a copyWith function for this class
+  Algorithm copyWith({int? algorithmIndex, String? guid, String? name}) {
+    return Algorithm(
+      algorithmIndex: algorithmIndex ?? this.algorithmIndex,
+      guid: guid ?? this.guid,
+      name: name ?? this.name,
+    );
+  }
 }
 
 class Specification {
@@ -1206,7 +1215,8 @@ class DistingNT {
     return Mapping(
       algorithmIndex: decode8(message),
       parameterNumber: decode16(message, 1),
-      packedMappingData: PackedMappingData.fromBytes(decode8(message.sublist(4, 5)), message.sublist(5)),
+      packedMappingData: PackedMappingData.fromBytes(
+          decode8(message.sublist(4, 5)), message.sublist(5)),
     );
   }
 

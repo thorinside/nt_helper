@@ -707,7 +707,7 @@ class DistingCubit extends Cubit<DistingState> {
     // Run through all of the parts of the slot and replace the algorithm index
     // with the new one.
     return Slot(
-      algorithm: slot.algorithm,
+      algorithm: slot.algorithm.copyWith(algorithmIndex: algorithmIndex),
       routing: RoutingInfo(
           algorithmIndex: algorithmIndex,
           routingInfo: slot.routing.routingInfo),
