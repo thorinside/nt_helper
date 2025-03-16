@@ -212,6 +212,17 @@ class SynchronizedScreen extends StatelessWidget {
                 },
         );
       }),
+      Builder(
+        builder: (context) {
+          return IconButton(
+            icon: Icon(Icons.alarm_on_rounded),
+            tooltip: "Wake",
+            onPressed: () {
+              context.read<DistingCubit>().wakeDevice();
+            },
+          );
+        }
+      ),
       Builder(builder: (context) {
         return IconButton(
           icon: const Icon(Icons.arrow_upward_rounded),
@@ -247,15 +258,6 @@ class SynchronizedScreen extends StatelessWidget {
       PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert),
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: "wake",
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Wake'), Icon(Icons.alarm_on_rounded)]),
-            onTap: () {
-              context.read<DistingCubit>().wakeDevice();
-            },
-          ),
           PopupMenuItem(
             value: "new",
             child: const Row(
