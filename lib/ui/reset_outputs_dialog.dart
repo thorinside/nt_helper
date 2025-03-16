@@ -17,6 +17,7 @@ Future<void> showResetOutputsDialog({
           width: double.infinity,
           child: DropdownMenu<int>(
             initialSelection: selectedInput,
+            requestFocusOnTap: false,
             label: const Text('CV Input'),
             onSelected: (newValue) {
               if (newValue == null) return;

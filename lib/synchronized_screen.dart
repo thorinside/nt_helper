@@ -661,16 +661,22 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'Reset Outputs',
-                        onTap: () {
-                          showResetOutputsDialog(context: context, initialCvInput: 0, onReset: (outputIndex) {
-                            context.read<DistingCubit>().resetOutputs(widget.slot, outputIndex);
-                          },);
-                        },
-                        child: Text('Reset Outputs'),
-                      ),
-                    ]),
+                          PopupMenuItem(
+                            value: 'Reset Outputs',
+                            onTap: () {
+                              showResetOutputsDialog(
+                                context: context,
+                                initialCvInput: 0,
+                                onReset: (outputIndex) {
+                                  context
+                                      .read<DistingCubit>()
+                                      .resetOutputs(widget.slot, outputIndex);
+                                },
+                              );
+                            },
+                            child: Text('Reset Outputs'),
+                          ),
+                        ]),
               ]),
             ),
             Expanded(
@@ -1019,6 +1025,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                     )
                   : widget.dropdownItems != null
                       ? DropdownMenu(
+                          requestFocusOnTap: false,
                           initialSelection: widget.dropdownItems![currentValue],
                           textStyle: widescreen
                               ? textTheme.labelLarge

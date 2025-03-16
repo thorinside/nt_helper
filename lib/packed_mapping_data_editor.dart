@@ -165,6 +165,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               width: double.infinity,
               child: DropdownMenu<int>(
                 initialSelection: cvInputValue,
+                requestFocusOnTap: false,
                 label: Text('CV Input'), // optional text if you want a hint
                 onSelected: (newValue) {
                   if (newValue == null) return;
@@ -274,6 +275,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             width: double.infinity,
             child: DropdownMenu<int>(
               initialSelection: midiChannelValue,
+              requestFocusOnTap: false,
               label: Text("MIDI Channel"),
               onSelected: (newValue) {
                 if (newValue == null) return;

@@ -232,8 +232,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 width: 250,
                 initialSelection: selectedInputDevice,
                 enabled: true,
-                enableSearch: false,
-                enableFilter: false,
+                requestFocusOnTap: false,
                 label: const Text("Input MIDI Device"),
                 dropdownMenuEntries: widget.inputDevices.map((device) {
                   return DropdownMenuEntry<MidiDevice>(
@@ -252,8 +251,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 width: 250,
                 initialSelection: selectedOutputDevice,
                 enabled: true,
-                enableSearch: false,
-                enableFilter: false,
+                requestFocusOnTap: false,
                 label: const Text("Output MIDI Device"),
                 dropdownMenuEntries: widget.outputDevices.map((device) {
                   return DropdownMenuEntry<MidiDevice>(
@@ -272,6 +270,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
               DropdownMenu<int>(
                 width: 250,
                 initialSelection: selectedSysExId,
+                requestFocusOnTap: false,
                 label: const Text("Device ID"),
                 dropdownMenuEntries: List.generate(128, (index) {
                   return DropdownMenuEntry<int>(

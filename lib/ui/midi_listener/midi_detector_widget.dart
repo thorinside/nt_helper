@@ -158,8 +158,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
       children: [
         DropdownMenu<MidiDevice>(
           width: 250,
-          enableFilter: false,
-          enableSearch: false,
+          requestFocusOnTap: false,
           label: const Text('MIDI Device'),
           initialSelection: _selectedDevice,
           dropdownMenuEntries: entries,
