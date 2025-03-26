@@ -208,6 +208,10 @@ class DistingMidiManager {
 
   Future<Mapping?> requestMappings(
       int algorithmIndex, int parameterNumber) async {
+
+    // Currently can't do parameter numbers > 128
+    if (parameterNumber > 127) return null;
+
     final packet = DistingNT.encodeRequestMappings(
         sysExId, algorithmIndex, parameterNumber);
     final key = RequestKey(
@@ -527,7 +531,7 @@ class DistingMidiManager {
     );
     return _scheduler.sendRequest<ParameterPages>(
       maxRetries: 5,
-      timeout: Duration(milliseconds: 200),
+      timeout: Duration(milliseconds: 30000 ),
       retryDelay: Duration(milliseconds: 250),
       packet,
       key,

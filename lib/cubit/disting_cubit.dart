@@ -224,13 +224,23 @@ class DistingCubit extends Cubit<DistingState> {
         await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
             ParameterInfo.filler()
     ];
+    var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
+        ParameterPages.filler();
+
+    var visibleParameters = parameterPages.pages.expand(
+      (element) {
+        return element.parameters;
+      },
+    );
+
     var parameterValues =
         (await disting.requestAllParameterValues(algorithmIndex))!.values;
     var enums = [
       for (int parameterNumber = 0;
           parameterNumber < numParametersInAlgorithm;
           parameterNumber++)
-        if (parameters[parameterNumber].unit == 1)
+        if (parameters[parameterNumber].unit == 1 &&
+            visibleParameters.contains(parameterNumber))
           await disting.requestParameterEnumStrings(
                   algorithmIndex, parameterNumber) ??
               ParameterEnumStrings.filler()
@@ -241,8 +251,10 @@ class DistingCubit extends Cubit<DistingState> {
       for (int parameterNumber = 0;
           parameterNumber < numParametersInAlgorithm;
           parameterNumber++)
-        await disting.requestMappings(algorithmIndex, parameterNumber) ??
-            Mapping.filler()
+        visibleParameters.contains(parameterNumber)
+            ? await disting.requestMappings(algorithmIndex, parameterNumber) ??
+                Mapping.filler()
+            : Mapping.filler()
     ];
     var routing = await disting.requestRoutingInformation(algorithmIndex) ??
         RoutingInfo.filler();
@@ -250,15 +262,14 @@ class DistingCubit extends Cubit<DistingState> {
       for (int parameterNumber = 0;
           parameterNumber < numParametersInAlgorithm;
           parameterNumber++)
-        if ([13, 14, 17].contains(parameters[parameterNumber].unit))
+        if ([13, 14, 17].contains(parameters[parameterNumber].unit) &&
+            visibleParameters.contains(parameterNumber))
           await disting.requestParameterValueString(
                   algorithmIndex, parameterNumber) ??
               ParameterValueString.filler()
         else
           ParameterValueString.filler()
     ];
-    var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
-        ParameterPages.filler();
     return Slot(
       algorithm: (await disting.requestAlgorithmGuid(algorithmIndex))!,
       pages: parameterPages,
@@ -768,7 +779,7 @@ class DistingCubit extends Cubit<DistingState> {
           List<MappedParameter>.empty(growable: true),
           (acc, slot) {
             acc.addAll(slot.mappings
-                .where((mapping) => mapping.packedMappingData.isMapped())
+                .where((mapping) => mapping.parameterNumber != -1 && mapping.packedMappingData.isMapped())
                 .map(
               (mapping) {
                 var parameterNumber = mapping.parameterNumber;

@@ -15,10 +15,17 @@ class PerformanceScreen extends StatefulWidget {
 class _PerformanceScreenState extends State<PerformanceScreen> {
   // Local flag to track whether polling is enabled.
   bool _pollingEnabled = false;
+  DistingCubit? _cubit;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cubit = context.read<DistingCubit>();
+  }
 
   @override
   void dispose() {
-    context.read<DistingCubit>().stopPollingMappedParameters();
+    _cubit?.stopPollingMappedParameters();
     super.dispose();
   }
 

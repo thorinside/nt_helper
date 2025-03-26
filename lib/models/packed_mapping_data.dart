@@ -76,7 +76,7 @@ class PackedMappingData {
 
   // Decode from packed Uint8List
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
-    if (version < 1 || version > 2) throw Exception("unknown_mapping_data_version");
+    if (version < 1 || version > 3) throw Exception("unknown_mapping_data_version");
 
     int offset = 0;
 
@@ -90,9 +90,12 @@ class PackedMappingData {
     offset += 3;
 
     // --- Decode MIDI Mapping ---
-    final midiCC = data[offset++];
+    var midiCC = data[offset++];
     final midiFlags = data[offset++];
     final midiFlags2 = version >= 2 ? data[offset++] : 0;
+    if (midiFlags & 4 != 0) {
+      midiCC = 128;
+    }
     final midiChannel = (midiFlags >> 3) & 0xF;
     final isMidiEnabled = (midiFlags & 1) != 0;
     final isMidiSymmetric = (midiFlags & 2) != 0;
@@ -103,7 +106,10 @@ class PackedMappingData {
     offset += 3;
 
     // --- Decode I2C Mapping ---
-    final i2cCC = data[offset++];
+    var i2cCC = data[offset++];
+    if (version >= 3) {
+      i2cCC = i2cCC | (data[offset++] & 1) << 7;
+    }
     final i2cFlags = data[offset++];
     final isI2cEnabled = (i2cFlags & 1) != 0;
     final isI2cSymmetric = (i2cFlags & 2) != 0;
@@ -191,6 +197,7 @@ class PackedMappingData {
     // Build the packed payload (starting after the version byte)
     final payload = [
       adjustedCC & 0x7F, // I2C control code
+      if (version >= 3) (adjustedCC >> 7) & 0x7F,
       flags & 0x7F, // Flags
       ...DistingNT.encode16(min), // Encode 'min' as 7-bit chunks
       ...DistingNT.encode16(max), // Encode 'max' as 7-bit chunks
