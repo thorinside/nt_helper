@@ -108,6 +108,9 @@ class DistingPage extends StatelessWidget {
                 onSettingsPressed: () async {
                   await context.showSettingsDialog();
                 },
+                onDemoPressed: () async {
+                  context.read<DistingCubit>().onDemo();
+                },
               );
             } else if (state is DistingStateConnected) {
               return Center(
@@ -154,14 +157,16 @@ class _DeviceSelectionView extends StatefulWidget {
   final List<MidiDevice> outputDevices;
   final Function(MidiDevice, MidiDevice, int) onDeviceSelected;
   final Function() onRefresh;
-  final Function() onSettingsPressed; // Added callback for settings
+  final Function() onSettingsPressed;
+  final Function() onDemoPressed;
 
   const _DeviceSelectionView({
     required this.inputDevices,
     required this.outputDevices,
     required this.onDeviceSelected,
     required this.onRefresh,
-    required this.onSettingsPressed, // Added required parameter
+    required this.onSettingsPressed,
+    required this.onDemoPressed,
   });
 
   @override
@@ -310,6 +315,17 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ),
                 ],
               ),
+              Column(
+                children: [
+                  Text("See what this app is about, if you don't have a Disting NT"),
+                  OutlinedButton(
+                    onPressed: () {
+                      widget.onDemoPressed();
+                    },
+                    child: const Text("Demo")
+                  ),
+                ]
+              )
             ],
           ),
         ),

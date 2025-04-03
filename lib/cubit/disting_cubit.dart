@@ -74,6 +74,21 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  Future<void> onDemo() async {
+    // Build a small demo state and emit it, mostly so that
+    // Apple can review the app and see that it isn't doing anything
+    // nefarious.
+
+    emit(DistingState.synchronized(
+      disting: connectedState.disting,
+      distingVersion: "1.17",
+      presetName: "Demo Preset",
+      algorithms: algorithms,
+      slots: slots,
+      unitStrings: unitStrings,
+    ));
+  }
+
   Future<void> loadDevices() async {
     try {
       // Transition to a loading state if needed

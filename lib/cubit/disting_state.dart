@@ -30,17 +30,20 @@ class MappedParameter with _$MappedParameter {
 class DistingState with _$DistingState {
   const factory DistingState.initial({
     Uint8List? screenshot,
+    @Default(false) bool demo,
   }) = DistingStateInitial;
 
   const factory DistingState.selectDevice({
     required List<MidiDevice> inputDevices,
     required List<MidiDevice> outputDevices,
     Uint8List? screenshot,
+    @Default(false) bool demo,
   }) = DistingStateSelectDevice;
 
   const factory DistingState.connected({
     required DistingMidiManager disting,
     Uint8List? screenshot,
+    @Default(false) bool demo,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({
@@ -52,5 +55,6 @@ class DistingState with _$DistingState {
     required List<String> unitStrings,
     Uint8List? screenshot,
     @Default(false) bool loading,
+    @Default(false) bool demo,
   }) = DistingStateSynchronized;
 }
