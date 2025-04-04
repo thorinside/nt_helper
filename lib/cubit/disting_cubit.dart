@@ -7,6 +7,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/extensions.dart';
@@ -75,17 +76,146 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> onDemo() async {
-    // Build a small demo state and emit it, mostly so that
-    // Apple can review the app and see that it isn't doing anything
-    // nefarious.
+    // Define demo algorithms
+    final demoAlgorithms = [
+      AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: "clk ",
+          name: "Clock",
+          numSpecifications: 0,
+          specifications: []),
+      AlgorithmInfo(
+          algorithmIndex: 1,
+          guid: "seq ",
+          name: "Step Sequencer",
+          numSpecifications: 0,
+          specifications: []),
+      AlgorithmInfo(
+          algorithmIndex: 2,
+          guid: "sine",
+          name: "Sine Oscillator",
+          numSpecifications: 0,
+          specifications: []),
+    ];
+
+    // Define demo slots
+    final clockSlot = Slot(
+      algorithm: Algorithm(algorithmIndex: 0, guid: "clk ", name: "Clock"),
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(algorithmIndex: 0, pages: [
+        ParameterPage(name: "Main", parameters: [0])
+      ]),
+      parameters: [
+        ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            name: "BPM",
+            min: 20,
+            max: 300,
+            defaultValue: 120,
+            unit: 0,
+            powerOfTen: 0)
+      ],
+      values: [
+        ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 120)
+      ],
+      enums: [ParameterEnumStrings.filler()],
+      mappings: [Mapping.filler()],
+      valueStrings: [ParameterValueString.filler()],
+    );
+
+    final sequencerSlot = Slot(
+      algorithm:
+          Algorithm(algorithmIndex: 1, guid: "seq ", name: "Step Sequencer"),
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(algorithmIndex: 1, pages: [
+        ParameterPage(name: "Main", parameters: [0, 1])
+      ]),
+      parameters: [
+        ParameterInfo(
+            algorithmIndex: 1,
+            parameterNumber: 0,
+            name: "Steps",
+            min: 1,
+            max: 16,
+            defaultValue: 8,
+            unit: 0,
+            powerOfTen: 0),
+        ParameterInfo(
+            algorithmIndex: 1,
+            parameterNumber: 1,
+            name: "Gate Length",
+            min: 0,
+            max: 100,
+            defaultValue: 50,
+            unit: 1,
+            powerOfTen: 0) // Unit 1 for %
+      ],
+      values: [
+        ParameterValue(algorithmIndex: 1, parameterNumber: 0, value: 8),
+        ParameterValue(algorithmIndex: 1, parameterNumber: 1, value: 50)
+      ],
+      enums: [
+        ParameterEnumStrings.filler(),
+        ParameterEnumStrings.filler()
+      ], // Match param count
+      mappings: [Mapping.filler(), Mapping.filler()], // Match param count
+      valueStrings: [
+        ParameterValueString.filler(),
+        ParameterValueString.filler()
+      ], // Match param count
+    );
+
+    final sineSlot = Slot(
+      algorithm:
+          Algorithm(algorithmIndex: 2, guid: "sine", name: "Sine Oscillator"),
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(algorithmIndex: 2, pages: [
+        ParameterPage(name: "Main", parameters: [0, 1])
+      ]),
+      parameters: [
+        ParameterInfo(
+            algorithmIndex: 2,
+            parameterNumber: 0,
+            name: "Frequency",
+            min: 0,
+            max: 8000,
+            defaultValue: 440,
+            unit: 2,
+            powerOfTen: 0), // Unit 2 for Hz
+        ParameterInfo(
+            algorithmIndex: 2,
+            parameterNumber: 1,
+            name: "Level",
+            min: -96,
+            max: 0,
+            defaultValue: -6,
+            unit: 3,
+            powerOfTen: 0) // Unit 3 for dB
+      ],
+      values: [
+        ParameterValue(algorithmIndex: 2, parameterNumber: 0, value: 440),
+        ParameterValue(algorithmIndex: 2, parameterNumber: 1, value: -6)
+      ],
+      enums: [
+        ParameterEnumStrings.filler(),
+        ParameterEnumStrings.filler()
+      ], // Match param count
+      mappings: [Mapping.filler(), Mapping.filler()], // Match param count
+      valueStrings: [
+        ParameterValueString.filler(),
+        ParameterValueString.filler()
+      ], // Match param count
+    );
 
     emit(DistingState.synchronized(
-      disting: connectedState.disting,
-      distingVersion: "1.17",
-      presetName: "Demo Preset",
-      algorithms: algorithms,
-      slots: slots,
-      unitStrings: unitStrings,
+      disting: MockDistingMidiManager(), // Use Mock manager
+      distingVersion: "Demo v1.0",
+      presetName: "Screech",
+      algorithms: demoAlgorithms,
+      slots: [clockSlot, sequencerSlot, sineSlot],
+      unitStrings: ["", "%", "Hz", "dB"], // Example units matching above
+      demo: true,
     ));
   }
 
@@ -217,7 +347,7 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<List<Slot>> fetchSlots(
-      int numAlgorithmsInPreset, DistingMidiManager disting) async {
+      int numAlgorithmsInPreset, IDistingMidiManager disting) async {
     final slotsFutures =
         List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
       return await fetchSlot(disting, algorithmIndex);
@@ -228,7 +358,8 @@ class DistingCubit extends Cubit<DistingState> {
     return slots;
   }
 
-  Future<Slot> fetchSlot(DistingMidiManager disting, int algorithmIndex) async {
+  Future<Slot> fetchSlot(
+      IDistingMidiManager disting, int algorithmIndex) async {
     int numParametersInAlgorithm =
         (await disting.requestNumberOfParameters(algorithmIndex))!
             .numParameters;
@@ -297,7 +428,7 @@ class DistingCubit extends Cubit<DistingState> {
     );
   }
 
-  DistingMidiManager requireDisting() {
+  IDistingMidiManager requireDisting() {
     if (state is DistingStateConnected) {
       return (state as DistingStateConnected).disting;
     }
@@ -307,7 +438,7 @@ class DistingCubit extends Cubit<DistingState> {
     throw Exception("Device is not connected.");
   }
 
-  DistingMidiManager? disting() {
+  IDistingMidiManager? disting() {
     if (state is DistingStateConnected) {
       return (state as DistingStateConnected).disting;
     }
@@ -483,7 +614,7 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> _waitForSlotCountChange(
-      DistingMidiManager disting, int currentNumAlgorithms) async {
+      IDistingMidiManager disting, int currentNumAlgorithms) async {
     // Wait until number of algorithms in preset changes
     var startTime = DateTime.timestamp();
     while ((await disting.requestNumAlgorithmsInPreset()) ==
@@ -634,7 +765,7 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> _refreshPreset(
-    DistingMidiManager disting,
+    IDistingMidiManager disting,
     DistingStateSynchronized state, {
     Duration delay = const Duration(milliseconds: 250),
   }) async {
@@ -794,7 +925,9 @@ class DistingCubit extends Cubit<DistingState> {
           List<MappedParameter>.empty(growable: true),
           (acc, slot) {
             acc.addAll(slot.mappings
-                .where((mapping) => mapping.parameterNumber != -1 && mapping.packedMappingData.isMapped())
+                .where((mapping) =>
+                    mapping.parameterNumber != -1 &&
+                    mapping.packedMappingData.isMapped())
                 .map(
               (mapping) {
                 var parameterNumber = mapping.parameterNumber;

@@ -41,13 +41,13 @@ class DistingState with _$DistingState {
   }) = DistingStateSelectDevice;
 
   const factory DistingState.connected({
-    required DistingMidiManager disting,
+    required IDistingMidiManager disting,
     Uint8List? screenshot,
     @Default(false) bool demo,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({
-    required DistingMidiManager disting,
+    required IDistingMidiManager disting,
     required String distingVersion,
     required String presetName,
     required List<AlgorithmInfo> algorithms,
