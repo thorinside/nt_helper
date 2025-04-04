@@ -92,31 +92,22 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       // Ensure your app's theme is set to Material 3:
       // MaterialApp(theme: ThemeData(useMaterial3: true), ...)
       title: Text(_isManagingHistory ? 'Manage History' : 'Load Preset'),
-      content: SizedBox(
-        // Give the content a fixed width, especially for the management list
-        width: 350,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Conditional View
-            _isManagingHistory
-                ? _buildManagementView()
-                : _buildAutocompleteView(),
-            SizedBox(height: 16), // Spacing
-            // Toggle Button
-            TextButton(
-              onPressed: () => setState(() {
-                _isManagingHistory = !_isManagingHistory;
-              }),
-              child: Text(_isManagingHistory ? 'Done' : 'Manage History'),
-            ),
-          ],
+      content: SingleChildScrollView(
+        // Use scrollable content to prevent overflow if management list is long
+        child: SizedBox(
+          width: 325,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _isManagingHistory
+                  ? _buildManagementView()
+                  : _buildAutocompleteView(),
+            ],
+          ),
         ),
       ),
-      actions: _isManagingHistory
-          ? [_buildCloseButton()]
-          : _buildLoadActions(), // Only show Close when managing
+      actions: _isManagingHistory ? [_buildDoneButton()] : _buildLoadActions(),
     );
   }
 
@@ -141,7 +132,17 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               _controller.text = value;
             },
             decoration: InputDecoration(
-                border: OutlineInputBorder(), labelText: 'Preset Path'),
+              border: OutlineInputBorder(),
+              labelText: 'Preset Path',
+              // Add button to enter management mode
+              suffixIcon: IconButton(
+                icon: Icon(Icons.edit_note_rounded),
+                tooltip: 'Manage History',
+                onPressed: () => setState(() {
+                  _isManagingHistory = true;
+                }),
+              ),
+            ),
             controller: textEditingController, // Use Autocomplete's controller
             focusNode: focusNode,
           ),
@@ -201,23 +202,25 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       height: 300, // Adjust height as needed
       child: _history.isEmpty
           ? Center(child: Text('No preset history.'))
-          : ListView.builder(
-              shrinkWrap: true,
-              itemCount: _history.length,
-              itemBuilder: (context, index) {
-                final presetName = _history[index];
-                return ListTile(
-                  dense: true,
-                  title: Text(presetName, overflow: TextOverflow.ellipsis),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete_outline, size: 20),
-                    tooltip: 'Remove from history',
-                    onPressed: () {
-                      _removeNameFromHistory(presetName);
-                    },
-                  ),
-                );
-              },
+          : Scrollbar(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _history.length,
+                itemBuilder: (context, index) {
+                  final presetName = _history[index];
+                  return ListTile(
+                    dense: true,
+                    title: Text(presetName, overflow: TextOverflow.ellipsis),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete_outline, size: 20),
+                      tooltip: 'Remove from history',
+                      onPressed: () {
+                        _removeNameFromHistory(presetName);
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
@@ -247,13 +250,13 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     ];
   }
 
-  // Close button for management view
-  Widget _buildCloseButton() {
+  // Renamed from _buildCloseButton
+  Widget _buildDoneButton() {
     return TextButton(
       onPressed: () => setState(() {
         _isManagingHistory = false;
       }),
-      child: const Text('CLOSE'),
+      child: const Text('Done'),
     );
   }
 }
