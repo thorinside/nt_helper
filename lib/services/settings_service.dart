@@ -101,12 +101,15 @@ class _SettingsDialogState extends State<SettingsDialog> {
   Future<void> _saveSettings() async {
     if (_formKey.currentState!.validate()) {
       final settings = SettingsService();
-      await settings.setRequestTimeout(int.parse(_requestTimeoutController.text));
-      await settings.setInterMessageDelay(int.parse(_interMessageDelayController.text));
+      await settings
+          .setRequestTimeout(int.parse(_requestTimeoutController.text));
+      await settings
+          .setInterMessageDelay(int.parse(_interMessageDelayController.text));
       await settings.setHapticsEnabled(_hapticsEnabled);
 
       if (mounted) {
-        Navigator.of(context).pop(true); // Return true to indicate settings were saved
+        Navigator.of(context)
+            .pop(true); // Return true to indicate settings were saved
       }
     }
   }
@@ -157,7 +160,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           controller: _requestTimeoutController,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             suffixText: 'ms',
                           ),
                           keyboardType: TextInputType.number,
@@ -187,7 +191,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           controller: _interMessageDelayController,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             suffixText: 'ms',
                           ),
                           keyboardType: TextInputType.number,
@@ -211,8 +216,12 @@ class _SettingsDialogState extends State<SettingsDialog> {
 
                       // Haptics enabled setting
                       SwitchListTile(
-                        title: Text('Enable Haptics', style: Theme.of(context).textTheme.titleMedium,),
-                        subtitle: const Text('Provide tactile feedback when interacting with the app'),
+                        title: Text(
+                          'Enable Haptics',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        subtitle: const Text(
+                            'Provide tactile feedback when interacting with the app'),
                         value: _hapticsEnabled,
                         onChanged: (value) {
                           setState(() {
@@ -234,7 +243,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).pop(false); // Return false to indicate cancel
+                      Navigator.of(context)
+                          .pop(false); // Return false to indicate cancel
                     },
                     child: const Text('Cancel'),
                   ),
@@ -280,8 +290,8 @@ class _SettingSection extends StatelessWidget {
             child: Text(
               subtitle!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           )
         else
@@ -406,9 +416,9 @@ class _SettingListTile extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
           ),
         ],
       ),

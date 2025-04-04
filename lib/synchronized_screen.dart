@@ -212,17 +212,15 @@ class SynchronizedScreen extends StatelessWidget {
                 },
         );
       }),
-      Builder(
-        builder: (context) {
-          return IconButton(
-            icon: Icon(Icons.alarm_on_rounded),
-            tooltip: "Wake",
-            onPressed: () {
-              context.read<DistingCubit>().wakeDevice();
-            },
-          );
-        }
-      ),
+      Builder(builder: (context) {
+        return IconButton(
+          icon: Icon(Icons.alarm_on_rounded),
+          tooltip: "Wake",
+          onPressed: () {
+            context.read<DistingCubit>().wakeDevice();
+          },
+        );
+      }),
       Builder(builder: (context) {
         return IconButton(
           icon: const Icon(Icons.arrow_upward_rounded),

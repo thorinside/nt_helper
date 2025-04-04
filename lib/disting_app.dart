@@ -188,12 +188,12 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
     selectedInputDevice = widget.inputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-    )
+        )
         .firstOrNull;
     selectedOutputDevice = widget.outputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-    )
+        )
         .firstOrNull;
   }
 
@@ -304,28 +304,26 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ),
                   ElevatedButton(
                     onPressed: (selectedInputDevice != null &&
-                        selectedOutputDevice != null &&
-                        selectedSysExId != null)
+                            selectedOutputDevice != null &&
+                            selectedSysExId != null)
                         ? () {
-                      widget.onDeviceSelected(selectedInputDevice!,
-                          selectedOutputDevice!, selectedSysExId!);
-                    }
+                            widget.onDeviceSelected(selectedInputDevice!,
+                                selectedOutputDevice!, selectedSysExId!);
+                          }
                         : null,
                     child: const Text("Connect"),
                   ),
                 ],
               ),
-              Column(
-                children: [
-                  Text("See what this app is about, if you don't have a Disting NT"),
-                  OutlinedButton(
+              Column(children: [
+                Text(
+                    "See what this app is about, if you don't have a Disting NT"),
+                OutlinedButton(
                     onPressed: () {
                       widget.onDemoPressed();
                     },
-                    child: const Text("Demo")
-                  ),
-                ]
-              )
+                    child: const Text("Demo")),
+              ])
             ],
           ),
         ),
