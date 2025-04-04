@@ -315,15 +315,22 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ),
                 ],
               ),
-              Column(children: [
-                Text(
-                    "See what this app is about, if you don't have a Disting NT"),
-                OutlinedButton(
-                    onPressed: () {
-                      widget.onDemoPressed();
-                    },
-                    child: const Text("Demo")),
-              ])
+              if (selectedInputDevice == null ||
+                  selectedOutputDevice == null ||
+                  selectedSysExId == null)
+                Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text(
+                          "See what this app is about, \nif you don't have a Disting NT"),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                          onPressed: () {
+                            widget.onDemoPressed();
+                          },
+                          child: const Text("Demo")),
+                    ])
             ],
           ),
         ),
