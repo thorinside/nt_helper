@@ -5,6 +5,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/db/database.dart';
 
 class DistingApp extends StatelessWidget {
   const DistingApp({super.key});
@@ -32,7 +33,7 @@ class DistingApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       // Follow system settings
       home: BlocProvider(
-        create: (_) {
+        create: (context) {
           final cubit = DistingCubit();
           cubit.initialize(); // Load settings and auto-connect if possible
           return cubit;

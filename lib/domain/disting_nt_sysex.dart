@@ -466,7 +466,7 @@ class DistingNT {
   });
 
   /// Helper to create the standard SysEx header for a disting NT message,
-  /// given the 'SysEx ID' (the module’s own ID in its settings).
+  /// given the 'SysEx ID' (the module's own ID in its settings).
   static List<int> _buildHeader(int distingSysExId) {
     return [
       kSysExStart, ...kExpertSleepersManufacturerId, // 00 21 27
@@ -964,7 +964,7 @@ class DistingNT {
     offset = nameStr.nextOffset;
     final algorithmName = nameStr.value;
 
-    // 7) Decode each specification’s display name (also null-terminated).
+    // 7) Decode each specification's display name (also null-terminated).
     final specNames = List.generate(numSpecifications, (_) {
       final str = decodeNullTerminatedAscii(data, offset);
       offset = str.nextOffset;

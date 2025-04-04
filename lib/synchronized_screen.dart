@@ -23,6 +23,7 @@ import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -374,6 +375,20 @@ class SynchronizedScreen extends StatelessWidget {
             child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [Text('Settings'), Icon(Icons.settings)]),
+          ),
+          PopupMenuItem(
+            value: 'sync_metadata',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const MetadataSyncPage()),
+              );
+            },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Sync Metadata'), Icon(Icons.cloud_sync_rounded)],
+            ),
           ),
           PopupMenuItem(
             value: 'about',
