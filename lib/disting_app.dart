@@ -108,6 +108,9 @@ class DistingPage extends StatelessWidget {
                 onSettingsPressed: () async {
                   await context.showSettingsDialog();
                 },
+                onDemoPressed: () async {
+                  context.read<DistingCubit>().onDemo();
+                },
               );
             } else if (state is DistingStateConnected) {
               return Center(
@@ -154,14 +157,16 @@ class _DeviceSelectionView extends StatefulWidget {
   final List<MidiDevice> outputDevices;
   final Function(MidiDevice, MidiDevice, int) onDeviceSelected;
   final Function() onRefresh;
-  final Function() onSettingsPressed; // Added callback for settings
+  final Function() onSettingsPressed;
+  final Function() onDemoPressed;
 
   const _DeviceSelectionView({
     required this.inputDevices,
     required this.outputDevices,
     required this.onDeviceSelected,
     required this.onRefresh,
-    required this.onSettingsPressed, // Added required parameter
+    required this.onSettingsPressed,
+    required this.onDemoPressed,
   });
 
   @override
@@ -183,12 +188,12 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
     selectedInputDevice = widget.inputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-    )
+        )
         .firstOrNull;
     selectedOutputDevice = widget.outputDevices
         .where(
           (element) => element.name.toLowerCase().contains('disting'),
-    )
+        )
         .firstOrNull;
   }
 
@@ -299,17 +304,33 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ),
                   ElevatedButton(
                     onPressed: (selectedInputDevice != null &&
-                        selectedOutputDevice != null &&
-                        selectedSysExId != null)
+                            selectedOutputDevice != null &&
+                            selectedSysExId != null)
                         ? () {
-                      widget.onDeviceSelected(selectedInputDevice!,
-                          selectedOutputDevice!, selectedSysExId!);
-                    }
+                            widget.onDeviceSelected(selectedInputDevice!,
+                                selectedOutputDevice!, selectedSysExId!);
+                          }
                         : null,
                     child: const Text("Connect"),
                   ),
                 ],
               ),
+              if (selectedInputDevice == null ||
+                  selectedOutputDevice == null ||
+                  selectedSysExId == null)
+                Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text(
+                          "See what this app is about, \nif you don't have a Disting NT"),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                          onPressed: () {
+                            widget.onDemoPressed();
+                          },
+                          child: const Text("Demo")),
+                    ])
             ],
           ),
         ),

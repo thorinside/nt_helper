@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data'; // Added for Uint8List
 
 import 'package:async/async.dart';
 import 'package:bloc/bloc.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/extensions.dart';
@@ -15,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 part 'disting_cubit.freezed.dart';
 part 'disting_state.dart';
 
-// A helper class to track each parameter’s polling state.
+// A helper class to track each parameter's polling state.
 class _PollingTask {
   bool active = true;
   int noChangeCount = 0;
@@ -72,6 +74,468 @@ class DistingCubit extends Cubit<DistingState> {
       // Load devices if no saved settings are found
       loadDevices();
     }
+  }
+
+  Future<void> onDemo() async {
+    // --- Define Standard I/O Enum Values ---
+    final List<String> ioEnumValues = [
+      ...List.generate(12, (i) => "Input ${i + 1}"),
+      ...List.generate(8, (i) => "Output ${i + 1}"),
+      ...List.generate(8, (i) => "Aux ${i + 1}"),
+    ];
+    const int ioEnumMax = 27; // 12 + 8 + 8 - 1
+
+    // --- Define Demo Algorithms ---
+    final List<AlgorithmInfo> demoAlgorithms = <AlgorithmInfo>[
+      AlgorithmInfo(
+          algorithmIndex: 0,
+          guid: "clk ",
+          name: "Clock",
+          numSpecifications: 0,
+          specifications: []),
+      AlgorithmInfo(
+          algorithmIndex: 1,
+          guid: "seq ",
+          name: "Step Sequencer",
+          numSpecifications: 0,
+          specifications: []),
+      AlgorithmInfo(
+          algorithmIndex: 2,
+          guid: "sine",
+          name: "Sine Oscillator",
+          numSpecifications: 0,
+          specifications: []),
+    ];
+
+    // --- Define Demo Slot 0: Clock ---
+    final List<ParameterInfo> clockParams = <ParameterInfo>[
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 0,
+          name: "BPM",
+          min: 20,
+          max: 300,
+          defaultValue: 120,
+          unit: 0,
+          powerOfTen: 0),
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 1,
+          name: "Multiplier",
+          min: 0,
+          max: 4,
+          defaultValue: 2,
+          unit: 1,
+          powerOfTen: 0), // Enum unit
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 2,
+          name: "Swing",
+          min: 0,
+          max: 100,
+          defaultValue: 50,
+          unit: 1,
+          powerOfTen: 0), // % unit
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 3,
+          name: "Clock In",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Input 1
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 4,
+          name: "Reset In",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 1,
+          unit: 1,
+          powerOfTen: 0), // Input 2
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 5,
+          name: "Clock Out",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 12,
+          unit: 1,
+          powerOfTen: 0), // Output 1
+      ParameterInfo(
+          algorithmIndex: 0,
+          parameterNumber: 6,
+          name: "Bypass",
+          min: 0,
+          max: 1,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Enum unit
+    ];
+    final List<ParameterValue> clockValues = <ParameterValue>[
+      ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 120),
+      ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 2), // x1
+      ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 50),
+      ParameterValue(
+          algorithmIndex: 0, parameterNumber: 3, value: 0), // Input 1
+      ParameterValue(
+          algorithmIndex: 0, parameterNumber: 4, value: 1), // Input 2
+      ParameterValue(
+          algorithmIndex: 0, parameterNumber: 5, value: 12), // Output 1
+      ParameterValue(algorithmIndex: 0, parameterNumber: 6, value: 0), // Off
+    ];
+    final List<ParameterEnumStrings> clockEnums = <ParameterEnumStrings>[
+      ParameterEnumStrings.filler(), // BPM
+      ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 1,
+          values: ["/4", "/2", "x1", "x2", "x4"]), // Multiplier
+      ParameterEnumStrings.filler(), // Swing
+      ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 3,
+          values: ioEnumValues), // Clock In
+      ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 4,
+          values: ioEnumValues), // Reset In
+      ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 5,
+          values: ioEnumValues), // Clock Out
+      ParameterEnumStrings(
+          algorithmIndex: 0,
+          parameterNumber: 6,
+          values: ["Off", "On"]), // Bypass
+    ];
+    final ParameterPages clockPages = ParameterPages(algorithmIndex: 0, pages: [
+      ParameterPage(name: "Timing", parameters: [0, 1]),
+      ParameterPage(name: "Feel", parameters: [2]),
+      ParameterPage(name: "Routing", parameters: [3, 4, 5]),
+      ParameterPage(name: "Algorithm", parameters: [6]),
+    ]);
+    // Explicitly typed lists for mappings and valueStrings
+    final List<Mapping> clockMappings =
+        List<Mapping>.generate(clockParams.length, (_) => Mapping.filler());
+    final List<ParameterValueString> clockValueStrings =
+        List<ParameterValueString>.generate(
+            clockParams.length, (_) => ParameterValueString.filler());
+    final Slot clockSlot = Slot(
+      algorithm: Algorithm(algorithmIndex: 0, guid: "clk ", name: "Clock"),
+      routing: RoutingInfo.filler(),
+      pages: clockPages,
+      parameters: clockParams,
+      values: clockValues,
+      enums: clockEnums,
+      mappings: clockMappings,
+      valueStrings: clockValueStrings,
+    );
+
+    // --- Define Demo Slot 1: Step Sequencer ---
+    final List<ParameterInfo> seqParams = <ParameterInfo>[
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 0,
+          name: "Steps",
+          min: 1,
+          max: 16,
+          defaultValue: 8,
+          unit: 0,
+          powerOfTen: 0),
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 1,
+          name: "Gate Length",
+          min: 0,
+          max: 100,
+          defaultValue: 50,
+          unit: 1,
+          powerOfTen: 0), // %
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 2,
+          name: "Direction",
+          min: 0,
+          max: 3,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Enum
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 3,
+          name: "Sequence Length",
+          min: 1,
+          max: 16,
+          defaultValue: 8,
+          unit: 0,
+          powerOfTen: 0),
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 4,
+          name: "CV Out",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 12,
+          unit: 1,
+          powerOfTen: 0), // Output 1
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 5,
+          name: "Gate Out",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 13,
+          unit: 1,
+          powerOfTen: 0), // Output 2
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 6,
+          name: "Clock In",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Input 1
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 7,
+          name: "Reset In",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 1,
+          unit: 1,
+          powerOfTen: 0), // Input 2
+      ParameterInfo(
+          algorithmIndex: 1,
+          parameterNumber: 8,
+          name: "Bypass",
+          min: 0,
+          max: 1,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Enum
+    ];
+    final List<ParameterValue> seqValues = <ParameterValue>[
+      ParameterValue(algorithmIndex: 1, parameterNumber: 0, value: 8),
+      ParameterValue(algorithmIndex: 1, parameterNumber: 1, value: 50),
+      ParameterValue(algorithmIndex: 1, parameterNumber: 2, value: 0), // Fwd
+      ParameterValue(algorithmIndex: 1, parameterNumber: 3, value: 8),
+      ParameterValue(
+          algorithmIndex: 1, parameterNumber: 4, value: 12), // Output 1
+      ParameterValue(
+          algorithmIndex: 1, parameterNumber: 5, value: 13), // Output 2
+      ParameterValue(
+          algorithmIndex: 1, parameterNumber: 6, value: 0), // Input 1
+      ParameterValue(
+          algorithmIndex: 1, parameterNumber: 7, value: 1), // Input 2
+      ParameterValue(algorithmIndex: 1, parameterNumber: 8, value: 0), // Off
+    ];
+    final List<ParameterEnumStrings> seqEnums = <ParameterEnumStrings>[
+      ParameterEnumStrings.filler(), // Steps
+      ParameterEnumStrings.filler(), // Gate Length
+      ParameterEnumStrings(
+          algorithmIndex: 1,
+          parameterNumber: 2,
+          values: ["Fwd", "Rev", "Png", "Rnd"]), // Direction
+      ParameterEnumStrings.filler(), // Sequence Length
+      ParameterEnumStrings(
+          algorithmIndex: 1,
+          parameterNumber: 4,
+          values: ioEnumValues), // CV Out
+      ParameterEnumStrings(
+          algorithmIndex: 1,
+          parameterNumber: 5,
+          values: ioEnumValues), // Gate Out
+      ParameterEnumStrings(
+          algorithmIndex: 1,
+          parameterNumber: 6,
+          values: ioEnumValues), // Clock In
+      ParameterEnumStrings(
+          algorithmIndex: 1,
+          parameterNumber: 7,
+          values: ioEnumValues), // Reset In
+      ParameterEnumStrings(
+          algorithmIndex: 1,
+          parameterNumber: 8,
+          values: ["Off", "On"]), // Bypass
+    ];
+    final ParameterPages seqPages = ParameterPages(algorithmIndex: 1, pages: [
+      ParameterPage(name: "Sequence", parameters: [0, 3, 2]),
+      ParameterPage(name: "Output", parameters: [1, 4, 5]),
+      ParameterPage(name: "Routing", parameters: [6, 7]),
+      ParameterPage(name: "Algorithm", parameters: [8]),
+    ]);
+    // Explicitly typed lists
+    final List<Mapping> seqMappings =
+        List<Mapping>.generate(seqParams.length, (_) => Mapping.filler());
+    final List<ParameterValueString> seqValueStrings =
+        List<ParameterValueString>.generate(
+            seqParams.length, (_) => ParameterValueString.filler());
+    final Slot sequencerSlot = Slot(
+      algorithm:
+          Algorithm(algorithmIndex: 1, guid: "seq ", name: "Step Sequencer"),
+      routing: RoutingInfo.filler(),
+      pages: seqPages,
+      parameters: seqParams,
+      values: seqValues,
+      enums: seqEnums,
+      mappings: seqMappings,
+      valueStrings: seqValueStrings,
+    );
+
+    // --- Define Demo Slot 2: Sine Oscillator ---
+    final List<ParameterInfo> sineParams = <ParameterInfo>[
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 0,
+          name: "Frequency",
+          min: 0,
+          max: 8000,
+          defaultValue: 440,
+          unit: 2,
+          powerOfTen: 0), // Hz unit
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 1,
+          name: "Level",
+          min: -96,
+          max: 0,
+          defaultValue: -6,
+          unit: 3,
+          powerOfTen: 0), // dB unit
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 2,
+          name: "Phase",
+          min: 0,
+          max: 360,
+          defaultValue: 0,
+          unit: 4,
+          powerOfTen: 0), // Degree unit
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 3,
+          name: "Octave",
+          min: -2,
+          max: 2,
+          defaultValue: 0,
+          unit: 0,
+          powerOfTen: 0),
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 4,
+          name: "CV In (V/Oct)",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Input 1
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 5,
+          name: "Gate In",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 1,
+          unit: 1,
+          powerOfTen: 0), // Input 2
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 6,
+          name: "Audio Out L",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 12,
+          unit: 1,
+          powerOfTen: 0), // Output 1
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 7,
+          name: "Audio Out R",
+          min: 0,
+          max: ioEnumMax,
+          defaultValue: 13,
+          unit: 1,
+          powerOfTen: 0), // Output 2
+      ParameterInfo(
+          algorithmIndex: 2,
+          parameterNumber: 8,
+          name: "Bypass",
+          min: 0,
+          max: 1,
+          defaultValue: 0,
+          unit: 1,
+          powerOfTen: 0), // Enum unit
+    ];
+    final List<ParameterValue> sineValues = <ParameterValue>[
+      ParameterValue(algorithmIndex: 2, parameterNumber: 0, value: 440),
+      ParameterValue(algorithmIndex: 2, parameterNumber: 1, value: -6),
+      ParameterValue(algorithmIndex: 2, parameterNumber: 2, value: 0),
+      ParameterValue(algorithmIndex: 2, parameterNumber: 3, value: 0),
+      ParameterValue(
+          algorithmIndex: 2, parameterNumber: 4, value: 0), // Input 1
+      ParameterValue(
+          algorithmIndex: 2, parameterNumber: 5, value: 1), // Input 2
+      ParameterValue(
+          algorithmIndex: 2, parameterNumber: 6, value: 12), // Output 1
+      ParameterValue(
+          algorithmIndex: 2, parameterNumber: 7, value: 13), // Output 2
+      ParameterValue(algorithmIndex: 2, parameterNumber: 8, value: 0), // Off
+    ];
+    final List<ParameterEnumStrings> sineEnums =
+        List<ParameterEnumStrings>.generate(sineParams.length, (i) {
+      if (i >= 4 && i <= 7)
+        return ParameterEnumStrings(
+            algorithmIndex: 2, parameterNumber: i, values: ioEnumValues);
+      if (i == 8)
+        return ParameterEnumStrings(
+            algorithmIndex: 2,
+            parameterNumber: 8,
+            values: ["Off", "On"]); // Bypass
+      return ParameterEnumStrings.filler();
+    });
+    final ParameterPages sinePages = ParameterPages(algorithmIndex: 2, pages: [
+      ParameterPage(name: "Pitch", parameters: [0, 3]),
+      ParameterPage(name: "Shape", parameters: [1, 2]),
+      ParameterPage(name: "Routing", parameters: [4, 5, 6, 7]),
+      ParameterPage(name: "Algorithm", parameters: [8]),
+    ]);
+    // Explicitly typed lists
+    final List<Mapping> sineMappings =
+        List<Mapping>.generate(sineParams.length, (_) => Mapping.filler());
+    final List<ParameterValueString> sineValueStrings =
+        List<ParameterValueString>.generate(
+            sineParams.length, (_) => ParameterValueString.filler());
+    final Slot sineSlot = Slot(
+      algorithm:
+          Algorithm(algorithmIndex: 2, guid: "sine", name: "Sine Oscillator"),
+      routing: RoutingInfo.filler(),
+      pages: sinePages,
+      parameters: sineParams,
+      values: sineValues,
+      enums: sineEnums,
+      mappings: sineMappings,
+      valueStrings: sineValueStrings,
+    );
+
+    // --- Emit the State ---
+    emit(DistingState.synchronized(
+      disting: MockDistingMidiManager(),
+      distingVersion: "Demo v1.0",
+      presetName: "Screech",
+      algorithms: demoAlgorithms,
+      slots: [clockSlot, sequencerSlot, sineSlot],
+      unitStrings: [
+        "",
+        "%",
+        "Hz",
+        "dB",
+        "°",
+        "V/Oct"
+      ], // Keep existing units, enum unit (1) is handled internally
+      demo: true,
+    ));
   }
 
   Future<void> loadDevices() async {
@@ -202,7 +666,7 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<List<Slot>> fetchSlots(
-      int numAlgorithmsInPreset, DistingMidiManager disting) async {
+      int numAlgorithmsInPreset, IDistingMidiManager disting) async {
     final slotsFutures =
         List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
       return await fetchSlot(disting, algorithmIndex);
@@ -213,7 +677,8 @@ class DistingCubit extends Cubit<DistingState> {
     return slots;
   }
 
-  Future<Slot> fetchSlot(DistingMidiManager disting, int algorithmIndex) async {
+  Future<Slot> fetchSlot(
+      IDistingMidiManager disting, int algorithmIndex) async {
     int numParametersInAlgorithm =
         (await disting.requestNumberOfParameters(algorithmIndex))!
             .numParameters;
@@ -282,7 +747,7 @@ class DistingCubit extends Cubit<DistingState> {
     );
   }
 
-  DistingMidiManager requireDisting() {
+  IDistingMidiManager requireDisting() {
     if (state is DistingStateConnected) {
       return (state as DistingStateConnected).disting;
     }
@@ -292,7 +757,7 @@ class DistingCubit extends Cubit<DistingState> {
     throw Exception("Device is not connected.");
   }
 
-  DistingMidiManager? disting() {
+  IDistingMidiManager? disting() {
     if (state is DistingStateConnected) {
       return (state as DistingStateConnected).disting;
     }
@@ -468,7 +933,7 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> _waitForSlotCountChange(
-      DistingMidiManager disting, int currentNumAlgorithms) async {
+      IDistingMidiManager disting, int currentNumAlgorithms) async {
     // Wait until number of algorithms in preset changes
     var startTime = DateTime.timestamp();
     while ((await disting.requestNumAlgorithmsInPreset()) ==
@@ -619,7 +1084,7 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> _refreshPreset(
-    DistingMidiManager disting,
+    IDistingMidiManager disting,
     DistingStateSynchronized state, {
     Duration delay = const Duration(milliseconds: 250),
   }) async {
@@ -779,7 +1244,9 @@ class DistingCubit extends Cubit<DistingState> {
           List<MappedParameter>.empty(growable: true),
           (acc, slot) {
             acc.addAll(slot.mappings
-                .where((mapping) => mapping.parameterNumber != -1 && mapping.packedMappingData.isMapped())
+                .where((mapping) =>
+                    mapping.parameterNumber != -1 &&
+                    mapping.packedMappingData.isMapped())
                 .map(
               (mapping) {
                 var parameterNumber = mapping.parameterNumber;
@@ -882,7 +1349,7 @@ class DistingCubit extends Cubit<DistingState> {
       await Future.delayed(slowInterval);
     }
 
-    // Continue polling this parameter if it’s still active.
+    // Continue polling this parameter if it's still active.
     if (_pollingTasks.containsKey(key)) {
       _pollIndividualParameter(mapped, key);
     }

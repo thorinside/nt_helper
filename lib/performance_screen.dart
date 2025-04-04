@@ -32,11 +32,14 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perform'),
+      appBar: AppBar(
+        title: const Text('Perform'),
         actions: [
           IconButton(
             icon: Icon(
-              _pollingEnabled ? Icons.pause_circle_filled : Icons.play_circle_fill,
+              _pollingEnabled
+                  ? Icons.pause_circle_filled
+                  : Icons.play_circle_fill,
             ),
             tooltip: _pollingEnabled ? 'Stop polling' : 'Start polling',
             onPressed: () {

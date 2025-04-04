@@ -8,7 +8,51 @@ import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/settings_service.dart';
 
-class DistingMidiManager {
+/// Abstract interface for Disting MIDI communication.
+abstract class IDistingMidiManager {
+  void dispose();
+  Future<int?> requestNumberOfAlgorithms();
+  Future<AlgorithmInfo?> requestAlgorithmInfo(int index);
+  Future<int?> requestNumAlgorithmsInPreset();
+  Future<String?> requestVersionString();
+  Future<String?> requestPresetName();
+  Future<List<String>?> requestUnitStrings();
+  Future<NumParameters?> requestNumberOfParameters(int algorithmIndex);
+  Future<ParameterInfo?> requestParameterInfo(
+      int algorithmIndex, int parameterNumber);
+  Future<ParameterPages?> requestParameterPages(int algorithmIndex);
+  Future<AllParameterValues?> requestAllParameterValues(int algorithmIndex);
+  Future<ParameterEnumStrings?> requestParameterEnumStrings(
+      int algorithmIndex, int parameterNumber);
+  Future<Mapping?> requestMappings(int algorithmIndex, int parameterNumber);
+  Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex);
+  Future<ParameterValueString?> requestParameterValueString(
+      int algorithmIndex, int parameterNumber);
+  Future<ParameterValue?> requestParameterValue(
+      int algorithmIndex, int parameterNumber);
+  Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex);
+  Future<Uint8List?> encodeTakeScreenshot();
+  Future<void> requestWake();
+  Future<void> setParameterValue(
+      int algorithmIndex, int parameterNumber, int value);
+  Future<void> requestAddAlgorithm(
+      AlgorithmInfo algorithm, List<int> specifications);
+  Future<void> requestRemoveAlgorithm(int algorithmIndex);
+  Future<void> requestSetFocus(int algorithmIndex, int parameterNumber);
+  Future<void> requestSetPresetName(String newName);
+  Future<void> requestSavePreset(); // Simplified based on cubit usage
+  Future<void> requestMoveAlgorithmUp(int algorithmIndex);
+  Future<void> requestMoveAlgorithmDown(int algorithmIndex);
+  Future<void> requestNewPreset();
+  Future<void> requestLoadPreset(String name, bool append);
+  Future<void> requestSetMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data);
+  Future<void> requestSendSlotName(int algorithmIndex, String newName);
+  Future<void> requestSetDisplayMode(DisplayMode displayMode);
+}
+
+class DistingMidiManager implements IDistingMidiManager {
+  // Implement interface
   final DistingMessageScheduler _scheduler;
   final int sysExId;
 
@@ -22,10 +66,13 @@ class DistingMidiManager {
           inputDevice: inputDevice,
           outputDevice: outputDevice,
           sysExId: sysExId,
-          defaultTimeout: Duration(milliseconds: SettingsService().requestTimeout),
-          defaultRetryDelay: Duration(milliseconds: SettingsService().interMessageDelay),
+          defaultTimeout:
+              Duration(milliseconds: SettingsService().requestTimeout),
+          defaultRetryDelay:
+              Duration(milliseconds: SettingsService().interMessageDelay),
         );
 
+  @override
   void dispose() {
     _scheduler.dispose();
   }
@@ -48,7 +95,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests the version string
+  @override
   Future<String?> requestVersionString() async {
     final packet = DistingNT.encodeRequestVersionString(sysExId);
     final key = RequestKey(
@@ -63,7 +110,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests the number of algorithms
+  @override
   Future<int?> requestNumberOfAlgorithms() async {
     final packet = DistingNT.encodeRequestNumAlgorithms(sysExId);
     final key = RequestKey(
@@ -78,7 +125,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests the number of algorithms in the preset
+  @override
   Future<int?> requestNumAlgorithmsInPreset() async {
     final packet = DistingNT.encodeNumAlgorithmsInPreset(sysExId);
     final key = RequestKey(
@@ -92,7 +139,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests algorithm information by index
+  @override
   Future<AlgorithmInfo?> requestAlgorithmInfo(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestAlgorithmInfo(sysExId, algorithmIndex);
@@ -108,7 +155,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests the preset name
+  @override
   Future<String?> requestPresetName() async {
     final packet = DistingNT.encodeRequestPresetName(sysExId);
     final key = RequestKey(
@@ -122,7 +169,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests the number of parameters for an algorithm
+  @override
   Future<NumParameters?> requestNumberOfParameters(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestNumParameters(sysExId, algorithmIndex);
@@ -138,7 +185,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests parameter info for a given parameter
+  @override
   Future<ParameterInfo?> requestParameterInfo(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestParameterInfo(
@@ -156,7 +203,7 @@ class DistingMidiManager {
     );
   }
 
-  /// Requests the parameter value for a given parameter
+  @override
   Future<ParameterValue?> requestParameterValue(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestParameterValue(
@@ -174,6 +221,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<List<String>?> requestUnitStrings() async {
     final packet = DistingNT.encodeRequestUnitStrings(sysExId);
     final key = RequestKey(
@@ -187,6 +235,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<ParameterEnumStrings?> requestParameterEnumStrings(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestEnumStrings(
@@ -206,9 +255,9 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<Mapping?> requestMappings(
       int algorithmIndex, int parameterNumber) async {
-
     // Currently can't do parameter numbers > 128
     if (parameterNumber > 127) return null;
 
@@ -229,6 +278,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<ParameterValueString?> requestParameterValueString(
       int algorithmIndex, int parameterNumber) async {
     final packet = DistingNT.encodeRequestParameterValueString(
@@ -247,6 +297,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestAlgorithmGuid(sysExId, algorithmIndex);
@@ -263,6 +314,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<AllParameterValues?> requestAllParameterValues(
       int algorithmIndex) async {
     final packet =
@@ -280,6 +332,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> setParameterValue(
       int algorithmIndex, int parameterNumber, int value) {
     final packet = DistingNT.encodeSetParameterValue(
@@ -295,6 +348,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestWake() {
     final packet = DistingNT.encodeWake(sysExId);
     return _scheduler.sendRequest<void>(
@@ -304,6 +358,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestAddAlgorithm(
       AlgorithmInfo algorithm, List<int> specifications) {
     final packet =
@@ -319,6 +374,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestRemoveAlgorithm(int algorithmIndex) {
     final packet = DistingNT.encodeRemoveAlgorithm(sysExId, algorithmIndex);
     final key = RequestKey(
@@ -332,6 +388,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSetFocus(int algorithmIndex, int parameterNumber) {
     final packet =
         DistingNT.encodeSetFocus(sysExId, algorithmIndex, parameterNumber);
@@ -346,6 +403,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSetPresetName(String newName) {
     final packet = DistingNT.encodeSetPresetName(sysExId, newName);
     final key = RequestKey(
@@ -359,6 +417,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSavePreset() {
     final packet = DistingNT.encodeSavePreset(sysExId, 2);
     final key = RequestKey(
@@ -372,9 +431,9 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestMoveAlgorithmUp(int algorithmIndex) {
-    final packet = DistingNT.encodeMoveAlgorithm(
-        sysExId, algorithmIndex, algorithmIndex - 1);
+    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, 0);
     final key = RequestKey(
       sysExId: sysExId,
     );
@@ -386,9 +445,9 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestMoveAlgorithmDown(int algorithmIndex) {
-    final packet = DistingNT.encodeMoveAlgorithm(
-        sysExId, algorithmIndex, algorithmIndex + 1);
+    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, 1);
     final key = RequestKey(
       sysExId: sysExId,
     );
@@ -400,6 +459,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<Uint8List?> encodeTakeScreenshot() {
     final packet = DistingNT.encodeTakeScreenshot(sysExId);
     final key = RequestKey(
@@ -417,6 +477,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestNewPreset() {
     final packet = DistingNT.encodeNewPreset(sysExId);
     final key = RequestKey(
@@ -430,6 +491,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestLoadPreset(String presetName, bool append) {
     final packet = DistingNT.encodeLoadPreset(sysExId, presetName, append);
 
@@ -441,6 +503,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSetMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) {
     final cvPacket = DistingNT.encodeSetCVMapping(
@@ -470,6 +533,7 @@ class DistingMidiManager {
     ]);
   }
 
+  @override
   Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex) async {
     final packet =
         DistingNT.encodeRequestRoutingInformation(sysExId, algorithmIndex);
@@ -489,12 +553,12 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSendSlotName(int algorithmIndex, String name) async {
     final packet = DistingNT.encodeSendSlotName(sysExId, algorithmIndex, name);
 
     final key = RequestKey(
       sysExId: sysExId,
-      algorithmIndex: algorithmIndex,
     );
     return _scheduler.sendRequest<void>(
       maxRetries: 1,
@@ -505,6 +569,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSetDisplayMode(DisplayMode displayMode) async {
     final packet = DistingNT.encodeSetDisplayMode(sysExId, displayMode);
 
@@ -520,6 +585,7 @@ class DistingMidiManager {
     );
   }
 
+  @override
   Future<ParameterPages?> requestParameterPages(int algorithmIndex) {
     final packet =
         DistingNT.encodeRequestParameterPages(sysExId, algorithmIndex);
@@ -531,7 +597,7 @@ class DistingMidiManager {
     );
     return _scheduler.sendRequest<ParameterPages>(
       maxRetries: 5,
-      timeout: Duration(milliseconds: 30000 ),
+      timeout: Duration(milliseconds: 30000),
       retryDelay: Duration(milliseconds: 250),
       packet,
       key,

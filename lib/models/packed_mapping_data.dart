@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class PackedMappingData {
-
   // Version
   final int version;
 
@@ -76,7 +75,8 @@ class PackedMappingData {
 
   // Decode from packed Uint8List
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
-    if (version < 1 || version > 3) throw Exception("unknown_mapping_data_version");
+    if (version < 1 || version > 3)
+      throw Exception("unknown_mapping_data_version");
 
     int offset = 0;
 
