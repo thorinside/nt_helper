@@ -42,12 +42,16 @@ class Parameters extends Table {
   TextColumn get algorithmGuid => text().references(Algorithms, #guid)();
   IntColumn get parameterNumber => integer()();
   TextColumn get name => text()();
-  IntColumn get minValue => integer()();
-  IntColumn get maxValue => integer()();
-  IntColumn get defaultValue => integer()();
+  IntColumn get minValue => integer().nullable()();
+  IntColumn get maxValue => integer().nullable()();
+  IntColumn get defaultValue => integer().nullable()();
   IntColumn get unitId =>
       integer().nullable().references(Units, #id)(); // FK to Units table
-  IntColumn get powerOfTen => integer()();
+  IntColumn get powerOfTen => integer().nullable()();
+
+  // --- NEW COLUMN ---
+  // Stores the original unit index (0, 1, 2, etc.) from the device protocol
+  IntColumn get rawUnitIndex => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {algorithmGuid, parameterNumber};

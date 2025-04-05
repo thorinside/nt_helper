@@ -339,13 +339,14 @@ class MetadataSyncService {
 
       paramEntries.add(ParameterEntry(
           algorithmGuid: algoInfo.guid,
-          parameterNumber: paramNumKey, // Use the number from info
-          name: baseName, // Store the parsed base name
+          parameterNumber: paramNumKey,
+          name: baseName,
           minValue: paramInfo.min,
           maxValue: paramInfo.max,
           defaultValue: paramInfo.defaultValue,
           unitId: unitId,
-          powerOfTen: paramInfo.powerOfTen));
+          powerOfTen: paramInfo.powerOfTen,
+          rawUnitIndex: paramInfo.unit));
     }
     // Use insertOrIgnore mode via metadataDao.batch
     await metadataDao.batch((batch) {

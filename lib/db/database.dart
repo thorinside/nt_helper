@@ -42,12 +42,43 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1; // Increment if schema changes later
+  int get schemaVersion => 2; // Increment if schema changes later
 
   // Access DAOs (Drift generates getters)
   // MetadataDao get metadataDao => MetadataDao(this); // This getter is generated
   // PresetsDao get presetsDao => PresetsDao(this); // This getter is generated
   // FileSystemDao get fileSystemDao => FileSystemDao(this); // This getter is generated
+
+  // --- MIGRATION LOGIC ---
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (Migrator m) async {
+          await m.createAll();
+          // Add initial data if needed
+          print("Database created from scratch (version 2).");
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          print("Starting database migration from version $from to $to...");
+          // Example: Migrating FROM version 1 TO version 2 (or higher)
+          if (from == 1) {
+            try {
+              print(
+                  "Attempting to add rawUnitIndex column to parameters table...");
+              await m.addColumn(parameters, parameters.rawUnitIndex);
+              print(
+                  "Migration successful: Added rawUnitIndex column to parameters table.");
+            } catch (e) {
+              print("Migration error adding rawUnitIndex column: $e");
+              // Consider re-throwing or handling the error appropriately
+            }
+          }
+          // Add more `if (from == X)` blocks for future migrations
+        },
+      );
+
+  // Define DAO getters
+  // MetadataDao get metadataDao => attachedDatabase.accessor(MetadataDao(this));
+  // ... other DAO getters ...
 }
 
 LazyDatabase _openConnection() {

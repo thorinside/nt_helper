@@ -28,6 +28,33 @@ class _PollingTask {
   _PollingTask();
 }
 
+// Define the standard I/O enum values (similar to onDemo)
+final List<String> _kStandardIoEnumValues = [
+  ...List.generate(12, (i) => "Input ${i + 1}"),
+  ...List.generate(8, (i) => "Output ${i + 1}"),
+  ...List.generate(8, (i) => "Aux ${i + 1}"),
+];
+const int _kStandardIoEnumMax = 27; // 12 + 8 + 8 - 1
+
+// Helper to identify parameters that likely use the standard I/O list
+bool _isIoParameter(ParameterInfo paramInfo) {
+  // Check typical range and name patterns
+  final nameLower = paramInfo.name.toLowerCase();
+  final hasIoKeyword = nameLower.contains("input") ||
+      nameLower.contains("output") ||
+      nameLower.contains("source") ||
+      nameLower.contains("destination") ||
+      nameLower.endsWith(" in") ||
+      nameLower.endsWith(" out");
+
+  // Check if the range matches the standard I/O count
+  final matchesRange =
+      paramInfo.min == 0 && paramInfo.max == _kStandardIoEnumMax;
+
+  // If it matches the range AND has a relevant keyword, likely an I/O param
+  return matchesRange && hasIoKeyword;
+}
+
 class DistingCubit extends Cubit<DistingState> {
   final AppDatabase _database; // Added
   late final MetadataDao _metadataDao; // Added
@@ -728,18 +755,20 @@ class DistingCubit extends Cubit<DistingState> {
 
     var parameterValues =
         (await disting.requestAllParameterValues(algorithmIndex))!.values;
-    var enums = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        if (parameters[parameterNumber].unit == 1 &&
-            visibleParameters.contains(parameterNumber))
-          await disting.requestParameterEnumStrings(
-                  algorithmIndex, parameterNumber) ??
-              ParameterEnumStrings.filler()
-        else
-          ParameterEnumStrings.filler()
-    ];
+    var enums = <ParameterEnumStrings>[];
+    for (int i = 0; i < numParametersInAlgorithm; i++) {
+      ParameterEnumStrings? fetchedEnums;
+      // Only fetch enums if visible on a page (optimization)
+      final isVisible =
+          parameterPages.pages.any((page) => page.parameters.contains(i));
+
+      if (isVisible) {
+        fetchedEnums =
+            await disting.requestParameterEnumStrings(algorithmIndex, i);
+      }
+      // Add the result from the manager (could be I/O, custom, or filler)
+      enums.add(fetchedEnums ?? ParameterEnumStrings.filler());
+    }
     var mappings = [
       for (int parameterNumber = 0;
           parameterNumber < numParametersInAlgorithm;
@@ -946,28 +975,9 @@ class DistingCubit extends Cubit<DistingState> {
         final disting = syncstate.disting;
         await disting.requestAddAlgorithm(algorithm, specifications);
 
-        int currentNumAlgorithms = syncstate.slots.length;
-
-        // Wait until number of algorithms in preset changes
-        await _waitForSlotCountChange(disting, currentNumAlgorithms);
-
-        // Add a slot at the end of the slots list, and then ask to update that
-        // slot. The rest should remain the same, so we don't have to update
-        // everything.
-        var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
-        slots.add(await fetchSlot(disting, slots.length));
-        emit((state as DistingStateSynchronized).copyWith(slots: slots));
-    }
-  }
-
-  Future<void> _waitForSlotCountChange(
-      IDistingMidiManager disting, int currentNumAlgorithms) async {
-    // Wait until number of algorithms in preset changes
-    var startTime = DateTime.timestamp();
-    while ((await disting.requestNumAlgorithmsInPreset()) ==
-            currentNumAlgorithms &&
-        DateTime.timestamp().difference(startTime) < Duration(seconds: 10)) {
-      await Future.delayed(Duration(milliseconds: 150));
+        // Refresh state from manager - fetchSlot will be called via refresh
+        refresh();
+        break;
     }
   }
 
@@ -1422,22 +1432,38 @@ class DistingCubit extends Cubit<DistingState> {
 
     // Fetch initial data needed for the synchronized state using the offline manager
     try {
+      // --- Fetch basic offline info ---
       final version = await offlineManager.requestVersionString() ?? "Offline";
       final presetName =
           await offlineManager.requestPresetName() ?? "Offline Preset";
-      final algorithms =
-          await getAvailableAlgorithms(); // Use existing method which checks offline
+      final allCachedAlgorithms = await _metadataDao.getAllAlgorithms();
+      // Map cached entries to AlgorithmInfo for the state's algorithm list
+      final availableAlgorithmsInfo = allCachedAlgorithms.map((entry) {
+        return AlgorithmInfo(
+          guid: entry.guid,
+          name: entry.name,
+          numSpecifications: entry.numSpecifications,
+          algorithmIndex: -1, // No meaningful live index
+          specifications: [], // Not fetching detailed specs here
+        );
+      }).toList();
+
       final units = await offlineManager.requestUnitStrings() ?? [];
 
-      // Start with an empty preset (no slots initially)
-      final List<Slot> slots = [];
+      // --- Build initial slots based on a default/last known offline preset? ---
+      // For now, let's assume we start with an empty offline preset.
+      // The `offlineManager`'s `_presetAlgorithmGuids` will be empty initially.
+      final List<Slot> initialSlots = [];
+      // If we wanted to load a default preset, we would populate
+      // `offlineManager._presetAlgorithmGuids` and then call
+      // `_fetchOfflineSlot` for each GUID here.
 
       emit(DistingState.synchronized(
         disting: offlineManager, // Use the offline manager
         distingVersion: version,
         presetName: presetName,
-        algorithms: algorithms, // Full list of available algorithms from cache
-        slots: slots, // Start with empty slots
+        algorithms: availableAlgorithmsInfo, // Full list from cache
+        slots: initialSlots, // Start with empty slots
         unitStrings: units,
         offline: true, // Mark as offline
         demo: false,

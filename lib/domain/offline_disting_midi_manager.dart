@@ -149,13 +149,12 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         return ParameterInfo(
           algorithmIndex: algorithmIndex, // Use preset index
           parameterNumber: paramEntry.parameterNumber,
-          min: paramEntry.minValue,
-          max: paramEntry.maxValue,
-          defaultValue: paramEntry.defaultValue,
-          unit: paramEntry.unitId ??
-              0, // Handle null unitId, map to unit (0 = none?)
+          min: paramEntry.minValue ?? 0,
+          max: paramEntry.maxValue ?? 0,
+          defaultValue: paramEntry.defaultValue ?? 0,
+          unit: paramEntry.rawUnitIndex ?? 0,
           name: paramEntry.name,
-          powerOfTen: paramEntry.powerOfTen,
+          powerOfTen: paramEntry.powerOfTen ?? 0,
         );
       } else {
         return null;
@@ -184,7 +183,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         return ParameterValue(
           algorithmIndex: algorithmIndex, // Use preset index
           parameterNumber: entry.parameterNumber,
-          value: entry.defaultValue, // Use the stored default value
+          value: entry.defaultValue ?? 0, // Use the stored default value
         );
       }).toList();
 
@@ -229,9 +228,19 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<ParameterEnumStrings?> requestParameterEnumStrings(
-      int algorithmIndex, int parameterNumber) {
-    // Get GUID, fetch enum strings for the specific parameter
-    return _runForGuid<ParameterEnumStrings?>(algorithmIndex, (guid) async {
+      int algorithmIndex, int parameterNumber) async {
+    // IMPORTANT: This method in the interface expects the *preset slot index*.
+    // We need the GUID associated with that slot index first.
+    if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
+      debugPrint(
+          "[Offline] requestParameterEnumStrings: Index $algorithmIndex out of bounds");
+      return Future.value(
+          ParameterEnumStrings.filler()); // Return filler if index invalid
+    }
+    final String guid = _presetAlgorithmGuids[algorithmIndex];
+
+    // Always query the ParameterEnums table directly, relying on cached data presence.
+    try {
       final enumsQuery = _metadataDao.select(_metadataDao.parameterEnums)
         ..where((e) =>
             e.algorithmGuid.equals(guid) &
@@ -250,7 +259,12 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         // Return filler if no enums found (or parameter isn't enum type)
         return ParameterEnumStrings.filler();
       }
-    }, errorValue: ParameterEnumStrings.filler()); // Return filler on error
+    } catch (e, stackTrace) {
+      debugPrint(
+          "[Offline] Error fetching enums for guid $guid, param $parameterNumber: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      return ParameterEnumStrings.filler(); // Return filler on error
+    }
   }
 
   @override

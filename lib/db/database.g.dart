@@ -849,20 +849,20 @@ class $ParametersTable extends Parameters
       const VerificationMeta('minValue');
   @override
   late final GeneratedColumn<int> minValue = GeneratedColumn<int>(
-      'min_value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+      'min_value', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _maxValueMeta =
       const VerificationMeta('maxValue');
   @override
   late final GeneratedColumn<int> maxValue = GeneratedColumn<int>(
-      'max_value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+      'max_value', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _defaultValueMeta =
       const VerificationMeta('defaultValue');
   @override
   late final GeneratedColumn<int> defaultValue = GeneratedColumn<int>(
-      'default_value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+      'default_value', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _unitIdMeta = const VerificationMeta('unitId');
   @override
   late final GeneratedColumn<int> unitId = GeneratedColumn<int>(
@@ -875,8 +875,14 @@ class $ParametersTable extends Parameters
       const VerificationMeta('powerOfTen');
   @override
   late final GeneratedColumn<int> powerOfTen = GeneratedColumn<int>(
-      'power_of_ten', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+      'power_of_ten', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _rawUnitIndexMeta =
+      const VerificationMeta('rawUnitIndex');
+  @override
+  late final GeneratedColumn<int> rawUnitIndex = GeneratedColumn<int>(
+      'raw_unit_index', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         algorithmGuid,
@@ -886,7 +892,8 @@ class $ParametersTable extends Parameters
         maxValue,
         defaultValue,
         unitId,
-        powerOfTen
+        powerOfTen,
+        rawUnitIndex
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -923,22 +930,16 @@ class $ParametersTable extends Parameters
     if (data.containsKey('min_value')) {
       context.handle(_minValueMeta,
           minValue.isAcceptableOrUnknown(data['min_value']!, _minValueMeta));
-    } else if (isInserting) {
-      context.missing(_minValueMeta);
     }
     if (data.containsKey('max_value')) {
       context.handle(_maxValueMeta,
           maxValue.isAcceptableOrUnknown(data['max_value']!, _maxValueMeta));
-    } else if (isInserting) {
-      context.missing(_maxValueMeta);
     }
     if (data.containsKey('default_value')) {
       context.handle(
           _defaultValueMeta,
           defaultValue.isAcceptableOrUnknown(
               data['default_value']!, _defaultValueMeta));
-    } else if (isInserting) {
-      context.missing(_defaultValueMeta);
     }
     if (data.containsKey('unit_id')) {
       context.handle(_unitIdMeta,
@@ -949,8 +950,12 @@ class $ParametersTable extends Parameters
           _powerOfTenMeta,
           powerOfTen.isAcceptableOrUnknown(
               data['power_of_ten']!, _powerOfTenMeta));
-    } else if (isInserting) {
-      context.missing(_powerOfTenMeta);
+    }
+    if (data.containsKey('raw_unit_index')) {
+      context.handle(
+          _rawUnitIndexMeta,
+          rawUnitIndex.isAcceptableOrUnknown(
+              data['raw_unit_index']!, _rawUnitIndexMeta));
     }
     return context;
   }
@@ -968,15 +973,17 @@ class $ParametersTable extends Parameters
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       minValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}min_value'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}min_value']),
       maxValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}max_value'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}max_value']),
       defaultValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}default_value'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}default_value']),
       unitId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}unit_id']),
       powerOfTen: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}power_of_ten'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}power_of_ten']),
+      rawUnitIndex: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}raw_unit_index']),
     );
   }
 
@@ -990,33 +997,46 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
   final String algorithmGuid;
   final int parameterNumber;
   final String name;
-  final int minValue;
-  final int maxValue;
-  final int defaultValue;
+  final int? minValue;
+  final int? maxValue;
+  final int? defaultValue;
   final int? unitId;
-  final int powerOfTen;
+  final int? powerOfTen;
+  final int? rawUnitIndex;
   const ParameterEntry(
       {required this.algorithmGuid,
       required this.parameterNumber,
       required this.name,
-      required this.minValue,
-      required this.maxValue,
-      required this.defaultValue,
+      this.minValue,
+      this.maxValue,
+      this.defaultValue,
       this.unitId,
-      required this.powerOfTen});
+      this.powerOfTen,
+      this.rawUnitIndex});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['algorithm_guid'] = Variable<String>(algorithmGuid);
     map['parameter_number'] = Variable<int>(parameterNumber);
     map['name'] = Variable<String>(name);
-    map['min_value'] = Variable<int>(minValue);
-    map['max_value'] = Variable<int>(maxValue);
-    map['default_value'] = Variable<int>(defaultValue);
+    if (!nullToAbsent || minValue != null) {
+      map['min_value'] = Variable<int>(minValue);
+    }
+    if (!nullToAbsent || maxValue != null) {
+      map['max_value'] = Variable<int>(maxValue);
+    }
+    if (!nullToAbsent || defaultValue != null) {
+      map['default_value'] = Variable<int>(defaultValue);
+    }
     if (!nullToAbsent || unitId != null) {
       map['unit_id'] = Variable<int>(unitId);
     }
-    map['power_of_ten'] = Variable<int>(powerOfTen);
+    if (!nullToAbsent || powerOfTen != null) {
+      map['power_of_ten'] = Variable<int>(powerOfTen);
+    }
+    if (!nullToAbsent || rawUnitIndex != null) {
+      map['raw_unit_index'] = Variable<int>(rawUnitIndex);
+    }
     return map;
   }
 
@@ -1025,12 +1045,23 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       algorithmGuid: Value(algorithmGuid),
       parameterNumber: Value(parameterNumber),
       name: Value(name),
-      minValue: Value(minValue),
-      maxValue: Value(maxValue),
-      defaultValue: Value(defaultValue),
+      minValue: minValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(minValue),
+      maxValue: maxValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(maxValue),
+      defaultValue: defaultValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(defaultValue),
       unitId:
           unitId == null && nullToAbsent ? const Value.absent() : Value(unitId),
-      powerOfTen: Value(powerOfTen),
+      powerOfTen: powerOfTen == null && nullToAbsent
+          ? const Value.absent()
+          : Value(powerOfTen),
+      rawUnitIndex: rawUnitIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rawUnitIndex),
     );
   }
 
@@ -1041,11 +1072,12 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
       parameterNumber: serializer.fromJson<int>(json['parameterNumber']),
       name: serializer.fromJson<String>(json['name']),
-      minValue: serializer.fromJson<int>(json['minValue']),
-      maxValue: serializer.fromJson<int>(json['maxValue']),
-      defaultValue: serializer.fromJson<int>(json['defaultValue']),
+      minValue: serializer.fromJson<int?>(json['minValue']),
+      maxValue: serializer.fromJson<int?>(json['maxValue']),
+      defaultValue: serializer.fromJson<int?>(json['defaultValue']),
       unitId: serializer.fromJson<int?>(json['unitId']),
-      powerOfTen: serializer.fromJson<int>(json['powerOfTen']),
+      powerOfTen: serializer.fromJson<int?>(json['powerOfTen']),
+      rawUnitIndex: serializer.fromJson<int?>(json['rawUnitIndex']),
     );
   }
   @override
@@ -1055,11 +1087,12 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       'algorithmGuid': serializer.toJson<String>(algorithmGuid),
       'parameterNumber': serializer.toJson<int>(parameterNumber),
       'name': serializer.toJson<String>(name),
-      'minValue': serializer.toJson<int>(minValue),
-      'maxValue': serializer.toJson<int>(maxValue),
-      'defaultValue': serializer.toJson<int>(defaultValue),
+      'minValue': serializer.toJson<int?>(minValue),
+      'maxValue': serializer.toJson<int?>(maxValue),
+      'defaultValue': serializer.toJson<int?>(defaultValue),
       'unitId': serializer.toJson<int?>(unitId),
-      'powerOfTen': serializer.toJson<int>(powerOfTen),
+      'powerOfTen': serializer.toJson<int?>(powerOfTen),
+      'rawUnitIndex': serializer.toJson<int?>(rawUnitIndex),
     };
   }
 
@@ -1067,20 +1100,24 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
           {String? algorithmGuid,
           int? parameterNumber,
           String? name,
-          int? minValue,
-          int? maxValue,
-          int? defaultValue,
+          Value<int?> minValue = const Value.absent(),
+          Value<int?> maxValue = const Value.absent(),
+          Value<int?> defaultValue = const Value.absent(),
           Value<int?> unitId = const Value.absent(),
-          int? powerOfTen}) =>
+          Value<int?> powerOfTen = const Value.absent(),
+          Value<int?> rawUnitIndex = const Value.absent()}) =>
       ParameterEntry(
         algorithmGuid: algorithmGuid ?? this.algorithmGuid,
         parameterNumber: parameterNumber ?? this.parameterNumber,
         name: name ?? this.name,
-        minValue: minValue ?? this.minValue,
-        maxValue: maxValue ?? this.maxValue,
-        defaultValue: defaultValue ?? this.defaultValue,
+        minValue: minValue.present ? minValue.value : this.minValue,
+        maxValue: maxValue.present ? maxValue.value : this.maxValue,
+        defaultValue:
+            defaultValue.present ? defaultValue.value : this.defaultValue,
         unitId: unitId.present ? unitId.value : this.unitId,
-        powerOfTen: powerOfTen ?? this.powerOfTen,
+        powerOfTen: powerOfTen.present ? powerOfTen.value : this.powerOfTen,
+        rawUnitIndex:
+            rawUnitIndex.present ? rawUnitIndex.value : this.rawUnitIndex,
       );
   ParameterEntry copyWithCompanion(ParametersCompanion data) {
     return ParameterEntry(
@@ -1099,6 +1136,9 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       unitId: data.unitId.present ? data.unitId.value : this.unitId,
       powerOfTen:
           data.powerOfTen.present ? data.powerOfTen.value : this.powerOfTen,
+      rawUnitIndex: data.rawUnitIndex.present
+          ? data.rawUnitIndex.value
+          : this.rawUnitIndex,
     );
   }
 
@@ -1112,14 +1152,15 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
           ..write('maxValue: $maxValue, ')
           ..write('defaultValue: $defaultValue, ')
           ..write('unitId: $unitId, ')
-          ..write('powerOfTen: $powerOfTen')
+          ..write('powerOfTen: $powerOfTen, ')
+          ..write('rawUnitIndex: $rawUnitIndex')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(algorithmGuid, parameterNumber, name,
-      minValue, maxValue, defaultValue, unitId, powerOfTen);
+      minValue, maxValue, defaultValue, unitId, powerOfTen, rawUnitIndex);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1131,18 +1172,20 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
           other.maxValue == this.maxValue &&
           other.defaultValue == this.defaultValue &&
           other.unitId == this.unitId &&
-          other.powerOfTen == this.powerOfTen);
+          other.powerOfTen == this.powerOfTen &&
+          other.rawUnitIndex == this.rawUnitIndex);
 }
 
 class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
   final Value<String> algorithmGuid;
   final Value<int> parameterNumber;
   final Value<String> name;
-  final Value<int> minValue;
-  final Value<int> maxValue;
-  final Value<int> defaultValue;
+  final Value<int?> minValue;
+  final Value<int?> maxValue;
+  final Value<int?> defaultValue;
   final Value<int?> unitId;
-  final Value<int> powerOfTen;
+  final Value<int?> powerOfTen;
+  final Value<int?> rawUnitIndex;
   final Value<int> rowid;
   const ParametersCompanion({
     this.algorithmGuid = const Value.absent(),
@@ -1153,25 +1196,23 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     this.defaultValue = const Value.absent(),
     this.unitId = const Value.absent(),
     this.powerOfTen = const Value.absent(),
+    this.rawUnitIndex = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ParametersCompanion.insert({
     required String algorithmGuid,
     required int parameterNumber,
     required String name,
-    required int minValue,
-    required int maxValue,
-    required int defaultValue,
+    this.minValue = const Value.absent(),
+    this.maxValue = const Value.absent(),
+    this.defaultValue = const Value.absent(),
     this.unitId = const Value.absent(),
-    required int powerOfTen,
+    this.powerOfTen = const Value.absent(),
+    this.rawUnitIndex = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : algorithmGuid = Value(algorithmGuid),
         parameterNumber = Value(parameterNumber),
-        name = Value(name),
-        minValue = Value(minValue),
-        maxValue = Value(maxValue),
-        defaultValue = Value(defaultValue),
-        powerOfTen = Value(powerOfTen);
+        name = Value(name);
   static Insertable<ParameterEntry> custom({
     Expression<String>? algorithmGuid,
     Expression<int>? parameterNumber,
@@ -1181,6 +1222,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     Expression<int>? defaultValue,
     Expression<int>? unitId,
     Expression<int>? powerOfTen,
+    Expression<int>? rawUnitIndex,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1192,6 +1234,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
       if (defaultValue != null) 'default_value': defaultValue,
       if (unitId != null) 'unit_id': unitId,
       if (powerOfTen != null) 'power_of_ten': powerOfTen,
+      if (rawUnitIndex != null) 'raw_unit_index': rawUnitIndex,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1200,11 +1243,12 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
       {Value<String>? algorithmGuid,
       Value<int>? parameterNumber,
       Value<String>? name,
-      Value<int>? minValue,
-      Value<int>? maxValue,
-      Value<int>? defaultValue,
+      Value<int?>? minValue,
+      Value<int?>? maxValue,
+      Value<int?>? defaultValue,
       Value<int?>? unitId,
-      Value<int>? powerOfTen,
+      Value<int?>? powerOfTen,
+      Value<int?>? rawUnitIndex,
       Value<int>? rowid}) {
     return ParametersCompanion(
       algorithmGuid: algorithmGuid ?? this.algorithmGuid,
@@ -1215,6 +1259,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
       defaultValue: defaultValue ?? this.defaultValue,
       unitId: unitId ?? this.unitId,
       powerOfTen: powerOfTen ?? this.powerOfTen,
+      rawUnitIndex: rawUnitIndex ?? this.rawUnitIndex,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1246,6 +1291,9 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     if (powerOfTen.present) {
       map['power_of_ten'] = Variable<int>(powerOfTen.value);
     }
+    if (rawUnitIndex.present) {
+      map['raw_unit_index'] = Variable<int>(rawUnitIndex.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1263,6 +1311,7 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
           ..write('defaultValue: $defaultValue, ')
           ..write('unitId: $unitId, ')
           ..write('powerOfTen: $powerOfTen, ')
+          ..write('rawUnitIndex: $rawUnitIndex, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4594,22 +4643,24 @@ typedef $$ParametersTableCreateCompanionBuilder = ParametersCompanion Function({
   required String algorithmGuid,
   required int parameterNumber,
   required String name,
-  required int minValue,
-  required int maxValue,
-  required int defaultValue,
+  Value<int?> minValue,
+  Value<int?> maxValue,
+  Value<int?> defaultValue,
   Value<int?> unitId,
-  required int powerOfTen,
+  Value<int?> powerOfTen,
+  Value<int?> rawUnitIndex,
   Value<int> rowid,
 });
 typedef $$ParametersTableUpdateCompanionBuilder = ParametersCompanion Function({
   Value<String> algorithmGuid,
   Value<int> parameterNumber,
   Value<String> name,
-  Value<int> minValue,
-  Value<int> maxValue,
-  Value<int> defaultValue,
+  Value<int?> minValue,
+  Value<int?> maxValue,
+  Value<int?> defaultValue,
   Value<int?> unitId,
-  Value<int> powerOfTen,
+  Value<int?> powerOfTen,
+  Value<int?> rawUnitIndex,
   Value<int> rowid,
 });
 
@@ -4674,6 +4725,9 @@ class $$ParametersTableFilterComposer
 
   ColumnFilters<int> get powerOfTen => $composableBuilder(
       column: $table.powerOfTen, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get rawUnitIndex => $composableBuilder(
+      column: $table.rawUnitIndex, builder: (column) => ColumnFilters(column));
 
   $$AlgorithmsTableFilterComposer get algorithmGuid {
     final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
@@ -4745,6 +4799,10 @@ class $$ParametersTableOrderingComposer
   ColumnOrderings<int> get powerOfTen => $composableBuilder(
       column: $table.powerOfTen, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get rawUnitIndex => $composableBuilder(
+      column: $table.rawUnitIndex,
+      builder: (column) => ColumnOrderings(column));
+
   $$AlgorithmsTableOrderingComposer get algorithmGuid {
     final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -4813,6 +4871,9 @@ class $$ParametersTableAnnotationComposer
   GeneratedColumn<int> get powerOfTen => $composableBuilder(
       column: $table.powerOfTen, builder: (column) => column);
 
+  GeneratedColumn<int> get rawUnitIndex => $composableBuilder(
+      column: $table.rawUnitIndex, builder: (column) => column);
+
   $$AlgorithmsTableAnnotationComposer get algorithmGuid {
     final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
         composer: this,
@@ -4880,11 +4941,12 @@ class $$ParametersTableTableManager extends RootTableManager<
             Value<String> algorithmGuid = const Value.absent(),
             Value<int> parameterNumber = const Value.absent(),
             Value<String> name = const Value.absent(),
-            Value<int> minValue = const Value.absent(),
-            Value<int> maxValue = const Value.absent(),
-            Value<int> defaultValue = const Value.absent(),
+            Value<int?> minValue = const Value.absent(),
+            Value<int?> maxValue = const Value.absent(),
+            Value<int?> defaultValue = const Value.absent(),
             Value<int?> unitId = const Value.absent(),
-            Value<int> powerOfTen = const Value.absent(),
+            Value<int?> powerOfTen = const Value.absent(),
+            Value<int?> rawUnitIndex = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ParametersCompanion(
@@ -4896,17 +4958,19 @@ class $$ParametersTableTableManager extends RootTableManager<
             defaultValue: defaultValue,
             unitId: unitId,
             powerOfTen: powerOfTen,
+            rawUnitIndex: rawUnitIndex,
             rowid: rowid,
           ),
           createCompanionCallback: ({
             required String algorithmGuid,
             required int parameterNumber,
             required String name,
-            required int minValue,
-            required int maxValue,
-            required int defaultValue,
+            Value<int?> minValue = const Value.absent(),
+            Value<int?> maxValue = const Value.absent(),
+            Value<int?> defaultValue = const Value.absent(),
             Value<int?> unitId = const Value.absent(),
-            required int powerOfTen,
+            Value<int?> powerOfTen = const Value.absent(),
+            Value<int?> rawUnitIndex = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ParametersCompanion.insert(
@@ -4918,6 +4982,7 @@ class $$ParametersTableTableManager extends RootTableManager<
             defaultValue: defaultValue,
             unitId: unitId,
             powerOfTen: powerOfTen,
+            rawUnitIndex: rawUnitIndex,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
