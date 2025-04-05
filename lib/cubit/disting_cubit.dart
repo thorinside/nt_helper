@@ -1370,7 +1370,7 @@ class DistingCubit extends Cubit<DistingState> {
       final version = await offlineManager.requestVersionString() ?? "Offline";
       final presetName =
           await offlineManager.requestPresetName() ?? offlinePresetName;
-      final allCachedAlgorithms = await _metadataDao.getAllAlgorithms();
+      final allCachedAlgorithms = await _metadataDao.getAllAlgorithmsWithParameters();
       // Map cached entries to AlgorithmInfo for the state's algorithm list
       final availableAlgorithmsInfo = allCachedAlgorithms.map((entry) {
         return AlgorithmInfo(
@@ -1436,7 +1436,7 @@ class DistingCubit extends Cubit<DistingState> {
       if (currentState.offline) {
         // Offline: Fetch from database and map
         try {
-          final cachedEntries = await _metadataDao.getAllAlgorithms();
+          final cachedEntries = await _metadataDao.getAllAlgorithmsWithParameters();
           // Map AlgorithmEntry to AlgorithmInfo
           return cachedEntries.map((entry) {
             return AlgorithmInfo(

@@ -24,6 +24,7 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
+import '../db/daos/presets_dao.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -212,7 +213,7 @@ class SynchronizedScreen extends StatelessWidget {
               : () {
                   context.read<DistingCubit>().refresh();
                 },
-              );
+        );
       }),
       Builder(builder: (context) {
         return IconButton(
@@ -545,6 +546,41 @@ class SynchronizedScreen extends StatelessWidget {
     );
 
     Overlay.of(context).insert(overlayEntry);
+  }
+
+  void _showApplyOfflinePresetDialog(
+      BuildContext context, FullPresetDetails offlinePreset) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must choose an action
+      builder: (BuildContext dialogContext) {
+        final cubit = BlocProvider.of<DistingCubit>(
+            context); // Get cubit from original context
+
+        return AlertDialog(
+          title: const Text("Offline Work Found"),
+          content: const Text(
+              "You have saved work from a previous offline session. Would you like to apply it to the connected device?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Discard"),
+              onPressed: () {
+                cubit.discardOfflinePreset();
+                Navigator.of(dialogContext).pop(); // Close the dialog
+              },
+            ),
+            ElevatedButton(
+              child: const Text("Apply to Device"),
+              onPressed: () {
+                cubit.applyOfflinePresetToDevice();
+                Navigator.of(dialogContext).pop(); // Close the dialog
+                // Optionally show a loading indicator or confirmation
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

@@ -138,6 +138,26 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Future<List<AlgorithmEntry>> getAllAlgorithmsWithParameters() async {
+    final subQuery = selectOnly(parameters, distinct: true)
+      ..addColumns([parameters.algorithmGuid]);
+
+    final guidsWithParams =
+        await subQuery.map((row) => row.read(parameters.algorithmGuid)!).get();
+
+    // If no algorithms have parameters, return empty list
+    if (guidsWithParams.isEmpty) {
+      return [];
+    }
+
+    final mainQuery = select(algorithms)
+      ..where(
+          (a) => a.guid.isIn(guidsWithParams)) // Filter by the list of GUIDs
+      ..orderBy([(a) => OrderingTerm.asc(a.name)]); // Order the result
+
+    return mainQuery.get();
+  }
+
   Stream<List<AlgorithmEntry>> watchAllAlgorithms() {
     return (select(algorithms)..orderBy([(a) => OrderingTerm.asc(a.name)]))
         .watch();
