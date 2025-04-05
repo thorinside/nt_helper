@@ -5,24 +5,39 @@ class MetadataSyncState with _$MetadataSyncState {
   // Initial state, ready to start
   const factory MetadataSyncState.idle() = Idle;
 
-  // Sync is in progress
-  const factory MetadataSyncState.syncing({
+  // --- Metadata Sync Specific States ---
+  const factory MetadataSyncState.syncingMetadata({
     required double progress, // 0.0 to 1.0
     required String mainMessage, // e.g., "Processing Algorithm X (15/128)"
     required String subMessage, // e.g., "Adding to preset..."
     int? algorithmsProcessed, // Keep for progress calculation
     int? totalAlgorithms, // Keep for progress calculation
-  }) = Syncing;
+  }) = SyncingMetadata;
+  const factory MetadataSyncState.metadataSyncSuccess(String message) =
+      MetadataSyncSuccess;
+  const factory MetadataSyncState.metadataSyncFailure(String error) =
+      MetadataSyncFailure;
 
-  // Sync completed successfully
-  const factory MetadataSyncState.success(String message) = Success;
+  // --- Preset Management Specific States ---
+  const factory MetadataSyncState.savingPreset() = SavingPreset;
+  const factory MetadataSyncState.loadingPreset() = LoadingPreset;
+  const factory MetadataSyncState.presetSaveSuccess(String message) =
+      PresetSaveSuccess;
+  const factory MetadataSyncState.presetSaveFailure(String error) =
+      PresetSaveFailure;
+  const factory MetadataSyncState.presetLoadSuccess(String message) =
+      PresetLoadSuccess;
+  const factory MetadataSyncState.presetLoadFailure(String error) =
+      PresetLoadFailure;
 
-  // Sync failed
-  const factory MetadataSyncState.failure(String error) = Failure;
-
-  // NEW: State for viewing cached data
-  const factory MetadataSyncState.viewingData({
+  // --- Viewing Local Data State ---
+  const factory MetadataSyncState.viewingLocalData({
+    // Include both for potential future use or segmented view
     required List<AlgorithmEntry> algorithms,
     required Map<String, int> parameterCounts,
-  }) = ViewingData;
+    required List<PresetEntry> presets,
+  }) = ViewingLocalData;
+
+  // Generic failure for operations other than sync/save/load (e.g., data loading failure)
+  const factory MetadataSyncState.failure(String error) = Failure;
 }

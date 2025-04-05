@@ -616,11 +616,6 @@ class DistingCubit extends Cubit<DistingState> {
   // Private helper to perform the full synchronization and emit the state
   Future<void> _performSyncAndEmit() async {
     final currentState = state;
-    if (currentState is DistingStateConnected) {
-      if (currentState.pendingOfflinePresetToSync != null) {
-        return;
-      }
-    }
 
     if (!(currentState is DistingStateSynchronized ||
         currentState is DistingStateConnected)) {
@@ -686,15 +681,11 @@ class DistingCubit extends Cubit<DistingState> {
           outputDevice: outputDevice,
           sysExId: sysExId);
 
-      // --- Check for pending offline data FIRST ---
-      final pendingData = await _checkForOfflinePreset();
-      if (pendingData != null) {
-        debugPrint("[Cubit] _performSyncAndEmit: Found pending offline data.");
-      }
-
-      // Emit Connected state to show the spinner
+      // Emit Connected state WITHOUT pending data
       emit(DistingState.connected(
-          disting: disting, pendingOfflinePresetToSync: pendingData));
+        disting: disting,
+        // pendingOfflinePresetToSync: pendingData // Removed
+      ));
 
       // Perform the sync process
       await _performSyncAndEmit();
@@ -1537,25 +1528,6 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-// Helper to check for the saved offline state
-  Future<FullPresetDetails?> _checkForOfflinePreset() async {
-    const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
-    try {
-      final presetsDao = _database.presetsDao;
-      final savedPresetEntry =
-          await presetsDao.getPresetByName(offlinePresetName);
-      if (savedPresetEntry != null) {
-        debugPrint(
-            "[Cubit] Found saved offline state preset: ${savedPresetEntry.id}");
-        return await presetsDao.getFullPresetDetails(savedPresetEntry.id);
-      }
-    } catch (e, stackTrace) {
-      debugPrint("[Cubit] Error checking for offline preset: $e");
-      debugPrintStack(stackTrace: stackTrace);
-    }
-    return null;
-  }
-
   Future<List<Slot>> fetchSlots(
       int numAlgorithmsInPreset, IDistingMidiManager disting) async {
     final slotsFutures =
@@ -1638,185 +1610,5 @@ class DistingCubit extends Cubit<DistingState> {
       valueStrings: valueStrings,
       routing: routing,
     );
-  }
-
-  Future<void> applyOfflinePresetToDevice() async {
-    debugPrint("[Cubit] applyOfflinePresetToDevice called");
-    final currentState = state;
-    if (currentState is! DistingStateConnected ||
-        currentState.offline ||
-        currentState.pendingOfflinePresetToSync == null) {
-      debugPrint("[Cubit] Cannot apply offline preset: Invalid state.");
-      return;
-    }
-
-    final liveManager = currentState.disting;
-    final FullPresetDetails offlinePreset =
-        currentState.pendingOfflinePresetToSync!;
-    const String offlinePresetDbKey = "__OFFLINE_INTERNAL_STATE__";
-
-    try {
-      emit(currentState.copyWith(loading: true)); // Show loading indicator
-
-      // 1. Start with a new preset on the device
-      debugPrint("[ApplyOffline] Sending NewPreset request...");
-      await liveManager.requestNewPreset();
-      await Future.delayed(
-          const Duration(milliseconds: 500)); // Wait for device
-
-      // 2. Add algorithms in order
-      debugPrint(
-          "[ApplyOffline] Adding ${offlinePreset.slots.length} algorithms...");
-      for (final offlineSlot in offlinePreset.slots) {
-        // --- Get default specs from Metadata DAO --- New
-        FullAlgorithmDetails? algoDetails = await _metadataDao
-            .getFullAlgorithmDetails(offlineSlot.algorithm.guid);
-        List<int> defaultSpecs = [];
-        if (algoDetails != null) {
-          defaultSpecs = algoDetails.specifications
-              .map((specEntry) => specEntry.defaultValue)
-              .toList();
-          debugPrint(
-              "[ApplyOffline] Found default specs for ${algoDetails.algorithm.name}: $defaultSpecs");
-        } else {
-          // Fallback: If not found in DAO (shouldn't happen if sync occurred),
-          // use empty list or log error.
-          debugPrint(
-              "[ApplyOffline] Warning: Could not find algorithm details in DAO for GUID ${offlineSlot.algorithm.guid}. Using empty specifications.");
-        }
-        // --- End Get default specs ---
-
-        // Find the corresponding AlgorithmInfo from the live device's list
-        // NOTE: We don't actually need AlgorithmInfo here anymore, just GUID and specs
-        // AlgorithmInfo algoInfo = AlgorithmInfo.filler().copyWith(
-        //     name: offlineSlot.algorithm.name,
-        //     numSpecifications: offlineSlot.algorithm.numSpecifications,
-        //     guid: offlineSlot.algorithm.guid);
-
-        debugPrint(
-            "[ApplyOffline] Adding algorithm: ${offlineSlot.algorithm.name} (GUID: ${offlineSlot.algorithm.guid}) with specs: $defaultSpecs");
-        // Use the fetched defaultSpecs here
-        await liveManager.requestAddAlgorithm(
-            AlgorithmInfo(
-              guid: offlineSlot.algorithm.guid,
-              // Provide placeholder values for fields likely ignored by this request
-              name: '', // Name might not be needed by the device here
-              numSpecifications: 0, // Num specs might not be needed
-              algorithmIndex: -1, // Index is irrelevant here
-              specifications: [], // Specs are passed in the separate argument
-            ),
-            defaultSpecs);
-        await Future.delayed(
-            const Duration(milliseconds: 250)); // Wait between adds
-      }
-
-      // Wait briefly after adding all algorithms
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // 3. Set parameter values
-      debugPrint("[ApplyOffline] Setting parameter values...");
-      for (int slotIndex = 0;
-          slotIndex < offlinePreset.slots.length;
-          slotIndex++) {
-        final offlineSlot = offlinePreset.slots[slotIndex];
-        for (final paramEntry in offlineSlot.parameterValues.entries) {
-          final paramNum = paramEntry.key;
-          final paramValue = paramEntry.value;
-          await liveManager.setParameterValue(slotIndex, paramNum, paramValue);
-          // Maybe add a tiny delay here if needed, but often bulk setting is okay
-          // await Future.delayed(const Duration(milliseconds: 5));
-        }
-        debugPrint("[ApplyOffline] ... values set for slot $slotIndex");
-      }
-
-      // --- Optional: Set Mappings, Routing, Names ---
-      debugPrint("[ApplyOffline] Setting mappings...");
-      for (int slotIndex = 0;
-          slotIndex < offlinePreset.slots.length;
-          slotIndex++) {
-        final offlineSlot = offlinePreset.slots[slotIndex];
-        for (final mappingEntry in offlineSlot.mappings.entries) {
-          await liveManager.requestSetMapping(
-              slotIndex, mappingEntry.key, mappingEntry.value);
-        }
-        if (offlineSlot.slot.customName != null) {
-          await liveManager.requestSendSlotName(
-              slotIndex, offlineSlot.slot.customName!);
-        }
-        // TODO: Apply routing if requestSetRouting implemented
-      }
-
-      // 4. Clean up: Delete the offline preset from DB
-      try {
-        final presetsDao = _database.presetsDao;
-        final entryToDelete =
-            await presetsDao.getPresetByName(offlinePresetDbKey);
-        if (entryToDelete != null) {
-          await presetsDao.deletePreset(entryToDelete.id);
-          debugPrint(
-              "[ApplyOffline] Deleted internal offline state preset from DB.");
-        }
-      } catch (e) {
-        debugPrint(
-            "[ApplyOffline] Failed to delete internal offline state preset: $e");
-      }
-
-      // 5. Refresh the UI state from the device
-      debugPrint("[ApplyOffline] Refreshing state from device...");
-      await Future.delayed(
-          const Duration(milliseconds: 250)); // Give device a moment
-      await refresh(); // MODIFIED: Call refresh() instead of synchronizeDevice()
-    } catch (e, stackTrace) {
-      debugPrint("[ApplyOffline] Error applying offline preset: $e");
-      debugPrintStack(stackTrace: stackTrace);
-      // Emit state without loading and clear pending flag in case of error during apply
-      final currentState = state;
-      if (currentState is DistingStateSynchronized) {
-        emit(currentState.copyWith(loading: false));
-      } else {
-        await loadDevices(); // Fallback to device selection
-      }
-    }
-  }
-
-  Future<void> discardOfflinePreset() async {
-    debugPrint("[Cubit] discardOfflinePreset called");
-    const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
-    final currentState = state; // Need current state to modify it
-
-    try {
-      final presetsDao = _database.presetsDao;
-      final savedPresetEntry =
-          await presetsDao.getPresetByName(offlinePresetName);
-      if (savedPresetEntry != null) {
-        await presetsDao.deletePreset(savedPresetEntry.id);
-        debugPrint(
-            "[Cubit] Deleted offline preset from DB: ID ${savedPresetEntry.id}");
-      } else {
-        debugPrint("[Cubit] No offline preset found in DB to delete.");
-      }
-
-      // After discarding, just re-emit the CURRENT state but clear the flag
-      if (currentState is DistingStateConnected) {
-        debugPrint(
-            "[Cubit] Discard successful, re-emitting synchronized state with pending flag cleared.");
-        emit(currentState.copyWith(pendingOfflinePresetToSync: null));
-      } else {
-        // Should not happen if dialog was shown
-        debugPrint(
-            "[Cubit] Discard called but state was not Synchronized. Ignoring.");
-      }
-    } catch (e, stackTrace) {
-      debugPrint("[Cubit] Error deleting offline preset: $e");
-      debugPrintStack(stackTrace: stackTrace);
-      // If delete failed, still try to clear the flag from the UI state
-      if (currentState is DistingStateConnected) {
-        debugPrint(
-            "[Cubit] Discard DB delete failed, but still clearing pending flag from UI state.");
-        emit(currentState.copyWith(pendingOfflinePresetToSync: null));
-      } else {
-        await loadDevices();
-      }
-    }
   }
 }

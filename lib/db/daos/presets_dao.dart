@@ -24,6 +24,10 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
         .watch();
   }
 
+  Future<List<PresetEntry>> getAllPresets() {
+    return (select(presets)..orderBy([(p) => OrderingTerm.asc(p.name)])).get();
+  }
+
   Future<PresetEntry?> getPresetByName(String name) {
     return (select(presets)..where((p) => p.name.equals(name)))
         .getSingleOrNull();

@@ -93,15 +93,7 @@ class _DistingPageState extends State<DistingPage> {
     return Scaffold(
       body: BlocProvider(
         create: (context) => MidiListenerCubit(),
-        child: BlocListener<DistingCubit, DistingState>(
-  listener: (context, state) {
-    if (state is DistingStateConnected &&
-        state.pendingOfflinePresetToSync != null) {
-      _showApplyOfflinePresetDialog(
-          context, state.pendingOfflinePresetToSync!);
-    }
-  },
-  child: BlocBuilder<DistingCubit, DistingState>(
+        child: BlocBuilder<DistingCubit, DistingState>(
           builder: (context, state) {
             if (state is DistingStateInitial) {
               return Center(
@@ -136,28 +128,25 @@ class _DistingPageState extends State<DistingPage> {
                 canWorkOffline: state.canWorkOffline,
               );
             } else if (state is DistingStateConnected) {
-              return state.pendingOfflinePresetToSync != null
-                  ? Material()
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text("Synchronizing...",
-                              style:
-                                  Theme.of(context).textTheme.titleLarge),
-                          Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                          OutlinedButton(
-                            onPressed: () {
-                              context.read<DistingCubit>().cancelSync();
-                            },
-                            child: Text("Cancel"),
-                          )
-                        ],
-                      ),
-                    );
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Synchronizing...",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                    OutlinedButton(
+                      onPressed: () {
+                        context.read<DistingCubit>().cancelSync();
+                      },
+                      child: Text("Cancel"),
+                    )
+                  ],
+                ),
+              );
             } else if (state is DistingStateSynchronized) {
               return SynchronizedScreen(
                 slots: state.slots,
@@ -173,43 +162,7 @@ class _DistingPageState extends State<DistingPage> {
             }
           },
         ),
-),
       ),
-    );
-  }
-
-  void _showApplyOfflinePresetDialog(
-      BuildContext context, FullPresetDetails offlinePreset) {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // User must choose an action
-      builder: (BuildContext dialogContext) {
-        final cubit = BlocProvider.of<DistingCubit>(
-            context); // Get cubit from original context
-
-        return AlertDialog(
-          title: const Text("Offline Work Found"),
-          content: const Text(
-              "You have saved work from a previous offline session. Would you like to apply it to the connected device?"),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Discard"),
-              onPressed: () {
-                cubit.discardOfflinePreset();
-                Navigator.of(dialogContext).pop(); // Close the dialog
-              },
-            ),
-            ElevatedButton(
-              child: const Text("Apply to Device"),
-              onPressed: () {
-                cubit.applyOfflinePresetToDevice();
-                Navigator.of(dialogContext).pop(); // Close the dialog
-                // Optionally show a loading indicator or confirmation
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 }

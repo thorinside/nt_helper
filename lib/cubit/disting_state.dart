@@ -47,7 +47,6 @@ class DistingState with _$DistingState {
     @Default(false) bool demo,
     @Default(false) bool offline,
     @Default(false) bool loading,
-    FullPresetDetails? pendingOfflinePresetToSync,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({
