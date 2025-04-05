@@ -16,6 +16,7 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:collection/collection.dart'; // Add collection package import
 
 part 'disting_cubit.freezed.dart';
 part 'disting_state.dart';
@@ -621,7 +622,8 @@ class DistingCubit extends Cubit<DistingState> {
       }
     }
 
-    if (!(currentState is DistingStateSynchronized || currentState is DistingStateConnected)) {
+    if (!(currentState is DistingStateSynchronized ||
+        currentState is DistingStateConnected)) {
       return;
     }
 
@@ -867,10 +869,32 @@ class DistingCubit extends Cubit<DistingState> {
     switch (state) {
       case DistingStateSynchronized syncstate:
         final disting = syncstate.disting; // Could be OfflineDistingMidiManager
-        await disting.requestAddAlgorithm(algorithm, specifications);
+
+        List<int> specsToSend =
+            specifications; // Default to using passed-in specs
+
+        // If offline, find the algorithm in state and use its stored default specs
+        if (syncstate.offline) {
+          final storedAlgoInfo = syncstate.algorithms.firstWhereOrNull(
+            (a) => a.guid == algorithm.guid,
+          );
+          if (storedAlgoInfo != null) {
+            specsToSend = storedAlgoInfo.specifications
+                .map((s) => s.defaultValue)
+                .toList();
+            debugPrint(
+                "[Offline Cubit] Using stored default specifications for ${algorithm.name}: $specsToSend");
+          } else {
+            // Fallback or error? For now, use the (likely empty) passed-in specs
+            debugPrint(
+                "[Offline Cubit] Warning: Could not find stored AlgorithmInfo for ${algorithm.name}. Using passed specifications.");
+          }
+        }
+
+        await disting.requestAddAlgorithm(algorithm, specsToSend);
 
         // Refresh state from manager - fetchSlot will be called via refresh
-        refresh(); // <--- THIS is the problem in offline mode
+        refresh();
         _saveOfflineState(); // Save after adding
         break;
     }
@@ -1370,18 +1394,43 @@ class DistingCubit extends Cubit<DistingState> {
       final version = await offlineManager.requestVersionString() ?? "Offline";
       final presetName =
           await offlineManager.requestPresetName() ?? offlinePresetName;
-      final allCachedAlgorithms = await _metadataDao.getAllAlgorithmsWithParameters();
-      // Map cached entries to AlgorithmInfo for the state's algorithm list
-      final availableAlgorithmsInfo = allCachedAlgorithms.map((entry) {
-        return AlgorithmInfo(
-          guid: entry.guid,
-          name: entry.name,
-          numSpecifications: entry.numSpecifications,
-          algorithmIndex: -1,
-          // No meaningful live index
-          specifications: [], // Not fetching detailed specs here
-        );
+
+      // Fetch all basic algorithm entries first
+      final allBasicAlgoEntries = await _metadataDao.getAllAlgorithms();
+      final List<AlgorithmInfo> availableAlgorithmsInfo = [];
+
+      // Fetch full details including specifications for each algorithm
+      // Use Future.wait for parallel fetching
+      final detailedFutures = allBasicAlgoEntries.map((basicEntry) async {
+        // Ensure null safety for getFullAlgorithmDetails call if it can return null
+        return await _metadataDao.getFullAlgorithmDetails(basicEntry.guid);
       }).toList();
+
+      // Wait for all futures to complete
+      final detailedResults = await Future.wait(detailedFutures);
+
+      // Process the results, filtering out any nulls and mapping to AlgorithmInfo
+      for (final details in detailedResults.whereType<FullAlgorithmDetails>()) {
+        availableAlgorithmsInfo.add(AlgorithmInfo(
+          guid: details.algorithm.guid,
+          name: details.algorithm.name,
+          numSpecifications: details.algorithm.numSpecifications,
+          algorithmIndex: -1, // Offline mode has no live index
+          // Populate specifications using the fetched default values from SpecificationEntry
+          specifications: details.specifications
+              .map((specEntry) => Specification(
+                    name: specEntry.name,
+                    min: specEntry.minValue,
+                    max: specEntry.maxValue,
+                    defaultValue: specEntry.defaultValue,
+                    type: specEntry.type,
+                  ))
+              .toList(),
+        ));
+      }
+      // Sort the final list alphabetically by name for consistency
+      availableAlgorithmsInfo
+          .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
       final units = await offlineManager.requestUnitStrings() ?? [];
 
@@ -1436,7 +1485,8 @@ class DistingCubit extends Cubit<DistingState> {
       if (currentState.offline) {
         // Offline: Fetch from database and map
         try {
-          final cachedEntries = await _metadataDao.getAllAlgorithmsWithParameters();
+          final cachedEntries =
+              await _metadataDao.getAllAlgorithmsWithParameters();
           // Map AlgorithmEntry to AlgorithmInfo
           return cachedEntries.map((entry) {
             return AlgorithmInfo(
@@ -1618,16 +1668,44 @@ class DistingCubit extends Cubit<DistingState> {
       debugPrint(
           "[ApplyOffline] Adding ${offlinePreset.slots.length} algorithms...");
       for (final offlineSlot in offlinePreset.slots) {
+        // --- Get default specs from Metadata DAO --- New
+        FullAlgorithmDetails? algoDetails = await _metadataDao
+            .getFullAlgorithmDetails(offlineSlot.algorithm.guid);
+        List<int> defaultSpecs = [];
+        if (algoDetails != null) {
+          defaultSpecs = algoDetails.specifications
+              .map((specEntry) => specEntry.defaultValue)
+              .toList();
+          debugPrint(
+              "[ApplyOffline] Found default specs for ${algoDetails.algorithm.name}: $defaultSpecs");
+        } else {
+          // Fallback: If not found in DAO (shouldn't happen if sync occurred),
+          // use empty list or log error.
+          debugPrint(
+              "[ApplyOffline] Warning: Could not find algorithm details in DAO for GUID ${offlineSlot.algorithm.guid}. Using empty specifications.");
+        }
+        // --- End Get default specs ---
+
         // Find the corresponding AlgorithmInfo from the live device's list
-        AlgorithmInfo algoInfo = AlgorithmInfo.filler().copyWith(
-            name: offlineSlot.algorithm.name,
-            numSpecifications: offlineSlot.algorithm.numSpecifications,
-            guid: offlineSlot.algorithm.guid);
+        // NOTE: We don't actually need AlgorithmInfo here anymore, just GUID and specs
+        // AlgorithmInfo algoInfo = AlgorithmInfo.filler().copyWith(
+        //     name: offlineSlot.algorithm.name,
+        //     numSpecifications: offlineSlot.algorithm.numSpecifications,
+        //     guid: offlineSlot.algorithm.guid);
 
         debugPrint(
-            "[ApplyOffline] Adding algorithm: ${algoInfo.name} (GUID: ${algoInfo.guid})");
+            "[ApplyOffline] Adding algorithm: ${offlineSlot.algorithm.name} (GUID: ${offlineSlot.algorithm.guid}) with specs: $defaultSpecs");
+        // Use the fetched defaultSpecs here
         await liveManager.requestAddAlgorithm(
-            algoInfo, []); // TODO: Use default specifications
+            AlgorithmInfo(
+              guid: offlineSlot.algorithm.guid,
+              // Provide placeholder values for fields likely ignored by this request
+              name: '', // Name might not be needed by the device here
+              numSpecifications: 0, // Num specs might not be needed
+              algorithmIndex: -1, // Index is irrelevant here
+              specifications: [], // Specs are passed in the separate argument
+            ),
+            defaultSpecs);
         await Future.delayed(
             const Duration(milliseconds: 250)); // Wait between adds
       }

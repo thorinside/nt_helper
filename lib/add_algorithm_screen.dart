@@ -17,9 +17,17 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final distingState = context.watch<DistingCubit>().state;
+    final bool isOffline = distingState.maybeWhen(
+      synchronized: (disting, version, preset, algos, slots, units, loading,
+              screenshot, offline, demo) =>
+          offline,
+      orElse: () => false,
+    );
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Algorithm'),
+        title: Text(isOffline ? 'Add Algorithm (Defaults)' : 'Add Algorithm'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -67,9 +75,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       } catch (e) {
                         _currentAlgoInfo = null;
                       }
-                      specValues = _currentAlgoInfo != null
-                          ? List.filled(_currentAlgoInfo!.numSpecifications, 0)
-                          : null;
+                      specValues = _currentAlgoInfo?.specifications
+                          .map((s) => s.defaultValue)
+                          .toList();
                     });
                   },
                 ),
@@ -78,17 +86,18 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   child: SingleChildScrollView(
                     child: _currentAlgoInfo != null &&
                             _currentAlgoInfo!.numSpecifications > 0
-                        ? _buildSpecificationInputs(_currentAlgoInfo!)
+                        ? _buildSpecificationInputs(
+                            _currentAlgoInfo!, isOffline)
                         : Container(),
                   ),
                 ),
                 const Spacer(),
                 ElevatedButton(
-                  onPressed: _currentAlgoInfo != null
+                  onPressed: _currentAlgoInfo != null && specValues != null
                       ? () {
                           Navigator.pop(context, {
                             'algorithm': _currentAlgoInfo,
-                            'specValues': specValues ?? [],
+                            'specValues': specValues,
                           });
                         }
                       : null,
@@ -102,27 +111,56 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     );
   }
 
-  Widget _buildSpecificationInputs(AlgorithmInfo algorithm) {
+  Widget _buildSpecificationInputs(AlgorithmInfo algorithm, bool isOffline) {
+    if (specValues == null ||
+        specValues!.length != algorithm.numSpecifications) {
+      specValues = algorithm.specifications.map((s) => s.defaultValue).toList();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+      return const Center(child: Text("Initializing specifications..."));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Specifications:', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          isOffline ? 'Specifications (Using Defaults):' : 'Specifications:',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         ...List.generate(algorithm.numSpecifications, (index) {
+          final specInfo = algorithm.specifications[index];
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4.0),
             child: TextFormField(
               initialValue: specValues![index].toString(),
+              readOnly: isOffline,
               decoration: InputDecoration(
-                labelText: 'Specification ${index + 1}',
+                labelText: specInfo.name.isNotEmpty
+                    ? specInfo.name
+                    : 'Specification ${index + 1}',
+                hintText: '(${specInfo.min} to ${specInfo.max})',
                 border: const OutlineInputBorder(),
+                filled: isOffline,
+                fillColor: isOffline ? Colors.grey[200] : null,
               ),
               keyboardType: TextInputType.number,
-              onChanged: (value) {
-                setState(() {
-                  specValues![index] = int.tryParse(value) ?? 0;
-                });
-              },
+              onChanged: isOffline
+                  ? null
+                  : (value) {
+                      int parsedValue =
+                          int.tryParse(value) ?? specInfo.defaultValue;
+                      parsedValue =
+                          parsedValue.clamp(specInfo.min, specInfo.max);
+                      if (specValues![index] != parsedValue) {
+                        setState(() {
+                          specValues![index] = parsedValue;
+                        });
+                      }
+                    },
             ),
           );
         }),
