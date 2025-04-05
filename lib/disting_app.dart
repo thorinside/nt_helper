@@ -112,6 +112,9 @@ class DistingPage extends StatelessWidget {
                 onDemoPressed: () async {
                   context.read<DistingCubit>().onDemo();
                 },
+                onOfflinePressed: () async {
+                  context.read<DistingCubit>().workOffline();
+                },
               );
             } else if (state is DistingStateConnected) {
               return Center(
@@ -160,6 +163,7 @@ class _DeviceSelectionView extends StatefulWidget {
   final Function() onRefresh;
   final Function() onSettingsPressed;
   final Function() onDemoPressed;
+  final Function() onOfflinePressed;
 
   const _DeviceSelectionView({
     required this.inputDevices,
@@ -168,6 +172,7 @@ class _DeviceSelectionView extends StatefulWidget {
     required this.onRefresh,
     required this.onSettingsPressed,
     required this.onDemoPressed,
+    required this.onOfflinePressed,
   });
 
   @override
@@ -293,17 +298,25 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 },
               ),
               const SizedBox(height: 32),
-              // Button to confirm selection
+              // Button row: Refresh, Work Offline, Connect
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween, // Space buttons out
                 children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      widget.onRefresh();
-                    },
-                    child: const Text("Refresh"),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Refresh"),
+                    onPressed: widget.onRefresh,
                   ),
-                  ElevatedButton(
+                  OutlinedButton.icon(
+                    // Added Work Offline button here
+                    icon: const Icon(Icons.cloud_off),
+                    label: const Text("Work Offline"),
+                    onPressed: widget.onOfflinePressed, // Use existing callback
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.link),
+                    label: const Text("Connect"),
                     onPressed: (selectedInputDevice != null &&
                             selectedOutputDevice != null &&
                             selectedSysExId != null)
@@ -312,26 +325,24 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                                 selectedOutputDevice!, selectedSysExId!);
                           }
                         : null,
-                    child: const Text("Connect"),
                   ),
                 ],
               ),
+              // Demo button section (if no device selected)
               if (selectedInputDevice == null ||
                   selectedOutputDevice == null ||
                   selectedSysExId == null)
                 Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const SizedBox(height: 24),
-                      Text(
-                          "See what this app is about, \nif you don't have a Disting NT"),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                          onPressed: () {
-                            widget.onDemoPressed();
-                          },
-                          child: const Text("Demo")),
-                    ])
+                  children: [
+                    const SizedBox(height: 24),
+                    const Text("No Disting detected? Try the demo:"),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: widget.onDemoPressed,
+                      child: const Text("Demo"),
+                    ),
+                  ],
+                )
             ],
           ),
         ),

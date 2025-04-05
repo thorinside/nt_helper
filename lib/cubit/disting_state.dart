@@ -56,5 +56,6 @@ class DistingState with _$DistingState {
     Uint8List? screenshot,
     @Default(false) bool loading,
     @Default(false) bool demo,
+    @Default(false) bool offline,
   }) = DistingStateSynchronized;
 }

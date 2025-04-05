@@ -1372,4 +1372,17 @@ class DistingCubit extends Cubit<DistingState> {
         );
     refresh();
   }
+
+  Future<void> workOffline() async {
+    emit(DistingState.synchronized(
+      disting: MockDistingMidiManager(),
+      distingVersion: "Offline Mode",
+      presetName: "Offline Preset",
+      algorithms: [],
+      slots: [],
+      unitStrings: [],
+      offline: true,
+      demo: false, // Ensure demo mode is off unless explicitly entered
+    ));
+  }
 }

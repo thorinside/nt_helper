@@ -618,7 +618,8 @@ mixin _$DistingState {
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -640,7 +641,8 @@ mixin _$DistingState {
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
@@ -662,7 +664,8 @@ mixin _$DistingState {
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) =>
@@ -849,7 +852,8 @@ class _$DistingStateInitialImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
     return initial(screenshot, demo);
@@ -874,7 +878,8 @@ class _$DistingStateInitialImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
     return initial?.call(screenshot, demo);
@@ -899,7 +904,8 @@ class _$DistingStateInitialImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1122,7 +1128,8 @@ class _$DistingStateSelectDeviceImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
     return selectDevice(inputDevices, outputDevices, screenshot, demo);
@@ -1147,7 +1154,8 @@ class _$DistingStateSelectDeviceImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
     return selectDevice?.call(inputDevices, outputDevices, screenshot, demo);
@@ -1172,7 +1180,8 @@ class _$DistingStateSelectDeviceImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1362,7 +1371,8 @@ class _$DistingStateConnectedImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
     return connected(disting, screenshot, demo);
@@ -1387,7 +1397,8 @@ class _$DistingStateConnectedImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
     return connected?.call(disting, screenshot, demo);
@@ -1412,7 +1423,8 @@ class _$DistingStateConnectedImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
@@ -1498,7 +1510,8 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
       List<String> unitStrings,
       Uint8List? screenshot,
       bool loading,
-      bool demo});
+      bool demo,
+      bool offline});
 }
 
 /// @nodoc
@@ -1524,6 +1537,7 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? screenshot = freezed,
     Object? loading = null,
     Object? demo = null,
+    Object? offline = null,
   }) {
     return _then(_$DistingStateSynchronizedImpl(
       disting: null == disting
@@ -1562,6 +1576,10 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
           ? _value.demo
           : demo // ignore: cast_nullable_to_non_nullable
               as bool,
+      offline: null == offline
+          ? _value.offline
+          : offline // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1580,7 +1598,8 @@ class _$DistingStateSynchronizedImpl
       required final List<String> unitStrings,
       this.screenshot,
       this.loading = false,
-      this.demo = false})
+      this.demo = false,
+      this.offline = false})
       : _algorithms = algorithms,
         _slots = slots,
         _unitStrings = unitStrings;
@@ -1623,10 +1642,13 @@ class _$DistingStateSynchronizedImpl
   @override
   @JsonKey()
   final bool demo;
+  @override
+  @JsonKey()
+  final bool offline;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot, loading: $loading, demo: $demo)';
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline)';
   }
 
   @override
@@ -1642,7 +1664,8 @@ class _$DistingStateSynchronizedImpl
       ..add(DiagnosticsProperty('unitStrings', unitStrings))
       ..add(DiagnosticsProperty('screenshot', screenshot))
       ..add(DiagnosticsProperty('loading', loading))
-      ..add(DiagnosticsProperty('demo', demo));
+      ..add(DiagnosticsProperty('demo', demo))
+      ..add(DiagnosticsProperty('offline', offline));
   }
 
   @override
@@ -1663,7 +1686,8 @@ class _$DistingStateSynchronizedImpl
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot) &&
             (identical(other.loading, loading) || other.loading == loading) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            (identical(other.demo, demo) || other.demo == demo) &&
+            (identical(other.offline, offline) || other.offline == offline));
   }
 
   @override
@@ -1677,7 +1701,8 @@ class _$DistingStateSynchronizedImpl
       const DeepCollectionEquality().hash(_unitStrings),
       const DeepCollectionEquality().hash(screenshot),
       loading,
-      demo);
+      demo,
+      offline);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1707,11 +1732,12 @@ class _$DistingStateSynchronizedImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
     return synchronized(disting, distingVersion, presetName, algorithms, slots,
-        unitStrings, screenshot, loading, demo);
+        unitStrings, screenshot, loading, demo, offline);
   }
 
   @override
@@ -1733,11 +1759,12 @@ class _$DistingStateSynchronizedImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
     return synchronized?.call(disting, distingVersion, presetName, algorithms,
-        slots, unitStrings, screenshot, loading, demo);
+        slots, unitStrings, screenshot, loading, demo, offline);
   }
 
   @override
@@ -1759,13 +1786,14 @@ class _$DistingStateSynchronizedImpl
             List<String> unitStrings,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
     if (synchronized != null) {
       return synchronized(disting, distingVersion, presetName, algorithms,
-          slots, unitStrings, screenshot, loading, demo);
+          slots, unitStrings, screenshot, loading, demo, offline);
     }
     return orElse();
   }
@@ -1818,7 +1846,8 @@ abstract class DistingStateSynchronized implements DistingState {
       required final List<String> unitStrings,
       final Uint8List? screenshot,
       final bool loading,
-      final bool demo}) = _$DistingStateSynchronizedImpl;
+      final bool demo,
+      final bool offline}) = _$DistingStateSynchronizedImpl;
 
   IDistingMidiManager get disting;
   String get distingVersion;
@@ -1831,6 +1860,7 @@ abstract class DistingStateSynchronized implements DistingState {
   bool get loading;
   @override
   bool get demo;
+  bool get offline;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
