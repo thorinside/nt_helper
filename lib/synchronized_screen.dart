@@ -212,7 +212,7 @@ class SynchronizedScreen extends StatelessWidget {
               : () {
                   context.read<DistingCubit>().refresh();
                 },
-        );
+              );
       }),
       Builder(builder: (context) {
         return IconButton(

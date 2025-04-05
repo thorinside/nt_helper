@@ -1,11 +1,13 @@
 import 'dart:async';
-import 'dart:typed_data'; // Added for Uint8List
 
 import 'package:async/async.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
+import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
+import 'package:nt_helper/db/database.dart'; // Added
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
@@ -14,9 +16,6 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nt_helper/db/database.dart'; // Added
-import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
-import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 
 part 'disting_cubit.freezed.dart';
 part 'disting_state.dart';
@@ -27,33 +26,6 @@ class _PollingTask {
   int noChangeCount = 0;
 
   _PollingTask();
-}
-
-// Define the standard I/O enum values (similar to onDemo)
-final List<String> _kStandardIoEnumValues = [
-  ...List.generate(12, (i) => "Input ${i + 1}"),
-  ...List.generate(8, (i) => "Output ${i + 1}"),
-  ...List.generate(8, (i) => "Aux ${i + 1}"),
-];
-const int _kStandardIoEnumMax = 27; // 12 + 8 + 8 - 1
-
-// Helper to identify parameters that likely use the standard I/O list
-bool _isIoParameter(ParameterInfo paramInfo) {
-  // Check typical range and name patterns
-  final nameLower = paramInfo.name.toLowerCase();
-  final hasIoKeyword = nameLower.contains("input") ||
-      nameLower.contains("output") ||
-      nameLower.contains("source") ||
-      nameLower.contains("destination") ||
-      nameLower.endsWith(" in") ||
-      nameLower.endsWith(" out");
-
-  // Check if the range matches the standard I/O count
-  final matchesRange =
-      paramInfo.min == 0 && paramInfo.max == _kStandardIoEnumMax;
-
-  // If it matches the range AND has a relevant keyword, likely an I/O param
-  return matchesRange && hasIoKeyword;
 }
 
 class DistingCubit extends Cubit<DistingState> {
@@ -537,14 +509,16 @@ class DistingCubit extends Cubit<DistingState> {
     ];
     final List<ParameterEnumStrings> sineEnums =
         List<ParameterEnumStrings>.generate(sineParams.length, (i) {
-      if (i >= 4 && i <= 7)
+      if (i >= 4 && i <= 7) {
         return ParameterEnumStrings(
             algorithmIndex: 2, parameterNumber: i, values: ioEnumValues);
-      if (i == 8)
+      }
+      if (i == 8) {
         return ParameterEnumStrings(
             algorithmIndex: 2,
             parameterNumber: 8,
             values: ["Off", "On"]); // Bypass
+      }
       return ParameterEnumStrings.filler();
     });
     final ParameterPages sinePages = ParameterPages(algorithmIndex: 2, pages: [
@@ -578,14 +552,8 @@ class DistingCubit extends Cubit<DistingState> {
       presetName: "Screech",
       algorithms: demoAlgorithms,
       slots: [clockSlot, sequencerSlot, sineSlot],
-      unitStrings: [
-        "",
-        "%",
-        "Hz",
-        "dB",
-        "°",
-        "V/Oct"
-      ], // Keep existing units, enum unit (1) is handled internally
+      unitStrings: ["", "%", "Hz", "dB", "°", "V/Oct"],
+      // Keep existing units, enum unit (1) is handled internally
       demo: true,
     ));
   }
@@ -644,6 +612,59 @@ class DistingCubit extends Cubit<DistingState> {
     _midiCommand = MidiCommand();
   }
 
+  // Private helper to perform the full synchronization and emit the state
+  Future<void> _performSyncAndEmit() async {
+    final currentState = state;
+    if (currentState is DistingStateConnected) {
+      debugPrint(
+          "[Cubit] _performSyncAndEmit called in unexpected state: ${currentState.runtimeType}");
+      await loadDevices();
+      return;
+    }
+
+    // Only do the rest if we are in distingState synchronized
+    if (currentState is! DistingStateSynchronized) {
+      return;
+    }
+
+    final disting = currentState.disting;
+
+    try {
+      // --- Fetch ALL data from device REGARDLESS ---
+      debugPrint("[Cubit] _performSyncAndEmit: Fetching full device state...");
+      final numAlgorithms = (await disting.requestNumberOfAlgorithms()) ?? 0;
+      final algorithms = numAlgorithms > 0
+          ? await Future.wait([
+              for (int i = 0; i < numAlgorithms; i++)
+                disting.requestAlgorithmInfo(i)
+            ]).then((results) => results.whereType<AlgorithmInfo>().toList())
+          : <AlgorithmInfo>[];
+
+      final numAlgorithmsInPreset =
+          (await disting.requestNumAlgorithmsInPreset()) ?? 0;
+      final distingVersion = await disting.requestVersionString() ?? "";
+      final presetName = await disting.requestPresetName() ?? "Default";
+      var unitStrings = await disting.requestUnitStrings() ?? [];
+      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+      debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
+
+      // --- Emit final synchronized state ---
+      emit(DistingState.synchronized(
+        disting: disting,
+        distingVersion: distingVersion,
+        presetName: presetName,
+        algorithms: algorithms,
+        slots: slots,
+        unitStrings: unitStrings,
+        loading: false, // Ensure loading is false
+      ));
+    } catch (e, stackTrace) {
+      debugPrint("Error during synchronization: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      await loadDevices();
+    }
+  }
+
   Future<void> connectToDevices(
       MidiDevice inputDevice, MidiDevice outputDevice, int sysExId) async {
     try {
@@ -665,144 +686,41 @@ class DistingCubit extends Cubit<DistingState> {
           outputDevice: outputDevice,
           sysExId: sysExId);
 
-      // Transition to the connected state
+      // --- Check for pending offline data FIRST ---
+      final pendingData = await _checkForOfflinePreset();
+      if (pendingData != null) {
+        debugPrint("[Cubit] _performSyncAndEmit: Found pending offline data.");
+      }
+
+      // Emit Connected state to show the spinner
       emit(DistingState.connected(
-        disting: disting,
-      ));
-      synchronizeDevice();
-    } catch (e) {
-      // Handle error state if necessary
-      if (kDebugMode) {
-        print("Error connecting: ${e.toString()}");
-      }
-      debugPrintStack();
+          disting: disting, pendingOfflinePresetToSync: pendingData));
+
+      // Perform the sync process
+      await _performSyncAndEmit();
+    } catch (e, stackTrace) {
+      debugPrint("Error connecting or initial sync: ${e.toString()}");
+      debugPrintStack(stackTrace: stackTrace);
+      await loadDevices();
     }
   }
 
+  // ADDING BACK the cancelSync method
   Future<void> cancelSync() async {
-    disconnect();
-    loadDevices();
+    disconnect(); // Disconnect MIDI
+    await loadDevices(); // Go back to device selection
   }
 
-  Future<void> synchronizeDevice() async {
-    try {
-      if (state is! DistingStateConnected) {
-        throw Exception("Device is not connected.");
-      }
-
-      final connectedState = state as DistingStateConnected;
-
-      final disting = requireDisting();
-
-      final numAlgorithms = (await disting.requestNumberOfAlgorithms())!;
-      final algorithms = [
-        for (int i = 0; i < numAlgorithms; i++)
-          (await disting.requestAlgorithmInfo(i))!
-      ];
-      final numAlgorithmsInPreset =
-          (await disting.requestNumAlgorithmsInPreset())!;
-      final distingVersion = await disting.requestVersionString() ?? "";
-      final presetName = await disting.requestPresetName() ?? "";
-      var unitStrings = await disting.requestUnitStrings() ?? [];
-
-      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
-
-      // Transition to the synchronizing state
-      emit(DistingState.synchronized(
-        disting: connectedState.disting,
-        distingVersion: distingVersion,
-        presetName: presetName,
-        algorithms: algorithms,
-        slots: slots,
-        unitStrings: unitStrings,
-      ));
-    } catch (e) {
-      // Handle error state if necessary
+  /// Refreshes the entire state from the Disting device.
+  Future<void> refresh() async {
+    debugPrint("[Cubit] Refresh requested.");
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      await _performSyncAndEmit(); // Call the helper
+    } else {
+      debugPrint("[Cubit] Cannot refresh: Not in Synchronized state.");
+      // Optionally handle error or do nothing
     }
-  }
-
-  Future<List<Slot>> fetchSlots(
-      int numAlgorithmsInPreset, IDistingMidiManager disting) async {
-    final slotsFutures =
-        List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
-      return await fetchSlot(disting, algorithmIndex);
-    });
-
-    // Finish off the requests
-    final slots = await Future.wait(slotsFutures);
-    return slots;
-  }
-
-  Future<Slot> fetchSlot(
-      IDistingMidiManager disting, int algorithmIndex) async {
-    int numParametersInAlgorithm =
-        (await disting.requestNumberOfParameters(algorithmIndex))!
-            .numParameters;
-    var parameters = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
-            ParameterInfo.filler()
-    ];
-    var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
-        ParameterPages.filler();
-
-    var visibleParameters = parameterPages.pages.expand(
-      (element) {
-        return element.parameters;
-      },
-    );
-
-    var parameterValues =
-        (await disting.requestAllParameterValues(algorithmIndex))!.values;
-    var enums = <ParameterEnumStrings>[];
-    for (int i = 0; i < numParametersInAlgorithm; i++) {
-      ParameterEnumStrings? fetchedEnums;
-      // Only fetch enums if visible on a page (optimization)
-      final isVisible =
-          parameterPages.pages.any((page) => page.parameters.contains(i));
-
-      if (isVisible) {
-        fetchedEnums =
-            await disting.requestParameterEnumStrings(algorithmIndex, i);
-      }
-      // Add the result from the manager (could be I/O, custom, or filler)
-      enums.add(fetchedEnums ?? ParameterEnumStrings.filler());
-    }
-    var mappings = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        visibleParameters.contains(parameterNumber)
-            ? await disting.requestMappings(algorithmIndex, parameterNumber) ??
-                Mapping.filler()
-            : Mapping.filler()
-    ];
-    var routing = await disting.requestRoutingInformation(algorithmIndex) ??
-        RoutingInfo.filler();
-    var valueStrings = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        if ([13, 14, 17].contains(parameters[parameterNumber].unit) &&
-            visibleParameters.contains(parameterNumber))
-          await disting.requestParameterValueString(
-                  algorithmIndex, parameterNumber) ??
-              ParameterValueString.filler()
-        else
-          ParameterValueString.filler()
-    ];
-    return Slot(
-      algorithm: (await disting.requestAlgorithmGuid(algorithmIndex))!,
-      pages: parameterPages,
-      parameters: parameters,
-      values: parameterValues,
-      enums: enums,
-      mappings: mappings,
-      valueStrings: valueStrings,
-      routing: routing,
-    );
   }
 
   IDistingMidiManager requireDisting() {
@@ -944,41 +862,17 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  void refresh({Duration delay = const Duration(milliseconds: 250)}) async {
-    await Future.delayed(delay);
-
-    switch (state) {
-      case DistingStateSynchronized state:
-        var disting = state.disting;
-
-        emit(state.copyWith(loading: true));
-
-        final numAlgorithmsInPreset =
-            (await disting.requestNumAlgorithmsInPreset())!;
-
-        final presetName = await disting.requestPresetName() ?? "";
-
-        emit(state.copyWith(
-          loading: false,
-          presetName: presetName,
-          slots: await fetchSlots(numAlgorithmsInPreset, disting),
-        ));
-
-        break;
-    }
-  }
-
   Future<void> onAlgorithmSelected(
     AlgorithmInfo algorithm,
     List<int> specifications,
   ) async {
     switch (state) {
       case DistingStateSynchronized syncstate:
-        final disting = syncstate.disting;
+        final disting = syncstate.disting; // Could be OfflineDistingMidiManager
         await disting.requestAddAlgorithm(algorithm, specifications);
 
         // Refresh state from manager - fetchSlot will be called via refresh
-        refresh();
+        refresh(); // <--- THIS is the problem in offline mode
         _saveOfflineState(); // Save after adding
         break;
     }
@@ -1020,8 +914,15 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   void renamePreset(String newName) async {
-    if (state is DistingStateSynchronized) {
-      final disting = requireDisting();
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      // Prevent renaming when offline
+      if (currentState.offline) {
+        debugPrint("[Cubit] Ignoring renamePreset call while offline.");
+        return;
+      }
+
+      final disting = currentState.disting;
       disting.requestSetPresetName(newName);
 
       await Future.delayed(Duration(milliseconds: 250));
@@ -1446,14 +1347,25 @@ class DistingCubit extends Cubit<DistingState> {
     try {
       // --- Load previous offline state --- (New)
       final presetsDao = _database.presetsDao;
+      debugPrint(
+          "[Offline Cubit] Attempting to load state for preset: $offlinePresetName");
       PresetEntry? savedPresetEntry =
           await presetsDao.getPresetByName(offlinePresetName);
+      debugPrint(
+          "[Offline Cubit] Found preset entry: ${savedPresetEntry?.id} (${savedPresetEntry?.name})");
       FullPresetDetails? savedDetails;
       if (savedPresetEntry != null) {
+        debugPrint(
+            "[Offline Cubit] Loading full details for preset ID: ${savedPresetEntry.id}");
         savedDetails =
             await presetsDao.getFullPresetDetails(savedPresetEntry.id);
+        debugPrint(
+            "[Offline Cubit] Loaded details: Slots=${savedDetails?.slots.length ?? 'null'}");
+      } else {
+        debugPrint("[Offline Cubit] No saved preset entry found.");
       }
       // Initialize the manager with loaded state (or empty if none found)
+      debugPrint("[Offline Cubit] Initializing manager with loaded details...");
       await offlineManager.initializeFromDb(savedDetails);
 
       // --- Fetch basic offline info --- (Uses manager's internal state now)
@@ -1467,7 +1379,8 @@ class DistingCubit extends Cubit<DistingState> {
           guid: entry.guid,
           name: entry.name,
           numSpecifications: entry.numSpecifications,
-          algorithmIndex: -1, // No meaningful live index
+          algorithmIndex: -1,
+          // No meaningful live index
           specifications: [], // Not fetching detailed specs here
         );
       }).toList();
@@ -1484,13 +1397,17 @@ class DistingCubit extends Cubit<DistingState> {
       }
 
       emit(DistingState.synchronized(
-        disting: offlineManager, // Use the offline manager
+        disting: offlineManager,
+        // Use the offline manager
         distingVersion: version,
         presetName: presetName,
-        algorithms: availableAlgorithmsInfo, // Full list from cache
-        slots: initialSlots, // Start with empty slots
+        algorithms: availableAlgorithmsInfo,
+        // Full list from cache
+        slots: initialSlots,
+        // Start with empty slots
         unitStrings: units,
-        offline: true, // Mark as offline
+        offline: true,
+        // Mark as offline
         demo: false,
       ));
     } catch (e, stackTrace) {
@@ -1529,12 +1446,13 @@ class DistingCubit extends Cubit<DistingState> {
               name: entry.name,
               numSpecifications: entry.numSpecifications,
               // Database doesn't store live index or specific spec values easily
-              algorithmIndex: -1, // Indicate invalid index for offline context
+              algorithmIndex: -1,
+              // Indicate invalid index for offline context
               specifications: [], // Specs aren't stored directly this way
             );
           }).toList();
         } catch (e, stackTrace) {
-          print("Error fetching cached algorithms: $e");
+          debugPrint("Error fetching cached algorithms: $e");
           debugPrintStack(stackTrace: stackTrace);
           return []; // Return empty on error
         }
@@ -1550,12 +1468,15 @@ class DistingCubit extends Cubit<DistingState> {
 
   // Helper to save the current offline state to the DB
   Future<void> _saveOfflineState() async {
+    debugPrint("[Offline Cubit] Attempting to save offline state...");
     final currentState = state;
     if (currentState is DistingStateSynchronized && currentState.offline) {
       final manager = currentState.disting;
       if (manager is OfflineDistingMidiManager) {
         try {
           final presetDetails = await manager.getCurrentPresetDetails();
+          debugPrint(
+              "[Offline Cubit] State to save: Preset='${presetDetails.preset.name}', Slots=${presetDetails.slots.length}");
           final presetsDao = _database.presetsDao;
           await presetsDao.saveFullPreset(presetDetails);
           debugPrint(
@@ -1564,6 +1485,261 @@ class DistingCubit extends Cubit<DistingState> {
           debugPrint("[Offline] Error saving offline state: $e");
           debugPrintStack(stackTrace: stackTrace);
         }
+      }
+    }
+  }
+
+  // Helper to check for the saved offline state
+  Future<FullPresetDetails?> _checkForOfflinePreset() async {
+    const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
+    try {
+      final presetsDao = _database.presetsDao;
+      final savedPresetEntry =
+          await presetsDao.getPresetByName(offlinePresetName);
+      if (savedPresetEntry != null) {
+        debugPrint(
+            "[Cubit] Found saved offline state preset: ${savedPresetEntry.id}");
+        return await presetsDao.getFullPresetDetails(savedPresetEntry.id);
+      }
+    } catch (e, stackTrace) {
+      debugPrint("[Cubit] Error checking for offline preset: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    return null;
+  }
+
+  Future<List<Slot>> fetchSlots(
+      int numAlgorithmsInPreset, IDistingMidiManager disting) async {
+    final slotsFutures =
+        List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
+      return await fetchSlot(disting, algorithmIndex);
+    });
+
+    // Finish off the requests
+    final slots = await Future.wait(slotsFutures);
+    return slots;
+  }
+
+  Future<Slot> fetchSlot(
+      IDistingMidiManager disting, int algorithmIndex) async {
+    int numParametersInAlgorithm =
+        (await disting.requestNumberOfParameters(algorithmIndex))!
+            .numParameters;
+    var parameters = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
+            ParameterInfo.filler()
+    ];
+    var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
+        ParameterPages.filler();
+
+    var visibleParameters = parameterPages.pages.expand(
+      (element) {
+        return element.parameters;
+      },
+    );
+
+    var parameterValues =
+        (await disting.requestAllParameterValues(algorithmIndex))!.values;
+    var enums = <ParameterEnumStrings>[];
+    for (int i = 0; i < numParametersInAlgorithm; i++) {
+      ParameterEnumStrings? fetchedEnums;
+      // Only fetch enums if visible on a page (optimization)
+      final isVisible =
+          parameterPages.pages.any((page) => page.parameters.contains(i));
+
+      if (isVisible) {
+        fetchedEnums =
+            await disting.requestParameterEnumStrings(algorithmIndex, i);
+      }
+      // Add the result from the manager (could be I/O, custom, or filler)
+      enums.add(fetchedEnums ?? ParameterEnumStrings.filler());
+    }
+    var mappings = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        visibleParameters.contains(parameterNumber)
+            ? await disting.requestMappings(algorithmIndex, parameterNumber) ??
+                Mapping.filler()
+            : Mapping.filler()
+    ];
+    var routing = await disting.requestRoutingInformation(algorithmIndex) ??
+        RoutingInfo.filler();
+    var valueStrings = [
+      for (int parameterNumber = 0;
+          parameterNumber < numParametersInAlgorithm;
+          parameterNumber++)
+        if ([13, 14, 17].contains(parameters[parameterNumber].unit) &&
+            visibleParameters.contains(parameterNumber))
+          await disting.requestParameterValueString(
+                  algorithmIndex, parameterNumber) ??
+              ParameterValueString.filler()
+        else
+          ParameterValueString.filler()
+    ];
+    return Slot(
+      algorithm: (await disting.requestAlgorithmGuid(algorithmIndex))!,
+      pages: parameterPages,
+      parameters: parameters,
+      values: parameterValues,
+      enums: enums,
+      mappings: mappings,
+      valueStrings: valueStrings,
+      routing: routing,
+    );
+  }
+
+  Future<void> applyOfflinePresetToDevice() async {
+    debugPrint("[Cubit] applyOfflinePresetToDevice called");
+    final currentState = state;
+    if (currentState is! DistingStateConnected ||
+        currentState.offline ||
+        currentState.pendingOfflinePresetToSync == null) {
+      debugPrint("[Cubit] Cannot apply offline preset: Invalid state.");
+      return;
+    }
+
+    final liveManager = currentState.disting;
+    final FullPresetDetails offlinePreset =
+        currentState.pendingOfflinePresetToSync!;
+    const String offlinePresetDbKey = "__OFFLINE_INTERNAL_STATE__";
+
+    try {
+      emit(currentState.copyWith(loading: true)); // Show loading indicator
+
+      // 1. Start with a new preset on the device
+      debugPrint("[ApplyOffline] Sending NewPreset request...");
+      await liveManager.requestNewPreset();
+      await Future.delayed(
+          const Duration(milliseconds: 500)); // Wait for device
+
+      // 2. Add algorithms in order
+      debugPrint(
+          "[ApplyOffline] Adding ${offlinePreset.slots.length} algorithms...");
+      for (final offlineSlot in offlinePreset.slots) {
+        // Find the corresponding AlgorithmInfo from the live device's list
+        AlgorithmInfo algoInfo = AlgorithmInfo.filler().copyWith(
+            name: offlineSlot.algorithm.name,
+            numSpecifications: offlineSlot.algorithm.numSpecifications,
+            guid: offlineSlot.algorithm.guid);
+
+        debugPrint(
+            "[ApplyOffline] Adding algorithm: ${algoInfo.name} (GUID: ${algoInfo.guid})");
+        await liveManager.requestAddAlgorithm(
+            algoInfo, []); // TODO: Use default specifications
+        await Future.delayed(
+            const Duration(milliseconds: 250)); // Wait between adds
+      }
+
+      // Wait briefly after adding all algorithms
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // 3. Set parameter values
+      debugPrint("[ApplyOffline] Setting parameter values...");
+      for (int slotIndex = 0;
+          slotIndex < offlinePreset.slots.length;
+          slotIndex++) {
+        final offlineSlot = offlinePreset.slots[slotIndex];
+        for (final paramEntry in offlineSlot.parameterValues.entries) {
+          final paramNum = paramEntry.key;
+          final paramValue = paramEntry.value;
+          await liveManager.setParameterValue(slotIndex, paramNum, paramValue);
+          // Maybe add a tiny delay here if needed, but often bulk setting is okay
+          // await Future.delayed(const Duration(milliseconds: 5));
+        }
+        debugPrint("[ApplyOffline] ... values set for slot $slotIndex");
+      }
+
+      // --- Optional: Set Mappings, Routing, Names ---
+      debugPrint("[ApplyOffline] Setting mappings...");
+      for (int slotIndex = 0;
+          slotIndex < offlinePreset.slots.length;
+          slotIndex++) {
+        final offlineSlot = offlinePreset.slots[slotIndex];
+        for (final mappingEntry in offlineSlot.mappings.entries) {
+          await liveManager.requestSetMapping(
+              slotIndex, mappingEntry.key, mappingEntry.value);
+        }
+        if (offlineSlot.slot.customName != null) {
+          await liveManager.requestSendSlotName(
+              slotIndex, offlineSlot.slot.customName!);
+        }
+        // TODO: Apply routing if requestSetRouting implemented
+      }
+
+      // 4. Clean up: Delete the offline preset from DB
+      try {
+        final presetsDao = _database.presetsDao;
+        final entryToDelete =
+            await presetsDao.getPresetByName(offlinePresetDbKey);
+        if (entryToDelete != null) {
+          await presetsDao.deletePreset(entryToDelete.id);
+          debugPrint(
+              "[ApplyOffline] Deleted internal offline state preset from DB.");
+        }
+      } catch (e) {
+        debugPrint(
+            "[ApplyOffline] Failed to delete internal offline state preset: $e");
+      }
+
+      // 5. Refresh the UI state from the device
+      debugPrint("[ApplyOffline] Refreshing state from device...");
+      await Future.delayed(
+          const Duration(milliseconds: 250)); // Give device a moment
+      await refresh(); // MODIFIED: Call refresh() instead of synchronizeDevice()
+    } catch (e, stackTrace) {
+      debugPrint("[ApplyOffline] Error applying offline preset: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // Emit state without loading and clear pending flag in case of error during apply
+      final currentState = state;
+      if (currentState is DistingStateSynchronized) {
+        emit(currentState.copyWith(loading: false));
+      } else {
+        await loadDevices(); // Fallback to device selection
+      }
+    }
+  }
+
+  Future<void> discardOfflinePreset() async {
+    debugPrint("[Cubit] discardOfflinePreset called");
+    const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
+    final currentState = state; // Need current state to modify it
+
+    try {
+      final presetsDao = _database.presetsDao;
+      final savedPresetEntry =
+          await presetsDao.getPresetByName(offlinePresetName);
+      if (savedPresetEntry != null) {
+        await presetsDao.deletePreset(savedPresetEntry.id);
+        debugPrint(
+            "[Cubit] Deleted offline preset from DB: ID ${savedPresetEntry.id}");
+      } else {
+        debugPrint("[Cubit] No offline preset found in DB to delete.");
+      }
+
+      // After discarding, just re-emit the CURRENT state but clear the flag
+      if (currentState is DistingStateConnected) {
+        debugPrint(
+            "[Cubit] Discard successful, re-emitting synchronized state with pending flag cleared.");
+        emit(currentState.copyWith(pendingOfflinePresetToSync: null));
+      } else {
+        // Should not happen if dialog was shown
+        debugPrint(
+            "[Cubit] Discard called but state was not Synchronized. Ignoring.");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("[Cubit] Error deleting offline preset: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // If delete failed, still try to clear the flag from the UI state
+      if (currentState is DistingStateConnected) {
+        debugPrint(
+            "[Cubit] Discard DB delete failed, but still clearing pending flag from UI state.");
+        emit(currentState.copyWith(pendingOfflinePresetToSync: null));
+      } else {
+        await loadDevices();
       }
     }
   }

@@ -45,6 +45,9 @@ class DistingState with _$DistingState {
     required IDistingMidiManager disting,
     Uint8List? screenshot,
     @Default(false) bool demo,
+    @Default(false) bool offline,
+    @Default(false) bool loading,
+    FullPresetDetails? pendingOfflinePresetToSync,
   }) = DistingStateConnected;
 
   const factory DistingState.synchronized({

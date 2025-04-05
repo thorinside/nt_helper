@@ -373,7 +373,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<String?> requestPresetName() async {
-    return _presetName; // Return internal state name
+    return "Offline Preset"; // Always return fixed display name
   }
 
   @override
@@ -443,14 +443,28 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetPresetName(String name) async {
-    debugPrint("[Offline] requestSetPresetName: $name");
-    // Update internal state name
-    _presetName = name;
+    debugPrint(
+        "[Offline] requestSetPresetName: Ignoring rename attempt for offline state.");
+    // Renaming the internal offline state preset doesn't make sense.
   }
 
   @override
   Future<void> requestSavePreset() async {
-    print("[Offline] requestSavePreset - No-op");
+    debugPrint(
+        "[Offline] requestSavePreset: Saving current offline state to DB");
+    try {
+      final presetDetails = await getCurrentPresetDetails();
+      final presetsDao = _database.presetsDao;
+      // getCurrentPresetDetails ensures the correct PresetEntry is included
+      // saveFullPreset handles the upsert based on the preset ID
+      await presetsDao.saveFullPreset(presetDetails);
+
+      debugPrint("[Offline] Saved offline state to DB via requestSavePreset.");
+    } catch (e, stackTrace) {
+      debugPrint(
+          "[Offline] Error saving offline state via requestSavePreset: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   @override
@@ -595,17 +609,24 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<FullPresetDetails> getCurrentPresetDetails() async {
     // Need the PresetsDao to potentially create/find the PresetEntry ID
     final presetsDao = _database.presetsDao;
+    // Define the constant internal name for the offline state preset
+    const String offlinePresetDbKey = "__OFFLINE_INTERNAL_STATE__";
     // Find or create the preset entry for our offline state
-    PresetEntry? presetEntry = await presetsDao.getPresetByName(_presetName);
+    PresetEntry? presetEntry =
+        await presetsDao.getPresetByName(offlinePresetDbKey);
     if (presetEntry == null) {
-      // Create if it doesn't exist (using default name?)
-      final id = await presetsDao.db
-          .into(presetsDao.db.presets)
-          .insert(PresetsCompanion.insert(name: _presetName));
+      // Create if it doesn't exist (using the key as the name for DB consistency)
+      final id = await presetsDao.db.into(presetsDao.db.presets).insert(
+          PresetsCompanion.insert(
+              name: offlinePresetDbKey)); // Use key for DB name field too
       presetEntry = await presetsDao.getPresetById(id);
       if (presetEntry == null) {
-        throw Exception("Failed to create/find offline preset entry in DB");
+        throw Exception(
+            "Failed to create/find offline preset entry in DB for key: $offlinePresetDbKey");
       }
+    } else {
+      // If it exists, update its lastModified time
+      // ... existing code ...
     }
 
     final List<FullPresetSlot> slots = [];

@@ -611,7 +611,12 @@ mixin _$DistingState {
             bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -638,7 +643,12 @@ mixin _$DistingState {
             bool canWorkOffline)?
         selectDevice,
     TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -665,7 +675,12 @@ mixin _$DistingState {
             bool canWorkOffline)?
         selectDevice,
     TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -857,7 +872,12 @@ class _$DistingStateInitialImpl
             bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -887,7 +907,12 @@ class _$DistingStateInitialImpl
             bool canWorkOffline)?
         selectDevice,
     TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -917,7 +942,12 @@ class _$DistingStateInitialImpl
             bool canWorkOffline)?
         selectDevice,
     TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -1159,7 +1189,12 @@ class _$DistingStateSelectDeviceImpl
             bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -1190,7 +1225,12 @@ class _$DistingStateSelectDeviceImpl
             bool canWorkOffline)?
         selectDevice,
     TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -1221,7 +1261,12 @@ class _$DistingStateSelectDeviceImpl
             bool canWorkOffline)?
         selectDevice,
     TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -1315,7 +1360,13 @@ abstract class _$$DistingStateConnectedImplCopyWith<$Res>
       __$$DistingStateConnectedImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({IDistingMidiManager disting, Uint8List? screenshot, bool demo});
+  $Res call(
+      {IDistingMidiManager disting,
+      Uint8List? screenshot,
+      bool demo,
+      bool offline,
+      bool loading,
+      FullPresetDetails? pendingOfflinePresetToSync});
 }
 
 /// @nodoc
@@ -1334,6 +1385,9 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
     Object? disting = null,
     Object? screenshot = freezed,
     Object? demo = null,
+    Object? offline = null,
+    Object? loading = null,
+    Object? pendingOfflinePresetToSync = freezed,
   }) {
     return _then(_$DistingStateConnectedImpl(
       disting: null == disting
@@ -1348,6 +1402,18 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
           ? _value.demo
           : demo // ignore: cast_nullable_to_non_nullable
               as bool,
+      offline: null == offline
+          ? _value.offline
+          : offline // ignore: cast_nullable_to_non_nullable
+              as bool,
+      loading: null == loading
+          ? _value.loading
+          : loading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      pendingOfflinePresetToSync: freezed == pendingOfflinePresetToSync
+          ? _value.pendingOfflinePresetToSync
+          : pendingOfflinePresetToSync // ignore: cast_nullable_to_non_nullable
+              as FullPresetDetails?,
     ));
   }
 }
@@ -1358,7 +1424,12 @@ class _$DistingStateConnectedImpl
     with DiagnosticableTreeMixin
     implements DistingStateConnected {
   const _$DistingStateConnectedImpl(
-      {required this.disting, this.screenshot, this.demo = false});
+      {required this.disting,
+      this.screenshot,
+      this.demo = false,
+      this.offline = false,
+      this.loading = false,
+      this.pendingOfflinePresetToSync});
 
   @override
   final IDistingMidiManager disting;
@@ -1367,10 +1438,18 @@ class _$DistingStateConnectedImpl
   @override
   @JsonKey()
   final bool demo;
+  @override
+  @JsonKey()
+  final bool offline;
+  @override
+  @JsonKey()
+  final bool loading;
+  @override
+  final FullPresetDetails? pendingOfflinePresetToSync;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.connected(disting: $disting, screenshot: $screenshot, demo: $demo)';
+    return 'DistingState.connected(disting: $disting, screenshot: $screenshot, demo: $demo, offline: $offline, loading: $loading, pendingOfflinePresetToSync: $pendingOfflinePresetToSync)';
   }
 
   @override
@@ -1380,7 +1459,11 @@ class _$DistingStateConnectedImpl
       ..add(DiagnosticsProperty('type', 'DistingState.connected'))
       ..add(DiagnosticsProperty('disting', disting))
       ..add(DiagnosticsProperty('screenshot', screenshot))
-      ..add(DiagnosticsProperty('demo', demo));
+      ..add(DiagnosticsProperty('demo', demo))
+      ..add(DiagnosticsProperty('offline', offline))
+      ..add(DiagnosticsProperty('loading', loading))
+      ..add(DiagnosticsProperty(
+          'pendingOfflinePresetToSync', pendingOfflinePresetToSync));
   }
 
   @override
@@ -1391,12 +1474,24 @@ class _$DistingStateConnectedImpl
             (identical(other.disting, disting) || other.disting == disting) &&
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            (identical(other.demo, demo) || other.demo == demo) &&
+            (identical(other.offline, offline) || other.offline == offline) &&
+            (identical(other.loading, loading) || other.loading == loading) &&
+            (identical(other.pendingOfflinePresetToSync,
+                    pendingOfflinePresetToSync) ||
+                other.pendingOfflinePresetToSync ==
+                    pendingOfflinePresetToSync));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, disting,
-      const DeepCollectionEquality().hash(screenshot), demo);
+  int get hashCode => Object.hash(
+      runtimeType,
+      disting,
+      const DeepCollectionEquality().hash(screenshot),
+      demo,
+      offline,
+      loading,
+      pendingOfflinePresetToSync);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1419,7 +1514,12 @@ class _$DistingStateConnectedImpl
             bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -1434,7 +1534,8 @@ class _$DistingStateConnectedImpl
             bool offline)
         synchronized,
   }) {
-    return connected(disting, screenshot, demo);
+    return connected(disting, screenshot, demo, offline, loading,
+        pendingOfflinePresetToSync);
   }
 
   @override
@@ -1449,7 +1550,12 @@ class _$DistingStateConnectedImpl
             bool canWorkOffline)?
         selectDevice,
     TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -1464,7 +1570,8 @@ class _$DistingStateConnectedImpl
             bool offline)?
         synchronized,
   }) {
-    return connected?.call(disting, screenshot, demo);
+    return connected?.call(disting, screenshot, demo, offline, loading,
+        pendingOfflinePresetToSync);
   }
 
   @override
@@ -1479,7 +1586,12 @@ class _$DistingStateConnectedImpl
             bool canWorkOffline)?
         selectDevice,
     TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -1496,7 +1608,8 @@ class _$DistingStateConnectedImpl
     required TResult orElse(),
   }) {
     if (connected != null) {
-      return connected(disting, screenshot, demo);
+      return connected(disting, screenshot, demo, offline, loading,
+          pendingOfflinePresetToSync);
     }
     return orElse();
   }
@@ -1541,15 +1654,22 @@ class _$DistingStateConnectedImpl
 
 abstract class DistingStateConnected implements DistingState {
   const factory DistingStateConnected(
-      {required final IDistingMidiManager disting,
-      final Uint8List? screenshot,
-      final bool demo}) = _$DistingStateConnectedImpl;
+          {required final IDistingMidiManager disting,
+          final Uint8List? screenshot,
+          final bool demo,
+          final bool offline,
+          final bool loading,
+          final FullPresetDetails? pendingOfflinePresetToSync}) =
+      _$DistingStateConnectedImpl;
 
   IDistingMidiManager get disting;
   @override
   Uint8List? get screenshot;
   @override
   bool get demo;
+  bool get offline;
+  bool get loading;
+  FullPresetDetails? get pendingOfflinePresetToSync;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1792,7 +1912,12 @@ class _$DistingStateSynchronizedImpl
             bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -1823,7 +1948,12 @@ class _$DistingStateSynchronizedImpl
             bool canWorkOffline)?
         selectDevice,
     TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -1854,7 +1984,12 @@ class _$DistingStateSynchronizedImpl
             bool canWorkOffline)?
         selectDevice,
     TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+            IDistingMidiManager disting,
+            Uint8List? screenshot,
+            bool demo,
+            bool offline,
+            bool loading,
+            FullPresetDetails? pendingOfflinePresetToSync)?
         connected,
     TResult Function(
             IDistingMidiManager disting,

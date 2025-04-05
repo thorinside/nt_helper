@@ -145,7 +145,6 @@ class Algorithm implements HasAlgorithmIndex {
     return "Algorithm: index=$algorithmIndex guid=$guid name=$name";
   }
 
-  // Write a copyWith function for this class
   Algorithm copyWith({int? algorithmIndex, String? guid, String? name}) {
     return Algorithm(
       algorithmIndex: algorithmIndex ?? this.algorithmIndex,
@@ -417,6 +416,16 @@ class AlgorithmInfo implements HasAlgorithmIndex {
       numSpecifications: 0,
       specifications: List.empty(),
       name: "name",
+    );
+  }
+
+  AlgorithmInfo copyWith({int? algorithmIndex, String? guid, String? name, int? numSpecifications, List<Specification>? specifications}) {
+    return AlgorithmInfo(
+      algorithmIndex: algorithmIndex ?? this.algorithmIndex,
+      guid: guid ?? this.guid,
+      name: name ?? this.name,
+      numSpecifications: numSpecifications ?? this.numSpecifications,
+      specifications: specifications ?? this.specifications,
     );
   }
 
