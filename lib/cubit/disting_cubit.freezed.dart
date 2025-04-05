@@ -603,8 +603,12 @@ mixin _$DistingState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot, bool demo) initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+    required TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)
         selectDevice,
     required TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)
@@ -626,8 +630,12 @@ mixin _$DistingState {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot, bool demo)? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult? Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult? Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -649,8 +657,12 @@ mixin _$DistingState {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot, bool demo)? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -837,8 +849,12 @@ class _$DistingStateInitialImpl
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot, bool demo) initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+    required TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)
         selectDevice,
     required TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)
@@ -863,8 +879,12 @@ class _$DistingStateInitialImpl
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot, bool demo)? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult? Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult? Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -889,8 +909,12 @@ class _$DistingStateInitialImpl
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot, bool demo)? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -984,7 +1008,8 @@ abstract class _$$DistingStateSelectDeviceImplCopyWith<$Res>
       {List<MidiDevice> inputDevices,
       List<MidiDevice> outputDevices,
       Uint8List? screenshot,
-      bool demo});
+      bool demo,
+      bool canWorkOffline});
 }
 
 /// @nodoc
@@ -1005,6 +1030,7 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
     Object? outputDevices = null,
     Object? screenshot = freezed,
     Object? demo = null,
+    Object? canWorkOffline = null,
   }) {
     return _then(_$DistingStateSelectDeviceImpl(
       inputDevices: null == inputDevices
@@ -1023,6 +1049,10 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
           ? _value.demo
           : demo // ignore: cast_nullable_to_non_nullable
               as bool,
+      canWorkOffline: null == canWorkOffline
+          ? _value.canWorkOffline
+          : canWorkOffline // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1036,7 +1066,8 @@ class _$DistingStateSelectDeviceImpl
       {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
       this.screenshot,
-      this.demo = false})
+      this.demo = false,
+      this.canWorkOffline = false})
       : _inputDevices = inputDevices,
         _outputDevices = outputDevices;
 
@@ -1061,10 +1092,13 @@ class _$DistingStateSelectDeviceImpl
   @override
   @JsonKey()
   final bool demo;
+  @override
+  @JsonKey()
+  final bool canWorkOffline;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot, demo: $demo)';
+    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot, demo: $demo, canWorkOffline: $canWorkOffline)';
   }
 
   @override
@@ -1075,7 +1109,8 @@ class _$DistingStateSelectDeviceImpl
       ..add(DiagnosticsProperty('inputDevices', inputDevices))
       ..add(DiagnosticsProperty('outputDevices', outputDevices))
       ..add(DiagnosticsProperty('screenshot', screenshot))
-      ..add(DiagnosticsProperty('demo', demo));
+      ..add(DiagnosticsProperty('demo', demo))
+      ..add(DiagnosticsProperty('canWorkOffline', canWorkOffline));
   }
 
   @override
@@ -1089,7 +1124,9 @@ class _$DistingStateSelectDeviceImpl
                 .equals(other._outputDevices, _outputDevices) &&
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            (identical(other.demo, demo) || other.demo == demo) &&
+            (identical(other.canWorkOffline, canWorkOffline) ||
+                other.canWorkOffline == canWorkOffline));
   }
 
   @override
@@ -1098,7 +1135,8 @@ class _$DistingStateSelectDeviceImpl
       const DeepCollectionEquality().hash(_inputDevices),
       const DeepCollectionEquality().hash(_outputDevices),
       const DeepCollectionEquality().hash(screenshot),
-      demo);
+      demo,
+      canWorkOffline);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1113,8 +1151,12 @@ class _$DistingStateSelectDeviceImpl
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot, bool demo) initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+    required TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)
         selectDevice,
     required TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)
@@ -1132,15 +1174,20 @@ class _$DistingStateSelectDeviceImpl
             bool offline)
         synchronized,
   }) {
-    return selectDevice(inputDevices, outputDevices, screenshot, demo);
+    return selectDevice(
+        inputDevices, outputDevices, screenshot, demo, canWorkOffline);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot, bool demo)? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult? Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult? Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -1158,15 +1205,20 @@ class _$DistingStateSelectDeviceImpl
             bool offline)?
         synchronized,
   }) {
-    return selectDevice?.call(inputDevices, outputDevices, screenshot, demo);
+    return selectDevice?.call(
+        inputDevices, outputDevices, screenshot, demo, canWorkOffline);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot, bool demo)? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -1186,7 +1238,8 @@ class _$DistingStateSelectDeviceImpl
     required TResult orElse(),
   }) {
     if (selectDevice != null) {
-      return selectDevice(inputDevices, outputDevices, screenshot, demo);
+      return selectDevice(
+          inputDevices, outputDevices, screenshot, demo, canWorkOffline);
     }
     return orElse();
   }
@@ -1234,7 +1287,8 @@ abstract class DistingStateSelectDevice implements DistingState {
       {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
       final Uint8List? screenshot,
-      final bool demo}) = _$DistingStateSelectDeviceImpl;
+      final bool demo,
+      final bool canWorkOffline}) = _$DistingStateSelectDeviceImpl;
 
   List<MidiDevice> get inputDevices;
   List<MidiDevice> get outputDevices;
@@ -1242,6 +1296,7 @@ abstract class DistingStateSelectDevice implements DistingState {
   Uint8List? get screenshot;
   @override
   bool get demo;
+  bool get canWorkOffline;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1356,8 +1411,12 @@ class _$DistingStateConnectedImpl
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot, bool demo) initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+    required TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)
         selectDevice,
     required TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)
@@ -1382,8 +1441,12 @@ class _$DistingStateConnectedImpl
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot, bool demo)? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult? Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult? Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -1408,8 +1471,12 @@ class _$DistingStateConnectedImpl
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot, bool demo)? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -1717,8 +1784,12 @@ class _$DistingStateSynchronizedImpl
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(Uint8List? screenshot, bool demo) initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+    required TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)
         selectDevice,
     required TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)
@@ -1744,8 +1815,12 @@ class _$DistingStateSynchronizedImpl
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(Uint8List? screenshot, bool demo)? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult? Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult? Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
@@ -1771,8 +1846,12 @@ class _$DistingStateSynchronizedImpl
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(Uint8List? screenshot, bool demo)? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+    TResult Function(
+            List<MidiDevice> inputDevices,
+            List<MidiDevice> outputDevices,
+            Uint8List? screenshot,
+            bool demo,
+            bool canWorkOffline)?
         selectDevice,
     TResult Function(
             IDistingMidiManager disting, Uint8List? screenshot, bool demo)?

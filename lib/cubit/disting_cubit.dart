@@ -13,6 +13,8 @@ import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/db/database.dart'; // Added
+import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
 
 part 'disting_cubit.freezed.dart';
 part 'disting_state.dart';
@@ -26,11 +28,17 @@ class _PollingTask {
 }
 
 class DistingCubit extends Cubit<DistingState> {
-  DistingCubit()
-      : _prefs = SharedPreferences.getInstance(),
-        super(DistingState.initial());
-
+  final AppDatabase _database; // Added
+  late final MetadataDao _metadataDao; // Added
   final Future<SharedPreferences> _prefs;
+
+  // Modified constructor
+  DistingCubit(this._database)
+      : _prefs = SharedPreferences.getInstance(),
+        super(DistingState.initial()) {
+    _metadataDao = _database.metadataDao; // Initialize DAO
+  }
+
   MidiCommand _midiCommand = MidiCommand();
   CancelableOperation<void>? _programSlotUpdate;
 
@@ -41,6 +49,15 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> initialize() async {
+    // Check for offline capability first
+    bool canWorkOffline = false; // Default to false
+    try {
+      canWorkOffline = await _metadataDao.hasCachedAlgorithms();
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      // Proceed with canWorkOffline as false
+    }
+
     final prefs = await _prefs;
     final savedInputDeviceName = prefs.getString('selectedInputMidiDevice');
     final savedOutputDeviceName = prefs.getString('selectedOutputMidiDevice');
@@ -63,16 +80,22 @@ class DistingCubit extends Cubit<DistingState> {
         await connectToDevices(
             savedInputDevice, savedOutputDevice, savedSysExId);
       } else {
+        // Saved prefs exist, but devices not found now.
+        final devices = await _fetchDeviceLists(); // Use helper
         emit(DistingState.selectDevice(
-          inputDevices:
-              devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
-          outputDevices:
-              devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
+          inputDevices: devices['input'] ?? [],
+          outputDevices: devices['output'] ?? [],
+          canWorkOffline: canWorkOffline, // Pass the flag
         ));
       }
     } else {
-      // Load devices if no saved settings are found
-      loadDevices();
+      // No saved settings found, load devices and show selection
+      final devices = await _fetchDeviceLists(); // Use helper
+      emit(DistingState.selectDevice(
+        inputDevices: devices['input'] ?? [],
+        outputDevices: devices['output'] ?? [],
+        canWorkOffline: canWorkOffline, // Pass the flag
+      ));
     }
   }
 
@@ -543,22 +566,26 @@ class DistingCubit extends Cubit<DistingState> {
       // Transition to a loading state if needed
       emit(DistingState.initial());
 
-      // Fetch available MIDI devices asynchronously
-      final devices = await _midiCommand.devices;
+      // Fetch devices using the helper
+      final devices = await _fetchDeviceLists();
 
-      devices?.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+      // Re-check offline capability here for manual refresh accuracy
+      final bool canWorkOffline = await _metadataDao.hasCachedAlgorithms();
 
       // Transition to the select device state
       emit(DistingState.selectDevice(
-        inputDevices:
-            devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
-        outputDevices:
-            devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
+        inputDevices: devices['input'] ?? [],
+        outputDevices: devices['output'] ?? [],
+        canWorkOffline: canWorkOffline, // Pass the flag here
       ));
-    } catch (e) {
-      // Handle error state if necessary
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace);
+      // Emit default state on error
+      emit(const DistingState.selectDevice(
+        inputDevices: [],
+        outputDevices: [],
+        canWorkOffline: false,
+      ));
     }
   }
 
@@ -1374,6 +1401,8 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> workOffline() async {
+    // Load algorithms from DB for offline mode?
+    // For now, just emit the empty state as before.
     emit(DistingState.synchronized(
       disting: MockDistingMidiManager(),
       distingVersion: "Offline Mode",
@@ -1384,5 +1413,18 @@ class DistingCubit extends Cubit<DistingState> {
       offline: true,
       demo: false, // Ensure demo mode is off unless explicitly entered
     ));
+  }
+
+  // Helper method to fetch and sort devices
+  Future<Map<String, List<MidiDevice>>> _fetchDeviceLists() async {
+    final devices = await _midiCommand.devices;
+    devices?.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return {
+      'input': devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
+      'output':
+          devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
+    };
   }
 }

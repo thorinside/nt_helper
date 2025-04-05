@@ -38,6 +38,7 @@ class DistingState with _$DistingState {
     required List<MidiDevice> outputDevices,
     Uint8List? screenshot,
     @Default(false) bool demo,
+    @Default(false) bool canWorkOffline,
   }) = DistingStateSelectDevice;
 
   const factory DistingState.connected({

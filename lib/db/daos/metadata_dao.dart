@@ -235,6 +235,14 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
       enums: enumMap,
     );
   }
+
+  /// Checks if there are any algorithms stored in the database.
+  Future<bool> hasCachedAlgorithms() async {
+    final query = selectOnly(algorithms)..addColumns([algorithms.guid.count()]);
+    final result = await query.getSingleOrNull();
+    final count = result?.read(algorithms.guid.count()) ?? 0;
+    return count > 0;
+  }
 }
 
 // Helper classes for combined query results

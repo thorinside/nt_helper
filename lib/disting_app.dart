@@ -34,7 +34,11 @@ class DistingApp extends StatelessWidget {
       // Follow system settings
       home: BlocProvider(
         create: (context) {
-          final cubit = DistingCubit();
+          // Get the AppDatabase instance from the context
+          final database = context.read<AppDatabase>();
+
+          // Create DistingCubit and pass the database instance
+          final cubit = DistingCubit(database); // Pass database here
           cubit.initialize(); // Load settings and auto-connect if possible
           return cubit;
         },
@@ -115,6 +119,7 @@ class DistingPage extends StatelessWidget {
                 onOfflinePressed: () async {
                   context.read<DistingCubit>().workOffline();
                 },
+                canWorkOffline: state.canWorkOffline,
               );
             } else if (state is DistingStateConnected) {
               return Center(
@@ -164,6 +169,7 @@ class _DeviceSelectionView extends StatefulWidget {
   final Function() onSettingsPressed;
   final Function() onDemoPressed;
   final Function() onOfflinePressed;
+  final bool canWorkOffline;
 
   const _DeviceSelectionView({
     required this.inputDevices,
@@ -173,6 +179,7 @@ class _DeviceSelectionView extends StatefulWidget {
     required this.onSettingsPressed,
     required this.onDemoPressed,
     required this.onOfflinePressed,
+    required this.canWorkOffline,
   });
 
   @override
@@ -308,12 +315,12 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                     label: const Text("Refresh"),
                     onPressed: widget.onRefresh,
                   ),
-                  OutlinedButton.icon(
-                    // Added Work Offline button here
-                    icon: const Icon(Icons.cloud_off),
-                    label: const Text("Work Offline"),
-                    onPressed: widget.onOfflinePressed, // Use existing callback
-                  ),
+                  if (widget.canWorkOffline)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.cloud_off),
+                      label: const Text("Work Offline"),
+                      onPressed: widget.onOfflinePressed,
+                    ),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.link),
                     label: const Text("Connect"),
