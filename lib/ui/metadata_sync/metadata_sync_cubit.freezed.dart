@@ -19,25 +19,40 @@ mixin _$MetadataSyncState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
-    required TResult Function(double progress, String message) syncing,
+    required TResult Function(double progress, String mainMessage,
+            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
+        syncing,
     required TResult Function(String message) success,
     required TResult Function(String error) failure,
+    required TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)
+        viewingData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
-    TResult? Function(double progress, String message)? syncing,
+    TResult? Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult? Function(String message)? success,
     TResult? Function(String error)? failure,
+    TResult? Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
-    TResult Function(double progress, String message)? syncing,
+    TResult Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult Function(String message)? success,
     TResult Function(String error)? failure,
+    TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -47,6 +62,7 @@ mixin _$MetadataSyncState {
     required TResult Function(Syncing value) syncing,
     required TResult Function(Success value) success,
     required TResult Function(Failure value) failure,
+    required TResult Function(ViewingData value) viewingData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -55,6 +71,7 @@ mixin _$MetadataSyncState {
     TResult? Function(Syncing value)? syncing,
     TResult? Function(Success value)? success,
     TResult? Function(Failure value)? failure,
+    TResult? Function(ViewingData value)? viewingData,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -63,6 +80,7 @@ mixin _$MetadataSyncState {
     TResult Function(Syncing value)? syncing,
     TResult Function(Success value)? success,
     TResult Function(Failure value)? failure,
+    TResult Function(ViewingData value)? viewingData,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -130,9 +148,14 @@ class _$IdleImpl implements Idle {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
-    required TResult Function(double progress, String message) syncing,
+    required TResult Function(double progress, String mainMessage,
+            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
+        syncing,
     required TResult Function(String message) success,
     required TResult Function(String error) failure,
+    required TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)
+        viewingData,
   }) {
     return idle();
   }
@@ -141,9 +164,14 @@ class _$IdleImpl implements Idle {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
-    TResult? Function(double progress, String message)? syncing,
+    TResult? Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult? Function(String message)? success,
     TResult? Function(String error)? failure,
+    TResult? Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
   }) {
     return idle?.call();
   }
@@ -152,9 +180,14 @@ class _$IdleImpl implements Idle {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
-    TResult Function(double progress, String message)? syncing,
+    TResult Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult Function(String message)? success,
     TResult Function(String error)? failure,
+    TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
     required TResult orElse(),
   }) {
     if (idle != null) {
@@ -170,6 +203,7 @@ class _$IdleImpl implements Idle {
     required TResult Function(Syncing value) syncing,
     required TResult Function(Success value) success,
     required TResult Function(Failure value) failure,
+    required TResult Function(ViewingData value) viewingData,
   }) {
     return idle(this);
   }
@@ -181,6 +215,7 @@ class _$IdleImpl implements Idle {
     TResult? Function(Syncing value)? syncing,
     TResult? Function(Success value)? success,
     TResult? Function(Failure value)? failure,
+    TResult? Function(ViewingData value)? viewingData,
   }) {
     return idle?.call(this);
   }
@@ -192,6 +227,7 @@ class _$IdleImpl implements Idle {
     TResult Function(Syncing value)? syncing,
     TResult Function(Success value)? success,
     TResult Function(Failure value)? failure,
+    TResult Function(ViewingData value)? viewingData,
     required TResult orElse(),
   }) {
     if (idle != null) {
@@ -211,7 +247,12 @@ abstract class _$$SyncingImplCopyWith<$Res> {
           _$SyncingImpl value, $Res Function(_$SyncingImpl) then) =
       __$$SyncingImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({double progress, String message});
+  $Res call(
+      {double progress,
+      String mainMessage,
+      String subMessage,
+      int? algorithmsProcessed,
+      int? totalAlgorithms});
 }
 
 /// @nodoc
@@ -228,17 +269,32 @@ class __$$SyncingImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? progress = null,
-    Object? message = null,
+    Object? mainMessage = null,
+    Object? subMessage = null,
+    Object? algorithmsProcessed = freezed,
+    Object? totalAlgorithms = freezed,
   }) {
     return _then(_$SyncingImpl(
       progress: null == progress
           ? _value.progress
           : progress // ignore: cast_nullable_to_non_nullable
               as double,
-      message: null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
+      mainMessage: null == mainMessage
+          ? _value.mainMessage
+          : mainMessage // ignore: cast_nullable_to_non_nullable
               as String,
+      subMessage: null == subMessage
+          ? _value.subMessage
+          : subMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      algorithmsProcessed: freezed == algorithmsProcessed
+          ? _value.algorithmsProcessed
+          : algorithmsProcessed // ignore: cast_nullable_to_non_nullable
+              as int?,
+      totalAlgorithms: freezed == totalAlgorithms
+          ? _value.totalAlgorithms
+          : totalAlgorithms // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -246,17 +302,31 @@ class __$$SyncingImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$SyncingImpl implements Syncing {
-  const _$SyncingImpl({required this.progress, required this.message});
+  const _$SyncingImpl(
+      {required this.progress,
+      required this.mainMessage,
+      required this.subMessage,
+      this.algorithmsProcessed,
+      this.totalAlgorithms});
 
   @override
   final double progress;
 // 0.0 to 1.0
   @override
-  final String message;
+  final String mainMessage;
+// e.g., "Processing Algorithm X (15/128)"
+  @override
+  final String subMessage;
+// e.g., "Adding to preset..."
+  @override
+  final int? algorithmsProcessed;
+// Keep for progress calculation
+  @override
+  final int? totalAlgorithms;
 
   @override
   String toString() {
-    return 'MetadataSyncState.syncing(progress: $progress, message: $message)';
+    return 'MetadataSyncState.syncing(progress: $progress, mainMessage: $mainMessage, subMessage: $subMessage, algorithmsProcessed: $algorithmsProcessed, totalAlgorithms: $totalAlgorithms)';
   }
 
   @override
@@ -266,11 +336,19 @@ class _$SyncingImpl implements Syncing {
             other is _$SyncingImpl &&
             (identical(other.progress, progress) ||
                 other.progress == progress) &&
-            (identical(other.message, message) || other.message == message));
+            (identical(other.mainMessage, mainMessage) ||
+                other.mainMessage == mainMessage) &&
+            (identical(other.subMessage, subMessage) ||
+                other.subMessage == subMessage) &&
+            (identical(other.algorithmsProcessed, algorithmsProcessed) ||
+                other.algorithmsProcessed == algorithmsProcessed) &&
+            (identical(other.totalAlgorithms, totalAlgorithms) ||
+                other.totalAlgorithms == totalAlgorithms));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, progress, message);
+  int get hashCode => Object.hash(runtimeType, progress, mainMessage,
+      subMessage, algorithmsProcessed, totalAlgorithms);
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
@@ -284,35 +362,53 @@ class _$SyncingImpl implements Syncing {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
-    required TResult Function(double progress, String message) syncing,
+    required TResult Function(double progress, String mainMessage,
+            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
+        syncing,
     required TResult Function(String message) success,
     required TResult Function(String error) failure,
+    required TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)
+        viewingData,
   }) {
-    return syncing(progress, message);
+    return syncing(progress, mainMessage, subMessage, algorithmsProcessed,
+        totalAlgorithms);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
-    TResult? Function(double progress, String message)? syncing,
+    TResult? Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult? Function(String message)? success,
     TResult? Function(String error)? failure,
+    TResult? Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
   }) {
-    return syncing?.call(progress, message);
+    return syncing?.call(progress, mainMessage, subMessage, algorithmsProcessed,
+        totalAlgorithms);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
-    TResult Function(double progress, String message)? syncing,
+    TResult Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult Function(String message)? success,
     TResult Function(String error)? failure,
+    TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
     required TResult orElse(),
   }) {
     if (syncing != null) {
-      return syncing(progress, message);
+      return syncing(progress, mainMessage, subMessage, algorithmsProcessed,
+          totalAlgorithms);
     }
     return orElse();
   }
@@ -324,6 +420,7 @@ class _$SyncingImpl implements Syncing {
     required TResult Function(Syncing value) syncing,
     required TResult Function(Success value) success,
     required TResult Function(Failure value) failure,
+    required TResult Function(ViewingData value) viewingData,
   }) {
     return syncing(this);
   }
@@ -335,6 +432,7 @@ class _$SyncingImpl implements Syncing {
     TResult? Function(Syncing value)? syncing,
     TResult? Function(Success value)? success,
     TResult? Function(Failure value)? failure,
+    TResult? Function(ViewingData value)? viewingData,
   }) {
     return syncing?.call(this);
   }
@@ -346,6 +444,7 @@ class _$SyncingImpl implements Syncing {
     TResult Function(Syncing value)? syncing,
     TResult Function(Success value)? success,
     TResult Function(Failure value)? failure,
+    TResult Function(ViewingData value)? viewingData,
     required TResult orElse(),
   }) {
     if (syncing != null) {
@@ -358,10 +457,16 @@ class _$SyncingImpl implements Syncing {
 abstract class Syncing implements MetadataSyncState {
   const factory Syncing(
       {required final double progress,
-      required final String message}) = _$SyncingImpl;
+      required final String mainMessage,
+      required final String subMessage,
+      final int? algorithmsProcessed,
+      final int? totalAlgorithms}) = _$SyncingImpl;
 
   double get progress; // 0.0 to 1.0
-  String get message;
+  String get mainMessage; // e.g., "Processing Algorithm X (15/128)"
+  String get subMessage; // e.g., "Adding to preset..."
+  int? get algorithmsProcessed; // Keep for progress calculation
+  int? get totalAlgorithms;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
@@ -439,9 +544,14 @@ class _$SuccessImpl implements Success {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
-    required TResult Function(double progress, String message) syncing,
+    required TResult Function(double progress, String mainMessage,
+            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
+        syncing,
     required TResult Function(String message) success,
     required TResult Function(String error) failure,
+    required TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)
+        viewingData,
   }) {
     return success(message);
   }
@@ -450,9 +560,14 @@ class _$SuccessImpl implements Success {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
-    TResult? Function(double progress, String message)? syncing,
+    TResult? Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult? Function(String message)? success,
     TResult? Function(String error)? failure,
+    TResult? Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
   }) {
     return success?.call(message);
   }
@@ -461,9 +576,14 @@ class _$SuccessImpl implements Success {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
-    TResult Function(double progress, String message)? syncing,
+    TResult Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult Function(String message)? success,
     TResult Function(String error)? failure,
+    TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
     required TResult orElse(),
   }) {
     if (success != null) {
@@ -479,6 +599,7 @@ class _$SuccessImpl implements Success {
     required TResult Function(Syncing value) syncing,
     required TResult Function(Success value) success,
     required TResult Function(Failure value) failure,
+    required TResult Function(ViewingData value) viewingData,
   }) {
     return success(this);
   }
@@ -490,6 +611,7 @@ class _$SuccessImpl implements Success {
     TResult? Function(Syncing value)? syncing,
     TResult? Function(Success value)? success,
     TResult? Function(Failure value)? failure,
+    TResult? Function(ViewingData value)? viewingData,
   }) {
     return success?.call(this);
   }
@@ -501,6 +623,7 @@ class _$SuccessImpl implements Success {
     TResult Function(Syncing value)? syncing,
     TResult Function(Success value)? success,
     TResult Function(Failure value)? failure,
+    TResult Function(ViewingData value)? viewingData,
     required TResult orElse(),
   }) {
     if (success != null) {
@@ -591,9 +714,14 @@ class _$FailureImpl implements Failure {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
-    required TResult Function(double progress, String message) syncing,
+    required TResult Function(double progress, String mainMessage,
+            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
+        syncing,
     required TResult Function(String message) success,
     required TResult Function(String error) failure,
+    required TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)
+        viewingData,
   }) {
     return failure(error);
   }
@@ -602,9 +730,14 @@ class _$FailureImpl implements Failure {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
-    TResult? Function(double progress, String message)? syncing,
+    TResult? Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult? Function(String message)? success,
     TResult? Function(String error)? failure,
+    TResult? Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
   }) {
     return failure?.call(error);
   }
@@ -613,9 +746,14 @@ class _$FailureImpl implements Failure {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
-    TResult Function(double progress, String message)? syncing,
+    TResult Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
     TResult Function(String message)? success,
     TResult Function(String error)? failure,
+    TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
     required TResult orElse(),
   }) {
     if (failure != null) {
@@ -631,6 +769,7 @@ class _$FailureImpl implements Failure {
     required TResult Function(Syncing value) syncing,
     required TResult Function(Success value) success,
     required TResult Function(Failure value) failure,
+    required TResult Function(ViewingData value) viewingData,
   }) {
     return failure(this);
   }
@@ -642,6 +781,7 @@ class _$FailureImpl implements Failure {
     TResult? Function(Syncing value)? syncing,
     TResult? Function(Success value)? success,
     TResult? Function(Failure value)? failure,
+    TResult? Function(ViewingData value)? viewingData,
   }) {
     return failure?.call(this);
   }
@@ -653,6 +793,7 @@ class _$FailureImpl implements Failure {
     TResult Function(Syncing value)? syncing,
     TResult Function(Success value)? success,
     TResult Function(Failure value)? failure,
+    TResult Function(ViewingData value)? viewingData,
     required TResult orElse(),
   }) {
     if (failure != null) {
@@ -671,5 +812,207 @@ abstract class Failure implements MetadataSyncState {
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$FailureImplCopyWith<_$FailureImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$ViewingDataImplCopyWith<$Res> {
+  factory _$$ViewingDataImplCopyWith(
+          _$ViewingDataImpl value, $Res Function(_$ViewingDataImpl) then) =
+      __$$ViewingDataImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call(
+      {List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts});
+}
+
+/// @nodoc
+class __$$ViewingDataImplCopyWithImpl<$Res>
+    extends _$MetadataSyncStateCopyWithImpl<$Res, _$ViewingDataImpl>
+    implements _$$ViewingDataImplCopyWith<$Res> {
+  __$$ViewingDataImplCopyWithImpl(
+      _$ViewingDataImpl _value, $Res Function(_$ViewingDataImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? algorithms = null,
+    Object? parameterCounts = null,
+  }) {
+    return _then(_$ViewingDataImpl(
+      algorithms: null == algorithms
+          ? _value._algorithms
+          : algorithms // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmEntry>,
+      parameterCounts: null == parameterCounts
+          ? _value._parameterCounts
+          : parameterCounts // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$ViewingDataImpl implements ViewingData {
+  const _$ViewingDataImpl(
+      {required final List<AlgorithmEntry> algorithms,
+      required final Map<String, int> parameterCounts})
+      : _algorithms = algorithms,
+        _parameterCounts = parameterCounts;
+
+  final List<AlgorithmEntry> _algorithms;
+  @override
+  List<AlgorithmEntry> get algorithms {
+    if (_algorithms is EqualUnmodifiableListView) return _algorithms;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_algorithms);
+  }
+
+  final Map<String, int> _parameterCounts;
+  @override
+  Map<String, int> get parameterCounts {
+    if (_parameterCounts is EqualUnmodifiableMapView) return _parameterCounts;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_parameterCounts);
+  }
+
+  @override
+  String toString() {
+    return 'MetadataSyncState.viewingData(algorithms: $algorithms, parameterCounts: $parameterCounts)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ViewingDataImpl &&
+            const DeepCollectionEquality()
+                .equals(other._algorithms, _algorithms) &&
+            const DeepCollectionEquality()
+                .equals(other._parameterCounts, _parameterCounts));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_algorithms),
+      const DeepCollectionEquality().hash(_parameterCounts));
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ViewingDataImplCopyWith<_$ViewingDataImpl> get copyWith =>
+      __$$ViewingDataImplCopyWithImpl<_$ViewingDataImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() idle,
+    required TResult Function(double progress, String mainMessage,
+            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
+        syncing,
+    required TResult Function(String message) success,
+    required TResult Function(String error) failure,
+    required TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)
+        viewingData,
+  }) {
+    return viewingData(algorithms, parameterCounts);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? idle,
+    TResult? Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
+    TResult? Function(String message)? success,
+    TResult? Function(String error)? failure,
+    TResult? Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
+  }) {
+    return viewingData?.call(algorithms, parameterCounts);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? idle,
+    TResult Function(double progress, String mainMessage, String subMessage,
+            int? algorithmsProcessed, int? totalAlgorithms)?
+        syncing,
+    TResult Function(String message)? success,
+    TResult Function(String error)? failure,
+    TResult Function(
+            List<AlgorithmEntry> algorithms, Map<String, int> parameterCounts)?
+        viewingData,
+    required TResult orElse(),
+  }) {
+    if (viewingData != null) {
+      return viewingData(algorithms, parameterCounts);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(Idle value) idle,
+    required TResult Function(Syncing value) syncing,
+    required TResult Function(Success value) success,
+    required TResult Function(Failure value) failure,
+    required TResult Function(ViewingData value) viewingData,
+  }) {
+    return viewingData(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(Idle value)? idle,
+    TResult? Function(Syncing value)? syncing,
+    TResult? Function(Success value)? success,
+    TResult? Function(Failure value)? failure,
+    TResult? Function(ViewingData value)? viewingData,
+  }) {
+    return viewingData?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(Idle value)? idle,
+    TResult Function(Syncing value)? syncing,
+    TResult Function(Success value)? success,
+    TResult Function(Failure value)? failure,
+    TResult Function(ViewingData value)? viewingData,
+    required TResult orElse(),
+  }) {
+    if (viewingData != null) {
+      return viewingData(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class ViewingData implements MetadataSyncState {
+  const factory ViewingData(
+      {required final List<AlgorithmEntry> algorithms,
+      required final Map<String, int> parameterCounts}) = _$ViewingDataImpl;
+
+  List<AlgorithmEntry> get algorithms;
+  Map<String, int> get parameterCounts;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ViewingDataImplCopyWith<_$ViewingDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

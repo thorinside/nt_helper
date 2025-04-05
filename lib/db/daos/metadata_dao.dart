@@ -114,8 +114,34 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
 
   // --- Query Methods ---
 
-  Stream<List<AlgorithmEntry>> watchAllAlgorithms() =>
-      select(algorithms).watch();
+  Future<Map<String, int>> getAlgorithmParameterCounts() async {
+    // Define the count expression
+    final countExp = parameters.parameterNumber.count();
+
+    final query = select(parameters).addColumns([
+      parameters.algorithmGuid,
+      countExp // Use the count expression here
+    ]);
+    query.groupBy([parameters.algorithmGuid]); // Group by algorithm
+
+    final results = await query.get();
+
+    return {
+      for (var row in results)
+        // Read the GUID and the calculated count expression
+        row.read(parameters.algorithmGuid)!: row.read(countExp) ?? 0
+    };
+  }
+
+  Future<List<AlgorithmEntry>> getAllAlgorithms() {
+    return (select(algorithms)..orderBy([(a) => OrderingTerm.asc(a.name)]))
+        .get();
+  }
+
+  Stream<List<AlgorithmEntry>> watchAllAlgorithms() {
+    return (select(algorithms)..orderBy([(a) => OrderingTerm.asc(a.name)]))
+        .watch();
+  }
 
   Future<List<UnitEntry>> getAllUnits() => select(units).get();
 
@@ -125,7 +151,9 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     final algo = await algoQuery.getSingleOrNull();
     if (algo == null) return null;
 
-    // Parameters
+    // --- Fetch all necessary data in parallel ---
+
+    // Parameters with Units
     final paramsBase = select(parameters).join([
       leftOuterJoin(units, units.id.equalsExp(parameters.unitId)),
     ]);
@@ -133,16 +161,16 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     paramsBase.orderBy([OrderingTerm.asc(parameters.parameterNumber)]);
 
     // Specifications
-    final specsBase = select(specifications);
-    specsBase.where((s) => s.algorithmGuid.equals(guid));
-    specsBase.orderBy([(s) => OrderingTerm.asc(s.specIndex)]);
+    final specsBase = select(specifications)
+      ..where((s) => s.algorithmGuid.equals(guid))
+      ..orderBy([(s) => OrderingTerm.asc(s.specIndex)]);
 
-    // Pages
-    final pagesBase = select(parameterPages);
-    pagesBase.where((p) => p.algorithmGuid.equals(guid));
-    pagesBase.orderBy([(p) => OrderingTerm.asc(p.pageIndex)]);
+    // Parameter Pages
+    final pagesBase = select(parameterPages)
+      ..where((p) => p.algorithmGuid.equals(guid))
+      ..orderBy([(p) => OrderingTerm.asc(p.pageIndex)]);
 
-    // Page Items
+    // Page Items (linking parameters to pages)
     final pageItemsBase = select(parameterPageItems)
       ..where((i) => i.algorithmGuid.equals(guid));
 
@@ -150,25 +178,37 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     final enumsBase = select(parameterEnums)
       ..where((e) => e.algorithmGuid.equals(guid));
 
-    // Fetch in parallel
     final results = await Future.wait([
       paramsBase.get(),
       specsBase.get(),
-      pagesBase.get(),
-      pageItemsBase.get(),
+      pagesBase.get(), // Fetches ParameterPageEntry
+      pageItemsBase.get(), // Fetches ParameterPageItemEntry
       enumsBase.get(),
     ]);
 
-    final paramsWithUnits = (results[0] as List<TypedResult>).map((row) {
-      final param = row.readTable(parameters);
-      final unit = row.readTableOrNull(units);
-      return ParameterWithUnit(param, unit?.unitString);
-    }).toList();
+    // --- Process fetched data ---
 
+    final paramResults = results[0] as List<TypedResult>;
     final specs = results[1] as List<SpecificationEntry>;
     final pages = results[2] as List<ParameterPageEntry>;
     final pageItems = results[3] as List<ParameterPageItemEntry>;
     final enums = results[4] as List<ParameterEnumEntry>;
+
+    // Build lookup maps for efficiency
+    final pageIndexToName = {for (var p in pages) p.pageIndex: p.name};
+    final paramNumToPageIndex = {
+      for (var i in pageItems) i.parameterNumber: i.pageIndex
+    };
+
+    // Create ParameterWithUnit list, now including pageName
+    final paramsWithUnits = paramResults.map((row) {
+      final param = row.readTable(parameters);
+      final unit = row.readTableOrNull(units);
+      final pageIndex = paramNumToPageIndex[param.parameterNumber];
+      final pageName = pageIndex != null ? pageIndexToName[pageIndex] : null;
+      return ParameterWithUnit(
+          param, unit?.unitString, pageName); // Pass pageName
+    }).toList();
 
     // Organize page items and enums for easier access
     final pageMap = <int, List<int>>{}; // pageIndex -> List<parameterNumber>
@@ -181,11 +221,6 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     for (final enumEntry in enums) {
       (enumMap[enumEntry.parameterNumber] ??= []).add(enumEntry.enumString);
     }
-    // Ensure correct order if enumIndex matters
-    enumMap.forEach((key, valueList) {
-      // If you stored enumIndex with the ParameterEnumEntry, sort here.
-      // Assuming the fetch order was correct or index isn't critical for this structure.
-    });
 
     return FullAlgorithmDetails(
       algorithm: algo,
@@ -206,7 +241,9 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
 class ParameterWithUnit {
   final ParameterEntry parameter;
   final String? unitString;
-  ParameterWithUnit(this.parameter, this.unitString);
+  final String? pageName;
+
+  ParameterWithUnit(this.parameter, this.unitString, this.pageName);
 }
 
 class ParameterPageWithItems {

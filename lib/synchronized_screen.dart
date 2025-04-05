@@ -379,10 +379,13 @@ class SynchronizedScreen extends StatelessWidget {
           PopupMenuItem(
             value: 'sync_metadata',
             onTap: () {
+              final distingCubit = context.read<DistingCubit>();
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const MetadataSyncPage()),
+                  builder: (context) =>
+                      MetadataSyncPage(distingCubit: distingCubit),
+                ),
               );
             },
             child: const Row(
