@@ -23,52 +23,46 @@ class MetadataSyncPage extends StatelessWidget {
     final bool isConnected = distingManager != null;
 
     return BlocProvider(
-      create: (context) => MetadataSyncCubit(distingManager, database),
+      create: (context) =>
+          MetadataSyncCubit(distingManager, database)..loadLocalData(),
       child: Builder(builder: (context) {
         // Use Builder to get context with Cubit
         return Scaffold(
             appBar: AppBar(
-              title: const Text('Sync / Preset Management'),
+              title: const Text('Local Data / Sync'),
               leading: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
                   builder: (context, state) {
-                // Back button resets state when viewing data
-                return BackButton(
-                  onPressed: () {
-                    if (state is ViewingLocalData) {
-                      // Check type directly
-                      context.read<MetadataSyncCubit>().reset();
-                    } else {
-                      // Only pop if not currently busy
-                      state.maybeWhen(
-                        idle: () => Navigator.maybePop(context),
-                        metadataSyncSuccess: (_) => Navigator.maybePop(context),
-                        metadataSyncFailure: (_) => Navigator.maybePop(context),
-                        presetSaveSuccess: (_) => Navigator.maybePop(context),
-                        presetSaveFailure: (_) => Navigator.maybePop(context),
-                        presetLoadSuccess: (_) => Navigator.maybePop(context),
-                        presetLoadFailure: (_) => Navigator.maybePop(context),
-                        failure: (_) => Navigator.maybePop(context),
-                        orElse: () {
-                          // Don't pop if syncing, saving, loading, or viewing
-                        },
-                      );
-                    }
-                  },
-                );
+                // Back button should always work now, just pop
+                return BackButton(onPressed: () => Navigator.maybePop(context));
               }),
               actions: [
-                // Save Preset Button
                 BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
                   builder: (context, state) {
-                    // Determine if an operation is in progress
                     final isBusy = state.maybeMap(
                         syncingMetadata: (_) => true,
                         savingPreset: (_) => true,
                         loadingPreset: (_) => true,
+                        deletingPreset: (_) => true,
                         orElse: () => false);
-                    // Can save if connected AND not busy
+                    final canSync = isConnected && !isBusy;
+                    return IconButton(
+                      icon: const Icon(Icons.sync),
+                      tooltip: 'Sync Metadata From Device',
+                      onPressed: canSync
+                          ? () => _showSyncConfirmationDialog(context)
+                          : null,
+                    );
+                  },
+                ),
+                BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                  builder: (context, state) {
+                    final isBusy = state.maybeMap(
+                        syncingMetadata: (_) => true,
+                        savingPreset: (_) => true,
+                        loadingPreset: (_) => true,
+                        deletingPreset: (_) => true,
+                        orElse: () => false);
                     final canSave = isConnected && !isBusy;
-
                     return IconButton(
                       icon: const Icon(Icons.save_alt_outlined),
                       tooltip: 'Save Current Device Preset',
@@ -94,11 +88,20 @@ class MetadataSyncPage extends StatelessWidget {
                       _showSnackBar(context, message, Colors.green),
                   presetSaveFailure: (error) => _showSnackBar(
                       context, error, Theme.of(context).colorScheme.error),
+                  presetDeleteSuccess:
+                      (message) => // Added listener for delete success
+                          _showSnackBar(context, message, Colors.green),
+                  presetDeleteFailure:
+                      (error) => // Added listener for delete failure
+                          _showSnackBar(context, error,
+                              Theme.of(context).colorScheme.error),
                   presetLoadSuccess: (message) =>
                       _showSnackBar(context, message, Colors.green),
                   presetLoadFailure: (error) => _showSnackBar(
                       context, error, Theme.of(context).colorScheme.error),
-                  failure: (error) => _showSnackBar(context, "Error: $error",
+                  failure: (error) => _showSnackBar(
+                      context,
+                      "Error loading data: $error",
                       Theme.of(context).colorScheme.error),
                 );
               },
@@ -107,29 +110,90 @@ class MetadataSyncPage extends StatelessWidget {
                 final bool isOperationInProgress = state.maybeMap(
                     syncingMetadata: (_) => true,
                     savingPreset: (_) => true,
-                    loadingPreset: (_) =>
-                        true, // Covers preset load AND local data load
+                    loadingPreset: (_) => true,
+                    deletingPreset: (_) => true,
                     orElse: () => false);
 
-                // Decide which main view to show
-                if (state is ViewingLocalData) {
+                // Loading states (initial or refresh)
+                if (state is Idle || state is LoadingPreset) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // Failure states
+                if (state is Failure ||
+                    state is MetadataSyncFailure ||
+                    state is PresetSaveFailure ||
+                    state is PresetDeleteFailure ||
+                    state is PresetLoadFailure) {
+                  String errorMsg = state.mapOrNull(
+                        failure: (s) => s.error,
+                        metadataSyncFailure: (s) => s.error,
+                        presetSaveFailure: (s) => s.error,
+                        presetDeleteFailure: (s) => s.error,
+                        presetLoadFailure: (s) => s.error,
+                      ) ??
+                      "An unknown error occurred.";
+                  return Center(
+                      child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline,
+                              color: Theme.of(context).colorScheme.error,
+                              size: 48),
+                          const SizedBox(height: 16),
+                          Text(errorMsg, textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          TextButton(
+                              onPressed: () =>
+                                  context.read<MetadataSyncCubit>().reset(),
+                              child: const Text("Retry"))
+                        ]),
+                  ));
+                }
+
+                // Busy states (Syncing, Saving, Deleting) show progress indicator
+                if (state is SyncingMetadata ||
+                    state is SavingPreset ||
+                    state is DeletingPreset) {
+                  return Center(child: _buildProgressIndicator(context, state));
+                }
+
+                // Data loaded state (also shown during transient success states before reload)
+                if (state is ViewingLocalData ||
+                    state is MetadataSyncSuccess ||
+                    state is PresetSaveSuccess ||
+                    state is PresetDeleteSuccess ||
+                    state is PresetLoadSuccess) {
+                  // Try to get data, might be null during success states before reload
+                  List<AlgorithmEntry> algos = state.maybeMap(
+                      viewingLocalData: (s) => s.algorithms, orElse: () => []);
+                  Map<String, int> counts = state.maybeMap(
+                      viewingLocalData: (s) => s.parameterCounts,
+                      orElse: () => {});
+                  List<PresetEntry> presets = state.maybeMap(
+                      viewingLocalData: (s) => s.presets, orElse: () => []);
+
+                  // If data is empty during a success state, show loading briefly
+                  if (state is! ViewingLocalData &&
+                      presets.isEmpty &&
+                      algos.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
                   return _buildDataView(
                     context,
-                    state.algorithms,
-                    state.parameterCounts,
-                    state.presets,
+                    algos, // Use potentially empty list during transition
+                    counts,
+                    presets,
                     isConnected,
-                    isOperationInProgress, // Pass this to potentially disable actions within the view
-                  );
-                } else {
-                  // All other states show the controls view
-                  return _buildControlsView(
-                    context,
-                    isConnected,
-                    state, // Pass the specific state (Idle, Syncing, Success, Failure, etc.)
-                    isOperationInProgress,
+                    isOperationInProgress, // Pass busy status
                   );
                 }
+
+                // Fallback (should not be reached)
+                return const Center(child: Text("Unhandled state"));
               },
             ));
       }),
@@ -145,177 +209,10 @@ class MetadataSyncPage extends StatelessWidget {
         SnackBar(content: Text(message), backgroundColor: backgroundColor));
   }
 
-  // Main controls view (shown when not viewing data)
-  Widget _buildControlsView(
-    BuildContext context,
-    bool isConnected,
-    MetadataSyncState state,
-    bool isOperationInProgress,
-  ) {
-    // Get status message and error status from the current state
-    final statusMessage = state.maybeMap(
-      metadataSyncSuccess: (s) => s.message,
-      metadataSyncFailure: (s) => s.error,
-      presetSaveSuccess: (s) => s.message,
-      presetSaveFailure: (s) => s.error,
-      presetLoadSuccess: (s) => s.message,
-      presetLoadFailure: (s) => s.error,
-      failure: (s) => s.error,
-      orElse: () => null,
-    );
-    final isError = state.maybeMap(
-      metadataSyncFailure: (_) => true,
-      presetSaveFailure: (_) => true,
-      presetLoadFailure: (_) => true,
-      failure: (_) => true,
-      orElse: () => false,
-    );
-
-    return Padding(
-      // Consistent page padding
-      padding: const EdgeInsets.all(16.0),
-      child: Center(
-        // Constrain width for very large screens if desired
-        // child: ConstrainedBox(
-        //   constraints: BoxConstraints(maxWidth: 600),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch buttons
-          children: [
-            // Disconnected message (only if relevant)
-            if (!isConnected && !isOperationInProgress && statusMessage == null)
-              Padding(
-                padding:
-                    const EdgeInsets.only(bottom: 24.0), // Increased spacing
-                child: Text(
-                  "Connect to a Disting NT to Sync Metadata or Manage Presets.",
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium // Use titleMedium for prominence
-                      ?.copyWith(color: Theme.of(context).colorScheme.error),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-            // Explanatory text (show when not busy)
-            if (!isOperationInProgress)
-              Padding(
-                padding:
-                    const EdgeInsets.only(bottom: 24.0), // Increased spacing
-                child: Text(
-                  // Use triple double quotes for multi-line string
-                  """Sync metadata for offline use or manage locally saved presets.
-Warning: Metadata Sync clears the device preset.""",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-            // Remove SizedBox(height: 15)
-
-            // Action Buttons (Show when not busy)
-            if (!isOperationInProgress) ...[
-              ElevatedButton.icon(
-                icon: const Icon(Icons.sync),
-                label: const Text('Sync Metadata'),
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  textStyle: Theme.of(context).textTheme.titleMedium,
-                ),
-                onPressed: !isConnected
-                    ? null
-                    : () =>
-                        context.read<MetadataSyncCubit>().startMetadataSync(),
-              ),
-              const SizedBox(height: 16.0), // Standard spacing
-              OutlinedButton.icon(
-                icon: const Icon(Icons.folder_open_outlined),
-                label: const Text('View Local Data'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12), // Consistent padding
-                  textStyle: Theme.of(context)
-                      .textTheme
-                      .titleSmall, // Slightly smaller for secondary
-                ),
-                onPressed: () =>
-                    context.read<MetadataSyncCubit>().loadLocalData(),
-              ),
-            ],
-
-            // Add consistent spacing before Progress/Status
-            const SizedBox(height: 24.0),
-
-            // Progress / Status Area
-            SizedBox(
-              height: 60, // Allocate space for indicator + text
-              child: isOperationInProgress
-                  ? _buildProgressIndicator(context, state)
-                  : statusMessage != null
-                      ? _buildStatusMessage(
-                          context,
-                          statusMessage,
-                          isError
-                              ? Theme.of(context).colorScheme.error
-                              : Colors.green[700])
-                      : null, // Empty space if nothing to show
-            ),
-
-            // Add spacing before Reset/Cancel buttons if they appear
-            if (state.maybeMap(
-              metadataSyncSuccess: (_) => true,
-              metadataSyncFailure: (_) => true,
-              presetSaveSuccess: (_) => true,
-              presetSaveFailure: (_) => true,
-              presetLoadSuccess: (_) => true,
-              presetLoadFailure: (_) => true,
-              failure: (_) => true,
-              syncingMetadata: (_) => true, // Need space if cancel appears
-              orElse: () => false,
-            ))
-              const SizedBox(height: 16.0),
-
-            // Reset Button
-            if (state.maybeMap(
-              metadataSyncSuccess: (_) => true,
-              metadataSyncFailure: (_) => true,
-              presetSaveSuccess: (_) => true,
-              presetSaveFailure: (_) => true,
-              presetLoadSuccess: (_) => true,
-              presetLoadFailure: (_) => true,
-              failure: (_) => true,
-              orElse: () => false,
-            ))
-              _buildResetButton(context),
-
-            // Cancel Button
-            if (state.maybeMap(
-                syncingMetadata: (_) => true, orElse: () => false))
-              OutlinedButton.icon(
-                icon: const Icon(Icons.cancel_outlined),
-                label: const Text('Cancel Sync'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                  side: BorderSide(
-                      color:
-                          Theme.of(context).colorScheme.error.withOpacity(0.5)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  textStyle: Theme.of(context).textTheme.titleSmall,
-                ),
-                onPressed: () =>
-                    context.read<MetadataSyncCubit>().cancelMetadataSync(),
-              ),
-          ],
-        ),
-        // ),
-      ),
-    );
-  }
-
-  // Progress Indicator Widget (Adjust text style)
+  // Progress Indicator Widget (No changes needed from previous version)
   Widget _buildProgressIndicator(
       BuildContext context, MetadataSyncState state) {
-    // ... [message and progressValue determination remains the same]
+    // ... (implementation from previous step) ...
     String mainMessage = "Processing...";
     double? progressValue; // Null for indeterminate
 
@@ -327,7 +224,10 @@ Warning: Metadata Sync clears the device preset.""",
       savingPreset: () => mainMessage = "Saving Preset...",
       loadingPreset: () =>
           mainMessage = "Loading...", // Covers preset load and data load
-      orElse: () {},
+      deletingPreset: () => mainMessage = "Deleting Preset...", // Added message
+      orElse: () {
+        mainMessage = "Please wait..."; // Generic fallback
+      },
     );
 
     return Column(
@@ -341,9 +241,8 @@ Warning: Metadata Sync clears the device preset.""",
         const SizedBox(height: 12),
         Text(
           mainMessage,
-          style: Theme.of(context)
-              .textTheme
-              .bodyLarge, // Use bodyLarge for status text
+          style:
+              Theme.of(context).textTheme.titleMedium, // Keep consistent style
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -352,35 +251,34 @@ Warning: Metadata Sync clears the device preset.""",
     );
   }
 
-  // Status Message Widget (Adjust text style and padding)
-  Widget _buildStatusMessage(
-      BuildContext context, String message, Color? color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0), // Vertical padding
-      child: Text(
-        message,
-        style: Theme.of(context)
-            .textTheme
-            .bodyLarge
-            ?.copyWith(color: color), // Use bodyLarge
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
+  // Confirmation Dialog for Metadata Sync
+  void _showSyncConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Sync Metadata?'),
+          content: const Text(
+              'This process reads all algorithm data from the device and requires clearing the current preset. Save any work on the device first! Continue?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: const Text('Sync'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.read<MetadataSyncCubit>().startMetadataSync();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
-  // Reset Button Widget (Consider styling)
-  Widget _buildResetButton(BuildContext context) {
-    return TextButton(
-      onPressed: () => context.read<MetadataSyncCubit>().reset(),
-      child: const Text('OK'),
-      // Optional: Add style if needed
-      // style: TextButton.styleFrom(...
-    );
-  }
-
-  // Tabbed Data View Widget (Add padding to TabBarView)
+  // Tabbed Data View Widget (No major changes needed from previous step)
   Widget _buildDataView(
     BuildContext context,
     List<AlgorithmEntry> algorithms,
@@ -389,8 +287,9 @@ Warning: Metadata Sync clears the device preset.""",
     bool isConnected,
     bool isOperationInProgress,
   ) {
+    // ... (implementation from previous step) ...
     return DefaultTabController(
-      length: 2,
+      length: 2, // Two tabs: Presets and Algorithms
       child: Column(
         children: [
           const TabBar(
@@ -401,16 +300,16 @@ Warning: Metadata Sync clears the device preset.""",
           ),
           Expanded(
             child: Padding(
-              // Add padding around the content of the tabs
-              padding:
-                  const EdgeInsets.only(top: 8.0), // Add space below tab bar
+              padding: const EdgeInsets.only(top: 8.0),
               child: TabBarView(
                 children: [
+                  // --- Presets Tab ---
                   _PresetListView(
                     presets: presets,
                     isConnected: isConnected,
                     isOperationInProgress: isOperationInProgress,
                   ),
+                  // --- Algorithms Tab ---
                   _AlgorithmMetadataListView(
                     algorithms: algorithms,
                     parameterCounts: parameterCounts,
@@ -425,7 +324,7 @@ Warning: Metadata Sync clears the device preset.""",
   }
 }
 
-// --- Widget for Preset List View (Add Dividers) ---
+// --- Widget for Preset List View ---
 class _PresetListView extends StatelessWidget {
   final List<PresetEntry> presets;
   final bool isConnected;
@@ -445,71 +344,153 @@ class _PresetListView extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Text(
-            "No presets saved locally yet. Connect to a device and use the save button in the top right.",
+            "No presets found.",
             textAlign: TextAlign.center,
+            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
           ),
         ),
       );
     }
 
+    // Sort presets by name for consistent order
     final sortedPresets = List<PresetEntry>.from(presets)
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
-    // Use ListView.separated to add dividers
     return ListView.separated(
       itemCount: sortedPresets.length,
       separatorBuilder: (context, index) =>
           const Divider(height: 1), // Add divider
       itemBuilder: (context, index) {
         final preset = sortedPresets[index];
-        final formattedDate = preset.lastModified.toLocal().toString();
+        // Use local time for display
+        final formattedDate =
+            preset.lastModified.toLocal().toString(); // Simple fallback
+        // Can load if connected AND no other operation is in progress
         final canLoad = isConnected && !isOperationInProgress;
+        final canDelete =
+            !isOperationInProgress; // Can always delete unless busy
 
         return ListTile(
           key: ValueKey(preset.id),
-          title: Text(preset.name),
-          subtitle: Text("Saved: $formattedDate"),
-          trailing: IconButton(
-            icon: const Icon(Icons.upload_file_outlined),
-            tooltip: 'Load Preset to Device',
-            color:
-                canLoad ? Theme.of(context).colorScheme.primary : Colors.grey,
-            onPressed: canLoad
-                ? () {
-                    showDialog(
-                      // ... [Dialog remains the same]
-                      context: context,
-                      builder: (BuildContext dialogContext) {
-                        return AlertDialog(
-                          title: const Text('Load Preset?'),
-                          content: Text(
-                              'This will overwrite the current preset on the connected Disting NT with "${preset.name}". Continue?'),
-                          actions: <Widget>[
-                            TextButton(
-                              child: const Text('Cancel'),
-                              onPressed: () {
-                                Navigator.of(dialogContext)
-                                    .pop(); // Close dialog
-                              },
-                            ),
-                            TextButton(
-                              child: const Text('Load'),
-                              onPressed: () {
-                                Navigator.of(dialogContext)
-                                    .pop(); // Close dialog
-                                // Call cubit method
-                                context
-                                    .read<MetadataSyncCubit>()
-                                    .loadPresetToDevice(preset.id);
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  }
-                : null,
+          title: Text(preset.name.trim()), // Trim the name for display
+          subtitle: Text("Saved: $formattedDate"), // Use simple string date
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min, // Prevent row from expanding
+            children: [
+              // Load Button
+              IconButton(
+                icon: const Icon(Icons.upload_file_outlined),
+                tooltip: 'Send to NT',
+                color: canLoad
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+                onPressed: canLoad
+                    ? () => _showLoadConfirmationDialog(context, preset)
+                    : null,
+              ),
+              // Delete Button
+              IconButton(
+                icon: Icon(Icons.delete_outline,
+                    color: canDelete
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.grey),
+                tooltip: 'Delete Saved Preset',
+                onPressed: canDelete
+                    ? () => _showDeleteConfirmationDialog(context, preset)
+                    : null,
+              ),
+            ],
           ),
+        );
+      },
+    );
+  }
+
+  // Helper function for Load Confirmation Dialog
+  void _showLoadConfirmationDialog(BuildContext context, PresetEntry preset) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Send Preset to NT?'),
+          content: Text(
+              'This will overwrite the current preset on the connected Disting NT with "${preset.name}". Continue?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Close dialog
+              },
+            ),
+            TextButton(
+              child: const Text('Send'),
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // Close dialog
+                try {
+                  // Fetch full details before calling cubit
+                  final fullDetails = await context
+                      .read<AppDatabase>()
+                      .presetsDao
+                      .getFullPresetDetails(preset.id);
+                  if (fullDetails != null) {
+                    // Call cubit method with full details
+                    // Use 'context' from the outer scope, not dialogContext
+                    context
+                        .read<MetadataSyncCubit>()
+                        .loadPresetToDevice(fullDetails);
+                  } else {
+                    // Handle error: Preset details not found
+                    // Call ScaffoldMessenger directly
+                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            "Error: Could not load details for preset '${preset.name}'"),
+                        backgroundColor: Theme.of(context).colorScheme.error));
+                  }
+                } catch (e) {
+                  // Handle potential error during fetch
+                  // Call ScaffoldMessenger directly
+                  ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text("Error fetching preset details: $e"),
+                      backgroundColor: Theme.of(context).colorScheme.error));
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper function for Delete Confirmation Dialog
+  void _showDeleteConfirmationDialog(BuildContext context, PresetEntry preset) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Preset?'),
+          content: Text(
+              'Are you sure you want to permanently delete the saved preset "${preset.name}"?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Close dialog
+              },
+            ),
+            TextButton(
+              // Make delete action visually distinct
+              style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Close dialog
+                // Call cubit method
+                context.read<MetadataSyncCubit>().deletePreset(preset.id);
+              },
+            ),
+          ],
         );
       },
     );
@@ -517,18 +498,77 @@ class _PresetListView extends StatelessWidget {
 }
 
 // --- Widget for Algorithm Metadata List View (Previously _DataListView) ---
-class _AlgorithmMetadataListView extends StatelessWidget {
+// Converted to StatefulWidget for filtering
+class _AlgorithmMetadataListView extends StatefulWidget {
   final List<AlgorithmEntry> algorithms;
   final Map<String, int> parameterCounts;
 
-  const _AlgorithmMetadataListView({
-    required this.algorithms,
-    required this.parameterCounts,
-  });
+  const _AlgorithmMetadataListView(
+      {required this.algorithms,
+      required this.parameterCounts,
+      super.key // Added key
+      });
+
+  @override
+  State<_AlgorithmMetadataListView> createState() =>
+      _AlgorithmMetadataListViewState();
+}
+
+class _AlgorithmMetadataListViewState
+    extends State<_AlgorithmMetadataListView> {
+  late final TextEditingController _filterController;
+  late List<AlgorithmEntry> _filteredAlgorithms;
+
+  @override
+  void initState() {
+    super.initState();
+    _filterController = TextEditingController();
+    // Initialize with all algorithms sorted
+    _filteredAlgorithms = _sortAlgorithms(widget.algorithms);
+
+    _filterController.addListener(_filterList);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AlgorithmMetadataListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the underlying algorithm list changes, re-apply filter
+    if (widget.algorithms != oldWidget.algorithms) {
+      _filterList();
+    }
+  }
+
+  @override
+  void dispose() {
+    _filterController.removeListener(_filterList);
+    _filterController.dispose();
+    super.dispose();
+  }
+
+  // Helper to sort algorithms by name
+  List<AlgorithmEntry> _sortAlgorithms(List<AlgorithmEntry> algorithms) {
+    final sorted = List<AlgorithmEntry>.from(algorithms)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return sorted;
+  }
+
+  void _filterList() {
+    final query = _filterController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredAlgorithms = _sortAlgorithms(widget.algorithms);
+      } else {
+        _filteredAlgorithms = _sortAlgorithms(widget.algorithms
+            .where((algo) => algo.name.toLowerCase().contains(query))
+            .toList());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (algorithms.isEmpty) {
+    // Handle the case where the initial list might be empty
+    if (widget.algorithms.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
@@ -539,31 +579,70 @@ class _AlgorithmMetadataListView extends StatelessWidget {
         ),
       );
     }
-    // Sort algorithms by name
-    final sortedAlgorithms = List<AlgorithmEntry>.from(algorithms)
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
-    return ListView.builder(
-      itemCount: sortedAlgorithms.length,
-      itemBuilder: (context, index) {
-        final algo = sortedAlgorithms[index];
-        final count = parameterCounts[algo.guid] ?? 0;
-        return _AlgorithmExpansionTile(algorithm: algo, parameterCount: count);
-      },
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            controller: _filterController,
+            decoration: InputDecoration(
+              labelText: "Filter Algorithms",
+              hintText: "Enter algorithm name...",
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
+              // Add clear button
+              suffixIcon: _filterController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _filterController.clear();
+                        // _filterList will be called by the listener
+                      },
+                    )
+                  : null,
+            ),
+          ),
+        ),
+        Expanded(
+          // Display message if filter results are empty
+          child: _filteredAlgorithms.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      'No algorithms match "${_filterController.text}".',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: _filteredAlgorithms.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final algo = _filteredAlgorithms[index];
+                    final count = widget.parameterCounts[algo.guid] ?? 0;
+                    return _AlgorithmExpansionTile(
+                        algorithm: algo, parameterCount: count);
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
 
 // --- StatefulWidget for Algorithm Expansion Tile (No changes needed here) ---
-// (Assuming this widget remains the same as provided previously)
 class _AlgorithmExpansionTile extends StatefulWidget {
   final AlgorithmEntry algorithm;
   final int parameterCount;
 
-  const _AlgorithmExpansionTile({
-    required this.algorithm,
-    required this.parameterCount,
-  });
+  const _AlgorithmExpansionTile(
+      {required this.algorithm,
+      required this.parameterCount,
+      super.key // Added key
+      });
 
   @override
   State<_AlgorithmExpansionTile> createState() =>

@@ -30,6 +30,13 @@ class MetadataSyncState with _$MetadataSyncState {
   const factory MetadataSyncState.presetLoadFailure(String error) =
       PresetLoadFailure;
 
+  // NEW: Preset Deletion States
+  const factory MetadataSyncState.deletingPreset() = DeletingPreset;
+  const factory MetadataSyncState.presetDeleteSuccess(String message) =
+      PresetDeleteSuccess;
+  const factory MetadataSyncState.presetDeleteFailure(String error) =
+      PresetDeleteFailure;
+
   // --- Viewing Local Data State ---
   const factory MetadataSyncState.viewingLocalData({
     // Include both for potential future use or segmented view
