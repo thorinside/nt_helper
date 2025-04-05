@@ -16,6 +16,7 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/db/database.dart'; // Added
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Added
+import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 
 part 'disting_cubit.freezed.dart';
 part 'disting_state.dart';
@@ -939,6 +940,7 @@ class DistingCubit extends Cubit<DistingState> {
             ),
           ));
         }
+        _saveOfflineState(); // Save after potential state change
     }
   }
 
@@ -977,6 +979,7 @@ class DistingCubit extends Cubit<DistingState> {
 
         // Refresh state from manager - fetchSlot will be called via refresh
         refresh();
+        _saveOfflineState(); // Save after adding
         break;
     }
   }
@@ -1003,6 +1006,7 @@ class DistingCubit extends Cubit<DistingState> {
             .toList();
 
         emit(syncstate.copyWith(slots: updatedSlots));
+        _saveOfflineState(); // Save after removing
         break;
     }
   }
@@ -1023,6 +1027,7 @@ class DistingCubit extends Cubit<DistingState> {
       await Future.delayed(Duration(milliseconds: 250));
       emit((state as DistingStateSynchronized)
           .copyWith(presetName: await disting.requestPresetName() ?? ""));
+      _saveOfflineState(); // Save after renaming
     }
   }
 
@@ -1049,6 +1054,8 @@ class DistingCubit extends Cubit<DistingState> {
     slots.insert(algorithmIndex - 1, slot);
     slots.insert(algorithmIndex, otherSlot);
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
+
+    _saveOfflineState(); // Save after moving
 
     return algorithmIndex - 1;
   }
@@ -1081,6 +1088,8 @@ class DistingCubit extends Cubit<DistingState> {
     slots.insert(algorithmIndex + 1, slot);
 
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
+
+    _saveOfflineState(); // Save after moving
 
     return algorithmIndex + 1;
   }
@@ -1186,6 +1195,7 @@ class DistingCubit extends Cubit<DistingState> {
             ),
           ),
         );
+        _saveOfflineState(); // Save after mapping change
         break;
       default:
       // Handle other cases or errors
@@ -1201,6 +1211,7 @@ class DistingCubit extends Cubit<DistingState> {
         final slot = await fetchSlot(requireDisting(), algorithmIndex);
         emit(syncstate.copyWith(
             slots: updateSlot(algorithmIndex, syncstate.slots, (_) => slot)));
+        _saveOfflineState(); // Save after slot rename
     }
   }
 
@@ -1429,13 +1440,26 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> workOffline() async {
     // Create the offline manager instance
     final offlineManager = OfflineDistingMidiManager(_database);
+    // Define the name for the offline state preset
+    const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
 
-    // Fetch initial data needed for the synchronized state using the offline manager
     try {
-      // --- Fetch basic offline info ---
+      // --- Load previous offline state --- (New)
+      final presetsDao = _database.presetsDao;
+      PresetEntry? savedPresetEntry =
+          await presetsDao.getPresetByName(offlinePresetName);
+      FullPresetDetails? savedDetails;
+      if (savedPresetEntry != null) {
+        savedDetails =
+            await presetsDao.getFullPresetDetails(savedPresetEntry.id);
+      }
+      // Initialize the manager with loaded state (or empty if none found)
+      await offlineManager.initializeFromDb(savedDetails);
+
+      // --- Fetch basic offline info --- (Uses manager's internal state now)
       final version = await offlineManager.requestVersionString() ?? "Offline";
       final presetName =
-          await offlineManager.requestPresetName() ?? "Offline Preset";
+          await offlineManager.requestPresetName() ?? offlinePresetName;
       final allCachedAlgorithms = await _metadataDao.getAllAlgorithms();
       // Map cached entries to AlgorithmInfo for the state's algorithm list
       final availableAlgorithmsInfo = allCachedAlgorithms.map((entry) {
@@ -1450,13 +1474,14 @@ class DistingCubit extends Cubit<DistingState> {
 
       final units = await offlineManager.requestUnitStrings() ?? [];
 
-      // --- Build initial slots based on a default/last known offline preset? ---
-      // For now, let's assume we start with an empty offline preset.
-      // The `offlineManager`'s `_presetAlgorithmGuids` will be empty initially.
+      // --- Build initial slots from loaded/initialized manager state --- (New)
+      final initialSlotCount =
+          await offlineManager.requestNumAlgorithmsInPreset() ?? 0;
       final List<Slot> initialSlots = [];
-      // If we wanted to load a default preset, we would populate
-      // `offlineManager._presetAlgorithmGuids` and then call
-      // `_fetchOfflineSlot` for each GUID here.
+      for (int i = 0; i < initialSlotCount; i++) {
+        // Use the standard fetchSlot method, it will call the offlineManager
+        initialSlots.add(await fetchSlot(offlineManager, i));
+      }
 
       emit(DistingState.synchronized(
         disting: offlineManager, // Use the offline manager
@@ -1520,6 +1545,26 @@ class DistingCubit extends Cubit<DistingState> {
     } else {
       // Not synchronized, return empty list
       return [];
+    }
+  }
+
+  // Helper to save the current offline state to the DB
+  Future<void> _saveOfflineState() async {
+    final currentState = state;
+    if (currentState is DistingStateSynchronized && currentState.offline) {
+      final manager = currentState.disting;
+      if (manager is OfflineDistingMidiManager) {
+        try {
+          final presetDetails = await manager.getCurrentPresetDetails();
+          final presetsDao = _database.presetsDao;
+          await presetsDao.saveFullPreset(presetDetails);
+          debugPrint(
+              "[Offline] Saved offline state to DB for preset: ${presetDetails.preset.name}");
+        } catch (e, stackTrace) {
+          debugPrint("[Offline] Error saving offline state: $e");
+          debugPrintStack(stackTrace: stackTrace);
+        }
+      }
     }
   }
 }
