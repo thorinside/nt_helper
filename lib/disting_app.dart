@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/db/database.dart';
 
 class DistingApp extends StatelessWidget {
   const DistingApp({super.key});
@@ -80,15 +80,28 @@ class DistingApp extends StatelessWidget {
   }
 }
 
-class DistingPage extends StatelessWidget {
+class DistingPage extends StatefulWidget {
   const DistingPage({super.key});
 
+  @override
+  State<DistingPage> createState() => _DistingPageState();
+}
+
+class _DistingPageState extends State<DistingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocProvider(
         create: (context) => MidiListenerCubit(),
-        child: BlocBuilder<DistingCubit, DistingState>(
+        child: BlocListener<DistingCubit, DistingState>(
+  listener: (context, state) {
+    if (state is DistingStateConnected &&
+        state.pendingOfflinePresetToSync != null) {
+      _showApplyOfflinePresetDialog(
+          context, state.pendingOfflinePresetToSync!);
+    }
+  },
+  child: BlocBuilder<DistingCubit, DistingState>(
           builder: (context, state) {
             if (state is DistingStateInitial) {
               return Center(
@@ -123,31 +136,28 @@ class DistingPage extends StatelessWidget {
                 canWorkOffline: state.canWorkOffline,
               );
             } else if (state is DistingStateConnected) {
-              if (state.pendingOfflinePresetToSync != null) {
-                _showApplyOfflinePresetDialog(context, state.pendingOfflinePresetToSync!);
-                return Material();
-              }
-              else {
-                return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("Synchronizing...",
-                        style: Theme.of(context).textTheme.titleLarge),
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                    OutlinedButton(
-                      onPressed: () {
-                        context.read<DistingCubit>().cancelSync();
-                      },
-                      child: Text("Cancel"),
-                    )
-                  ],
-                ),
-              );
-              }
+              return state.pendingOfflinePresetToSync != null
+                  ? Material()
+                  : Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("Synchronizing...",
+                              style:
+                                  Theme.of(context).textTheme.titleLarge),
+                          Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                          OutlinedButton(
+                            onPressed: () {
+                              context.read<DistingCubit>().cancelSync();
+                            },
+                            child: Text("Cancel"),
+                          )
+                        ],
+                      ),
+                    );
             } else if (state is DistingStateSynchronized) {
               return SynchronizedScreen(
                 slots: state.slots,
@@ -163,6 +173,7 @@ class DistingPage extends StatelessWidget {
             }
           },
         ),
+),
       ),
     );
   }
@@ -201,7 +212,6 @@ class DistingPage extends StatelessWidget {
       },
     );
   }
-
 }
 
 class _DeviceSelectionView extends StatefulWidget {

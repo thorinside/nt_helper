@@ -616,18 +616,16 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> _performSyncAndEmit() async {
     final currentState = state;
     if (currentState is DistingStateConnected) {
-      debugPrint(
-          "[Cubit] _performSyncAndEmit called in unexpected state: ${currentState.runtimeType}");
-      await loadDevices();
+      if (currentState.pendingOfflinePresetToSync != null) {
+        return;
+      }
+    }
+
+    if (!(currentState is DistingStateSynchronized || currentState is DistingStateConnected)) {
       return;
     }
 
-    // Only do the rest if we are in distingState synchronized
-    if (currentState is! DistingStateSynchronized) {
-      return;
-    }
-
-    final disting = currentState.disting;
+    final disting = requireDisting();
 
     try {
       // --- Fetch ALL data from device REGARDLESS ---
@@ -705,7 +703,7 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  // ADDING BACK the cancelSync method
+// ADDING BACK the cancelSync method
   Future<void> cancelSync() async {
     disconnect(); // Disconnect MIDI
     await loadDevices(); // Go back to device selection
@@ -1233,11 +1231,11 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  // Map to hold an active polling task for each mapped parameter,
-  // keyed by a composite key (e.g. "algorithmIndex_parameterNumber").
+// Map to hold an active polling task for each mapped parameter,
+// keyed by a composite key (e.g. "algorithmIndex_parameterNumber").
   final Map<String, _PollingTask> _pollingTasks = {};
 
-  // Starts polling for each mapped parameter.
+// Starts polling for each mapped parameter.
   void startPollingMappedParameters() {
     stopPollingMappedParameters(); // Clear any previous tasks.
     if (state is! DistingStateSynchronized) return;
@@ -1250,12 +1248,12 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  // Stops all polling tasks.
+// Stops all polling tasks.
   void stopPollingMappedParameters() {
     _pollingTasks.clear();
   }
 
-  // Polls a single mapped parameter recursively.
+// Polls a single mapped parameter recursively.
   Future<void> _pollIndividualParameter(
       MappedParameter mapped, String key) async {
     // If the task has been cancelled or state is not synchronized, stop.
@@ -1418,7 +1416,7 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  // Helper method to fetch and sort devices
+// Helper method to fetch and sort devices
   Future<Map<String, List<MidiDevice>>> _fetchDeviceLists() async {
     final devices = await _midiCommand.devices;
     devices?.sort(
@@ -1431,7 +1429,7 @@ class DistingCubit extends Cubit<DistingState> {
     };
   }
 
-  // Gets the list of available algorithms, either from the device or cache.
+// Gets the list of available algorithms, either from the device or cache.
   Future<List<AlgorithmInfo>> getAvailableAlgorithms() async {
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
@@ -1466,7 +1464,7 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  // Helper to save the current offline state to the DB
+// Helper to save the current offline state to the DB
   Future<void> _saveOfflineState() async {
     debugPrint("[Offline Cubit] Attempting to save offline state...");
     final currentState = state;
@@ -1489,7 +1487,7 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  // Helper to check for the saved offline state
+// Helper to check for the saved offline state
   Future<FullPresetDetails?> _checkForOfflinePreset() async {
     const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
     try {
