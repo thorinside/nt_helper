@@ -9,6 +9,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
+import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/util/extensions.dart';
@@ -976,20 +977,23 @@ class DistingCubit extends Cubit<DistingState> {
         final disting = requireDisting();
         await disting.requestRemoveAlgorithm(algorithmIndex);
 
-        int currentNumAlgorithms = syncstate.slots.length;
-
-        // Wait until number of algorithms in preset changes
-        await _waitForSlotCountChange(disting, currentNumAlgorithms);
-
+        // Get the current slots
         var slots = List<Slot>.from(syncstate.slots);
 
-        var updatedSlots = [
-          ...slots.sublist(0, algorithmIndex),
-          ...slots.sublist(algorithmIndex + 1).mapIndexed((index, element) =>
-              _fixAlgorithmIndex(element, algorithmIndex + index))
-        ];
+        // Remove the slot at the specified index
+        if (algorithmIndex >= 0 && algorithmIndex < slots.length) {
+          slots.removeAt(algorithmIndex);
+        }
 
-        emit((state as DistingStateSynchronized).copyWith(slots: updatedSlots));
+        // Fix indices for remaining slots
+        var updatedSlots = slots
+            .mapIndexed((index, element) => _fixAlgorithmIndex(
+                    element, index) // Use index directly after removal
+                )
+            .toList();
+
+        emit(syncstate.copyWith(slots: updatedSlots));
+        break;
     }
   }
 
@@ -1023,10 +1027,12 @@ class DistingCubit extends Cubit<DistingState> {
     final disting = requireDisting();
     await disting.requestMoveAlgorithmUp(algorithmIndex);
 
+    // Manually update the slots list immediately
     var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
     var slot = slots.removeAt(algorithmIndex);
     var otherSlot = slots.removeAt(algorithmIndex - 1);
 
+    // Fix indices before inserting back
     otherSlot = _fixAlgorithmIndex(otherSlot, algorithmIndex);
     slot = _fixAlgorithmIndex(slot, algorithmIndex - 1);
 
@@ -1038,22 +1044,32 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<int> moveAlgorithmDown(int algorithmIndex) async {
+    // Check bounds based on current state before calling manager
+    if (state is! DistingStateSynchronized) return algorithmIndex;
+    final syncState = state as DistingStateSynchronized;
+    if (algorithmIndex >= syncState.slots.length - 1) return algorithmIndex;
+
     final disting = requireDisting();
     await disting.requestMoveAlgorithmDown(algorithmIndex);
 
+    // Manually update the slots list immediately
     var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
 
-    // If we are not on the last slot, move the slot to the next space in the list
-    if (algorithmIndex == slots.length) return algorithmIndex;
-
     var slot = slots.removeAt(algorithmIndex);
+    // The item originally after the moved item is now at algorithmIndex
     var otherSlot = slots.removeAt(algorithmIndex);
 
+    // Fix indices before inserting back
+    // The one originally after moves to the original index
     otherSlot = _fixAlgorithmIndex(otherSlot, algorithmIndex);
+    // The moved item goes to the next index
     slot = _fixAlgorithmIndex(slot, algorithmIndex + 1);
 
-    slots.insert(algorithmIndex, slot);
+    // Insert the other slot first (at the original index)
     slots.insert(algorithmIndex, otherSlot);
+    // Then insert the moved slot after it
+    slots.insert(algorithmIndex + 1, slot);
+
     emit((state as DistingStateSynchronized).copyWith(slots: slots));
 
     return algorithmIndex + 1;
@@ -1208,7 +1224,7 @@ class DistingCubit extends Cubit<DistingState> {
 
   Slot _fixAlgorithmIndex(Slot slot, int algorithmIndex) {
     // Run through all of the parts of the slot and replace the algorithm index
-    // with the new one.
+    // with the new one by manually constructing new objects.
     return Slot(
       algorithm: slot.algorithm.copyWith(algorithmIndex: algorithmIndex),
       routing: RoutingInfo(
@@ -1401,18 +1417,37 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> workOffline() async {
-    // Load algorithms from DB for offline mode?
-    // For now, just emit the empty state as before.
-    emit(DistingState.synchronized(
-      disting: MockDistingMidiManager(),
-      distingVersion: "Offline Mode",
-      presetName: "Offline Preset",
-      algorithms: [],
-      slots: [],
-      unitStrings: [],
-      offline: true,
-      demo: false, // Ensure demo mode is off unless explicitly entered
-    ));
+    // Create the offline manager instance
+    final offlineManager = OfflineDistingMidiManager(_database);
+
+    // Fetch initial data needed for the synchronized state using the offline manager
+    try {
+      final version = await offlineManager.requestVersionString() ?? "Offline";
+      final presetName =
+          await offlineManager.requestPresetName() ?? "Offline Preset";
+      final algorithms =
+          await getAvailableAlgorithms(); // Use existing method which checks offline
+      final units = await offlineManager.requestUnitStrings() ?? [];
+
+      // Start with an empty preset (no slots initially)
+      final List<Slot> slots = [];
+
+      emit(DistingState.synchronized(
+        disting: offlineManager, // Use the offline manager
+        distingVersion: version,
+        presetName: presetName,
+        algorithms: algorithms, // Full list of available algorithms from cache
+        slots: slots, // Start with empty slots
+        unitStrings: units,
+        offline: true, // Mark as offline
+        demo: false,
+      ));
+    } catch (e, stackTrace) {
+      debugPrint("Error initializing offline mode: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // Optionally emit an error state or fall back to device selection
+      loadDevices(); // Fallback to device selection on error
+    }
   }
 
   // Helper method to fetch and sort devices
@@ -1426,5 +1461,39 @@ class DistingCubit extends Cubit<DistingState> {
       'output':
           devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
     };
+  }
+
+  // Gets the list of available algorithms, either from the device or cache.
+  Future<List<AlgorithmInfo>> getAvailableAlgorithms() async {
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      if (currentState.offline) {
+        // Offline: Fetch from database and map
+        try {
+          final cachedEntries = await _metadataDao.getAllAlgorithms();
+          // Map AlgorithmEntry to AlgorithmInfo
+          return cachedEntries.map((entry) {
+            return AlgorithmInfo(
+              guid: entry.guid,
+              name: entry.name,
+              numSpecifications: entry.numSpecifications,
+              // Database doesn't store live index or specific spec values easily
+              algorithmIndex: -1, // Indicate invalid index for offline context
+              specifications: [], // Specs aren't stored directly this way
+            );
+          }).toList();
+        } catch (e, stackTrace) {
+          print("Error fetching cached algorithms: $e");
+          debugPrintStack(stackTrace: stackTrace);
+          return []; // Return empty on error
+        }
+      } else {
+        // Online: Return algorithms from state (already sorted by device)
+        return currentState.algorithms;
+      }
+    } else {
+      // Not synchronized, return empty list
+      return [];
+    }
   }
 }

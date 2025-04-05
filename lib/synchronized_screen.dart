@@ -69,11 +69,12 @@ class SynchronizedScreen extends StatelessWidget {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) =>
-                    AddAlgorithmScreen(algorithms: algorithms)),
+              builder: (context) => BlocProvider.value(
+                  value: cubit, child: const AddAlgorithmScreen()),
+            ),
           );
 
-          if (result != null) {
+          if (result != null && result is Map) {
             await cubit.onAlgorithmSelected(
               result['algorithm'],
               result['specValues'],
