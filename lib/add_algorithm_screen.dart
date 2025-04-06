@@ -1,8 +1,12 @@
+import 'dart:async'; // Added for Timer
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:collection/collection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddAlgorithmScreen extends StatefulWidget {
   const AddAlgorithmScreen({super.key});
@@ -12,9 +16,177 @@ class AddAlgorithmScreen extends StatefulWidget {
 }
 
 class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
+  static const _favKey = 'favorite_algorithm_guids';
+  static const _showFavOnlyKey =
+      'add_algo_show_fav_only'; // Key for toggle state
+
+  // State for new UI
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce; // Timer for debouncing search input
+  List<AlgorithmInfo> _allAlgorithms = [];
+  List<AlgorithmInfo> _filteredAlgorithms = [];
+  Set<String> _favoriteGuids = {}; // Store favorite GUIDs
+  bool _showFavoritesOnly = false; // State for the favorite toggle
+
+  // Original state variables
   String? selectedAlgorithmGuid;
   AlgorithmInfo? _currentAlgoInfo;
   List<int>? specValues;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings(); // Load both favorites and toggle state
+    _searchController.addListener(_onSearchChanged); // Use debounced listener
+
+    // Initialize algorithm lists based on current DistingCubit state
+    final distingState = context.read<DistingCubit>().state;
+    distingState.maybeMap(
+      synchronized: (syncState) {
+        _allAlgorithms = List<AlgorithmInfo>.from(syncState.algorithms)
+          ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        // Initial filter
+        _filterAlgorithms();
+      },
+      orElse: () {
+        _allAlgorithms = [];
+        _filteredAlgorithms = [];
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _debounce?.cancel(); // Cancel timer on dispose
+    super.dispose();
+  }
+
+  // --- Debounced Search Handler ---
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      // Check if mounted before calling _filterAlgorithms, as timer might fire after dispose
+      if (mounted) {
+        _filterAlgorithms();
+      }
+    });
+  }
+
+  // --- Settings Management (Favorites + Toggle State) ---
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favs = prefs.getStringList(_favKey) ?? [];
+    final showOnlyFavs = prefs.getBool(_showFavOnlyKey) ?? false;
+    setState(() {
+      _favoriteGuids = favs.toSet();
+      _showFavoritesOnly = showOnlyFavs;
+      // Re-filter after loading settings
+      _filterAlgorithms();
+    });
+  }
+
+  Future<void> _saveFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_favKey, _favoriteGuids.toList());
+  }
+
+  Future<void> _saveShowFavoritesOnlyState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_showFavOnlyKey, _showFavoritesOnly);
+  }
+
+  void _toggleFavorite(String guid) {
+    setState(() {
+      if (_favoriteGuids.contains(guid)) {
+        _favoriteGuids.remove(guid);
+      } else {
+        _favoriteGuids.add(guid);
+      }
+      _saveFavorites(); // Save favorite list changes
+      _filterAlgorithms(); // Re-filter to update list if needed (e.g., if showFavOnly is true) and update chip icon
+    });
+  }
+
+  void _toggleShowFavoritesOnly() {
+    // Unfocus search field when toggling favorites
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _showFavoritesOnly = !_showFavoritesOnly;
+      _saveShowFavoritesOnlyState(); // Save toggle state changes
+      _filterAlgorithms(); // Re-filter based on new toggle state
+    });
+  }
+
+  // --- Filtering Logic ---
+
+  void _filterAlgorithms() {
+    final query = _searchController.text.toLowerCase();
+    // No need for setState here if only called from debounced handler or initState/load
+    // setState is handled in the calling methods (_onSearchChanged, _loadSettings, etc.)
+
+    List<AlgorithmInfo> baseList;
+    if (_showFavoritesOnly) {
+      baseList = _allAlgorithms
+          .where((algo) => _favoriteGuids.contains(algo.guid))
+          .toList();
+    } else {
+      baseList = List.from(_allAlgorithms);
+    }
+
+    if (query.isEmpty) {
+      _filteredAlgorithms = baseList;
+    } else {
+      _filteredAlgorithms = baseList
+          .where((algo) => algo.name.toLowerCase().contains(query))
+          .toList();
+    }
+
+    _filteredAlgorithms
+        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    // Use WidgetsBinding to ensure setState is called safely after build if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          // If the currently selected algorithm is no longer in the filtered list, deselect it
+          if (selectedAlgorithmGuid != null &&
+              !_filteredAlgorithms
+                  .any((algo) => algo.guid == selectedAlgorithmGuid)) {
+            _clearSelection(); // This already calls setState
+          } else {
+            // Ensure UI rebuilds with the filtered list
+            // This setState might be redundant if _clearSelection was called, but safe to include.
+            setState(() {});
+          }
+        });
+      }
+    });
+  }
+
+  // --- Selection Logic ---
+  void _selectAlgorithm(String? guid) {
+    // Unfocus search field when selecting an algorithm
+    FocusScope.of(context).unfocus();
+    setState(() {
+      selectedAlgorithmGuid = guid;
+      _currentAlgoInfo = _allAlgorithms.firstWhereOrNull((a) => a.guid == guid);
+      specValues =
+          _currentAlgoInfo?.specifications.map((s) => s.defaultValue).toList();
+    });
+  }
+
+  void _clearSelection() {
+    // No need to unfocus here as it happens when list updates remove selection
+    setState(() {
+      selectedAlgorithmGuid = null;
+      _currentAlgoInfo = null;
+      specValues = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,74 +196,191 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       orElse: () => false,
     );
 
+    // Update allAlgorithms if the state changes (e.g., going online/offline)
+    distingState.maybeMap(synchronized: (syncState) {
+      if (!listEquals(_allAlgorithms, syncState.algorithms)) {
+        _allAlgorithms = List<AlgorithmInfo>.from(syncState.algorithms)
+          ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _filterAlgorithms();
+          }
+        });
+      }
+    }, orElse: () {
+      if (_allAlgorithms.isNotEmpty) {
+        _allAlgorithms = [];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _filterAlgorithms();
+          }
+        });
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(isOffline ? 'Add Algorithm (Defaults)' : 'Add Algorithm'),
+        title: const Text('Add Algorithm'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: distingState.maybeMap(
-          synchronized: (syncState) {
-            final algorithms = syncState.algorithms;
-            if (algorithms.isEmpty) {
-              return const Center(
-                  child: Text('No algorithms available in current state.'));
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Select Algorithm',
-                    border: OutlineInputBorder(),
-                  ),
-                  value: selectedAlgorithmGuid,
-                  isExpanded: true,
-                  items: algorithms.map((algo) {
-                    return DropdownMenuItem<String>(
-                      value: algo.guid,
-                      child: Text(
-                        algo.name,
-                        overflow: TextOverflow.ellipsis,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: distingState.maybeMap(
+            synchronized: (syncState) {
+              if (_allAlgorithms.isEmpty && !_showFavoritesOnly) {
+                // Show only if not in fav-only mode and list is truly empty
+                return const Center(
+                    child: Text('No algorithms available in current state.'));
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- Search Row ---
+                  Row(
+                    // Align items vertically center
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            labelText: 'Search Algorithms',
+                            hintText: _showFavoritesOnly
+                                ? 'Search within favorites...'
+                                : 'Enter algorithm name...',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                    },
+                                  )
+                                : null,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (String? newGuid) {
-                    setState(() {
-                      selectedAlgorithmGuid = newGuid;
-                      _currentAlgoInfo =
-                          algorithms.firstWhereOrNull((a) => a.guid == newGuid);
-                      specValues = _currentAlgoInfo?.specifications
-                          .map((s) => s.defaultValue)
-                          .toList();
-                    });
-                  },
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: _currentAlgoInfo != null &&
-                            _currentAlgoInfo!.numSpecifications > 0
-                        ? _buildSpecificationInputs(
-                            _currentAlgoInfo!, isOffline)
-                        : Container(),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(_showFavoritesOnly
+                            ? Icons.star
+                            : Icons.star_border),
+                        tooltip: 'Show Favorites Only',
+                        color: _showFavoritesOnly
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                        onPressed: _toggleShowFavoritesOnly,
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ],
                   ),
-                ),
-                ElevatedButton(
-                  onPressed: _currentAlgoInfo != null && specValues != null
-                      ? () {
-                          Navigator.pop(context, {
-                            'algorithm': _currentAlgoInfo,
-                            'specValues': specValues,
-                          });
-                        }
-                      : null,
-                  child: const Text('Add to Preset'),
-                ),
-              ],
-            );
-          },
-          orElse: () => const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 12),
+
+                  // --- Algorithm Chips (Expanded to allow scrolling) ---
+                  Expanded(
+                    flex: 2, // Adjust flex factor as needed
+                    child: _filteredAlgorithms.isEmpty
+                        ? Center(
+                            child: Text(_showFavoritesOnly
+                                ? (_favoriteGuids.isEmpty
+                                    ? 'No algorithms marked as favorite.'
+                                    : 'No favorites match "${_searchController.text}".')
+                                : 'No algorithms match "${_searchController.text}".'))
+                        : Scrollbar(
+                            // Add scrollbar for chip area
+                            child: SingleChildScrollView(
+                              // Inner scroll view for chips
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Wrap(
+                                spacing: 8.0,
+                                runSpacing: 4.0,
+                                children: _filteredAlgorithms.map((algo) {
+                                  final bool isSelected =
+                                      selectedAlgorithmGuid == algo.guid;
+                                  final bool isFavorite =
+                                      _favoriteGuids.contains(algo.guid);
+                                  return GestureDetector(
+                                    onLongPress: () =>
+                                        _toggleFavorite(algo.guid),
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        algo.name,
+                                        maxLines: 2, // Limit text lines
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      selected: isSelected,
+                                      onSelected: (bool selected) {
+                                        if (selected) {
+                                          _selectAlgorithm(algo.guid);
+                                        } else {
+                                          if (isSelected) {
+                                            _selectAlgorithm(null);
+                                          }
+                                        }
+                                      },
+                                      avatar: isFavorite
+                                          ? Icon(Icons.star,
+                                              size: 18,
+                                              color: isSelected
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .primary)
+                                          : null,
+                                      labelPadding: isFavorite
+                                          ? const EdgeInsets.only(
+                                              left: 4.0, right: 8.0)
+                                          : null,
+                                      tooltip: 'Long-press to toggle favorite',
+                                      selectedColor: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                  ),
+
+                  const Divider(),
+                  const SizedBox(height: 12),
+
+                  // --- Specification Inputs (Flexible) ---
+                  if (_currentAlgoInfo != null &&
+                      _currentAlgoInfo!.numSpecifications > 0)
+                    Flexible(
+                      flex: 3, // Adjust flex factor as needed
+                      child: _buildSpecificationInputs(
+                          _currentAlgoInfo!, isOffline),
+                    ),
+
+                  // --- Add Button (at the bottom) ---
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+                    child: ElevatedButton(
+                      onPressed: _currentAlgoInfo != null && specValues != null
+                          ? () {
+                              Navigator.pop(context, {
+                                'algorithm': _currentAlgoInfo,
+                                'specValues': specValues,
+                              });
+                            }
+                          : null,
+                      child: const Text('Add to Preset'),
+                    ),
+                  ),
+                ],
+              );
+            },
+            orElse: () => const Center(child: CircularProgressIndicator()),
+          ),
         ),
       ),
     );
@@ -99,58 +388,100 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   Widget _buildSpecificationInputs(AlgorithmInfo algorithm, bool isOffline) {
     if (specValues == null ||
-        specValues!.length != algorithm.numSpecifications) {
+        specValues!.length != algorithm.numSpecifications ||
+        _currentAlgoInfo?.guid != algorithm.guid) {
       specValues = algorithm.specifications.map((s) => s.defaultValue).toList();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {});
         }
       });
-      return const Center(child: Text("Initializing specifications..."));
+      return const Center(
+          child: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Text("Loading specifications..."),
+      ));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          isOffline ? 'Specifications (Using Defaults):' : 'Specifications:',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        ...List.generate(algorithm.numSpecifications, (index) {
-          final specInfo = algorithm.specifications[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: TextFormField(
-              initialValue: specValues![index].toString(),
-              readOnly: isOffline,
-              decoration: InputDecoration(
-                labelText: specInfo.name.isNotEmpty
-                    ? specInfo.name
-                    : 'Specification ${index + 1}',
-                hintText: '(${specInfo.min} to ${specInfo.max})',
-                border: const OutlineInputBorder(),
-                filled: isOffline,
-                fillColor: isOffline ? Colors.grey[200] : null,
+    return Scrollbar(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Specs column takes minimum height
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Specifications:',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              keyboardType: TextInputType.number,
-              onChanged: isOffline
-                  ? null
-                  : (value) {
-                      int parsedValue =
-                          int.tryParse(value) ?? specInfo.defaultValue;
-                      parsedValue =
-                          parsedValue.clamp(specInfo.min, specInfo.max);
-                      if (specValues![index] != parsedValue) {
-                        setState(() {
-                          specValues![index] = parsedValue;
-                        });
-                      }
-                    },
             ),
-          );
-        }),
-      ],
+            ...List.generate(algorithm.numSpecifications, (index) {
+              final specInfo = algorithm.specifications[index];
+              if (index >= specValues!.length) {
+                return const SizedBox.shrink(); // Avoid index error
+              }
+              // Define the TextFormField
+              final textField = TextFormField(
+                key: ValueKey('${algorithm.guid}_spec_$index'),
+                initialValue: specValues![index].toString(),
+                readOnly: isOffline,
+                decoration: InputDecoration(
+                  labelText: specInfo.name.isNotEmpty
+                      ? specInfo.name
+                      : 'Specification ${index + 1}',
+                  hintText: '(${specInfo.min} to ${specInfo.max})',
+                  border: const OutlineInputBorder(),
+                  // Reduce density for specs section
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12.0, vertical: 10.0),
+                ),
+                keyboardType: TextInputType.number,
+                onChanged: isOffline
+                    ? null
+                    : (value) {
+                        int parsedValue =
+                            int.tryParse(value) ?? specInfo.defaultValue;
+                        parsedValue =
+                            parsedValue.clamp(specInfo.min, specInfo.max);
+                        if (index < specValues!.length &&
+                            specValues![index] != parsedValue) {
+                          setState(() {
+                            specValues![index] = parsedValue;
+                          });
+                        }
+                      },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a value';
+                  }
+                  final int? parsed = int.tryParse(value);
+                  if (parsed == null) {
+                    return 'Please enter a number';
+                  }
+                  if (parsed < specInfo.min || parsed > specInfo.max) {
+                    return 'Value must be between ${specInfo.min} and ${specInfo.max}';
+                  }
+                  return null; // Valid
+                },
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              );
+
+              // Wrap with Tooltip only if offline
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: isOffline
+                    ? Tooltip(
+                        message: 'Defaults are used in offline mode',
+                        child: textField,
+                      )
+                    : textField,
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 }
