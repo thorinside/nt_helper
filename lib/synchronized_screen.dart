@@ -581,9 +581,6 @@ class SynchronizedScreen extends StatelessWidget {
       builder: (context, state) {
         return state.maybeMap(
           synchronized: (syncState) {
-            if (syncState.slots.isEmpty) {
-              return const Center(child: Text("No algorithms in preset"));
-            }
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: TabBar(
