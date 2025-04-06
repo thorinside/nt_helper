@@ -123,7 +123,7 @@ class _DistingPageState extends State<DistingPage> {
                   context.read<DistingCubit>().onDemo();
                 },
                 onOfflinePressed: () async {
-                  context.read<DistingCubit>().workOffline();
+                  context.read<DistingCubit>().goOffline();
                 },
                 canWorkOffline: state.canWorkOffline,
               );
@@ -138,12 +138,6 @@ class _DistingPageState extends State<DistingPage> {
                       padding: const EdgeInsets.all(24.0),
                       child: CircularProgressIndicator(),
                     ),
-                    OutlinedButton(
-                      onPressed: () {
-                        context.read<DistingCubit>().cancelSync();
-                      },
-                      child: Text("Cancel"),
-                    )
                   ],
                 ),
               );

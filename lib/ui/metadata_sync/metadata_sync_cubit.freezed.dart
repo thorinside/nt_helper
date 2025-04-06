@@ -3283,9 +3283,7 @@ class _$ViewingLocalDataImpl
         _parameterCounts = parameterCounts,
         _presets = presets;
 
-// Include both for potential future use or segmented view
   final List<AlgorithmEntry> _algorithms;
-// Include both for potential future use or segmented view
   @override
   List<AlgorithmEntry> get algorithms {
     if (_algorithms is EqualUnmodifiableListView) return _algorithms;
@@ -3511,7 +3509,6 @@ abstract class ViewingLocalData implements MetadataSyncState {
       required final Map<String, int> parameterCounts,
       required final List<PresetEntry> presets}) = _$ViewingLocalDataImpl;
 
-// Include both for potential future use or segmented view
   List<AlgorithmEntry> get algorithms;
   Map<String, int> get parameterCounts;
   List<PresetEntry> get presets;

@@ -7,6 +7,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// Abstract interface for Disting MIDI communication.
 abstract class IDistingMidiManager {

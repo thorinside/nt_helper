@@ -113,17 +113,42 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   // --- Insertion/Update Methods ---
 
   // Saves a complete preset. Uses a transaction.
-  // Assumes the input 'preset' contains all necessary data.
+  // If a preset with the same name exists, it updates it; otherwise, it inserts a new one.
   Future<int> saveFullPreset(FullPresetDetails presetData) async {
     return transaction(() async {
-      // 1. Upsert Preset entry
-      final presetCompanion =
-          presetData.toCompanion(false); // Use companion for upsert
-      final presetId = await into(presets)
-          .insert(presetCompanion, mode: InsertMode.insertOrReplace);
+      final presetName = presetData.preset.name;
+      int presetId;
 
-      // 2. Clear existing related data for this preset (slots, values etc.)
-      //    This simplifies logic compared to detailed diffing/updating.
+      // 1. Look up existing preset by name
+      final existingPreset = await getPresetByName(presetName);
+
+      if (existingPreset != null) {
+        // --- UPDATE existing preset ---
+        presetId = existingPreset.id;
+        // Update the existing preset entry (e.g., lastModified)
+        await (update(presets)..where((p) => p.id.equals(presetId))).write(
+          PresetsCompanion(
+            // name: Value(presetName), // Name shouldn't change here
+            lastModified: Value(DateTime.now()),
+          ),
+        );
+        print(
+            "[PresetsDao] Updating existing preset ID: $presetId, Name: '$presetName'");
+      } else {
+        // --- INSERT new preset ---
+        final presetCompanion = presetData.preset.toCompanion(false).copyWith(
+              id: const Value.absent(), // Explicitly ignore ID for insert
+              lastModified:
+                  Value(DateTime.now()), // Ensure lastModified is updated
+            );
+        presetId = await into(presets).insert(presetCompanion,
+            mode: InsertMode.insert); // Force insert for new name
+        print(
+            "[PresetsDao] Inserting new preset. Assigned ID: $presetId, Name: '$presetName'");
+      }
+
+      // 2. Clear existing related data for the target preset ID
+      //    (Necessary for both insert and update to ensure clean state)
       final existingSlots = await (select(presetSlots)
             ..where((s) => s.presetId.equals(presetId)))
           .get();

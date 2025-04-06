@@ -14,9 +14,7 @@ part 'metadata_sync_state.dart';
 part 'metadata_sync_cubit.freezed.dart';
 
 class MetadataSyncCubit extends Cubit<MetadataSyncState> {
-  final IDistingMidiManager? _distingManager;
   final AppDatabase _database;
-  late final MetadataSyncService _metadataSyncService;
   late final MetadataDao _metadataDao;
   late final PresetsDao _presetsDao;
 
@@ -24,26 +22,17 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   bool _isMetadataSyncCancelled = false;
 
   MetadataSyncCubit(
-    this._distingManager,
     this._database,
   ) : super(const MetadataSyncState.idle()) {
     _metadataDao = _database.metadataDao;
     _presetsDao = _database.presetsDao;
-    if (_distingManager != null) {
-      _metadataSyncService = MetadataSyncService(_distingManager!, _database);
-    }
   }
 
   // --- Metadata Sync Methods ---
 
-  Future<void> startMetadataSync() async {
+  Future<void> startMetadataSync(IDistingMidiManager manager) async {
     if (state.maybeMap(syncingMetadata: (_) => true, orElse: () => false))
       return;
-    if (_distingManager == null) {
-      emit(const MetadataSyncState.metadataSyncFailure(
-          "Cannot sync: Disting connection not available."));
-      return;
-    }
 
     _isMetadataSyncCancelled = false; // Reset cancellation flag
 
@@ -56,7 +45,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     bool errorOccurred = false;
     String finalMessage = "Metadata sync completed successfully.";
 
-    await _metadataSyncService.syncAllAlgorithmMetadata(
+    final syncService = MetadataSyncService(manager, _database);
+
+    await syncService.syncAllAlgorithmMetadata(
       onProgress: (progress, processed, total, mainMsg, subMsg) {
         if (!isClosed && !_isMetadataSyncCancelled) {
           emit(MetadataSyncState.syncingMetadata(
@@ -85,6 +76,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         emit(MetadataSyncState.metadataSyncFailure(finalMessage));
       } else {
         emit(MetadataSyncState.metadataSyncSuccess(finalMessage));
+        await loadLocalData();
       }
     }
   }
@@ -98,12 +90,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
   // --- Preset Management Methods ---
 
-  Future<void> saveCurrentPreset() async {
-    if (_distingManager == null) {
-      emit(const MetadataSyncState.presetSaveFailure(
-          "Cannot save: Disting connection not available."));
-      return;
-    }
+  Future<void> saveCurrentPreset(IDistingMidiManager manager) async {
     if (state.maybeMap(
         savingPreset: (_) => true,
         loadingPreset: (_) => true,
@@ -114,12 +101,13 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     emit(const MetadataSyncState.savingPreset());
     try {
       // 1. Fetch Name
-      final rawName =
-          await _distingManager!.requestPresetName() ?? "Unnamed Preset";
+      final rawName = await manager.requestPresetName() ?? "Unnamed Preset";
       final name = rawName.trim(); // Trim the name
 
+      // *** Name check removed - DAO will handle upsert based on name ***
+
       // 2. Fetch Number of Slots
-      final numSlots = await _distingManager!.requestNumAlgorithmsInPreset();
+      final numSlots = await manager.requestNumAlgorithmsInPreset();
       if (kDebugMode)
         print(" >> saveCurrentPreset: Device reported $numSlots slots.");
       if (numSlots == null) {
@@ -134,7 +122,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
               "  -> saveCurrentPreset: Entering FOR loop iteration i = $i"); // Keep this
         }
         if (kDebugMode) print("  >> About to call _fetchPresetSlotDetails($i)");
-        final slotDetails = await _fetchPresetSlotDetails(i);
+        final slotDetails = await _fetchPresetSlotDetails(i, manager);
         fullSlots.add(slotDetails);
         if (kDebugMode)
           print(
@@ -164,18 +152,15 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       loadLocalData();
     } catch (e, stacktrace) {
       print("Error saving preset: $e\n$stacktrace");
+      // *** Reverted error handling - Keep generic message ***
       emit(MetadataSyncState.presetSaveFailure(
           "Failed to save preset: ${e.toString()}"));
     }
   }
 
-  Future<void> loadPresetToDevice(FullPresetDetails preset) async {
+  Future<void> loadPresetToDevice(
+      FullPresetDetails preset, IDistingMidiManager manager) async {
     emit(const MetadataSyncState.loadingPreset());
-    if (_distingManager == null) {
-      emit(const MetadataSyncState.presetLoadFailure(
-          "Device not connected or initialized."));
-      return;
-    }
     if (kDebugMode) {
       print(
           "loadPresetToDevice: Starting load for preset '${preset.preset.name}'");
@@ -185,7 +170,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       if (kDebugMode) {
         print("  -> Sending New Preset command to clear device state...");
       }
-      await _distingManager!.requestNewPreset();
+      await manager.requestNewPreset();
       await Future.delayed(
           const Duration(milliseconds: 200)); // Allow time to process
 
@@ -236,8 +221,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           print(
               "    -> Sending Add Algorithm command for slot $i with GUID $algorithmGuid and ${defaultSpecifications.length} specs.");
         }
-        await _distingManager!
-            .requestAddAlgorithm(algorithmInfo, defaultSpecifications);
+        await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
         // Add delay after adding each algorithm
         await Future.delayed(const Duration(milliseconds: 150));
       }
@@ -285,7 +269,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
                 "    -> Sending Param $parameterNumber ($paramName) = $value for slot $i");
           }
           // Use setParameterValue
-          await _distingManager!.setParameterValue(
+          await manager.setParameterValue(
             i, // slotIndex (use loop index)
             parameterNumber,
             value,
@@ -308,7 +292,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
                 "    -> Sending Mapping for Param $parameterNumber in slot $i: CV(${mappingData.cvInput}), MIDI(${mappingData.isMidiEnabled ? mappingData.midiCC : 'Off'}), I2C(${mappingData.isI2cEnabled ? mappingData.i2cCC : 'Off'})");
           }
           // Use requestSetMapping
-          await _distingManager!.requestSetMapping(
+          await manager.requestSetMapping(
             i, // slotIndex (use loop index)
             parameterNumber,
             mappingData,
@@ -329,7 +313,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       if (kDebugMode) {
         print("  -> Setting preset name on device to: '$presetName'");
       }
-      await _distingManager!.requestSetPresetName(presetName);
+      await manager.requestSetPresetName(presetName);
       await Future.delayed(
           const Duration(milliseconds: 50)); // Short delay after name set
 
@@ -356,8 +340,13 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         syncingMetadata: (_) => true,
         savingPreset: (_) => true,
         loadingPreset: (_) => true,
+        // deletingPreset: (_) => true, // Allow loading even if deleting just finished
         orElse: () => false);
-    if (isBusy) return;
+    // Allow proceeding if the state IS deletingPreset, because we want to load data *after* deletion.
+    if (isBusy &&
+        !state.maybeMap(deletingPreset: (_) => true, orElse: () => false)) {
+      return;
+    }
 
     // Use a generic loading state or specific one?
     // Let's reuse loadingPreset for simplicity for now.
@@ -393,13 +382,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   // Helper method to fetch data for a single slot needed for saving
-  Future<FullPresetSlot> _fetchPresetSlotDetails(int slotIndex) async {
-    // Ensure manager exists (already checked in caller, but good practice)
-    if (_distingManager == null) throw Exception("Disting manager is null");
+  Future<FullPresetSlot> _fetchPresetSlotDetails(
+      int slotIndex, IDistingMidiManager manager) async {
+    // Manager is passed in, assume not null
 
-    // Fetch Algorithm GUID and Name (which includes custom name if set)
-    final algoGuidResult =
-        await _distingManager!.requestAlgorithmGuid(slotIndex);
+    // Fetch Algorithm GUID and Name (use passed manager)
+    final algoGuidResult = await manager.requestAlgorithmGuid(slotIndex);
     final guid = algoGuidResult?.guid;
     // Use the name from the returned Algorithm object as the potential custom name
     final String? customName = algoGuidResult?.name;
@@ -421,7 +409,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
     // Fetch Parameter Values
     final paramValuesResult =
-        await _distingManager!.requestAllParameterValues(slotIndex);
+        await manager.requestAllParameterValues(slotIndex);
     final parameterValues = paramValuesResult?.values ?? [];
     // Convert list to map required by FullPresetSlot
     final parameterValuesMap = <int, int>{};
@@ -430,13 +418,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     }
 
     // Fetch Mappings
-    final numParamsResult =
-        await _distingManager!.requestNumberOfParameters(slotIndex);
+    final numParamsResult = await manager.requestNumberOfParameters(slotIndex);
     final numParams = numParamsResult?.numParameters ?? 0;
     final Map<int, PackedMappingData> mappingsMap = {};
     for (int pNum = 0; pNum < numParams; pNum++) {
-      final mappingResult =
-          await _distingManager!.requestMappings(slotIndex, pNum);
+      final mappingResult = await manager.requestMappings(slotIndex, pNum);
       // Only store if it's a valid mapping (not filler/default)
       if (mappingResult != null && mappingResult.packedMappingData.isMapped()) {
         mappingsMap[pNum] = mappingResult.packedMappingData;
@@ -446,7 +432,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     // Fetch Routing Info
     // Assuming requestRoutingInformation returns RoutingInfo which has List<int> routingInfo
     final routingInfoResult =
-        await _distingManager!.requestRoutingInformation(slotIndex);
+        await manager.requestRoutingInformation(slotIndex);
     final routingInfoList = routingInfoResult?.routingInfo ?? [];
 
     // Create PresetSlotEntry (ID and PresetID are set by DAO on insert)
@@ -470,17 +456,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   Future<void> deletePreset(int presetId) async {
-    // Use the correct state for indicating deletion is starting
     emit(const MetadataSyncState.deletingPreset());
     try {
-      // Use _presetsDao to delete the preset
       await _presetsDao.deletePreset(presetId);
-      // Reload local data to reflect the deletion
-      loadLocalData();
-      // Optionally emit a success state if defined, otherwise just reloading data might be enough
-      // emit(MetadataSyncState.presetDeleteSuccess("Preset deleted.")); // Uncomment if you have this state and want to use it
+      // Ensure we wait for data loading to finish
+      await loadLocalData();
     } catch (e) {
-      // Use the correct state for deletion failure
       emit(MetadataSyncState.presetDeleteFailure("Error deleting preset: $e"));
     }
   }

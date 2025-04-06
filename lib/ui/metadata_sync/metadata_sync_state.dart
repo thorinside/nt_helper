@@ -39,7 +39,6 @@ class MetadataSyncState with _$MetadataSyncState {
 
   // --- Viewing Local Data State ---
   const factory MetadataSyncState.viewingLocalData({
-    // Include both for potential future use or segmented view
     required List<AlgorithmEntry> algorithms,
     required Map<String, int> parameterCounts,
     required List<PresetEntry> presets,

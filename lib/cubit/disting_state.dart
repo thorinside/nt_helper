@@ -27,24 +27,19 @@ class MappedParameter with _$MappedParameter {
 }
 
 @freezed
-class DistingState with _$DistingState {
-  const factory DistingState.initial({
-    Uint8List? screenshot,
-    @Default(false) bool demo,
-  }) = DistingStateInitial;
+sealed class DistingState with _$DistingState {
+  const factory DistingState.initial() = DistingStateInitial;
 
   const factory DistingState.selectDevice({
     required List<MidiDevice> inputDevices,
     required List<MidiDevice> outputDevices,
-    Uint8List? screenshot,
-    @Default(false) bool demo,
-    @Default(false) bool canWorkOffline,
+    required bool canWorkOffline,
   }) = DistingStateSelectDevice;
 
   const factory DistingState.connected({
     required IDistingMidiManager disting,
-    Uint8List? screenshot,
-    @Default(false) bool demo,
+    MidiDevice? inputDevice,
+    MidiDevice? outputDevice,
     @Default(false) bool offline,
     @Default(false) bool loading,
   }) = DistingStateConnected;
@@ -56,6 +51,8 @@ class DistingState with _$DistingState {
     required List<AlgorithmInfo> algorithms,
     required List<Slot> slots,
     required List<String> unitStrings,
+    MidiDevice? inputDevice,
+    MidiDevice? outputDevice,
     Uint8List? screenshot,
     @Default(false) bool loading,
     @Default(false) bool demo,

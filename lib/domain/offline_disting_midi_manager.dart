@@ -19,6 +19,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   late final MetadataDao _metadataDao;
 
   // Internal state for the simulated preset
+  int? _loadedPresetId; // Added: Store the ID of the loaded preset
   final List<String> _presetAlgorithmGuids = [];
   // State per slot (keyed by slot index)
   final Map<int, Map<int, int>> _parameterValues =
@@ -40,13 +41,15 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _mappings.clear();
     _routingInfo.clear();
     _customNames.clear();
+    _loadedPresetId = null; // Reset ID
 
     if (details == null) {
       _presetName = "Offline Preset";
       return; // Start empty
     }
 
-    _presetName = details.preset.name;
+    _loadedPresetId = details.preset.id; // Store the ID
+    _presetName = details.preset.name; // Set internal name from loaded preset
     for (int i = 0; i < details.slots.length; i++) {
       final slotData = details.slots[i];
       _presetAlgorithmGuids.add(slotData.algorithm.guid);
@@ -58,7 +61,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       }
     }
     debugPrint(
-        "[Offline] Initialized manager state from DB preset '${_presetName}'. Slots: ${_presetAlgorithmGuids.length}");
+        "[Offline] Initialized manager state from DB preset '$_presetName' (ID: $_loadedPresetId). Slots: ${_presetAlgorithmGuids.length}");
   }
 
   @override
@@ -139,6 +142,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
           .getSingleOrNull();
 
       if (algoEntry != null) {
+        // Get the base name from the database entry
+        String baseName = algoEntry.name;
+
         // Check for duplicate GUIDs earlier in the list to simulate postfixing
         int instanceCount = 0;
         for (int i = 0; i < algorithmIndex; i++) {
@@ -146,16 +152,18 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
             instanceCount++;
           }
         }
-
-        String name = algoEntry.name;
         if (instanceCount > 0) {
-          name = "$name ${instanceCount + 1}";
+          baseName = "$baseName ${instanceCount + 1}";
         }
+
+        // *** Check for a custom name in the internal map ***
+        final customName = _customNames[algorithmIndex];
 
         return Algorithm(
           algorithmIndex: algorithmIndex, // Use the preset index
           guid: algoEntry.guid,
-          name: name, // Use potentially postfixed name
+          // Use custom name if available, otherwise use the (potentially postfixed) base name
+          name: customName ?? baseName,
         );
       } else {
         debugPrint(
@@ -373,7 +381,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<String?> requestPresetName() async {
-    return "Offline Preset"; // Always return fixed display name
+    // Return the current internal preset name
+    return _presetName;
   }
 
   @override
@@ -443,23 +452,54 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetPresetName(String name) async {
+    if (_loadedPresetId == null) {
+      debugPrint(
+          "[Offline] requestSetPresetName: Cannot rename, no preset loaded.");
+      return;
+    }
     debugPrint(
-        "[Offline] requestSetPresetName: Ignoring rename attempt for offline state.");
-    // Renaming the internal offline state preset doesn't make sense.
+        "[Offline] requestSetPresetName: Renaming preset ID $_loadedPresetId to '$name'");
+    _presetName = name; // Update internal state first
+    try {
+      final presetsDao = _database.presetsDao;
+      // Call DAO to update DB (This method needs to be added to PresetsDao)
+      await presetsDao.updatePresetName(_loadedPresetId!, name);
+      debugPrint("[Offline] Successfully requested preset name update in DB.");
+    } catch (e, stackTrace) {
+      debugPrint("[Offline] Error updating preset name in DB: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // Consider error handling/reverting internal state if needed
+    }
   }
 
   @override
   Future<void> requestSavePreset() async {
     debugPrint(
-        "[Offline] requestSavePreset: Saving current offline state to DB");
+        "[Offline] requestSavePreset: Attempting to save current offline state to DB");
     try {
-      final presetDetails = await getCurrentPresetDetails();
-      final presetsDao = _database.presetsDao;
-      // getCurrentPresetDetails ensures the correct PresetEntry is included
-      // saveFullPreset handles the upsert based on the preset ID
-      await presetsDao.saveFullPreset(presetDetails);
+      // Build details based on current state (handles null _loadedPresetId for insertion)
+      final FullPresetDetails? presetDetails =
+          await _buildPresetDetailsForSave();
 
-      debugPrint("[Offline] Saved offline state to DB via requestSavePreset.");
+      if (presetDetails == null) {
+        // This might happen if essential metadata (like algorithm entry) is missing
+        debugPrint(
+            "[Offline] requestSavePreset: Failed to build preset details for saving.");
+        return;
+      }
+
+      final presetsDao = _database.presetsDao;
+      // saveFullPreset handles insert (if ID is missing/invalid in companion) or update
+      final savedPresetId = await presetsDao.saveFullPreset(presetDetails);
+
+      // Update the loaded ID with the ID returned from save operation
+      // This ensures subsequent saves update the correct preset, especially after an insert.
+      _loadedPresetId = savedPresetId;
+      // Also update internal name just in case saveFullPreset modified it (though unlikely)
+      _presetName = presetDetails.preset.name;
+
+      debugPrint(
+          "[Offline] Saved state to preset ID $_loadedPresetId ('${presetDetails.preset.name}') in DB.");
     } catch (e, stackTrace) {
       debugPrint(
           "[Offline] Error saving offline state via requestSavePreset: $e");
@@ -474,7 +514,15 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestNewPreset() async {
-    print("[Offline] requestNewPreset - No-op");
+    debugPrint(
+        "[Offline] requestNewPreset: Clearing internal state and setting name to 'Init'.");
+    _presetAlgorithmGuids.clear();
+    _parameterValues.clear();
+    _mappings.clear();
+    _routingInfo.clear();
+    _customNames.clear();
+    _presetName = "Init"; // Set name to Init
+    _loadedPresetId = null; // Clear loaded preset ID
   }
 
   @override
@@ -605,50 +653,55 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     }
   }
 
-  // Helper method to construct FullPresetDetails from internal state
-  Future<FullPresetDetails> getCurrentPresetDetails() async {
-    // Need the PresetsDao to potentially create/find the PresetEntry ID
-    final presetsDao = _database.presetsDao;
-    // Define the constant internal name for the offline state preset
-    const String offlinePresetDbKey = "__OFFLINE_INTERNAL_STATE__";
-    // Find or create the preset entry for our offline state
-    PresetEntry? presetEntry =
-        await presetsDao.getPresetByName(offlinePresetDbKey);
-    if (presetEntry == null) {
-      // Create if it doesn't exist (using the key as the name for DB consistency)
-      final id = await presetsDao.db.into(presetsDao.db.presets).insert(
-          PresetsCompanion.insert(
-              name: offlinePresetDbKey)); // Use key for DB name field too
-      presetEntry = await presetsDao.getPresetById(id);
-      if (presetEntry == null) {
-        throw Exception(
-            "Failed to create/find offline preset entry in DB for key: $offlinePresetDbKey");
-      }
+  // Helper method to construct FullPresetDetails for saving (insert or update).
+  // Returns null if needed algorithm metadata is missing.
+  Future<FullPresetDetails?> _buildPresetDetailsForSave() async {
+    // Construct PresetEntry: Use existing ID/name if loaded, else use current name and invalid ID for insert.
+    final PresetEntry presetEntry;
+    if (_loadedPresetId != null) {
+      presetEntry = PresetEntry(
+        id: _loadedPresetId!, // Use existing ID for update
+        name: _presetName, // Use potentially updated name
+        lastModified: DateTime.now(),
+      );
     } else {
-      // If it exists, update its lastModified time
-      // ... existing code ...
+      // Use an invalid ID like -1 or rely on DAO/companion logic for auto-increment on insert.
+      // The DAO's saveFullPreset uses toCompanion which should handle this for inserts.
+      presetEntry = PresetEntry(
+        id: -1, // Placeholder ID for insertion logic in DAO
+        name: _presetName, // Use current name (e.g., "Init" or user-changed)
+        lastModified: DateTime.now(),
+      );
     }
 
     final List<FullPresetSlot> slots = [];
     for (int i = 0; i < _presetAlgorithmGuids.length; i++) {
       final guid = _presetAlgorithmGuids[i];
-      // Fetch base algorithm info
+      // Fetch base algorithm info - requires DB access
       final algoEntry = await (_metadataDao.select(_metadataDao.algorithms)
             ..where((a) => a.guid.equals(guid)))
-          .getSingle();
+          .getSingleOrNull(); // Use getSingleOrNull for safety
+
+      if (algoEntry == null) {
+        debugPrint(
+            "[Offline] Warning: Algorithm metadata missing for GUID $guid while building save details. Cannot save.");
+        return null; // Cannot proceed without algorithm metadata
+      }
 
       slots.add(FullPresetSlot(
-          slot: PresetSlotEntry(
-              id: -1,
-              presetId: presetEntry.id,
-              slotIndex: i,
-              algorithmGuid: guid,
-              customName:
-                  _customNames[i]), // ID is irrelevant for saving logic in DAO
-          algorithm: algoEntry,
-          parameterValues: _parameterValues[i] ?? {},
-          mappings: _mappings[i] ?? {},
-          routingInfo: _routingInfo[i] ?? []));
+        slot: PresetSlotEntry(
+          id: -1, // Slot ID is handled by DAO during save
+          presetId:
+              presetEntry.id, // Link to preset ID (placeholder OK for DAO)
+          slotIndex: i,
+          algorithmGuid: guid,
+          customName: _customNames[i],
+        ),
+        algorithm: algoEntry,
+        parameterValues: _parameterValues[i] ?? {},
+        mappings: _mappings[i] ?? {},
+        routingInfo: _routingInfo[i] ?? [],
+      ));
     }
 
     return FullPresetDetails(preset: presetEntry, slots: slots);

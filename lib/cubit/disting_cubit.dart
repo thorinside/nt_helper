@@ -32,21 +32,32 @@ class _PollingTask {
 class DistingCubit extends Cubit<DistingState> {
   final AppDatabase _database; // Added
   late final MetadataDao _metadataDao; // Added
+  late final PresetsDao _presetsDao; // Added PresetsDao
   final Future<SharedPreferences> _prefs;
 
   // Modified constructor
   DistingCubit(this._database)
       : _prefs = SharedPreferences.getInstance(),
-        super(DistingState.initial()) {
+        super(const DistingState.initial()) {
     _metadataDao = _database.metadataDao; // Initialize DAO
+    _presetsDao = _database.presetsDao; // Initialize PresetsDao
   }
 
   MidiCommand _midiCommand = MidiCommand();
   CancelableOperation<void>? _programSlotUpdate;
+  // Keep track of the offline manager instance when offline
+  OfflineDistingMidiManager? _offlineManager;
+
+  // Added: Store last known online connection details
+  MidiDevice? _lastOnlineInputDevice;
+  MidiDevice? _lastOnlineOutputDevice;
+  int? _lastOnlineSysExId;
 
   @override
   Future<void> close() {
     disting()?.dispose();
+    _offlineManager?.dispose(); // Dispose offline manager too
+    _midiCommand.dispose();
     return super.close();
   }
 
@@ -562,10 +573,10 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> loadDevices() async {
     try {
       // Transition to a loading state if needed
-      emit(DistingState.initial());
+      emit(const DistingState.initial());
 
       // Fetch devices using the helper
-      final devices = await _fetchDeviceLists();
+      final devices = await _fetchDeviceLists(); // Call helper
 
       // Re-check offline capability here for manual refresh accuracy
       final bool canWorkOffline = await _metadataDao.hasCachedAlgorithms();
@@ -602,6 +613,9 @@ class DistingCubit extends Cubit<DistingState> {
 
   void disconnect() {
     switch (state) {
+      case DistingStateInitial():
+      case DistingStateSelectDevice():
+        break;
       case DistingStateConnected connectedState:
         connectedState.disting.dispose();
         break;
@@ -616,97 +630,378 @@ class DistingCubit extends Cubit<DistingState> {
   // Private helper to perform the full synchronization and emit the state
   Future<void> _performSyncAndEmit() async {
     final currentState = state;
+    MidiDevice? inputDevice; // Variables to hold devices from state
+    MidiDevice? outputDevice;
 
-    if (!(currentState is DistingStateSynchronized ||
-        currentState is DistingStateConnected)) {
+    if (currentState is DistingStateConnected) {
+      inputDevice = currentState.inputDevice;
+      outputDevice = currentState.outputDevice;
+    } else if (currentState is DistingStateSynchronized &&
+        !currentState.offline) {
+      inputDevice = currentState.inputDevice;
+      outputDevice = currentState.outputDevice;
+    } else {
+      debugPrint("[Cubit] Cannot sync: Invalid state or offline.");
       return;
     }
 
-    final disting = requireDisting();
+    // Now state is confirmed, get manager
+    final IDistingMidiManager distingManager = requireDisting();
 
     try {
       // --- Fetch ALL data from device REGARDLESS ---
       debugPrint("[Cubit] _performSyncAndEmit: Fetching full device state...");
-      final numAlgorithms = (await disting.requestNumberOfAlgorithms()) ?? 0;
+
+      final numAlgorithms =
+          (await distingManager.requestNumberOfAlgorithms()) ?? 0;
       final algorithms = numAlgorithms > 0
           ? await Future.wait([
               for (int i = 0; i < numAlgorithms; i++)
-                disting.requestAlgorithmInfo(i)
+                distingManager.requestAlgorithmInfo(i)
             ]).then((results) => results.whereType<AlgorithmInfo>().toList())
           : <AlgorithmInfo>[];
-
       final numAlgorithmsInPreset =
-          (await disting.requestNumAlgorithmsInPreset()) ?? 0;
-      final distingVersion = await disting.requestVersionString() ?? "";
-      final presetName = await disting.requestPresetName() ?? "Default";
-      var unitStrings = await disting.requestUnitStrings() ?? [];
-      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+          (await distingManager.requestNumAlgorithmsInPreset()) ?? 0;
+      final distingVersion = await distingManager.requestVersionString() ?? "";
+      final presetName = await distingManager.requestPresetName() ?? "Default";
+      var unitStrings = await distingManager.requestUnitStrings() ?? [];
+      List<Slot> slots =
+          await fetchSlots(numAlgorithmsInPreset, distingManager);
       debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
 
-      // --- Emit final synchronized state ---
+      // --- Emit final synchronized state --- (Ensure offline is false)
       emit(DistingState.synchronized(
-        disting: disting,
+        disting: distingManager,
         distingVersion: distingVersion,
         presetName: presetName,
         algorithms: algorithms,
         slots: slots,
         unitStrings: unitStrings,
-        loading: false, // Ensure loading is false
+        inputDevice: inputDevice,
+        outputDevice: outputDevice,
+        loading: false,
+        offline: false,
       ));
     } catch (e, stackTrace) {
       debugPrint("Error during synchronization: $e");
       debugPrintStack(stackTrace: stackTrace);
+      // Do NOT store connection details if sync fails
       await loadDevices();
     }
   }
 
   Future<void> connectToDevices(
       MidiDevice inputDevice, MidiDevice outputDevice, int sysExId) async {
+    // Get the potentially existing manager AND devices from the CURRENT state
+    final currentState = state;
+    MidiDevice? existingInputDevice;
+    MidiDevice? existingOutputDevice;
+    if (currentState is DistingStateConnected) {
+      existingInputDevice = currentState.inputDevice;
+      existingOutputDevice = currentState.outputDevice;
+    } else if (currentState is DistingStateSynchronized) {
+      existingInputDevice = currentState.inputDevice;
+      existingOutputDevice = currentState.outputDevice;
+    }
+    final existingManager = disting(); // Get manager separately
+
     try {
+      // Disconnect and dispose any existing managers first
+      if (existingManager != null) {
+        // Explicitly disconnect devices using devices read from the state
+        if (existingInputDevice != null) {
+          _midiCommand.disconnectDevice(existingInputDevice);
+        }
+        // Avoid disconnecting same device twice
+        if (existingOutputDevice != null &&
+            existingOutputDevice.id != existingInputDevice?.id) {
+          _midiCommand.disconnectDevice(existingOutputDevice);
+        }
+        existingManager.dispose(); // Dispose the old manager
+      }
+      _offlineManager?.dispose(); // Explicitly dispose offline if it exists
+      _offlineManager = null;
+
       // Connect to the selected device
       await _midiCommand.connectToDevice(inputDevice);
       if (inputDevice != outputDevice) {
         await _midiCommand.connectToDevice(outputDevice);
       }
-
-      // Save the device name and SysEx ID to persistent storage
       final prefs = await _prefs;
       await prefs.setString('selectedInputMidiDevice', inputDevice.name);
       await prefs.setString('selectedOutputMidiDevice', outputDevice.name);
       await prefs.setInt('selectedSysExId', sysExId);
 
-      final disting = DistingMidiManager(
+      // Create the NEW online manager
+      final newDistingManager = DistingMidiManager(
           midiCommand: _midiCommand,
           inputDevice: inputDevice,
           outputDevice: outputDevice,
           sysExId: sysExId);
 
-      // Emit Connected state WITHOUT pending data
+      // Emit Connected state WITH the new manager AND devices
       emit(DistingState.connected(
-        disting: disting,
-        // pendingOfflinePresetToSync: pendingData // Removed
+        disting: newDistingManager,
+        inputDevice: inputDevice, // Store connected devices
+        outputDevice: outputDevice,
+        offline: false,
       ));
 
-      // Perform the sync process
-      await _performSyncAndEmit();
+      // Store these details as the last successful ONLINE connection
+      // BEFORE starting the full sync.
+      _lastOnlineInputDevice = inputDevice;
+      _lastOnlineOutputDevice = outputDevice;
+      _lastOnlineSysExId = sysExId; // Use the parameter passed to this method
+
+      await _performSyncAndEmit(); // Sync with the new connection
     } catch (e, stackTrace) {
       debugPrint("Error connecting or initial sync: ${e.toString()}");
+      debugPrintStack(stackTrace: stackTrace);
+      // Clear last connection details if connection/sync fails
+      _lastOnlineInputDevice = null;
+      _lastOnlineOutputDevice = null;
+      _lastOnlineSysExId = null;
+      // Attempt to clean up MIDI connection on error too
+      try {
+        _midiCommand.disconnectDevice(inputDevice);
+        if (inputDevice != outputDevice) {
+          _midiCommand.disconnectDevice(outputDevice);
+        }
+      } catch (disconnectError) {
+        debugPrint("Error during MIDI disconnect cleanup: $disconnectError");
+      }
+      await loadDevices();
+    }
+  }
+
+  // --- Offline Mode Handling ---
+
+  Future<void> goOffline() async {
+    final currentState = state;
+    if (currentState is DistingStateSynchronized && currentState.offline) {
+      return; // Already offline
+    }
+
+    // Get devices and manager from CURRENT state before changing it
+    MidiDevice? currentInputDevice;
+    MidiDevice? currentOutputDevice;
+    IDistingMidiManager? currentManager = disting(); // Get current manager
+
+    if (currentState is DistingStateConnected) {
+      currentInputDevice = currentState.inputDevice;
+      currentOutputDevice = currentState.outputDevice;
+    } else if (currentState is DistingStateSynchronized) {
+      currentInputDevice = currentState.inputDevice;
+      currentOutputDevice = currentState.outputDevice;
+    }
+
+    debugPrint("[DistingCubit] Entering offline mode...");
+    emit(DistingState.connected(
+        disting: MockDistingMidiManager(), loading: true));
+
+    try {
+      // Disconnect existing MIDI connection IF devices were present
+      if (currentManager != null) {
+        // Check if there *was* a manager
+        if (currentInputDevice != null) {
+          debugPrint(
+              "[DistingCubit] Disconnecting input device ${currentInputDevice.name}...");
+          _midiCommand.disconnectDevice(currentInputDevice);
+        }
+        if (currentOutputDevice != null &&
+            currentOutputDevice.id != currentInputDevice?.id) {
+          debugPrint(
+              "[DistingCubit] Disconnecting output device ${currentOutputDevice.name}...");
+          _midiCommand.disconnectDevice(currentOutputDevice);
+        }
+        currentManager.dispose(); // Dispose the old manager (online or offline)
+      }
+      _offlineManager
+          ?.dispose(); // Ensure offline is disposed if manager wasn't it
+
+      // Create and initialize the offline manager
+      _offlineManager = OfflineDistingMidiManager(_database);
+      await _offlineManager!.initializeFromDb(null);
+      final version =
+          await _offlineManager!.requestVersionString() ?? "Offline";
+      final units = await _offlineManager!.requestUnitStrings() ?? [];
+      final availableAlgorithmsInfo = await _fetchOfflineAlgorithms();
+      final presetName =
+          await _offlineManager!.requestPresetName() ?? "Offline Preset";
+      final numAlgorithmsInPreset =
+          await _offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
+      final List<Slot> initialSlots =
+          await fetchSlots(numAlgorithmsInPreset, _offlineManager!);
+
+      debugPrint("[DistingCubit] Emitting offline synchronized state.");
+      // Emit state WITHOUT devices or custom names map
+      emit(DistingState.synchronized(
+        disting: _offlineManager!, // Use offline manager
+        distingVersion: version,
+        presetName: presetName,
+        algorithms: availableAlgorithmsInfo,
+        slots: initialSlots,
+        unitStrings: units,
+        inputDevice: null, // No devices when offline
+        outputDevice: null,
+        offline: true,
+        loading: false,
+      ));
+    } catch (e, stackTrace) {
+      debugPrint("Error initializing offline mode: $e");
       debugPrintStack(stackTrace: stackTrace);
       await loadDevices();
     }
   }
 
-// ADDING BACK the cancelSync method
-  Future<void> cancelSync() async {
-    disconnect(); // Disconnect MIDI
-    await loadDevices(); // Go back to device selection
+  Future<void> goOnline() async {
+    final currentState = state;
+    if (!(currentState is DistingStateSynchronized && currentState.offline)) {
+      // Only proceed if currently offline and synchronized
+      // If already online or in a different state, loadDevices handles it
+      await loadDevices();
+      return;
+    }
+    debugPrint("[DistingCubit] Going online...");
+
+    // Dispose offline manager first
+    _offlineManager?.dispose();
+    _offlineManager = null;
+
+    // Check if we have details from the last online session
+    if (_lastOnlineInputDevice != null &&
+        _lastOnlineOutputDevice != null &&
+        _lastOnlineSysExId != null) {
+      debugPrint(
+          "Attempting to reconnect using last known online connection...");
+      try {
+        // Attempt direct connection using stored details
+        await connectToDevices(
+            _lastOnlineInputDevice!,
+            _lastOnlineOutputDevice!,
+            _lastOnlineSysExId!); // Use stored details
+        // If connectToDevices succeeds, it will emit the connected/synchronized state
+        return; // Successfully reconnected
+      } catch (e) {
+        debugPrint(
+            "Failed to reconnect using last known details: $e. Falling back to device selection.");
+        // Clear potentially stale details if reconnection failed
+        _lastOnlineInputDevice = null;
+        _lastOnlineOutputDevice = null;
+        _lastOnlineSysExId = null;
+        // Fall through to loadDevices below
+      }
+    }
+
+    // If no last connection details or direct reconnect failed, load devices normally
+    debugPrint("No valid last connection details, proceeding to loadDevices.");
+    disconnect(); // Ensure any residual MIDI connection is closed
+    await loadDevices(); // Go back to device selection / auto-connect
   }
 
-  /// Refreshes the entire state from the Disting device.
+  Future<void> loadPresetOffline(FullPresetDetails presetDetails) async {
+    final currentState = state;
+    if (!(currentState is DistingStateSynchronized && currentState.offline)) {
+      print("Error: Cannot load preset offline when not in offline mode.");
+      return;
+    }
+    if (_offlineManager == null) {
+      print("Error: Offline manager not initialized.");
+      return;
+    }
+
+    debugPrint(
+        "[DistingCubit] Loading preset offline: ${presetDetails.preset.name}");
+    emit(currentState.copyWith(loading: true)); // Show loading
+
+    try {
+      // 1. Tell the offline manager to load the preset
+      await _offlineManager!.initializeFromDb(presetDetails);
+
+      // 2. Fetch the updated state FROM the manager
+      final presetName = await _offlineManager!.requestPresetName() ?? "Error";
+      final numAlgorithmsInPreset =
+          await _offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
+      final slots = await fetchSlots(numAlgorithmsInPreset, _offlineManager!);
+
+      // 3. Re-fetch metadata (algorithms and units don't change)
+      final availableAlgorithmsInfo = await _fetchOfflineAlgorithms();
+      final units = await _offlineManager!.requestUnitStrings() ?? [];
+      final version =
+          await _offlineManager!.requestVersionString() ?? "Offline";
+
+      debugPrint(
+          "[DistingCubit] Emitting updated offline state with loaded preset: $presetName");
+      // 4. Emit the new synchronized state, still marked offline
+      emit(DistingState.synchronized(
+        disting: _offlineManager!,
+        distingVersion: version,
+        presetName: presetName,
+        algorithms: availableAlgorithmsInfo,
+        slots: slots,
+        unitStrings: units,
+        offline: true, // Remain offline
+        loading: false,
+        screenshot: currentState.screenshot, // Preserve screenshot if any
+        demo: currentState.demo, // Preserve demo status if any
+      ));
+    } catch (e, stackTrace) {
+      debugPrint("Error loading preset offline: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      emit(currentState.copyWith(loading: false)); // Stop loading on error
+    }
+  }
+
+  // Helper to fetch algorithm metadata for offline mode
+  Future<List<AlgorithmInfo>> _fetchOfflineAlgorithms() async {
+    try {
+      final allBasicAlgoEntries = await _metadataDao.getAllAlgorithms();
+      final List<AlgorithmInfo> availableAlgorithmsInfo = [];
+
+      final detailedFutures = allBasicAlgoEntries.map((basicEntry) async {
+        return await _metadataDao.getFullAlgorithmDetails(basicEntry.guid);
+      }).toList();
+
+      final detailedResults = await Future.wait(detailedFutures);
+
+      for (final details in detailedResults.whereType<FullAlgorithmDetails>()) {
+        availableAlgorithmsInfo.add(AlgorithmInfo(
+          guid: details.algorithm.guid,
+          name: details.algorithm.name,
+          numSpecifications: details.algorithm.numSpecifications,
+          algorithmIndex: -1,
+          specifications: details.specifications
+              .map((specEntry) => Specification(
+                    name: specEntry.name,
+                    min: specEntry.minValue,
+                    max: specEntry.maxValue,
+                    defaultValue: specEntry.defaultValue,
+                    type: specEntry.type,
+                  ))
+              .toList(),
+        ));
+      }
+      availableAlgorithmsInfo
+          .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return availableAlgorithmsInfo;
+    } catch (e, stackTrace) {
+      debugPrint("Error fetching offline algorithms metadata: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      return []; // Return empty on error
+    }
+  }
+
+  /// Refreshes the entire state from the Disting device (ONLINE ONLY).
   Future<void> refresh() async {
     debugPrint("[Cubit] Refresh requested.");
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
+      // *** Add check for offline mode ***
+      if (currentState.offline) {
+        debugPrint("[Cubit] Cannot refresh while offline.");
+        return;
+      }
+      // Proceed with online refresh
       await _performSyncAndEmit(); // Call the helper
     } else {
       debugPrint("[Cubit] Cannot refresh: Not in Synchronized state.");
@@ -719,9 +1014,11 @@ class DistingCubit extends Cubit<DistingState> {
       return (state as DistingStateConnected).disting;
     }
     if (state is DistingStateSynchronized) {
-      return (state as DistingStateSynchronized).disting;
+      // Return offline manager if offline, otherwise online manager
+      final syncState = (state as DistingStateSynchronized);
+      return syncState.offline ? _offlineManager! : syncState.disting;
     }
-    throw Exception("Device is not connected.");
+    throw Exception("Device is not connected or synchronized.");
   }
 
   IDistingMidiManager? disting() {
@@ -729,7 +1026,8 @@ class DistingCubit extends Cubit<DistingState> {
       return (state as DistingStateConnected).disting;
     }
     if (state is DistingStateSynchronized) {
-      return (state as DistingStateSynchronized).disting;
+      final syncState = (state as DistingStateSynchronized);
+      return syncState.offline ? _offlineManager : syncState.disting;
     }
     return null;
   }
@@ -770,6 +1068,10 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     switch (state) {
+      case DistingStateInitial():
+      case DistingStateSelectDevice():
+      case DistingStateConnected():
+        break;
       case DistingStateSynchronized syncstate:
         var disting = requireDisting();
 
@@ -849,7 +1151,6 @@ class DistingCubit extends Cubit<DistingState> {
             ),
           ));
         }
-        _saveOfflineState(); // Save after potential state change
     }
   }
 
@@ -858,13 +1159,15 @@ class DistingCubit extends Cubit<DistingState> {
     List<int> specifications,
   ) async {
     switch (state) {
+      case DistingStateInitial():
+      case DistingStateSelectDevice():
+      case DistingStateConnected():
+        break;
       case DistingStateSynchronized syncstate:
-        final disting = syncstate.disting; // Could be OfflineDistingMidiManager
+        final disting = syncstate.disting;
+        List<int> specsToSend = specifications;
 
-        List<int> specsToSend =
-            specifications; // Default to using passed-in specs
-
-        // If offline, find the algorithm in state and use its stored default specs
+        // *** Adjust for offline: Use stored default specs if offline ***
         if (syncstate.offline) {
           final storedAlgoInfo = syncstate.algorithms.firstWhereOrNull(
             (a) => a.guid == algorithm.guid,
@@ -876,7 +1179,6 @@ class DistingCubit extends Cubit<DistingState> {
             debugPrint(
                 "[Offline Cubit] Using stored default specifications for ${algorithm.name}: $specsToSend");
           } else {
-            // Fallback or error? For now, use the (likely empty) passed-in specs
             debugPrint(
                 "[Offline Cubit] Warning: Could not find stored AlgorithmInfo for ${algorithm.name}. Using passed specifications.");
           }
@@ -884,201 +1186,93 @@ class DistingCubit extends Cubit<DistingState> {
 
         await disting.requestAddAlgorithm(algorithm, specsToSend);
 
-        // Refresh state from manager - fetchSlot will be called via refresh
-        refresh();
-        _saveOfflineState(); // Save after adding
+        // Refresh state from manager
+        await _refreshStateFromManager(); // Use helper to refresh
         break;
     }
   }
 
   Future<void> onRemoveAlgorithm(int algorithmIndex) async {
     switch (state) {
+      case DistingStateInitial():
+      case DistingStateSelectDevice():
+      case DistingStateConnected():
+        break;
       case DistingStateSynchronized syncstate:
         final disting = requireDisting();
         await disting.requestRemoveAlgorithm(algorithmIndex);
 
-        // Get the current slots
-        var slots = List<Slot>.from(syncstate.slots);
-
-        // Remove the slot at the specified index
-        if (algorithmIndex >= 0 && algorithmIndex < slots.length) {
-          slots.removeAt(algorithmIndex);
-        }
-
-        // Fix indices for remaining slots
-        var updatedSlots = slots
-            .mapIndexed((index, element) => _fixAlgorithmIndex(
-                    element, index) // Use index directly after removal
-                )
-            .toList();
-
-        emit(syncstate.copyWith(slots: updatedSlots));
-        _saveOfflineState(); // Save after removing
+        // Refresh state from manager
+        await _refreshStateFromManager(); // Use helper to refresh
         break;
     }
-  }
-
-  void onFocusParameter({
-    required int algorithmIndex,
-    required int parameterNumber,
-  }) {
-    final disting = requireDisting();
-    disting.requestSetFocus(algorithmIndex, parameterNumber);
   }
 
   void renamePreset(String newName) async {
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
-      // Prevent renaming when offline
-      if (currentState.offline) {
-        debugPrint("[Cubit] Ignoring renamePreset call while offline.");
-        return;
-      }
-
       final disting = currentState.disting;
+      // Allow renaming offline, OfflineDistingMidiManager handles it
       disting.requestSetPresetName(newName);
 
-      await Future.delayed(Duration(milliseconds: 250));
-      emit((state as DistingStateSynchronized)
-          .copyWith(presetName: await disting.requestPresetName() ?? ""));
-      _saveOfflineState(); // Save after renaming
+      await Future.delayed(
+          const Duration(milliseconds: 50)); // Shorter delay okay?
+      await _refreshStateFromManager(); // Refresh state from manager
     }
   }
 
-  void save() async {
-    final disting = requireDisting();
-    disting.requestSavePreset();
-  }
-
   Future<int> moveAlgorithmUp(int algorithmIndex) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return algorithmIndex;
     if (algorithmIndex == 0) return 0;
 
     final disting = requireDisting();
     await disting.requestMoveAlgorithmUp(algorithmIndex);
-
-    // Manually update the slots list immediately
-    var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
-    var slot = slots.removeAt(algorithmIndex);
-    var otherSlot = slots.removeAt(algorithmIndex - 1);
-
-    // Fix indices before inserting back
-    otherSlot = _fixAlgorithmIndex(otherSlot, algorithmIndex);
-    slot = _fixAlgorithmIndex(slot, algorithmIndex - 1);
-
-    slots.insert(algorithmIndex - 1, slot);
-    slots.insert(algorithmIndex, otherSlot);
-    emit((state as DistingStateSynchronized).copyWith(slots: slots));
-
-    _saveOfflineState(); // Save after moving
-
-    return algorithmIndex - 1;
+    await _refreshStateFromManager(); // Refresh state from manager
+    return algorithmIndex - 1; // Assume manager updated index correctly
   }
 
   Future<int> moveAlgorithmDown(int algorithmIndex) async {
-    // Check bounds based on current state before calling manager
-    if (state is! DistingStateSynchronized) return algorithmIndex;
-    final syncState = state as DistingStateSynchronized;
-    if (algorithmIndex >= syncState.slots.length - 1) return algorithmIndex;
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return algorithmIndex;
+    if (algorithmIndex >= currentState.slots.length - 1) return algorithmIndex;
 
     final disting = requireDisting();
     await disting.requestMoveAlgorithmDown(algorithmIndex);
-
-    // Manually update the slots list immediately
-    var slots = List<Slot>.from((state as DistingStateSynchronized).slots);
-
-    var slot = slots.removeAt(algorithmIndex);
-    // The item originally after the moved item is now at algorithmIndex
-    var otherSlot = slots.removeAt(algorithmIndex);
-
-    // Fix indices before inserting back
-    // The one originally after moves to the original index
-    otherSlot = _fixAlgorithmIndex(otherSlot, algorithmIndex);
-    // The moved item goes to the next index
-    slot = _fixAlgorithmIndex(slot, algorithmIndex + 1);
-
-    // Insert the other slot first (at the original index)
-    slots.insert(algorithmIndex, otherSlot);
-    // Then insert the moved slot after it
-    slots.insert(algorithmIndex + 1, slot);
-
-    emit((state as DistingStateSynchronized).copyWith(slots: slots));
-
-    _saveOfflineState(); // Save after moving
-
-    return algorithmIndex + 1;
-  }
-
-  void wakeDevice() async {
-    final disting = requireDisting();
-    disting.requestWake();
-  }
-
-  void closeScreenshot() {
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        emit(syncstate.copyWith(screenshot: null));
-        break;
-      default:
-      // Handle other cases or errors
-    }
+    await _refreshStateFromManager(); // Refresh state from manager
+    return algorithmIndex + 1; // Assume manager updated index correctly
   }
 
   Future<void> newPreset() async {
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        final disting = requireDisting();
-
-        await disting.requestNewPreset();
-
-        await _refreshPreset(disting, syncstate);
-
-        break;
-      default:
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      final disting = requireDisting();
+      await disting.requestNewPreset();
+      await _refreshStateFromManager(); // Use helper
+    } else {
       // Handle other cases or errors
     }
   }
 
   Future<void> loadPreset(String name, bool append) async {
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        final disting = requireDisting();
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      // Prevent online load preset when offline
+      if (currentState.offline) {
+        print("Error: Cannot load device preset while offline.");
+        return;
+      }
+      final disting = requireDisting();
 
-        emit(
-          syncstate.copyWith(
-            loading: true,
-          ),
-        );
+      emit(currentState.copyWith(loading: true));
 
-        await disting.requestLoadPreset(name, append);
+      await disting.requestLoadPreset(name, append);
 
-        await _refreshPreset(disting, syncstate);
-
-        break;
-      default:
+      // Use the common refresh helper
+      await _refreshStateFromManager();
+    } else {
       // Handle other cases or errors
     }
-  }
-
-  Future<void> _refreshPreset(
-    IDistingMidiManager disting,
-    DistingStateSynchronized state, {
-    Duration delay = const Duration(milliseconds: 250),
-  }) async {
-    await Future.delayed(delay);
-
-    final numAlgorithmsInPreset =
-        (await disting.requestNumAlgorithmsInPreset())!;
-    final presetName = await disting.requestPresetName() ?? "";
-
-    List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
-
-    emit(
-      state.copyWith(
-        loading: false,
-        presetName: presetName,
-        slots: slots,
-      ),
-    );
   }
 
   Future<void> saveMapping(
@@ -1086,30 +1280,8 @@ class DistingCubit extends Cubit<DistingState> {
     switch (state) {
       case DistingStateSynchronized syncstate:
         final disting = requireDisting();
-
         await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
-
-        emit(
-          syncstate.copyWith(
-            slots: updateSlot(
-              algorithmIndex,
-              syncstate.slots,
-              (slot) {
-                return slot.copyWith(
-                  mappings: replaceInList(
-                    slot.mappings,
-                    Mapping(
-                        algorithmIndex: algorithmIndex,
-                        parameterNumber: parameterNumber,
-                        packedMappingData: data),
-                    index: parameterNumber,
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-        _saveOfflineState(); // Save after mapping change
+        await _refreshStateFromManager(); // Refresh state from manager
         break;
       default:
       // Handle other cases or errors
@@ -1117,15 +1289,50 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   void renameSlot(int algorithmIndex, String newName) async {
-    switch (state) {
-      case DistingStateSynchronized syncstate:
-        final disting = requireDisting();
-        await disting.requestSendSlotName(algorithmIndex, newName);
-        await Future.delayed(Duration(milliseconds: 100));
-        final slot = await fetchSlot(requireDisting(), algorithmIndex);
-        emit(syncstate.copyWith(
-            slots: updateSlot(algorithmIndex, syncstate.slots, (_) => slot)));
-        _saveOfflineState(); // Save after slot rename
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      final disting = requireDisting();
+      // Send the name update to the manager (online or offline)
+      await disting.requestSendSlotName(algorithmIndex, newName);
+
+      // Trigger a refresh to get the updated name from the manager
+      await _refreshStateFromManager();
+    }
+  }
+
+  // --- Helper Methods ---
+
+  // Helper to refresh state from the current manager (online or offline)
+  Future<void> _refreshStateFromManager({
+    Duration delay = const Duration(milliseconds: 50), // Shorter default delay
+  }) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) {
+      debugPrint("[Cubit] Cannot refresh state: Not in Synchronized state.");
+      return;
+    }
+
+    emit(currentState.copyWith(loading: true)); // Show loading
+    await Future.delayed(delay);
+
+    final disting = currentState.disting; // Could be online or offline
+
+    try {
+      final numAlgorithmsInPreset =
+          (await disting.requestNumAlgorithmsInPreset()) ?? 0;
+      final presetName = await disting.requestPresetName() ?? "Error";
+      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+
+      emit(currentState.copyWith(
+        loading: false,
+        presetName: presetName,
+        slots: slots,
+        // Keep other fields like disting, version, algorithms, units, offline status
+      ));
+    } catch (e, stackTrace) {
+      debugPrint("Error refreshing state from manager: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      emit(currentState.copyWith(loading: false)); // Stop loading on error
     }
   }
 
@@ -1351,183 +1558,6 @@ class DistingCubit extends Cubit<DistingState> {
     refresh();
   }
 
-  Future<void> workOffline() async {
-    // Create the offline manager instance
-    final offlineManager = OfflineDistingMidiManager(_database);
-    // Define the name for the offline state preset
-    const String offlinePresetName = "__OFFLINE_INTERNAL_STATE__";
-
-    try {
-      // --- Load previous offline state --- (New)
-      final presetsDao = _database.presetsDao;
-      debugPrint(
-          "[Offline Cubit] Attempting to load state for preset: $offlinePresetName");
-      PresetEntry? savedPresetEntry =
-          await presetsDao.getPresetByName(offlinePresetName);
-      debugPrint(
-          "[Offline Cubit] Found preset entry: ${savedPresetEntry?.id} (${savedPresetEntry?.name})");
-      FullPresetDetails? savedDetails;
-      if (savedPresetEntry != null) {
-        debugPrint(
-            "[Offline Cubit] Loading full details for preset ID: ${savedPresetEntry.id}");
-        savedDetails =
-            await presetsDao.getFullPresetDetails(savedPresetEntry.id);
-        debugPrint(
-            "[Offline Cubit] Loaded details: Slots=${savedDetails?.slots.length ?? 'null'}");
-      } else {
-        debugPrint("[Offline Cubit] No saved preset entry found.");
-      }
-      // Initialize the manager with loaded state (or empty if none found)
-      debugPrint("[Offline Cubit] Initializing manager with loaded details...");
-      await offlineManager.initializeFromDb(savedDetails);
-
-      // --- Fetch basic offline info --- (Uses manager's internal state now)
-      final version = await offlineManager.requestVersionString() ?? "Offline";
-      final presetName =
-          await offlineManager.requestPresetName() ?? offlinePresetName;
-
-      // Fetch all basic algorithm entries first
-      final allBasicAlgoEntries = await _metadataDao.getAllAlgorithms();
-      final List<AlgorithmInfo> availableAlgorithmsInfo = [];
-
-      // Fetch full details including specifications for each algorithm
-      // Use Future.wait for parallel fetching
-      final detailedFutures = allBasicAlgoEntries.map((basicEntry) async {
-        // Ensure null safety for getFullAlgorithmDetails call if it can return null
-        return await _metadataDao.getFullAlgorithmDetails(basicEntry.guid);
-      }).toList();
-
-      // Wait for all futures to complete
-      final detailedResults = await Future.wait(detailedFutures);
-
-      // Process the results, filtering out any nulls and mapping to AlgorithmInfo
-      for (final details in detailedResults.whereType<FullAlgorithmDetails>()) {
-        availableAlgorithmsInfo.add(AlgorithmInfo(
-          guid: details.algorithm.guid,
-          name: details.algorithm.name,
-          numSpecifications: details.algorithm.numSpecifications,
-          algorithmIndex: -1, // Offline mode has no live index
-          // Populate specifications using the fetched default values from SpecificationEntry
-          specifications: details.specifications
-              .map((specEntry) => Specification(
-                    name: specEntry.name,
-                    min: specEntry.minValue,
-                    max: specEntry.maxValue,
-                    defaultValue: specEntry.defaultValue,
-                    type: specEntry.type,
-                  ))
-              .toList(),
-        ));
-      }
-      // Sort the final list alphabetically by name for consistency
-      availableAlgorithmsInfo
-          .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-      final units = await offlineManager.requestUnitStrings() ?? [];
-
-      // --- Build initial slots from loaded/initialized manager state --- (New)
-      final initialSlotCount =
-          await offlineManager.requestNumAlgorithmsInPreset() ?? 0;
-      final List<Slot> initialSlots = [];
-      for (int i = 0; i < initialSlotCount; i++) {
-        // Use the standard fetchSlot method, it will call the offlineManager
-        initialSlots.add(await fetchSlot(offlineManager, i));
-      }
-
-      emit(DistingState.synchronized(
-        disting: offlineManager,
-        // Use the offline manager
-        distingVersion: version,
-        presetName: presetName,
-        algorithms: availableAlgorithmsInfo,
-        // Full list from cache
-        slots: initialSlots,
-        // Start with empty slots
-        unitStrings: units,
-        offline: true,
-        // Mark as offline
-        demo: false,
-      ));
-    } catch (e, stackTrace) {
-      debugPrint("Error initializing offline mode: $e");
-      debugPrintStack(stackTrace: stackTrace);
-      // Optionally emit an error state or fall back to device selection
-      loadDevices(); // Fallback to device selection on error
-    }
-  }
-
-// Helper method to fetch and sort devices
-  Future<Map<String, List<MidiDevice>>> _fetchDeviceLists() async {
-    final devices = await _midiCommand.devices;
-    devices?.sort(
-      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-    );
-    return {
-      'input': devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
-      'output':
-          devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
-    };
-  }
-
-// Gets the list of available algorithms, either from the device or cache.
-  Future<List<AlgorithmInfo>> getAvailableAlgorithms() async {
-    final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      if (currentState.offline) {
-        // Offline: Fetch from database and map
-        try {
-          final cachedEntries =
-              await _metadataDao.getAllAlgorithmsWithParameters();
-          // Map AlgorithmEntry to AlgorithmInfo
-          return cachedEntries.map((entry) {
-            return AlgorithmInfo(
-              guid: entry.guid,
-              name: entry.name,
-              numSpecifications: entry.numSpecifications,
-              // Database doesn't store live index or specific spec values easily
-              algorithmIndex: -1,
-              // Indicate invalid index for offline context
-              specifications: [], // Specs aren't stored directly this way
-            );
-          }).toList();
-        } catch (e, stackTrace) {
-          debugPrint("Error fetching cached algorithms: $e");
-          debugPrintStack(stackTrace: stackTrace);
-          return []; // Return empty on error
-        }
-      } else {
-        // Online: Return algorithms from state (already sorted by device)
-        return currentState.algorithms;
-      }
-    } else {
-      // Not synchronized, return empty list
-      return [];
-    }
-  }
-
-// Helper to save the current offline state to the DB
-  Future<void> _saveOfflineState() async {
-    debugPrint("[Offline Cubit] Attempting to save offline state...");
-    final currentState = state;
-    if (currentState is DistingStateSynchronized && currentState.offline) {
-      final manager = currentState.disting;
-      if (manager is OfflineDistingMidiManager) {
-        try {
-          final presetDetails = await manager.getCurrentPresetDetails();
-          debugPrint(
-              "[Offline Cubit] State to save: Preset='${presetDetails.preset.name}', Slots=${presetDetails.slots.length}");
-          final presetsDao = _database.presetsDao;
-          await presetsDao.saveFullPreset(presetDetails);
-          debugPrint(
-              "[Offline] Saved offline state to DB for preset: ${presetDetails.preset.name}");
-        } catch (e, stackTrace) {
-          debugPrint("[Offline] Error saving offline state: $e");
-          debugPrintStack(stackTrace: stackTrace);
-        }
-      }
-    }
-  }
-
   Future<List<Slot>> fetchSlots(
       int numAlgorithmsInPreset, IDistingMidiManager disting) async {
     final slotsFutures =
@@ -1610,5 +1640,18 @@ class DistingCubit extends Cubit<DistingState> {
       valueStrings: valueStrings,
       routing: routing,
     );
+  }
+
+  // Helper method to fetch and sort devices (Reinstated)
+  Future<Map<String, List<MidiDevice>>> _fetchDeviceLists() async {
+    final devices = await _midiCommand.devices;
+    devices?.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return {
+      'input': devices?.where((it) => it.inputPorts.isNotEmpty).toList() ?? [],
+      'output':
+          devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
+    };
   }
 }

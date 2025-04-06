@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:collection/collection.dart';
 
 class AddAlgorithmScreen extends StatefulWidget {
   const AddAlgorithmScreen({super.key});
@@ -18,10 +19,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   @override
   Widget build(BuildContext context) {
     final distingState = context.watch<DistingCubit>().state;
-    final bool isOffline = distingState.maybeWhen(
-      synchronized: (disting, version, preset, algos, slots, units, loading,
-              screenshot, offline, demo) =>
-          offline,
+    final bool isOffline = distingState.maybeMap(
+      synchronized: (s) => s.offline,
       orElse: () => false,
     );
 
@@ -31,22 +30,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: FutureBuilder<List<AlgorithmInfo>>(
-          future: context.read<DistingCubit>().getAvailableAlgorithms(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+        child: distingState.maybeMap(
+          synchronized: (syncState) {
+            final algorithms = syncState.algorithms;
+            if (algorithms.isEmpty) {
+              return const Center(
+                  child: Text('No algorithms available in current state.'));
             }
-            if (snapshot.hasError) {
-              return Center(
-                  child: Text('Error loading algorithms: ${snapshot.error}'));
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('No algorithms available.'));
-            }
-
-            final algorithms = snapshot.data!;
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -69,12 +59,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   onChanged: (String? newGuid) {
                     setState(() {
                       selectedAlgorithmGuid = newGuid;
-                      try {
-                        _currentAlgoInfo =
-                            algorithms.firstWhere((a) => a.guid == newGuid);
-                      } catch (e) {
-                        _currentAlgoInfo = null;
-                      }
+                      _currentAlgoInfo =
+                          algorithms.firstWhereOrNull((a) => a.guid == newGuid);
                       specValues = _currentAlgoInfo?.specifications
                           .map((s) => s.defaultValue)
                           .toList();
@@ -91,7 +77,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         : Container(),
                   ),
                 ),
-                const Spacer(),
                 ElevatedButton(
                   onPressed: _currentAlgoInfo != null && specValues != null
                       ? () {
@@ -106,6 +91,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               ],
             );
           },
+          orElse: () => const Center(child: CircularProgressIndicator()),
         ),
       ),
     );
