@@ -452,19 +452,22 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetPresetName(String name) async {
+    // Always update the internal name regardless of loaded state
+    _presetName = name;
+
     if (_loadedPresetId == null) {
       debugPrint(
-          "[Offline] requestSetPresetName: Cannot rename, no preset loaded.");
-      return;
+          "[Offline] requestSetPresetName: Updated internal name to '$name' for unsaved preset.");
+      return; // Don't attempt DB update if not loaded
     }
+
+    // If loaded, proceed with DB update
     debugPrint(
-        "[Offline] requestSetPresetName: Renaming preset ID $_loadedPresetId to '$name'");
-    _presetName = name; // Update internal state first
+        "[Offline] requestSetPresetName: Updating preset ID $_loadedPresetId name to '$name' in DB.");
     try {
       final presetsDao = _database.presetsDao;
-      // Call DAO to update DB (This method needs to be added to PresetsDao)
       await presetsDao.updatePresetName(_loadedPresetId!, name);
-      debugPrint("[Offline] Successfully requested preset name update in DB.");
+      debugPrint("[Offline] Successfully updated preset name in DB.");
     } catch (e, stackTrace) {
       debugPrint("[Offline] Error updating preset name in DB: $e");
       debugPrintStack(stackTrace: stackTrace);
