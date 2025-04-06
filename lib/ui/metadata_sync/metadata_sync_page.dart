@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:intl/intl.dart'; // Removed unused import
-import 'package:nt_helper/cubit/disting_cubit.dart'; // Now primary source of state
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
-// Import needed for ParameterWithUnit used in _AlgorithmExpansionTile
-import 'package:nt_helper/db/daos/metadata_dao.dart'; // For AlgorithmEntry
-import 'package:nt_helper/db/daos/presets_dao.dart'; // For PresetEntry
-import 'package:nt_helper/domain/disting_midi_manager.dart'; // Import IDistingMidiManager
+import 'package:nt_helper/db/daos/metadata_dao.dart';
+import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 
 class MetadataSyncPage extends StatelessWidget {
@@ -47,8 +44,7 @@ class MetadataSyncPage extends StatelessWidget {
               value: distingCubit,
               child: Scaffold(
                 appBar: AppBar(
-                  title: Text(
-                      'Local Data / Sync ${isOffline ? "(Offline)" : ""}'), // Title reflects mode
+                  title: Text('Offline Data'),
                   leading:
                       BackButton(onPressed: () => Navigator.maybePop(context)),
                   actions: [
@@ -94,7 +90,7 @@ class MetadataSyncPage extends StatelessWidget {
                         final canSync = isConnected && !isBusy;
                         return IconButton(
                           icon: const Icon(Icons.sync),
-                          tooltip: 'Sync Metadata From Device',
+                          tooltip: 'Sync From Device',
                           // Pass manager only if action is possible
                           onPressed: canSync && currentManager != null
                               ? () => _showSyncConfirmationDialog(
@@ -217,15 +213,6 @@ class MetadataSyncPage extends StatelessWidget {
             );
           }),
     );
-  }
-
-  // Helper to show snackbars
-  void _showSnackBar(
-      BuildContext context, String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context)
-        .removeCurrentSnackBar(); // Remove previous snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: backgroundColor));
   }
 
   // Progress Indicator Widget
@@ -628,7 +615,7 @@ class _AlgorithmMetadataListViewState
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Text(
-            "No algorithm metadata found. Connect to a device and perform a 'Sync Metadata' operation.",
+            "No algorithms found. Connect your NT and perform a 'Sync From Device'.",
             textAlign: TextAlign.center,
           ),
         ),
@@ -693,11 +680,10 @@ class _AlgorithmExpansionTile extends StatefulWidget {
   final AlgorithmEntry algorithm;
   final int parameterCount;
 
-  const _AlgorithmExpansionTile(
-      {required this.algorithm,
-      required this.parameterCount,
-      super.key // Added key
-      });
+  const _AlgorithmExpansionTile({
+    required this.algorithm,
+    required this.parameterCount,
+  });
 
   @override
   State<_AlgorithmExpansionTile> createState() =>

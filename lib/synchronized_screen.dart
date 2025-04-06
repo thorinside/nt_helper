@@ -466,10 +466,7 @@ class SynchronizedScreen extends StatelessWidget {
                     },
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Sync Metadata'),
-                  Icon(Icons.cloud_sync_rounded)
-                ],
+                children: [Text('Offline Data'), Icon(Icons.sync_alt_rounded)],
               ),
             ),
             // About: Always enabled (Fix context usage for Theme)
