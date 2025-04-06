@@ -419,7 +419,12 @@ class AlgorithmInfo implements HasAlgorithmIndex {
     );
   }
 
-  AlgorithmInfo copyWith({int? algorithmIndex, String? guid, String? name, int? numSpecifications, List<Specification>? specifications}) {
+  AlgorithmInfo copyWith(
+      {int? algorithmIndex,
+      String? guid,
+      String? name,
+      int? numSpecifications,
+      List<Specification>? specifications}) {
     return AlgorithmInfo(
       algorithmIndex: algorithmIndex ?? this.algorithmIndex,
       guid: guid ?? this.guid,
