@@ -220,26 +220,34 @@ class MetadataSyncService {
                 "[MetadataSync] Warning: Failed to remove ${algoInfo.name} cleanly (expected 0, found $numInPreset).");
           }
 
-          // Report final success for this item
-          _reportProgress(mainProgressMsg, "Done.");
+          _reportProgress(mainProgressMsg, "Done."); // Simplified final report
         } catch (instantiationError, stackTrace) {
+          // Report the main error first
           final errorMsg =
               "Error processing ${algoInfo.name}: $instantiationError";
           debugPrint("[MetadataSync] $errorMsg");
-          debugPrintStack(stackTrace: stackTrace); // Log stack trace too
+          debugPrintStack(stackTrace: stackTrace);
           onError?.call(errorMsg);
 
-          // Report cleanup steps
-          _reportProgress(
-              mainProgressMsg, "Error occurred. Clearing DB cache...",
-              incrementCount: true);
+          // Attempt DB cleanup
+          _reportProgress(mainProgressMsg, "Attempting DB cleanup...");
           try {
             await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
-            _reportProgress(mainProgressMsg, "DB cache cleared.");
+            // ALSO delete the base algorithm and specification entries
+            await (metadataDao.delete(metadataDao.specifications)
+                  ..where((s) => s.algorithmGuid.equals(algoInfo.guid)))
+                .go();
+            await (metadataDao.delete(metadataDao.algorithms)
+                  ..where((a) => a.guid.equals(algoInfo.guid)))
+                .go();
+            _reportProgress(
+                mainProgressMsg, "DB cleared for failed ${algoInfo.name}.");
           } catch (dbClearError) {
             _reportProgress(
-                mainProgressMsg, "DB cache clear failed: $dbClearError");
+                mainProgressMsg, "DB cleanup failed: $dbClearError");
           }
+
+          // Attempt device cleanup
           _reportProgress(mainProgressMsg, "Attempting device preset clear...");
           try {
             await _distingManager.requestNewPreset();
@@ -249,6 +257,7 @@ class MetadataSyncService {
             _reportProgress(mainProgressMsg,
                 "Device preset clear failed: $presetClearError");
           }
+          // No final "Done" report here, as it failed.
         }
       }
 
