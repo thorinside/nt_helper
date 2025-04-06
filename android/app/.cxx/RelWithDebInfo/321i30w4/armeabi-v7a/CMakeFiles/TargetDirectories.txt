@@ -1,2 +1,0 @@
-/Users/nealsanche/nosuch/nt_helper/android/app/.cxx/RelWithDebInfo/321i30w4/armeabi-v7a/CMakeFiles/edit_cache.dir
-/Users/nealsanche/nosuch/nt_helper/android/app/.cxx/RelWithDebInfo/321i30w4/armeabi-v7a/CMakeFiles/rebuild_cache.dir
