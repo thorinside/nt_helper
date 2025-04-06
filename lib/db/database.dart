@@ -5,6 +5,7 @@ import 'dart:typed_data'; // For type converters
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Import the DAO
 import 'package:nt_helper/db/daos/presets_dao.dart'; // Import the new DAO
 import 'package:nt_helper/db/daos/file_system_dao.dart'; // Import the new DAO
@@ -55,20 +56,20 @@ class AppDatabase extends _$AppDatabase {
         onCreate: (Migrator m) async {
           await m.createAll();
           // Add initial data if needed
-          print("Database created from scratch (version 2).");
+          debugPrint("Database created from scratch (version 2).");
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          print("Starting database migration from version $from to $to...");
+          debugPrint("Starting database migration from version $from to $to...");
           // Example: Migrating FROM version 1 TO version 2 (or higher)
           if (from == 1) {
             try {
-              print(
+              debugPrint(
                   "Attempting to add rawUnitIndex column to parameters table...");
               await m.addColumn(parameters, parameters.rawUnitIndex);
-              print(
+              debugPrint(
                   "Migration successful: Added rawUnitIndex column to parameters table.");
             } catch (e) {
-              print("Migration error adding rawUnitIndex column: $e");
+              debugPrint("Migration error adding rawUnitIndex column: $e");
               // Consider re-throwing or handling the error appropriately
             }
           }

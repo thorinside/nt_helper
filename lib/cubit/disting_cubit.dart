@@ -899,14 +899,19 @@ class DistingCubit extends Cubit<DistingState> {
     await loadDevices(); // Go back to device selection / auto-connect
   }
 
+  Future<void> cancelSync() async {
+    disconnect();
+    await loadDevices();
+  }
+
   Future<void> loadPresetOffline(FullPresetDetails presetDetails) async {
     final currentState = state;
     if (!(currentState is DistingStateSynchronized && currentState.offline)) {
-      print("Error: Cannot load preset offline when not in offline mode.");
+      debugPrint("Error: Cannot load preset offline when not in offline mode.");
       return;
     }
     if (_offlineManager == null) {
-      print("Error: Offline manager not initialized.");
+      debugPrint("Error: Offline manager not initialized.");
       return;
     }
 
@@ -1063,9 +1068,7 @@ class DistingCubit extends Cubit<DistingState> {
     required int value,
     required bool userIsChangingTheValue,
   }) async {
-    if (kDebugMode) {
-      print("value = $value, userChanging = $userIsChangingTheValue");
-    }
+    debugPrint("value = $value, userChanging = $userIsChangingTheValue");
 
     switch (state) {
       case DistingStateInitial():
@@ -1259,7 +1262,7 @@ class DistingCubit extends Cubit<DistingState> {
     if (currentState is DistingStateSynchronized) {
       // Prevent online load preset when offline
       if (currentState.offline) {
-        print("Error: Cannot load device preset while offline.");
+        debugPrint("Error: Cannot load device preset while offline.");
         return;
       }
       final disting = requireDisting();

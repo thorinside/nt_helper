@@ -171,10 +171,8 @@ class DistingMessageScheduler {
 
     // Send the SysEx data
     midiCommand.sendData(current.sysExMessage, deviceId: outputDevice.id);
-    if (kDebugMode) {
-      print('Sent SysEx (attempt ${current.attemptCount}): '
+    debugPrint('Sent SysEx (attempt ${current.attemptCount}): '
           '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')} ${_currentRequest?.requestKey}');
-    }
 
     // If no response expected → complete immediately (after the rate-limit delay).
     if (current.responseExpectation == ResponseExpectation.none) {
@@ -206,7 +204,7 @@ class DistingMessageScheduler {
             _tryProcessNext();
           } else {
             // We can try again
-            print(
+            debugPrint(
                 'No response in time, retrying (attempt ${current.attemptCount + 1})...');
             _scheduleRetry(current.retryDelay);
           }
@@ -340,15 +338,11 @@ class DistingMessageScheduler {
           return DistingNT.decodeParameterPages(payload);
 
         default:
-          if (kDebugMode) {
-            print("Unknown or unsupported message type: $messageType");
-          }
+          debugPrint("Unknown or unsupported message type: $messageType");
           return null; // Unhandled message type
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Error decoding response: $e in $parsedMessage");
-      }
+      debugPrint("Error decoding response: $e in $parsedMessage");
       return null;
     }
   }

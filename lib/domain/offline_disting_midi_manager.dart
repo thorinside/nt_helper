@@ -67,7 +67,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   void dispose() {
     // No resources to dispose for the offline manager
-    print("OfflineDistingMidiManager disposed.");
+    debugPrint("OfflineDistingMidiManager disposed.");
   }
 
   // --- Metadata Request Implementations ---
@@ -79,7 +79,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final algorithms = await _metadataDao.getAllAlgorithms();
       return algorithms.length;
     } catch (e) {
-      print("Error fetching algorithm count from DB: $e");
+      debugPrint("Error fetching algorithm count from DB: $e");
       return 0; // Return 0 or null on error? Let's return 0 for now.
     }
   }
@@ -120,7 +120,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       }
       return null;
     } catch (e) {
-      print("Error fetching AlgorithmInfo($algorithmIndex) from DB: $e");
+      debugPrint("Error fetching AlgorithmInfo($algorithmIndex) from DB: $e");
       return null;
     }
   }
@@ -512,7 +512,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestLoadPreset(String name, bool append) async {
-    print("[Offline] requestLoadPreset - No-op");
+    debugPrint("[Offline] requestLoadPreset - No-op");
   }
 
   @override
@@ -607,23 +607,23 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<Uint8List?> encodeTakeScreenshot() async {
-    print("[Offline] encodeTakeScreenshot - Returning null");
+    debugPrint("[Offline] encodeTakeScreenshot - Returning null");
     return null; // No screenshot capability offline
   }
 
   @override
   Future<void> requestSetFocus(int algorithmIndex, int parameterNumber) async {
-    print("[Offline] requestSetFocus - No-op");
+    debugPrint("[Offline] requestSetFocus - No-op");
   }
 
   @override
   Future<void> requestSetDisplayMode(DisplayMode displayMode) async {
-    print("[Offline] requestSetDisplayMode - No-op");
+    debugPrint("[Offline] requestSetDisplayMode - No-op");
   }
 
   @override
   Future<void> requestWake() async {
-    print("[Offline] requestWake - No-op");
+    debugPrint("[Offline] requestWake - No-op");
   }
 
   @override

@@ -138,6 +138,12 @@ class _DistingPageState extends State<DistingPage> {
                       padding: const EdgeInsets.all(24.0),
                       child: CircularProgressIndicator(),
                     ),
+                    OutlinedButton(
+                      onPressed: () {
+                        context.read<DistingCubit>().cancelSync();
+                      },
+                      child: Text("Cancel"),
+                    )
                   ],
                 ),
               );
@@ -318,7 +324,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   if (widget.canWorkOffline)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.cloud_off),
-                      label: const Text("Work Offline"),
+                      label: const Text("Offline"),
                       onPressed: widget.onOfflinePressed,
                     ),
                   ElevatedButton.icon(
@@ -342,7 +348,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 Column(
                   children: [
                     const SizedBox(height: 24),
-                    const Text("No Disting detected? Try the demo:"),
+                    const Text("No Disting? Try the demo:"),
                     const SizedBox(height: 16),
                     OutlinedButton(
                       onPressed: widget.onDemoPressed,

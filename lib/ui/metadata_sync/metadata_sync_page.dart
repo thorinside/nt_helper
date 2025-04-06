@@ -718,8 +718,8 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
         });
       }
     } catch (e, stacktrace) {
-      print("Error fetching parameters for ${widget.algorithm.guid}: $e");
-      print("Stack trace:\n$stacktrace");
+      debugPrint("Error fetching parameters for ${widget.algorithm.guid}: $e");
+      debugPrint("Stack trace:\n$stacktrace");
       if (mounted) {
         setState(() {
           _isLoading = false;

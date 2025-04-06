@@ -84,7 +84,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   void cancelMetadataSync() {
     if (state.maybeMap(syncingMetadata: (_) => true, orElse: () => false)) {
       _isMetadataSyncCancelled = true;
-      print("[MetadataSyncCubit] Metadata sync cancellation requested.");
+      debugPrint("[MetadataSyncCubit] Metadata sync cancellation requested.");
     }
   }
 
@@ -108,8 +108,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // 2. Fetch Number of Slots
       final numSlots = await manager.requestNumAlgorithmsInPreset();
-      if (kDebugMode)
-        print(" >> saveCurrentPreset: Device reported $numSlots slots.");
+      debugPrint(" >> saveCurrentPreset: Device reported $numSlots slots.");
       if (numSlots == null) {
         throw Exception("Failed to get number of algorithms in preset.");
       }
