@@ -337,7 +337,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                           ? const EdgeInsets.only(
                                               left: 4.0, right: 8.0)
                                           : null,
-                                      tooltip: 'Long-press to toggle favorite',
                                       selectedColor: Theme.of(context)
                                           .colorScheme
                                           .primaryContainer,
