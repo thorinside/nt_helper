@@ -1039,7 +1039,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
           // Slider column
           Expanded(
-              flex: widescreen ? 8 : 6,
+              flex: widescreen ? 8 : 6, // Decreased flex
               // Proportionally larger space for the slider
               child: GestureDetector(
                 onDoubleTap: () => _showAlternateEditor
@@ -1116,7 +1116,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               )),
           // Control column
           Expanded(
-            flex: widescreen ? 3 : 4, // Slightly larger control column
+            flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
               child: widget.isOnOff
@@ -1134,6 +1134,12 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                       ? DropdownMenu(
                           requestFocusOnTap: false,
                           initialSelection: widget.dropdownItems![currentValue],
+                          inputDecorationTheme: const InputDecorationTheme(
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12.0, vertical: 8.0),
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
                           textStyle: widescreen
                               ? textTheme.labelLarge
                               : textTheme.labelMedium,

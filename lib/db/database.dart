@@ -1,14 +1,12 @@
 // lib/db/database.dart
 import 'dart:io';
-import 'dart:convert'; // For type converters
-import 'dart:typed_data'; // For type converters
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:nt_helper/db/daos/file_system_dao.dart'; // Import the new DAO
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Import the DAO
 import 'package:nt_helper/db/daos/presets_dao.dart'; // Import the new DAO
-import 'package:nt_helper/db/daos/file_system_dao.dart'; // Import the new DAO
 import 'package:nt_helper/db/tables.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'; // Import for converter
 import 'package:path/path.dart' as p;
@@ -59,7 +57,8 @@ class AppDatabase extends _$AppDatabase {
           debugPrint("Database created from scratch (version 2).");
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          debugPrint("Starting database migration from version $from to $to...");
+          debugPrint(
+              "Starting database migration from version $from to $to...");
           // Example: Migrating FROM version 1 TO version 2 (or higher)
           if (from == 1) {
             try {
@@ -77,9 +76,9 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  // Define DAO getters
-  // MetadataDao get metadataDao => attachedDatabase.accessor(MetadataDao(this));
-  // ... other DAO getters ...
+// Define DAO getters
+// MetadataDao get metadataDao => attachedDatabase.accessor(MetadataDao(this));
+// ... other DAO getters ...
 }
 
 LazyDatabase _openConnection() {
