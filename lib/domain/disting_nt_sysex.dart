@@ -499,40 +499,22 @@ class DistingNT {
     return payload[0].toInt();
   }
 
-  /// Encodes a 16-bit signed integer into 3 bytes of 7-bit data.
-  static List<int> encode16(int v) {
-    // Ensure the value is within the signed 16-bit range
-    if (v < -32768 || v > 32767) {
-      throw ArgumentError("Value $v is out of signed 16-bit range");
-    }
-    // Convert negative numbers to their two's complement representation if necessary
-    int unsignedV = v & 0xFFFF;
-    return [
-      (unsignedV >> 14) & 0x7F,
-      (unsignedV >> 7) & 0x7F,
-      unsignedV & 0x7F,
-    ];
+  static List<int> encode16(int value) {
+    // Ensure 16-bit range
+    final int v = value & 0xFFFF;
+    final int ms2 = (v >> 14) & 0x03; // top 2 bits
+    final int mid7 = (v >> 7) & 0x7F; // next 7 bits
+    final int ls7 = v & 0x7F; // final 7 bits
+    return [ms2, mid7, ls7];
   }
 
-  /// Decodes 3 bytes of 7-bit data into a signed 16-bit integer.
+  /// The reverse: parse 3 bytes of 7-bit data into a 16-bit integer.
   static int decode16(List<int> data, int offset) {
-    // Check bounds FIRST
-    if (offset + 2 >= data.length) {
-      if (kDebugMode) {
-        print(
-            "Warning: decode16 trying to read past end of data. Offset: $offset, Length: ${data.length}");
-      }
-      // Return a default/error value or throw? Throwing is safer to catch bugs.
-      throw RangeError(
-          "decode16: Offset $offset + 2 out of bounds for data length ${data.length}");
-    }
     var v =
         (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
     // Ensure the value is treated as a signed 16-bit integer
-    // (Important for things like min/max/default values)
-    if (v >= 32768) {
-      // Check if the sign bit (bit 15) would be set
-      v -= 65536; // Subtract 2^16 to get the correct negative value
+    if (v & 0x8000 != 0) {
+      v -= 0x10000;
     }
     return v;
   }
@@ -955,7 +937,7 @@ class DistingNT {
     int offset = 0;
 
     // 1) Decode the 16-bit algorithm index (2 bytes).
-    final algorithmIndex = decode16(data.sublist(0, 2), 0);
+    final algorithmIndex = decode16(data, offset);
     offset += 2;
 
     // 2) Skip 1 byte at index 2 (if your data format specifies this gap).
@@ -971,13 +953,13 @@ class DistingNT {
 
     // 5) Decode each specification, each occupying 3 + 3 + 3 + 1 = 10 bytes.
     final specs = List.generate(numSpecifications, (_) {
-      final min = decode16(data.sublist(offset, offset + 3), 0);
+      final min = decode16(data, offset);
       offset += 3;
 
-      final max = decode16(data.sublist(offset, offset + 3), 0);
+      final max = decode16(data, offset);
       offset += 3;
 
-      final defaultValue = decode16(data.sublist(offset, offset + 3), 0);
+      final defaultValue = decode16(data, offset);
       offset += 3;
 
       final type = data[offset];
@@ -1028,8 +1010,14 @@ class DistingNT {
   }
 
   static NumParameters decodeNumParameters(Uint8List data) {
+    // Basic length check: algorithm index (1) + encoded num params (3) = 4
+    if (data.length < 4) {
+      throw ArgumentError(
+          "Invalid data length for NumParameters: ${data.length}, expected at least 4.");
+    }
     var algorithmIndex = data[0].toInt();
-    var numParameters = decode16(data.sublist(1, 3), 0);
+    // Correct slice: sublist(1, 4) gets 3 bytes (index 1, 2, 3)
+    var numParameters = decode16(data.sublist(1, 4), 0);
 
     return NumParameters(
       algorithmIndex: algorithmIndex,
@@ -1187,35 +1175,15 @@ class DistingNT {
   // <16 bit maximum> <16 bit default> <unit> <ASCII string> F7
   // Contains information for the given parameter in the indexed algorithm.
   static ParameterInfo decodeParameterInfo(Uint8List messagePayload) {
-    // Basic length check: Needs at least 1 byte index, 2 for param#, 2 for min, 2 for max,
-    // 2 for default, 1 for unit, 1 for name start (offset 10), 1 for null terminator, 1 for powerOfTen.
-    // Minimum safe length is 10 (before name) + 1 (null) + 1 (powerOfTen) = 12.
-    if (messagePayload.length < 12) {
-      throw ArgumentError(
-          "Invalid data length for ParameterInfo: ${messagePayload.length}, expected at least 12.");
-    }
-    // Decode name starting at offset 10
-    ParseResult nameResult = decodeNullTerminatedAscii(messagePayload, 10);
-
-    // The index of the powerOfTen byte is the offset *after* the null terminator
-    int powerOfTenIndex = nameResult.nextOffset;
-
-    // Bounds check for the calculated index
-    if (powerOfTenIndex >= messagePayload.length) {
-      throw ArgumentError(
-          "Calculated powerOfTen index ($powerOfTenIndex) is out of bounds (length ${messagePayload.length}). Name was '${nameResult.value}'");
-    }
-
     return ParameterInfo(
       algorithmIndex: decode8(messagePayload.sublist(0, 1)),
-      parameterNumber: decode16(messagePayload.sublist(1, 3), 0),
-      min: decode16(messagePayload.sublist(3, 5), 0),
-      max: decode16(messagePayload.sublist(5, 7), 0),
-      defaultValue: decode16(messagePayload.sublist(7, 9), 0),
-      unit: decode8(messagePayload.sublist(9, 10)),
-      name: nameResult.value,
-      powerOfTen:
-          messagePayload[powerOfTenIndex], // Use the nextOffset directly
+      parameterNumber: decode16(messagePayload, 1),
+      min: decode16(messagePayload, 4),
+      max: decode16(messagePayload, 7),
+      defaultValue: decode16(messagePayload, 10),
+      unit: decode8(messagePayload.sublist(13, 14)),
+      name: decodeNullTerminatedAscii(messagePayload, 14).value,
+      powerOfTen: messagePayload.last,
     );
   }
 
@@ -1228,7 +1196,7 @@ class DistingNT {
           ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: offset ~/ 3,
-              value: decode16(message.sublist(offset, offset + 3), 0)),
+              value: decode16(message, offset)),
       ],
     );
   }
@@ -1236,8 +1204,8 @@ class DistingNT {
   static ParameterValue decodeParameterValue(Uint8List message) {
     return ParameterValue(
       algorithmIndex: decode8(message.sublist(0, 1)),
-      parameterNumber: decode16(message.sublist(1, 3), 0),
-      value: decode16(message.sublist(3, 5), 0),
+      parameterNumber: decode16(message, 1),
+      value: decode16(message, 4),
     );
   }
 
@@ -1255,7 +1223,7 @@ class DistingNT {
     int start = 5;
     return ParameterEnumStrings(
       algorithmIndex: decode8(message),
-      parameterNumber: decode16(message.sublist(4, 6), 0),
+      parameterNumber: decode16(message, 1),
       values: List.generate(decode8(message.sublist(4, 5)), (i) {
         ParseResult result = decodeNullTerminatedAscii(message, start);
         start = result.nextOffset;
@@ -1267,28 +1235,28 @@ class DistingNT {
   static Mapping decodeMapping(Uint8List message) {
     return Mapping(
       algorithmIndex: decode8(message),
-      parameterNumber: decode16(message.sublist(4, 6), 0),
+      parameterNumber: decode16(message, 1),
       packedMappingData: PackedMappingData.fromBytes(
           decode8(message.sublist(4, 5)), message.sublist(5)),
     );
   }
 
   static ParameterValueString decodeParameterValueString(Uint8List message) {
-    if (message.length < 4) {
-      throw ArgumentError(
-          "Invalid data length for ParameterValueString: ${message.length}");
-    }
-    // Decode the string starting from offset 4
-    ParseResult stringResult = decodeNullTerminatedAscii(message, 4);
     return ParameterValueString(
       algorithmIndex: decode8(message.sublist(0, 1)),
-      parameterNumber: decode16(message.sublist(1, 3), 0),
-      value: stringResult.value,
+      parameterNumber: decode16(message, 1),
+      value: decodeNullTerminatedAscii(message, 4).value,
     );
   }
 
   static int decodeNumberOfAlgorithms(Uint8List message) {
-    return decode16(message.sublist(0, 2), 0);
+    // Basic length check: encoded num algos (3)
+    if (message.length < 3) {
+      throw ArgumentError(
+          "Invalid data length for NumberOfAlgorithms: ${message.length}, expected at least 3.");
+    }
+    // Correct slice: sublist(0, 3) gets 3 bytes (index 0, 1, 2)
+    return decode16(message.sublist(0, 3), 0);
   }
 
   static int decodeNumberOfAlgorithmsInPreset(Uint8List message) {
@@ -1300,7 +1268,7 @@ class DistingNT {
     return RoutingInfo(
       algorithmIndex: decode8(message.sublist(0, 1)),
       routingInfo: List.generate(6, (i) {
-        final value = decode32(message.sublist(offset, offset + 5), 0);
+        final value = decode32(message, offset);
         offset += 5;
         return value;
       }),

@@ -1575,16 +1575,22 @@ class DistingCubit extends Cubit<DistingState> {
 
   Future<Slot> fetchSlot(
       IDistingMidiManager disting, int algorithmIndex) async {
-    int numParametersInAlgorithm =
-        (await disting.requestNumberOfParameters(algorithmIndex))!
-            .numParameters;
-    var parameters = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
-            ParameterInfo.filler()
-    ];
+    // Safely get number of parameters, default to 0 if null
+    final numParamsResult =
+        await disting.requestNumberOfParameters(algorithmIndex);
+    final int numParametersInAlgorithm = numParamsResult?.numParameters ?? 0;
+
+    var parameters = <ParameterInfo>[];
+    if (numParametersInAlgorithm > 0) {
+      parameters = [
+        for (int parameterNumber = 0;
+            parameterNumber < numParametersInAlgorithm;
+            parameterNumber++)
+          await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
+              ParameterInfo.filler()
+      ];
+    } // else parameters remains empty
+
     var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
         ParameterPages.filler();
 
@@ -1594,50 +1600,79 @@ class DistingCubit extends Cubit<DistingState> {
       },
     );
 
-    var parameterValues =
-        (await disting.requestAllParameterValues(algorithmIndex))!.values;
+    // Safely get parameter values, default to empty list if null or no params
+    final allValuesResult =
+        await disting.requestAllParameterValues(algorithmIndex);
+    final parameterValues = allValuesResult?.values ??
+        List<ParameterValue>.generate(
+            numParametersInAlgorithm,
+            // Use filler without arguments
+            (i) => ParameterValue.filler());
+
     var enums = <ParameterEnumStrings>[];
+    // Ensure loop condition respects potentially 0 parameters
     for (int i = 0; i < numParametersInAlgorithm; i++) {
       ParameterEnumStrings? fetchedEnums;
-      // Only fetch enums if visible on a page (optimization)
+      // Only fetch enums if visible on a page AND if the parameter unit is 1 (Enum)
       final isVisible =
           parameterPages.pages.any((page) => page.parameters.contains(i));
+      // Check parameters list bounds before accessing unit
+      final isEnum = (i < parameters.length) ? parameters[i].unit == 1 : false;
 
-      if (isVisible) {
+      if (isVisible && isEnum) {
         fetchedEnums =
             await disting.requestParameterEnumStrings(algorithmIndex, i);
       }
       // Add the result from the manager (could be I/O, custom, or filler)
       enums.add(fetchedEnums ?? ParameterEnumStrings.filler());
     }
-    var mappings = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        visibleParameters.contains(parameterNumber)
-            ? await disting.requestMappings(algorithmIndex, parameterNumber) ??
-                Mapping.filler()
-            : Mapping.filler()
-    ];
+
+    var mappings = <Mapping>[];
+    // Ensure loop condition respects potentially 0 parameters
+    for (int parameterNumber = 0;
+        parameterNumber < numParametersInAlgorithm;
+        parameterNumber++) {
+      mappings.add(visibleParameters.contains(parameterNumber)
+          ? await disting.requestMappings(algorithmIndex, parameterNumber) ??
+              Mapping.filler()
+          : Mapping.filler());
+    }
+
     var routing = await disting.requestRoutingInformation(algorithmIndex) ??
         RoutingInfo.filler();
-    var valueStrings = [
-      for (int parameterNumber = 0;
-          parameterNumber < numParametersInAlgorithm;
-          parameterNumber++)
-        if ([13, 14, 17].contains(parameters[parameterNumber].unit) &&
-            visibleParameters.contains(parameterNumber))
-          await disting.requestParameterValueString(
-                  algorithmIndex, parameterNumber) ??
-              ParameterValueString.filler()
-        else
-          ParameterValueString.filler()
-    ];
+
+    var valueStrings = <ParameterValueString>[];
+    // Ensure loop condition respects potentially 0 parameters
+    for (int parameterNumber = 0;
+        parameterNumber < numParametersInAlgorithm;
+        parameterNumber++) {
+      // Check parameters list bounds before accessing unit
+      final unit = (parameterNumber < parameters.length)
+          ? parameters[parameterNumber].unit
+          : -1; // Use -1 or another value that won't match
+      if ([13, 14, 17].contains(unit) &&
+          visibleParameters.contains(parameterNumber)) {
+        valueStrings.add(await disting.requestParameterValueString(
+                algorithmIndex, parameterNumber) ??
+            ParameterValueString.filler());
+      } else {
+        valueStrings.add(ParameterValueString.filler());
+      }
+    }
+
+    // Safely get algorithm GUID, default to filler if null
+    final algorithmGuid = await disting.requestAlgorithmGuid(algorithmIndex);
+
     return Slot(
-      algorithm: (await disting.requestAlgorithmGuid(algorithmIndex))!,
+      // Use a default constructed Algorithm if guid is null
+      algorithm: algorithmGuid ??
+          Algorithm(
+              algorithmIndex: algorithmIndex,
+              guid: "ERROR",
+              name: "Error fetching Algorithm"),
       pages: parameterPages,
-      parameters: parameters,
-      values: parameterValues,
+      parameters: parameters, // Already handled if numParams was 0
+      values: parameterValues, // Already handled if result was null
       enums: enums,
       mappings: mappings,
       valueStrings: valueStrings,
