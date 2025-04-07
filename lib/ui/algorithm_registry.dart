@@ -29,11 +29,19 @@ class NotesAlgorithmView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (int i = 0; i < slot.valueStrings.length; i++)
-              Text(
-                slot.valueStrings[i].value.trim(),
-                textAlign: TextAlign.start,
-                style: Theme.of(context).textTheme.bodyLarge,
-              )
+              Builder(builder: (context) {
+                // Use Builder to easily add print
+                final valueToDisplay = slot.valueStrings[i].value;
+                // --- Debug Print ---
+                debugPrint(
+                    "[NotesAlgorithmView] Displaying string index $i: '$valueToDisplay'");
+                // --- End Debug Print ---
+                return Text(
+                  valueToDisplay.trim(),
+                  textAlign: TextAlign.start,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                );
+              })
           ],
         ),
       ),

@@ -1647,15 +1647,37 @@ class DistingCubit extends Cubit<DistingState> {
         parameterNumber < numParametersInAlgorithm;
         parameterNumber++) {
       // Check parameters list bounds before accessing unit
-      final unit = (parameterNumber < parameters.length)
-          ? parameters[parameterNumber].unit
-          : -1; // Use -1 or another value that won't match
+      final paramInfo = (parameterNumber < parameters.length)
+          ? parameters[parameterNumber]
+          : null;
+      // Use -1 or another value that won't match if paramInfo is null or unit is missing
+      final unit = paramInfo?.unit ?? -1;
+
+      // Check if the parameter's unit indicates it might be a string (13, 14, 17)
+      // and if it's meant to be visible.
       if ([13, 14, 17].contains(unit) &&
           visibleParameters.contains(parameterNumber)) {
-        valueStrings.add(await disting.requestParameterValueString(
-                algorithmIndex, parameterNumber) ??
-            ParameterValueString.filler());
+        // --- Debug Logging: Log BEFORE requesting ---
+        // Log the details of the parameter for which we are about to request a string value.
+        debugPrint(
+            "[fetchSlot Debug] Requesting string for AlgoIndex: $algorithmIndex, ParamNum: $parameterNumber, Unit: $unit");
+        // --- End Debug Logging ---
+
+        // Request the actual string value from the manager (device or offline cache).
+        final stringResult = await disting.requestParameterValueString(
+            algorithmIndex, parameterNumber);
+
+        // --- Debug Logging: Log AFTER receiving ---
+        // Log the details again, including the string value that was actually received.
+        // This helps verify if the junk data is present in the received value.
+        debugPrint(
+            "[fetchSlot Debug] Received string for AlgoIndex: $algorithmIndex, ParamNum: $parameterNumber, Unit: $unit, Value: '${stringResult?.value ?? 'NULL'}'");
+        // --- End Debug Logging ---
+
+        // Add the received string (or a filler if the request failed) to the list.
+        valueStrings.add(stringResult ?? ParameterValueString.filler());
       } else {
+        // If it's not a string unit or not visible, add a filler.
         valueStrings.add(ParameterValueString.filler());
       }
     }
