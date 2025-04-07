@@ -461,6 +461,7 @@ class _PresetListView extends StatelessWidget {
             TextButton(
               child: Text(isOffline ? 'Load Offline' : 'Send'),
               onPressed: () async {
+                // Pop the dialog first
                 Navigator.of(dialogContext).pop();
                 try {
                   // Fetch full details (still needed)
@@ -473,6 +474,12 @@ class _PresetListView extends StatelessWidget {
                     // Call correct Cubit based on mode
                     if (isOffline) {
                       distingCubit.loadPresetOffline(fullDetails);
+                      // After loading offline, pop the metadata page
+                      // Use the original context from the list item builder
+                      if (context.mounted) {
+                        // Check if the widget is still mounted
+                        Navigator.of(context).pop();
+                      }
                     } else {
                       // Need manager instance for online load
                       final onlineManager = distingCubit.disting();
@@ -486,18 +493,25 @@ class _PresetListView extends StatelessWidget {
                       }
                     }
                   } else {
-                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                            "Error: Could not load details for preset '${preset.name}'"),
-                        backgroundColor: Theme.of(context).colorScheme.error));
+                    // Show error if details couldn't be loaded
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(
+                              "Error: Could not load details for preset '${preset.name}'"),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.error));
+                    }
                   }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content:
-                          Text("Error fetching/loading preset details: $e"),
-                      backgroundColor: Theme.of(context).colorScheme.error));
+                  // Show error if fetching/loading failed
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content:
+                            Text("Error fetching/loading preset details: $e"),
+                        backgroundColor: Theme.of(context).colorScheme.error));
+                  }
                 }
               },
             ),
