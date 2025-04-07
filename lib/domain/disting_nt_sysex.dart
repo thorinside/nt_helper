@@ -238,7 +238,8 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
       defaultValue, unit, name, powerOfTen);
 
   String? getUnitString(List<String> units) {
-    return unit > 0 ? units.elementAtOrNull(unit - 1) : null;
+    if (unit <= 0 || unit > units.length) return null;
+    return units[unit - 1];
   }
 }
 

@@ -95,6 +95,18 @@ class MetadataSyncService {
           "Cached ${unitIdMap.length} unit strings.");
       if (checkCancel()) return;
 
+      // --- NEW: Save the ordered list to the cache ---
+      try {
+        await metadataDao.saveOrderedUnitStrings(unitStrings);
+        debugPrint("[MetadataSync] Saved ordered unit strings to cache.");
+      } catch (e) {
+        debugPrint(
+            "[MetadataSync] Warning: Failed to save ordered unit strings to cache: $e");
+        // Decide if this is a fatal error - maybe not, if reconstruction can fall back?
+        // For now, we just log a warning.
+      }
+      // --- END NEW ---
+
       // 2. Get All Algorithm Basic Info
       _reportProgress(
           "Fetching Algorithm List", "Requesting number of algorithms...");

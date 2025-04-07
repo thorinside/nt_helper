@@ -3634,6 +3634,203 @@ class FileSystemEntriesCompanion extends UpdateCompanion<FileSystemEntry> {
   }
 }
 
+class $MetadataCacheTable extends MetadataCache
+    with TableInfo<$MetadataCacheTable, MetadataCacheEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MetadataCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _cacheKeyMeta =
+      const VerificationMeta('cacheKey');
+  @override
+  late final GeneratedColumn<String> cacheKey = GeneratedColumn<String>(
+      'cache_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _cacheValueMeta =
+      const VerificationMeta('cacheValue');
+  @override
+  late final GeneratedColumn<String> cacheValue = GeneratedColumn<String>(
+      'cache_value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [cacheKey, cacheValue];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'metadata_cache';
+  @override
+  VerificationContext validateIntegrity(Insertable<MetadataCacheEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cache_key')) {
+      context.handle(_cacheKeyMeta,
+          cacheKey.isAcceptableOrUnknown(data['cache_key']!, _cacheKeyMeta));
+    } else if (isInserting) {
+      context.missing(_cacheKeyMeta);
+    }
+    if (data.containsKey('cache_value')) {
+      context.handle(
+          _cacheValueMeta,
+          cacheValue.isAcceptableOrUnknown(
+              data['cache_value']!, _cacheValueMeta));
+    } else if (isInserting) {
+      context.missing(_cacheValueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {cacheKey};
+  @override
+  MetadataCacheEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MetadataCacheEntry(
+      cacheKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cache_key'])!,
+      cacheValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cache_value'])!,
+    );
+  }
+
+  @override
+  $MetadataCacheTable createAlias(String alias) {
+    return $MetadataCacheTable(attachedDatabase, alias);
+  }
+}
+
+class MetadataCacheEntry extends DataClass
+    implements Insertable<MetadataCacheEntry> {
+  final String cacheKey;
+  final String cacheValue;
+  const MetadataCacheEntry({required this.cacheKey, required this.cacheValue});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cache_key'] = Variable<String>(cacheKey);
+    map['cache_value'] = Variable<String>(cacheValue);
+    return map;
+  }
+
+  MetadataCacheCompanion toCompanion(bool nullToAbsent) {
+    return MetadataCacheCompanion(
+      cacheKey: Value(cacheKey),
+      cacheValue: Value(cacheValue),
+    );
+  }
+
+  factory MetadataCacheEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MetadataCacheEntry(
+      cacheKey: serializer.fromJson<String>(json['cacheKey']),
+      cacheValue: serializer.fromJson<String>(json['cacheValue']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'cacheKey': serializer.toJson<String>(cacheKey),
+      'cacheValue': serializer.toJson<String>(cacheValue),
+    };
+  }
+
+  MetadataCacheEntry copyWith({String? cacheKey, String? cacheValue}) =>
+      MetadataCacheEntry(
+        cacheKey: cacheKey ?? this.cacheKey,
+        cacheValue: cacheValue ?? this.cacheValue,
+      );
+  MetadataCacheEntry copyWithCompanion(MetadataCacheCompanion data) {
+    return MetadataCacheEntry(
+      cacheKey: data.cacheKey.present ? data.cacheKey.value : this.cacheKey,
+      cacheValue:
+          data.cacheValue.present ? data.cacheValue.value : this.cacheValue,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MetadataCacheEntry(')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('cacheValue: $cacheValue')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(cacheKey, cacheValue);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MetadataCacheEntry &&
+          other.cacheKey == this.cacheKey &&
+          other.cacheValue == this.cacheValue);
+}
+
+class MetadataCacheCompanion extends UpdateCompanion<MetadataCacheEntry> {
+  final Value<String> cacheKey;
+  final Value<String> cacheValue;
+  final Value<int> rowid;
+  const MetadataCacheCompanion({
+    this.cacheKey = const Value.absent(),
+    this.cacheValue = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MetadataCacheCompanion.insert({
+    required String cacheKey,
+    required String cacheValue,
+    this.rowid = const Value.absent(),
+  })  : cacheKey = Value(cacheKey),
+        cacheValue = Value(cacheValue);
+  static Insertable<MetadataCacheEntry> custom({
+    Expression<String>? cacheKey,
+    Expression<String>? cacheValue,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (cacheKey != null) 'cache_key': cacheKey,
+      if (cacheValue != null) 'cache_value': cacheValue,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MetadataCacheCompanion copyWith(
+      {Value<String>? cacheKey, Value<String>? cacheValue, Value<int>? rowid}) {
+    return MetadataCacheCompanion(
+      cacheKey: cacheKey ?? this.cacheKey,
+      cacheValue: cacheValue ?? this.cacheValue,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (cacheKey.present) {
+      map['cache_key'] = Variable<String>(cacheKey.value);
+    }
+    if (cacheValue.present) {
+      map['cache_value'] = Variable<String>(cacheValue.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MetadataCacheCompanion(')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('cacheValue: $cacheValue, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3653,6 +3850,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PresetRoutingsTable presetRoutings = $PresetRoutingsTable(this);
   late final $FileSystemEntriesTable fileSystemEntries =
       $FileSystemEntriesTable(this);
+  late final $MetadataCacheTable metadataCache = $MetadataCacheTable(this);
   late final MetadataDao metadataDao = MetadataDao(this as AppDatabase);
   late final PresetsDao presetsDao = PresetsDao(this as AppDatabase);
   late final FileSystemDao fileSystemDao = FileSystemDao(this as AppDatabase);
@@ -3673,7 +3871,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         presetParameterValues,
         presetMappings,
         presetRoutings,
-        fileSystemEntries
+        fileSystemEntries,
+        metadataCache
       ];
 }
 
@@ -7426,6 +7625,134 @@ typedef $$FileSystemEntriesTableProcessedTableManager = ProcessedTableManager<
     (FileSystemEntry, $$FileSystemEntriesTableReferences),
     FileSystemEntry,
     PrefetchHooks Function({bool parentId})>;
+typedef $$MetadataCacheTableCreateCompanionBuilder = MetadataCacheCompanion
+    Function({
+  required String cacheKey,
+  required String cacheValue,
+  Value<int> rowid,
+});
+typedef $$MetadataCacheTableUpdateCompanionBuilder = MetadataCacheCompanion
+    Function({
+  Value<String> cacheKey,
+  Value<String> cacheValue,
+  Value<int> rowid,
+});
+
+class $$MetadataCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $MetadataCacheTable> {
+  $$MetadataCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get cacheValue => $composableBuilder(
+      column: $table.cacheValue, builder: (column) => ColumnFilters(column));
+}
+
+class $$MetadataCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $MetadataCacheTable> {
+  $$MetadataCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get cacheValue => $composableBuilder(
+      column: $table.cacheValue, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MetadataCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MetadataCacheTable> {
+  $$MetadataCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get cacheKey =>
+      $composableBuilder(column: $table.cacheKey, builder: (column) => column);
+
+  GeneratedColumn<String> get cacheValue => $composableBuilder(
+      column: $table.cacheValue, builder: (column) => column);
+}
+
+class $$MetadataCacheTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MetadataCacheTable,
+    MetadataCacheEntry,
+    $$MetadataCacheTableFilterComposer,
+    $$MetadataCacheTableOrderingComposer,
+    $$MetadataCacheTableAnnotationComposer,
+    $$MetadataCacheTableCreateCompanionBuilder,
+    $$MetadataCacheTableUpdateCompanionBuilder,
+    (
+      MetadataCacheEntry,
+      BaseReferences<_$AppDatabase, $MetadataCacheTable, MetadataCacheEntry>
+    ),
+    MetadataCacheEntry,
+    PrefetchHooks Function()> {
+  $$MetadataCacheTableTableManager(_$AppDatabase db, $MetadataCacheTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MetadataCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MetadataCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MetadataCacheTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> cacheKey = const Value.absent(),
+            Value<String> cacheValue = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MetadataCacheCompanion(
+            cacheKey: cacheKey,
+            cacheValue: cacheValue,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String cacheKey,
+            required String cacheValue,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MetadataCacheCompanion.insert(
+            cacheKey: cacheKey,
+            cacheValue: cacheValue,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MetadataCacheTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MetadataCacheTable,
+    MetadataCacheEntry,
+    $$MetadataCacheTableFilterComposer,
+    $$MetadataCacheTableOrderingComposer,
+    $$MetadataCacheTableAnnotationComposer,
+    $$MetadataCacheTableCreateCompanionBuilder,
+    $$MetadataCacheTableUpdateCompanionBuilder,
+    (
+      MetadataCacheEntry,
+      BaseReferences<_$AppDatabase, $MetadataCacheTable, MetadataCacheEntry>
+    ),
+    MetadataCacheEntry,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7456,4 +7783,6 @@ class $AppDatabaseManager {
       $$PresetRoutingsTableTableManager(_db, _db.presetRoutings);
   $$FileSystemEntriesTableTableManager get fileSystemEntries =>
       $$FileSystemEntriesTableTableManager(_db, _db.fileSystemEntries);
+  $$MetadataCacheTableTableManager get metadataCache =>
+      $$MetadataCacheTableTableManager(_db, _db.metadataCache);
 }

@@ -183,6 +183,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       int algorithmIndex, int parameterNumber) {
     // Get GUID and query the specific parameter entry
     return _runForGuid<ParameterInfo?>(algorithmIndex, (guid) async {
+      // Fetch the ParameterEntry from the database
       final paramEntry = await (_metadataDao.select(_metadataDao.parameters)
             ..where((p) =>
                 p.algorithmGuid.equals(guid) &
@@ -190,7 +191,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
           .getSingleOrNull();
 
       if (paramEntry != null) {
-        // Map ParameterEntry to ParameterInfo
+        // Map ParameterEntry to ParameterInfo, using the rawUnitIndex directly.
+        // The consumer will use getUnitString() later with the correct unit list.
         return ParameterInfo(
           algorithmIndex: algorithmIndex, // Use preset index
           parameterNumber: paramEntry.parameterNumber,
@@ -417,14 +419,19 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<List<String>?> requestUnitStrings() async {
-    // Fetch all unit strings from the Units table
     try {
-      final units = await _metadataDao.getAllUnits();
-      // The API likely expects a list of strings, ordered somehow?
-      // Let's assume ordering by ID is sufficient for now.
-      return units.map((u) => u.unitString).toList();
+      final cachedUnits = await _metadataDao.getOrderedUnitStrings();
+      if (cachedUnits != null) {
+        debugPrint(
+            "[Offline] requestUnitStrings: Returning ${cachedUnits.length} strings from cache.");
+        return cachedUnits;
+      } else {
+        debugPrint(
+            "[Offline] requestUnitStrings: No cached list found. Returning empty list.");
+        return []; // Return empty list if not found in cache
+      }
     } catch (e, stackTrace) {
-      debugPrint("[Offline] Error fetching UnitStrings from DB: $e");
+      debugPrint("[Offline] Error fetching cached UnitStrings from DB: $e");
       debugPrintStack(stackTrace: stackTrace);
       return []; // Return empty list on error
     }

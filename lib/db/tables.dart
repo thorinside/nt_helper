@@ -211,3 +211,16 @@ class FileSystemEntries extends Table {
   @override
   List<String> get customConstraints => ['UNIQUE (parent_id, name)'];
 }
+
+// --- General Metadata Cache ---
+
+@DataClassName('MetadataCacheEntry')
+class MetadataCache extends Table {
+  // A unique key to identify the cached data (e.g., 'unit_strings_ordered_list')
+  TextColumn get cacheKey => text()();
+  // The cached data, stored as a JSON string or other suitable format
+  TextColumn get cacheValue => text()();
+
+  @override
+  Set<Column> get primaryKey => {cacheKey};
+}
