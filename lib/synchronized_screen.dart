@@ -1052,6 +1052,18 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           Expanded(
             flex: widescreen ? 2 : 3,
             child: GestureDetector(
+              onLongPress: () {
+                // Get the manager from the cubit
+                final manager = context.read<DistingCubit>().requireDisting();
+                // Call requestSetFocus on the manager
+                manager.requestSetFocus(
+                  widget.algorithmIndex,
+                  widget.parameterNumber,
+                );
+                if (SettingsService().hapticsEnabled) {
+                  Haptics.vibrate(HapticsType.medium);
+                }
+              },
               child: Text(
                 cleanTitle(widget.name),
                 overflow: TextOverflow.ellipsis,
