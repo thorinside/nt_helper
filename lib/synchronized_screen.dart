@@ -92,48 +92,71 @@ class SynchronizedScreen extends StatelessWidget {
       child: Row(
         children: [
           Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Parameter View",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.parameters);
-              },
-              icon: Icon(Icons.list_alt_rounded),
-            );
-          }),
-          Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Algorithm UI",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.algorithmUI);
-              },
-              icon: Icon(Icons.line_axis_rounded),
-            );
-          }),
-          Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Overview UI",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.overview);
-              },
-              icon: Icon(Icons.line_weight_rounded),
-            );
-          }),
-          Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Overview VU Meters",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.overviewVUs);
-              },
-              icon: Icon(Icons.leaderboard_rounded),
-            );
+            final isOffline = context.watch<DistingCubit>().state.maybeMap(
+                  synchronized: (s) => s.offline,
+                  orElse: () =>
+                      false, // Default to not offline if state is not synchronized
+                );
+
+            if (isOffline) {
+              // Show "Offline Data" button when offline
+              return IconButton(
+                tooltip: "Offline Data",
+                icon: const Icon(Icons.sync_alt_rounded),
+                onPressed: () {
+                  final distingCubit = context.read<DistingCubit>();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          MetadataSyncPage(distingCubit: distingCubit),
+                    ),
+                  );
+                },
+              );
+            } else {
+              // Show regular view mode buttons when online
+              return Row(
+                children: [
+                  IconButton(
+                    tooltip: "Parameter View",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.parameters);
+                    },
+                    icon: Icon(Icons.list_alt_rounded),
+                  ),
+                  IconButton(
+                    tooltip: "Algorithm UI",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.algorithmUI);
+                    },
+                    icon: Icon(Icons.line_axis_rounded),
+                  ),
+                  IconButton(
+                    tooltip: "Overview UI",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.overview);
+                    },
+                    icon: Icon(Icons.line_weight_rounded),
+                  ),
+                  IconButton(
+                    tooltip: "Overview VU Meters",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.overviewVUs);
+                    },
+                    icon: Icon(Icons.leaderboard_rounded),
+                  ),
+                ],
+              );
+            }
           }),
           SizedBox.fromSize(
             size: Size.fromWidth(24),
@@ -204,12 +227,16 @@ class SynchronizedScreen extends StatelessWidget {
 
   List<Widget> _buildAppBarActions() {
     return [
-      // Refresh: Only disabled by loading
+      // Refresh: Only disabled by loading OR offline
       Builder(builder: (ctx) {
+        final isOffline = ctx.watch<DistingCubit>().state.maybeMap(
+              synchronized: (s) => s.offline,
+              orElse: () => false,
+            );
         return IconButton(
           icon: Icon(Icons.refresh_rounded),
           tooltip: 'Refresh',
-          onPressed: loading
+          onPressed: loading || isOffline // <-- Updated condition
               ? null
               : () {
                   ctx.read<DistingCubit>().refresh();
