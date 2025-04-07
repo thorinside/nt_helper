@@ -172,7 +172,7 @@ class DistingMessageScheduler {
     // Send the SysEx data
     midiCommand.sendData(current.sysExMessage, deviceId: outputDevice.id);
     debugPrint('Sent SysEx (attempt ${current.attemptCount}): '
-          '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')} ${_currentRequest?.requestKey}');
+        '${current.sysExMessage.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')} ${_currentRequest?.requestKey}');
 
     // If no response expected → complete immediately (after the rate-limit delay).
     if (current.responseExpectation == ResponseExpectation.none) {
