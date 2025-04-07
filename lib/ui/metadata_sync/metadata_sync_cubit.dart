@@ -374,81 +374,87 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   // Helper method to fetch data for a single slot needed for saving
   Future<FullPresetSlot> _fetchPresetSlotDetails(
       int slotIndex, IDistingMidiManager manager) async {
-    // Fetch Algorithm GUID and Name
+    // 1. Fetch Core Info
     final algoGuidResult = await manager.requestAlgorithmGuid(slotIndex);
     final guid = algoGuidResult?.guid;
     final String? customName = algoGuidResult?.name;
-
     if (guid == null) {
       throw Exception("Failed to get algorithm GUID for slot $slotIndex.");
     }
-
-    // Fetch AlgorithmEntry from Metadata DB
     final algoMetadata = await _metadataDao.getFullAlgorithmDetails(guid);
     if (algoMetadata == null) {
       throw Exception(
-          "Algorithm metadata for GUID '$guid' not found in local DB. Please sync metadata first.");
+          "Local metadata for GUID '$guid' not found. Sync needed.");
     }
     final algorithmEntry = algoMetadata.algorithm;
 
-    // Fetch Parameter Values
+    // 2. Fetch Actual Parameter Values from device for this slot
     final paramValuesResult =
         await manager.requestAllParameterValues(slotIndex);
-    final parameterValues = paramValuesResult?.values ?? [];
+    // Build map directly from the device response
     final parameterValuesMap = <int, int>{};
-    for (final pVal in parameterValues) {
-      parameterValuesMap[pVal.parameterNumber] = pVal.value;
+    if (paramValuesResult != null) {
+      for (final pVal in paramValuesResult.values) {
+        parameterValuesMap[pVal.parameterNumber] = pVal.value;
+      }
+    }
+    if (kDebugMode) {
+      print(
+          "  >> Slot $slotIndex: Fetched ${parameterValuesMap.length} parameter values.");
     }
 
-    // Fetch Mappings and Parameter String Values
-    final numParamsResult = await manager.requestNumberOfParameters(slotIndex);
-    final numParams = numParamsResult?.numParameters ?? 0;
+    // 3. Fetch Mappings & Strings based on *actual* parameters found
     final Map<int, PackedMappingData> mappingsMap = {};
-    final Map<int, String> parameterStringValuesMap =
-        {}; // Map for string values
+    final Map<int, String> parameterStringValuesMap = {};
 
-    for (int pNum = 0; pNum < numParams; pNum++) {
-      // Fetch Mapping
+    // Iterate through the parameter numbers we *know* exist in this slot instance
+    for (final pNum in parameterValuesMap.keys) {
+      if (kDebugMode) {
+        print(
+            "  >> Slot $slotIndex: Fetching details for actual parameter #$pNum");
+      }
+      // Fetch Mapping for this specific parameter number
       final mappingResult = await manager.requestMappings(slotIndex, pNum);
       if (mappingResult != null && mappingResult.packedMappingData.isMapped()) {
         mappingsMap[pNum] = mappingResult.packedMappingData;
       }
 
-      // Fetch Parameter String Value
+      // Fetch Parameter String Value for this specific parameter number
       final stringValueResult =
           await manager.requestParameterValueString(slotIndex, pNum);
-      // Store if not null and the string is not empty (or some default/filler value)
-      // Assuming ParameterValueString.stringValue is the field
+      // Check for null result and non-empty/non-filler value
       if (stringValueResult?.value != null &&
           stringValueResult!.value.isNotEmpty) {
-        // Additional check: avoid storing simple integer representations if possible?
-        // For now, store any non-empty string value fetched.
+        // Potentially add more checks here to avoid storing simple int strings
+        // if desired, e.g., `int.tryParse(stringValueResult.value) == null`
         parameterStringValuesMap[pNum] = stringValueResult.value;
       }
+      // Optional small delay to avoid overwhelming the device
+      await Future.delayed(const Duration(milliseconds: 15));
+    }
+    if (kDebugMode) {
+      print(
+          "  >> Slot $slotIndex: Found ${mappingsMap.length} mappings and ${parameterStringValuesMap.length} string values.");
     }
 
-    // Fetch Routing Info - REMOVED
-    // final routingInfoResult = await manager.requestRoutingInformation(slotIndex);
-    // final routingInfoList = routingInfoResult?.routingInfo ?? [];
-
-    // Create PresetSlotEntry
+    // 4. Create PresetSlotEntry
     final presetSlotEntry = PresetSlotEntry(
-      id: 0, // Ignored by DAO insert
-      presetId: 0, // Ignored by DAO insert
+      id: -1, // Use -1 as placeholder for DAO
+      presetId: -1, // Use -1 as placeholder for DAO
       slotIndex: slotIndex,
       algorithmGuid: guid,
       customName: customName,
     );
 
-    // Assemble and return
+    // 5. Assemble and return FullPresetSlot
     return FullPresetSlot(
       slot: presetSlotEntry,
       algorithm: algorithmEntry,
-      parameterValues: parameterValuesMap,
+      parameterValues:
+          parameterValuesMap, // Map derived from actual device values
       parameterStringValues:
-          parameterStringValuesMap, // Pass the string values map
-      mappings: mappingsMap,
-      // routingInfo: routingInfoList, // Argument removed
+          parameterStringValuesMap, // Map derived from actual device values
+      mappings: mappingsMap, // Map derived from actual device values
     );
   }
 
