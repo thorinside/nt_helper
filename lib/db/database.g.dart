@@ -2632,6 +2632,15 @@ class $PresetParameterValuesTable extends PresetParameterValues
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $PresetParameterValuesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
   static const VerificationMeta _presetSlotIdMeta =
       const VerificationMeta('presetSlotId');
   @override
@@ -2639,8 +2648,8 @@ class $PresetParameterValuesTable extends PresetParameterValues
       'preset_slot_id', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES preset_slots (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES preset_slots (id) ON DELETE CASCADE'));
   static const VerificationMeta _parameterNumberMeta =
       const VerificationMeta('parameterNumber');
   @override
@@ -2653,7 +2662,8 @@ class $PresetParameterValuesTable extends PresetParameterValues
       'value', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns => [presetSlotId, parameterNumber, value];
+  List<GeneratedColumn> get $columns =>
+      [id, presetSlotId, parameterNumber, value];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2665,6 +2675,9 @@ class $PresetParameterValuesTable extends PresetParameterValues
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('preset_slot_id')) {
       context.handle(
           _presetSlotIdMeta,
@@ -2691,12 +2704,14 @@ class $PresetParameterValuesTable extends PresetParameterValues
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {presetSlotId, parameterNumber};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   PresetParameterValueEntry map(Map<String, dynamic> data,
       {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetParameterValueEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       presetSlotId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}preset_slot_id'])!,
       parameterNumber: attachedDatabase.typeMapping
@@ -2714,16 +2729,19 @@ class $PresetParameterValuesTable extends PresetParameterValues
 
 class PresetParameterValueEntry extends DataClass
     implements Insertable<PresetParameterValueEntry> {
+  final int id;
   final int presetSlotId;
   final int parameterNumber;
   final int value;
   const PresetParameterValueEntry(
-      {required this.presetSlotId,
+      {required this.id,
+      required this.presetSlotId,
       required this.parameterNumber,
       required this.value});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
     map['preset_slot_id'] = Variable<int>(presetSlotId);
     map['parameter_number'] = Variable<int>(parameterNumber);
     map['value'] = Variable<int>(value);
@@ -2732,6 +2750,7 @@ class PresetParameterValueEntry extends DataClass
 
   PresetParameterValuesCompanion toCompanion(bool nullToAbsent) {
     return PresetParameterValuesCompanion(
+      id: Value(id),
       presetSlotId: Value(presetSlotId),
       parameterNumber: Value(parameterNumber),
       value: Value(value),
@@ -2742,6 +2761,7 @@ class PresetParameterValueEntry extends DataClass
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetParameterValueEntry(
+      id: serializer.fromJson<int>(json['id']),
       presetSlotId: serializer.fromJson<int>(json['presetSlotId']),
       parameterNumber: serializer.fromJson<int>(json['parameterNumber']),
       value: serializer.fromJson<int>(json['value']),
@@ -2751,6 +2771,7 @@ class PresetParameterValueEntry extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
       'presetSlotId': serializer.toJson<int>(presetSlotId),
       'parameterNumber': serializer.toJson<int>(parameterNumber),
       'value': serializer.toJson<int>(value),
@@ -2758,8 +2779,9 @@ class PresetParameterValueEntry extends DataClass
   }
 
   PresetParameterValueEntry copyWith(
-          {int? presetSlotId, int? parameterNumber, int? value}) =>
+          {int? id, int? presetSlotId, int? parameterNumber, int? value}) =>
       PresetParameterValueEntry(
+        id: id ?? this.id,
         presetSlotId: presetSlotId ?? this.presetSlotId,
         parameterNumber: parameterNumber ?? this.parameterNumber,
         value: value ?? this.value,
@@ -2767,6 +2789,7 @@ class PresetParameterValueEntry extends DataClass
   PresetParameterValueEntry copyWithCompanion(
       PresetParameterValuesCompanion data) {
     return PresetParameterValueEntry(
+      id: data.id.present ? data.id.value : this.id,
       presetSlotId: data.presetSlotId.present
           ? data.presetSlotId.value
           : this.presetSlotId,
@@ -2780,6 +2803,7 @@ class PresetParameterValueEntry extends DataClass
   @override
   String toString() {
     return (StringBuffer('PresetParameterValueEntry(')
+          ..write('id: $id, ')
           ..write('presetSlotId: $presetSlotId, ')
           ..write('parameterNumber: $parameterNumber, ')
           ..write('value: $value')
@@ -2788,11 +2812,12 @@ class PresetParameterValueEntry extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(presetSlotId, parameterNumber, value);
+  int get hashCode => Object.hash(id, presetSlotId, parameterNumber, value);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PresetParameterValueEntry &&
+          other.id == this.id &&
           other.presetSlotId == this.presetSlotId &&
           other.parameterNumber == this.parameterNumber &&
           other.value == this.value);
@@ -2800,47 +2825,303 @@ class PresetParameterValueEntry extends DataClass
 
 class PresetParameterValuesCompanion
     extends UpdateCompanion<PresetParameterValueEntry> {
+  final Value<int> id;
   final Value<int> presetSlotId;
   final Value<int> parameterNumber;
   final Value<int> value;
-  final Value<int> rowid;
   const PresetParameterValuesCompanion({
+    this.id = const Value.absent(),
     this.presetSlotId = const Value.absent(),
     this.parameterNumber = const Value.absent(),
     this.value = const Value.absent(),
-    this.rowid = const Value.absent(),
   });
   PresetParameterValuesCompanion.insert({
+    this.id = const Value.absent(),
     required int presetSlotId,
     required int parameterNumber,
     required int value,
-    this.rowid = const Value.absent(),
   })  : presetSlotId = Value(presetSlotId),
         parameterNumber = Value(parameterNumber),
         value = Value(value);
   static Insertable<PresetParameterValueEntry> custom({
+    Expression<int>? id,
     Expression<int>? presetSlotId,
     Expression<int>? parameterNumber,
     Expression<int>? value,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (presetSlotId != null) 'preset_slot_id': presetSlotId,
+      if (parameterNumber != null) 'parameter_number': parameterNumber,
+      if (value != null) 'value': value,
+    });
+  }
+
+  PresetParameterValuesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? presetSlotId,
+      Value<int>? parameterNumber,
+      Value<int>? value}) {
+    return PresetParameterValuesCompanion(
+      id: id ?? this.id,
+      presetSlotId: presetSlotId ?? this.presetSlotId,
+      parameterNumber: parameterNumber ?? this.parameterNumber,
+      value: value ?? this.value,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (presetSlotId.present) {
+      map['preset_slot_id'] = Variable<int>(presetSlotId.value);
+    }
+    if (parameterNumber.present) {
+      map['parameter_number'] = Variable<int>(parameterNumber.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<int>(value.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PresetParameterValuesCompanion(')
+          ..write('id: $id, ')
+          ..write('presetSlotId: $presetSlotId, ')
+          ..write('parameterNumber: $parameterNumber, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PresetParameterStringValuesTable extends PresetParameterStringValues
+    with
+        TableInfo<$PresetParameterStringValuesTable,
+            PresetParameterStringValueEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PresetParameterStringValuesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _presetSlotIdMeta =
+      const VerificationMeta('presetSlotId');
+  @override
+  late final GeneratedColumn<int> presetSlotId = GeneratedColumn<int>(
+      'preset_slot_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES preset_slots (id) ON DELETE CASCADE'));
+  static const VerificationMeta _parameterNumberMeta =
+      const VerificationMeta('parameterNumber');
+  @override
+  late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
+      'parameter_number', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _stringValueMeta =
+      const VerificationMeta('stringValue');
+  @override
+  late final GeneratedColumn<String> stringValue = GeneratedColumn<String>(
+      'string_value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [presetSlotId, parameterNumber, stringValue];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'preset_parameter_string_values';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PresetParameterStringValueEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('preset_slot_id')) {
+      context.handle(
+          _presetSlotIdMeta,
+          presetSlotId.isAcceptableOrUnknown(
+              data['preset_slot_id']!, _presetSlotIdMeta));
+    } else if (isInserting) {
+      context.missing(_presetSlotIdMeta);
+    }
+    if (data.containsKey('parameter_number')) {
+      context.handle(
+          _parameterNumberMeta,
+          parameterNumber.isAcceptableOrUnknown(
+              data['parameter_number']!, _parameterNumberMeta));
+    } else if (isInserting) {
+      context.missing(_parameterNumberMeta);
+    }
+    if (data.containsKey('string_value')) {
+      context.handle(
+          _stringValueMeta,
+          stringValue.isAcceptableOrUnknown(
+              data['string_value']!, _stringValueMeta));
+    } else if (isInserting) {
+      context.missing(_stringValueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {presetSlotId, parameterNumber};
+  @override
+  PresetParameterStringValueEntry map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PresetParameterStringValueEntry(
+      presetSlotId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}preset_slot_id'])!,
+      parameterNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
+      stringValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}string_value'])!,
+    );
+  }
+
+  @override
+  $PresetParameterStringValuesTable createAlias(String alias) {
+    return $PresetParameterStringValuesTable(attachedDatabase, alias);
+  }
+}
+
+class PresetParameterStringValueEntry extends DataClass
+    implements Insertable<PresetParameterStringValueEntry> {
+  final int presetSlotId;
+  final int parameterNumber;
+  final String stringValue;
+  const PresetParameterStringValueEntry(
+      {required this.presetSlotId,
+      required this.parameterNumber,
+      required this.stringValue});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['preset_slot_id'] = Variable<int>(presetSlotId);
+    map['parameter_number'] = Variable<int>(parameterNumber);
+    map['string_value'] = Variable<String>(stringValue);
+    return map;
+  }
+
+  PresetParameterStringValuesCompanion toCompanion(bool nullToAbsent) {
+    return PresetParameterStringValuesCompanion(
+      presetSlotId: Value(presetSlotId),
+      parameterNumber: Value(parameterNumber),
+      stringValue: Value(stringValue),
+    );
+  }
+
+  factory PresetParameterStringValueEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PresetParameterStringValueEntry(
+      presetSlotId: serializer.fromJson<int>(json['presetSlotId']),
+      parameterNumber: serializer.fromJson<int>(json['parameterNumber']),
+      stringValue: serializer.fromJson<String>(json['stringValue']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'presetSlotId': serializer.toJson<int>(presetSlotId),
+      'parameterNumber': serializer.toJson<int>(parameterNumber),
+      'stringValue': serializer.toJson<String>(stringValue),
+    };
+  }
+
+  PresetParameterStringValueEntry copyWith(
+          {int? presetSlotId, int? parameterNumber, String? stringValue}) =>
+      PresetParameterStringValueEntry(
+        presetSlotId: presetSlotId ?? this.presetSlotId,
+        parameterNumber: parameterNumber ?? this.parameterNumber,
+        stringValue: stringValue ?? this.stringValue,
+      );
+  PresetParameterStringValueEntry copyWithCompanion(
+      PresetParameterStringValuesCompanion data) {
+    return PresetParameterStringValueEntry(
+      presetSlotId: data.presetSlotId.present
+          ? data.presetSlotId.value
+          : this.presetSlotId,
+      parameterNumber: data.parameterNumber.present
+          ? data.parameterNumber.value
+          : this.parameterNumber,
+      stringValue:
+          data.stringValue.present ? data.stringValue.value : this.stringValue,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PresetParameterStringValueEntry(')
+          ..write('presetSlotId: $presetSlotId, ')
+          ..write('parameterNumber: $parameterNumber, ')
+          ..write('stringValue: $stringValue')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(presetSlotId, parameterNumber, stringValue);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PresetParameterStringValueEntry &&
+          other.presetSlotId == this.presetSlotId &&
+          other.parameterNumber == this.parameterNumber &&
+          other.stringValue == this.stringValue);
+}
+
+class PresetParameterStringValuesCompanion
+    extends UpdateCompanion<PresetParameterStringValueEntry> {
+  final Value<int> presetSlotId;
+  final Value<int> parameterNumber;
+  final Value<String> stringValue;
+  final Value<int> rowid;
+  const PresetParameterStringValuesCompanion({
+    this.presetSlotId = const Value.absent(),
+    this.parameterNumber = const Value.absent(),
+    this.stringValue = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PresetParameterStringValuesCompanion.insert({
+    required int presetSlotId,
+    required int parameterNumber,
+    required String stringValue,
+    this.rowid = const Value.absent(),
+  })  : presetSlotId = Value(presetSlotId),
+        parameterNumber = Value(parameterNumber),
+        stringValue = Value(stringValue);
+  static Insertable<PresetParameterStringValueEntry> custom({
+    Expression<int>? presetSlotId,
+    Expression<int>? parameterNumber,
+    Expression<String>? stringValue,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (presetSlotId != null) 'preset_slot_id': presetSlotId,
       if (parameterNumber != null) 'parameter_number': parameterNumber,
-      if (value != null) 'value': value,
+      if (stringValue != null) 'string_value': stringValue,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  PresetParameterValuesCompanion copyWith(
+  PresetParameterStringValuesCompanion copyWith(
       {Value<int>? presetSlotId,
       Value<int>? parameterNumber,
-      Value<int>? value,
+      Value<String>? stringValue,
       Value<int>? rowid}) {
-    return PresetParameterValuesCompanion(
+    return PresetParameterStringValuesCompanion(
       presetSlotId: presetSlotId ?? this.presetSlotId,
       parameterNumber: parameterNumber ?? this.parameterNumber,
-      value: value ?? this.value,
+      stringValue: stringValue ?? this.stringValue,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2854,8 +3135,8 @@ class PresetParameterValuesCompanion
     if (parameterNumber.present) {
       map['parameter_number'] = Variable<int>(parameterNumber.value);
     }
-    if (value.present) {
-      map['value'] = Variable<int>(value.value);
+    if (stringValue.present) {
+      map['string_value'] = Variable<String>(stringValue.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2865,10 +3146,10 @@ class PresetParameterValuesCompanion
 
   @override
   String toString() {
-    return (StringBuffer('PresetParameterValuesCompanion(')
+    return (StringBuffer('PresetParameterStringValuesCompanion(')
           ..write('presetSlotId: $presetSlotId, ')
           ..write('parameterNumber: $parameterNumber, ')
-          ..write('value: $value, ')
+          ..write('stringValue: $stringValue, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3846,6 +4127,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PresetSlotsTable presetSlots = $PresetSlotsTable(this);
   late final $PresetParameterValuesTable presetParameterValues =
       $PresetParameterValuesTable(this);
+  late final $PresetParameterStringValuesTable presetParameterStringValues =
+      $PresetParameterStringValuesTable(this);
   late final $PresetMappingsTable presetMappings = $PresetMappingsTable(this);
   late final $PresetRoutingsTable presetRoutings = $PresetRoutingsTable(this);
   late final $FileSystemEntriesTable fileSystemEntries =
@@ -3869,11 +4152,32 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         presets,
         presetSlots,
         presetParameterValues,
+        presetParameterStringValues,
         presetMappings,
         presetRoutings,
         fileSystemEntries,
         metadataCache
       ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('preset_slots',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('preset_parameter_values', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('preset_slots',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('preset_parameter_string_values',
+                  kind: UpdateKind.delete),
+            ],
+          ),
+        ],
+      );
 }
 
 typedef $$AlgorithmsTableCreateCompanionBuilder = AlgorithmsCompanion Function({
@@ -6097,6 +6401,25 @@ final class $$PresetSlotsTableReferences
         manager.$state.copyWith(prefetchedData: cache));
   }
 
+  static MultiTypedResultKey<$PresetParameterStringValuesTable,
+          List<PresetParameterStringValueEntry>>
+      _presetParameterStringValuesRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.presetParameterStringValues,
+              aliasName: $_aliasNameGenerator(db.presetSlots.id,
+                  db.presetParameterStringValues.presetSlotId));
+
+  $$PresetParameterStringValuesTableProcessedTableManager
+      get presetParameterStringValuesRefs {
+    final manager = $$PresetParameterStringValuesTableTableManager(
+            $_db, $_db.presetParameterStringValues)
+        .filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult
+        .readTableOrNull(_presetParameterStringValuesRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
   static MultiTypedResultKey<$PresetMappingsTable, List<PresetMappingEntry>>
       _presetMappingsRefsTable(_$AppDatabase db) =>
           MultiTypedResultKey.fromTable(db.presetMappings,
@@ -6201,6 +6524,30 @@ class $$PresetSlotsTableFilterComposer
                 $$PresetParameterValuesTableFilterComposer(
                   $db: $db,
                   $table: $db.presetParameterValues,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
+    return f(composer);
+  }
+
+  Expression<bool> presetParameterStringValuesRefs(
+      Expression<bool> Function(
+              $$PresetParameterStringValuesTableFilterComposer f)
+          f) {
+    final $$PresetParameterStringValuesTableFilterComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.presetParameterStringValues,
+            getReferencedColumn: (t) => t.presetSlotId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$PresetParameterStringValuesTableFilterComposer(
+                  $db: $db,
+                  $table: $db.presetParameterStringValues,
                   $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                   joinBuilder: joinBuilder,
                   $removeJoinBuilderFromRootComposer:
@@ -6392,6 +6739,30 @@ class $$PresetSlotsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> presetParameterStringValuesRefs<T extends Object>(
+      Expression<T> Function(
+              $$PresetParameterStringValuesTableAnnotationComposer a)
+          f) {
+    final $$PresetParameterStringValuesTableAnnotationComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.presetParameterStringValues,
+            getReferencedColumn: (t) => t.presetSlotId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$PresetParameterStringValuesTableAnnotationComposer(
+                  $db: $db,
+                  $table: $db.presetParameterStringValues,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
+    return f(composer);
+  }
+
   Expression<T> presetMappingsRefs<T extends Object>(
       Expression<T> Function($$PresetMappingsTableAnnotationComposer a) f) {
     final $$PresetMappingsTableAnnotationComposer composer = $composerBuilder(
@@ -6450,6 +6821,7 @@ class $$PresetSlotsTableTableManager extends RootTableManager<
         {bool presetId,
         bool algorithmGuid,
         bool presetParameterValuesRefs,
+        bool presetParameterStringValuesRefs,
         bool presetMappingsRefs,
         bool presetRoutingsRefs})> {
   $$PresetSlotsTableTableManager(_$AppDatabase db, $PresetSlotsTable table)
@@ -6500,12 +6872,15 @@ class $$PresetSlotsTableTableManager extends RootTableManager<
               {presetId = false,
               algorithmGuid = false,
               presetParameterValuesRefs = false,
+              presetParameterStringValuesRefs = false,
               presetMappingsRefs = false,
               presetRoutingsRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (presetParameterValuesRefs) db.presetParameterValues,
+                if (presetParameterStringValuesRefs)
+                  db.presetParameterStringValues,
                 if (presetMappingsRefs) db.presetMappings,
                 if (presetRoutingsRefs) db.presetRoutings
               ],
@@ -6561,6 +6936,19 @@ class $$PresetSlotsTableTableManager extends RootTableManager<
                             (item, referencedItems) => referencedItems
                                 .where((e) => e.presetSlotId == item.id),
                         typedResults: items),
+                  if (presetParameterStringValuesRefs)
+                    await $_getPrefetchedData<PresetSlotEntry,
+                            $PresetSlotsTable, PresetParameterStringValueEntry>(
+                        currentTable: table,
+                        referencedTable: $$PresetSlotsTableReferences
+                            ._presetParameterStringValuesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$PresetSlotsTableReferences(db, table, p0)
+                                .presetParameterStringValuesRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.presetSlotId == item.id),
+                        typedResults: items),
                   if (presetMappingsRefs)
                     await $_getPrefetchedData<PresetSlotEntry,
                             $PresetSlotsTable, PresetMappingEntry>(
@@ -6609,21 +6997,22 @@ typedef $$PresetSlotsTableProcessedTableManager = ProcessedTableManager<
         {bool presetId,
         bool algorithmGuid,
         bool presetParameterValuesRefs,
+        bool presetParameterStringValuesRefs,
         bool presetMappingsRefs,
         bool presetRoutingsRefs})>;
 typedef $$PresetParameterValuesTableCreateCompanionBuilder
     = PresetParameterValuesCompanion Function({
+  Value<int> id,
   required int presetSlotId,
   required int parameterNumber,
   required int value,
-  Value<int> rowid,
 });
 typedef $$PresetParameterValuesTableUpdateCompanionBuilder
     = PresetParameterValuesCompanion Function({
+  Value<int> id,
   Value<int> presetSlotId,
   Value<int> parameterNumber,
   Value<int> value,
-  Value<int> rowid,
 });
 
 final class $$PresetParameterValuesTableReferences extends BaseReferences<
@@ -6656,6 +7045,9 @@ class $$PresetParameterValuesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<int> get parameterNumber => $composableBuilder(
       column: $table.parameterNumber,
       builder: (column) => ColumnFilters(column));
@@ -6693,6 +7085,9 @@ class $$PresetParameterValuesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
       column: $table.parameterNumber,
       builder: (column) => ColumnOrderings(column));
@@ -6730,6 +7125,9 @@ class $$PresetParameterValuesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
       column: $table.parameterNumber, builder: (column) => column);
 
@@ -6784,28 +7182,28 @@ class $$PresetParameterValuesTableTableManager extends RootTableManager<
               $$PresetParameterValuesTableAnnotationComposer(
                   $db: db, $table: table),
           updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
             Value<int> presetSlotId = const Value.absent(),
             Value<int> parameterNumber = const Value.absent(),
             Value<int> value = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
           }) =>
               PresetParameterValuesCompanion(
+            id: id,
             presetSlotId: presetSlotId,
             parameterNumber: parameterNumber,
             value: value,
-            rowid: rowid,
           ),
           createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
             required int presetSlotId,
             required int parameterNumber,
             required int value,
-            Value<int> rowid = const Value.absent(),
           }) =>
               PresetParameterValuesCompanion.insert(
+            id: id,
             presetSlotId: presetSlotId,
             parameterNumber: parameterNumber,
             value: value,
-            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -6865,6 +7263,269 @@ typedef $$PresetParameterValuesTableProcessedTableManager
         (PresetParameterValueEntry, $$PresetParameterValuesTableReferences),
         PresetParameterValueEntry,
         PrefetchHooks Function({bool presetSlotId})>;
+typedef $$PresetParameterStringValuesTableCreateCompanionBuilder
+    = PresetParameterStringValuesCompanion Function({
+  required int presetSlotId,
+  required int parameterNumber,
+  required String stringValue,
+  Value<int> rowid,
+});
+typedef $$PresetParameterStringValuesTableUpdateCompanionBuilder
+    = PresetParameterStringValuesCompanion Function({
+  Value<int> presetSlotId,
+  Value<int> parameterNumber,
+  Value<String> stringValue,
+  Value<int> rowid,
+});
+
+final class $$PresetParameterStringValuesTableReferences extends BaseReferences<
+    _$AppDatabase,
+    $PresetParameterStringValuesTable,
+    PresetParameterStringValueEntry> {
+  $$PresetParameterStringValuesTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
+      db.presetSlots.createAlias($_aliasNameGenerator(
+          db.presetParameterStringValues.presetSlotId, db.presetSlots.id));
+
+  $$PresetSlotsTableProcessedTableManager get presetSlotId {
+    final $_column = $_itemColumn<int>('preset_slot_id')!;
+
+    final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_presetSlotIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$PresetParameterStringValuesTableFilterComposer
+    extends Composer<_$AppDatabase, $PresetParameterStringValuesTable> {
+  $$PresetParameterStringValuesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get parameterNumber => $composableBuilder(
+      column: $table.parameterNumber,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get stringValue => $composableBuilder(
+      column: $table.stringValue, builder: (column) => ColumnFilters(column));
+
+  $$PresetSlotsTableFilterComposer get presetSlotId {
+    final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.presetSlotId,
+        referencedTable: $db.presetSlots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$PresetSlotsTableFilterComposer(
+              $db: $db,
+              $table: $db.presetSlots,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$PresetParameterStringValuesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PresetParameterStringValuesTable> {
+  $$PresetParameterStringValuesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get parameterNumber => $composableBuilder(
+      column: $table.parameterNumber,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get stringValue => $composableBuilder(
+      column: $table.stringValue, builder: (column) => ColumnOrderings(column));
+
+  $$PresetSlotsTableOrderingComposer get presetSlotId {
+    final $$PresetSlotsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.presetSlotId,
+        referencedTable: $db.presetSlots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$PresetSlotsTableOrderingComposer(
+              $db: $db,
+              $table: $db.presetSlots,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$PresetParameterStringValuesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PresetParameterStringValuesTable> {
+  $$PresetParameterStringValuesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get parameterNumber => $composableBuilder(
+      column: $table.parameterNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get stringValue => $composableBuilder(
+      column: $table.stringValue, builder: (column) => column);
+
+  $$PresetSlotsTableAnnotationComposer get presetSlotId {
+    final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.presetSlotId,
+        referencedTable: $db.presetSlots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$PresetSlotsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.presetSlots,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$PresetParameterStringValuesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PresetParameterStringValuesTable,
+    PresetParameterStringValueEntry,
+    $$PresetParameterStringValuesTableFilterComposer,
+    $$PresetParameterStringValuesTableOrderingComposer,
+    $$PresetParameterStringValuesTableAnnotationComposer,
+    $$PresetParameterStringValuesTableCreateCompanionBuilder,
+    $$PresetParameterStringValuesTableUpdateCompanionBuilder,
+    (
+      PresetParameterStringValueEntry,
+      $$PresetParameterStringValuesTableReferences
+    ),
+    PresetParameterStringValueEntry,
+    PrefetchHooks Function({bool presetSlotId})> {
+  $$PresetParameterStringValuesTableTableManager(
+      _$AppDatabase db, $PresetParameterStringValuesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PresetParameterStringValuesTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PresetParameterStringValuesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PresetParameterStringValuesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> presetSlotId = const Value.absent(),
+            Value<int> parameterNumber = const Value.absent(),
+            Value<String> stringValue = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PresetParameterStringValuesCompanion(
+            presetSlotId: presetSlotId,
+            parameterNumber: parameterNumber,
+            stringValue: stringValue,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required int presetSlotId,
+            required int parameterNumber,
+            required String stringValue,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PresetParameterStringValuesCompanion.insert(
+            presetSlotId: presetSlotId,
+            parameterNumber: parameterNumber,
+            stringValue: stringValue,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$PresetParameterStringValuesTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({presetSlotId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (presetSlotId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.presetSlotId,
+                    referencedTable:
+                        $$PresetParameterStringValuesTableReferences
+                            ._presetSlotIdTable(db),
+                    referencedColumn:
+                        $$PresetParameterStringValuesTableReferences
+                            ._presetSlotIdTable(db)
+                            .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$PresetParameterStringValuesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PresetParameterStringValuesTable,
+    PresetParameterStringValueEntry,
+    $$PresetParameterStringValuesTableFilterComposer,
+    $$PresetParameterStringValuesTableOrderingComposer,
+    $$PresetParameterStringValuesTableAnnotationComposer,
+    $$PresetParameterStringValuesTableCreateCompanionBuilder,
+    $$PresetParameterStringValuesTableUpdateCompanionBuilder,
+    (
+      PresetParameterStringValueEntry,
+      $$PresetParameterStringValuesTableReferences
+    ),
+    PresetParameterStringValueEntry,
+    PrefetchHooks Function({bool presetSlotId})>;
 typedef $$PresetMappingsTableCreateCompanionBuilder = PresetMappingsCompanion
     Function({
   required int presetSlotId,
@@ -7777,6 +8438,10 @@ class $AppDatabaseManager {
       $$PresetSlotsTableTableManager(_db, _db.presetSlots);
   $$PresetParameterValuesTableTableManager get presetParameterValues =>
       $$PresetParameterValuesTableTableManager(_db, _db.presetParameterValues);
+  $$PresetParameterStringValuesTableTableManager
+      get presetParameterStringValues =>
+          $$PresetParameterStringValuesTableTableManager(
+              _db, _db.presetParameterStringValues);
   $$PresetMappingsTableTableManager get presetMappings =>
       $$PresetMappingsTableTableManager(_db, _db.presetMappings);
   $$PresetRoutingsTableTableManager get presetRoutings =>

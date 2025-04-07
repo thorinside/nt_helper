@@ -10,5 +10,6 @@ mixin _$PresetsDaoMixin on DatabaseAccessor<AppDatabase> {
   $PresetParameterValuesTable get presetParameterValues =>
       attachedDatabase.presetParameterValues;
   $PresetMappingsTable get presetMappings => attachedDatabase.presetMappings;
-  $PresetRoutingsTable get presetRoutings => attachedDatabase.presetRoutings;
+  $PresetParameterStringValuesTable get presetParameterStringValues =>
+      attachedDatabase.presetParameterStringValues;
 }

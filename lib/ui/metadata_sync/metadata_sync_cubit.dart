@@ -127,7 +127,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // 4. Assemble Preset Data AFTER fetching slots
       final now = DateTime.now();
-      final presetEntry = PresetEntry(id: 0, name: name, lastModified: now);
+      final presetEntry = PresetEntry(id: -1, name: name, lastModified: now);
       // Use the populated fullSlots list here
       final detailsToSave =
           FullPresetDetails(preset: presetEntry, slots: fullSlots);
@@ -374,74 +374,81 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   // Helper method to fetch data for a single slot needed for saving
   Future<FullPresetSlot> _fetchPresetSlotDetails(
       int slotIndex, IDistingMidiManager manager) async {
-    // Manager is passed in, assume not null
-
-    // Fetch Algorithm GUID and Name (use passed manager)
+    // Fetch Algorithm GUID and Name
     final algoGuidResult = await manager.requestAlgorithmGuid(slotIndex);
     final guid = algoGuidResult?.guid;
-    // Use the name from the returned Algorithm object as the potential custom name
     final String? customName = algoGuidResult?.name;
 
     if (guid == null) {
       throw Exception("Failed to get algorithm GUID for slot $slotIndex.");
     }
 
-    // Fetch AlgorithmEntry from Metadata DB (needed for FullPresetSlot structure)
-    // We still need the base algorithm info (like numSpecifications if required by DAO)
-    // Let's assume we just need the GUID for saving, but need the entry for structure.
-    // A method like `getAlgorithmByGuid` might be better if available.
+    // Fetch AlgorithmEntry from Metadata DB
     final algoMetadata = await _metadataDao.getFullAlgorithmDetails(guid);
     if (algoMetadata == null) {
       throw Exception(
           "Algorithm metadata for GUID '$guid' not found in local DB. Please sync metadata first.");
     }
-    final algorithmEntry = algoMetadata.algorithm; // Base algorithm info
+    final algorithmEntry = algoMetadata.algorithm;
 
     // Fetch Parameter Values
     final paramValuesResult =
         await manager.requestAllParameterValues(slotIndex);
     final parameterValues = paramValuesResult?.values ?? [];
-    // Convert list to map required by FullPresetSlot
     final parameterValuesMap = <int, int>{};
     for (final pVal in parameterValues) {
       parameterValuesMap[pVal.parameterNumber] = pVal.value;
     }
 
-    // Fetch Mappings
+    // Fetch Mappings and Parameter String Values
     final numParamsResult = await manager.requestNumberOfParameters(slotIndex);
     final numParams = numParamsResult?.numParameters ?? 0;
     final Map<int, PackedMappingData> mappingsMap = {};
+    final Map<int, String> parameterStringValuesMap =
+        {}; // Map for string values
+
     for (int pNum = 0; pNum < numParams; pNum++) {
+      // Fetch Mapping
       final mappingResult = await manager.requestMappings(slotIndex, pNum);
-      // Only store if it's a valid mapping (not filler/default)
       if (mappingResult != null && mappingResult.packedMappingData.isMapped()) {
         mappingsMap[pNum] = mappingResult.packedMappingData;
       }
+
+      // Fetch Parameter String Value
+      final stringValueResult =
+          await manager.requestParameterValueString(slotIndex, pNum);
+      // Store if not null and the string is not empty (or some default/filler value)
+      // Assuming ParameterValueString.stringValue is the field
+      if (stringValueResult?.value != null &&
+          stringValueResult!.value.isNotEmpty) {
+        // Additional check: avoid storing simple integer representations if possible?
+        // For now, store any non-empty string value fetched.
+        parameterStringValuesMap[pNum] = stringValueResult.value;
+      }
     }
 
-    // Fetch Routing Info
-    // Assuming requestRoutingInformation returns RoutingInfo which has List<int> routingInfo
-    final routingInfoResult =
-        await manager.requestRoutingInformation(slotIndex);
-    final routingInfoList = routingInfoResult?.routingInfo ?? [];
+    // Fetch Routing Info - REMOVED
+    // final routingInfoResult = await manager.requestRoutingInformation(slotIndex);
+    // final routingInfoList = routingInfoResult?.routingInfo ?? [];
 
-    // Create PresetSlotEntry (ID and PresetID are set by DAO on insert)
-    // Use the fetched customName here
+    // Create PresetSlotEntry
     final presetSlotEntry = PresetSlotEntry(
       id: 0, // Ignored by DAO insert
       presetId: 0, // Ignored by DAO insert
       slotIndex: slotIndex,
       algorithmGuid: guid,
-      customName: customName, // Use name from AlgorithmGuid result
+      customName: customName,
     );
 
     // Assemble and return
     return FullPresetSlot(
       slot: presetSlotEntry,
-      algorithm: algorithmEntry, // Pass the base AlgorithmEntry
+      algorithm: algorithmEntry,
       parameterValues: parameterValuesMap,
+      parameterStringValues:
+          parameterStringValuesMap, // Pass the string values map
       mappings: mappingsMap,
-      routingInfo: routingInfoList,
+      // routingInfo: routingInfoList, // Argument removed
     );
   }
 
@@ -449,8 +456,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     emit(const MetadataSyncState.deletingPreset());
     try {
       await _presetsDao.deletePreset(presetId);
-      // Ensure we wait for data loading to finish
-      await loadLocalData();
+      await loadLocalData(); // Reload data after deletion
     } catch (e) {
       emit(MetadataSyncState.presetDeleteFailure("Error deleting preset: $e"));
     }

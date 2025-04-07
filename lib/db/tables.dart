@@ -126,9 +126,27 @@ class PresetSlots extends Table {
 
 @DataClassName('PresetParameterValueEntry')
 class PresetParameterValues extends Table {
-  IntColumn get presetSlotId => integer().references(PresetSlots, #id)();
+  IntColumn get id =>
+      integer().autoIncrement()(); // This is automatically the primary key
+  IntColumn get presetSlotId =>
+      integer().references(PresetSlots, #id, onDelete: KeyAction.cascade)();
   IntColumn get parameterNumber => integer()();
-  IntColumn get value => integer()();
+  IntColumn get value => integer()(); // The actual saved integer value
+
+  // Add a unique constraint for the combination if needed logically
+  @override
+  List<String> get customConstraints =>
+      ['UNIQUE (preset_slot_id, parameter_number)'];
+}
+
+/// Stores the string representation of a parameter's value for a specific slot
+/// in a saved preset, if applicable (e.g., for enums, notes).
+@DataClassName('PresetParameterStringValueEntry')
+class PresetParameterStringValues extends Table {
+  IntColumn get presetSlotId =>
+      integer().references(PresetSlots, #id, onDelete: KeyAction.cascade)();
+  IntColumn get parameterNumber => integer()();
+  TextColumn get stringValue => text()(); // The string representation
 
   @override
   Set<Column> get primaryKey => {presetSlotId, parameterNumber};
