@@ -45,6 +45,8 @@ class DistingCubit extends Cubit<DistingState> {
 
   MidiCommand _midiCommand = MidiCommand();
   CancelableOperation<void>? _programSlotUpdate;
+  CancelableOperation<void>?
+      _moveVerificationOperation; // Add verification operation tracker
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
 
@@ -1229,21 +1231,220 @@ class DistingCubit extends Cubit<DistingState> {
     if (currentState is! DistingStateSynchronized) return algorithmIndex;
     if (algorithmIndex == 0) return 0;
 
+    // Cancel any pending verification from a previous move
+    _moveVerificationOperation?.cancel();
+
+    final syncstate = currentState;
+    final slots = syncstate.slots;
+
+    // 1. Optimistic Update
+    List<Slot> optimisticSlots = List.from(slots); // Create a mutable copy
+    final movedSlot = optimisticSlots.removeAt(algorithmIndex);
+    optimisticSlots.insert(algorithmIndex - 1, movedSlot);
+
+    // Update internal algorithmIndex for all slots based on their new position
+    List<Slot> optimisticSlotsCorrected = [];
+    for (int i = 0; i < optimisticSlots.length; i++) {
+      optimisticSlotsCorrected.add(_fixAlgorithmIndex(optimisticSlots[i], i));
+    }
+
+    // Emit optimistic state
+    emit(syncstate.copyWith(slots: optimisticSlotsCorrected, loading: false));
+
+    // 2. Manager Request
     final disting = requireDisting();
-    await disting.requestMoveAlgorithmUp(algorithmIndex);
-    await _refreshStateFromManager(); // Refresh state from manager
-    return algorithmIndex - 1; // Assume manager updated index correctly
+    // Don't await here, let it run in the background
+    disting.requestMoveAlgorithmUp(algorithmIndex).catchError((e, s) {
+      debugPrint("Error sending move up request: $e");
+      // Optionally trigger a full refresh on error?
+      _refreshStateFromManager(
+          delay: Duration.zero); // Refresh immediately on error
+    });
+
+    // 3. Verification
+    _moveVerificationOperation = CancelableOperation.fromFuture(
+      Future.delayed(const Duration(seconds: 2), () async {
+        // Check if state is still synchronized before proceeding
+        if (state is! DistingStateSynchronized) return;
+        final verificationState = state as DistingStateSynchronized;
+
+        // Only verify if the current state *still* matches the optimistic one we emitted.
+        // If it changed due to user interaction or another update, the verification is moot.
+        // Use a deep equality check for the slots.
+        final eq = const DeepCollectionEquality();
+        if (!eq.equals(verificationState.slots, optimisticSlotsCorrected)) {
+          debugPrint(
+              "[Cubit Move Verify] State changed before verification completed. Skipping verification.");
+          return;
+        }
+
+        debugPrint(
+            "[Cubit Move Verify] Verifying optimistic move up for index $algorithmIndex...");
+        try {
+          final actualNumAlgorithms =
+              await disting.requestNumAlgorithmsInPreset() ?? 0;
+          final actualPresetName = await disting.requestPresetName() ?? "Error";
+          List<Slot> actualSlots =
+              await fetchSlots(actualNumAlgorithms, disting);
+
+          // Compare actual state with the optimistic state
+          bool match = eq.equals(actualSlots, optimisticSlotsCorrected) &&
+              actualPresetName ==
+                  verificationState
+                      .presetName; // Use the name from the *verification* state
+
+          if (!match) {
+            debugPrint(
+                "[Cubit Move Verify] Optimistic state INCORRECT. Reverting to actual state.");
+            // If mismatch, emit the actual fetched state. Need all data.
+            // Re-fetch everything needed for Synchronized state for robustness
+            final numAlgorithms =
+                await disting.requestNumberOfAlgorithms() ?? 0;
+            final algorithms = numAlgorithms > 0
+                ? await Future.wait([
+                    for (int i = 0; i < numAlgorithms; i++)
+                      disting.requestAlgorithmInfo(i)
+                  ]).then(
+                    (results) => results.whereType<AlgorithmInfo>().toList())
+                : <AlgorithmInfo>[];
+            final distingVersion = await disting.requestVersionString() ?? "";
+            var unitStrings = await disting.requestUnitStrings() ?? [];
+
+            emit(DistingState.synchronized(
+              disting: verificationState.disting, // Keep manager
+              distingVersion: distingVersion,
+              presetName: actualPresetName,
+              algorithms: algorithms, // Fetch latest algorithms list
+              slots: actualSlots, // Use actual slots
+              unitStrings: unitStrings, // Fetch latest units
+              inputDevice: verificationState.inputDevice, // Keep devices
+              outputDevice: verificationState.outputDevice,
+              screenshot: verificationState.screenshot, // Keep screenshot etc.
+              loading: false,
+              demo: verificationState.demo,
+              offline: verificationState.offline,
+            ));
+          } else {
+            debugPrint("[Cubit Move Verify] Optimistic state CORRECT.");
+          }
+        } catch (e, stackTrace) {
+          debugPrint("[Cubit Move Verify] Error during verification: $e");
+          debugPrintStack(stackTrace: stackTrace);
+          // Optionally trigger a full refresh on verification error?
+          // Avoid emitting potentially stale state on error. A full refresh might be safer.
+          _refreshStateFromManager(delay: Duration.zero);
+        }
+      }),
+      onCancel: () => debugPrint("[Cubit Move Verify] Verification cancelled."),
+    );
+
+    // 4. Return optimistic index
+    return algorithmIndex - 1;
   }
 
   Future<int> moveAlgorithmDown(int algorithmIndex) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return algorithmIndex;
-    if (algorithmIndex >= currentState.slots.length - 1) return algorithmIndex;
+    final syncstate = currentState;
+    final slots = syncstate.slots;
+    if (algorithmIndex >= slots.length - 1) return algorithmIndex;
 
+    // Cancel any pending verification from a previous move
+    _moveVerificationOperation?.cancel();
+
+    // 1. Optimistic Update
+    List<Slot> optimisticSlots = List.from(slots); // Create a mutable copy
+    final movedSlot = optimisticSlots.removeAt(algorithmIndex);
+    optimisticSlots.insert(
+        algorithmIndex + 1, movedSlot); // Insert one position down
+
+    // Update internal algorithmIndex for all slots based on their new position
+    List<Slot> optimisticSlotsCorrected = [];
+    for (int i = 0; i < optimisticSlots.length; i++) {
+      optimisticSlotsCorrected.add(_fixAlgorithmIndex(optimisticSlots[i], i));
+    }
+
+    // Emit optimistic state
+    emit(syncstate.copyWith(slots: optimisticSlotsCorrected, loading: false));
+
+    // 2. Manager Request
     final disting = requireDisting();
-    await disting.requestMoveAlgorithmDown(algorithmIndex);
-    await _refreshStateFromManager(); // Refresh state from manager
-    return algorithmIndex + 1; // Assume manager updated index correctly
+    // Don't await here, let it run in the background
+    disting.requestMoveAlgorithmDown(algorithmIndex).catchError((e, s) {
+      debugPrint("Error sending move down request: $e");
+      _refreshStateFromManager(
+          delay: Duration.zero); // Refresh immediately on error
+    });
+
+    // 3. Verification
+    _moveVerificationOperation = CancelableOperation.fromFuture(
+      Future.delayed(const Duration(seconds: 2), () async {
+        if (state is! DistingStateSynchronized) return;
+        final verificationState = state as DistingStateSynchronized;
+
+        final eq = const DeepCollectionEquality();
+        if (!eq.equals(verificationState.slots, optimisticSlotsCorrected)) {
+          debugPrint(
+              "[Cubit Move Verify] State changed before verification completed. Skipping verification.");
+          return;
+        }
+
+        debugPrint(
+            "[Cubit Move Verify] Verifying optimistic move down for index $algorithmIndex...");
+        try {
+          final actualNumAlgorithms =
+              await disting.requestNumAlgorithmsInPreset() ?? 0;
+          final actualPresetName = await disting.requestPresetName() ?? "Error";
+          List<Slot> actualSlots =
+              await fetchSlots(actualNumAlgorithms, disting);
+
+          bool match = eq.equals(actualSlots, optimisticSlotsCorrected) &&
+              actualPresetName == verificationState.presetName;
+
+          if (!match) {
+            debugPrint(
+                "[Cubit Move Verify] Optimistic state INCORRECT. Reverting to actual state.");
+            // Re-fetch everything needed for Synchronized state for robustness
+            final numAlgorithms =
+                await disting.requestNumberOfAlgorithms() ?? 0;
+            final algorithms = numAlgorithms > 0
+                ? await Future.wait([
+                    for (int i = 0; i < numAlgorithms; i++)
+                      disting.requestAlgorithmInfo(i)
+                  ]).then(
+                    (results) => results.whereType<AlgorithmInfo>().toList())
+                : <AlgorithmInfo>[];
+            final distingVersion = await disting.requestVersionString() ?? "";
+            var unitStrings = await disting.requestUnitStrings() ?? [];
+
+            emit(DistingState.synchronized(
+              disting: verificationState.disting,
+              distingVersion: distingVersion,
+              presetName: actualPresetName,
+              algorithms: algorithms,
+              slots: actualSlots,
+              unitStrings: unitStrings,
+              inputDevice: verificationState.inputDevice,
+              outputDevice: verificationState.outputDevice,
+              screenshot: verificationState.screenshot,
+              loading: false,
+              demo: verificationState.demo,
+              offline: verificationState.offline,
+            ));
+          } else {
+            debugPrint("[Cubit Move Verify] Optimistic state CORRECT.");
+          }
+        } catch (e, stackTrace) {
+          debugPrint("[Cubit Move Verify] Error during verification: $e");
+          debugPrintStack(stackTrace: stackTrace);
+          _refreshStateFromManager(delay: Duration.zero);
+        }
+      }),
+      onCancel: () => debugPrint("[Cubit Move Verify] Verification cancelled."),
+    );
+
+    // 4. Return optimistic index
+    return algorithmIndex + 1;
   }
 
   Future<void> newPreset() async {
