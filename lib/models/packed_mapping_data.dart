@@ -7,6 +7,7 @@ class PackedMappingData {
   final int version;
 
   // CV Mapping
+  final int source; // Source of the CV input
   final int cvInput; // Input source for CV
   final bool isUnipolar; // Unipolar or bipolar mapping
   final bool isGate; // Gate mapping enabled
@@ -31,6 +32,7 @@ class PackedMappingData {
 
   // Constructor
   PackedMappingData({
+    required this.source,
     required this.cvInput,
     required this.isUnipolar,
     required this.isGate,
@@ -53,6 +55,7 @@ class PackedMappingData {
 
   factory PackedMappingData.filler() {
     return PackedMappingData(
+        source: -1,
         cvInput: -1,
         isUnipolar: false,
         isGate: false,
@@ -73,26 +76,66 @@ class PackedMappingData {
         version: -1);
   }
 
-  // Decode from packed Uint8List
+  // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
-    if (version < 1 || version > 3)
-      throw Exception("unknown_mapping_data_version");
+    if (version < 1 || version > 4) {
+      print(
+          "Warning: Unknown PackedMappingData version $version. Returning filler.");
+      return PackedMappingData.filler();
+    }
 
     int offset = 0;
+    final dataLength = data.length;
+
+    // Helper function for safe decoding
+    int safeDecode16(int currentOffset) {
+      if (currentOffset + 2 >= dataLength) {
+        print(
+            "Warning: PackedMappingData truncated during decode16 at offset $currentOffset (length $dataLength). Returning 0.");
+        return 0; // Or throw, or return a specific error indicator?
+      }
+      return DistingNT.decode16(data, currentOffset);
+    }
+
+    // Helper function for safe byte read
+    int safeReadByte(int currentOffset) {
+      if (currentOffset >= dataLength) {
+        print(
+            "Warning: PackedMappingData truncated during byte read at offset $currentOffset (length $dataLength). Returning 0.");
+        return 0;
+      }
+      return data[currentOffset];
+    }
 
     // --- Decode CV Mapping ---
-    final cvInput = data[offset++];
-    final cvFlags = data[offset++];
+    int cvSectionMinLength = (version >= 4) ? 7 : 6;
+    if (offset + cvSectionMinLength - 1 >= dataLength) {
+      // Check if enough bytes for the whole section
+      print(
+          "Warning: PackedMappingData truncated within CV section (offset $offset, length $dataLength, version $version). Returning filler.");
+      return PackedMappingData.filler();
+    }
+    final source = (version >= 4) ? safeReadByte(offset++) : 0;
+    final cvInput = safeReadByte(offset++);
+    final cvFlags = safeReadByte(offset++);
     final isUnipolar = (cvFlags & 1) != 0;
     final isGate = (cvFlags & 2) != 0;
-    final volts = data[offset++];
-    final delta = DistingNT.decode16(data, offset);
+    final volts = safeReadByte(offset++);
+    final delta = safeDecode16(offset);
     offset += 3;
 
-    // --- Decode MIDI Mapping ---
-    var midiCC = data[offset++];
-    final midiFlags = data[offset++];
-    final midiFlags2 = version >= 2 ? data[offset++] : 0;
+    // --- Decode MIDI Mapping (8 or 9 bytes) ---
+    int midiSectionMinLength = offset + 7; // Base size (v1)
+    if (version >= 2) midiSectionMinLength++; // Add 1 for flags2
+    if (midiSectionMinLength >= dataLength) {
+      // Need at least 8 (v1) or 9 (v2/3) bytes total (offset up to 7 or 8 + 6 for decode16 calls)
+      print(
+          "Warning: PackedMappingData truncated before MIDI max (offset $offset, length $dataLength). Returning filler.");
+      return PackedMappingData.filler();
+    }
+    var midiCC = safeReadByte(offset++);
+    final midiFlags = safeReadByte(offset++);
+    final midiFlags2 = version >= 2 ? safeReadByte(offset++) : 0;
     if (midiFlags & 4 != 0) {
       midiCC = 128;
     }
@@ -100,26 +143,57 @@ class PackedMappingData {
     final isMidiEnabled = (midiFlags & 1) != 0;
     final isMidiSymmetric = (midiFlags & 2) != 0;
     final isMidiRelative = (midiFlags2 & 1) != 0;
-    final midiMin = DistingNT.decode16(data, offset);
+    final midiMin = safeDecode16(offset);
     offset += 3;
-    final midiMax = DistingNT.decode16(data, offset);
+    final midiMax = safeDecode16(offset);
     offset += 3;
 
-    // --- Decode I2C Mapping ---
-    var i2cCC = data[offset++];
-    if (version >= 3) {
-      i2cCC = i2cCC | (data[offset++] & 1) << 7;
+    // --- Decode I2C Mapping (8 or 9 bytes) ---
+    int i2cSectionMinLength = offset + 7; // Base size (v1/v2)
+    if (version >= 3) i2cSectionMinLength++; // Add 1 for extra I2C CC byte
+    if (i2cSectionMinLength >= dataLength) {
+      // Need offset up to 7 or 8 + 6 for decode16 calls
+      print(
+          "Warning: PackedMappingData truncated before I2C max (offset $offset, length $dataLength). Returning filler.");
+      return PackedMappingData.filler();
     }
-    final i2cFlags = data[offset++];
+    var i2cCC = safeReadByte(offset++);
+    if (version >= 3) {
+      // Check if we have the extra byte before reading it
+      if (offset >= dataLength) {
+        print(
+            "Warning: PackedMappingData (v3) truncated before extra I2C CC byte (offset $offset, length $dataLength). Returning filler.");
+        return PackedMappingData.filler();
+      }
+      i2cCC = i2cCC | (safeReadByte(offset++) & 1) << 7;
+    }
+    final i2cFlags = safeReadByte(offset++);
     final isI2cEnabled = (i2cFlags & 1) != 0;
     final isI2cSymmetric = (i2cFlags & 2) != 0;
-    final i2cMin = DistingNT.decode16(data, offset);
+    final i2cMin = safeDecode16(offset);
     offset += 3;
-    final i2cMax = DistingNT.decode16(data, offset);
-    offset += 3;
+    final i2cMax = safeDecode16(
+        offset); // This is the problematic call if dataLength is 23 for v2
+    // No need to increment offset after the last read
+    // offset += 3;
 
-    // Return the decoded mapping data
+    // Final check (optional): Ensure offset matches expected length based on version
+    int expectedLength = (version == 1)
+        ? 22
+        : (version == 2)
+            ? 23
+            : (version == 3)
+                ? 24
+                : 25;
+    if (offset != expectedLength) {
+      print(
+          "Warning: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data might be corrupt.");
+      // Decide whether to return filler or the potentially partially decoded data
+      // return PackedMappingData.filler();
+    }
+
     return PackedMappingData(
+      source: source,
       cvInput: cvInput,
       isUnipolar: isUnipolar,
       isGate: isGate,
@@ -147,6 +221,7 @@ class PackedMappingData {
 
     // Build the packed payload (starting after the version byte)
     final payload = [
+      if (version >= 4) source & 0x7F, // Source of the CV input
       cvInput & 0x7F, // CV input number
       flags & 0x7F, // Flags for unipolar/gate settings
       volts & 0x7F, // Voltage setting (0-127)
@@ -206,32 +281,62 @@ class PackedMappingData {
     return Uint8List.fromList(payload);
   }
 
-  // Convert back to Uint8List
+  // Convert back to Uint8List (excluding the version byte itself)
   Uint8List toBytes() {
     final bytes = <int>[];
 
-    // Encode CV Mapping
-    bytes.add(cvInput);
-    bytes.add((isUnipolar ? 1 : 0) | (isGate ? 2 : 0));
-    bytes.add(volts);
+    // Encode CV Mapping (6 bytes)
+    if (version >= 4) {
+      bytes.add(source & 0x7F);
+    }
+    bytes.add(cvInput & 0x7F);
+    bytes.add(((isUnipolar ? 1 : 0) | (isGate ? 2 : 0)) & 0x7F);
+    bytes.add(volts & 0x7F);
     bytes.addAll(DistingNT.encode16(delta));
 
-    // Encode MIDI Mapping
-    bytes.add(midiCC);
-    bytes.add((isMidiEnabled ? 1 : 0) |
+    // Encode MIDI Mapping (8 or 9 bytes)
+    int midiFlags = (isMidiEnabled ? 1 : 0) |
         (isMidiSymmetric ? 2 : 0) |
-        ((midiChannel & 0xF) << 3));
+        ((midiChannel & 0xF) << 3);
+    int midiFlags2 = (isMidiRelative ? 1 : 0);
+    int adjustedMidiCC = midiCC;
+    if (adjustedMidiCC == 128) {
+      adjustedMidiCC = 0;
+      midiFlags |= (1 << 2); // Use bit 2 of flags like in fromBytes
+    }
+    bytes.add(adjustedMidiCC & 0x7F);
+    bytes.add(midiFlags & 0x7F);
     if (version >= 2) {
-      bytes.add((isMidiRelative ? 1 : 0));
+      bytes.add(midiFlags2 & 0x7F);
     }
     bytes.addAll(DistingNT.encode16(midiMin));
     bytes.addAll(DistingNT.encode16(midiMax));
 
-    // Encode I2C Mapping
-    bytes.add(i2cCC);
-    bytes.add((isI2cEnabled ? 1 : 0) | (isI2cSymmetric ? 2 : 0));
+    // Encode I2C Mapping (8 or 9 bytes)
+    int i2cFlags = (isI2cEnabled ? 1 : 0) | (isI2cSymmetric ? 2 : 0);
+    // Correctly encode i2cCC based on version
+    bytes.add(i2cCC & 0x7F); // Lower 7 bits
+    if (version >= 3) {
+      // Add the high bit as the next byte for v3+
+      bytes.add((i2cCC >> 7) & 0x01);
+    }
+    bytes.add(i2cFlags & 0x7F);
     bytes.addAll(DistingNT.encode16(i2cMin));
     bytes.addAll(DistingNT.encode16(i2cMax));
+
+    // Verify length (optional but good practice)
+    int expectedLength = (version == 1)
+        ? 22
+        : (version == 2)
+            ? 23
+            : (version == 3)
+                ? 24
+                : 25;
+    if (bytes.length != expectedLength) {
+      print(
+          "FATAL: PackedMappingData.toBytes() produced incorrect length (${bytes.length}) for version $version. Expected $expectedLength.");
+      // Handle error - maybe return fixed-size filler bytes?
+    }
 
     return Uint8List.fromList(bytes);
   }
@@ -241,7 +346,8 @@ class PackedMappingData {
     if (identical(this, other)) return true;
     if (other is! PackedMappingData) return false;
 
-    return other.cvInput == cvInput &&
+    return other.source == source &&
+        other.cvInput == cvInput &&
         other.isUnipolar == isUnipolar &&
         other.isGate == isGate &&
         other.volts == volts &&
@@ -262,6 +368,7 @@ class PackedMappingData {
   @override
   int get hashCode {
     return Object.hash(
+      source,
       cvInput,
       isUnipolar,
       isGate,

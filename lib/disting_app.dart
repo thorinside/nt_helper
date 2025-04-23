@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
@@ -32,8 +34,12 @@ class DistingApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       // Follow system settings
       home: BlocProvider(
-        create: (_) {
-          final cubit = DistingCubit();
+        create: (context) {
+          // Get the AppDatabase instance from the context
+          final database = context.read<AppDatabase>();
+
+          // Create DistingCubit and pass the database instance
+          final cubit = DistingCubit(database); // Pass database here
           cubit.initialize(); // Load settings and auto-connect if possible
           return cubit;
         },
@@ -74,9 +80,14 @@ class DistingApp extends StatelessWidget {
   }
 }
 
-class DistingPage extends StatelessWidget {
+class DistingPage extends StatefulWidget {
   const DistingPage({super.key});
 
+  @override
+  State<DistingPage> createState() => _DistingPageState();
+}
+
+class _DistingPageState extends State<DistingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,6 +122,10 @@ class DistingPage extends StatelessWidget {
                 onDemoPressed: () async {
                   context.read<DistingCubit>().onDemo();
                 },
+                onOfflinePressed: () async {
+                  context.read<DistingCubit>().goOffline();
+                },
+                canWorkOffline: state.canWorkOffline,
               );
             } else if (state is DistingStateConnected) {
               return Center(
@@ -159,6 +174,8 @@ class _DeviceSelectionView extends StatefulWidget {
   final Function() onRefresh;
   final Function() onSettingsPressed;
   final Function() onDemoPressed;
+  final Function() onOfflinePressed;
+  final bool canWorkOffline;
 
   const _DeviceSelectionView({
     required this.inputDevices,
@@ -167,6 +184,8 @@ class _DeviceSelectionView extends StatefulWidget {
     required this.onRefresh,
     required this.onSettingsPressed,
     required this.onDemoPressed,
+    required this.onOfflinePressed,
+    required this.canWorkOffline,
   });
 
   @override
@@ -292,17 +311,25 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                 },
               ),
               const SizedBox(height: 32),
-              // Button to confirm selection
+              // Button row: Refresh, Work Offline, Connect
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween, // Space buttons out
                 children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      widget.onRefresh();
-                    },
-                    child: const Text("Refresh"),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Refresh"),
+                    onPressed: widget.onRefresh,
                   ),
-                  ElevatedButton(
+                  if (widget.canWorkOffline)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.cloud_off),
+                      label: const Text("Offline"),
+                      onPressed: widget.onOfflinePressed,
+                    ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.link),
+                    label: const Text("Connect"),
                     onPressed: (selectedInputDevice != null &&
                             selectedOutputDevice != null &&
                             selectedSysExId != null)
@@ -311,26 +338,24 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                                 selectedOutputDevice!, selectedSysExId!);
                           }
                         : null,
-                    child: const Text("Connect"),
                   ),
                 ],
               ),
+              // Demo button section (if no device selected)
               if (selectedInputDevice == null ||
                   selectedOutputDevice == null ||
                   selectedSysExId == null)
                 Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const SizedBox(height: 24),
-                      Text(
-                          "See what this app is about, \nif you don't have a Disting NT"),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                          onPressed: () {
-                            widget.onDemoPressed();
-                          },
-                          child: const Text("Demo")),
-                    ])
+                  children: [
+                    const SizedBox(height: 24),
+                    const Text("No Disting? Try the demo:"),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: widget.onDemoPressed,
+                      child: const Text("Demo"),
+                    ),
+                  ],
+                )
             ],
           ),
         ),

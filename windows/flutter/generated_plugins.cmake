@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
   pasteboard
+  sqlite3_flutter_libs
   universal_ble
 )
 

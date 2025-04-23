@@ -130,6 +130,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
             },
             onChanged: (value) {
               _controller.text = value;
+              // Trigger rebuild to re-evaluate button enablement
+              setState(() {});
             },
             decoration: InputDecoration(
               border: OutlineInputBorder(),

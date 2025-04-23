@@ -47,7 +47,12 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
   void _fetchScreenshot() async {
     await widget.cubit.updateScreenshot();
 
-    final screenshot = widget.cubit.state.screenshot;
+    // Safely access screenshot using maybeMap
+    final screenshot = widget.cubit.state.maybeMap(
+      synchronized: (syncState) => syncState.screenshot,
+      orElse: () => null, // Return null for other states
+    );
+
     if (mounted) {
       setState(() {
         _screenshot = screenshot;

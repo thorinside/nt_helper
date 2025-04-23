@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 class ParseResult {
   final String value;
@@ -17,11 +17,22 @@ ParseResult decodeNullTerminatedAscii(Uint8List bytes, int start) {
     i++;
   }
 
+  // --- Debug Print: Log the sublist before decoding ---
+  final bytesToDecode = bytes.sublist(start, i);
+  debugPrint(
+      "[decodeNullTerminatedAscii] Decoding sublist (start=$start, end=$i): ${bytesToDecode.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}");
+  // --- End Debug Print ---
+
   // Decode the substring from [start .. i).
-  final str = ascii.decode(bytes.sublist(start, i), allowInvalid: true);
+  // Pass the explicitly created sublist to decode.
+  final str = ascii.decode(bytesToDecode, allowInvalid: true);
 
   // If we found a null terminator, skip it. Otherwise, i == bytes.length.
   final nextOffset = (i < bytes.length) ? i + 1 : i;
+
+  // --- Debug Print: Log the decoded string ---
+  debugPrint("[decodeNullTerminatedAscii] Decoded string: '$str'");
+  // --- End Debug Print ---
 
   return ParseResult(str, nextOffset);
 }

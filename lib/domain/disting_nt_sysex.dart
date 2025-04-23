@@ -145,7 +145,6 @@ class Algorithm implements HasAlgorithmIndex {
     return "Algorithm: index=$algorithmIndex guid=$guid name=$name";
   }
 
-  // Write a copyWith function for this class
   Algorithm copyWith({int? algorithmIndex, String? guid, String? name}) {
     return Algorithm(
       algorithmIndex: algorithmIndex ?? this.algorithmIndex,
@@ -239,7 +238,8 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
       defaultValue, unit, name, powerOfTen);
 
   String? getUnitString(List<String> units) {
-    return unit > 0 ? units.elementAtOrNull(unit - 1) : null;
+    if (unit <= 0 || unit > units.length) return null;
+    return units[unit - 1];
   }
 }
 
@@ -420,6 +420,21 @@ class AlgorithmInfo implements HasAlgorithmIndex {
     );
   }
 
+  AlgorithmInfo copyWith(
+      {int? algorithmIndex,
+      String? guid,
+      String? name,
+      int? numSpecifications,
+      List<Specification>? specifications}) {
+    return AlgorithmInfo(
+      algorithmIndex: algorithmIndex ?? this.algorithmIndex,
+      guid: guid ?? this.guid,
+      name: name ?? this.name,
+      numSpecifications: numSpecifications ?? this.numSpecifications,
+      specifications: specifications ?? this.specifications,
+    );
+  }
+
   @override
   String toString() {
     return "AlgorithmInfo: algorithmIndex=$algorithmIndex guid=$guid name=$name specificationName=$name specifications=$specifications";
@@ -466,7 +481,7 @@ class DistingNT {
   });
 
   /// Helper to create the standard SysEx header for a disting NT message,
-  /// given the 'SysEx ID' (the module’s own ID in its settings).
+  /// given the 'SysEx ID' (the module's own ID in its settings).
   static List<int> _buildHeader(int distingSysExId) {
     return [
       kSysExStart, ...kExpertSleepersManufacturerId, // 00 21 27
@@ -964,7 +979,7 @@ class DistingNT {
     offset = nameStr.nextOffset;
     final algorithmName = nameStr.value;
 
-    // 7) Decode each specification’s display name (also null-terminated).
+    // 7) Decode each specification's display name (also null-terminated).
     final specNames = List.generate(numSpecifications, (_) {
       final str = decodeNullTerminatedAscii(data, offset);
       offset = str.nextOffset;
@@ -995,8 +1010,14 @@ class DistingNT {
   }
 
   static NumParameters decodeNumParameters(Uint8List data) {
+    // Basic length check: algorithm index (1) + encoded num params (3) = 4
+    if (data.length < 4) {
+      throw ArgumentError(
+          "Invalid data length for NumParameters: ${data.length}, expected at least 4.");
+    }
     var algorithmIndex = data[0].toInt();
-    var numParameters = decode16(data, 1);
+    // Correct slice: sublist(1, 4) gets 3 bytes (index 1, 2, 3)
+    var numParameters = decode16(data.sublist(1, 4), 0);
 
     return NumParameters(
       algorithmIndex: algorithmIndex,
@@ -1229,7 +1250,13 @@ class DistingNT {
   }
 
   static int decodeNumberOfAlgorithms(Uint8List message) {
-    return decode16(message, 0);
+    // Basic length check: encoded num algos (3)
+    if (message.length < 3) {
+      throw ArgumentError(
+          "Invalid data length for NumberOfAlgorithms: ${message.length}, expected at least 3.");
+    }
+    // Correct slice: sublist(0, 3) gets 3 bytes (index 0, 1, 2)
+    return decode16(message.sublist(0, 3), 0);
   }
 
   static int decodeNumberOfAlgorithmsInPreset(Uint8List message) {

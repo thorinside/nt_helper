@@ -598,16 +598,18 @@ abstract class _MappedParameter implements MappedParameter {
 
 /// @nodoc
 mixin _$DistingState {
-  Uint8List? get screenshot => throw _privateConstructorUsedError;
-  bool get demo => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Uint8List? screenshot, bool demo) initial,
+    required TResult Function() initial,
     required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+            List<MidiDevice> outputDevices, bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
+            bool offline,
+            bool loading)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -616,20 +618,23 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Uint8List? screenshot, bool demo)? initial,
+    TResult? Function()? initial,
     TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -638,20 +643,23 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Uint8List? screenshot, bool demo)? initial,
+    TResult Function()? initial,
     TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -660,9 +668,12 @@ mixin _$DistingState {
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) =>
@@ -692,12 +703,6 @@ mixin _$DistingState {
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $DistingStateCopyWith<DistingState> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -705,8 +710,6 @@ abstract class $DistingStateCopyWith<$Res> {
   factory $DistingStateCopyWith(
           DistingState value, $Res Function(DistingState) then) =
       _$DistingStateCopyWithImpl<$Res, DistingState>;
-  @useResult
-  $Res call({Uint8List? screenshot, bool demo});
 }
 
 /// @nodoc
@@ -721,34 +724,13 @@ class _$DistingStateCopyWithImpl<$Res, $Val extends DistingState>
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? screenshot = freezed,
-    Object? demo = null,
-  }) {
-    return _then(_value.copyWith(
-      screenshot: freezed == screenshot
-          ? _value.screenshot
-          : screenshot // ignore: cast_nullable_to_non_nullable
-              as Uint8List?,
-      demo: null == demo
-          ? _value.demo
-          : demo // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
-  }
 }
 
 /// @nodoc
-abstract class _$$DistingStateInitialImplCopyWith<$Res>
-    implements $DistingStateCopyWith<$Res> {
+abstract class _$$DistingStateInitialImplCopyWith<$Res> {
   factory _$$DistingStateInitialImplCopyWith(_$DistingStateInitialImpl value,
           $Res Function(_$DistingStateInitialImpl) then) =
       __$$DistingStateInitialImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({Uint8List? screenshot, bool demo});
 }
 
 /// @nodoc
@@ -761,23 +743,6 @@ class __$$DistingStateInitialImplCopyWithImpl<$Res>
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? screenshot = freezed,
-    Object? demo = null,
-  }) {
-    return _then(_$DistingStateInitialImpl(
-      screenshot: freezed == screenshot
-          ? _value.screenshot
-          : screenshot // ignore: cast_nullable_to_non_nullable
-              as Uint8List?,
-      demo: null == demo
-          ? _value.demo
-          : demo // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
-  }
 }
 
 /// @nodoc
@@ -785,60 +750,42 @@ class __$$DistingStateInitialImplCopyWithImpl<$Res>
 class _$DistingStateInitialImpl
     with DiagnosticableTreeMixin
     implements DistingStateInitial {
-  const _$DistingStateInitialImpl({this.screenshot, this.demo = false});
-
-  @override
-  final Uint8List? screenshot;
-  @override
-  @JsonKey()
-  final bool demo;
+  const _$DistingStateInitialImpl();
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.initial(screenshot: $screenshot, demo: $demo)';
+    return 'DistingState.initial()';
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty('type', 'DistingState.initial'))
-      ..add(DiagnosticsProperty('screenshot', screenshot))
-      ..add(DiagnosticsProperty('demo', demo));
+    properties..add(DiagnosticsProperty('type', 'DistingState.initial'));
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DistingStateInitialImpl &&
-            const DeepCollectionEquality()
-                .equals(other.screenshot, screenshot) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            other is _$DistingStateInitialImpl);
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, const DeepCollectionEquality().hash(screenshot), demo);
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$DistingStateInitialImplCopyWith<_$DistingStateInitialImpl> get copyWith =>
-      __$$DistingStateInitialImplCopyWithImpl<_$DistingStateInitialImpl>(
-          this, _$identity);
+  int get hashCode => runtimeType.hashCode;
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Uint8List? screenshot, bool demo) initial,
+    required TResult Function() initial,
     required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+            List<MidiDevice> outputDevices, bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
+            bool offline,
+            bool loading)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -847,23 +794,26 @@ class _$DistingStateInitialImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
-    return initial(screenshot, demo);
+    return initial();
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Uint8List? screenshot, bool demo)? initial,
+    TResult? Function()? initial,
     TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -872,23 +822,26 @@ class _$DistingStateInitialImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
-    return initial?.call(screenshot, demo);
+    return initial?.call();
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Uint8List? screenshot, bool demo)? initial,
+    TResult Function()? initial,
     TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -897,14 +850,17 @@ class _$DistingStateInitialImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
     if (initial != null) {
-      return initial(screenshot, demo);
+      return initial();
     }
     return orElse();
   }
@@ -948,37 +904,20 @@ class _$DistingStateInitialImpl
 }
 
 abstract class DistingStateInitial implements DistingState {
-  const factory DistingStateInitial(
-      {final Uint8List? screenshot,
-      final bool demo}) = _$DistingStateInitialImpl;
-
-  @override
-  Uint8List? get screenshot;
-  @override
-  bool get demo;
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DistingStateInitialImplCopyWith<_$DistingStateInitialImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  const factory DistingStateInitial() = _$DistingStateInitialImpl;
 }
 
 /// @nodoc
-abstract class _$$DistingStateSelectDeviceImplCopyWith<$Res>
-    implements $DistingStateCopyWith<$Res> {
+abstract class _$$DistingStateSelectDeviceImplCopyWith<$Res> {
   factory _$$DistingStateSelectDeviceImplCopyWith(
           _$DistingStateSelectDeviceImpl value,
           $Res Function(_$DistingStateSelectDeviceImpl) then) =
       __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call(
       {List<MidiDevice> inputDevices,
       List<MidiDevice> outputDevices,
-      Uint8List? screenshot,
-      bool demo});
+      bool canWorkOffline});
 }
 
 /// @nodoc
@@ -997,8 +936,7 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
   $Res call({
     Object? inputDevices = null,
     Object? outputDevices = null,
-    Object? screenshot = freezed,
-    Object? demo = null,
+    Object? canWorkOffline = null,
   }) {
     return _then(_$DistingStateSelectDeviceImpl(
       inputDevices: null == inputDevices
@@ -1009,13 +947,9 @@ class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
           ? _value._outputDevices
           : outputDevices // ignore: cast_nullable_to_non_nullable
               as List<MidiDevice>,
-      screenshot: freezed == screenshot
-          ? _value.screenshot
-          : screenshot // ignore: cast_nullable_to_non_nullable
-              as Uint8List?,
-      demo: null == demo
-          ? _value.demo
-          : demo // ignore: cast_nullable_to_non_nullable
+      canWorkOffline: null == canWorkOffline
+          ? _value.canWorkOffline
+          : canWorkOffline // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -1029,8 +963,7 @@ class _$DistingStateSelectDeviceImpl
   const _$DistingStateSelectDeviceImpl(
       {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
-      this.screenshot,
-      this.demo = false})
+      required this.canWorkOffline})
       : _inputDevices = inputDevices,
         _outputDevices = outputDevices;
 
@@ -1051,14 +984,11 @@ class _$DistingStateSelectDeviceImpl
   }
 
   @override
-  final Uint8List? screenshot;
-  @override
-  @JsonKey()
-  final bool demo;
+  final bool canWorkOffline;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, screenshot: $screenshot, demo: $demo)';
+    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, canWorkOffline: $canWorkOffline)';
   }
 
   @override
@@ -1068,8 +998,7 @@ class _$DistingStateSelectDeviceImpl
       ..add(DiagnosticsProperty('type', 'DistingState.selectDevice'))
       ..add(DiagnosticsProperty('inputDevices', inputDevices))
       ..add(DiagnosticsProperty('outputDevices', outputDevices))
-      ..add(DiagnosticsProperty('screenshot', screenshot))
-      ..add(DiagnosticsProperty('demo', demo));
+      ..add(DiagnosticsProperty('canWorkOffline', canWorkOffline));
   }
 
   @override
@@ -1081,9 +1010,8 @@ class _$DistingStateSelectDeviceImpl
                 .equals(other._inputDevices, _inputDevices) &&
             const DeepCollectionEquality()
                 .equals(other._outputDevices, _outputDevices) &&
-            const DeepCollectionEquality()
-                .equals(other.screenshot, screenshot) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            (identical(other.canWorkOffline, canWorkOffline) ||
+                other.canWorkOffline == canWorkOffline));
   }
 
   @override
@@ -1091,8 +1019,7 @@ class _$DistingStateSelectDeviceImpl
       runtimeType,
       const DeepCollectionEquality().hash(_inputDevices),
       const DeepCollectionEquality().hash(_outputDevices),
-      const DeepCollectionEquality().hash(screenshot),
-      demo);
+      canWorkOffline);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1106,12 +1033,16 @@ class _$DistingStateSelectDeviceImpl
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Uint8List? screenshot, bool demo) initial,
+    required TResult Function() initial,
     required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+            List<MidiDevice> outputDevices, bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
+            bool offline,
+            bool loading)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -1120,23 +1051,26 @@ class _$DistingStateSelectDeviceImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
-    return selectDevice(inputDevices, outputDevices, screenshot, demo);
+    return selectDevice(inputDevices, outputDevices, canWorkOffline);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Uint8List? screenshot, bool demo)? initial,
+    TResult? Function()? initial,
     TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -1145,23 +1079,26 @@ class _$DistingStateSelectDeviceImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
-    return selectDevice?.call(inputDevices, outputDevices, screenshot, demo);
+    return selectDevice?.call(inputDevices, outputDevices, canWorkOffline);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Uint8List? screenshot, bool demo)? initial,
+    TResult Function()? initial,
     TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -1170,14 +1107,17 @@ class _$DistingStateSelectDeviceImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
     if (selectDevice != null) {
-      return selectDevice(inputDevices, outputDevices, screenshot, demo);
+      return selectDevice(inputDevices, outputDevices, canWorkOffline);
     }
     return orElse();
   }
@@ -1224,34 +1164,32 @@ abstract class DistingStateSelectDevice implements DistingState {
   const factory DistingStateSelectDevice(
       {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
-      final Uint8List? screenshot,
-      final bool demo}) = _$DistingStateSelectDeviceImpl;
+      required final bool canWorkOffline}) = _$DistingStateSelectDeviceImpl;
 
   List<MidiDevice> get inputDevices;
   List<MidiDevice> get outputDevices;
-  @override
-  Uint8List? get screenshot;
-  @override
-  bool get demo;
+  bool get canWorkOffline;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DistingStateSelectDeviceImplCopyWith<_$DistingStateSelectDeviceImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DistingStateConnectedImplCopyWith<$Res>
-    implements $DistingStateCopyWith<$Res> {
+abstract class _$$DistingStateConnectedImplCopyWith<$Res> {
   factory _$$DistingStateConnectedImplCopyWith(
           _$DistingStateConnectedImpl value,
           $Res Function(_$DistingStateConnectedImpl) then) =
       __$$DistingStateConnectedImplCopyWithImpl<$Res>;
-  @override
   @useResult
-  $Res call({IDistingMidiManager disting, Uint8List? screenshot, bool demo});
+  $Res call(
+      {IDistingMidiManager disting,
+      MidiDevice? inputDevice,
+      MidiDevice? outputDevice,
+      bool offline,
+      bool loading});
 }
 
 /// @nodoc
@@ -1268,21 +1206,31 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? disting = null,
-    Object? screenshot = freezed,
-    Object? demo = null,
+    Object? inputDevice = freezed,
+    Object? outputDevice = freezed,
+    Object? offline = null,
+    Object? loading = null,
   }) {
     return _then(_$DistingStateConnectedImpl(
       disting: null == disting
           ? _value.disting
           : disting // ignore: cast_nullable_to_non_nullable
               as IDistingMidiManager,
-      screenshot: freezed == screenshot
-          ? _value.screenshot
-          : screenshot // ignore: cast_nullable_to_non_nullable
-              as Uint8List?,
-      demo: null == demo
-          ? _value.demo
-          : demo // ignore: cast_nullable_to_non_nullable
+      inputDevice: freezed == inputDevice
+          ? _value.inputDevice
+          : inputDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
+      outputDevice: freezed == outputDevice
+          ? _value.outputDevice
+          : outputDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
+      offline: null == offline
+          ? _value.offline
+          : offline // ignore: cast_nullable_to_non_nullable
+              as bool,
+      loading: null == loading
+          ? _value.loading
+          : loading // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -1294,19 +1242,28 @@ class _$DistingStateConnectedImpl
     with DiagnosticableTreeMixin
     implements DistingStateConnected {
   const _$DistingStateConnectedImpl(
-      {required this.disting, this.screenshot, this.demo = false});
+      {required this.disting,
+      this.inputDevice,
+      this.outputDevice,
+      this.offline = false,
+      this.loading = false});
 
   @override
   final IDistingMidiManager disting;
   @override
-  final Uint8List? screenshot;
+  final MidiDevice? inputDevice;
+  @override
+  final MidiDevice? outputDevice;
   @override
   @JsonKey()
-  final bool demo;
+  final bool offline;
+  @override
+  @JsonKey()
+  final bool loading;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.connected(disting: $disting, screenshot: $screenshot, demo: $demo)';
+    return 'DistingState.connected(disting: $disting, inputDevice: $inputDevice, outputDevice: $outputDevice, offline: $offline, loading: $loading)';
   }
 
   @override
@@ -1315,8 +1272,10 @@ class _$DistingStateConnectedImpl
     properties
       ..add(DiagnosticsProperty('type', 'DistingState.connected'))
       ..add(DiagnosticsProperty('disting', disting))
-      ..add(DiagnosticsProperty('screenshot', screenshot))
-      ..add(DiagnosticsProperty('demo', demo));
+      ..add(DiagnosticsProperty('inputDevice', inputDevice))
+      ..add(DiagnosticsProperty('outputDevice', outputDevice))
+      ..add(DiagnosticsProperty('offline', offline))
+      ..add(DiagnosticsProperty('loading', loading));
   }
 
   @override
@@ -1325,14 +1284,17 @@ class _$DistingStateConnectedImpl
         (other.runtimeType == runtimeType &&
             other is _$DistingStateConnectedImpl &&
             (identical(other.disting, disting) || other.disting == disting) &&
-            const DeepCollectionEquality()
-                .equals(other.screenshot, screenshot) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            (identical(other.inputDevice, inputDevice) ||
+                other.inputDevice == inputDevice) &&
+            (identical(other.outputDevice, outputDevice) ||
+                other.outputDevice == outputDevice) &&
+            (identical(other.offline, offline) || other.offline == offline) &&
+            (identical(other.loading, loading) || other.loading == loading));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, disting,
-      const DeepCollectionEquality().hash(screenshot), demo);
+  int get hashCode => Object.hash(
+      runtimeType, disting, inputDevice, outputDevice, offline, loading);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1346,12 +1308,16 @@ class _$DistingStateConnectedImpl
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Uint8List? screenshot, bool demo) initial,
+    required TResult Function() initial,
     required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+            List<MidiDevice> outputDevices, bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
+            bool offline,
+            bool loading)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -1360,23 +1326,26 @@ class _$DistingStateConnectedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
-    return connected(disting, screenshot, demo);
+    return connected(disting, inputDevice, outputDevice, offline, loading);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Uint8List? screenshot, bool demo)? initial,
+    TResult? Function()? initial,
     TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -1385,23 +1354,27 @@ class _$DistingStateConnectedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
-    return connected?.call(disting, screenshot, demo);
+    return connected?.call(
+        disting, inputDevice, outputDevice, offline, loading);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Uint8List? screenshot, bool demo)? initial,
+    TResult Function()? initial,
     TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -1410,14 +1383,17 @@ class _$DistingStateConnectedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
     if (connected != null) {
-      return connected(disting, screenshot, demo);
+      return connected(disting, inputDevice, outputDevice, offline, loading);
     }
     return orElse();
   }
@@ -1463,31 +1439,30 @@ class _$DistingStateConnectedImpl
 abstract class DistingStateConnected implements DistingState {
   const factory DistingStateConnected(
       {required final IDistingMidiManager disting,
-      final Uint8List? screenshot,
-      final bool demo}) = _$DistingStateConnectedImpl;
+      final MidiDevice? inputDevice,
+      final MidiDevice? outputDevice,
+      final bool offline,
+      final bool loading}) = _$DistingStateConnectedImpl;
 
   IDistingMidiManager get disting;
-  @override
-  Uint8List? get screenshot;
-  @override
-  bool get demo;
+  MidiDevice? get inputDevice;
+  MidiDevice? get outputDevice;
+  bool get offline;
+  bool get loading;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DistingStateConnectedImplCopyWith<_$DistingStateConnectedImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
-    implements $DistingStateCopyWith<$Res> {
+abstract class _$$DistingStateSynchronizedImplCopyWith<$Res> {
   factory _$$DistingStateSynchronizedImplCopyWith(
           _$DistingStateSynchronizedImpl value,
           $Res Function(_$DistingStateSynchronizedImpl) then) =
       __$$DistingStateSynchronizedImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call(
       {IDistingMidiManager disting,
@@ -1496,9 +1471,12 @@ abstract class _$$DistingStateSynchronizedImplCopyWith<$Res>
       List<AlgorithmInfo> algorithms,
       List<Slot> slots,
       List<String> unitStrings,
+      MidiDevice? inputDevice,
+      MidiDevice? outputDevice,
       Uint8List? screenshot,
       bool loading,
-      bool demo});
+      bool demo,
+      bool offline});
 }
 
 /// @nodoc
@@ -1521,9 +1499,12 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
     Object? algorithms = null,
     Object? slots = null,
     Object? unitStrings = null,
+    Object? inputDevice = freezed,
+    Object? outputDevice = freezed,
     Object? screenshot = freezed,
     Object? loading = null,
     Object? demo = null,
+    Object? offline = null,
   }) {
     return _then(_$DistingStateSynchronizedImpl(
       disting: null == disting
@@ -1550,6 +1531,14 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
           ? _value._unitStrings
           : unitStrings // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      inputDevice: freezed == inputDevice
+          ? _value.inputDevice
+          : inputDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
+      outputDevice: freezed == outputDevice
+          ? _value.outputDevice
+          : outputDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
       screenshot: freezed == screenshot
           ? _value.screenshot
           : screenshot // ignore: cast_nullable_to_non_nullable
@@ -1561,6 +1550,10 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
       demo: null == demo
           ? _value.demo
           : demo // ignore: cast_nullable_to_non_nullable
+              as bool,
+      offline: null == offline
+          ? _value.offline
+          : offline // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -1578,9 +1571,12 @@ class _$DistingStateSynchronizedImpl
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
+      this.inputDevice,
+      this.outputDevice,
       this.screenshot,
       this.loading = false,
-      this.demo = false})
+      this.demo = false,
+      this.offline = false})
       : _algorithms = algorithms,
         _slots = slots,
         _unitStrings = unitStrings;
@@ -1616,6 +1612,10 @@ class _$DistingStateSynchronizedImpl
   }
 
   @override
+  final MidiDevice? inputDevice;
+  @override
+  final MidiDevice? outputDevice;
+  @override
   final Uint8List? screenshot;
   @override
   @JsonKey()
@@ -1623,10 +1623,13 @@ class _$DistingStateSynchronizedImpl
   @override
   @JsonKey()
   final bool demo;
+  @override
+  @JsonKey()
+  final bool offline;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, screenshot: $screenshot, loading: $loading, demo: $demo)';
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline)';
   }
 
   @override
@@ -1640,9 +1643,12 @@ class _$DistingStateSynchronizedImpl
       ..add(DiagnosticsProperty('algorithms', algorithms))
       ..add(DiagnosticsProperty('slots', slots))
       ..add(DiagnosticsProperty('unitStrings', unitStrings))
+      ..add(DiagnosticsProperty('inputDevice', inputDevice))
+      ..add(DiagnosticsProperty('outputDevice', outputDevice))
       ..add(DiagnosticsProperty('screenshot', screenshot))
       ..add(DiagnosticsProperty('loading', loading))
-      ..add(DiagnosticsProperty('demo', demo));
+      ..add(DiagnosticsProperty('demo', demo))
+      ..add(DiagnosticsProperty('offline', offline));
   }
 
   @override
@@ -1660,10 +1666,15 @@ class _$DistingStateSynchronizedImpl
             const DeepCollectionEquality().equals(other._slots, _slots) &&
             const DeepCollectionEquality()
                 .equals(other._unitStrings, _unitStrings) &&
+            (identical(other.inputDevice, inputDevice) ||
+                other.inputDevice == inputDevice) &&
+            (identical(other.outputDevice, outputDevice) ||
+                other.outputDevice == outputDevice) &&
             const DeepCollectionEquality()
                 .equals(other.screenshot, screenshot) &&
             (identical(other.loading, loading) || other.loading == loading) &&
-            (identical(other.demo, demo) || other.demo == demo));
+            (identical(other.demo, demo) || other.demo == demo) &&
+            (identical(other.offline, offline) || other.offline == offline));
   }
 
   @override
@@ -1675,9 +1686,12 @@ class _$DistingStateSynchronizedImpl
       const DeepCollectionEquality().hash(_algorithms),
       const DeepCollectionEquality().hash(_slots),
       const DeepCollectionEquality().hash(_unitStrings),
+      inputDevice,
+      outputDevice,
       const DeepCollectionEquality().hash(screenshot),
       loading,
-      demo);
+      demo,
+      offline);
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1691,12 +1705,16 @@ class _$DistingStateSynchronizedImpl
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(Uint8List? screenshot, bool demo) initial,
+    required TResult Function() initial,
     required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)
+            List<MidiDevice> outputDevices, bool canWorkOffline)
         selectDevice,
     required TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)
+            IDistingMidiManager disting,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
+            bool offline,
+            bool loading)
         connected,
     required TResult Function(
             IDistingMidiManager disting,
@@ -1705,24 +1723,38 @@ class _$DistingStateSynchronizedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)
+            bool demo,
+            bool offline)
         synchronized,
   }) {
-    return synchronized(disting, distingVersion, presetName, algorithms, slots,
-        unitStrings, screenshot, loading, demo);
+    return synchronized(
+        disting,
+        distingVersion,
+        presetName,
+        algorithms,
+        slots,
+        unitStrings,
+        inputDevice,
+        outputDevice,
+        screenshot,
+        loading,
+        demo,
+        offline);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(Uint8List? screenshot, bool demo)? initial,
+    TResult? Function()? initial,
     TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult? Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult? Function(
             IDistingMidiManager disting,
@@ -1731,24 +1763,38 @@ class _$DistingStateSynchronizedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
   }) {
-    return synchronized?.call(disting, distingVersion, presetName, algorithms,
-        slots, unitStrings, screenshot, loading, demo);
+    return synchronized?.call(
+        disting,
+        distingVersion,
+        presetName,
+        algorithms,
+        slots,
+        unitStrings,
+        inputDevice,
+        outputDevice,
+        screenshot,
+        loading,
+        demo,
+        offline);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(Uint8List? screenshot, bool demo)? initial,
+    TResult Function()? initial,
     TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, Uint8List? screenshot, bool demo)?
+            List<MidiDevice> outputDevices, bool canWorkOffline)?
         selectDevice,
-    TResult Function(
-            IDistingMidiManager disting, Uint8List? screenshot, bool demo)?
+    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
+            MidiDevice? outputDevice, bool offline, bool loading)?
         connected,
     TResult Function(
             IDistingMidiManager disting,
@@ -1757,15 +1803,29 @@ class _$DistingStateSynchronizedImpl
             List<AlgorithmInfo> algorithms,
             List<Slot> slots,
             List<String> unitStrings,
+            MidiDevice? inputDevice,
+            MidiDevice? outputDevice,
             Uint8List? screenshot,
             bool loading,
-            bool demo)?
+            bool demo,
+            bool offline)?
         synchronized,
     required TResult orElse(),
   }) {
     if (synchronized != null) {
-      return synchronized(disting, distingVersion, presetName, algorithms,
-          slots, unitStrings, screenshot, loading, demo);
+      return synchronized(
+          disting,
+          distingVersion,
+          presetName,
+          algorithms,
+          slots,
+          unitStrings,
+          inputDevice,
+          outputDevice,
+          screenshot,
+          loading,
+          demo,
+          offline);
     }
     return orElse();
   }
@@ -1816,9 +1876,12 @@ abstract class DistingStateSynchronized implements DistingState {
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
+      final MidiDevice? inputDevice,
+      final MidiDevice? outputDevice,
       final Uint8List? screenshot,
       final bool loading,
-      final bool demo}) = _$DistingStateSynchronizedImpl;
+      final bool demo,
+      final bool offline}) = _$DistingStateSynchronizedImpl;
 
   IDistingMidiManager get disting;
   String get distingVersion;
@@ -1826,15 +1889,15 @@ abstract class DistingStateSynchronized implements DistingState {
   List<AlgorithmInfo> get algorithms;
   List<Slot> get slots;
   List<String> get unitStrings;
-  @override
+  MidiDevice? get inputDevice;
+  MidiDevice? get outputDevice;
   Uint8List? get screenshot;
   bool get loading;
-  @override
   bool get demo;
+  bool get offline;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
-  @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DistingStateSynchronizedImplCopyWith<_$DistingStateSynchronizedImpl>
       get copyWith => throw _privateConstructorUsedError;

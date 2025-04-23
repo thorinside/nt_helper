@@ -23,6 +23,8 @@ import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
+import '../db/daos/presets_dao.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -68,11 +70,12 @@ class SynchronizedScreen extends StatelessWidget {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) =>
-                    AddAlgorithmScreen(algorithms: algorithms)),
+              builder: (context) => BlocProvider.value(
+                  value: cubit, child: const AddAlgorithmScreen()),
+            ),
           );
 
-          if (result != null) {
+          if (result != null && result is Map) {
             await cubit.onAlgorithmSelected(
               result['algorithm'],
               result['specValues'],
@@ -89,48 +92,71 @@ class SynchronizedScreen extends StatelessWidget {
       child: Row(
         children: [
           Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Parameter View",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.parameters);
-              },
-              icon: Icon(Icons.list_alt_rounded),
-            );
-          }),
-          Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Algorithm UI",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.algorithmUI);
-              },
-              icon: Icon(Icons.line_axis_rounded),
-            );
-          }),
-          Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Overview UI",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.overview);
-              },
-              icon: Icon(Icons.line_weight_rounded),
-            );
-          }),
-          Builder(builder: (context) {
-            return IconButton(
-              tooltip: "Overview VU Meters",
-              onPressed: () {
-                context
-                    .read<DistingCubit>()
-                    .setDisplayMode(DisplayMode.overviewVUs);
-              },
-              icon: Icon(Icons.leaderboard_rounded),
-            );
+            final isOffline = context.watch<DistingCubit>().state.maybeMap(
+                  synchronized: (s) => s.offline,
+                  orElse: () =>
+                      false, // Default to not offline if state is not synchronized
+                );
+
+            if (isOffline) {
+              // Show "Offline Data" button when offline
+              return IconButton(
+                tooltip: "Offline Data",
+                icon: const Icon(Icons.sync_alt_rounded),
+                onPressed: () {
+                  final distingCubit = context.read<DistingCubit>();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          MetadataSyncPage(distingCubit: distingCubit),
+                    ),
+                  );
+                },
+              );
+            } else {
+              // Show regular view mode buttons when online
+              return Row(
+                children: [
+                  IconButton(
+                    tooltip: "Parameter View",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.parameters);
+                    },
+                    icon: Icon(Icons.list_alt_rounded),
+                  ),
+                  IconButton(
+                    tooltip: "Algorithm UI",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.algorithmUI);
+                    },
+                    icon: Icon(Icons.line_axis_rounded),
+                  ),
+                  IconButton(
+                    tooltip: "Overview UI",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.overview);
+                    },
+                    icon: Icon(Icons.line_weight_rounded),
+                  ),
+                  IconButton(
+                    tooltip: "Overview VU Meters",
+                    onPressed: () {
+                      context
+                          .read<DistingCubit>()
+                          .setDisplayMode(DisplayMode.overviewVUs);
+                    },
+                    icon: Icon(Icons.leaderboard_rounded),
+                  ),
+                ],
+              );
+            }
           }),
           SizedBox.fromSize(
             size: Size.fromWidth(24),
@@ -201,209 +227,311 @@ class SynchronizedScreen extends StatelessWidget {
 
   List<Widget> _buildAppBarActions() {
     return [
-      Builder(builder: (context) {
+      // Refresh: Only disabled by loading OR offline
+      Builder(builder: (ctx) {
+        final isOffline = ctx.watch<DistingCubit>().state.maybeMap(
+              synchronized: (s) => s.offline,
+              orElse: () => false,
+            );
         return IconButton(
           icon: Icon(Icons.refresh_rounded),
           tooltip: 'Refresh',
-          onPressed: loading
+          onPressed: loading || isOffline // <-- Updated condition
               ? null
               : () {
-                  context.read<DistingCubit>().refresh();
+                  ctx.read<DistingCubit>().refresh();
                 },
         );
       }),
-      Builder(builder: (context) {
+      // Wake: Disabled by loading OR offline
+      Builder(builder: (ctx) {
+        final isOffline = ctx.watch<DistingCubit>().state.maybeMap(
+              synchronized: (s) => s.offline,
+              orElse: () => false,
+            );
         return IconButton(
           icon: Icon(Icons.alarm_on_rounded),
           tooltip: "Wake",
-          onPressed: () {
-            context.read<DistingCubit>().wakeDevice();
-          },
+          onPressed: loading || isOffline
+              ? null
+              : () {
+                  ctx.read<DistingCubit>().requireDisting().requestWake();
+                },
         );
       }),
-      Builder(builder: (context) {
+      // Move Up: Only disabled by loading
+      Builder(builder: (ctx) {
         return IconButton(
           icon: const Icon(Icons.arrow_upward_rounded),
           tooltip: 'Move Algorithm Up',
-          onPressed: () async {
-            DefaultTabController.of(context).index = await context
-                .read<DistingCubit>()
-                .moveAlgorithmUp(DefaultTabController.of(context).index);
-          },
+          onPressed: loading
+              ? null
+              : () async {
+                  final tabController = DefaultTabController.of(ctx);
+                  if (tabController.index > 0) {
+                    final newIndex = await ctx
+                        .read<DistingCubit>()
+                        .moveAlgorithmUp(tabController.index);
+                    tabController.animateTo(newIndex);
+                  }
+                },
         );
       }),
-      Builder(builder: (context) {
+      // Move Down: Only disabled by loading
+      Builder(builder: (ctx) {
         return IconButton(
           icon: const Icon(Icons.arrow_downward_rounded),
           tooltip: 'Move Algorithm Down',
-          onPressed: () async {
-            DefaultTabController.of(context).index = await context
-                .read<DistingCubit>()
-                .moveAlgorithmDown(DefaultTabController.of(context).index);
-          },
+          onPressed: loading
+              ? null
+              : () async {
+                  final tabController = DefaultTabController.of(ctx);
+                  final cubit = ctx.read<DistingCubit>();
+                  final currentState = cubit.state;
+                  int slotCount = 0;
+                  if (currentState is DistingStateSynchronized) {
+                    slotCount = currentState.slots.length;
+                  }
+                  if (tabController.index < slotCount - 1) {
+                    final newIndex =
+                        await cubit.moveAlgorithmDown(tabController.index);
+                    tabController.animateTo(newIndex);
+                  }
+                },
         );
       }),
+      // Remove Algorithm: Only disabled by loading
       Builder(
-        builder: (context) => IconButton(
-            icon: const Icon(Icons.delete_forever_rounded),
-            tooltip: 'Remove Algorithm',
-            onPressed: () async {
-              context
-                  .read<DistingCubit>()
-                  .onRemoveAlgorithm(DefaultTabController.of(context).index);
-            }),
+        builder: (ctx) {
+          return IconButton(
+              icon: const Icon(Icons.delete_forever_rounded),
+              tooltip: 'Remove Algorithm',
+              onPressed: loading
+                  ? null
+                  : () async {
+                      ctx.read<DistingCubit>().onRemoveAlgorithm(
+                          DefaultTabController.of(ctx).index);
+                    });
+        },
       ),
       PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: "new",
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('New Preset'), Icon(Icons.fiber_new_rounded)]),
-            onTap: () {
-              context.read<DistingCubit>().newPreset();
-            },
-          ),
-          PopupMenuItem(
-            value: "load",
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Load Preset'),
-                  Icon(Icons.file_upload_rounded)
-                ]),
-            onTap: () async {
-              var cubit = context.read<DistingCubit>();
-
-              final preset = await showDialog<dynamic>(
-                context: context,
-                builder: (context) => LoadPresetDialog(
-                  initialName: "",
-                ),
+        itemBuilder: (popupCtx) {
+          // Get offline status here for menu items that need it
+          final isOffline = popupCtx.read<DistingCubit>().state.maybeMap(
+                synchronized: (s) => s.offline,
+                orElse: () => false,
               );
-              if (preset == null) return;
-
-              cubit.loadPreset(
-                  preset["name"] as String, preset["append"] as bool);
-            },
-          ),
-          PopupMenuItem(
-            value: "save",
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Save Preset'), Icon(Icons.save_alt_rounded)]),
-            onTap: () {
-              context.read<DistingCubit>().save();
-            },
-          ),
-          PopupMenuItem(
-            value: 'routing',
-            onTap: () async {
-              final routingInformation =
-                  context.read<DistingCubit>().buildRoutingInformation();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        RoutingPage(routing: routingInformation)),
-              );
-            },
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('Routing'), Icon(Icons.route_rounded)],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'screenshot',
-            onTap: () {
-              _showScreenshotOverlay(context);
-            },
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Screenshot'),
-                  Icon(Icons.screenshot_monitor_rounded),
-                ]),
-          ),
-          PopupMenuItem(
-            value: 'perform',
-            onTap: () {
-              final cubit = context.read<DistingCubit>();
-              final midiListener = context.read<MidiListenerCubit>();
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MultiBlocProvider(
-                    providers: [
-                      BlocProvider(
-                        create: (context) => cubit,
-                      ),
-                      BlocProvider(
-                        create: (context) => midiListener,
-                      ),
-                    ],
-                    child: PerformanceScreen(units: units),
-                  ),
-                ),
-              );
-            },
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Perform'),
-                  Icon(Icons.library_music),
-                ]),
-          ),
-          PopupMenuItem(
-            value: 'Switch Devices',
-            onTap: () {
-              context.read<DistingCubit>().disconnect();
-              context.read<DistingCubit>().loadDevices();
-            },
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Switch'), Icon(Icons.login_rounded)]),
-          ),
-          PopupMenuItem(
-            value: 'Settings',
-            onTap: () async {
-              await context.showSettingsDialog();
-            },
-            child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Settings'), Icon(Icons.settings)]),
-          ),
-          PopupMenuItem(
-            value: 'about',
-            child: Text('About'),
-            onTap: () async {
-              final info = await PackageInfo.fromPlatform();
-
-              showDialog<String>(
-                context: context,
-                builder: (context) => AboutDialog(
-                  applicationName: "NT Helper",
-                  applicationVersion: "${info.version} (${info.buildNumber})",
-                  applicationLegalese:
-                      "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+          return [
+            // New: Only disabled by loading
+            PopupMenuItem(
+              value: "new",
+              enabled: !loading,
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        children: [
-                          Text("Disting Firmware: $distingVersion",
-                              style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+                    Text('New Preset'),
+                    Icon(Icons.fiber_new_rounded)
+                  ]),
+              onTap: loading
+                  ? null
+                  : () {
+                      popupCtx.read<DistingCubit>().newPreset();
+                    },
+            ),
+            // Load: Disabled by loading OR offline
+            PopupMenuItem(
+              value: "load",
+              enabled: !loading && !isOffline,
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Load Preset'),
+                    Icon(Icons.file_upload_rounded)
+                  ]),
+              onTap: loading || isOffline
+                  ? null
+                  : () async {
+                      var cubit = popupCtx.read<DistingCubit>();
+                      final preset = await showDialog<dynamic>(
+                        context: popupCtx,
+                        builder: (dialogCtx) =>
+                            LoadPresetDialog(initialName: ""),
+                      );
+                      if (preset == null) return;
+                      cubit.loadPreset(
+                          preset["name"] as String, preset["append"] as bool);
+                    },
+            ),
+            // Save: Disabled by loading ONLY
+            PopupMenuItem(
+              value: "save",
+              enabled: !loading,
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Save Preset'),
+                    Icon(Icons.save_alt_rounded)
+                  ]),
+              onTap: loading
+                  ? null
+                  : () {
+                      popupCtx
+                          .read<DistingCubit>()
+                          .requireDisting()
+                          .requestSavePreset();
+                    },
+            ),
+            // Routing: Disabled by loading OR offline
+            PopupMenuItem(
+              value: 'routing',
+              enabled: !loading && !isOffline,
+              onTap: loading || isOffline
+                  ? null
+                  : () async {
+                      final routingInformation = popupCtx
+                          .read<DistingCubit>()
+                          .buildRoutingInformation();
+                      Navigator.push(
+                        popupCtx,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                RoutingPage(routing: routingInformation)),
+                      );
+                    },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Routing'), Icon(Icons.route_rounded)],
+              ),
+            ),
+            // Screenshot: Disabled by loading OR offline
+            PopupMenuItem(
+              value: 'screenshot',
+              enabled: !loading && !isOffline,
+              onTap: loading || isOffline
+                  ? null
+                  : () {
+                      _showScreenshotOverlay(popupCtx);
+                    },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Screenshot'),
+                    Icon(Icons.screenshot_monitor_rounded),
+                  ]),
+            ),
+            // Perform: Disabled by loading OR offline
+            PopupMenuItem(
+              value: 'perform',
+              enabled: !loading && !isOffline,
+              onTap: loading || isOffline
+                  ? null
+                  : () {
+                      final cubit = popupCtx.read<DistingCubit>();
+                      final midiListener = popupCtx.read<MidiListenerCubit>();
+                      Navigator.push(
+                        popupCtx,
+                        MaterialPageRoute(
+                          builder: (_) => MultiBlocProvider(
+                            providers: [
+                              BlocProvider.value(value: cubit),
+                              BlocProvider.value(value: midiListener),
+                            ],
+                            child: PerformanceScreen(units: units),
+                          ),
+                        ),
+                      );
+                    },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Perform'),
+                    Icon(Icons.library_music),
+                  ]),
+            ),
+            // Switch Devices: Only disabled by loading (Fix context usage)
+            PopupMenuItem(
+              value: 'Switch Devices',
+              enabled: !loading,
+              onTap: loading
+                  ? null
+                  : () {
+                      popupCtx.read<DistingCubit>().goOnline();
+                    },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [Text('Switch'), Icon(Icons.login_rounded)]),
+            ),
+            // Settings: Only disabled by loading
+            PopupMenuItem(
+              value: 'Settings',
+              enabled: !loading,
+              onTap: loading
+                  ? null
+                  : () async {
+                      await popupCtx.showSettingsDialog();
+                    },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [Text('Settings'), Icon(Icons.settings)]),
+            ),
+            // Sync Metadata: Only disabled by loading
+            PopupMenuItem(
+              value: 'sync_metadata',
+              enabled: !loading,
+              onTap: loading
+                  ? null
+                  : () {
+                      final distingCubit = popupCtx.read<DistingCubit>();
+                      Navigator.push(
+                        popupCtx,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              MetadataSyncPage(distingCubit: distingCubit),
+                        ),
+                      );
+                    },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text('Offline Data'), Icon(Icons.sync_alt_rounded)],
+              ),
+            ),
+            // About: Always enabled (Fix context usage for Theme)
+            PopupMenuItem(
+              value: 'about',
+              enabled: true,
+              onTap: loading
+                  ? null
+                  : () async {
+                      final info = await PackageInfo.fromPlatform();
+                      showDialog<String>(
+                        context: popupCtx,
+                        builder: (dialogCtx) => AboutDialog(
+                          applicationName: "NT Helper",
+                          applicationVersion:
+                              "${info.version} (${info.buildNumber})",
+                          applicationLegalese:
+                              "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                children: [
+                                  Text("Disting Firmware: $distingVersion",
+                                      style: Theme.of(dialogCtx)
+                                          .textTheme
+                                          .bodySmall),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+              child: Text('About'),
+            ),
+          ];
+        },
       ),
     ];
   }
@@ -472,40 +600,52 @@ class SynchronizedScreen extends StatelessWidget {
     );
   }
 
-  TabBar _buildTabBar(BuildContext context) {
-    return TabBar(
-      indicatorSize: TabBarIndicatorSize.tab,
-      indicatorAnimation: TabIndicatorAnimation.elastic,
-      indicatorWeight: 1,
-      enableFeedback: true,
-      dividerHeight: 0,
-      isScrollable: true,
-      tabs: slots.map(
-        (slot) {
-          final algorithmName = (slot.algorithm.name.isNotEmpty)
-              ? slot.algorithm.name
-              : algorithms
-                  .where((element) => element.guid == slot.algorithm.guid)
-                  .firstOrNull
-                  ?.name;
-          return GestureDetector(
-            onLongPress: () async {
-              var cubit = context.read<DistingCubit>();
-              final newName = await showDialog<String>(
-                context: context,
-                builder: (context) => RenameSlotDialog(
-                  initialName: algorithmName ?? "",
-                ),
-              );
+  Widget _buildTabBar(BuildContext context) {
+    return BlocBuilder<DistingCubit, DistingState>(
+      builder: (context, state) {
+        return state.maybeMap(
+          synchronized: (syncState) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicatorAnimation: TabIndicatorAnimation.elastic,
+                indicatorWeight: 1,
+                enableFeedback: true,
+                dividerHeight: 0,
+                tabs: List<Widget>.generate(syncState.slots.length, (index) {
+                  final slot = syncState.slots[index];
+                  // Use slot.algorithm.name directly (includes custom name)
+                  final displayName = slot.algorithm.name;
 
-              if (newName != null) {
-                cubit.renameSlot(slot.algorithm.algorithmIndex, newName);
-              }
-            },
-            child: Tab(text: algorithmName ?? ""),
-          );
-        },
-      ).toList(),
+                  return GestureDetector(
+                    onLongPress: () async {
+                      var cubit = context.read<DistingCubit>();
+                      // Use the current displayName for the dialog initial value
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (dialogCtx) => RenameSlotDialog(
+                          initialName: displayName,
+                        ),
+                      );
+
+                      if (newName != null && newName != displayName) {
+                        // Use slot index directly (algorithmIndex on Algorithm is different)
+                        cubit.renameSlot(index, newName);
+                      }
+                    },
+                    // Display the correct name in the Tab
+                    child: Tab(text: displayName),
+                  );
+                }),
+              ),
+            );
+          },
+          orElse: () => const Center(child: Text("Loading slots...")),
+        );
+      },
     );
   }
 
@@ -913,10 +1053,16 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 2 : 3,
             child: GestureDetector(
               onLongPress: () {
-                context.read<DistingCubit>().onFocusParameter(
-                    // Call the Cubit method for long press
-                    algorithmIndex: widget.algorithmIndex,
-                    parameterNumber: widget.parameterNumber);
+                // Get the manager from the cubit
+                final manager = context.read<DistingCubit>().requireDisting();
+                // Call requestSetFocus on the manager
+                manager.requestSetFocus(
+                  widget.algorithmIndex,
+                  widget.parameterNumber,
+                );
+                if (SettingsService().hapticsEnabled) {
+                  Haptics.vibrate(HapticsType.medium);
+                }
               },
               child: Text(
                 cleanTitle(widget.name),
@@ -932,7 +1078,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
           // Slider column
           Expanded(
-              flex: widescreen ? 8 : 6,
+              flex: widescreen ? 8 : 6, // Decreased flex
               // Proportionally larger space for the slider
               child: GestureDetector(
                 onDoubleTap: () => _showAlternateEditor
@@ -1009,7 +1155,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               )),
           // Control column
           Expanded(
-            flex: widescreen ? 3 : 4, // Slightly larger control column
+            flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
               child: widget.isOnOff
@@ -1027,6 +1173,12 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                       ? DropdownMenu(
                           requestFocusOnTap: false,
                           initialSelection: widget.dropdownItems![currentValue],
+                          inputDecorationTheme: const InputDecorationTheme(
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12.0, vertical: 8.0),
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
                           textStyle: widescreen
                               ? textTheme.labelLarge
                               : textTheme.labelMedium,
@@ -1133,6 +1285,12 @@ class MappingEditButton extends StatelessWidget {
             tooltip: 'Edit mapping',
             onPressed: () async {
               final cubit = context.read<DistingCubit>();
+              final currentState = cubit.state;
+              List<Slot> currentSlots = [];
+              if (currentState is DistingStateSynchronized) {
+                currentSlots = currentState.slots;
+              }
+
               final data = widget.mappingData ?? PackedMappingData.filler();
               final myMidiCubit = context.read<MidiListenerCubit>();
               final updatedData = await showModalBottomSheet(
@@ -1142,6 +1300,7 @@ class MappingEditButton extends StatelessWidget {
                   return MappingEditorBottomSheet(
                     myMidiCubit: myMidiCubit,
                     data: data,
+                    slots: currentSlots,
                   );
                 },
               );
@@ -1166,10 +1325,12 @@ class MappingEditorBottomSheet extends StatelessWidget {
     super.key,
     required this.myMidiCubit,
     required this.data,
+    required this.slots,
   });
 
   final MidiListenerCubit myMidiCubit;
   final PackedMappingData data;
+  final List<Slot> slots;
 
   @override
   Widget build(BuildContext context) {
@@ -1187,6 +1348,7 @@ class MappingEditorBottomSheet extends StatelessWidget {
             value: myMidiCubit,
             child: PackedMappingDataEditor(
               initialData: data,
+              slots: slots,
               onSave: (updatedData) {
                 // do something with updatedData
                 Navigator.of(context).pop(updatedData);
