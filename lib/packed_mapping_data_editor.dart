@@ -7,10 +7,10 @@ class PackedMappingDataEditor extends StatefulWidget {
   final ValueChanged<PackedMappingData> onSave;
 
   const PackedMappingDataEditor({
-    Key? key,
+    super.key,
     required this.initialData,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   PackedMappingDataEditorState createState() => PackedMappingDataEditorState();
@@ -155,11 +155,51 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
     final cvInputValue =
         (_data.cvInput >= 0 && _data.cvInput <= 29) ? _data.cvInput : 0;
 
+    // Safely clamp the source value for the dropdown
+    final sourceValue =
+        (_data.source >= 0 && _data.source <= 33) ? _data.source : 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: SafeArea(
         child: Column(
           children: [
+            // Source Dropdown
+            SizedBox(
+              width: double.infinity,
+              child: DropdownMenu<int>(
+                initialSelection: sourceValue,
+                requestFocusOnTap: false,
+                label: const Text('Source'),
+                onSelected: (newValue) {
+                  if (newValue == null) return;
+                  setState(() {
+                    _data = _data.copyWith(source: newValue);
+                  });
+                },
+                dropdownMenuEntries: List.generate(34, (index) {
+                  if (index == 0) {
+                    return const DropdownMenuEntry<int>(
+                      value: 0,
+                      label: 'Own inputs',
+                    );
+                  } else if (index == 1) {
+                    return const DropdownMenuEntry<int>(
+                      value: 1,
+                      label: 'Module inputs',
+                    );
+                  } else {
+                    // index 2..33 correspond to slots 1..32
+                    final slotNumber = index - 1;
+                    return DropdownMenuEntry<int>(
+                      value: index,
+                      label: 'Slot $slotNumber',
+                    );
+                  }
+                }),
+              ),
+            ),
+            const SizedBox(height: 12),
             // Material 3 DropdownMenu for CV Input, filling width and removing redundant labels
             SizedBox(
               width: double.infinity,
@@ -350,7 +390,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           // Add the MIDI Detector
           MidiDetectorWidget(
             onCcFound: ({cc, channel}) {
-              // When we’ve detected 10 consecutive hits of the same CC,
+              // When we've detected 10 consecutive hits of the same CC,
               // automatically fill in the CC number, and midi channel in your form data
               // and assume we want to enable the midi mapping.
               setState(() {
@@ -500,6 +540,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
 /// CopyWith extension
 extension on PackedMappingData {
   PackedMappingData copyWith({
+    int? source,
     int? cvInput,
     bool? isUnipolar,
     bool? isGate,
@@ -520,6 +561,7 @@ extension on PackedMappingData {
     int? version,
   }) {
     return PackedMappingData(
+      source: source ?? this.source,
       cvInput: cvInput ?? this.cvInput,
       isUnipolar: isUnipolar ?? this.isUnipolar,
       isGate: isGate ?? this.isGate,

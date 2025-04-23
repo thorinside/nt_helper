@@ -7,6 +7,7 @@ class PackedMappingData {
   final int version;
 
   // CV Mapping
+  final int source; // Source of the CV input
   final int cvInput; // Input source for CV
   final bool isUnipolar; // Unipolar or bipolar mapping
   final bool isGate; // Gate mapping enabled
@@ -31,6 +32,7 @@ class PackedMappingData {
 
   // Constructor
   PackedMappingData({
+    required this.source,
     required this.cvInput,
     required this.isUnipolar,
     required this.isGate,
@@ -53,6 +55,7 @@ class PackedMappingData {
 
   factory PackedMappingData.filler() {
     return PackedMappingData(
+        source: -1,
         cvInput: -1,
         isUnipolar: false,
         isGate: false,
@@ -75,7 +78,7 @@ class PackedMappingData {
 
   // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
-    if (version < 1 || version > 3) {
+    if (version < 1 || version > 4) {
       print(
           "Warning: Unknown PackedMappingData version $version. Returning filler.");
       return PackedMappingData.filler();
@@ -104,13 +107,15 @@ class PackedMappingData {
       return data[currentOffset];
     }
 
-    // --- Decode CV Mapping (6 bytes) ---
-    if (offset + 5 >= dataLength) {
-      // Need 6 bytes total (offset 0 to 5)
+    // --- Decode CV Mapping ---
+    int cvSectionMinLength = (version >= 4) ? 7 : 6;
+    if (offset + cvSectionMinLength - 1 >= dataLength) {
+      // Check if enough bytes for the whole section
       print(
-          "Warning: PackedMappingData truncated before CV delta (offset $offset, length $dataLength). Returning filler.");
+          "Warning: PackedMappingData truncated within CV section (offset $offset, length $dataLength, version $version). Returning filler.");
       return PackedMappingData.filler();
     }
+    final source = (version >= 4) ? safeReadByte(offset++) : 0;
     final cvInput = safeReadByte(offset++);
     final cvFlags = safeReadByte(offset++);
     final isUnipolar = (cvFlags & 1) != 0;
@@ -177,7 +182,9 @@ class PackedMappingData {
         ? 22
         : (version == 2)
             ? 23
-            : 24;
+            : (version == 3)
+                ? 24
+                : 25;
     if (offset != expectedLength) {
       print(
           "Warning: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data might be corrupt.");
@@ -186,6 +193,7 @@ class PackedMappingData {
     }
 
     return PackedMappingData(
+      source: source,
       cvInput: cvInput,
       isUnipolar: isUnipolar,
       isGate: isGate,
@@ -213,6 +221,7 @@ class PackedMappingData {
 
     // Build the packed payload (starting after the version byte)
     final payload = [
+      if (version >= 4) source & 0x7F, // Source of the CV input
       cvInput & 0x7F, // CV input number
       flags & 0x7F, // Flags for unipolar/gate settings
       volts & 0x7F, // Voltage setting (0-127)
@@ -277,6 +286,9 @@ class PackedMappingData {
     final bytes = <int>[];
 
     // Encode CV Mapping (6 bytes)
+    if (version >= 4) {
+      bytes.add(source & 0x7F);
+    }
     bytes.add(cvInput & 0x7F);
     bytes.add(((isUnipolar ? 1 : 0) | (isGate ? 2 : 0)) & 0x7F);
     bytes.add(volts & 0x7F);
@@ -317,7 +329,9 @@ class PackedMappingData {
         ? 22
         : (version == 2)
             ? 23
-            : 24;
+            : (version == 3)
+                ? 24
+                : 25;
     if (bytes.length != expectedLength) {
       print(
           "FATAL: PackedMappingData.toBytes() produced incorrect length (${bytes.length}) for version $version. Expected $expectedLength.");
@@ -332,7 +346,8 @@ class PackedMappingData {
     if (identical(this, other)) return true;
     if (other is! PackedMappingData) return false;
 
-    return other.cvInput == cvInput &&
+    return other.source == source &&
+        other.cvInput == cvInput &&
         other.isUnipolar == isUnipolar &&
         other.isGate == isGate &&
         other.volts == volts &&
@@ -353,6 +368,7 @@ class PackedMappingData {
   @override
   int get hashCode {
     return Object.hash(
+      source,
       cvInput,
       isUnipolar,
       isGate,
