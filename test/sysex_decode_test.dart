@@ -135,6 +135,7 @@ void main() {
         i2cMin: 2,
         i2cMax: 16384,
         version: 1,
+        source: 0,
       );
 
       final message = Uint8List.fromList([
@@ -176,6 +177,7 @@ void main() {
         i2cMin: 2,
         i2cMax: 16384,
         version: 2,
+        source: 0,
       );
 
       final message = Uint8List.fromList([

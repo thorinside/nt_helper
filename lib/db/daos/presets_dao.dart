@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/tables.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'; // For PresetMappingEntry
@@ -135,7 +136,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             mappings: paramMappingsBySlot[slotId] ?? {},
           ));
         } else {
-          print(
+          debugPrint(
               "Warning: Algorithm with GUID ${slotEntry.algorithmGuid} not found for preset ${presetEntry.name}, slot index ${slotEntry.slotIndex}");
           // Handle missing algorithm metadata gracefully (e.g., skip slot or error)
         }
@@ -146,7 +147,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
 
       return FullPresetDetails(preset: presetEntry, slots: fullSlots);
     } catch (e, stackTrace) {
-      print(
+      debugPrint(
           "Error getting full preset details for ID $presetId: $e\n$stackTrace");
       return null;
     }

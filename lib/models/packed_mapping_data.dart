@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class PackedMappingData {
@@ -79,7 +80,7 @@ class PackedMappingData {
   // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
     if (version < 1 || version > 4) {
-      print(
+      debugPrint(
           "Warning: Unknown PackedMappingData version $version. Returning filler.");
       return PackedMappingData.filler();
     }
@@ -90,7 +91,7 @@ class PackedMappingData {
     // Helper function for safe decoding
     int safeDecode16(int currentOffset) {
       if (currentOffset + 2 >= dataLength) {
-        print(
+        debugPrint(
             "Warning: PackedMappingData truncated during decode16 at offset $currentOffset (length $dataLength). Returning 0.");
         return 0; // Or throw, or return a specific error indicator?
       }
@@ -100,7 +101,7 @@ class PackedMappingData {
     // Helper function for safe byte read
     int safeReadByte(int currentOffset) {
       if (currentOffset >= dataLength) {
-        print(
+        debugPrint(
             "Warning: PackedMappingData truncated during byte read at offset $currentOffset (length $dataLength). Returning 0.");
         return 0;
       }
@@ -111,7 +112,7 @@ class PackedMappingData {
     int cvSectionMinLength = (version >= 4) ? 7 : 6;
     if (offset + cvSectionMinLength - 1 >= dataLength) {
       // Check if enough bytes for the whole section
-      print(
+      debugPrint(
           "Warning: PackedMappingData truncated within CV section (offset $offset, length $dataLength, version $version). Returning filler.");
       return PackedMappingData.filler();
     }
@@ -129,7 +130,7 @@ class PackedMappingData {
     if (version >= 2) midiSectionMinLength++; // Add 1 for flags2
     if (midiSectionMinLength >= dataLength) {
       // Need at least 8 (v1) or 9 (v2/3) bytes total (offset up to 7 or 8 + 6 for decode16 calls)
-      print(
+      debugPrint(
           "Warning: PackedMappingData truncated before MIDI max (offset $offset, length $dataLength). Returning filler.");
       return PackedMappingData.filler();
     }
@@ -153,7 +154,7 @@ class PackedMappingData {
     if (version >= 3) i2cSectionMinLength++; // Add 1 for extra I2C CC byte
     if (i2cSectionMinLength >= dataLength) {
       // Need offset up to 7 or 8 + 6 for decode16 calls
-      print(
+      debugPrint(
           "Warning: PackedMappingData truncated before I2C max (offset $offset, length $dataLength). Returning filler.");
       return PackedMappingData.filler();
     }
@@ -161,7 +162,7 @@ class PackedMappingData {
     if (version >= 3) {
       // Check if we have the extra byte before reading it
       if (offset >= dataLength) {
-        print(
+        debugPrint(
             "Warning: PackedMappingData (v3) truncated before extra I2C CC byte (offset $offset, length $dataLength). Returning filler.");
         return PackedMappingData.filler();
       }
@@ -186,7 +187,7 @@ class PackedMappingData {
                 ? 24
                 : 25;
     if (offset != expectedLength) {
-      print(
+      debugPrint(
           "Warning: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data might be corrupt.");
       // Decide whether to return filler or the potentially partially decoded data
       // return PackedMappingData.filler();
@@ -333,7 +334,7 @@ class PackedMappingData {
                 ? 24
                 : 25;
     if (bytes.length != expectedLength) {
-      print(
+      debugPrint(
           "FATAL: PackedMappingData.toBytes() produced incorrect length (${bytes.length}) for version $version. Expected $expectedLength.");
       // Handle error - maybe return fixed-size filler bytes?
     }
