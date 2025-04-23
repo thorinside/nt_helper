@@ -434,7 +434,8 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestMoveAlgorithmUp(int algorithmIndex) {
-    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, 0);
+    final packet = DistingNT.encodeMoveAlgorithm(
+        sysExId, algorithmIndex, algorithmIndex - 1);
     final key = RequestKey(
       sysExId: sysExId,
     );
@@ -448,7 +449,8 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestMoveAlgorithmDown(int algorithmIndex) {
-    final packet = DistingNT.encodeMoveAlgorithm(sysExId, algorithmIndex, 1);
+    final packet = DistingNT.encodeMoveAlgorithm(
+        sysExId, algorithmIndex, algorithmIndex + 1);
     final key = RequestKey(
       sysExId: sysExId,
     );

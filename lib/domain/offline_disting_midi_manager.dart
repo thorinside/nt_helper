@@ -25,6 +25,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   final Map<int, Map<int, String>> _parameterStringValues = {};
   final Map<int, Map<int, PackedMappingData>> _mappings = {};
   final Map<int, String> _customNames = {};
+  final Map<int, String> _defaultNames = {};
   String _presetName = "Offline Preset";
 
   OfflineDistingMidiManager(this._database) {
@@ -38,6 +39,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _parameterStringValues.clear();
     _mappings.clear();
     _customNames.clear();
+    _defaultNames.clear();
     _loadedPresetId = null;
 
     if (details == null) {
@@ -49,7 +51,23 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _presetName = details.preset.name;
     for (int i = 0; i < details.slots.length; i++) {
       final slotData = details.slots[i];
-      _presetAlgorithmGuids.add(slotData.algorithm.guid);
+      final guid = slotData.algorithm.guid;
+      _presetAlgorithmGuids.add(guid);
+
+      // Calculate default name with instance number during init
+      String baseName = slotData.algorithm.name;
+      int instanceCount = 0;
+      for (int j = 0; j < i; j++) {
+        if (_presetAlgorithmGuids[j] == guid) {
+          instanceCount++;
+        }
+      }
+      if (instanceCount > 0) {
+        _defaultNames[i] = "$baseName ${instanceCount + 1}";
+      } else {
+        _defaultNames[i] = baseName;
+      }
+
       _parameterValues[i] = Map.from(slotData.parameterValues);
       _parameterStringValues[i] = Map.from(slotData.parameterStringValues);
       _mappings[i] = Map.from(slotData.mappings);
@@ -128,21 +146,14 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
           .getSingleOrNull();
 
       if (algoEntry != null) {
-        String baseName = algoEntry.name;
-        int instanceCount = 0;
-        for (int i = 0; i < algorithmIndex; i++) {
-          if (_presetAlgorithmGuids[i] == guid) {
-            instanceCount++;
-          }
-        }
-        if (instanceCount > 0) {
-          baseName = "$baseName ${instanceCount + 1}";
-        }
+        // Retrieve pre-calculated default name and custom name
+        final defaultName = _defaultNames[algorithmIndex];
         final customName = _customNames[algorithmIndex];
+
         return Algorithm(
           algorithmIndex: algorithmIndex,
           guid: algoEntry.guid,
-          name: customName ?? baseName,
+          name: customName ?? defaultName ?? "Error: Name Missing",
         );
       } else {
         debugPrint(
@@ -470,6 +481,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _parameterStringValues.clear();
     _mappings.clear();
     _customNames.clear();
+    _defaultNames.clear();
     _presetName = "Init";
     _loadedPresetId = null;
   }
@@ -477,8 +489,22 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestAddAlgorithm(
       AlgorithmInfo algorithm, List<int> specifications) async {
-    _presetAlgorithmGuids.add(algorithm.guid);
+    // Calculate default name before adding
+    String baseName = algorithm.name;
+    String guid = algorithm.guid;
+    int instanceCount = 0;
+    for (int i = 0; i < _presetAlgorithmGuids.length; i++) {
+      if (_presetAlgorithmGuids[i] == guid) {
+        instanceCount++;
+      }
+    }
+    String defaultName =
+        (instanceCount > 0) ? "$baseName ${instanceCount + 1}" : baseName;
+
+    // Add GUID and initialize state maps
+    _presetAlgorithmGuids.add(guid);
     final slotIndex = _presetAlgorithmGuids.length - 1;
+    _defaultNames[slotIndex] = defaultName;
     _parameterValues[slotIndex] = {};
     _parameterStringValues[slotIndex] = {};
     _mappings[slotIndex] = {};
@@ -624,16 +650,23 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _parameterStringValues.remove(removedIndex);
     _mappings.remove(removedIndex);
     _customNames.remove(removedIndex);
+    _defaultNames.remove(removedIndex);
 
     for (int i = removedIndex; i < _presetAlgorithmGuids.length; i++) {
       _parameterValues[i] = _parameterValues.remove(i + 1) ?? {};
       _parameterStringValues[i] = _parameterStringValues.remove(i + 1) ?? {};
       _mappings[i] = _mappings.remove(i + 1) ?? {};
-      final movedName = _customNames.remove(i + 1);
-      if (movedName != null) {
-        _customNames[i] = movedName;
+      final movedCustomName = _customNames.remove(i + 1);
+      if (movedCustomName != null) {
+        _customNames[i] = movedCustomName;
       } else {
         _customNames.remove(i);
+      }
+      final movedDefaultName = _defaultNames.remove(i + 1);
+      if (movedDefaultName != null) {
+        _defaultNames[i] = movedDefaultName;
+      } else {
+        _defaultNames.remove(i);
       }
     }
     final lastIndex = _presetAlgorithmGuids.length;
@@ -641,20 +674,91 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _parameterStringValues.remove(lastIndex);
     _mappings.remove(lastIndex);
     _customNames.remove(lastIndex);
+    _defaultNames.remove(lastIndex);
   }
 
   void _shiftStateUp(int movedIndex) {
-    final movingData = _getStateForIndex(movedIndex);
-    final otherData = _getStateForIndex(movedIndex - 1);
-    _setStateForIndex(movedIndex - 1, movingData);
-    _setStateForIndex(movedIndex, otherData);
+    final movingDefaultName = _defaultNames[movedIndex];
+    final otherDefaultName = _defaultNames[movedIndex - 1];
+    final movingCustomName = _customNames[movedIndex];
+    final otherCustomName = _customNames[movedIndex - 1];
+
+    final tempValues = _parameterValues[movedIndex - 1];
+    _parameterValues[movedIndex - 1] = _parameterValues[movedIndex] ?? {};
+    _parameterValues[movedIndex] = tempValues ?? {};
+
+    final tempStringValues = _parameterStringValues[movedIndex - 1];
+    _parameterStringValues[movedIndex - 1] =
+        _parameterStringValues[movedIndex] ?? {};
+    _parameterStringValues[movedIndex] = tempStringValues ?? {};
+
+    final tempMappings = _mappings[movedIndex - 1];
+    _mappings[movedIndex - 1] = _mappings[movedIndex] ?? {};
+    _mappings[movedIndex] = tempMappings ?? {};
+
+    if (movingDefaultName != null) {
+      _defaultNames[movedIndex - 1] = movingDefaultName;
+    } else {
+      _defaultNames.remove(movedIndex - 1);
+    }
+    if (otherDefaultName != null) {
+      _defaultNames[movedIndex] = otherDefaultName;
+    } else {
+      _defaultNames.remove(movedIndex);
+    }
+
+    if (movingCustomName != null) {
+      _customNames[movedIndex - 1] = movingCustomName;
+    } else {
+      _customNames.remove(movedIndex - 1);
+    }
+    if (otherCustomName != null) {
+      _customNames[movedIndex] = otherCustomName;
+    } else {
+      _customNames.remove(movedIndex);
+    }
   }
 
   void _shiftStateDown(int movedIndex) {
-    final movingData = _getStateForIndex(movedIndex);
-    final otherData = _getStateForIndex(movedIndex + 1);
-    _setStateForIndex(movedIndex + 1, movingData);
-    _setStateForIndex(movedIndex, otherData);
+    final movingDefaultName = _defaultNames[movedIndex];
+    final otherDefaultName = _defaultNames[movedIndex + 1];
+    final movingCustomName = _customNames[movedIndex];
+    final otherCustomName = _customNames[movedIndex + 1];
+
+    final tempValues = _parameterValues[movedIndex];
+    _parameterValues[movedIndex] = _parameterValues[movedIndex + 1] ?? {};
+    _parameterValues[movedIndex + 1] = tempValues ?? {};
+
+    final tempStringValues = _parameterStringValues[movedIndex];
+    _parameterStringValues[movedIndex] =
+        _parameterStringValues[movedIndex + 1] ?? {};
+    _parameterStringValues[movedIndex + 1] = tempStringValues ?? {};
+
+    final tempMappings = _mappings[movedIndex];
+    _mappings[movedIndex] = _mappings[movedIndex + 1] ?? {};
+    _mappings[movedIndex + 1] = tempMappings ?? {};
+
+    if (movingDefaultName != null) {
+      _defaultNames[movedIndex + 1] = movingDefaultName;
+    } else {
+      _defaultNames.remove(movedIndex + 1);
+    }
+    if (otherDefaultName != null) {
+      _defaultNames[movedIndex] = otherDefaultName;
+    } else {
+      _defaultNames.remove(movedIndex);
+    }
+
+    if (movingCustomName != null) {
+      _customNames[movedIndex + 1] = movingCustomName;
+    } else {
+      _customNames.remove(movedIndex + 1);
+    }
+    if (otherCustomName != null) {
+      _customNames[movedIndex] = otherCustomName;
+    } else {
+      _customNames.remove(movedIndex);
+    }
   }
 
   Map<String, dynamic> _getStateForIndex(int index) {
@@ -662,7 +766,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       'values': _parameterValues[index] ?? {},
       'stringValues': _parameterStringValues[index] ?? {},
       'mappings': _mappings[index] ?? {},
-      'name': _customNames[index],
     };
   }
 
@@ -670,10 +773,5 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _parameterValues[index] = Map<int, int>.from(data['values']);
     _parameterStringValues[index] = Map<int, String>.from(data['stringValues']);
     _mappings[index] = Map<int, PackedMappingData>.from(data['mappings']);
-    if (data['name'] != null) {
-      _customNames[index] = data['name'];
-    } else {
-      _customNames.remove(index);
-    }
   }
 }
