@@ -1285,6 +1285,12 @@ class MappingEditButton extends StatelessWidget {
             tooltip: 'Edit mapping',
             onPressed: () async {
               final cubit = context.read<DistingCubit>();
+              final currentState = cubit.state;
+              List<Slot> currentSlots = [];
+              if (currentState is DistingStateSynchronized) {
+                currentSlots = currentState.slots;
+              }
+
               final data = widget.mappingData ?? PackedMappingData.filler();
               final myMidiCubit = context.read<MidiListenerCubit>();
               final updatedData = await showModalBottomSheet(
@@ -1294,6 +1300,7 @@ class MappingEditButton extends StatelessWidget {
                   return MappingEditorBottomSheet(
                     myMidiCubit: myMidiCubit,
                     data: data,
+                    slots: currentSlots,
                   );
                 },
               );
@@ -1318,10 +1325,12 @@ class MappingEditorBottomSheet extends StatelessWidget {
     super.key,
     required this.myMidiCubit,
     required this.data,
+    required this.slots,
   });
 
   final MidiListenerCubit myMidiCubit;
   final PackedMappingData data;
+  final List<Slot> slots;
 
   @override
   Widget build(BuildContext context) {
@@ -1339,6 +1348,7 @@ class MappingEditorBottomSheet extends StatelessWidget {
             value: myMidiCubit,
             child: PackedMappingDataEditor(
               initialData: data,
+              slots: slots,
               onSave: (updatedData) {
                 // do something with updatedData
                 Navigator.of(context).pop(updatedData);

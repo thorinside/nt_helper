@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
   final ValueChanged<PackedMappingData> onSave;
-
+  final List<Slot> slots;
   const PackedMappingDataEditor({
     super.key,
     required this.initialData,
     required this.onSave,
+    required this.slots,
   });
 
   @override
@@ -191,9 +193,18 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   } else {
                     // index 2..33 correspond to slots 1..32
                     final slotNumber = index - 1;
+                    String label = 'Slot $slotNumber'; // Default label
+                    // Check if a slot exists at this index (0-based)
+                    if (slotNumber - 1 >= 0 &&
+                        slotNumber - 1 < widget.slots.length) {
+                      final slot = widget.slots[slotNumber - 1];
+                      // Use algorithm name if available
+                      label = 'Slot $slotNumber: ${slot.algorithm.name}';
+                    }
+
                     return DropdownMenuEntry<int>(
                       value: index,
-                      label: 'Slot $slotNumber',
+                      label: label,
                     );
                   }
                 }),
