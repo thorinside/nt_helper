@@ -832,6 +832,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     title: Text(page.name),
                     children: page.parameters.map(
                       (parameterNumber) {
+                        // Debug Print here
+                        debugPrint(
+                            "[UI Build] Slot: '${widget.slot.algorithm.name}', Page: '${page.name}', Param#: $parameterNumber, Mapping List Len: ${widget.slot.mappings.length}, Enums List Len: ${widget.slot.enums.length}, Values List Len: ${widget.slot.values.length}, ValueStrings Len: ${widget.slot.valueStrings.length}");
+
                         final value =
                             widget.slot.values.elementAt(parameterNumber);
                         final enumStrings =

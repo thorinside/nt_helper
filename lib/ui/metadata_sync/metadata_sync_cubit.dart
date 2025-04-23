@@ -118,7 +118,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       for (int i = 0; i < numSlots; i++) {
         debugPrint(
             "  -> saveCurrentPreset: Entering FOR loop iteration i = $i"); // Keep this
-        if (kDebugMode) print("  >> About to call _fetchPresetSlotDetails($i)");
+        if (kDebugMode)
+          debugPrint("  >> About to call _fetchPresetSlotDetails($i)");
         final slotDetails = await _fetchPresetSlotDetails(i, manager);
         fullSlots.add(slotDetails);
         debugPrint(
@@ -188,7 +189,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
               "Algorithm metadata for GUID '$algorithmGuid' not found locally. Cannot add slot ${i + 1}.");
         }
         if (kDebugMode) {
-          print(
+          debugPrint(
               "    -> Found local metadata for '${algoDetails.algorithm.name}'");
         }
 
@@ -399,7 +400,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
     }
     if (kDebugMode) {
-      print(
+      debugPrint(
           "  >> Slot $slotIndex: Fetched ${parameterValuesMap.length} parameter values.");
     }
 
@@ -410,7 +411,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     // Iterate through the parameter numbers we *know* exist in this slot instance
     for (final pNum in parameterValuesMap.keys) {
       if (kDebugMode) {
-        print(
+        debugPrint(
             "  >> Slot $slotIndex: Fetching details for actual parameter #$pNum");
       }
       // Fetch Mapping for this specific parameter number
@@ -433,7 +434,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       await Future.delayed(const Duration(milliseconds: 15));
     }
     if (kDebugMode) {
-      print(
+      debugPrint(
           "  >> Slot $slotIndex: Found ${mappingsMap.length} mappings and ${parameterStringValuesMap.length} string values.");
     }
 
