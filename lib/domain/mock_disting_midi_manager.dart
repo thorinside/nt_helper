@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart' show debugPrint;
+import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart'; // Import to get interface
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -829,6 +830,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
       debugPrint(
           "[Mock] setParameterValue: Invalid algorithmIndex $algorithmIndex");
     }
+  }
+
+  @override
+  Future<FullPresetDetails?> requestCurrentPresetDetails() async {
+    return null;
   }
 }
 

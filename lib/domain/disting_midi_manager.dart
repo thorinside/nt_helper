@@ -8,6 +8,9 @@ import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
+import 'package:nt_helper/db/daos/presets_dao.dart';
+import 'package:nt_helper/db/database.dart';
 
 /// Abstract interface for Disting MIDI communication.
 abstract class IDistingMidiManager {
@@ -50,6 +53,7 @@ abstract class IDistingMidiManager {
       int algorithmIndex, int parameterNumber, PackedMappingData data);
   Future<void> requestSendSlotName(int algorithmIndex, String newName);
   Future<void> requestSetDisplayMode(DisplayMode displayMode);
+  Future<FullPresetDetails?> requestCurrentPresetDetails();
 }
 
 class DistingMidiManager implements IDistingMidiManager {
@@ -605,6 +609,116 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
+    );
+  }
+
+  @override
+  Future<FullPresetDetails?> requestCurrentPresetDetails() async {
+    // 1. Fetch preset name and number of slots
+    final presetName = await requestPresetName();
+    final numSlots = await requestNumAlgorithmsInPreset();
+
+    if (presetName == null || numSlots == null) {
+      debugPrint(
+          "[OnlineManager] Failed to get preset name or number of slots.");
+      return null; // Cannot proceed
+    }
+
+    // 2. Fetch details for each slot
+    final List<FullPresetSlot> fullSlots = [];
+    for (int i = 0; i < numSlots; i++) {
+      try {
+        final slotDetails = await _fetchOnlineSlotDetails(i);
+        fullSlots.add(slotDetails);
+      } catch (e, stackTrace) {
+        debugPrint(
+            "[OnlineManager] Error fetching details for slot $i: $e\n$stackTrace");
+        return null; // If any slot fails, abort
+      }
+    }
+
+    // 3. Assemble PresetEntry (always use -1 for ID when fetching from device)
+    // The DAO will handle potential updates based on name if necessary (though current DAO doesn't)
+    final presetEntry = PresetEntry(
+      id: -1, // Use -1 to indicate it's fresh from device, not a DB entry ID
+      name: presetName,
+      lastModified: DateTime.now(), // Use current time for fetched state
+    );
+
+    // 4. Return the complete details
+    return FullPresetDetails(preset: presetEntry, slots: fullSlots);
+  }
+
+  // Helper method to fetch details for a single slot from the device
+  Future<FullPresetSlot> _fetchOnlineSlotDetails(int slotIndex) async {
+    // Fetch core info (GUID and Name)
+    final algoGuidResult = await requestAlgorithmGuid(slotIndex);
+    if (algoGuidResult == null) {
+      throw Exception("Failed to get algorithm GUID for slot $slotIndex.");
+    }
+    final guid = algoGuidResult.guid;
+    final String? customName =
+        algoGuidResult.name; // Device returns custom or default
+
+    // Fetch number of parameters for this specific slot instance
+    final numParamsResult = await requestNumberOfParameters(slotIndex);
+    final numParameters = numParamsResult?.numParameters ?? 0;
+
+    // Fetch Parameter Values
+    final paramValuesResult = await requestAllParameterValues(slotIndex);
+    final parameterValuesMap = <int, int>{};
+    if (paramValuesResult != null) {
+      for (final pVal in paramValuesResult.values) {
+        parameterValuesMap[pVal.parameterNumber] = pVal.value;
+      }
+    }
+
+    // Fetch Mappings & String Values (based on actual parameters in this slot)
+    final Map<int, PackedMappingData> mappingsMap = {};
+    final Map<int, String> parameterStringValuesMap = {};
+    for (final pNum in parameterValuesMap.keys) {
+      // Mapping
+      final mappingResult = await requestMappings(slotIndex, pNum);
+      if (mappingResult != null && mappingResult.packedMappingData.isMapped()) {
+        mappingsMap[pNum] = mappingResult.packedMappingData;
+      }
+      // String Value
+      final stringValueResult =
+          await requestParameterValueString(slotIndex, pNum);
+      if (stringValueResult?.value != null &&
+          stringValueResult!.value.isNotEmpty) {
+        parameterStringValuesMap[pNum] = stringValueResult.value;
+      }
+      // Optional small delay
+      await Future.delayed(const Duration(milliseconds: 5));
+    }
+
+    // Create PresetSlotEntry
+    final presetSlotEntry = PresetSlotEntry(
+      id: -1, // Placeholder ID
+      presetId: -1, // Placeholder ID
+      slotIndex: slotIndex,
+      algorithmGuid: guid,
+      customName: customName, // Name fetched from device
+    );
+
+    // We need an AlgorithmEntry. We only have GUID from device.
+    // Ideally, we'd fetch this from a local cache (MetadataDao).
+    // For now, create a minimal one. This might break saving if metadata isn't cached.
+    // TODO: Inject or access MetadataDao to get the full AlgorithmEntry based on GUID.
+    final minimalAlgorithmEntry = AlgorithmEntry(
+      guid: guid,
+      name: "Unknown (Fetch from DB)", // Placeholder name
+      numSpecifications: 0,
+    );
+
+    return FullPresetSlot(
+      slot: presetSlotEntry,
+      // Use minimal entry for now. Needs fixing if DAO requires full entry.
+      algorithm: minimalAlgorithmEntry,
+      parameterValues: parameterValuesMap,
+      parameterStringValues: parameterStringValuesMap,
+      mappings: mappingsMap,
     );
   }
 }

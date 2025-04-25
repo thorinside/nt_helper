@@ -100,43 +100,20 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
     emit(const MetadataSyncState.savingPreset());
     try {
-      // 1. Fetch Name
-      final rawName = await manager.requestPresetName() ?? "Unnamed Preset";
-      final name = rawName.trim(); // Trim the name
+      // 1. Fetch full preset details directly from the manager (online or offline)
+      final FullPresetDetails? detailsToSave =
+          await manager.requestCurrentPresetDetails();
 
-      // *** Name check removed - DAO will handle upsert based on name ***
-
-      // 2. Fetch Number of Slots
-      final numSlots = await manager.requestNumAlgorithmsInPreset();
-      debugPrint(" >> saveCurrentPreset: Device reported $numSlots slots.");
-      if (numSlots == null) {
-        throw Exception("Failed to get number of algorithms in preset.");
+      if (detailsToSave == null) {
+        throw Exception(
+            "Failed to retrieve current preset details from the manager.");
       }
 
-      // 3. Fetch Each Slot's Details FIRST
-      final List<FullPresetSlot> fullSlots = [];
-      for (int i = 0; i < numSlots; i++) {
-        debugPrint(
-            "  -> saveCurrentPreset: Entering FOR loop iteration i = $i"); // Keep this
-        if (kDebugMode)
-          debugPrint("  >> About to call _fetchPresetSlotDetails($i)");
-        final slotDetails = await _fetchPresetSlotDetails(i, manager);
-        fullSlots.add(slotDetails);
-        debugPrint(
-            "    >> Added slot $i. fullSlots length now: ${fullSlots.length}");
-      }
-
-      // 4. Assemble Preset Data AFTER fetching slots
-      final now = DateTime.now();
-      final presetEntry = PresetEntry(id: -1, name: name, lastModified: now);
-      // Use the populated fullSlots list here
-      final detailsToSave =
-          FullPresetDetails(preset: presetEntry, slots: fullSlots);
-
+      final name = detailsToSave.preset.name; // Get name for success message
       debugPrint(
-          " >> saveCurrentPreset: Assembled FullPresetDetails with ${detailsToSave.slots.length} slots BEFORE saving."); // Updated print message
+          " >> saveCurrentPreset: Fetched details for preset '${name}' (ID: ${detailsToSave.preset.id}) with ${detailsToSave.slots.length} slots from manager.");
 
-      // 5. Save to Database
+      // 2. Save to Database using the details obtained from the manager
       debugPrint("Saving preset to database...");
       await _presetsDao.saveFullPreset(detailsToSave);
 
@@ -146,7 +123,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       loadLocalData();
     } catch (e, stacktrace) {
       debugPrint("Error saving preset: $e\n$stacktrace");
-      // *** Reverted error handling - Keep generic message ***
       emit(MetadataSyncState.presetSaveFailure(
           "Failed to save preset: ${e.toString()}"));
     }
