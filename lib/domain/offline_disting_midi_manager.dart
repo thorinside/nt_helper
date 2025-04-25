@@ -774,4 +774,13 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     _parameterStringValues[index] = Map<int, String>.from(data['stringValues']);
     _mappings[index] = Map<int, PackedMappingData>.from(data['mappings']);
   }
+
+  // --- NEW METHOD IMPLEMENTATION ---
+  @override
+  Future<FullPresetDetails?> requestCurrentPresetDetails() {
+    // Simply call the existing helper method that builds the details object
+    // based on the current internal state (_loadedPresetId, _presetName, maps, etc.)
+    return _buildPresetDetailsForSave();
+  }
+  // --- END NEW METHOD IMPLEMENTATION ---
 }

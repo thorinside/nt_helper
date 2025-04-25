@@ -162,13 +162,33 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     return transaction(() async {
       // 1. Upsert Preset Entry
       final presetCompanion = details.preset
-          .toCompanion(true)
-          .copyWith(lastModified: Value(DateTime.now()));
+          .toCompanion(true) // Convert PresetEntry to its companion
+          // Explicitly handle the ID: if it's -1, treat it as absent for auto-increment.
+          // Otherwise, use the provided ID for potential replacement.
+          .copyWith(
+              id: details.preset.id == -1
+                  ? const Value.absent()
+                  : Value(details.preset.id),
+              lastModified: Value(DateTime.now()));
+
+      // Insert the companion. `insertOrReplace` will:
+      // - Insert if `id` is absent (and generate a new ID).
+      // - Replace if `id` is present and matches an existing row.
       final presetId = await into(presets).insert(
         presetCompanion,
         mode:
             InsertMode.insertOrReplace, // Handles insert or update based on ID
       );
+
+      // --- Check if insert returned a valid ID ---
+      // SQLite rowid starts at 1. If we get 0 or less, something went wrong.
+      if (presetId <= 0) {
+        // Throw an exception if the insert/replace failed to return a valid ID.
+        // This should cause the transaction to roll back.
+        throw Exception(
+            "Database operation failed: Invalid preset ID returned ($presetId)");
+      }
+      // --- End Check ---
 
       // 2. Handle Slots
       final existingSlots = await (select(presetSlots)
