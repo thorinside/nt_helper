@@ -1,6 +1,7 @@
 import 'dart:convert'; // For jsonEncode/Decode
 
 import 'package:drift/drift.dart';
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/tables.dart';
 
@@ -144,7 +145,7 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
         }
       } catch (e) {
         // Handle potential JSON decoding errors
-        print("Error decoding cached unit strings: $e");
+        debugPrint("Error decoding cached unit strings: $e");
         return null;
       }
     }
