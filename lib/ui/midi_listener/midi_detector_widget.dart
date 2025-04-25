@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
 
 import 'midi_listener_cubit.dart';
 
@@ -10,9 +11,13 @@ import 'midi_listener_cubit.dart';
 /// If an ancestor MidiListenerCubit is found, use it.
 /// Otherwise, create and own a MidiListenerCubit locally.
 class MidiDetectorWidget extends StatelessWidget {
-  final Function({int? channel, int? cc})? onCcFound;
+  final Function({
+    required MidiEventType type,
+    required int channel,
+    required int number, // CC or Note number
+  })? onMidiEventFound;
 
-  const MidiDetectorWidget({super.key, this.onCcFound});
+  const MidiDetectorWidget({super.key, this.onMidiEventFound});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +28,7 @@ class MidiDetectorWidget extends StatelessWidget {
       context.read<MidiListenerCubit>();
       // If we get here, there's already a MidiListenerCubit in the ancestor tree
       return _MidiDetectorContents(
-        onCcFound: onCcFound,
+        onMidiEventFound: onMidiEventFound,
         useLocalCubit: false, // We'll use the existing one
       );
     } catch (_) {
@@ -31,7 +36,7 @@ class MidiDetectorWidget extends StatelessWidget {
       return BlocProvider(
         create: (_) => MidiListenerCubit(),
         child: _MidiDetectorContents(
-          onCcFound: onCcFound,
+          onMidiEventFound: onMidiEventFound,
           useLocalCubit: true,
         ),
       );
@@ -44,11 +49,15 @@ class MidiDetectorWidget extends StatelessWidget {
 /// If [useLocalCubit] is true, we created one ourselves in the parent;
 /// otherwise, we rely on an ancestor-provided Cubit.
 class _MidiDetectorContents extends StatefulWidget {
-  final Function({int? channel, int? cc})? onCcFound;
+  final Function({
+    required MidiEventType type,
+    required int channel,
+    required int number,
+  })? onMidiEventFound;
   final bool useLocalCubit;
 
   const _MidiDetectorContents({
-    required this.onCcFound,
+    required this.onMidiEventFound,
     required this.useLocalCubit,
   });
 
@@ -124,13 +133,33 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                   } else if (!value.isConnected) {
                     _showStatusMessage('No device connected.');
                   }
-                  if (value.lastDetectedCc != null &&
+                  if (value.lastDetectedType != null &&
                       value.lastDetectedChannel != null) {
-                    _showStatusMessage(
-                        'Detected CC ${value.lastDetectedCc} on channel ${value.lastDetectedChannel! + 1}');
-                    widget.onCcFound?.call(
-                        channel: value.lastDetectedChannel!,
-                        cc: value.lastDetectedCc!);
+                    String eventTypeStr = '';
+                    int? eventNumber;
+                    switch (value.lastDetectedType!) {
+                      case MidiEventType.cc:
+                        eventTypeStr = 'CC';
+                        eventNumber = value.lastDetectedCc;
+                        break;
+                      case MidiEventType.noteOn:
+                        eventTypeStr = 'Note On';
+                        eventNumber = value.lastDetectedNote;
+                        break;
+                      case MidiEventType.noteOff:
+                        eventTypeStr = 'Note Off';
+                        eventNumber = value.lastDetectedNote;
+                        break;
+                    }
+
+                    if (eventNumber != null) {
+                      _showStatusMessage(
+                          'Detected $eventTypeStr $eventNumber on channel ${value.lastDetectedChannel! + 1}');
+                      widget.onMidiEventFound?.call(
+                          type: value.lastDetectedType!,
+                          channel: value.lastDetectedChannel!,
+                          number: eventNumber);
+                    }
                   }
                   return null;
                 },

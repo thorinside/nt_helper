@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_detector_widget.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart'; // Import for MidiEventType
 
 class PackedMappingDataEditor extends StatefulWidget {
   final PackedMappingData initialData;
@@ -344,8 +345,42 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             ),
           ),
           const SizedBox(height: 12),
+          // MIDI Mapping Type Dropdown
+          SizedBox(
+            width: double.infinity,
+            child: DropdownMenu<MidiMappingType>(
+              initialSelection: _data.midiMappingType,
+              requestFocusOnTap: false,
+              label: const Text("MIDI Type"),
+              onSelected: (newValue) {
+                if (newValue == null) return;
+                setState(() {
+                  _data = _data.copyWith(midiMappingType: newValue);
+                  // If type is not CC, disable relative
+                  if (newValue != MidiMappingType.cc) {
+                    _data = _data.copyWith(isMidiRelative: false);
+                  }
+                });
+              },
+              dropdownMenuEntries: const [
+                DropdownMenuEntry<MidiMappingType>(
+                  value: MidiMappingType.cc,
+                  label: 'CC',
+                ),
+                DropdownMenuEntry<MidiMappingType>(
+                  value: MidiMappingType.noteMomentary,
+                  label: 'Note - Momentary',
+                ),
+                DropdownMenuEntry<MidiMappingType>(
+                  value: MidiMappingType.noteToggle,
+                  label: 'Note - Toggle',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           _buildNumericField(
-            label: 'MIDI CC (0–128)',
+            label: 'MIDI CC / Note (0–128)',
             controller: _midiCcController,
             onSubmit: _updateMidiCcFromController,
           ),
@@ -380,14 +415,26 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               const Text('MIDI Relative'),
               Switch(
                 value: _data.isMidiRelative,
-                onChanged: (val) {
-                  setState(() {
-                    _data = _data.copyWith(isMidiRelative: val);
-                  });
-                },
+                onChanged: _data.midiMappingType == MidiMappingType.cc
+                    ? (val) {
+                        setState(() {
+                          _data = _data.copyWith(isMidiRelative: val);
+                        });
+                      }
+                    : null,
               ),
             ],
           ),
+          if (_data.midiMappingType != MidiMappingType.cc)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(
+                '(N/A for Notes)',
+                style: TextStyle(
+                    color: Theme.of(context).disabledColor,
+                    fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
+              ),
+            ),
           _buildNumericField(
             label: 'MIDI Min',
             controller: _midiMinController,
@@ -400,16 +447,36 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           ),
           // Add the MIDI Detector
           MidiDetectorWidget(
-            onCcFound: ({cc, channel}) {
+            onMidiEventFound: ({
+              required MidiEventType type,
+              required channel,
+              required number,
+            }) {
               // When we've detected 10 consecutive hits of the same CC,
               // automatically fill in the CC number, and midi channel in your form data
               // and assume we want to enable the midi mapping.
               setState(() {
+                // Default to CC type, adjust if it's a note
+                MidiMappingType detectedMappingType = MidiMappingType.cc;
+                if (type == MidiEventType.noteOn ||
+                    type == MidiEventType.noteOff) {
+                  if (_data.midiMappingType != MidiMappingType.noteMomentary &&
+                      _data.midiMappingType != MidiMappingType.noteToggle) {
+                    detectedMappingType = MidiMappingType.noteMomentary;
+                  } else {
+                    // Keep the existing note type if it was already set to one
+                    detectedMappingType = _data.midiMappingType;
+                  }
+                }
+
                 _data = _data.copyWith(
-                    midiCC: cc, midiChannel: channel, isMidiEnabled: true);
+                    midiMappingType: detectedMappingType,
+                    midiCC: number, // Use 'number' which is CC or Note
+                    midiChannel: channel,
+                    isMidiEnabled: true);
               });
               // Also update the text field / controller if necessary
-              _midiCcController.text = cc.toString();
+              _midiCcController.text = number.toString();
             },
           ),
         ],
@@ -558,6 +625,7 @@ extension on PackedMappingData {
     int? volts,
     int? delta,
     int? midiChannel,
+    MidiMappingType? midiMappingType,
     int? midiCC,
     bool? isMidiEnabled,
     bool? isMidiSymmetric,
@@ -579,6 +647,7 @@ extension on PackedMappingData {
       volts: volts ?? this.volts,
       delta: delta ?? this.delta,
       midiChannel: midiChannel ?? this.midiChannel,
+      midiMappingType: midiMappingType ?? this.midiMappingType,
       midiCC: midiCC ?? this.midiCC,
       isMidiEnabled: isMidiEnabled ?? this.isMidiEnabled,
       isMidiSymmetric: isMidiSymmetric ?? this.isMidiSymmetric,
