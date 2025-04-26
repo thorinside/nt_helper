@@ -1,5 +1,7 @@
 part of 'midi_listener_cubit.dart';
 
+enum MidiEventType { cc, noteOn, noteOff }
+
 @freezed
 class MidiListenerState with _$MidiListenerState {
   /// The initial state: no devices discovered, not connected.
@@ -10,8 +12,10 @@ class MidiListenerState with _$MidiListenerState {
     @Default([]) List<MidiDevice> devices,
     MidiDevice? selectedDevice,
     @Default(false) bool isConnected,
-    int? lastDetectedCc,
+    MidiEventType? lastDetectedType,
     int? lastDetectedChannel,
+    int? lastDetectedCc,
+    int? lastDetectedNote,
     DateTime? lastDetectedTime,
   }) = _Data;
 }

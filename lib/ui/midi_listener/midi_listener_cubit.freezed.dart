@@ -23,8 +23,10 @@ mixin _$MidiListenerState {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)
         data,
   }) =>
@@ -36,8 +38,10 @@ mixin _$MidiListenerState {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)?
         data,
   }) =>
@@ -49,8 +53,10 @@ mixin _$MidiListenerState {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)?
         data,
     required TResult orElse(),
@@ -144,8 +150,10 @@ class _$InitialImpl implements _Initial {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)
         data,
   }) {
@@ -160,8 +168,10 @@ class _$InitialImpl implements _Initial {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)?
         data,
   }) {
@@ -176,8 +186,10 @@ class _$InitialImpl implements _Initial {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)?
         data,
     required TResult orElse(),
@@ -234,8 +246,10 @@ abstract class _$$DataImplCopyWith<$Res> {
       {List<MidiDevice> devices,
       MidiDevice? selectedDevice,
       bool isConnected,
-      int? lastDetectedCc,
+      MidiEventType? lastDetectedType,
       int? lastDetectedChannel,
+      int? lastDetectedCc,
+      int? lastDetectedNote,
       DateTime? lastDetectedTime});
 }
 
@@ -254,8 +268,10 @@ class __$$DataImplCopyWithImpl<$Res>
     Object? devices = null,
     Object? selectedDevice = freezed,
     Object? isConnected = null,
-    Object? lastDetectedCc = freezed,
+    Object? lastDetectedType = freezed,
     Object? lastDetectedChannel = freezed,
+    Object? lastDetectedCc = freezed,
+    Object? lastDetectedNote = freezed,
     Object? lastDetectedTime = freezed,
   }) {
     return _then(_$DataImpl(
@@ -271,13 +287,21 @@ class __$$DataImplCopyWithImpl<$Res>
           ? _value.isConnected
           : isConnected // ignore: cast_nullable_to_non_nullable
               as bool,
+      lastDetectedType: freezed == lastDetectedType
+          ? _value.lastDetectedType
+          : lastDetectedType // ignore: cast_nullable_to_non_nullable
+              as MidiEventType?,
+      lastDetectedChannel: freezed == lastDetectedChannel
+          ? _value.lastDetectedChannel
+          : lastDetectedChannel // ignore: cast_nullable_to_non_nullable
+              as int?,
       lastDetectedCc: freezed == lastDetectedCc
           ? _value.lastDetectedCc
           : lastDetectedCc // ignore: cast_nullable_to_non_nullable
               as int?,
-      lastDetectedChannel: freezed == lastDetectedChannel
-          ? _value.lastDetectedChannel
-          : lastDetectedChannel // ignore: cast_nullable_to_non_nullable
+      lastDetectedNote: freezed == lastDetectedNote
+          ? _value.lastDetectedNote
+          : lastDetectedNote // ignore: cast_nullable_to_non_nullable
               as int?,
       lastDetectedTime: freezed == lastDetectedTime
           ? _value.lastDetectedTime
@@ -294,8 +318,10 @@ class _$DataImpl implements _Data {
       {final List<MidiDevice> devices = const [],
       this.selectedDevice,
       this.isConnected = false,
-      this.lastDetectedCc,
+      this.lastDetectedType,
       this.lastDetectedChannel,
+      this.lastDetectedCc,
+      this.lastDetectedNote,
       this.lastDetectedTime})
       : _devices = devices;
 
@@ -314,15 +340,19 @@ class _$DataImpl implements _Data {
   @JsonKey()
   final bool isConnected;
   @override
-  final int? lastDetectedCc;
+  final MidiEventType? lastDetectedType;
   @override
   final int? lastDetectedChannel;
+  @override
+  final int? lastDetectedCc;
+  @override
+  final int? lastDetectedNote;
   @override
   final DateTime? lastDetectedTime;
 
   @override
   String toString() {
-    return 'MidiListenerState.data(devices: $devices, selectedDevice: $selectedDevice, isConnected: $isConnected, lastDetectedCc: $lastDetectedCc, lastDetectedChannel: $lastDetectedChannel, lastDetectedTime: $lastDetectedTime)';
+    return 'MidiListenerState.data(devices: $devices, selectedDevice: $selectedDevice, isConnected: $isConnected, lastDetectedType: $lastDetectedType, lastDetectedChannel: $lastDetectedChannel, lastDetectedCc: $lastDetectedCc, lastDetectedNote: $lastDetectedNote, lastDetectedTime: $lastDetectedTime)';
   }
 
   @override
@@ -335,10 +365,14 @@ class _$DataImpl implements _Data {
                 other.selectedDevice == selectedDevice) &&
             (identical(other.isConnected, isConnected) ||
                 other.isConnected == isConnected) &&
-            (identical(other.lastDetectedCc, lastDetectedCc) ||
-                other.lastDetectedCc == lastDetectedCc) &&
+            (identical(other.lastDetectedType, lastDetectedType) ||
+                other.lastDetectedType == lastDetectedType) &&
             (identical(other.lastDetectedChannel, lastDetectedChannel) ||
                 other.lastDetectedChannel == lastDetectedChannel) &&
+            (identical(other.lastDetectedCc, lastDetectedCc) ||
+                other.lastDetectedCc == lastDetectedCc) &&
+            (identical(other.lastDetectedNote, lastDetectedNote) ||
+                other.lastDetectedNote == lastDetectedNote) &&
             (identical(other.lastDetectedTime, lastDetectedTime) ||
                 other.lastDetectedTime == lastDetectedTime));
   }
@@ -349,8 +383,10 @@ class _$DataImpl implements _Data {
       const DeepCollectionEquality().hash(_devices),
       selectedDevice,
       isConnected,
-      lastDetectedCc,
+      lastDetectedType,
       lastDetectedChannel,
+      lastDetectedCc,
+      lastDetectedNote,
       lastDetectedTime);
 
   /// Create a copy of MidiListenerState
@@ -369,13 +405,22 @@ class _$DataImpl implements _Data {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)
         data,
   }) {
-    return data(devices, selectedDevice, isConnected, lastDetectedCc,
-        lastDetectedChannel, lastDetectedTime);
+    return data(
+        devices,
+        selectedDevice,
+        isConnected,
+        lastDetectedType,
+        lastDetectedChannel,
+        lastDetectedCc,
+        lastDetectedNote,
+        lastDetectedTime);
   }
 
   @override
@@ -386,13 +431,22 @@ class _$DataImpl implements _Data {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)?
         data,
   }) {
-    return data?.call(devices, selectedDevice, isConnected, lastDetectedCc,
-        lastDetectedChannel, lastDetectedTime);
+    return data?.call(
+        devices,
+        selectedDevice,
+        isConnected,
+        lastDetectedType,
+        lastDetectedChannel,
+        lastDetectedCc,
+        lastDetectedNote,
+        lastDetectedTime);
   }
 
   @override
@@ -403,15 +457,24 @@ class _$DataImpl implements _Data {
             List<MidiDevice> devices,
             MidiDevice? selectedDevice,
             bool isConnected,
-            int? lastDetectedCc,
+            MidiEventType? lastDetectedType,
             int? lastDetectedChannel,
+            int? lastDetectedCc,
+            int? lastDetectedNote,
             DateTime? lastDetectedTime)?
         data,
     required TResult orElse(),
   }) {
     if (data != null) {
-      return data(devices, selectedDevice, isConnected, lastDetectedCc,
-          lastDetectedChannel, lastDetectedTime);
+      return data(
+          devices,
+          selectedDevice,
+          isConnected,
+          lastDetectedType,
+          lastDetectedChannel,
+          lastDetectedCc,
+          lastDetectedNote,
+          lastDetectedTime);
     }
     return orElse();
   }
@@ -453,15 +516,19 @@ abstract class _Data implements MidiListenerState {
       {final List<MidiDevice> devices,
       final MidiDevice? selectedDevice,
       final bool isConnected,
-      final int? lastDetectedCc,
+      final MidiEventType? lastDetectedType,
       final int? lastDetectedChannel,
+      final int? lastDetectedCc,
+      final int? lastDetectedNote,
       final DateTime? lastDetectedTime}) = _$DataImpl;
 
   List<MidiDevice> get devices;
   MidiDevice? get selectedDevice;
   bool get isConnected;
-  int? get lastDetectedCc;
+  MidiEventType? get lastDetectedType;
   int? get lastDetectedChannel;
+  int? get lastDetectedCc;
+  int? get lastDetectedNote;
   DateTime? get lastDetectedTime;
 
   /// Create a copy of MidiListenerState
