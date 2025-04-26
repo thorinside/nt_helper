@@ -3,6 +3,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
+enum MidiMappingType {
+  cc, // 0
+  noteMomentary, // 1
+  noteToggle, // 2
+}
+
 class PackedMappingData {
   // Version
   final int version;
@@ -17,7 +23,8 @@ class PackedMappingData {
 
   // MIDI Mapping
   final int midiChannel; // MIDI channel
-  final int midiCC; // MIDI control change number
+  final MidiMappingType midiMappingType; // CC, Note Momentary, or Note Toggle
+  final int midiCC; // MIDI control change number (or note number if type != cc)
   final bool isMidiEnabled; // MIDI mapping enabled
   final bool isMidiSymmetric; // MIDI mapping symmetric
   final bool isMidiRelative; // MIDI mapping relative
@@ -40,6 +47,7 @@ class PackedMappingData {
     required this.volts,
     required this.delta,
     required this.midiChannel,
+    required this.midiMappingType,
     required this.midiCC,
     required this.isMidiEnabled,
     required this.isMidiSymmetric,
@@ -63,6 +71,7 @@ class PackedMappingData {
         volts: -1,
         delta: -1,
         midiChannel: -1,
+        midiMappingType: MidiMappingType.cc,
         midiCC: -1,
         isMidiEnabled: false,
         isMidiSymmetric: false,
@@ -128,22 +137,37 @@ class PackedMappingData {
     // --- Decode MIDI Mapping (8 or 9 bytes) ---
     int midiSectionMinLength = offset + 7; // Base size (v1)
     if (version >= 2) midiSectionMinLength++; // Add 1 for flags2
-    if (midiSectionMinLength >= dataLength) {
-      // Need at least 8 (v1) or 9 (v2/3) bytes total (offset up to 7 or 8 + 6 for decode16 calls)
+    // Need enough bytes for midiCC, midiFlags, midiFlags2 (if v >= 2), midiMin (3), midiMax (3)
+    int requiredMidiBytes = 1 + 1 + (version >= 2 ? 1 : 0) + 3 + 3;
+    if (offset + requiredMidiBytes > dataLength) {
       debugPrint(
-          "Warning: PackedMappingData truncated before MIDI max (offset $offset, length $dataLength). Returning filler.");
+          "Warning: PackedMappingData truncated within MIDI section (offset $offset, required $requiredMidiBytes, length $dataLength, version $version). Returning filler.");
       return PackedMappingData.filler();
     }
     var midiCC = safeReadByte(offset++);
     final midiFlags = safeReadByte(offset++);
     final midiFlags2 = version >= 2 ? safeReadByte(offset++) : 0;
     if (midiFlags & 4 != 0) {
+      // This flag indicates Aftertouch, not a specific CC adjustment in the JS
       midiCC = 128;
     }
     final midiChannel = (midiFlags >> 3) & 0xF;
     final isMidiEnabled = (midiFlags & 1) != 0;
     final isMidiSymmetric = (midiFlags & 2) != 0;
+    // Decode from midiFlags2
     final isMidiRelative = (midiFlags2 & 1) != 0;
+    final isNoteMapping = (midiFlags2 & 4) != 0; // Bit 2 indicates Note mapping
+    final isToggleNote =
+        (midiFlags2 & 2) != 0; // Bit 1 indicates Toggle for Notes
+    final MidiMappingType midiMappingType;
+    if (isNoteMapping) {
+      midiMappingType = isToggleNote
+          ? MidiMappingType.noteToggle
+          : MidiMappingType.noteMomentary;
+    } else {
+      midiMappingType = MidiMappingType.cc;
+    }
+    // ---
     final midiMin = safeDecode16(offset);
     offset += 3;
     final midiMax = safeDecode16(offset);
@@ -152,31 +176,24 @@ class PackedMappingData {
     // --- Decode I2C Mapping (8 or 9 bytes) ---
     int i2cSectionMinLength = offset + 7; // Base size (v1/v2)
     if (version >= 3) i2cSectionMinLength++; // Add 1 for extra I2C CC byte
-    if (i2cSectionMinLength >= dataLength) {
-      // Need offset up to 7 or 8 + 6 for decode16 calls
+    // Need enough bytes for i2cCC (1 or 2), i2cFlags (1), i2cMin (3), i2cMax (3)
+    int requiredI2cBytes = (version >= 3 ? 2 : 1) + 1 + 3 + 3;
+    if (offset + requiredI2cBytes > dataLength) {
       debugPrint(
-          "Warning: PackedMappingData truncated before I2C max (offset $offset, length $dataLength). Returning filler.");
+          "Warning: PackedMappingData truncated within I2C section (offset $offset, required $requiredI2cBytes, length $dataLength, version $version). Returning filler.");
       return PackedMappingData.filler();
     }
     var i2cCC = safeReadByte(offset++);
     if (version >= 3) {
-      // Check if we have the extra byte before reading it
-      if (offset >= dataLength) {
-        debugPrint(
-            "Warning: PackedMappingData (v3) truncated before extra I2C CC byte (offset $offset, length $dataLength). Returning filler.");
-        return PackedMappingData.filler();
-      }
-      i2cCC = i2cCC | (safeReadByte(offset++) & 1) << 7;
+      // Check if we have the extra byte before reading it - already checked above
+      i2cCC |= (safeReadByte(offset++) & 1) << 7;
     }
     final i2cFlags = safeReadByte(offset++);
     final isI2cEnabled = (i2cFlags & 1) != 0;
     final isI2cSymmetric = (i2cFlags & 2) != 0;
     final i2cMin = safeDecode16(offset);
     offset += 3;
-    final i2cMax = safeDecode16(
-        offset); // This is the problematic call if dataLength is 23 for v2
-    // No need to increment offset after the last read
-    // offset += 3;
+    final i2cMax = safeDecode16(offset);
 
     // Final check (optional): Ensure offset matches expected length based on version
     int expectedLength = (version == 1)
@@ -186,10 +203,12 @@ class PackedMappingData {
             : (version == 3)
                 ? 24
                 : 25;
+    // The final offset should be *equal* to the expected length after reading all bytes
     if (offset != expectedLength) {
       debugPrint(
-          "Warning: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data might be corrupt.");
+          "Warning: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data might be corrupt or have extra bytes.");
       // Decide whether to return filler or the potentially partially decoded data
+      // Consider returning filler if strict adherence is needed.
       // return PackedMappingData.filler();
     }
 
@@ -201,6 +220,7 @@ class PackedMappingData {
       volts: volts,
       delta: delta,
       midiChannel: midiChannel,
+      midiMappingType: midiMappingType,
       midiCC: midiCC,
       isMidiEnabled: isMidiEnabled,
       isMidiSymmetric: isMidiSymmetric,
@@ -242,19 +262,24 @@ class PackedMappingData {
         (isMidiSymmetric ? 2 : 0) |
         ((midiChannel & 0xF) << 3);
 
-    int flags2 = (isMidiRelative ? 1 : 0);
+    // Encode midiFlags2 based on type and relative setting
+    bool isNote = midiMappingType != MidiMappingType.cc;
+    bool isToggle = midiMappingType == MidiMappingType.noteToggle;
+    int flags2 = (isMidiRelative ? 1 : 0) | // Bit 0: Relative
+        (isToggle ? (1 << 1) : 0) | // Bit 1: Toggle Note
+        (isNote ? (1 << 2) : 0); // Bit 2: Is Note Mapping
 
-    // Adjust the CC number and flags if necessary
+    // Adjust the CC number and flags if necessary (for Aftertouch)
     if (adjustedCC == 128) {
       adjustedCC = 0;
-      flags |= (1 << 2);
+      flags |= (1 << 2); // Use bit 2 of flags for Aftertouch indication
     }
 
     // Build the packed payload (starting after the version byte)
     final payload = [
-      adjustedCC & 0x7F, // MIDI CC number
+      adjustedCC & 0x7F, // MIDI CC number or Note number
       flags & 0x7F, // Flags
-      if (version >= 2) flags2 & 0x7F,
+      if (version >= 2) flags2 & 0x7F, // Flags2 (relative, toggle, is_note)
       ...DistingNT.encode16(min), // Encode 'min' as 7-bit chunks
       ...DistingNT.encode16(max), // Encode 'max' as 7-bit chunks
     ];
@@ -286,7 +311,7 @@ class PackedMappingData {
   Uint8List toBytes() {
     final bytes = <int>[];
 
-    // Encode CV Mapping (6 bytes)
+    // Encode CV Mapping (6 or 7 bytes)
     if (version >= 4) {
       bytes.add(source & 0x7F);
     }
@@ -299,11 +324,16 @@ class PackedMappingData {
     int midiFlags = (isMidiEnabled ? 1 : 0) |
         (isMidiSymmetric ? 2 : 0) |
         ((midiChannel & 0xF) << 3);
-    int midiFlags2 = (isMidiRelative ? 1 : 0);
+    // Encode midiFlags2 based on type and relative setting
+    bool isNote = midiMappingType != MidiMappingType.cc;
+    bool isToggle = midiMappingType == MidiMappingType.noteToggle;
+    int midiFlags2 = (isMidiRelative ? 1 : 0) | // Bit 0: Relative
+        (isToggle ? (1 << 1) : 0) | // Bit 1: Toggle Note
+        (isNote ? (1 << 2) : 0); // Bit 2: Is Note Mapping
     int adjustedMidiCC = midiCC;
     if (adjustedMidiCC == 128) {
       adjustedMidiCC = 0;
-      midiFlags |= (1 << 2); // Use bit 2 of flags like in fromBytes
+      midiFlags |= (1 << 2); // Use bit 2 of flags for Aftertouch indication
     }
     bytes.add(adjustedMidiCC & 0x7F);
     bytes.add(midiFlags & 0x7F);
@@ -319,7 +349,7 @@ class PackedMappingData {
     bytes.add(i2cCC & 0x7F); // Lower 7 bits
     if (version >= 3) {
       // Add the high bit as the next byte for v3+
-      bytes.add((i2cCC >> 7) & 0x01);
+      bytes.add((i2cCC >> 7) & 0x01); // Only the 8th bit
     }
     bytes.add(i2cFlags & 0x7F);
     bytes.addAll(DistingNT.encode16(i2cMin));
@@ -354,9 +384,11 @@ class PackedMappingData {
         other.volts == volts &&
         other.delta == delta &&
         other.midiChannel == midiChannel &&
+        other.midiMappingType == midiMappingType &&
         other.midiCC == midiCC &&
         other.isMidiEnabled == isMidiEnabled &&
         other.isMidiSymmetric == isMidiSymmetric &&
+        other.isMidiRelative == isMidiRelative &&
         other.midiMin == midiMin &&
         other.midiMax == midiMax &&
         other.i2cCC == i2cCC &&
@@ -376,9 +408,11 @@ class PackedMappingData {
       volts,
       delta,
       midiChannel,
+      midiMappingType,
       midiCC,
       isMidiEnabled,
       isMidiSymmetric,
+      isMidiRelative,
       midiMin,
       midiMax,
       i2cCC,

@@ -123,6 +123,7 @@ void main() {
         volts: 5,
         delta: 100,
         midiChannel: 2,
+        midiMappingType: MidiMappingType.cc,
         midiCC: 64,
         isMidiEnabled: true,
         isMidiSymmetric: false,
@@ -165,6 +166,7 @@ void main() {
         volts: 5,
         delta: 100,
         midiChannel: 2,
+        midiMappingType: MidiMappingType.cc,
         midiCC: 64,
         isMidiEnabled: true,
         isMidiSymmetric: false,
@@ -196,6 +198,86 @@ void main() {
       expect(mapping.packedMappingData.isMidiRelative, equals(true));
     });
 
+    test("can decode V2 mapping data for Note parameters", () {
+      // Momentary Note Mapping
+      PackedMappingData momentaryData = PackedMappingData(
+        cvInput: 0,
+        isUnipolar: false,
+        isGate: false,
+        volts: 0,
+        delta: 0,
+        midiChannel: 1,
+        midiMappingType: MidiMappingType.noteMomentary,
+        midiCC: 60, // Note C4
+        isMidiEnabled: true,
+        isMidiSymmetric: false,
+        isMidiRelative: false, // Usually false for notes
+        midiMin: 0, // Typically 0 for note off
+        midiMax: 127, // Typically 127 for note on
+        i2cCC: 0,
+        isI2cEnabled: false,
+        isI2cSymmetric: false,
+        i2cMin: 0,
+        i2cMax: 0,
+        version: 2,
+        source: 0,
+      );
+
+      final momentaryMessage = Uint8List.fromList([
+        10, // Algorithm index
+        ...DistingNT.encode16(5), // Parameter number
+        2, // Version
+        ...momentaryData.toBytes(),
+      ]);
+
+      var momentaryMapping = DistingNT.decodeMapping(momentaryMessage);
+      expect(momentaryMapping.algorithmIndex, equals(10));
+      expect(momentaryMapping.parameterNumber, equals(5));
+      expect(momentaryMapping.packedMappingData.version, equals(2));
+      expect(momentaryMapping.packedMappingData.midiMappingType,
+          equals(MidiMappingType.noteMomentary));
+      expect(momentaryMapping.packedMappingData, equals(momentaryData));
+
+      // Toggle Note Mapping
+      PackedMappingData toggleData = PackedMappingData(
+        cvInput: 0,
+        isUnipolar: false,
+        isGate: false,
+        volts: 0,
+        delta: 0,
+        midiChannel: 1,
+        midiMappingType: MidiMappingType.noteToggle,
+        midiCC: 61, // Note C#4
+        isMidiEnabled: true,
+        isMidiSymmetric: false,
+        isMidiRelative: false,
+        midiMin: 0,
+        midiMax: 127,
+        i2cCC: 0,
+        isI2cEnabled: false,
+        isI2cSymmetric: false,
+        i2cMin: 0,
+        i2cMax: 0,
+        version: 2,
+        source: 0,
+      );
+
+      final toggleMessage = Uint8List.fromList([
+        11, // Algorithm index
+        ...DistingNT.encode16(6), // Parameter number
+        2, // Version
+        ...toggleData.toBytes(),
+      ]);
+
+      var toggleMapping = DistingNT.decodeMapping(toggleMessage);
+      expect(toggleMapping.algorithmIndex, equals(11));
+      expect(toggleMapping.parameterNumber, equals(6));
+      expect(toggleMapping.packedMappingData.version, equals(2));
+      expect(toggleMapping.packedMappingData.midiMappingType,
+          equals(MidiMappingType.noteToggle));
+      expect(toggleMapping.packedMappingData, equals(toggleData));
+    });
+
     test("Can decode parameter value string", () {
       // 50H – Parameter value string
       // F0 00 21 27 6D <SysEx ID> 50 <algorithm index> <16 bit parameter number> <ASCII string> F7
@@ -216,7 +298,7 @@ void main() {
     test("Can decode number of algorithms", () {
       // 60H – Number of algorithms
       // F0 00 21 27 6D <SysEx ID> 60 <count> F7
-      // Sent in response to ‘60H – Request number of algorithms’, as above.
+      // Sent in response to '60H – Request number of algorithms', as above.
       final message = Uint8List.fromList([
         ...DistingNT.encode16(55),
       ]);
