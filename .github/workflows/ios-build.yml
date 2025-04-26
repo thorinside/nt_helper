@@ -3,11 +3,11 @@ name: iOS Build and Sign
 on:
   push:
     tags:
-      - 'v*'  # e.g., v1.0, v1.2.3, etc.
+      - "v*" # e.g., v1.0, v1.2.3, etc.
 
 jobs:
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-15-large
     name: Build & Sign iOS
 
     steps:
@@ -27,7 +27,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.29.3'
+          flutter-version: "3.29.3"
 
       - name: Flutter Doctor (debug)
         run: flutter doctor -v

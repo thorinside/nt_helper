@@ -53,7 +53,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.29.3'
+          flutter-version: "3.29.3"
 
       - name: Install dependencies
         run: flutter pub get
@@ -126,6 +126,12 @@ jobs:
       - name: Rename Android AAB
         run: mv ./build/app/outputs/bundle/release/app-release.aab ./build/app/outputs/bundle/release/nt_helper-${VERSION}.aab
 
+      - name: Save AAB as an artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nt_helper-${{ env.VERSION }}.aab
+          path: ./build/app/outputs/bundle/release/nt_helper-${{ env.VERSION }}.aab
+
       - name: Upload AAB to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
@@ -154,7 +160,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.29.3'
+          flutter-version: "3.29.3"
 
       - name: Install dependencies
         run: flutter pub get
@@ -271,7 +277,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.29.3'
+          flutter-version: "3.29.3"
 
       - name: Install dependencies
         run: flutter pub get
@@ -315,7 +321,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.29.3'
+          flutter-version: "3.29.3"
 
       - name: Install dependencies
         run: |
