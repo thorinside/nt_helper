@@ -24,7 +24,6 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
-import '../db/daos/presets_dao.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -323,32 +322,9 @@ class SynchronizedScreen extends StatelessWidget {
                 orElse: () => false,
               );
           return [
-            // New: Only disabled by loading
-            PopupMenuItem(
-              value: "new",
-              enabled: !loading,
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('New Preset'),
-                    Icon(Icons.fiber_new_rounded)
-                  ]),
-              onTap: loading
-                  ? null
-                  : () {
-                      popupCtx.read<DistingCubit>().newPreset();
-                    },
-            ),
-            // Load: Disabled by loading OR offline
             PopupMenuItem(
               value: "load",
               enabled: !loading && !isOffline,
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Load Preset'),
-                    Icon(Icons.file_upload_rounded)
-                  ]),
               onTap: loading || isOffline
                   ? null
                   : () async {
@@ -362,17 +338,31 @@ class SynchronizedScreen extends StatelessWidget {
                       cubit.loadPreset(
                           preset["name"] as String, preset["append"] as bool);
                     },
-            ),
-            // Save: Disabled by loading ONLY
-            PopupMenuItem(
-              value: "save",
-              enabled: !loading,
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Save Preset'),
-                    Icon(Icons.save_alt_rounded)
+                    Text('Load Preset'),
+                    Icon(Icons.file_upload_rounded)
                   ]),
+            ),
+            PopupMenuItem(
+              value: "new",
+              enabled: !loading,
+              onTap: loading
+                  ? null
+                  : () {
+                popupCtx.read<DistingCubit>().newPreset();
+              },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('New Preset'),
+                    Icon(Icons.fiber_new_rounded)
+                  ]),
+            ),
+            PopupMenuItem(
+              value: "save",
+              enabled: !loading,
               onTap: loading
                   ? null
                   : () {
@@ -381,6 +371,12 @@ class SynchronizedScreen extends StatelessWidget {
                           .requireDisting()
                           .requestSavePreset();
                     },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Save Preset'),
+                    Icon(Icons.save_alt_rounded)
+                  ]),
             ),
             // Routing: Disabled by loading OR offline
             PopupMenuItem(
