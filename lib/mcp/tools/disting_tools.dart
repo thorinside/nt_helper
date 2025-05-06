@@ -241,7 +241,7 @@ class DistingTools {
   ///   - name (string, required): The new name for the preset.
   /// Returns:
   ///   A JSON string confirming the action or an error.
-  Future<String> set_current_preset_name(Map<String, dynamic> params) async {
+  Future<String> set_preset_name(Map<String, dynamic> params) async {
     final String? name = params['name'] as String?;
 
     if (name == null || name.isEmpty) {
@@ -250,7 +250,7 @@ class DistingTools {
     }
 
     try {
-      await _controller.setCurrentPresetName(name);
+      await _controller.setPresetName(name);
       return jsonEncode({
         'success': true,
         'message': 'Preset name set to "$name".',

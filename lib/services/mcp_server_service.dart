@@ -276,7 +276,7 @@ class McpServerService extends ChangeNotifier {
     );
 
     server.tool(
-      'setCurrentPresetName',
+      'setPresetName',
       description:
           'Sets the name of the currently loaded preset on the device.',
       inputSchemaProperties: {
@@ -286,8 +286,7 @@ class McpServerService extends ChangeNotifier {
         }
       },
       callback: ({args, extra}) async {
-        final resultJson =
-            await _distingTools.set_current_preset_name(args ?? {});
+        final resultJson = await _distingTools.set_preset_name(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );

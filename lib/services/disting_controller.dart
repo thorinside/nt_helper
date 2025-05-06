@@ -9,7 +9,7 @@ abstract class DistingController {
 
   /// Sets the name of the currently loaded preset.
   /// Throws StateError if the Disting is not in a synchronized state.
-  Future<void> setCurrentPresetName(String name);
+  Future<void> setPresetName(String name);
 
   /// Retrieves the algorithm currently loaded in the specified slot.
   /// Returns null if the slot is empty.
