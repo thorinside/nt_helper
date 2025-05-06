@@ -6,6 +6,7 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 
 class DistingApp extends StatelessWidget {
   const DistingApp({super.key});
@@ -87,6 +88,40 @@ class DistingPage extends StatefulWidget {
 }
 
 class _DistingPageState extends State<DistingPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize and start the MCP server here, after DistingCubit is available
+    // Use WidgetsBinding.instance.addPostFrameCallback to ensure context is mounted
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Check if the widget is still in the tree
+        try {
+          final distingCubit = context.read<DistingCubit>();
+          McpServerService.initialize(distingCubit: distingCubit);
+          McpServerService.instance.start().catchError((e) {
+            // Handle potential errors during server start (e.g., port in use)
+            debugPrint('Error starting MCP Server: $e');
+            // Optionally show an error message to the user
+          });
+          debugPrint("MCP Server Initialized and Started");
+        } catch (e) {
+          debugPrint('Error initializing/starting MCP Server: $e');
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Stop the MCP server when the widget is disposed
+    McpServerService.instance.stop().catchError((e) {
+      debugPrint('Error stopping MCP Server: $e');
+    });
+    debugPrint("MCP Server Stopped");
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

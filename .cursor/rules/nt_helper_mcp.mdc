@@ -1,0 +1,121 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- **Interacting with Disting NT via MCP Tools**
+  - This document outlines how to use the MCP tools specifically designed for the `nt_helper` project to control and query a Disting NT module.
+  - These tools are typically defined in `lib/mcp/tools/disting_tools.dart` ([lib/mcp/tools/disting_tools.dart](mdc:lib/mcp/tools/disting_tools.dart)) and registered in `lib/services/mcp_server_service.dart` ([lib/services/mcp_server_service.dart](mdc:lib/services/mcp_server_service.dart)).
+  - **Important**: If backend tool definitions change (e.g., in `disting_tools.dart` or `mcp_server_service.dart`), the MCP server within `nt_helper` **must be restarted** for the changes to take effect and for the correct tool schemas to be available to clients like Cursor.
+
+- **Core `nt_helper` MCP Tools**
+  - **Algorithm GUIDs**: When using tools like `mcp_nt_helper_addAlgorithm` or `mcp_nt_helper_get_algorithm_details`, you **must** use valid algorithm GUIDs that are known to the `nt_helper` system.
+    - These are the GUIDs returned by `mcp_nt_helper_find_algorithms` or that exist in the application's loaded metadata (typically from `assets/algorithms/`).
+    - **Do not invent GUIDs** or assume a GUID exists (e.g., `"fold"`, `"wtbl"`) if it's not discoverable through `mcp_nt_helper_find_algorithms`. If a GUID is not found by the search tool, it means the metadata for that algorithm is not currently loaded or available to the `nt_helper` application.
+
+  - **`mcp_nt_helper_getCurrentPreset`**: Fetches the entire current state of the Disting preset.
+    - Parameters: Takes a `random_string` (can be any string, e.g., `"test"`) due to current MCP limitations for no-parameter tools.
+    - Returns: A JSON string detailing the preset name and a list of all slots. Each slot shows its index, the loaded algorithm (GUID, name, `algorithmIndex` within preset), and its parameters. **Critically, each parameter includes its unique `parameterNumber` which is the index required by `setParameterValue`**. Empty slots are represented as `null`.
+    ```json
+    // Example Call
+    // {"tool_name": "mcp_nt_helper_getCurrentPreset", "arguments": {"random_string": "foo"}}
+
+    // Example relevant parameter output within a slot:
+    // { "parameterNumber": 6, "name": "Speed", "min": 0, ... }
+    ```
+
+  - **`mcp_nt_helper_setCurrentPresetName`**: Sets the name of the currently loaded preset on the device.
+    - Parameters: `name` (string, required).
+    - Returns: Confirmation or error.
+    - Note: Requires `savePreset` to persist.
+    ```json
+    // Example Call: Set preset name to "My Synth"
+    // {"tool_name": "mcp_nt_helper_setCurrentPresetName", "arguments": {"name": "My Synth"}}
+    ```
+
+  - **`mcp_nt_helper_setSlotName`**: Sets a custom name for the algorithm loaded in a specific slot.
+    - Parameters: `slot_index` (integer, required), `name` (string, required).
+    - Returns: Confirmation or error.
+    - Note: Allows distinguishing multiple instances (e.g., "VCO 1", "VCO 2"). Requires `savePreset` to persist.
+    ```json
+    // Example Call: Set name of slot 1 to "VCO Master"
+    // {"tool_name": "mcp_nt_helper_setSlotName", "arguments": {"slot_index": 1, "name": "VCO Master"}}
+    ```
+
+  - **`mcp_nt_helper_newPreset`**: Tells the Disting device to clear the current working preset.
+    - Parameters: `random_string` (dummy).
+    - Returns: Confirmation or error.
+    - Note: Affects working memory; previous state lost unless saved.
+    ```json
+    // Example Call
+    // {"tool_name": "mcp_nt_helper_newPreset", "arguments": {"random_string": "init"}}
+    ```
+
+  - **`mcp_nt_helper_savePreset`**: Tells the Disting device to save the current working preset.
+    - Parameters: `random_string` (dummy).
+    - Returns: Confirmation or error.
+    - Note: Crucial for persisting changes.
+    ```json
+    // Example Call
+    // {"tool_name": "mcp_nt_helper_savePreset", "arguments": {"random_string": "save_now"}}
+    ```
+
+  - **`mcp_nt_helper_addAlgorithm`**: Adds a specified algorithm to the *next available slot*.
+    - Parameters: `algorithm_guid` (string, required). **Must be a valid, discoverable GUID.**
+    - Behavior: Firmware places algorithm; tool doesn't specify slot.
+    - Returns: Confirmation or error.
+    ```json
+    // Example Call
+    // {"tool_name": "mcp_nt_helper_addAlgorithm", "arguments": {"algorithm_guid": "vcow"}}
+    ```
+
+  - **`mcp_nt_helper_removeAlgorithm`**: Removes the algorithm from a *specific slot index*.
+    - Parameters: `slot_index` (integer, required).
+    - **CRITICAL BEHAVIOR - Slot Shifting**: When an algorithm is removed from `slot_index N`, all subsequent algorithms shift down (e.g., `N+1` moves to `N`, `N+2` moves to `N+1`). `algorithmIndex` of remaining algorithms updates.
+    - Returns: Confirmation or error.
+    ```json
+    // Example Call
+    // {"tool_name": "mcp_nt_helper_removeAlgorithm", "arguments": {"slot_index": 0}}
+    ```
+
+  - **`mcp_nt_helper_setParameterValue`**: Sets the value of a specific parameter using its human-readable display value.
+    - Parameters:
+      - `slot_index` (integer, required): 0-based index of the slot.
+      - `parameter_index` (integer, required): **The parameter's unique, 0-based device index.** See **Important Note** below.
+      - `display_value` (number, required): Human-readable value (e.g., `5.0` for 5Hz). Tool handles internal scaling (`powerOfTen`).
+    - **Important Note on `parameter_index`**:
+      - The required `parameter_index` corresponds to the `parameterNumber` field provided by the `mcp_nt_helper_getCurrentPreset` tool for that specific parameter within the slot.
+      - **DO NOT** rely on the 0-based order of parameters returned by `mcp_nt_helper_get_algorithm_details`. This list may be ordered differently (e.g., by UI pages) and does not reliably represent the `parameter_index` needed here.
+      - **Workflow**:
+        1. Ensure the algorithm is in the desired `slot_index`.
+        2. Call `mcp_nt_helper_getCurrentPreset`.
+        3. Find the parameter by `name` in the correct slot's `parameters` list.
+        4. Use the `parameterNumber` value from that object as the `parameter_index` for `mcp_nt_helper_setParameterValue`.
+    - Behavior: Handles `powerOfTen` scaling. Fails if slot/parameter invalid or scaled value out of range.
+    - Returns: Confirmation or error.
+    ```json
+    // Example Workflow: Set "Speed" (parameterNumber 6) of LFO in slot 0 to 8000
+    // 1. (LFO already added to slot 0)
+    // 2. Call: {"tool_name": "mcp_nt_helper_getCurrentPreset", "arguments": {"random_string": "get_indices"}}
+    // 3. (Parse result, find "Speed" in slot 0 params, confirm its "parameterNumber" is 6)
+    // 4. Call: {"tool_name": "mcp_nt_helper_setParameterValue", "arguments": {"slot_index": 0, "parameter_index": 6, "display_value": 8000}}
+    ```
+
+  - **`mcp_nt_helper_getParameterValue`**: Retrieves the current value of a specific parameter directly from the device.
+    - Parameters:
+      - `slot_index` (integer, required): 0-based index of the slot.
+      - `parameter_index` (integer, required): **The parameter's unique, 0-based device index (i.e., `parameterNumber` from `getCurrentPreset`).**
+    - Returns: JSON with `success: true`, `slotIndex`, `parameterIndex`, `value` (the raw integer value from device) or an error.
+    ```json
+    // Example Call: Get value of parameter 6 in slot 0
+    // {"tool_name": "mcp_nt_helper_getParameterValue", "arguments": {"slot_index": 0, "parameter_index": 6}}
+    ```
+
+  - **`mcp_nt_helper_get_algorithm_details`**: Retrieves static metadata for an algorithm.
+    - Parameters: `guid` (string, required), `expand_features` (bool, optional).
+    - Returns: JSON representation of `AlgorithmMetadata`.
+    - **Caution**: The order of parameters in this tool's output may *not* correspond to the `parameter_index` required by `setParameterValue` or `getParameterValue`. Use `getCurrentPreset` to find the correct index (`parameterNumber`) for setting/getting live values.
+    ```json
+    // Example Call
+    // {"tool_name": "mcp_nt_helper_get_algorithm_details", "arguments": {"guid": "vcow"}}
+    ```

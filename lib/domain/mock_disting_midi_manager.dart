@@ -5,8 +5,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/db/daos/presets_dao.dart'; // Re-add PresetsDao import
 // import 'package:nt_helper/db/database.dart'; // Remove unused
-import 'package:nt_helper/domain/disting_midi_manager.dart'; // Import to get interface
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/models/packed_mapping_data.dart';
 // import 'package:nt_helper/models/routing_information.dart';
 // import 'package:collection/collection.dart';
@@ -769,18 +770,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetFocus(int algorithmIndex, int parameterNumber) async {
-    // No-op
-  }
-
-  @override
-  Future<void> requestSetI2CMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
-    // No-op
-  }
-
-  @override
-  Future<void> requestSetMIDIMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
     // No-op
   }
 

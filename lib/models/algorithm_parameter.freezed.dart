@@ -41,6 +41,7 @@ mixin _$AlgorithmParameter {
   bool? get isPerChannel => throw _privateConstructorUsedError;
   @JsonKey(name: 'isCommon')
   bool? get isCommon => throw _privateConstructorUsedError;
+  int? get parameterNumber => throw _privateConstructorUsedError;
 
   /// Serializes this AlgorithmParameter to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -71,7 +72,8 @@ abstract class $AlgorithmParameterCopyWith<$Res> {
       @JsonKey(name: 'busIdRef') String? busIdRef,
       @JsonKey(name: 'channelCountRef') String? channelCountRef,
       @JsonKey(name: 'isPerChannel') bool? isPerChannel,
-      @JsonKey(name: 'isCommon') bool? isCommon});
+      @JsonKey(name: 'isCommon') bool? isCommon,
+      int? parameterNumber});
 }
 
 /// @nodoc
@@ -102,6 +104,7 @@ class _$AlgorithmParameterCopyWithImpl<$Res, $Val extends AlgorithmParameter>
     Object? channelCountRef = freezed,
     Object? isPerChannel = freezed,
     Object? isCommon = freezed,
+    Object? parameterNumber = freezed,
   }) {
     return _then(_value.copyWith(
       name: null == name
@@ -156,6 +159,10 @@ class _$AlgorithmParameterCopyWithImpl<$Res, $Val extends AlgorithmParameter>
           ? _value.isCommon
           : isCommon // ignore: cast_nullable_to_non_nullable
               as bool?,
+      parameterNumber: freezed == parameterNumber
+          ? _value.parameterNumber
+          : parameterNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -181,7 +188,8 @@ abstract class _$$AlgorithmParameterImplCopyWith<$Res>
       @JsonKey(name: 'busIdRef') String? busIdRef,
       @JsonKey(name: 'channelCountRef') String? channelCountRef,
       @JsonKey(name: 'isPerChannel') bool? isPerChannel,
-      @JsonKey(name: 'isCommon') bool? isCommon});
+      @JsonKey(name: 'isCommon') bool? isCommon,
+      int? parameterNumber});
 }
 
 /// @nodoc
@@ -210,6 +218,7 @@ class __$$AlgorithmParameterImplCopyWithImpl<$Res>
     Object? channelCountRef = freezed,
     Object? isPerChannel = freezed,
     Object? isCommon = freezed,
+    Object? parameterNumber = freezed,
   }) {
     return _then(_$AlgorithmParameterImpl(
       name: null == name
@@ -264,6 +273,10 @@ class __$$AlgorithmParameterImplCopyWithImpl<$Res>
           ? _value.isCommon
           : isCommon // ignore: cast_nullable_to_non_nullable
               as bool?,
+      parameterNumber: freezed == parameterNumber
+          ? _value.parameterNumber
+          : parameterNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -284,7 +297,8 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
       @JsonKey(name: 'busIdRef') this.busIdRef,
       @JsonKey(name: 'channelCountRef') this.channelCountRef,
       @JsonKey(name: 'isPerChannel') this.isPerChannel,
-      @JsonKey(name: 'isCommon') this.isCommon})
+      @JsonKey(name: 'isCommon') this.isCommon,
+      this.parameterNumber})
       : _values = values;
 
   factory _$AlgorithmParameterImpl.fromJson(Map<String, dynamic> json) =>
@@ -332,10 +346,12 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
   @override
   @JsonKey(name: 'isCommon')
   final bool? isCommon;
+  @override
+  final int? parameterNumber;
 
   @override
   String toString() {
-    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon)';
+    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
   }
 
   @override
@@ -361,7 +377,9 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
             (identical(other.isPerChannel, isPerChannel) ||
                 other.isPerChannel == isPerChannel) &&
             (identical(other.isCommon, isCommon) ||
-                other.isCommon == isCommon));
+                other.isCommon == isCommon) &&
+            (identical(other.parameterNumber, parameterNumber) ||
+                other.parameterNumber == parameterNumber));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -380,7 +398,8 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
       busIdRef,
       channelCountRef,
       isPerChannel,
-      isCommon);
+      isCommon,
+      parameterNumber);
 
   /// Create a copy of AlgorithmParameter
   /// with the given fields replaced by the non-null parameter values.
@@ -401,20 +420,20 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
 
 abstract class _AlgorithmParameter implements AlgorithmParameter {
   const factory _AlgorithmParameter(
-          {required final String name,
-          final String? unit,
-          final dynamic min,
-          final dynamic max,
-          final dynamic defaultValue,
-          final String? scope,
-          final String? description,
-          @JsonKey(name: 'enumValues') final List<String>? values,
-          final String? type,
-          @JsonKey(name: 'busIdRef') final String? busIdRef,
-          @JsonKey(name: 'channelCountRef') final String? channelCountRef,
-          @JsonKey(name: 'isPerChannel') final bool? isPerChannel,
-          @JsonKey(name: 'isCommon') final bool? isCommon}) =
-      _$AlgorithmParameterImpl;
+      {required final String name,
+      final String? unit,
+      final dynamic min,
+      final dynamic max,
+      final dynamic defaultValue,
+      final String? scope,
+      final String? description,
+      @JsonKey(name: 'enumValues') final List<String>? values,
+      final String? type,
+      @JsonKey(name: 'busIdRef') final String? busIdRef,
+      @JsonKey(name: 'channelCountRef') final String? channelCountRef,
+      @JsonKey(name: 'isPerChannel') final bool? isPerChannel,
+      @JsonKey(name: 'isCommon') final bool? isCommon,
+      final int? parameterNumber}) = _$AlgorithmParameterImpl;
 
   factory _AlgorithmParameter.fromJson(Map<String, dynamic> json) =
       _$AlgorithmParameterImpl.fromJson;
@@ -453,6 +472,8 @@ abstract class _AlgorithmParameter implements AlgorithmParameter {
   @override
   @JsonKey(name: 'isCommon')
   bool? get isCommon;
+  @override
+  int? get parameterNumber;
 
   /// Create a copy of AlgorithmParameter
   /// with the given fields replaced by the non-null parameter values.

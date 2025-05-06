@@ -10,6 +10,8 @@ import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 import 'package:nt_helper/db/database.dart'; // Added
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -748,7 +750,7 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
-  void updateParameterValue({
+  Future<void> updateParameterValue({
     required int algorithmIndex,
     required int parameterNumber,
     required int value,

@@ -4,8 +4,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
-import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:collection/collection.dart';
 

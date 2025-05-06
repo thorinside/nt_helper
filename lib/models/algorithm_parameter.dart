@@ -22,6 +22,7 @@ class AlgorithmParameter with _$AlgorithmParameter {
     @JsonKey(name: 'channelCountRef') String? channelCountRef,
     @JsonKey(name: 'isPerChannel') bool? isPerChannel,
     @JsonKey(name: 'isCommon') bool? isCommon,
+    int? parameterNumber,
   }) = _AlgorithmParameter;
 
   factory AlgorithmParameter.fromJson(Map<String, dynamic> json) =>

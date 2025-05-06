@@ -24,6 +24,7 @@ _$AlgorithmParameterImpl _$$AlgorithmParameterImplFromJson(
       channelCountRef: json['channelCountRef'] as String?,
       isPerChannel: json['isPerChannel'] as bool?,
       isCommon: json['isCommon'] as bool?,
+      parameterNumber: (json['parameterNumber'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$AlgorithmParameterImplToJson(
@@ -42,4 +43,5 @@ Map<String, dynamic> _$$AlgorithmParameterImplToJson(
       'channelCountRef': instance.channelCountRef,
       'isPerChannel': instance.isPerChannel,
       'isCommon': instance.isCommon,
+      'parameterNumber': instance.parameterNumber,
     };

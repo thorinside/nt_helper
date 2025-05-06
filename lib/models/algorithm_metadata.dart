@@ -48,7 +48,10 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
         for (final paramJson in pageParams) {
           if (paramJson is Map<String, dynamic>) {
             try {
-              allParams.add(AlgorithmParameter.fromJson(paramJson));
+              // Attempt to read parameterNumber, defaults to null if not present
+              final int? pNum = paramJson['parameterNumber'] as int?;
+              allParams.add(AlgorithmParameter.fromJson(paramJson)
+                  .copyWith(parameterNumber: pNum));
             } catch (e) {
               print(
                   'Error parsing parameter within page ${item['page']}: $paramJson\nError: $e');
@@ -56,9 +59,12 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
           }
         }
       } else if (item.containsKey('name')) {
-        // It might be a parameter directly in the list (handle potential future format)
+        // It might be a parameter directly in the list
         try {
-          allParams.add(AlgorithmParameter.fromJson(item));
+          // Attempt to read parameterNumber, defaults to null if not present
+          final int? pNum = item['parameterNumber'] as int?;
+          allParams.add(AlgorithmParameter.fromJson(item)
+              .copyWith(parameterNumber: pNum));
         } catch (e) {
           print('Error parsing parameter directly in list: $item\nError: $e');
         }
