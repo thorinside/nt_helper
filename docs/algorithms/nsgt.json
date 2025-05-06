@@ -1,0 +1,155 @@
+{
+  "guid": "nsgt",
+  "name": "Noise gate",
+  "categories": [
+    "Dynamics",
+    "Utility"
+  ],
+  "description": "A multi-channel noise gate with optional sidechain input. Each channel operates independently.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": {
+        "minValue": 1,
+        "maxValue": 12,
+        "defaultValue": 1
+      },
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enables the channel. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Left/mono input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left or mono input bus. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The right input bus, if stereo (0=None). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Sidechain input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The sidechain input bus (0=None). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Threshold",
+      "unit": "dB",
+      "defaultValue": -24.0,
+      "minValue": -70.0,
+      "maxValue": 0.0,
+      "description": "The threshold level required to open the gate. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Hysteresis",
+      "unit": "dB",
+      "defaultValue": -3.0,
+      "minValue": -24.0,
+      "maxValue": 0.0,
+      "description": "The level, relative to the threshold, that the input must drop below before the gate closes again. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Attack",
+      "unit": null,
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1023,
+      "description": "The attack time for the gate opening (0.2ms to 200ms, exponential scale). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Hold",
+      "unit": null,
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1023,
+      "description": "The minimum time that the gate remains open (1ms to 1000ms, exponential scale). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Release",
+      "unit": null,
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1023,
+      "description": "The release time for the gate closing (2ms to 2000ms, exponential scale). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Lookahead",
+      "unit": "ms",
+      "defaultValue": 1.0,
+      "minValue": 0.0,
+      "maxValue": 10.0,
+      "description": "Lookahead time to prevent missing sharp transients (adds latency). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Gain reduction",
+      "unit": "dB",
+      "defaultValue": -80,
+      "minValue": -80,
+      "maxValue": 0,
+      "description": "Amount signal is attenuated when gate is closed (-80 treated as -∞dB). Indexed per channel.",
+      "scope": "channel"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_l_mono",
+      "name": "Input L/Mono",
+      "description": "Left or Mono audio input. Use busIdRef based on channel index.",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "id": "in_r",
+      "name": "Input R",
+      "description": "Right audio input (if stereo). Use busIdRef based on channel index.",
+      "busIdRef": "Right input"
+    },
+    {
+      "id": "sidechain",
+      "name": "Sidechain In",
+      "description": "Sidechain control input. Use busIdRef based on channel index.",
+      "busIdRef": "Sidechain input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_l_mono",
+      "name": "Output L/Mono",
+      "description": "Gated Left or Mono audio output (replaces input). Use busIdRef based on channel index.",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "id": "out_r",
+      "name": "Output R",
+      "description": "Gated Right audio output (if stereo, replaces input). Use busIdRef based on channel index.",
+      "busIdRef": "Right input"
+    }
+  ]
+}

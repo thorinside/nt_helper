@@ -1,0 +1,86 @@
+{
+  "guid": "vcam",
+  "name": "VCA/Multiplier",
+  "categories": [
+    "Utility",
+    "Dynamics",
+    "VCA"
+  ],
+  "description": "Voltage multiplier algorithm that can function as a VCA. Uses a common CV input to multiply voltages on other channels. Supports typical VCA (clamp to 0V) or four-quadrant multiplier behavior.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "common",
+      "description": "The common input bus (CV for multiplication)."
+    },
+    {
+      "name": "Clamp to 0V",
+      "unit": "toggle",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "scope": "common",
+      "description": "Clamps common input to 0V (VCA mode) or allows negative values (4-quadrant multiplier mode)."
+    },
+    {
+      "name": "Divider",
+      "unit": "V",
+      "min": 1,
+      "max": 12,
+      "default": 8,
+      "scope": "common",
+      "description": "Sets the scaling of the input CV that corresponds to unity gain."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "per-channel",
+      "description": "The channel input bus (signal to be multiplied)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "per-channel",
+      "description": "The output bus. If 0 (None), the input bus is used as output, and mode is always Replace."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "per-channel",
+      "description": "The standard Add/Replace mode selector."
+    }
+  ],
+  "input_ports": [
+    "CV (Multiplier)",
+    "Audio/CV (Signal)"
+  ],
+  "output_ports": [
+    "Audio/CV"
+  ]
+}

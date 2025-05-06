@@ -1,0 +1,87 @@
+{
+  "name": "Chorus (Vintage)",
+  "guid": "junc",
+  "short_description": "Chorus effect based on an 80s polysynth",
+  "description": "This algorithm is a stereo chorus effect, modelled on that of the classic Juno-6 polysynth, based on measurements of the author's own unit. Those with keen ears may recognise it as the chorus that is built into the Poly Wavetable algorithm on the disting EX.",
+  "use_cases": [
+    "Adding stereo width",
+    "Emulating vintage chorus sounds",
+    "Thickening synth patches"
+  ],
+  "gui_description": null,
+  "specifications": [],
+  "parameters": [
+    {
+      "page": "Routing",
+      "params": [
+        {
+          "name": "Left/mono input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The left or mono input bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Right input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The right input bus, if stereo. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Left output",
+          "min": 1,
+          "max": 28,
+          "default": 13,
+          "unit": null,
+          "description": "The left output bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Right output",
+          "min": 1,
+          "max": 28,
+          "default": 14,
+          "unit": null,
+          "description": "The right output bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        }
+      ]
+    },
+    {
+      "page": "Chorus",
+      "params": [
+        {
+          "name": "Mode",
+          "min": 0,
+          "max": 2,
+          "default": 2,
+          "unit": null,
+          "description": "The chorus effect to apply.",
+          "enum_values": [
+            "None",
+            "Mode 1",
+            "Mode 2"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/disting_app.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
 
 void main() async {
@@ -10,6 +11,9 @@ void main() async {
   await SettingsService().init();
 
   final database = AppDatabase();
+
+  final mcpServer = McpServerService.instance;
+  mcpServer.start();
 
   runApp(
     RepositoryProvider<AppDatabase>(

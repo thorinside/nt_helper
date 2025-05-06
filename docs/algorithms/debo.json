@@ -1,0 +1,100 @@
+{
+  "name": "Debouncer",
+  "guid": "debo",
+  "short_description": "A switch debouncer",
+  "description": "This algorithm implements a simple switch debouncer. It was added primarily so that simple passive guitar footswitches can be attached to the module's inputs (with a suitable voltage source) and used with, for example, the Looper algorithm.",
+  "use_cases": [
+    "Using passive footswitches with digital inputs",
+    "Cleaning up noisy gate or trigger signals",
+    "Preventing multiple triggers from switch contact bounce"
+  ],
+  "gui_description": null,
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 8,
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "page": "Globals",
+      "params": [
+        {
+          "name": "Time",
+          "min": 1,
+          "max": 100,
+          "default": 10,
+          "unit": "ms",
+          "description": "The hold-off time. Once the output has changed, it is not allowed to change again for the this duration."
+        }
+      ]
+    },
+    {
+      "page": "Channel {i+1}",
+      "is_per_channel": true,
+      "params": [
+        {
+          "name": "Input",
+          "min": 0,
+          "max": 28,
+          "default": 13,
+          "unit": null,
+          "description": "The input bus. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Enable",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Enables debouncing on this channel.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Output",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        },
+        {
+          "name": "Output Volts",
+          "min": -10,
+          "max": 10,
+          "default": 5,
+          "unit": "V",
+          "description": "The output voltage when the input is 'high', in Volts."
+        },
+        {
+          "name": "Output semitones",
+          "min": -60,
+          "max": 60,
+          "default": 0,
+          "unit": "ST",
+          "description": "The output voltage when the input is 'high', in 12-TET semitones (one twelfth of a Volt)."
+        }
+      ]
+    }
+  ]
+}

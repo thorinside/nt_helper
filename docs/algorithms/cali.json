@@ -1,0 +1,72 @@
+{
+  "name": "Auto-calibrator",
+  "guid": "cali",
+  "short_description": "Calibrates pitch CV outputs",
+  "description": "This algorithm offers oscillator calibration, similar to that in our Silent Way Voice Controller VST plug-in, in the FH-2 module, and in various algorithms on the disting EX. Pass the pitch CV from another algorithm (for example, the Quantizer) or another module through this algorithm, and connect the algorithm output to your VCO's CV input. To perform the calibration, you will also need to connect an output from the VCO to an input on this algorithm. This is only required during calibration, and can be disconnected afterwards. To start the calibration, set the 'Start' parameter to 'On'. The module will output a series of voltages, ranging from -4 Volts up to +6 Volts, and analyse the pitch of the resulting signal from the VCO. As it does so, it will draw a graph of the results, which will ideally look like a nice straight line. Once the calibration is complete, the algorithm will continuously modify the pitch CV it receives to achieve the expected frequency from the VCO. When discussing this process we may say \"calibrate an output\" or \"calibrate a VCO\" but what is really being calibrated is the combination of the disting NT output and the VCO. Both may in fact be perfectly well calibrated, in terms of tracking, but the absolute pitch of a VCO is usually determined by a physical tuning knob (not to mention temperature and other factors) and so is hard to know precisely. This process saves you having to tune by hand.",
+  "use_cases": [
+    "Precise VCO tuning",
+    "Compensating for V/Oct tracking inaccuracies",
+    "Matching pitch across multiple oscillators",
+    "Automated tuning without manual adjustment"
+  ],
+  "gui_description": "While calibrating, the display draws a graph of the measured pitch vs output voltage.",
+  "specifications": [],
+  "parameters": [
+    {
+      "page": "Calibration",
+      "params": [
+        {
+          "name": "Enable",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "Enables the algorithm. If disabled, the algorithm passes through CVs unmodified.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Start",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Used to start the calibration process.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "CV input",
+          "min": 1,
+          "max": 28,
+          "default": 16,
+          "unit": null,
+          "description": "The pitch CV input bus.",
+          "is_bus": true
+        },
+        {
+          "name": "CV output",
+          "min": 1,
+          "max": 28,
+          "default": 16,
+          "unit": null,
+          "description": "The pitch CV output bus. Always uses \"Replace\" output mode.",
+          "is_bus": true
+        },
+        {
+          "name": "Audio input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The audio input to use during calibration.",
+          "is_bus": true
+        }
+      ]
+    }
+  ]
+}

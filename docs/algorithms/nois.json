@@ -1,0 +1,105 @@
+{
+  "guid": "nois",
+  "name": "Noise generator",
+  "categories": [
+    "Generator",
+    "Noise"
+  ],
+  "description": "Generates various standard \"colours\" of noise (Violet, White, Pink, Red, Blended).",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 1
+      },
+      "description": "The number of output channels."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Global Gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "An overall gain to apply, in addition to the per-channel gain.",
+      "scope": "global"
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The output bus. Indexed per channel. (0=None)",
+      "scope": "channel"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Amplitude",
+      "unit": "V",
+      "defaultValue": 10.00,
+      "minValue": 0.00,
+      "maxValue": 10.00,
+      "description": "The amplitude of the noise signal (before the gain is applied). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "The output level. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Colour",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 4,
+      "enumValues": [
+        "Blended",
+        "Violet",
+        "White",
+        "Pink",
+        "Red"
+      ],
+      "description": "The noise colour. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Blend",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 300,
+      "description": "If \"Blended\" colour is selected, sets the blend between noise colours. Indexed per channel.",
+      "scope": "channel"
+    }
+  ],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "id": "out",
+      "name": "Noise Output",
+      "description": "Noise signal output. Use busIdRef based on channel index.",
+      "busIdRef": "Output"
+    }
+  ]
+}

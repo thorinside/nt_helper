@@ -1,0 +1,75 @@
+{
+  "name": "Clock multiplier",
+  "guid": "clkm",
+  "short_description": "Multiplies clocks",
+  "description": "This algorithm is a simple clock multiplier, generating a faster clock from a slower one. The output clock rate is updated on every clock received, except that the clock duration is limited to at most double each time. This is mainly to prevent the output clock rate changing when the input clock is paused and restarted, which would otherwise be interpreted as a really long clock pulse.",
+  "use_cases": [
+    "Generating faster clock rates from a slower master clock",
+    "Creating complex rhythmic patterns by multiplying subdivisions",
+    "Speeding up sequences or LFOs synced to the multiplied clock"
+  ],
+  "gui_description": null,
+  "specifications": [],
+  "parameters": [
+    {
+      "page": "Parameters",
+      "params": [
+        {
+          "name": "Clock input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The clock input bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Clock output",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The clock output bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        },
+        {
+          "name": "Multiplier",
+          "min": 1,
+          "max": 24,
+          "default": 2,
+          "unit": null,
+          "description": "The clock multiplier."
+        },
+        {
+          "name": "Low voltage",
+          "min": -10.0,
+          "max": 10.0,
+          "default": 0.0,
+          "unit": "V",
+          "description": "The output voltage when the clock is low/inactive."
+        },
+        {
+          "name": "High voltage",
+          "min": -10.0,
+          "max": 10.0,
+          "default": 5.0,
+          "unit": "V",
+          "description": "The output voltage when the clock is high/active."
+        }
+      ]
+    }
+  ]
+}

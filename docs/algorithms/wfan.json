@@ -1,0 +1,140 @@
+{
+  "guid": "wfan",
+  "name": "Waveform Animator",
+  "categories": [
+    "Effect",
+    "Waveshaping"
+  ],
+  "description": "Embiggens simple waveforms. Recreates a popular analogue wave multiplier circuit using comparators and LFOs to turn simple inputs (e.g., sawtooth) into richer, fatter sounds. Based on disting mk4 algorithm.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Threshold",
+      "unit": "V",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "animate",
+      "description": "Sets the comparator threshold."
+    },
+    {
+      "name": "Track",
+      "unit": "toggle",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "scope": "animate",
+      "description": "Whether to track the input signal amplitude for square wave generation."
+    },
+    {
+      "name": "Amplitude",
+      "unit": "V",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 5.0,
+      "scope": "animate",
+      "description": "The square wave amplitude, if tracking is not being used."
+    },
+    {
+      "name": "Squares",
+      "unit": null,
+      "min": 1,
+      "max": 4,
+      "default": 4,
+      "scope": "animate",
+      "description": "The number of square waves (comparators) to generate."
+    },
+    {
+      "name": "Separation",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "scope": "animate",
+      "description": "The spread of the actual comparator thresholds around the value set by 'Threshold'."
+    },
+    {
+      "name": "Mix",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "animate",
+      "description": "Output mix (-100% = input only, 0% = full input & squares, 100% = squares only)."
+    },
+    {
+      "name": "LFO rate",
+      "unit": "scaled",
+      "min": 0,
+      "max": 1000,
+      "default": 699,
+      "scope": "animate",
+      "description": "The LFO rate, scaled exponentially from 0.2Hz to 20Hz."
+    },
+    {
+      "name": "LFO depth",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "scope": "animate",
+      "description": "The LFO depth modulating comparator thresholds."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "The first input bus to process."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "scope": "routing",
+      "description": "The number of busses to process, starting from the Input (e.g., 2 for stereo)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "The first output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "Threshold input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "The CV input bus for the comparator threshold."
+    }
+  ],
+  "input_ports": [
+    "Audio/CV",
+    "CV (Threshold)"
+  ],
+  "output_ports": [
+    "Audio/CV"
+  ]
+}

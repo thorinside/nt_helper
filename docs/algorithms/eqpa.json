@@ -1,0 +1,103 @@
+{
+  "guid": "eqpa",
+  "name": "EQ Parametric",
+  "categories": [
+    "Effect",
+    "Filter"
+  ],
+  "description": "A one-band parametric equaliser. Offers low shelving, peaking, or high shelving modes. Multiple instances can be run for multi-band EQ.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -24,
+      "maxValue": 24,
+      "description": "The boost or cut amount."
+    },
+    {
+      "name": "Freq",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -60,
+      "maxValue": 60,
+      "description": "The centre frequency, relative to C0 (MIDI note 0)."
+    },
+    {
+      "name": "Q",
+      "unit": null,
+      "defaultValue": 1.0,
+      "minValue": 0.1,
+      "maxValue": 10.0,
+      "description": "Sets the filter bandwidth (the sharpness of the Q). Only used in peaking mode."
+    },
+    {
+      "name": "Type",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Low shelf",
+        "Peaking",
+        "High shelf"
+      ],
+      "description": "The EQ type."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The input bus."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "description": "The number of channels to process."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "input",
+      "name": "Input",
+      "description": "Input bus(es).",
+      "busIdRef": "Input",
+      "channelCountRef": "Width"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Output bus(es).",
+      "busIdRef": "Output",
+      "channelCountRef": "Width"
+    }
+  ]
+}

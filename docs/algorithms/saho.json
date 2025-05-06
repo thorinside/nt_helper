@@ -1,0 +1,89 @@
+{
+  "guid": "saho",
+  "name": "Sample and Hold",
+  "categories": [
+    "Utility",
+    "CV"
+  ],
+  "description": "Simple sample (or track) and hold utility. A common gate/trigger input controls the sampling/tracking of multiple signal channels. Two modes: 'Sample and hold' (samples input on gate high) and 'Track and hold' (follows input while gate high, holds on gate low).",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Gate input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "common",
+      "description": "The input bus to use for the gate/trigger."
+    },
+    {
+      "name": "Gate offset",
+      "unit": "ms",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 2.0,
+      "scope": "common",
+      "description": "Offsets (delays) the gate input relative to the signal inputs."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": null,
+      "scope": "per-channel",
+      "description": "The signal input bus to sample/track."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "per-channel",
+      "description": "The output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "per-channel",
+      "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "Mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Sample and hold",
+        "Track and hold"
+      ],
+      "scope": "per-channel",
+      "description": "Chooses between 'Sample and hold' and 'Track and hold'."
+    }
+  ],
+  "input_ports": [
+    "CV (Signal)",
+    "Gate"
+  ],
+  "output_ports": [
+    "CV"
+  ]
+}

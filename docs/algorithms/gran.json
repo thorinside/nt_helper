@@ -1,0 +1,604 @@
+{
+  "guid": "gran",
+  "name": "Granulator",
+  "categories": [
+    "Effect",
+    "Sampler",
+    "Granular Synthesis"
+  ],
+  "description": "Granular synthesis engine using live audio or samples from SD card. Spawns grains controlled by notes (CV/Gate, MIDI, I2C) or internal drones. Features various grain parameter controls with mean/spread for randomization.",
+  "specifications": [
+    {
+      "name": "Max buffer size",
+      "unit": "seconds",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 32,
+      "description": "The maximum size of the recording buffer."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Input gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -34,
+      "maxValue": 12,
+      "description": "Gain applied to the audio being recorded (does not affect the dry signal)."
+    },
+    {
+      "name": "Dry gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Level of the input signal in the output mix."
+    },
+    {
+      "name": "Granulator gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Level of the granulator signal in the output mix."
+    },
+    {
+      "name": "Input feedback",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Feedback around the audio buffer when recording (echo effect on input)."
+    },
+    {
+      "name": "Main feedback",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Feedback of granulator output into the audio buffer when recording."
+    },
+    {
+      "name": "Normalize",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "If enabled, the overall volume of the grain cloud is lowered according to how many grains are active."
+    },
+    {
+      "name": "Record",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "Enables recording into the buffer."
+    },
+    {
+      "name": "Buffer size",
+      "unit": "ms",
+      "defaultValue": null,
+      "minValue": 100,
+      "maxValue": 32000,
+      "description": "The audio buffer size in milliseconds."
+    },
+    {
+      "name": "Record fade",
+      "unit": "ms",
+      "defaultValue": 5,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Fade duration applied when starting/stopping recording to avoid clicks."
+    },
+    {
+      "name": "Shape",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 5,
+      "enumValues": [
+        "Gaussian",
+        "Tukey",
+        "Triangle",
+        "Expodec",
+        "Rexpodec",
+        "Equal power"
+      ],
+      "description": "The grain envelope/window shape."
+    },
+    {
+      "name": "Spawn mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 4,
+      "enumValues": [
+        "Stochastic",
+        "Mid-grain",
+        "Single",
+        "Stochastic (fixed)",
+        "Mid-grain (fixed)"
+      ],
+      "description": "How grains are spawned."
+    },
+    {
+      "name": "Rate mean",
+      "unit": "ms",
+      "defaultValue": 5,
+      "minValue": 1,
+      "maxValue": 1000,
+      "description": "The average time between new grains being spawned."
+    },
+    {
+      "name": "Rate spread",
+      "unit": "%",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 200,
+      "description": "Variation in the spawn rate (% of Rate mean)."
+    },
+    {
+      "name": "Size mean",
+      "unit": "ms",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "The average grain size. 0 uses note pitch to calculate cycle duration."
+    },
+    {
+      "name": "Size spread",
+      "unit": "%",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 200,
+      "description": "Variation in grain size (% of Size mean)."
+    },
+    {
+      "name": "Pitch mean",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -24,
+      "maxValue": 24,
+      "description": "Average grain pitch shift (semitones), added to note's pitch CV."
+    },
+    {
+      "name": "Pitch spread",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1200,
+      "description": "Variation in grain pitch shift."
+    },
+    {
+      "name": "Pan mean",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Average grain pan position."
+    },
+    {
+      "name": "Pan spread",
+      "unit": "%",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Variation in grain pan."
+    },
+    {
+      "name": "Delay mean",
+      "unit": null,
+      "defaultValue": 50,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Average grain delay (position in buffer). Unit (% or ms) depends on 'Delay unit' parameter."
+    },
+    {
+      "name": "Delay spread",
+      "unit": "%",
+      "defaultValue": 5,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Variation in grain delay (% of buffer size)."
+    },
+    {
+      "name": "Reverse",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that a grain will be played backwards."
+    },
+    {
+      "name": "Grain limit",
+      "unit": null,
+      "defaultValue": 40,
+      "minValue": 1,
+      "maxValue": 40,
+      "description": "Arbitrary limit on the number of simultaneous grains."
+    },
+    {
+      "name": "Natural pitch",
+      "unit": "ST",
+      "defaultValue": 48,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Natural pitch of the audio (MIDI note number for original pitch playback)."
+    },
+    {
+      "name": "Pitch quantize",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 5,
+      "enumValues": [
+        "Off",
+        "Octaves",
+        "Fourths",
+        "Fifths",
+        "Major Triad",
+        "Minor Triad"
+      ],
+      "description": "Quantizes random pitch deviation to musical intervals."
+    },
+    {
+      "name": "Opacity",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Percentage of grains normally spawned that are actually spawned."
+    },
+    {
+      "name": "LFO depth",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Depth of the LFO affecting grain delay (% of buffer size)."
+    },
+    {
+      "name": "LFO speed",
+      "unit": null,
+      "defaultValue": 196,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "Speed of the grain delay LFO (relative to buffer size, 196=1x speed)."
+    },
+    {
+      "name": "LFO shape",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Triangle",
+        "Ramp up",
+        "Ramp down"
+      ],
+      "description": "Sets the LFO shape."
+    },
+    {
+      "name": "Attack time",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "The note envelope attack time (exponential scale, 100ms to 30s)."
+    },
+    {
+      "name": "Release time",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "The note envelope release time (exponential scale, 100ms to 30s)."
+    },
+    {
+      "name": "Env -> opacity",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount note envelope affects note opacity."
+    },
+    {
+      "name": "Env -> level",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount note envelope affects note level (volume)."
+    },
+    {
+      "name": "Veloc -> level",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount note velocity affects note level (volume)."
+    },
+    {
+      "name": "Veloc -> delay",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount note velocity affects grain delay."
+    },
+    {
+      "name": "Pitch -> pitch",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount note pitch affects grain pitch (100% = normal tracking)."
+    },
+    {
+      "name": "Pitch -> delay",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount note pitch affects grain delay."
+    },
+    {
+      "name": "Drone 1 pitch",
+      "unit": "ST",
+      "defaultValue": 48,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "MIDI note number for Drone 1."
+    },
+    {
+      "name": "Drone 1 enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "Enables (gates) Drone 1."
+    },
+    {
+      "name": "Drone 1 opacity",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Opacity of Drone 1."
+    },
+    {
+      "name": "Drone 1 level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Level (volume) of Drone 1."
+    },
+    {
+      "name": "Drone 2 pitch",
+      "unit": "ST",
+      "defaultValue": 36,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "MIDI note number for Drone 2."
+    },
+    {
+      "name": "Drone 2 enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "Enables (gates) Drone 2."
+    },
+    {
+      "name": "Drone 2 opacity",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Opacity of Drone 2."
+    },
+    {
+      "name": "Drone 2 level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Level (volume) of Drone 2."
+    },
+    {
+      "name": "Drone 3 pitch",
+      "unit": "ST",
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "MIDI note number for Drone 3."
+    },
+    {
+      "name": "Drone 3 enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "Enables (gates) Drone 3."
+    },
+    {
+      "name": "Drone 3 opacity",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Opacity of Drone 3."
+    },
+    {
+      "name": "Drone 3 level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Level (volume) of Drone 3."
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "The MIDI channel to listen on."
+    },
+    {
+      "name": "MPE channels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "Controls how the algorithm will respond to MPE."
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Bend range",
+      "unit": "ST",
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 48,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Delay unit",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "%",
+        "ms"
+      ],
+      "description": "Determines whether Delay mean/spread parameters work in % or ms."
+    },
+    {
+      "name": "Left input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left audio input bus."
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left audio output bus."
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 14,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The right audio output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Delay mean input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus to control grain delay (5V = 100% buffer size)."
+    },
+    {
+      "name": "Delay mean sampled",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Continuous",
+        "Sampled"
+      ],
+      "description": "If enabled, Delay mean input is sampled once at note start, else continuously per grain."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "left_in",
+      "name": "Left In",
+      "description": "Left audio input.",
+      "busIdRef": "Left input"
+    },
+    {
+      "id": "right_in",
+      "name": "Right In",
+      "description": "Right audio input.",
+      "busIdRef": "Right input"
+    },
+    {
+      "id": "delay_mean_cv",
+      "name": "Delay Mean CV",
+      "description": "CV input for grain delay mean.",
+      "busIdRef": "Delay mean input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "left_out",
+      "name": "Left Out",
+      "description": "Left audio output.",
+      "busIdRef": "Left output"
+    },
+    {
+      "id": "right_out",
+      "name": "Right Out",
+      "description": "Right audio output.",
+      "busIdRef": "Right output"
+    }
+  ]
+}

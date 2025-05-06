@@ -1,0 +1,92 @@
+{
+  "guid": "ptch",
+  "name": "Pitch reference",
+  "categories": [
+    "Utility",
+    "Generator"
+  ],
+  "description": "Generates a sine wave reference tone at a specified pitch or frequency.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Pitch mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Pitch",
+        "Frequency"
+      ],
+      "description": "Sets the mode for specifying the reference tone.",
+      "scope": "global"
+    },
+    {
+      "name": "Note",
+      "unit": null,
+      "defaultValue": 69,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Sets the note pitch (MIDI note number) if Pitch mode is 'Pitch'. Respects global tuning.",
+      "scope": "global"
+    },
+    {
+      "name": "Frequency",
+      "unit": "Hz",
+      "defaultValue": 440.0,
+      "minValue": 27.0,
+      "maxValue": 880.0,
+      "description": "Sets the frequency if Pitch mode is 'Frequency'.",
+      "scope": "global"
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The output bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "global"
+    },
+    {
+      "name": "Amplitude",
+      "unit": "V",
+      "defaultValue": 10.00,
+      "minValue": 0.00,
+      "maxValue": 10.00,
+      "description": "The amplitude of the signal (before gain is applied).",
+      "scope": "global"
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": -40,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "The level of the output signal.",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "id": "out",
+      "name": "Reference Tone Output",
+      "description": "Sine wave output at the specified pitch/frequency.",
+      "busIdRef": "Output"
+    }
+  ]
+}

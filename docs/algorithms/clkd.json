@@ -1,0 +1,151 @@
+{
+  "name": "Clock divider",
+  "guid": "clkd",
+  "short_description": "Divides clocks",
+  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks. There is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
+  "use_cases": [
+    "Generating slower clock divisions",
+    "Creating polyrhythms by using different divisors on multiple channels",
+    "Synchronizing multiple sequencers or modules at different subdivisions"
+  ],
+  "gui_description": null,
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 8,
+      "description": "The number of clock channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "page": "Common",
+      "params": [
+        {
+          "name": "Reset input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The shared reset input bus. 0 = None.",
+          "is_bus": true
+        }
+      ]
+    },
+    {
+      "page": "Channel {i+1}",
+      "is_per_channel": true,
+      "params": [
+        {
+          "name": "Type",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "unit": null,
+          "description": "The divisor type.",
+          "enum_values": [
+            "Free",
+            "Metrical (2)",
+            "Metrical (2,3)"
+          ]
+        },
+        {
+          "name": "Divisor",
+          "min": 1,
+          "max": 32,
+          "default": 2,
+          "unit": null,
+          "description": "The divisor, if the type is 'Free'. The divisor value is simply the parameter value."
+        },
+        {
+          "name": "Divisor (Metrical 2)",
+          "min": 0,
+          "max": 5,
+          "default": 1,
+          "unit": null,
+          "description": "The divisor, if the type is 'Metrical (2)'.",
+          "enum_values": [
+            "1",
+            "2",
+            "4",
+            "8",
+            "16",
+            "32"
+          ]
+        },
+        {
+          "name": "Divisor (Metrical 2,3)",
+          "min": 0,
+          "max": 9,
+          "default": 1,
+          "unit": null,
+          "description": "The divisor, if the type is 'Metrical (2,3)'.",
+          "enum_values": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "6",
+            "8",
+            "12",
+            "16",
+            "24",
+            "32"
+          ]
+        },
+        {
+          "name": "Enable",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Enables the channel. A disabled channel outputs nothing.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The clock input bus to divide.",
+          "is_bus": true
+        },
+        {
+          "name": "Reset input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The reset input bus for this channel. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Output",
+          "min": 1,
+          "max": 28,
+          "default": 15,
+          "unit": null,
+          "description": "The clock output bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        }
+      ]
+    }
+  ]
+}

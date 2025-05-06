@@ -1,0 +1,128 @@
+{
+  "guid": "usbt",
+  "name": "USB audio (to host)",
+  "categories": [
+    "Utility",
+    "USB",
+    "Audio",
+    "CV"
+  ],
+  "description": "Routes signals from the Disting NT's internal busses to the 12 USB audio input channels seen by the host. The signals sent depend on the algorithm's position in the processing chain.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "USB channel 1 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "common",
+      "description": "The bus to send to USB channel 1."
+    },
+    {
+      "name": "USB channel 2 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "common",
+      "description": "The bus to send to USB channel 2."
+    },
+    {
+      "name": "USB channel 3 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 3,
+      "scope": "common",
+      "description": "The bus to send to USB channel 3."
+    },
+    {
+      "name": "USB channel 4 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 4,
+      "scope": "common",
+      "description": "The bus to send to USB channel 4."
+    },
+    {
+      "name": "USB channel 5 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 5,
+      "scope": "common",
+      "description": "The bus to send to USB channel 5."
+    },
+    {
+      "name": "USB channel 6 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 6,
+      "scope": "common",
+      "description": "The bus to send to USB channel 6."
+    },
+    {
+      "name": "USB channel 7 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 7,
+      "scope": "common",
+      "description": "The bus to send to USB channel 7."
+    },
+    {
+      "name": "USB channel 8 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 8,
+      "scope": "common",
+      "description": "The bus to send to USB channel 8."
+    },
+    {
+      "name": "USB channel 9 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 9,
+      "scope": "common",
+      "description": "The bus to send to USB channel 9."
+    },
+    {
+      "name": "USB channel 10 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 10,
+      "scope": "common",
+      "description": "The bus to send to USB channel 10."
+    },
+    {
+      "name": "USB channel 11 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 11,
+      "scope": "common",
+      "description": "The bus to send to USB channel 11."
+    },
+    {
+      "name": "USB channel 12 from",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 12,
+      "scope": "common",
+      "description": "The bus to send to USB channel 12."
+    }
+  ],
+  "input_ports": [
+    "Audio/CV (from Busses)"
+  ],
+  "output_ports": [
+    "USB Audio/CV (to Host)"
+  ]
+}

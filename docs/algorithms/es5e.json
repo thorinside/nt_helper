@@ -1,0 +1,58 @@
+{
+  "guid": "es5e",
+  "name": "ES-5 Encoder",
+  "categories": [
+    "Utility",
+    "External Interface"
+  ],
+  "description": "Encodes 12 input channels into a stereo S/PDIF signal suitable for driving the Expert Sleepers ES-5 module, providing 12 additional gate/trigger/clock/sync outputs. Outputs are sample-accurate, primarily on/off but can pass intermediate voltages.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Input bus",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "Sets the first input bus (1 of 12)."
+    },
+    {
+      "name": "Output bus",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "Sets the first output bus (1 of 2)."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "input",
+      "name": "Input",
+      "description": "First of 12 input busses.",
+      "busIdRef": "Input bus",
+      "channelCount": 12
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "First of 2 output busses (S/PDIF encoded).",
+      "busIdRef": "Output bus",
+      "channelCount": 2
+    }
+  ]
+}

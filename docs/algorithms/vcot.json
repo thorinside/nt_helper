@@ -1,0 +1,123 @@
+{
+  "guid": "vcot",
+  "name": "VCO - wavetable",
+  "categories": [
+    "Oscillator",
+    "VCO",
+    "Wavetable"
+  ],
+  "description": "Simple VCO using wavetables for wave shapes. Wavetables are loaded from the MicroSD card.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Wavetable",
+      "unit": null,
+      "min": 0,
+      "max": null,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Chooses the wavetable file from the MicroSD card."
+    },
+    {
+      "name": "Wave offset",
+      "unit": "%",
+      "min": -100.0,
+      "max": 100.0,
+      "default": 0.0,
+      "scope": "VCO",
+      "description": "Sets the position within the selected wavetable."
+    },
+    {
+      "name": "Octave",
+      "unit": null,
+      "min": -16,
+      "max": 8,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Adjusts the VCO tuning in octaves."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Adjusts the VCO tuning in semitones."
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Adjusts the VCO tuning in cents."
+    },
+    {
+      "name": "Amplitude",
+      "unit": "V",
+      "min": 0.00,
+      "max": 10.00,
+      "default": 10.00,
+      "scope": "gain",
+      "description": "Sets the amplitude of the output (pre-gain)."
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "scope": "gain",
+      "description": "Sets the level of the output."
+    },
+    {
+      "name": "Pitch input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "The pitch CV input (1V/octave)."
+    },
+    {
+      "name": "Wave input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "Input bus to modulate the wave offset."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "The output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "The standard Add/Replace mode selector."
+    }
+  ],
+  "input_ports": [
+    "CV (Pitch)",
+    "CV (Wave Offset)"
+  ],
+  "output_ports": [
+    "Audio"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "guid": "feat_std_input_routing",
+  "name": "Standard Input Routing",
+  "description": "Common parameter for selecting a single input bus. Intended for use on a per-channel or common basis within algorithms.",
+  "parameters": [
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "per-channel-or-common",
+      "description": "The input bus."
+    }
+  ]
+}

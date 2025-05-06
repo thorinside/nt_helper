@@ -1,0 +1,139 @@
+{
+  "guid": "oscs",
+  "name": "Oscilloscope",
+  "categories": [
+    "Utility",
+    "Visualizer"
+  ],
+  "description": "A simple 2-channel oscilloscope for viewing waveforms.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Input 1",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The bus for input 1.",
+      "scope": "global"
+    },
+    {
+      "name": "Input 2",
+      "unit": "bus",
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The bus for input 2.",
+      "scope": "global"
+    },
+    {
+      "name": "Trigger type",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 4,
+      "enumValues": [
+        "Free running",
+        "1 rising",
+        "1 falling",
+        "2 rising",
+        "2 falling"
+      ],
+      "description": "The type of trigger to synchronize the display.",
+      "scope": "global"
+    },
+    {
+      "name": "Trigger voltage",
+      "unit": "V",
+      "defaultValue": 0.0,
+      "minValue": -11.0,
+      "maxValue": 11.0,
+      "description": "Set the trigger voltage threshold.",
+      "scope": "global"
+    },
+    {
+      "name": "Time range",
+      "unit": null,
+      "defaultValue": 7,
+      "minValue": 0,
+      "maxValue": 13,
+      "description": "Sets the time range corresponding to the full width of the display. 'Auto' sets based on trigger frequency.",
+      "scope": "global"
+    },
+    {
+      "name": "Display mode",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 4,
+      "enumValues": [
+        "Overlaid",
+        "Split",
+        "Channel 1",
+        "Channel 2",
+        "XY"
+      ],
+      "description": "Sets which waveforms are displayed and how.",
+      "scope": "global"
+    },
+    {
+      "name": "Draw mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Lines (antialiased)",
+        "Lines",
+        "Points"
+      ],
+      "description": "Sets how the waveform signals are drawn.",
+      "scope": "global"
+    },
+    {
+      "name": "Vertical scale 1",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ],
+      "description": "Sets the vertical scale (volts per division) for channel 1.",
+      "scope": "global"
+    },
+    {
+      "name": "Vertical scale 2",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "10V",
+        "5V",
+        "2V",
+        "1V"
+      ],
+      "description": "Sets the vertical scale (volts per division) for channel 2.",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_1",
+      "name": "Input 1",
+      "description": "Channel 1 input.",
+      "busIdRef": "Input 1"
+    },
+    {
+      "id": "in_2",
+      "name": "Input 2",
+      "description": "Channel 2 input.",
+      "busIdRef": "Input 2"
+    }
+  ],
+  "output_ports": []
+}

@@ -1,0 +1,112 @@
+{
+  "name": "Attenuverter",
+  "guid": "attn",
+  "short_description": "Attenuates and offsets signals",
+  "description": "This simple algorithm scales and offsets signals. It is probably most useful for CVs, but can be used for audio as well. The signal is scaled and then offset i.e. output = offset + ( input x scale ). Various offset parameters are provided, which might be useful in different scenarios - they are all simply added together. Note that it is valid to use this algorithm with no input bus selected, in which case the output is simply the offset voltage.",
+  "use_cases": [
+    "Scaling CV signals",
+    "Offsetting CV signals",
+    "Combining scaling and offsetting",
+    "Generating constant offset voltages"
+  ],
+  "gui_description": null,
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 12,
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "page": "Channel {i+1}",
+      "is_per_channel": true,
+      "params": [
+        {
+          "name": "Input",
+          "min": 0,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The input bus to process. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Enable",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Enables the channel. Disabled channels have no effect on the bus.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Output",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector as described above.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        },
+        {
+          "name": "Scale",
+          "min": -200.0,
+          "max": 200.0,
+          "default": 100.0,
+          "unit": "%",
+          "description": "Sets the channel scale."
+        },
+        {
+          "name": "Offset",
+          "min": -10.0,
+          "max": 10.0,
+          "default": 0.0,
+          "unit": "V",
+          "description": "Sets the channel offset (Volts)."
+        },
+        {
+          "name": "Fine",
+          "min": -1000,
+          "max": 1000,
+          "default": 0,
+          "unit": "mV",
+          "description": "Sets the channel offset (millivolts)."
+        },
+        {
+          "name": "Octaves",
+          "min": -10,
+          "max": 10,
+          "default": 0,
+          "unit": "V",
+          "description": "Sets the channel offset (whole Volts)."
+        },
+        {
+          "name": "Semitones",
+          "min": -60,
+          "max": 60,
+          "default": 0,
+          "unit": "ST",
+          "description": "Sets the channel offset (semitones i.e. 1/12th of a Volt)."
+        }
+      ]
+    }
+  ]
+}

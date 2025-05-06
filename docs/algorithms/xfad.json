@@ -1,0 +1,104 @@
+{
+  "name": "Crossfader",
+  "guid": "xfad",
+  "short_description": "Crossfades signals",
+  "description": "This algorithm crossfades between two sets of signals (from mono up to two sets of eight channels). Three different crossfade curves are available: Equal gain (for phase-coherent material), Equal power (for non-phase-coherent material), and Transition (DJ-style). Inputs A & B, and the output, use a contiguous range of busses, starting with the one set via the parameters, and with the channel count set by the 'Width' parameter. The crossfade can be controlled by both a parameter and a CV.",
+  "use_cases": [
+    "Mixing between two audio sources",
+    "Blending CV signals",
+    "Creating smooth transitions between signal paths",
+    "Voltage-controlled mixing"
+  ],
+  "gui_description": "The display shows a graphical representation of the crossfade curves, and the amount of the two signals that are combined in the output mix.",
+  "specifications": [],
+  "parameters": [
+    {
+      "page": "Crossfader",
+      "params": [
+        {
+          "name": "Crossfader",
+          "min": 0.0,
+          "max": 100.0,
+          "default": 50.0,
+          "unit": "%",
+          "description": "The crossfade position, from 0% (input A only) to 100% (input B only)."
+        },
+        {
+          "name": "Curve",
+          "min": 0,
+          "max": 2,
+          "default": 1,
+          "unit": null,
+          "description": "The crossfade curve.",
+          "enum_values": [
+            "Equal gain",
+            "Equal power",
+            "Transition"
+          ]
+        }
+      ]
+    },
+    {
+      "page": "Routing",
+      "params": [
+        {
+          "name": "Input A",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The first bus for input A.",
+          "is_bus": true
+        },
+        {
+          "name": "Input B",
+          "min": 1,
+          "max": 28,
+          "default": 2,
+          "unit": null,
+          "description": "The first bus for input B.",
+          "is_bus": true
+        },
+        {
+          "name": "Output",
+          "min": 1,
+          "max": 28,
+          "default": 13,
+          "unit": null,
+          "description": "The first bus for the output.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        },
+        {
+          "name": "Width",
+          "min": 1,
+          "max": 8,
+          "default": 1,
+          "unit": null,
+          "description": "The number of busses to process."
+        },
+        {
+          "name": "Crossfade input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The CV input to drive the crossfade, scaled so that 5V covers the range 0-100%. 0 = None.",
+          "is_bus": true
+        }
+      ]
+    }
+  ]
+}

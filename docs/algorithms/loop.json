@@ -1,0 +1,575 @@
+{
+  "guid": "loop",
+  "name": "Looper",
+  "categories": [
+    "Sampler",
+    "Looper"
+  ],
+  "description": "A feature-rich looper based on the disting EX algorithm, extended with crossfades, envelopes, clock synchronization, MIDI clock generation, and a layer system for undo/redo.",
+  "specifications": [
+    {
+      "name": "Loops",
+      "value": {
+        "minValue": 1,
+        "maxValue": 4,
+        "defaultValue": 1
+      },
+      "description": "The number of simultaneous loops."
+    },
+    {
+      "name": "Max time",
+      "value": {
+        "minValue": 1,
+        "maxValue": 90,
+        "defaultValue": 30
+      },
+      "description": "The maximum total loop time (in seconds), shared across all loops."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Target loop",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 4,
+      "description": "Selects the loop(s) affected by commands.",
+      "scope": "global"
+    },
+    {
+      "name": "Record",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Record/Overdub command trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Play",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Play/Pause/Mute/Retrigger command trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Retrigger",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Retrigger command trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Undo",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Undo command trigger (moves to previous layer).",
+      "scope": "global"
+    },
+    {
+      "name": "Redo",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Redo command trigger (moves to next layer).",
+      "scope": "global"
+    },
+    {
+      "name": "Target 1",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Target loop 1 selection trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Target 2",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Target loop 2 selection trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Target 3",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Target loop 3 selection trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Target 4",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Target loop 4 selection trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Target next",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Target next loop command trigger (on release). Also has long hold function.",
+      "scope": "global"
+    },
+    {
+      "name": "Stop all",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Released",
+        "Held"
+      ],
+      "description": "Stop all command trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Next hold time",
+      "unit": "ms",
+      "defaultValue": 500,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Hold time for 'Target next' long press function.",
+      "scope": "global"
+    },
+    {
+      "name": "Record hold time",
+      "unit": "ms",
+      "defaultValue": 500,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Hold time for 'Record'/'Overdub' command as alternative to double-tap.",
+      "scope": "global"
+    },
+    {
+      "name": "Crossfade",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Crossfade time for smooth looping.",
+      "scope": "loop"
+    },
+    {
+      "name": "Envelope attack",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Attack time for loop start/stop envelope.",
+      "scope": "loop"
+    },
+    {
+      "name": "Envelope decay",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Decay time for loop start/stop envelope.",
+      "scope": "loop"
+    },
+    {
+      "name": "Overdub attack",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Attack time for overdub start/end envelope.",
+      "scope": "loop"
+    },
+    {
+      "name": "Overdub decay",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Decay time for overdub start/end envelope.",
+      "scope": "loop"
+    },
+    {
+      "name": "Overdub fade",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -60,
+      "maxValue": 0,
+      "description": "Amount previous material fades during overdub (-60dB is silence).",
+      "scope": "loop"
+    },
+    {
+      "name": "Input gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Gain applied to the input signal.",
+      "scope": "loop"
+    },
+    {
+      "name": "Level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Output level of the loop.",
+      "scope": "loop"
+    },
+    {
+      "name": "Pan",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Stereo panning of the loop output.",
+      "scope": "loop"
+    },
+    {
+      "name": "Reverse",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Plays the loop in reverse.",
+      "scope": "loop"
+    },
+    {
+      "name": "Half speed",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Plays the loop at half speed (one octave down).",
+      "scope": "loop"
+    },
+    {
+      "name": "Pause/mute",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Pause",
+        "Mute",
+        "Retrigger"
+      ],
+      "description": "Action performed when 'Play' is pressed while playing.",
+      "scope": "loop"
+    },
+    {
+      "name": "Channels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 2,
+      "enumValues": [
+        "Mono",
+        "Stereo"
+      ],
+      "description": "Sets the loop as mono or stereo (affects max length).",
+      "scope": "loop"
+    },
+    {
+      "name": "Bit depth",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "16 bit",
+        "24 bit",
+        "32 bit float"
+      ],
+      "description": "Recording bit depth (affects max length and potential clipping).",
+      "scope": "loop"
+    },
+    {
+      "name": "Input L",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "Left/Mono input bus.",
+      "scope": "loop"
+    },
+    {
+      "name": "Input R",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Right input bus (0=None for mono).",
+      "scope": "loop"
+    },
+    {
+      "name": "Output L",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "Left/Mono output bus.",
+      "scope": "loop"
+    },
+    {
+      "name": "Output R",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Right output bus (0=None for mono).",
+      "scope": "loop"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "loop"
+    },
+    {
+      "name": "Clock source",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "None",
+        "Clock input",
+        "MIDI clock"
+      ],
+      "description": "Source for clock synchronization.",
+      "scope": "global"
+    },
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for analogue clock sync.",
+      "scope": "global"
+    },
+    {
+      "name": "Lock range",
+      "unit": "ms",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Time window around clock for automatic retriggering.",
+      "scope": "global"
+    },
+    {
+      "name": "Bypass clock",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Temporarily ignore clock sync for commands.",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI transport",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Sync start/stop with MIDI transport messages.",
+      "scope": "global"
+    },
+    {
+      "name": "PPQN (out)",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 48,
+      "description": "Pulses per quarter note for generated clock output.",
+      "scope": "loop"
+    },
+    {
+      "name": "1/4 notes (out)",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "Number of quarter notes per loop for clock generation.",
+      "scope": "loop"
+    },
+    {
+      "name": "Clock output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Output bus for generated clock.",
+      "scope": "loop"
+    },
+    {
+      "name": "Clock out mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode for generated clock.",
+      "scope": "loop"
+    },
+    {
+      "name": "Minimum layers",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 17,
+      "description": "Reserve memory for minimum number of layers (0=disabled, 1=single layer, max 16). Affects max loop length.",
+      "scope": "loop"
+    },
+    {
+      "name": "Current layer",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "Currently active layer.",
+      "scope": "loop",
+      "readOnly": true
+    },
+    {
+      "name": "Layer fade",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 5000,
+      "description": "Crossfade time when switching layers.",
+      "scope": "loop"
+    },
+    {
+      "name": "Only record targets",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "If on, audio is only recorded/overdubbed into target loops.",
+      "scope": "global"
+    },
+    {
+      "name": "Record Note",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": -1,
+      "maxValue": 127,
+      "description": "MIDI note number for Record/Overdub command.",
+      "scope": "global"
+    },
+    {
+      "name": "Play Note",
+      "unit": null,
+      "defaultValue": 61,
+      "minValue": -1,
+      "maxValue": 127,
+      "description": "MIDI note number for Play/Pause/Mute/Retrigger command.",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_l",
+      "name": "Input L/Mono",
+      "description": "Left or Mono audio input.",
+      "busIdRef": "Input L"
+    },
+    {
+      "id": "in_r",
+      "name": "Input R",
+      "description": "Right audio input (if Stereo).",
+      "busIdRef": "Input R"
+    },
+    {
+      "id": "clock_in",
+      "name": "Clock In",
+      "description": "External clock input for sync.",
+      "busIdRef": "Clock input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_l",
+      "name": "Output L/Mono",
+      "description": "Left or Mono audio output.",
+      "busIdRef": "Output L"
+    },
+    {
+      "id": "out_r",
+      "name": "Output R",
+      "description": "Right audio output (if Stereo).",
+      "busIdRef": "Output R"
+    },
+    {
+      "id": "clock_out",
+      "name": "Clock Out",
+      "description": "Generated clock output.",
+      "busIdRef": "Clock output"
+    }
+  ]
+}

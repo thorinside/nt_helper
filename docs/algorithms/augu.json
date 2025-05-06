@@ -1,0 +1,496 @@
+{
+  "name": "Augustus Loop",
+  "guid": "augu",
+  "short_description": "Tape-like delay",
+  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name (here^51 - https://expert-sleepers.co.uk/augustusloop.html). Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV. Patching an LFO into here is your route to all manner of subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing you to insert other effects or processing into the guts of the delay. Note that the 'Pitch CV' input changes the tape speed. It is labelled pitch rather than speed to emphasise the fact that it is scaled 1V/octave. There are four 'tape read heads' with independent delay times and stereo positions, allowing for straight stereo delays, ping pong delays, or hybrid multi-tap style effects.",
+  "use_cases": [
+    "Stereo tape delay emulation",
+    "Clocked delays",
+    "Tap tempo delays",
+    "Pitch-modulated delays (Chorus/Flange/Vibrato effects)",
+    "Tape stop/start/reverse effects",
+    "Multi-tap delays",
+    "Ping pong delays",
+    "Delay effects with external processing in the feedback loop"
+  ],
+  "gui_description": "The display shows the feedback amount bottom left and the delay time bottom right. The centre area shows an animation indicating the tape direction and speed. If using a clock input, the word 'Clock' flashes up every time the algorithm receives a clock pulse. The word 'Tap' is displayed if the tap tempo function will set the delay time on the next tap i.e. it shows whether tap tempo is 'live'.",
+  "specifications": [
+    {
+      "name": "Max delay time",
+      "min": 1,
+      "max": 44,
+      "unit": "seconds",
+      "description": "The maximum delay time."
+    }
+  ],
+  "parameters": [
+    {
+      "page": "Delay",
+      "params": [
+        {
+          "name": "Time (coarse)",
+          "min": 0.0,
+          "max": 43.7,
+          "default": 1.0,
+          "unit": "s",
+          "description": "Sets the delay time. The coarse and fine delay times are added to produce the actual delay time."
+        },
+        {
+          "name": "Time (fine)",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "unit": "ms",
+          "description": "Sets an adjustment to the delay time, in milliseconds. The coarse and fine delay times are added to produce the actual delay time."
+        },
+        {
+          "name": "Delay multiplier",
+          "min": 0,
+          "max": 23,
+          "default": 15,
+          "unit": null,
+          "description": "A multiplier to apply to the delay time set by the parameters, the tap tempo, or the clock. See manual for values.",
+          "enum_values": [
+            "1/64",
+            "1/48",
+            "1/32",
+            "1/24",
+            "1/16",
+            "1/12",
+            "1/8",
+            "1/6",
+            "3/16",
+            "1/4",
+            "5/16",
+            "1/3",
+            "3/8",
+            "1/2",
+            "3/4",
+            "x1",
+            "x1.5",
+            "x2",
+            "x3",
+            "x4",
+            "x5",
+            "x6",
+            "x8",
+            "x16"
+          ]
+        },
+        {
+          "name": "Feedback",
+          "min": 0,
+          "max": 100,
+          "default": 50,
+          "unit": "%",
+          "description": "The overall delay feedback amount."
+        },
+        {
+          "name": "L-L Time",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": "%",
+          "description": "Scales the delay time of the left-to-left feedback path, as a percentage of the overall delay time."
+        },
+        {
+          "name": "L-R Time",
+          "min": 0,
+          "max": 100,
+          "default": 50,
+          "unit": "%",
+          "description": "Scales the delay time of the left-to-right feedback path, as a percentage of the overall delay time."
+        },
+        {
+          "name": "R-L Time",
+          "min": 0,
+          "max": 100,
+          "default": 50,
+          "unit": "%",
+          "description": "Scales the delay time of the right-to-left feedback path, as a percentage of the overall delay time."
+        },
+        {
+          "name": "R-R Time",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": "%",
+          "description": "Scales the delay time of the right-to-right feedback path, as a percentage of the overall delay time."
+        },
+        {
+          "name": "L-L Level",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": "%",
+          "description": "Scales the amount of the delayed left signal mixed into the left feedback path."
+        },
+        {
+          "name": "L-R Level",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "description": "Scales the amount of the delayed left signal mixed into the right feedback path."
+        },
+        {
+          "name": "R-L Level",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "description": "Scales the amount of the delayed right signal mixed into the left feedback path."
+        },
+        {
+          "name": "R-R Level",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": "%",
+          "description": "Scales the amount of the delayed right signal mixed into the right feedback path."
+        },
+        {
+          "name": "Mono-ize",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "description": "Reduces the stereo width of the incoming signal. At zero the signal is reduced to mono, at a pan position set by the 'Initial pan' parameter."
+        },
+        {
+          "name": "Initial pan",
+          "min": -100,
+          "max": 100,
+          "default": -100,
+          "unit": "%",
+          "description": "Sets the pan position of the mono-ized signal. -100 is fully left; 100 is fully right."
+        }
+      ]
+    },
+    {
+      "page": "Mix",
+      "params": [
+        {
+          "name": "Dry gain",
+          "min": -40,
+          "max": 6,
+          "default": -40,
+          "unit": "dB",
+          "description": "The amount of the dry signal to mix into the outputs. At \"-40\" there is no dry signal at all i.e. it's actually –∞dB."
+        },
+        {
+          "name": "Effect gain",
+          "min": -40,
+          "max": 6,
+          "default": -3,
+          "unit": "dB",
+          "description": "The amount of the effect (delay) signal to mix into the outputs. At \"-40\" there is no effect signal at all i.e. it's actually –∞dB."
+        },
+        {
+          "name": "Input level",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": "%",
+          "description": "Attenuates the input signal fed to the tape write head."
+        }
+      ]
+    },
+    {
+      "page": "Tape",
+      "params": [
+        {
+          "name": "Pitch inertia",
+          "min": 0,
+          "max": 125,
+          "default": 64,
+          "unit": null,
+          "description": "Sets the amount of 'inertia' or slew on the pitch CV input. At zero, the tape speed follows the pitch input closely; at the maximum value, pitch changes are quite gradual."
+        },
+        {
+          "name": "Stop tape",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "When on, the tape speed is set to zero. Note that the Pitch inertia affects how quickly the tape stops and starts.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Reverse tape",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "When on, the tape is reversed. Note that the Pitch inertia affects how quickly the tape reverses.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Bit depth",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "Controls the bit depth used in the delay memory (note, not the bit depth used in any other processing). Setting this to '0' (16 bit) doubles the maximum delay time.",
+          "enum_values": [
+            "16 bit",
+            "32 bit"
+          ]
+        },
+        {
+          "name": "Inertia free",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Enables 'Inertia free' mode. See manual for details.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Inertia fade time",
+          "min": 1,
+          "max": 1000,
+          "default": 100,
+          "unit": "ms",
+          "description": "The fade time to use when in Inertia free mode."
+        },
+        {
+          "name": "Pitch CV input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The CV input to use for pitch. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Pitch LFO speed",
+          "min": 0,
+          "max": 127,
+          "default": 96,
+          "unit": null,
+          "description": "Sets the speed of the pitch modulation LFO."
+        },
+        {
+          "name": "Pitch LFO depth",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "unit": "%",
+          "description": "Sets the depth of pitch modulation by the LFO."
+        },
+        {
+          "name": "Clear loop",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "When on, instigates a rapid clear of the delay buffer (while maintaining passthrough of the dry signal).",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        }
+      ]
+    },
+    {
+      "page": "Filter/Sat",
+      "params": [
+        {
+          "name": "Filter type",
+          "min": 0,
+          "max": 400,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the filter type. Smoothly fades between thru, low pass, band pass, high pass, and back to thru."
+        },
+        {
+          "name": "Filter freq",
+          "min": 0,
+          "max": 127,
+          "default": 64,
+          "unit": null,
+          "description": "Sets the filter frequency."
+        },
+        {
+          "name": "Filter Q",
+          "min": 0,
+          "max": 100,
+          "default": 20,
+          "unit": null,
+          "description": "Sets the filter resonance."
+        },
+        {
+          "name": "Saturation enable",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "unit": null,
+          "description": "Enables the saturation processing (on the tape output, before the filter).",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Saturation",
+          "min": 0,
+          "max": 110,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the depth of the saturation effect, by applying gain before the saturation waveshaper."
+        },
+        {
+          "name": "Saturation shape",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": null,
+          "description": "Controls the shape of the saturation. At '100' the effect is that of soft saturation and clipping. At '0' the effect is of hard digital clipping. Note that at shape settings other than '0', some alteration is applied to the signal even if the Saturation level is zero."
+        }
+      ]
+    },
+    {
+      "page": "Tempo",
+      "params": [
+        {
+          "name": "Clock input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The CV input to use as the clock. The delay time is set as the time between two rising clock edges. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Tap tempo",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "When this parameter transitions from 0 to 1, the algorithm acts on a tap tempo event. See tap tempo, below."
+        },
+        {
+          "name": "Clocks required",
+          "min": 1,
+          "max": 10,
+          "default": 1,
+          "unit": null,
+          "description": "Sets the number of consistent clocks required to change the delay time. See manual for details."
+        }
+      ]
+    },
+    {
+      "page": "Routing",
+      "params": [
+        {
+          "name": "Left input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "Sets the bus for the left input.",
+          "is_bus": true
+        },
+        {
+          "name": "Right input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "Sets the bus for the right input.",
+          "is_bus": true
+        },
+        {
+          "name": "Left output",
+          "min": 1,
+          "max": 28,
+          "default": 13,
+          "unit": null,
+          "description": "Sets the bus for the left output.",
+          "is_bus": true
+        },
+        {
+          "name": "Right output",
+          "min": 1,
+          "max": 28,
+          "default": 14,
+          "unit": null,
+          "description": "Sets the bus for the right output.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector as described above.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        },
+        {
+          "name": "FX Loop position",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "unit": null,
+          "description": "Enables the effects loop and sets in position the signal flow. See manual for details.",
+          "enum_values": [
+            "Off",
+            "Pre-Filter",
+            "Post-Filter"
+          ]
+        },
+        {
+          "name": "FX Loop output L",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the left output to the effect loop. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "FX Loop output R",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the right output to the effect loop. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "FX Loop input L",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the left input from the effects loop. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "FX Loop input R",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the right input from the effects loop. 0 = None.",
+          "is_bus": true
+        }
+      ]
+    }
+  ]
+}

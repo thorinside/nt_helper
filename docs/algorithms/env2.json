@@ -1,0 +1,179 @@
+{
+  "guid": "env2",
+  "name": "Envelope (AR/AD)",
+  "categories": [
+    "Envelope Generator"
+  ],
+  "description": "Generates AR or AD envelopes. For AR, attack is followed by release if trigger stays high; goes low during attack triggers release. For AD, attack is followed by decay, then stays at zero until re-triggered.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 8,
+      "description": "The number of envelope generators."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Type",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "AR",
+        "AD"
+      ],
+      "description": "Chooses AR or AD envelope type."
+    },
+    {
+      "name": "Attack",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Sets the attack time."
+    },
+    {
+      "name": "Attack multiplier",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 6,
+      "enumValues": [
+        "x1",
+        "x2",
+        "x5",
+        "x10",
+        "x20",
+        "x50",
+        "x100"
+      ],
+      "description": "Sets a multiplier for the attack time."
+    },
+    {
+      "name": "Decay/Rel",
+      "unit": "ms",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Sets the decay/release time."
+    },
+    {
+      "name": "Decay/Rel multiplier",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 6,
+      "enumValues": [
+        "x1",
+        "x2",
+        "x5",
+        "x10",
+        "x20",
+        "x50",
+        "x100"
+      ],
+      "description": "Sets a multiplier for the decay/release time."
+    },
+    {
+      "name": "Max voltage",
+      "unit": "V",
+      "defaultValue": 5.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "description": "Sets the envelope's maximum voltage."
+    },
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "scope": "channel",
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Trigger input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "The bus to use for the trigger input."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "The bus to use for the channel output."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "channel",
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 16,
+      "scope": "channel",
+      "description": "The MIDI channel on which notes can trigger the envelope generator."
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 255,
+      "scope": "channel",
+      "description": "The I2C channel on which notes can trigger the envelope generator."
+    },
+    {
+      "name": "Note number",
+      "unit": null,
+      "defaultValue": -1,
+      "minValue": -1,
+      "maxValue": 127,
+      "scope": "channel",
+      "description": "The MIDI or I2C note number that will trigger the envelope generator, or '-1' for 'Any'."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "trigger",
+      "name": "Trigger",
+      "description": "Trigger input bus for each channel.",
+      "busIdRef": "Trigger input",
+      "isPerChannel": true
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Output bus for each channel.",
+      "busIdRef": "Output",
+      "isPerChannel": true
+    }
+  ]
+}

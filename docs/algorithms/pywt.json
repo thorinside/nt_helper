@@ -1,0 +1,469 @@
+{
+  "guid": "pywt",
+  "name": "Poly Wavetable",
+  "categories": [
+    "Oscillator",
+    "Polysynth",
+    "Wavetable"
+  ],
+  "description": "A complete polyphonic wavetable synthesizer based on the disting EX algorithm. Each voice has two envelopes, a filter, and an LFO. Supports microtuning.",
+  "specifications": [
+    {
+      "name": "Voices",
+      "value": {
+        "minValue": 1,
+        "maxValue": 24,
+        "defaultValue": 1
+      },
+      "description": "The number of simultaneous voices."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Wavetable",
+      "unit": null,
+      "defaultValue": 0,
+      "description": "Selects the wavetable from the MicroSD card.",
+      "scope": "global",
+      "type": "file"
+    },
+    {
+      "name": "Wave offset",
+      "unit": "%",
+      "defaultValue": 0.0,
+      "minValue": -100.0,
+      "maxValue": 100.0,
+      "description": "Manual offset for the wavetable position.",
+      "scope": "global"
+    },
+    {
+      "name": "Wave spread",
+      "unit": "%",
+      "defaultValue": 0.0,
+      "minValue": -100.0,
+      "maxValue": 100.0,
+      "description": "Amount to spread per-voice wavetable positions.",
+      "scope": "global"
+    },
+    {
+      "name": "Wave input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus to control wavetable position (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 1 Attack",
+      "unit": null,
+      "defaultValue": 20,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 1 attack time (1ms-15s).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 1 Decay",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 1 decay time (20ms-15s).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 1 Sustain",
+      "unit": null,
+      "defaultValue": 80,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 1 sustain level.",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 1 Release",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 1 release time (10ms-30s).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 1 Attack Shape",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 1 attack shape (0=exp, 127=lin).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 1 Decay Shape",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 1 decay/release shape (0=exp, 127=lin).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 2 Attack",
+      "unit": null,
+      "defaultValue": 20,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 2 attack time (1ms-15s).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 2 Decay",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 2 decay time (20ms-15s).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 2 Sustain",
+      "unit": null,
+      "defaultValue": 80,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 2 sustain level.",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 2 Release",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 2 release time (10ms-30s).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 2 Attack Shape",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 2 attack shape (0=exp, 127=lin).",
+      "scope": "global"
+    },
+    {
+      "name": "Envelope 2 Decay Shape",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope 2 decay/release shape (0=exp, 127=lin).",
+      "scope": "global"
+    },
+    {
+      "name": "Filter type",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "Off",
+        "Lowpass",
+        "Bandpass",
+        "Highpass"
+      ],
+      "description": "Filter type.",
+      "scope": "global"
+    },
+    {
+      "name": "Filter freq",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Filter frequency (MIDI note number).",
+      "scope": "global"
+    },
+    {
+      "name": "Filter Q",
+      "unit": null,
+      "defaultValue": 50,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Filter resonance.",
+      "scope": "global"
+    },
+    {
+      "name": "LFO speed",
+      "unit": null,
+      "defaultValue": 90,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "LFO speed (0.01Hz-10Hz).",
+      "scope": "global"
+    },
+    {
+      "name": "LFO retrigger",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Poly",
+        "Mono",
+        "Off"
+      ],
+      "description": "LFO retrigger mode.",
+      "scope": "global"
+    },
+    {
+      "name": "LFO spread",
+      "unit": "degrees",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 90,
+      "description": "LFO phase spread/retrigger phase (degrees).",
+      "scope": "global"
+    },
+    {
+      "name": "Veloc -> volume",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Velocity to volume modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Veloc -> wave",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Velocity to wavetable position modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Veloc -> filter",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -127,
+      "maxValue": 127,
+      "description": "Velocity to filter frequency modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Pitch -> wave",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Pitch to wavetable position modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Pitch -> filter",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Pitch to filter frequency modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Env-1 -> wave",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Envelope 1 to wavetable position modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Env-1 -> filter",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -127,
+      "maxValue": 127,
+      "description": "Envelope 1 to filter frequency modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Env-2 -> wave",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Envelope 2 to wavetable position modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Env-2 -> filter",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -127,
+      "maxValue": 127,
+      "description": "Envelope 2 to filter frequency modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Env-2 -> pitch",
+      "unit": "ST",
+      "defaultValue": 0.0,
+      "minValue": -12.0,
+      "maxValue": 12.0,
+      "description": "Envelope 2 to pitch modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "LFO -> wave",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "LFO to wavetable position modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "LFO -> filter",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -127,
+      "maxValue": 127,
+      "description": "LFO to filter frequency modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "LFO -> pitch",
+      "unit": "ST",
+      "defaultValue": 0.0,
+      "minValue": -12.0,
+      "maxValue": 12.0,
+      "description": "LFO to pitch modulation amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Spread mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Spread by voice",
+        "Spread by voice 2",
+        "Spread by pitch"
+      ],
+      "description": "Stereo output spread mode.",
+      "scope": "global"
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 24,
+      "description": "Overall output gain.",
+      "scope": "global"
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "Left output bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 14,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Right output bus (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "MIDI channel to listen on (0=Omni).",
+      "scope": "global"
+    },
+    {
+      "name": "MPE channels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "MPE response mode.",
+      "scope": "global"
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "I2C channel (0=Off).",
+      "scope": "global"
+    },
+    {
+      "name": "Pitchbend input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for pitch bend CV (0=None).",
+      "scope": "global"
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [
+    {
+      "id": "wave_cv",
+      "name": "Wave CV Input",
+      "description": "CV input to control wavetable position.",
+      "busIdRef": "Wave input"
+    },
+    {
+      "id": "pitchbend_cv",
+      "name": "Pitchbend CV Input",
+      "description": "CV input for pitch bend.",
+      "busIdRef": "Pitchbend input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_l",
+      "name": "Left Output",
+      "description": "Left audio output.",
+      "busIdRef": "Left output"
+    },
+    {
+      "id": "out_r",
+      "name": "Right Output",
+      "description": "Right audio output.",
+      "busIdRef": "Right output"
+    }
+  ]
+}

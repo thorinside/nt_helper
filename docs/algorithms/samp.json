@@ -1,0 +1,238 @@
+{
+  "guid": "samp",
+  "name": "Sample player",
+  "categories": [
+    "Sampler"
+  ],
+  "description": "A simple sample player designed for playing one-shot samples (e.g., drums) from the MicroSD card. Supports velocity switches and round robins. Trigger inputs are velocity-sensitive (5V = max velocity). Loosely based on the disting EX \"SD 6 Triggers\" algorithm.",
+  "specifications": [
+    {
+      "name": "Triggers",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "description": "The number of individual sample triggers."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "global",
+      "description": "An overall gain to apply in addition to the per-trigger gain."
+    },
+    {
+      "name": "Round robin mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "scope": "global",
+      "description": "The round-robin mode."
+    },
+    {
+      "name": "Folder",
+      "unit": null,
+      "min": 1,
+      "max": null,
+      "default": 1,
+      "scope": "per-trigger",
+      "description": "Sets the folder from which to choose a sample."
+    },
+    {
+      "name": "Sample",
+      "unit": null,
+      "min": 1,
+      "max": null,
+      "default": 1,
+      "scope": "per-trigger",
+      "description": "Sets the sample within the folder."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "scope": "per-trigger",
+      "description": "Sets the sample tuning in semitones."
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "per-trigger",
+      "description": "Sets the sample fine tuning."
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "per-trigger",
+      "description": "The output level."
+    },
+    {
+      "name": "Pan",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "per-trigger",
+      "description": "The stereo pan position."
+    },
+    {
+      "name": "Vel(ocity) depth",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "scope": "per-trigger",
+      "description": "Sets the amount by which the velocity affects the playback level."
+    },
+    {
+      "name": "Choke group",
+      "unit": "enum",
+      "min": 0,
+      "max": 8,
+      "default": 0,
+      "scope": "per-trigger",
+      "description": "Voice's choke group. Triggering ends playback of other voices in the same group."
+    },
+    {
+      "name": "Play",
+      "unit": "trigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "per-trigger",
+      "description": "Manually triggers sample playback."
+    },
+    {
+      "name": "Velocity",
+      "unit": "MIDI velocity",
+      "min": 1,
+      "max": 127,
+      "default": 127,
+      "scope": "per-trigger",
+      "description": "The velocity to use when 'Play' triggers playback."
+    },
+    {
+      "name": "Loop",
+      "unit": "enum",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "values": [
+        "From WAV file",
+        "Off",
+        "On"
+      ],
+      "scope": "per-trigger",
+      "description": "Sets whether the sample will loop."
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "per-trigger setup",
+      "description": "The left audio output bus."
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 14,
+      "scope": "per-trigger setup",
+      "description": "The right audio output bus."
+    },
+    {
+      "name": "MIDI channel",
+      "unit": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "scope": "per-trigger setup",
+      "description": "The MIDI channel to respond to (0=none)."
+    },
+    {
+      "name": "MIDI note",
+      "unit": "MIDI note",
+      "min": -1,
+      "max": 127,
+      "default": 48,
+      "scope": "per-trigger setup",
+      "description": "The MIDI note to respond to, or -1 for 'Any'."
+    },
+    {
+      "name": "Trigger input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "per-trigger setup",
+      "description": "The input bus to use as the gate/trigger."
+    },
+    {
+      "name": "Envelope",
+      "unit": "toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "per-trigger envelope",
+      "description": "Enables an ADSR volume envelope."
+    },
+    {
+      "name": "Attack",
+      "unit": "scaled",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "scope": "per-trigger envelope",
+      "description": "Sets the envelope attack time."
+    },
+    {
+      "name": "Decay",
+      "unit": "scaled",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "scope": "per-trigger envelope",
+      "description": "Sets the envelope decay time."
+    },
+    {
+      "name": "Sustain",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "scope": "per-trigger envelope",
+      "description": "Sets the envelope sustain level."
+    },
+    {
+      "name": "Release",
+      "unit": "scaled",
+      "min": 0,
+      "max": 127,
+      "default": 77,
+      "scope": "per-trigger envelope",
+      "description": "Sets the envelope release time."
+    }
+  ],
+  "input_ports": [
+    "Gate/Trigger",
+    "MIDI"
+  ],
+  "output_ports": [
+    "Audio (Stereo)"
+  ]
+}

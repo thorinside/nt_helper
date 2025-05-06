@@ -1,0 +1,123 @@
+{
+  "guid": "ptsh",
+  "name": "Pitch Shifter",
+  "categories": [
+    "Effects",
+    "Pitch"
+  ],
+  "description": "Performs pitch shifting using a time-domain algorithm. Can be paired with the Tracker algorithm.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Shift algorithm",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "2-phase",
+        "3-phase"
+      ],
+      "description": "Chooses the pitch shifting algorithm (3-phase usually sounds better but uses more CPU).",
+      "scope": "global"
+    },
+    {
+      "name": "Grain delay",
+      "unit": "ms",
+      "defaultValue": 300,
+      "minValue": 1,
+      "maxValue": 682,
+      "description": "Maximum length of the delay line used by the pitch shifter. Mean latency is half this value.",
+      "scope": "global"
+    },
+    {
+      "name": "Octaves",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -10,
+      "maxValue": 10,
+      "description": "The pitch shift amount, in octaves.",
+      "scope": "global"
+    },
+    {
+      "name": "Semitones",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -48,
+      "maxValue": 48,
+      "description": "The pitch shift amount, in semitones.",
+      "scope": "global"
+    },
+    {
+      "name": "Cents",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": -1200,
+      "maxValue": 1200,
+      "description": "The pitch shift amount, in cents.",
+      "scope": "global"
+    },
+    {
+      "name": "Audio input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The bus to use as the audio input.",
+      "scope": "global"
+    },
+    {
+      "name": "Shift input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The bus to use as a V/octave pitch shift amount CV (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The output bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "audio_in",
+      "name": "Audio Input",
+      "description": "Audio signal to be pitch shifted.",
+      "busIdRef": "Audio input"
+    },
+    {
+      "id": "shift_cv",
+      "name": "Shift CV Input",
+      "description": "V/octave CV input to control pitch shift amount.",
+      "busIdRef": "Shift input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out",
+      "name": "Pitch Shifted Output",
+      "description": "Pitch shifted audio output.",
+      "busIdRef": "Output"
+    }
+  ]
+}
