@@ -123,6 +123,8 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
     - test/
+    - docs/algorithms/
+    - docs/features/
 
 flutter_launcher_icons:
   # ... (Keep existing launcher icon config)

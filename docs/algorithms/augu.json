@@ -2,7 +2,7 @@
   "name": "Augustus Loop",
   "guid": "augu",
   "short_description": "Tape-like delay",
-  "description": "Augustus Loop is a disting NT implementation of one of Expert Sleepers' oldest products, the VST plug-in of the same name (here^51 - https://expert-sleepers.co.uk/augustusloop.html). Essentially, it's a tape-inspired stereo delay. The delay time can be dialled in manually, or set by tap tempo or a clock input. The longest delay possible is around 44 seconds. Being a tape delay, you can change the tape speed via CV. Patching an LFO into here is your route to all manner of subtle detuning or extreme mangling effects. You can also stop and reverse the tape. There is an option to run the delay signal through an 'effects loop', allowing you to insert other effects or processing into the guts of the delay. Note that the 'Pitch CV' input changes the tape speed. It is labelled pitch rather than speed to emphasise the fact that it is scaled 1V/octave. There are four 'tape read heads' with independent delay times and stereo positions, allowing for straight stereo delays, ping pong delays, or hybrid multi-tap style effects.",
+  "description": "A versatile stereo audio delay and looping effect inspired by the Augustus Loop tape delay/looper. Offers independent control over loop length, pitch shift, filtering, and tape emulation parameters.",
   "use_cases": [
     "Stereo tape delay emulation",
     "Clocked delays",
@@ -14,6 +14,7 @@
     "Delay effects with external processing in the feedback loop"
   ],
   "gui_description": "The display shows the feedback amount bottom left and the delay time bottom right. The centre area shows an animation indicating the tape direction and speed. If using a clock input, the word 'Clock' flashes up every time the algorithm receives a clock pulse. The word 'Tap' is displayed if the tap tempo function will set the delay time on the next tap i.e. it shows whether tap tempo is 'live'.",
+  "categories": [],
   "specifications": [
     {
       "name": "Max delay time",

@@ -8,7 +8,6 @@ import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
 

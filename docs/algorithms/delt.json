@@ -10,6 +10,7 @@
     "Lo-fi delay textures"
   ],
   "gui_description": null,
+  "categories": [],
   "specifications": [
     {
       "name": "Max tape length",

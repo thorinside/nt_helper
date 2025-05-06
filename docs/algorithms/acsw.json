@@ -3,6 +3,7 @@
   "guid": "acsw",
   "short_description": "AD envelope with variable peak",
   "description": "This algorithm recreates a very specific aspect of the Roland TB-303's circuitry. There is a lengthy write-up on it on the Devil Fish page here^50 (https://www.firstpr.com.au/rwi/dfish/303-unique.html), but essentially it creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered.",
+  "categories": [],
   "use_cases": [
     "TB-303 style accent simulation",
     "Dynamic envelope shaping"

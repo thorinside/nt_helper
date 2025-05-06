@@ -10,6 +10,7 @@
     "Automated tuning without manual adjustment"
   ],
   "gui_description": "While calibrating, the display draws a graph of the measured pitch vs output voltage.",
+  "categories": [],
   "specifications": [],
   "parameters": [
     {

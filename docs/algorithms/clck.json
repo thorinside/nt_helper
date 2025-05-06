@@ -10,6 +10,7 @@
     "Providing divided/multiplied clocks within the module"
   ],
   "gui_description": "The display shows the current tempo, and the transport location in bars, beats, and sixteenths. It also shows the clock source, and whether the transport is running or stopped.",
+  "categories": [],
   "specifications": [
     {
       "name": "Outputs",

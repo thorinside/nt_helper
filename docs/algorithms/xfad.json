@@ -10,7 +10,11 @@
     "Voltage-controlled mixing"
   ],
   "gui_description": "The display shows a graphical representation of the crossfade curves, and the amount of the two signals that are combined in the output mix.",
-  "specifications": [],
+  "specifications": [
+    {
+      "name": "Channels"
+    }
+  ],
   "parameters": [
     {
       "page": "Crossfader",
@@ -100,5 +104,6 @@
         }
       ]
     }
-  ]
+  ],
+  "categories": []
 }

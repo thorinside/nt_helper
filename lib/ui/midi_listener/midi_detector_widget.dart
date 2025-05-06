@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
-import 'package:nt_helper/models/packed_mapping_data.dart';
 
 import 'midi_listener_cubit.dart';
 

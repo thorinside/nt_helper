@@ -10,6 +10,7 @@
     "Multi-track recording (up to 10 simultaneous files)"
   ],
   "gui_description": "The display shows a level meter for each file. This will be grayed out if the file is disabled. The meters show the input levels when idle or recording, and the playback levels when playing. While recording, the display shows the name of the current recording, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card. When idle, the display shows the name of the last recording completed or played. During playback, the display shows the name of the recording being played, and the elapsed time.",
+  "categories": [],
   "specifications": [
     {
       "name": "Max files",

@@ -32,7 +32,6 @@ class _PollingTask {
 class DistingCubit extends Cubit<DistingState> {
   final AppDatabase _database; // Added
   late final MetadataDao _metadataDao; // Added
-  late final PresetsDao _presetsDao; // Added PresetsDao
   final Future<SharedPreferences> _prefs;
 
   // Modified constructor
@@ -40,7 +39,6 @@ class DistingCubit extends Cubit<DistingState> {
       : _prefs = SharedPreferences.getInstance(),
         super(const DistingState.initial()) {
     _metadataDao = _database.metadataDao; // Initialize DAO
-    _presetsDao = _database.presetsDao; // Initialize PresetsDao
   }
 
   MidiCommand _midiCommand = MidiCommand();

@@ -10,6 +10,7 @@
     "Clean digital delay or modulated delay sounds"
   ],
   "gui_description": null,
+  "categories": [],
   "specifications": [
     {
       "name": "Max delay time",
@@ -17,6 +18,14 @@
       "max": 30,
       "unit": "seconds",
       "description": "The maximum delay time."
+    },
+    {
+      "name": "Stereo Link",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "unit": null,
+      "description": "Enables stereo linking."
     }
   ],
   "parameters": [

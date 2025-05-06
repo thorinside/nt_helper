@@ -386,7 +386,7 @@ class _PresetListView extends StatelessWidget {
 
         // Determine button states
         final bool canLoad = !isOperationInProgress;
-        final canDelete = !isOperationInProgress;
+        final bool canDelete = !isOperationInProgress;
 
         return ListTile(
           key: ValueKey(preset.id),

@@ -10,12 +10,21 @@
     "Sequenced voltage generation"
   ],
   "gui_description": "The display shows, for each channel, from top to bottom: The remaining time of the delay (once triggered), the remaining time of the function, and the output function as a bar graph.",
+  "categories": [],
   "specifications": [
     {
       "name": "Channels",
       "min": 1,
       "max": 8,
       "description": "The number of functions to generate."
+    },
+    {
+      "name": "Stereo Link",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "unit": null,
+      "description": "Sets the stereo link mode."
     }
   ],
   "parameters": [

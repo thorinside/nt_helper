@@ -123,140 +123,125 @@ class _SettingsDialogState extends State<SettingsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Dialog(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Text(
-                  'Settings',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ),
-
-              // Settings content
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 400),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Request timeout setting
-                      _SettingSection(
-                        title: 'Request Timeout',
-                        subtitle: 'Default timeout for requests',
-                        child: TextFormField(
-                          controller: _requestTimeoutController,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            suffixText: 'ms',
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a value';
-                            }
-                            final number = int.tryParse(value);
-                            if (number == null) {
-                              return 'Please enter a valid number';
-                            }
-                            if (number <= 0) {
-                              return 'Value must be greater than 0';
-                            }
-                            return null;
-                          },
+    return AlertDialog(
+      title: const Text('Manage Settings'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Settings content
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 400),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Request timeout setting
+                    _SettingSection(
+                      title: 'Request Timeout',
+                      subtitle: 'Default timeout for requests',
+                      child: TextFormField(
+                        controller: _requestTimeoutController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          suffixText: 'ms',
                         ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Inter-message delay setting
-                      _SettingSection(
-                        title: 'Inter-Message Delay',
-                        subtitle: 'Minimum time between messages',
-                        child: TextFormField(
-                          controller: _interMessageDelayController,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            suffixText: 'ms',
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a value';
-                            }
-                            final number = int.tryParse(value);
-                            if (number == null) {
-                              return 'Please enter a valid number';
-                            }
-                            if (number < 0) {
-                              return 'Value must be 0 or greater';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Haptics enabled setting
-                      SwitchListTile(
-                        title: Text(
-                          'Enable Haptics',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        subtitle: const Text(
-                            'Provide tactile feedback when interacting with the app'),
-                        value: _hapticsEnabled,
-                        onChanged: (value) {
-                          setState(() {
-                            _hapticsEnabled = value;
-                          });
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a value';
+                          }
+                          final number = int.tryParse(value);
+                          if (number == null) {
+                            return 'Please enter a valid number';
+                          }
+                          if (number <= 0) {
+                            return 'Value must be greater than 0';
+                          }
+                          return null;
                         },
-                        contentPadding: EdgeInsets.zero,
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Inter-message delay setting
+                    _SettingSection(
+                      title: 'Inter-Message Delay',
+                      subtitle: 'Minimum time between messages',
+                      child: TextFormField(
+                        controller: _interMessageDelayController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          suffixText: 'ms',
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a value';
+                          }
+                          final number = int.tryParse(value);
+                          if (number == null) {
+                            return 'Please enter a valid number';
+                          }
+                          if (number < 0) {
+                            return 'Value must be 0 or greater';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Haptics enabled setting
+                    SwitchListTile(
+                      title: Text(
+                        'Enable Haptics',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                          'Provide tactile feedback when interacting with the app'),
+                      value: _hapticsEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _hapticsEnabled = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
                 ),
               ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context)
-                          .pop(false); // Return false to indicate cancel
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _saveSettings,
-                    child: const Text('Save'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            // Actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context)
+                        .pop(false); // Return false to indicate cancel
+                  },
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _saveSettings,
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

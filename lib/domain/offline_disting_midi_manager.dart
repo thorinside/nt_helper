@@ -8,7 +8,6 @@ import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import '../db/daos/presets_dao.dart';
 
@@ -577,10 +576,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Stream<MidiPacket> get midiDataStream => Stream.empty();
 
   @override
-  MidiDevice? get inputDevice => null;
+  Future<MidiDevice?> get inputDevice async => null;
 
   @override
-  MidiDevice? get outputDevice => null;
+  Future<MidiDevice?> get outputDevice async => null;
 
   // --- Helper Methods ---
 
@@ -759,20 +758,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     } else {
       _customNames.remove(movedIndex);
     }
-  }
-
-  Map<String, dynamic> _getStateForIndex(int index) {
-    return {
-      'values': _parameterValues[index] ?? {},
-      'stringValues': _parameterStringValues[index] ?? {},
-      'mappings': _mappings[index] ?? {},
-    };
-  }
-
-  void _setStateForIndex(int index, Map<String, dynamic> data) {
-    _parameterValues[index] = Map<int, int>.from(data['values']);
-    _parameterStringValues[index] = Map<int, String>.from(data['stringValues']);
-    _mappings[index] = Map<int, PackedMappingData>.from(data['mappings']);
   }
 
   // --- NEW METHOD IMPLEMENTATION ---
