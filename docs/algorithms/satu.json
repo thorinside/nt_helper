@@ -1,0 +1,62 @@
+{
+  "guid": "satu",
+  "name": "Saturation",
+  "categories": [
+    "Effect",
+    "Dynamics"
+  ],
+  "description": "Simple soft-clipping saturation effect. Useful for tone-shaping or avoiding harsh digital clipping. Based on the output bus limiter used in many disting EX algorithms.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "description": "The number of bus channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Pre gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "global",
+      "description": "A gain to apply before the saturation."
+    },
+    {
+      "name": "Post gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "scope": "global",
+      "description": "A gain to apply after the saturation."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "per-channel",
+      "description": "The input (and output) bus. If 0, channel is disabled."
+    },
+    {
+      "name": "Enable",
+      "unit": "toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "per-channel",
+      "description": "Enables saturation on this channel."
+    }
+  ],
+  "input_ports": [
+    "Audio"
+  ],
+  "output_ports": [
+    "Audio"
+  ]
+}

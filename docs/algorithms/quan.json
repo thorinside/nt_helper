@@ -1,0 +1,246 @@
+{
+  "guid": "quan",
+  "name": "Quantizer",
+  "categories": [
+    "Utility",
+    "CV Modifier"
+  ],
+  "description": "A multi-channel CV quantizer based on the disting EX Quad Quantizer. Quantizes CV inputs to specific scales and outputs CV and/or MIDI. Supports microtuning.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": {
+        "minValue": 1,
+        "maxValue": 12,
+        "defaultValue": 1
+      },
+      "description": "The number of independent quantizer channels."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Quantize mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Nearest",
+        "Mapped",
+        "Warped"
+      ],
+      "description": "Sets the quantization mode (Nearest/Mapped/Warped).",
+      "scope": "global"
+    },
+    {
+      "name": "Input transpose",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -48,
+      "maxValue": 48,
+      "description": "Input transposition in 12-TET semitones.",
+      "scope": "global"
+    },
+    {
+      "name": "Shift",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -48,
+      "maxValue": 48,
+      "description": "In-scale shift amount.",
+      "scope": "global"
+    },
+    {
+      "name": "Key",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -12,
+      "maxValue": 12,
+      "description": "Sets the key (root note) of the scale.",
+      "scope": "global"
+    },
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 12,
+      "description": "Sets the scale mode (rotation). Displays familiar names for major scale.",
+      "scope": "global"
+    },
+    {
+      "name": "Scale",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 10,
+      "description": "The scale to quantize into (Chromatic, Major, Minor, etc., plus MIDI input options).",
+      "scope": "global"
+    },
+    {
+      "name": "Output transpose",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -48,
+      "maxValue": 48,
+      "description": "Output transposition in 12-TET semitones.",
+      "scope": "global"
+    },
+    {
+      "name": "Output gate mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Triggers",
+        "Inv Triggers",
+        "Gates"
+      ],
+      "description": "Behavior of gate/trigger outputs (and MIDI notes).",
+      "scope": "global"
+    },
+    {
+      "name": "Gate offset",
+      "unit": "ms",
+      "defaultValue": 2.0,
+      "minValue": 0.0,
+      "maxValue": 10.0,
+      "description": "Delays gate inputs relative to pitch inputs.",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI channel (in)",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "MIDI channel to receive notes on (for MIDI scale modes).",
+      "scope": "global"
+    },
+    {
+      "name": "CV input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Pitch CV input bus for the channel (0=None).",
+      "scope": "channel"
+    },
+    {
+      "name": "Gate input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Optional gate input bus for the channel (0=None). Samples CV on high gate.",
+      "scope": "channel"
+    },
+    {
+      "name": "CV output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Pitch CV output bus for the channel (0=None). Always uses 'Replace' mode.",
+      "scope": "channel"
+    },
+    {
+      "name": "Gate output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Gate output bus for the channel (0=None). Behavior set by 'Output gate mode'. Always 'Replace' mode.",
+      "scope": "channel"
+    },
+    {
+      "name": "Change output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "'Change trigger' output bus. Fires when quantized note changes (0=None). Always 'Replace' mode.",
+      "scope": "channel"
+    },
+    {
+      "name": "MIDI channel (out)",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "MIDI channel to output notes on for this channel (0=Off).",
+      "scope": "channel"
+    },
+    {
+      "name": "Output to breakout",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enable MIDI output to the breakout port.",
+      "scope": "global"
+    },
+    {
+      "name": "Output to Select Bus",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enable MIDI output to the Select Bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Output to USB",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enable MIDI output to USB.",
+      "scope": "global"
+    },
+    {
+      "name": "Output to internal",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enable internal MIDI output (to other algorithms).",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "cv_in",
+      "name": "CV Input",
+      "description": "Pitch CV input for a channel.",
+      "busIdRef": "CV input"
+    },
+    {
+      "id": "gate_in",
+      "name": "Gate Input",
+      "description": "Optional gate input for a channel.",
+      "busIdRef": "Gate input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "cv_out",
+      "name": "CV Output",
+      "description": "Quantized pitch CV output for a channel.",
+      "busIdRef": "CV output"
+    },
+    {
+      "id": "gate_out",
+      "name": "Gate Output",
+      "description": "Gate/Trigger output for a channel.",
+      "busIdRef": "Gate output"
+    },
+    {
+      "id": "change_out",
+      "name": "Change Trigger Output",
+      "description": "Trigger output fired when quantized note changes.",
+      "busIdRef": "Change output"
+    }
+  ]
+}

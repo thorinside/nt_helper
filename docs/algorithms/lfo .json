@@ -1,0 +1,214 @@
+{
+  "guid": "lfo ",
+  "name": "LFO",
+  "categories": [
+    "LFO",
+    "Modulation"
+  ],
+  "description": "Flexible low frequency oscillator with multiple waveform mixing (Sine, Triangle, Saw, Square, Noise), slew, and sync options (Free, Clock, MIDI). Channels 2-4 can phase-lock to Channel 1.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 4,
+      "description": "The number of LFO outputs."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Quality",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Stepped",
+        "Linear"
+      ],
+      "scope": "global",
+      "description": "Sets the LFO output quality (Stepped for low CPU, Linear for CV output)."
+    },
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use as the clock input (0 = None)."
+    },
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "scope": "channel",
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Speed",
+      "unit": null,
+      "defaultValue": 8605,
+      "minValue": 0,
+      "maxValue": 16383,
+      "scope": "channel",
+      "description": "Sets the LFO speed (exponential scale, 0.05Hz to 15Hz)."
+    },
+    {
+      "name": "Multiplier",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "x0.1",
+        "x1",
+        "x10",
+        "x100"
+      ],
+      "scope": "channel",
+      "description": "Sets a multiplier for the LFO speed."
+    },
+    {
+      "name": "Sine",
+      "unit": "V",
+      "defaultValue": 0.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "scope": "channel",
+      "description": "Amplitude of sine wave component."
+    },
+    {
+      "name": "Triangle",
+      "unit": "V",
+      "defaultValue": 0.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "scope": "channel",
+      "description": "Amplitude of triangle wave component."
+    },
+    {
+      "name": "Saw",
+      "unit": "V",
+      "defaultValue": 0.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "scope": "channel",
+      "description": "Amplitude of saw wave component."
+    },
+    {
+      "name": "Square",
+      "unit": "V",
+      "defaultValue": 0.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "scope": "channel",
+      "description": "Amplitude of square wave component."
+    },
+    {
+      "name": "Noise",
+      "unit": "V",
+      "defaultValue": 0.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "scope": "channel",
+      "description": "Amplitude of noise component."
+    },
+    {
+      "name": "Slew",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 127,
+      "scope": "channel",
+      "description": "Amount of slew applied to the LFO output."
+    },
+    {
+      "name": "Sync",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Free",
+        "Clock input",
+        "MIDI clock"
+      ],
+      "scope": "channel",
+      "description": "Chooses the sync source."
+    },
+    {
+      "name": "Phase",
+      "unit": "degrees",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 360,
+      "scope": "channel",
+      "description": "Phase offset. If Sync != Free and channel > 1, offset relative to LFO 1."
+    },
+    {
+      "name": "MIDI divisor",
+      "unit": null,
+      "defaultValue": 9,
+      "minValue": 0,
+      "maxValue": 19,
+      "scope": "channel",
+      "description": "MIDI clock divisor (if Sync is MIDI clock)."
+    },
+    {
+      "name": "MIDI numerator",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "scope": "channel",
+      "description": "MIDI clock numerator (if Sync is MIDI clock)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "The output bus for the channel."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "channel",
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "clock_in",
+      "name": "Clock In",
+      "description": "Global clock input bus.",
+      "busIdRef": "Clock input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Output bus for each LFO channel.",
+      "busIdRef": "Output",
+      "isPerChannel": true
+    }
+  ]
+}

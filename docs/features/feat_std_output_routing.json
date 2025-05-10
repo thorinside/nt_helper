@@ -1,0 +1,29 @@
+{
+  "guid": "feat_std_output_routing",
+  "name": "Standard Output Routing",
+  "description": "Common parameters for selecting an output bus and its mode (Add/Replace). Intended for use on a per-channel basis within algorithms.",
+  "parameters": [
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "per-channel",
+      "description": "The output bus. If set to 'None' (0), the input bus is used as output, and the mode is always 'Replace'."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "per-channel",
+      "description": "The standard Add/Replace mode selector."
+    }
+  ]
+}

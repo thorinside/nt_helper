@@ -5,10 +5,10 @@ import 'package:drift/drift.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
-import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/models/packed_mapping_data.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import '../db/daos/presets_dao.dart';
 
@@ -447,7 +447,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestSavePreset() async {
+  Future<void> requestSavePreset({int option = 0}) async {
     debugPrint("[Offline] requestSavePreset: Saving offline state...");
     try {
       final FullPresetDetails? presetDetails =
@@ -577,10 +577,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Stream<MidiPacket> get midiDataStream => Stream.empty();
 
   @override
-  MidiDevice? get inputDevice => null;
+  Future<MidiDevice?> get inputDevice async => null;
 
   @override
-  MidiDevice? get outputDevice => null;
+  Future<MidiDevice?> get outputDevice async => null;
 
   // --- Helper Methods ---
 
@@ -761,26 +761,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     }
   }
 
-  Map<String, dynamic> _getStateForIndex(int index) {
-    return {
-      'values': _parameterValues[index] ?? {},
-      'stringValues': _parameterStringValues[index] ?? {},
-      'mappings': _mappings[index] ?? {},
-    };
-  }
-
-  void _setStateForIndex(int index, Map<String, dynamic> data) {
-    _parameterValues[index] = Map<int, int>.from(data['values']);
-    _parameterStringValues[index] = Map<int, String>.from(data['stringValues']);
-    _mappings[index] = Map<int, PackedMappingData>.from(data['mappings']);
-  }
-
-  // --- NEW METHOD IMPLEMENTATION ---
   @override
   Future<FullPresetDetails?> requestCurrentPresetDetails() {
     // Simply call the existing helper method that builds the details object
     // based on the current internal state (_loadedPresetId, _presetName, maps, etc.)
     return _buildPresetDetailsForSave();
   }
-  // --- END NEW METHOD IMPLEMENTATION ---
 }

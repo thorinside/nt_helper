@@ -1,0 +1,241 @@
+{
+  "name": "Auto-sampler",
+  "guid": "auto",
+  "short_description": "Creates multisamples",
+  "description": "This algorithm allows you to automatically create multi-sampled instruments in a format that can be used by the Poly Multisample algorithm, by triggering an external synth (by MIDI or CV/gate) and recording the resulting audio. You can set the range of notes to be sampled, and the step size (e.g. every note, every fourth note etc.). You can also choose to sample multiple velocity levels per note, and multiple round-robins of each note. The samples are stored on the MicroSD card, in a folder within the root 'samples' folder.",
+  "use_cases": [
+    "Creating multisampled instruments from hardware synths",
+    "Sampling external sound sources for playback",
+    "Building custom sample libraries"
+  ],
+  "gui_description": "While sampling, the display shows a level meter, the filename of the sample currently being recorded, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card.",
+  "categories": [],
+  "specifications": [],
+  "parameters": [
+    {
+      "page": "Recording",
+      "params": [
+        {
+          "name": "Folder name",
+          "min": null,
+          "max": null,
+          "default": null,
+          "unit": null,
+          "description": "The name of the folder to create when starting a recording. If the folder already exists, a number will be appended to make the new name unique.",
+          "is_string": true
+        },
+        {
+          "name": "Bit depth",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "unit": null,
+          "description": "Chooses the bit depth for recording. The options are 16, 24, or 32 bit.",
+          "enum_values": [
+            "16 bit",
+            "24 bit",
+            "32 bit"
+          ]
+        },
+        {
+          "name": "Normalisation",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the input voltage that corresponds to full-scale in the recorded files. The options are 10V or 12V.",
+          "enum_values": [
+            "10V",
+            "12V"
+          ]
+        },
+        {
+          "name": "Left/mono input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The left channel input to record.",
+          "is_bus": true
+        },
+        {
+          "name": "Right input",
+          "min": 0,
+          "max": 28,
+          "default": 2,
+          "unit": null,
+          "description": "The right channel input, if recording in stereo. 0 = None.",
+          "is_bus": true
+        }
+      ]
+    },
+    {
+      "page": "Outputs",
+      "params": [
+        {
+          "name": "CV output",
+          "min": 0,
+          "max": 28,
+          "default": 14,
+          "unit": null,
+          "description": "The pitch CV output bus. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Gate output",
+          "min": 0,
+          "max": 28,
+          "default": 15,
+          "unit": null,
+          "description": "The gate output bus. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "MIDI output",
+          "min": 0,
+          "max": 4,
+          "default": 0,
+          "unit": null,
+          "description": "The MIDI output port.",
+          "enum_values": [
+            "None",
+            "Breakout",
+            "Select Bus",
+            "USB",
+            "Internal"
+          ]
+        },
+        {
+          "name": "MIDI channel",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "unit": null,
+          "description": "The output MIDI channel."
+        }
+      ]
+    },
+    {
+      "page": "Setup",
+      "params": [
+        {
+          "name": "Start Note",
+          "min": 0,
+          "max": 127,
+          "default": 21,
+          "unit": null,
+          "description": "The first note to sample."
+        },
+        {
+          "name": "End Note",
+          "min": 0,
+          "max": 127,
+          "default": 108,
+          "unit": null,
+          "description": "The last note to sample."
+        },
+        {
+          "name": "Note Step",
+          "min": 1,
+          "max": 127,
+          "default": 1,
+          "unit": null,
+          "description": "The number of notes to increment by after each sample (e.g. '1' samples every note, '12' samples every octave etc.)."
+        },
+        {
+          "name": "Vel switches",
+          "min": 1,
+          "max": 9,
+          "default": 1,
+          "unit": null,
+          "description": "The number of velocity switch layers to sample."
+        },
+        {
+          "name": "Min velocity",
+          "min": 1,
+          "max": 127,
+          "default": 25,
+          "unit": null,
+          "description": "The minimum velocity value to use when sampling with velocity switch layers."
+        },
+        {
+          "name": "Max velocity",
+          "min": 1,
+          "max": 127,
+          "default": 127,
+          "unit": null,
+          "description": "The maximum velocity value to use when sampling with velocity switch layers, or the fixed value to use if not using velocity switches."
+        },
+        {
+          "name": "Round robins",
+          "min": 1,
+          "max": 9,
+          "default": 1,
+          "unit": null,
+          "description": "The number of round-robins to sample."
+        },
+        {
+          "name": "Length",
+          "min": 0.1,
+          "max": 60.0,
+          "default": 1.0,
+          "unit": "s",
+          "description": "The note length (i.e. how long the gate is held high, or between MIDI note on and note off)."
+        },
+        {
+          "name": "Gap",
+          "min": 0.1,
+          "max": 60.0,
+          "default": 0.1,
+          "unit": "s",
+          "description": "The time to keep recording after the note is released."
+        },
+        {
+          "name": "Latency",
+          "min": 0,
+          "max": 2048,
+          "default": 0,
+          "unit": null,
+          "description": "Adjusts for latency. See manual for details."
+        },
+        {
+          "name": "Preview note",
+          "min": 0,
+          "max": 127,
+          "default": 48,
+          "unit": null,
+          "description": "Sets the MIDI note number to use when previewing."
+        }
+      ]
+    },
+    {
+      "page": "Activate",
+      "params": [
+        {
+          "name": "Activate",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Activates auto-sampling when on.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Test",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "When on, triggers a note so you can test the timing parameters (Length and Gap) and the latency.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        }
+      ]
+    }
+  ]
+}

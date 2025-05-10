@@ -1,0 +1,249 @@
+{
+  "guid": "pyms",
+  "name": "Poly Multisample",
+  "categories": [
+    "Sampler",
+    "Polysynth"
+  ],
+  "description": "A polyphonic, multitimbral sample playback instrument based on the disting EX algorithm. Supports velocity switches and round robins. Can be controlled via CV/Gate, MIDI, or I2C.",
+  "specifications": [
+    {
+      "name": "Timbres",
+      "value": {
+        "minValue": 1,
+        "maxValue": 4,
+        "defaultValue": 1
+      },
+      "description": "The number of distinct sample sets (timbres) that can be loaded and assigned."
+    },
+    {
+      "name": "Voices",
+      "value": {
+        "minValue": 1,
+        "maxValue": 16,
+        "defaultValue": 1
+      },
+      "description": "The number of simultaneous voices shared across all timbres."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Global gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Overall gain applied to all timbres.",
+      "scope": "global"
+    },
+    {
+      "name": "Sustain mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Sustain",
+        "Sostenuto"
+      ],
+      "description": "Standard polysynth sustain mode.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate offset",
+      "unit": "ms",
+      "defaultValue": 0.2,
+      "minValue": 0.0,
+      "maxValue": 10.0,
+      "description": "Delays gate inputs relative to pitch inputs (useful for CV settle time).",
+      "scope": "global"
+    },
+    {
+      "name": "Round robin mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "description": "Round-robin mode for sample selection.",
+      "scope": "global"
+    },
+    {
+      "name": "Folder",
+      "unit": null,
+      "description": "Sample folder selection.",
+      "scope": "timbre",
+      "type": "folder"
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 24,
+      "description": "Output level for the timbre.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Pan",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Stereo pan position for the timbre.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -60,
+      "maxValue": 60,
+      "description": "Coarse tuning for the timbre.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Fine tuning for the timbre.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Envelope",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enables ADSR volume envelope for the timbre (0=Off, 1=On). If off, sample plays fully.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Attack",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope attack time (1ms-15s, exp).",
+      "scope": "timbre"
+    },
+    {
+      "name": "Decay",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope decay time (20ms-15s, exp).",
+      "scope": "timbre"
+    },
+    {
+      "name": "Sustain",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Envelope sustain level.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Release",
+      "unit": null,
+      "defaultValue": 77,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Envelope release time (10ms-30s, exp).",
+      "scope": "timbre"
+    },
+    {
+      "name": "Velocity",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount velocity affects volume.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Sustain",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Direct sustain control (like MIDI pedal).",
+      "scope": "timbre"
+    },
+    {
+      "name": "Left/mono output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "Left or mono output bus for the timbre.",
+      "scope": "timbre"
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Right output bus for the timbre (0=None).",
+      "scope": "timbre"
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "MIDI channel for the timbre (0=Omni).",
+      "scope": "timbre"
+    },
+    {
+      "name": "MPE channels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "MPE response mode for the timbre.",
+      "scope": "timbre"
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "I2C channel for the timbre (0=Off).",
+      "scope": "timbre"
+    },
+    {
+      "name": "Bend range",
+      "unit": "ST",
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 48,
+      "description": "MIDI pitch bend range for the timbre.",
+      "scope": "timbre"
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "id": "out_l_mono",
+      "name": "Left/Mono Output",
+      "description": "Audio output for the timbre (Left or Mono).",
+      "busIdRef": "Left/mono output"
+    },
+    {
+      "id": "out_r",
+      "name": "Right Output",
+      "description": "Audio output for the timbre (Right, if stereo).",
+      "busIdRef": "Right output"
+    }
+  ]
+}

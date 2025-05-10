@@ -1,0 +1,166 @@
+{
+  "guid": "eucp",
+  "name": "Euclidean patterns",
+  "categories": [
+    "Rhythm",
+    "Pattern Generator"
+  ],
+  "description": "Generates Euclidean rhythmic patterns based on steps, pulses, and rotation. Output can be triggers or clock pulses.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 8,
+      "description": "The number of simultaneous patterns to generate."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The clock input bus. A rising edge advances the patterns by one step."
+    },
+    {
+      "name": "Reset input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The reset input bus. A high level resets the patterns to step 1 (and holds them there)."
+    },
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "scope": "channel",
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Steps",
+      "unit": null,
+      "defaultValue": 16,
+      "minValue": 1,
+      "maxValue": 32,
+      "scope": "channel",
+      "description": "The number of steps in the pattern."
+    },
+    {
+      "name": "Pulses",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 1,
+      "maxValue": 32,
+      "scope": "channel",
+      "description": "The number of pulses in the pattern."
+    },
+    {
+      "name": "Rotation",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 32,
+      "scope": "channel",
+      "description": "The rotation of the pattern."
+    },
+    {
+      "name": "Repeat",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 128,
+      "scope": "channel",
+      "description": "The overall repeat count (number of clocks until pattern repeats). 0 uses Steps value. > Steps extends with silence."
+    },
+    {
+      "name": "Output type",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Trigger",
+        "% of clock"
+      ],
+      "scope": "channel",
+      "description": "Sets whether the output is a fixed length trigger or a clock pulse related to the input clock period."
+    },
+    {
+      "name": "Length (Trigger)",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 1,
+      "maxValue": 100,
+      "scope": "channel",
+      "description": "Sets the trigger length (if Output type is Trigger).",
+      "relevance": "Output type == 0"
+    },
+    {
+      "name": "Length (% of clock)",
+      "unit": "%",
+      "defaultValue": 50,
+      "minValue": 1,
+      "maxValue": 99,
+      "scope": "channel",
+      "description": "Sets the output clock pulse width (if Output type is % of clock).",
+      "relevance": "Output type == 1"
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "The output bus for the channel."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "channel",
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "clock",
+      "name": "Clock",
+      "description": "Global clock input.",
+      "busIdRef": "Clock input"
+    },
+    {
+      "id": "reset",
+      "name": "Reset",
+      "description": "Global reset input.",
+      "busIdRef": "Reset input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Output bus for each channel.",
+      "busIdRef": "Output",
+      "isPerChannel": true
+    }
+  ]
+}

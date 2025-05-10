@@ -1,0 +1,170 @@
+{
+  "guid": "revb",
+  "name": "Reverb",
+  "categories": [
+    "Effects",
+    "Reverb"
+  ],
+  "description": "A classic algorithmic reverb effect, not based on any specific hardware or physical space.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Mix",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Sets the wet/dry mix.",
+      "scope": "global"
+    },
+    {
+      "name": "Time",
+      "unit": "ms",
+      "defaultValue": 1700,
+      "minValue": 400,
+      "maxValue": 30000,
+      "description": "Sets the reverb decay time.",
+      "scope": "global"
+    },
+    {
+      "name": "Model",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 3,
+      "description": "Chooses the reverb model.",
+      "scope": "global"
+    },
+    {
+      "name": "Size",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 1,
+      "maxValue": 100,
+      "description": "Sets the size of the reverb space (affects early reflections).",
+      "scope": "global"
+    },
+    {
+      "name": "High damp",
+      "unit": null,
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount of high frequency damping in the reverb tail.",
+      "scope": "global"
+    },
+    {
+      "name": "Modulation speed",
+      "unit": "Hz",
+      "defaultValue": 2.50,
+      "minValue": 0.01,
+      "maxValue": 5.00,
+      "description": "Sets the speed of internal reverb modulation.",
+      "scope": "global"
+    },
+    {
+      "name": "Modulation depth",
+      "unit": null,
+      "defaultValue": 25,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Sets the depth of internal reverb modulation.",
+      "scope": "global"
+    },
+    {
+      "name": "Early gain",
+      "unit": "dB",
+      "defaultValue": -12,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Output level of the early reflections.",
+      "scope": "global"
+    },
+    {
+      "name": "Diffuse gain",
+      "unit": "dB",
+      "defaultValue": -6,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Output level of the diffuse reflections.",
+      "scope": "global"
+    },
+    {
+      "name": "Left input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left audio input bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The right audio input bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left audio output bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 14,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The right audio output bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_l",
+      "name": "Left Input",
+      "description": "Left audio input.",
+      "busIdRef": "Left input"
+    },
+    {
+      "id": "in_r",
+      "name": "Right Input",
+      "description": "Right audio input.",
+      "busIdRef": "Right input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_l",
+      "name": "Left Output",
+      "description": "Left audio output.",
+      "busIdRef": "Left output"
+    },
+    {
+      "id": "out_r",
+      "name": "Right Output",
+      "description": "Right audio output.",
+      "busIdRef": "Right output"
+    }
+  ]
+}

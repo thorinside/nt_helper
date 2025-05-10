@@ -1,0 +1,45 @@
+{
+  "guid": "note",
+  "name": "Notes",
+  "categories": [
+    "Utility"
+  ],
+  "description": "A simple placeholder algorithm to store text notes within a preset. It has no effect on busses and consumes no CPU.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Text Line 1",
+      "unit": null,
+      "defaultValue": "",
+      "description": "First line of text.",
+      "scope": "global",
+      "type": "string"
+    },
+    {
+      "name": "Text Line 2",
+      "unit": null,
+      "defaultValue": "",
+      "description": "Second line of text.",
+      "scope": "global",
+      "type": "string"
+    },
+    {
+      "name": "Text Line 3",
+      "unit": null,
+      "defaultValue": "",
+      "description": "Third line of text.",
+      "scope": "global",
+      "type": "string"
+    },
+    {
+      "name": "Text Line 4",
+      "unit": null,
+      "defaultValue": "",
+      "description": "Fourth line of text.",
+      "scope": "global",
+      "type": "string"
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

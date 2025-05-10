@@ -1,0 +1,329 @@
+{
+  "guid": "mac2",
+  "name": "Macro Oscillator 2",
+  "categories": [
+    "Oscillator",
+    "Digital"
+  ],
+  "description": "Implementation of the open source Plaits module by Émilie Gillet, offering a wide range of synthesis models.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Model",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 23,
+      "description": "Chooses the synthesis model.",
+      "scope": "global"
+    },
+    {
+      "name": "Coarse tune",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -60,
+      "maxValue": 60,
+      "description": "Coarse tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Fine tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Harmonics",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Sets the harmonics control.",
+      "scope": "global"
+    },
+    {
+      "name": "Timbre",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Sets the timbre control.",
+      "scope": "global"
+    },
+    {
+      "name": "Morph",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Sets the morph control.",
+      "scope": "global"
+    },
+    {
+      "name": "FM",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Sets the FM depth.",
+      "scope": "global"
+    },
+    {
+      "name": "Timbre mod",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Sets the timbre modulation depth.",
+      "scope": "global"
+    },
+    {
+      "name": "Morph mod",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Sets the morph modulation depth.",
+      "scope": "global"
+    },
+    {
+      "name": "Low-pass gate",
+      "unit": null,
+      "defaultValue": 127,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Sets the LPG colour (VCFA-VCA blend).",
+      "scope": "global"
+    },
+    {
+      "name": "Time/decay",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Sets the envelope decay time.",
+      "scope": "global"
+    },
+    {
+      "name": "Trigger input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the trigger input (0=None, constant sound).",
+      "scope": "global"
+    },
+    {
+      "name": "Level input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the level input (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "CV input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the pitch CV input (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "FM input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the FM input (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Harmonics input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the harmonics input (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Timbre input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the timbre input (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Morph input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Selects which bus is used as the morph input (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Main output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The bus for the 'Main' output (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Aux output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The bus for the 'Aux' output (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "global"
+    },
+    {
+      "name": "Main gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "The level of the 'Main' output signal.",
+      "scope": "global"
+    },
+    {
+      "name": "Aux gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "The level of the 'Aux' output signal.",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "Off",
+        "Pitch",
+        "Trigger",
+        "Pitch & trigger"
+      ],
+      "description": "Controls the algorithm's response to MIDI.",
+      "scope": "global"
+    },
+    {
+      "name": "I2C mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "Off",
+        "Pitch",
+        "Trigger",
+        "Pitch & trigger"
+      ],
+      "description": "Controls the algorithm's response to I2C.",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "The MIDI channel to receive on (0=Omni).",
+      "scope": "global"
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "The I2C channel to receive on (0=Off).",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "trigger",
+      "name": "Trigger",
+      "description": "Trigger input for the internal envelope.",
+      "busIdRef": "Trigger input"
+    },
+    {
+      "id": "level",
+      "name": "Level",
+      "description": "Level CV input (affects internal LPG).",
+      "busIdRef": "Level input"
+    },
+    {
+      "id": "cv",
+      "name": "CV",
+      "description": "Pitch CV input (1V/Oct).",
+      "busIdRef": "CV input"
+    },
+    {
+      "id": "fm",
+      "name": "FM",
+      "description": "Frequency Modulation input.",
+      "busIdRef": "FM input"
+    },
+    {
+      "id": "harmonics",
+      "name": "Harmonics",
+      "description": "Harmonics control CV input.",
+      "busIdRef": "Harmonics input"
+    },
+    {
+      "id": "timbre",
+      "name": "Timbre",
+      "description": "Timbre control CV input.",
+      "busIdRef": "Timbre input"
+    },
+    {
+      "id": "morph",
+      "name": "Morph",
+      "description": "Morph control CV input.",
+      "busIdRef": "Morph input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "main",
+      "name": "Main Out",
+      "description": "Main audio output.",
+      "busIdRef": "Main output"
+    },
+    {
+      "id": "aux",
+      "name": "Aux Out",
+      "description": "Auxiliary audio output.",
+      "busIdRef": "Aux output"
+    }
+  ]
+}

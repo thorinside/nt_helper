@@ -4,6 +4,8 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/domain/disting_midi_manager.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 
 class MetadataSyncPage extends StatelessWidget {
@@ -386,7 +388,7 @@ class _PresetListView extends StatelessWidget {
 
         // Determine button states
         final bool canLoad = !isOperationInProgress;
-        final canDelete = !isOperationInProgress;
+        final bool canDelete = !isOperationInProgress;
 
         return ListTile(
           key: ValueKey(preset.id),

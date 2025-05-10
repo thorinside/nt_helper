@@ -1,0 +1,370 @@
+{
+  "guid": "resn",
+  "name": "Resonator",
+  "categories": [
+    "Effects",
+    "Resonator",
+    "Synth Voice"
+  ],
+  "description": "An implementation of the open-source Rings module by Émilie Gillet. Can be played via MIDI, I2C, or CV/gate.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 6,
+      "description": "Selects the resonator mode.",
+      "scope": "global"
+    },
+    {
+      "name": "Synth effect",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 5,
+      "description": "Selects the audio effect applied if Mode is 'Synth'.",
+      "scope": "global"
+    },
+    {
+      "name": "Polyphony",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 4,
+      "description": "Sets the number of simultaneous voices.",
+      "scope": "global"
+    },
+    {
+      "name": "Coarse tune",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -36,
+      "maxValue": 24,
+      "description": "Coarse tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Fine tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Structure",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'structure'.",
+      "scope": "global"
+    },
+    {
+      "name": "Brightness",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'brightness'.",
+      "scope": "global"
+    },
+    {
+      "name": "Damping",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'damping'.",
+      "scope": "global"
+    },
+    {
+      "name": "Position",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'position'.",
+      "scope": "global"
+    },
+    {
+      "name": "Chord",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 10,
+      "description": "Chooses the chord for resonator modes that use one.",
+      "scope": "global"
+    },
+    {
+      "name": "Noise gate",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enables a noise gate on the audio input.",
+      "scope": "global"
+    },
+    {
+      "name": "Input gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Gain applied to the input audio before the resonator.",
+      "scope": "global"
+    },
+    {
+      "name": "Strum input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for 'strum' trigger (0=None, internal strum).",
+      "scope": "global"
+    },
+    {
+      "name": "V/Oct input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for V/octave pitch CV (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Audio input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for audio exciter (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Brightness input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "CV input bus for 'brightness' (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Frequency input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "CV input bus for 'frequency' (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Damping input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "CV input bus for 'damping' (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Structure input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "CV input bus for 'structure' (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Position input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "CV input bus for 'position' (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Odd output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Output bus for the Odd output (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Odd output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for the Odd output.",
+      "scope": "global"
+    },
+    {
+      "name": "Even output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Output bus for the Even output (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Even output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for the Even output.",
+      "scope": "global"
+    },
+    {
+      "name": "Output gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Output level for both Odd and Even outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Dry gain",
+      "unit": "dB",
+      "defaultValue": -40,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Level of the dry input audio mixed into the output(s).",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "Off",
+        "Pitch",
+        "Strum",
+        "Pitch & strum"
+      ],
+      "description": "Controls MIDI note response.",
+      "scope": "global"
+    },
+    {
+      "name": "I2C mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "Off",
+        "Pitch",
+        "Strum",
+        "Pitch & strum"
+      ],
+      "description": "Controls I2C note response.",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "MIDI channel to receive on (0=Omni).",
+      "scope": "global"
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "I2C channel to receive on (0=Off).",
+      "scope": "global"
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [
+    {
+      "id": "strum_in",
+      "name": "Strum Input",
+      "description": "Trigger input to strum the resonator.",
+      "busIdRef": "Strum input"
+    },
+    {
+      "id": "v_oct_in",
+      "name": "V/Oct Input",
+      "description": "V/octave pitch CV input.",
+      "busIdRef": "V/Oct input"
+    },
+    {
+      "id": "audio_in",
+      "name": "Audio Input",
+      "description": "Audio input to excite the resonator.",
+      "busIdRef": "Audio input"
+    },
+    {
+      "id": "brightness_cv",
+      "name": "Brightness CV",
+      "description": "CV input for brightness modulation.",
+      "busIdRef": "Brightness input"
+    },
+    {
+      "id": "frequency_cv",
+      "name": "Frequency CV",
+      "description": "CV input for frequency modulation.",
+      "busIdRef": "Frequency input"
+    },
+    {
+      "id": "damping_cv",
+      "name": "Damping CV",
+      "description": "CV input for damping modulation.",
+      "busIdRef": "Damping input"
+    },
+    {
+      "id": "structure_cv",
+      "name": "Structure CV",
+      "description": "CV input for structure modulation.",
+      "busIdRef": "Structure input"
+    },
+    {
+      "id": "position_cv",
+      "name": "Position CV",
+      "description": "CV input for position modulation.",
+      "busIdRef": "Position input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_odd",
+      "name": "Odd Output",
+      "description": "Audio output for odd harmonics.",
+      "busIdRef": "Odd output"
+    },
+    {
+      "id": "out_even",
+      "name": "Even Output",
+      "description": "Audio output for even harmonics.",
+      "busIdRef": "Even output"
+    }
+  ]
+}

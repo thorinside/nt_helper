@@ -1,0 +1,430 @@
+{
+  "guid": "krby",
+  "name": "Kirbinator",
+  "categories": [
+    "Effect",
+    "Sampler",
+    "Stochastic Processor"
+  ],
+  "description": "Stochastic audio processor that continuously records audio and plays back pitched, reversed, and panned slices based on probabilities triggered by Mark and Trigger inputs. Features random seed control and mutation for repeatable/evolving patterns.",
+  "specifications": [
+    {
+      "name": "Buffer size",
+      "unit": "seconds",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 44,
+      "description": "The maximum size of the audio buffer."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Pitch up",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that playback will be pitched up."
+    },
+    {
+      "name": "Pitch down",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that playback will be pitched down."
+    },
+    {
+      "name": "Fifths",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that pitch shift (if up/down) will be a perfect fifth; otherwise, an octave."
+    },
+    {
+      "name": "Reverse",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that playback will be reversed."
+    },
+    {
+      "name": "Glide",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that a glide will be applied to any pitch change."
+    },
+    {
+      "name": "Stutter",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that playback of the new slice will be stuttered (initial part repeated)."
+    },
+    {
+      "name": "Triplet",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "If 'Metrical' stutter is selected, probability that stutter is triplet division, else power of 2."
+    },
+    {
+      "name": "Play",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Probability that playback will actually happen; otherwise, playback stops."
+    },
+    {
+      "name": "Glide control",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Single",
+        "Independent"
+      ],
+      "description": "Sets whether a single glide time is used, or independent times for up and down glides."
+    },
+    {
+      "name": "Glide",
+      "unit": "ms",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Glide time to apply if glide is activated (when Glide control is Single)."
+    },
+    {
+      "name": "Glide up",
+      "unit": "ms",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Glide up time (when Glide control is Independent)."
+    },
+    {
+      "name": "Glide down",
+      "unit": "ms",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Glide down time (when Glide control is Independent)."
+    },
+    {
+      "name": "Through zero",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "Whether glides are allowed when playback direction reverses (can produce tape stop effect)."
+    },
+    {
+      "name": "Min stutter",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "Minimum number of restarts if stutter is activated."
+    },
+    {
+      "name": "Max stutter",
+      "unit": null,
+      "defaultValue": 3,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "Maximum number of restarts if stutter is activated."
+    },
+    {
+      "name": "Min jump",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "Minimum number of slices away from current record position to jump."
+    },
+    {
+      "name": "Max jump",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "Maximum number of slices away from current record position to jump."
+    },
+    {
+      "name": "Stutter Type",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Free",
+        "Metrical"
+      ],
+      "description": "Sets whether stutter is Free (unconstrained) or Metrical (powers of 2/3)."
+    },
+    {
+      "name": "Pitch offset",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -24,
+      "maxValue": 24,
+      "description": "Constant pitch change applied to playback, added to probabilistic pitch change."
+    },
+    {
+      "name": "Glide offset",
+      "unit": "ms",
+      "defaultValue": 0,
+      "minValue": -1000,
+      "maxValue": 1000,
+      "description": "Constant glide time applied, added to probabilistic glide."
+    },
+    {
+      "name": "Fade",
+      "unit": "ms",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Fade in/out time for slice playback."
+    },
+    {
+      "name": "Random seed",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 32767,
+      "description": "Random seed to apply (if non-zero) for repeatable patterns."
+    },
+    {
+      "name": "Apply seed",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Applies the random seed when the parameter goes from 0 to 1."
+    },
+    {
+      "name": "Mutate",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Degree of mutation (blend) from the current random seed to the next."
+    },
+    {
+      "name": "Trigger hold time",
+      "unit": "s",
+      "defaultValue": 0.0,
+      "minValue": 0.0,
+      "maxValue": 5.0,
+      "description": "Time trigger must be held; releasing after this time stops playback (0=Off)."
+    },
+    {
+      "name": "Buffer size",
+      "unit": "s",
+      "defaultValue": null,
+      "minValue": 1.0,
+      "maxValue": 44.0,
+      "description": "The audio buffer size (max set by specifications)."
+    },
+    {
+      "name": "Feedback",
+      "unit": "dB",
+      "defaultValue": -24.0,
+      "minValue": -24.0,
+      "maxValue": 0.0,
+      "description": "Attenuation of existing buffer content per recording pass (-24dB = replace)."
+    },
+    {
+      "name": "Detect",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "description": "Enables automatic transient detection to create marks."
+    },
+    {
+      "name": "Sensitivity",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 200,
+      "description": "Transient detection sensitivity."
+    },
+    {
+      "name": "Dry gain",
+      "unit": "dB",
+      "defaultValue": -40,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Level of the input signal passed through to the output (-40dB = off)."
+    },
+    {
+      "name": "Effect gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 6,
+      "description": "Output level of the Kirbinator effect."
+    },
+    {
+      "name": "Pan mean",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Average pan position of slice playback."
+    },
+    {
+      "name": "Pan deviation",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Amount of random deviation from average pan position per trigger."
+    },
+    {
+      "name": "Left/mono input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left or mono audio input."
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The right audio input (0 = None)."
+    },
+    {
+      "name": "Left/mono output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left or mono audio output."
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The right audio output (0 = None)."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Mark input",
+      "unit": "bus",
+      "defaultValue": 3,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Bus to use as the Mark signal (defines slices)."
+    },
+    {
+      "name": "Trigger input",
+      "unit": "bus",
+      "defaultValue": 3,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Bus to use as the Trigger signal (initiates playback/parameter change)."
+    },
+    {
+      "name": "Stop input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "A trigger on this bus stops the currently playing slice (0 = None)."
+    },
+    {
+      "name": "Pitch offset input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "A 1V/octave pitch CV on this bus is added to the 'Pitch offset' parameter (0 = None)."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "left_in",
+      "name": "Left/Mono In",
+      "description": "Left or mono audio input.",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "id": "right_in",
+      "name": "Right In",
+      "description": "Right audio input.",
+      "busIdRef": "Right input"
+    },
+    {
+      "id": "mark",
+      "name": "Mark In",
+      "description": "Input for Mark signal (defines slices).",
+      "busIdRef": "Mark input"
+    },
+    {
+      "id": "trigger",
+      "name": "Trigger In",
+      "description": "Input for Trigger signal (initiates playback).",
+      "busIdRef": "Trigger input"
+    },
+    {
+      "id": "stop",
+      "name": "Stop In",
+      "description": "Input to stop current playback.",
+      "busIdRef": "Stop input"
+    },
+    {
+      "id": "pitch_offset_cv",
+      "name": "Pitch Offset CV",
+      "description": "CV input for pitch offset.",
+      "busIdRef": "Pitch offset input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "left_out",
+      "name": "Left/Mono Out",
+      "description": "Left or mono audio output.",
+      "busIdRef": "Left/mono output"
+    },
+    {
+      "id": "right_out",
+      "name": "Right Out",
+      "description": "Right audio output.",
+      "busIdRef": "Right output"
+    }
+  ]
+}

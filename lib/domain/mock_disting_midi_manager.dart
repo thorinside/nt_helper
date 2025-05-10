@@ -1,15 +1,19 @@
 import 'dart:async';
-import 'dart:math';
+// import 'dart:math'; // Remove unused
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart' show debugPrint;
-import 'package:nt_helper/db/daos/presets_dao.dart';
-import 'package:nt_helper/domain/disting_midi_manager.dart'; // Import to get interface
+import 'package:nt_helper/db/daos/presets_dao.dart'; // Re-add PresetsDao import
+// import 'package:nt_helper/db/database.dart'; // Remove unused
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/models/packed_mapping_data.dart';
-import 'package:nt_helper/models/routing_information.dart'; // Added
-import 'package:collection/collection.dart'; // Added
+// import 'package:nt_helper/models/routing_information.dart';
+// import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart'; // Added import for Slot, etc.
+import 'package:drift/drift.dart';
+// import 'package:flutter/foundation.dart'; // Remove unused
 
 /// Mock implementation for demo mode or testing.
 class MockDistingMidiManager implements IDistingMidiManager {
@@ -674,7 +678,9 @@ class MockDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestLoadPreset(String name, bool append) async {
-    // No-op
+    // No-op for mock
+    debugPrint("[Mock] requestLoadPreset: name=$name, append=$append");
+    return;
   }
 
   @override
@@ -740,8 +746,10 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestSavePreset({int option = 2}) async {
-    // No-op
+  Future<void> requestSavePreset({int? option}) async {
+    // No-op for mock
+    debugPrint("[Mock] requestSavePreset: option=$option");
+    return;
   }
 
   @override
@@ -766,18 +774,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestSetI2CMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
-    // No-op
-  }
-
-  @override
-  Future<void> requestSetMIDIMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
-    // No-op
-  }
-
-  @override
   Future<void> requestSetMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) async {
     // No-op
@@ -785,7 +781,8 @@ class MockDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetPresetName(String newName) async {
-    // No-op
+    _state.presetName = newName;
+    debugPrint("[Mock] requestSetPresetName: newName=$newName");
   }
 
   @override

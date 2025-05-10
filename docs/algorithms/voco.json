@@ -1,0 +1,150 @@
+{
+  "guid": "voco",
+  "name": "Vocoder",
+  "categories": [
+    "Effect",
+    "Spectral",
+    "Vocoder"
+  ],
+  "description": "Classic vocoder algorithm. Applies spectral characteristics of the modulator input to the carrier input.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Bands",
+      "unit": null,
+      "min": 4,
+      "max": 20,
+      "default": 12,
+      "scope": "vocoder",
+      "description": "The number of bands into which the signals are split."
+    },
+    {
+      "name": "Min frequency",
+      "unit": "Hz",
+      "min": 50,
+      "max": 1000,
+      "default": 200,
+      "scope": "vocoder",
+      "description": "The centre frequency of the lowest band."
+    },
+    {
+      "name": "Max frequency",
+      "unit": "Hz",
+      "min": 1000,
+      "max": 10000,
+      "default": 3200,
+      "scope": "vocoder",
+      "description": "The centre frequency of the highest band."
+    },
+    {
+      "name": "Bandwidth",
+      "unit": "%",
+      "min": 25,
+      "max": 400,
+      "default": 100,
+      "scope": "vocoder",
+      "description": "Applies a scaling to the width of the bandpass filters."
+    },
+    {
+      "name": "Attack",
+      "unit": "scaled",
+      "min": 0,
+      "max": 1000,
+      "default": 303,
+      "scope": "vocoder",
+      "description": "Sets the attack time of the band envelope trackers."
+    },
+    {
+      "name": "Decay",
+      "unit": "scaled",
+      "min": 0,
+      "max": 1000,
+      "default": 394,
+      "scope": "vocoder",
+      "description": "Sets the decay time of the band envelope trackers."
+    },
+    {
+      "name": "High pass",
+      "unit": "Hz",
+      "min": 10,
+      "max": 1000,
+      "default": 50,
+      "scope": "vocoder",
+      "description": "Sets the frequency of a high-pass filter applied to both modulator and carrier."
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "vocoder",
+      "description": "Applies an overall gain."
+    },
+    {
+      "name": "Noise",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "scope": "noise",
+      "description": "Level of noise added to carrier input for speech intelligibility (HP filtered at highest band freq)."
+    },
+    {
+      "name": "Modulator input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "The bus to use for the modulator signal."
+    },
+    {
+      "name": "Carrier input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "routing",
+      "description": "The first carrier bus to process."
+    },
+    {
+      "name": "Carrier width",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "scope": "routing",
+      "description": "The number of carrier busses to process (e.g., 2 for stereo)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "The first output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "The standard Add/Replace mode selector."
+    }
+  ],
+  "input_ports": [
+    "Audio (Modulator)",
+    "Audio (Carrier)"
+  ],
+  "output_ports": [
+    "Audio (Vocoded)"
+  ]
+}

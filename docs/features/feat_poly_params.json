@@ -1,0 +1,74 @@
+{
+  "guid": "feat_poly_params",
+  "name": "Polyphonic Parameters",
+  "description": "Common parameters found in polyphonic synthesizer algorithms for managing voices, unison, spread, and performance controls.",
+  "parameters": [
+    {
+      "name": "Unison",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "description": "Number of unison voices per triggered note.",
+      "scope": "global"
+    },
+    {
+      "name": "Unison detune",
+      "unit": "cents",
+      "defaultValue": 10,
+      "minValue": 0,
+      "maxValue": 100,
+      "description": "Detune amount for unison voices.",
+      "scope": "global"
+    },
+    {
+      "name": "Output spread",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Stereo output spread amount for voices.",
+      "scope": "global"
+    },
+    {
+      "name": "Max voices",
+      "unit": null,
+      "defaultValue": 8,
+      "minValue": 1,
+      "maxValue": 24,
+      "description": "Maximum number of simultaneous voices allowed (may be limited by algorithm specification).",
+      "scope": "global"
+    },
+    {
+      "name": "Sustain mode",
+      "unit": "enum",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Sustain",
+        "Sostenuto"
+      ],
+      "description": "Standard polysynth sustain mode.",
+      "scope": "global"
+    },
+    {
+      "name": "Sustain",
+      "unit": "toggle",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Direct sustain control (like MIDI pedal).",
+      "scope": "global"
+    },
+    {
+      "name": "Bend range",
+      "unit": "ST",
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 48,
+      "description": "MIDI pitch bend range in semitones.",
+      "scope": "global"
+    }
+  ]
+}

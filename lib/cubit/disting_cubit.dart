@@ -10,6 +10,8 @@ import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 import 'package:nt_helper/db/database.dart'; // Added
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -32,7 +34,6 @@ class _PollingTask {
 class DistingCubit extends Cubit<DistingState> {
   final AppDatabase _database; // Added
   late final MetadataDao _metadataDao; // Added
-  late final PresetsDao _presetsDao; // Added PresetsDao
   final Future<SharedPreferences> _prefs;
 
   // Modified constructor
@@ -40,7 +41,6 @@ class DistingCubit extends Cubit<DistingState> {
       : _prefs = SharedPreferences.getInstance(),
         super(const DistingState.initial()) {
     _metadataDao = _database.metadataDao; // Initialize DAO
-    _presetsDao = _database.presetsDao; // Initialize PresetsDao
   }
 
   MidiCommand _midiCommand = MidiCommand();
@@ -750,7 +750,7 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
-  void updateParameterValue({
+  Future<void> updateParameterValue({
     required int algorithmIndex,
     required int parameterNumber,
     required int value,

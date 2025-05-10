@@ -1,0 +1,23 @@
+{
+  "guid": "lua ",
+  "name": "Lua Script",
+  "categories": [
+    "Utility",
+    "Scripting"
+  ],
+  "description": "Runs Lua scripts loaded from the MicroSD card, allowing for custom CV processing, sequencers, generative patterns, etc.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Program",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 999,
+      "description": "Selects the Lua script file (.lua) to run from the '/programs/lua' directory on the MicroSD card.",
+      "scope": "global"
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

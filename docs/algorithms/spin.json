@@ -1,0 +1,179 @@
+{
+  "guid": "spin",
+  "name": "Three Pot",
+  "categories": [
+    "Effect",
+    "External DSP"
+  ],
+  "description": "Runs DSP code (plug-ins) loaded from the MicroSD card, particularly designed for Spin Semiconductor FV-1 programs. Translates programs to C++ and compiles them for the Disting NT. Allows direct C++ coding as well. Uses the module's three pots for direct control, unique UI interaction.",
+  "specifications": [
+    {
+      "name": "Code memory",
+      "unit": "512 byte multiples",
+      "min": 1,
+      "max": 24,
+      "description": "The amount of code memory to assign to the algorithm."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Program",
+      "unit": null,
+      "min": 0,
+      "max": 999,
+      "default": 0,
+      "scope": "program",
+      "description": "Selects the program to run (.3pot file from SD card)."
+    },
+    {
+      "name": "Pot 1",
+      "unit": "%",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "scope": "program",
+      "description": "The first program 'pot' parameter."
+    },
+    {
+      "name": "Pot 2",
+      "unit": "%",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "scope": "program",
+      "description": "The second program 'pot' parameter."
+    },
+    {
+      "name": "Pot 3",
+      "unit": "%",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 50.0,
+      "scope": "program",
+      "description": "The third program 'pot' parameter."
+    },
+    {
+      "name": "Pre/post gain",
+      "unit": "dB",
+      "min": -36,
+      "max": 0,
+      "default": -20,
+      "scope": "mix",
+      "description": "Sets gain adjustment applied before/after program DSP for headroom management."
+    },
+    {
+      "name": "Mix style",
+      "unit": "enum",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "values": [
+        "None",
+        "Wet/dry",
+        "Independent"
+      ],
+      "scope": "mix",
+      "description": "Chooses the dry/wet mix style."
+    },
+    {
+      "name": "Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "scope": "mix",
+      "description": "Sets the mix if the style is 'Wet/dry'."
+    },
+    {
+      "name": "Dry gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "scope": "mix",
+      "description": "Sets the dry gain if the mix style is 'Independent'."
+    },
+    {
+      "name": "Wet gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "scope": "mix",
+      "description": "Sets the wet gain if the mix style is 'Independent'."
+    },
+    {
+      "name": "Rate conversion",
+      "unit": "toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "sample rate",
+      "description": "Enables sample rate conversion."
+    },
+    {
+      "name": "Sample rate",
+      "unit": "kHz",
+      "min": 8.0,
+      "max": 40.0,
+      "default": 32.0,
+      "scope": "sample rate",
+      "description": "The sample rate (in kHz) at which to run the program."
+    },
+    {
+      "name": "Left input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "The left audio input bus."
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "routing",
+      "description": "The right audio input bus."
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "The left audio output bus."
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": "The right audio output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "The standard Add/Replace mode selector."
+    }
+  ],
+  "input_ports": [
+    "Audio (L/R)"
+  ],
+  "output_ports": [
+    "Audio (L/R)"
+  ]
+}

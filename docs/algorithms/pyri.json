@@ -1,0 +1,284 @@
+{
+  "guid": "pyri",
+  "name": "Poly Resonator",
+  "categories": [
+    "Polysynth",
+    "Resonator"
+  ],
+  "description": "A polyphonic synthesizer where each voice is an implementation of the open-source Rings module by Émilie Gillet. Supports microtuning.",
+  "specifications": [
+    {
+      "name": "Voices",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 1
+      },
+      "description": "The number of simultaneous voices (each a Rings instance)."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 4,
+      "description": "Selects the resonator mode (like Rings).",
+      "scope": "global"
+    },
+    {
+      "name": "Synth effect",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Selects the audio effect applied if Mode is 'Synth'.",
+      "scope": "global"
+    },
+    {
+      "name": "Coarse tune",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -36,
+      "maxValue": 24,
+      "description": "Coarse tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Fine tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Resolution",
+      "unit": null,
+      "defaultValue": 16,
+      "minValue": 8,
+      "maxValue": 64,
+      "description": "Number of internal resonator building blocks per voice (affects sound and CPU).",
+      "scope": "global"
+    },
+    {
+      "name": "Structure",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'structure'.",
+      "scope": "global"
+    },
+    {
+      "name": "Brightness",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'brightness'.",
+      "scope": "global"
+    },
+    {
+      "name": "Damping",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'damping'.",
+      "scope": "global"
+    },
+    {
+      "name": "Position",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "Controls the resonator 'position'.",
+      "scope": "global"
+    },
+    {
+      "name": "Chord",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 10,
+      "description": "Chooses the chord for resonator modes that use one.",
+      "scope": "global"
+    },
+    {
+      "name": "Noise gate",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enables a noise gate on the audio input.",
+      "scope": "global"
+    },
+    {
+      "name": "Input gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Gain applied to the input audio before the resonator.",
+      "scope": "global"
+    },
+    {
+      "name": "Audio input",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Audio input bus (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Odd output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Output bus for the Odd output (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Even output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Output bus for the Even output (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Odd output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for the Odd output.",
+      "scope": "global"
+    },
+    {
+      "name": "Even output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for the Even output.",
+      "scope": "global"
+    },
+    {
+      "name": "Output gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Output level for both Odd and Even outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Dry gain",
+      "unit": "dB",
+      "defaultValue": -40,
+      "minValue": -40,
+      "maxValue": 12,
+      "description": "Level of the dry input audio mixed into the output(s).",
+      "scope": "global"
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "MIDI channel to listen on (0=Omni).",
+      "scope": "global"
+    },
+    {
+      "name": "MPE channels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "MPE response mode.",
+      "scope": "global"
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "I2C channel (0=Off).",
+      "scope": "global"
+    },
+    {
+      "name": "Bend range",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 48,
+      "description": "MIDI pitch bend range.",
+      "scope": "global"
+    },
+    {
+      "name": "Sustain mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Sustain",
+        "Sostenuto"
+      ],
+      "description": "Standard polysynth sustain mode.",
+      "scope": "global"
+    },
+    {
+      "name": "Sustain",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Direct sustain control (like MIDI pedal).",
+      "scope": "global"
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [
+    {
+      "id": "audio_in",
+      "name": "Audio Input",
+      "description": "Audio input to excite the resonators.",
+      "busIdRef": "Audio input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_odd",
+      "name": "Odd Output",
+      "description": "Audio output for odd harmonics.",
+      "busIdRef": "Odd output"
+    },
+    {
+      "id": "out_even",
+      "name": "Even Output",
+      "description": "Audio output for even harmonics.",
+      "busIdRef": "Even output"
+    }
+  ]
+}

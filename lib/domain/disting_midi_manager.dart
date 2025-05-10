@@ -8,53 +8,11 @@ import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 
 /// Abstract interface for Disting MIDI communication.
-abstract class IDistingMidiManager {
-  void dispose();
-  Future<int?> requestNumberOfAlgorithms();
-  Future<AlgorithmInfo?> requestAlgorithmInfo(int index);
-  Future<int?> requestNumAlgorithmsInPreset();
-  Future<String?> requestVersionString();
-  Future<String?> requestPresetName();
-  Future<List<String>?> requestUnitStrings();
-  Future<NumParameters?> requestNumberOfParameters(int algorithmIndex);
-  Future<ParameterInfo?> requestParameterInfo(
-      int algorithmIndex, int parameterNumber);
-  Future<ParameterPages?> requestParameterPages(int algorithmIndex);
-  Future<AllParameterValues?> requestAllParameterValues(int algorithmIndex);
-  Future<ParameterEnumStrings?> requestParameterEnumStrings(
-      int algorithmIndex, int parameterNumber);
-  Future<Mapping?> requestMappings(int algorithmIndex, int parameterNumber);
-  Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex);
-  Future<ParameterValueString?> requestParameterValueString(
-      int algorithmIndex, int parameterNumber);
-  Future<ParameterValue?> requestParameterValue(
-      int algorithmIndex, int parameterNumber);
-  Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex);
-  Future<Uint8List?> encodeTakeScreenshot();
-  Future<void> requestWake();
-  Future<void> setParameterValue(
-      int algorithmIndex, int parameterNumber, int value);
-  Future<void> requestAddAlgorithm(
-      AlgorithmInfo algorithm, List<int> specifications);
-  Future<void> requestRemoveAlgorithm(int algorithmIndex);
-  Future<void> requestSetFocus(int algorithmIndex, int parameterNumber);
-  Future<void> requestSetPresetName(String newName);
-  Future<void> requestSavePreset(); // Simplified based on cubit usage
-  Future<void> requestMoveAlgorithmUp(int algorithmIndex);
-  Future<void> requestMoveAlgorithmDown(int algorithmIndex);
-  Future<void> requestNewPreset();
-  Future<void> requestLoadPreset(String name, bool append);
-  Future<void> requestSetMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data);
-  Future<void> requestSendSlotName(int algorithmIndex, String newName);
-  Future<void> requestSetDisplayMode(DisplayMode displayMode);
-  Future<FullPresetDetails?> requestCurrentPresetDetails();
-}
 
 class DistingMidiManager implements IDistingMidiManager {
   // Implement interface
@@ -423,7 +381,7 @@ class DistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestSavePreset() {
+  Future<void> requestSavePreset({int option = 0}) {
     final packet = DistingNT.encodeSavePreset(sysExId, 2);
     final key = RequestKey(
       sysExId: sysExId,
@@ -510,7 +468,6 @@ class DistingMidiManager implements IDistingMidiManager {
     );
   }
 
-  @override
   Future<void> requestSetMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) {
     final cvPacket = DistingNT.encodeSetCVMapping(
@@ -720,5 +677,23 @@ class DistingMidiManager implements IDistingMidiManager {
       parameterStringValues: parameterStringValuesMap,
       mappings: mappingsMap,
     );
+  }
+
+  @override
+  Future<void> requestSetCVMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  }
+
+  @override
+  Future<void> requestSetI2CMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  }
+
+  @override
+  Future<void> requestSetMIDIMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    return requestSetMapping(algorithmIndex, parameterNumber, data);
   }
 }

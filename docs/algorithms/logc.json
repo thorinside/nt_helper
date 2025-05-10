@@ -1,0 +1,137 @@
+{
+  "guid": "logc",
+  "name": "Logic",
+  "categories": [
+    "Utility",
+    "Logic"
+  ],
+  "description": "This algorithm implements the classic logic functions AND, OR, XOR, NAND, NOR, XNOR. It is based on the disting mk4 algorithm \"L-1 Logic\".",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 1
+      },
+      "description": "The number of logic functions to perform."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enables the channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Input A",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The bus for the first input.",
+      "scope": "channel"
+    },
+    {
+      "name": "Input B",
+      "unit": "bus",
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The bus for the second input.",
+      "scope": "channel"
+    },
+    {
+      "name": "Function",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 5,
+      "enumValues": [
+        "AND",
+        "OR",
+        "XOR",
+        "NAND",
+        "NOR",
+        "XNOR"
+      ],
+      "description": "The logic function to perform.",
+      "scope": "channel"
+    },
+    {
+      "name": "Invert A",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Inverts input A.",
+      "scope": "channel"
+    },
+    {
+      "name": "Invert B",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Inverts input B.",
+      "scope": "channel"
+    },
+    {
+      "name": "Invert Out",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Inverts the output.",
+      "scope": "channel"
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The output bus for the result.",
+      "scope": "channel"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "The standard Add/Replace mode selector.",
+      "scope": "channel"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_a",
+      "name": "Input A",
+      "description": "First logic input.",
+      "busIdRef": "Input A"
+    },
+    {
+      "id": "in_b",
+      "name": "Input B",
+      "description": "Second logic input.",
+      "busIdRef": "Input B"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out",
+      "name": "Output",
+      "description": "Logic function result.",
+      "busIdRef": "Output"
+    }
+  ]
+}

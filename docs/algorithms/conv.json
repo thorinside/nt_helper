@@ -1,0 +1,161 @@
+{
+  "name": "Convolver",
+  "guid": "conv",
+  "short_description": "Computes audio convolutions",
+  "description": "This algorithm performs real-time convolution of the input signal and another signal (often called an 'impulse response'), which is loaded from the MicroSD card. This is often used for realistic reverb effects, but the technique is much more general and can be a very creative way to mangle and combine sounds. Convolution is CPU-intensive; performance depends on allocated memory, mono/stereo operation, latency setting, and internal sample rate. Impulse responses should be placed in the 'samples/impulses' folder on the MicroSD card.",
+  "use_cases": [
+    "Realistic reverb effects using impulse responses (IRs)",
+    "Cabinet simulation for guitar/bass amps",
+    "Creative sound mangling by convolving unrelated signals",
+    "Applying acoustic characteristics of spaces to sounds"
+  ],
+  "gui_description": "The display shows a graphical representation of the impulse sample on the left. On the right side, it shows the mono/stereo processing mode, the maximum impulse time (as a result of the current parameter values), the actual length of the sample file, and the current overall CPU usage.",
+  "specifications": [
+    {
+      "name": "Max impulse",
+      "min": 1,
+      "max": 10,
+      "unit": "seconds",
+      "description": "The maximum length of the impulse sample."
+    }
+  ],
+  "parameters": [
+    {
+      "page": "Convolver",
+      "params": [
+        {
+          "name": "Folder",
+          "min": 1,
+          "max": null,
+          "default": 1,
+          "unit": null,
+          "description": "Chooses the folder from which to load the impulse response sample (within 'samples/impulses').",
+          "is_file_selector": true,
+          "selector_type": "folder"
+        },
+        {
+          "name": "Sample",
+          "min": 1,
+          "max": null,
+          "default": 1,
+          "unit": null,
+          "description": "Chooses the impulse response sample file within the selected folder.",
+          "is_file_selector": true,
+          "selector_type": "file"
+        },
+        {
+          "name": "Latency",
+          "min": 0,
+          "max": 3,
+          "default": 2,
+          "unit": null,
+          "description": "Sets the processing latency vs max impulse length trade-off.",
+          "enum_values": [
+            "5ms",
+            "11ms",
+            "22ms",
+            "43ms"
+          ]
+        },
+        {
+          "name": "Sample rate",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the internal processing sample rate vs max impulse length trade-off.",
+          "enum_values": [
+            "48kHz",
+            "24kHz",
+            "12kHz",
+            "6kHz"
+          ]
+        },
+        {
+          "name": "Partitions",
+          "min": 1,
+          "max": null,
+          "default": 1,
+          "unit": null,
+          "description": "Allows you to fine tune the maximum impulse length, and consequently the CPU usage."
+        }
+      ]
+    },
+    {
+      "page": "Mix",
+      "params": [
+        {
+          "name": "Dry gain",
+          "min": -40,
+          "max": 12,
+          "default": 0,
+          "unit": "dB",
+          "description": "The output level of the dry signal."
+        },
+        {
+          "name": "Convolution gain",
+          "min": -40,
+          "max": 12,
+          "default": 0,
+          "unit": "dB",
+          "description": "The output level of the convolution result."
+        }
+      ]
+    },
+    {
+      "page": "Routing",
+      "params": [
+        {
+          "name": "Left/mono input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The left or mono audio input bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Right input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The right audio input bus. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Left output",
+          "min": 1,
+          "max": 28,
+          "default": 13,
+          "unit": null,
+          "description": "The left audio output bus.",
+          "is_bus": true
+        },
+        {
+          "name": "Right output",
+          "min": 0,
+          "max": 28,
+          "default": 14,
+          "unit": null,
+          "description": "The right audio output bus. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        }
+      ]
+    }
+  ],
+  "categories": []
+}

@@ -1,0 +1,191 @@
+{
+  "guid": "luae",
+  "name": "Lua Expression",
+  "categories": [
+    "Utility",
+    "Scripting"
+  ],
+  "description": "Evaluates a single line of Lua code to process CV or audio signals. Useful for simple math operations or custom signal manipulation without needing a full script.",
+  "specifications": [
+    {
+      "name": "Expressions",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 1
+      },
+      "description": "The number of independent expressions to evaluate."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Enables the expression evaluation.",
+      "scope": "expression"
+    },
+    {
+      "name": "Expression",
+      "unit": null,
+      "defaultValue": "a",
+      "description": "The Lua expression to evaluate. Inputs are available as variables a-h.",
+      "scope": "expression",
+      "type": "string"
+    },
+    {
+      "name": "Input a",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable a (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input b",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable b (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input c",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable c (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input d",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable d (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input e",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable e (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input f",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable f (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input g",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable g (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Input h",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for variable h (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Output bus for the expression result (0 = None).",
+      "scope": "expression"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode (Add/Replace).",
+      "scope": "expression"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_a",
+      "name": "Input A",
+      "description": "Input signal for variable 'a'.",
+      "busIdRef": "Input a"
+    },
+    {
+      "id": "in_b",
+      "name": "Input B",
+      "description": "Input signal for variable 'b'.",
+      "busIdRef": "Input b"
+    },
+    {
+      "id": "in_c",
+      "name": "Input C",
+      "description": "Input signal for variable 'c'.",
+      "busIdRef": "Input c"
+    },
+    {
+      "id": "in_d",
+      "name": "Input D",
+      "description": "Input signal for variable 'd'.",
+      "busIdRef": "Input d"
+    },
+    {
+      "id": "in_e",
+      "name": "Input E",
+      "description": "Input signal for variable 'e'.",
+      "busIdRef": "Input e"
+    },
+    {
+      "id": "in_f",
+      "name": "Input F",
+      "description": "Input signal for variable 'f'.",
+      "busIdRef": "Input f"
+    },
+    {
+      "id": "in_g",
+      "name": "Input G",
+      "description": "Input signal for variable 'g'.",
+      "busIdRef": "Input g"
+    },
+    {
+      "id": "in_h",
+      "name": "Input H",
+      "description": "Input signal for variable 'h'.",
+      "busIdRef": "Input h"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out",
+      "name": "Output",
+      "description": "Result of the evaluated Lua expression.",
+      "busIdRef": "Output"
+    }
+  ]
+}

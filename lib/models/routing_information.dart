@@ -10,6 +10,13 @@ class RoutingInformation {
     required this.routingInfo,
     required this.algorithmName,
   });
+
+  /// Serializes this RoutingInformation instance to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'algorithmIndex': algorithmIndex,
+        'routingInfo': routingInfo,
+        'algorithmName': algorithmName,
+      };
 }
 
 /// Utility function that replicates netInputMask(r) logic from JS.

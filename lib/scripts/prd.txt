@@ -1,0 +1,163 @@
+# nt\_helper — Product Requirements Document (PRD)
+
+*Last updated: 2025‑05‑04*
+
+## 1. Purpose & Problem Statement
+
+Disting NT is a powerful Eurorack module whose on‑device interface can be cumbersome when creating and editing complex presets. **nt\_helper** is a cross‑platform (Flutter) companion application that exposes a richer UX for preset creation, editing and performance. This PRD defines the requirements for delivering nt\_helper as a stable, user‑friendly, open‑source utility.
+
+## 2. Goals
+
+1. Provide a desktop/mobile GUI that mirrors and extends the Expert Sleepers browser editor while working fully offline.
+2. Allow bidirectional preset synchronisation with Disting NT over USB‑MIDI SysEx.
+3. Accelerate sound‑design workflows through bulk parameter editing, routing visualisation and performance dashboards.
+4. Support Windows, macOS, Linux, Android and iOS with a single codebase.
+5. Maintain zero data collection; the app must never access the public Internet.
+
+## 3. Non‑Goals
+
+* Implementing firmware updates or file management on the module.
+* Supporting Bluetooth or network MIDI transport.
+* Real‑time audio streaming or CV scope visualisation.
+
+## 4. Target Users & Personas
+
+| Persona                   | Description                                           | Key Needs                                    |
+| ------------------------- | ----------------------------------------------------- | -------------------------------------------- |
+| **Live Performer “Aria”** | Uses Disting NT on stage; needs fast parameter access | Reliable preset loading, “Perform” view      |
+| **Sound‑Designer “Max”**  | Experiments with complex routings in the studio       | Bulk editing, routing diagram, screenshot    |
+| **Newcomer “Lea”**        | First time owner exploring algorithms                 | Guided add‑algorithm flow, sensible defaults |
+
+## 5. User Stories (excerpt)
+
+1. *As a performer* I can map parameters to a single “Perform” page so that I can tweak them live without menu diving.
+2. *As a designer* I can reorder algorithms via drag or buttons so that signal paths match my creative intent.
+3. *As a user* I can take a screenshot of the NT’s display and copy it to clipboard for documentation.
+4. *As a troubleshooter* I can adjust SysEx timeout and inter‑message delay to accommodate different cables/devices.
+
+## 6. Functional Requirements
+
+### 6.1 Connection & Synchronisation
+
+* Detect available MIDI in/out ports; allow user selection (same port may be chosen for both).
+* Execute initial **Sync** (≤5 s on normal cable); retry logic with configurable timeout (default 2 s) and inter‑message delay (default 40 ms).
+
+### 6.2 Editor Core
+
+* Display algorithms as horizontally scrollable **Tabs**; tab rename on long‑press.
+* For each algorithm show parameter pages with collapsible sections and sliders / enum selectors.
+* Throttle slider events to ≤20 msg/s and coalesce when possible to avoid module overload.
+* Long‑press on parameter opens module focus; double‑tap resets to default.
+
+### 6.3 Mapping
+
+* Bottom sheet editor for CV, MIDI CC and I²C mappings.
+* MIDI detector listens to selected MIDI input and autocaptures CC & channel.
+* Persist mappings in preset JSON and push to module on save.
+
+### 6.4 Routing Analysis
+
+* Render 3‑row diagram (inputs, algorithm label, outputs) with coloured blocks matching browser editor semantics.
+* Update diagram on every algorithm add/remove/reorder event.
+
+### 6.5 Perform View
+
+* Aggregate all mapped parameters; stream value updates (poll 0.1 s when active).
+* “Play” toggle activates higher‑rate polling; deactivate on page exit.
+
+### 6.6 Preset Management
+
+* New, Load (file picker), Save (overwrite), Delete algorithm, Move algorithm (left/right).
+* JSON compatibility with Expert Sleepers editor ≥v1.7.
+
+### 6.7 Settings
+
+* Request Timeout (ms) numeric field, allow 50–5000.
+* Inter‑Message Delay (ms) numeric field, allow 10–1000.
+* Enable/disable Haptics (default on where supported).
+* Theme auto/light/dark (default auto).
+
+### 6.8 Help & Support
+
+* “Wake” command sends screen‑wake SysEx.
+* About dialog shows app version, NT firmware, links to GitHub & Discord.
+
+### 6.9 Embedded MCP Server (Experimental)
+
+*   Optionally run an embedded MCP (Model Context Protocol) server over SSE (Server-Sent Events) on a configurable local port.
+*   Requires processing and embedding algorithm documentation from the PDF manual into the app (structured data).
+*   Expose the following tools via the MCP server:
+    *   `list_algorithms`: Returns a list of available Disting NT algorithms (requires embedded documentation).
+    *   `get_current_preset`: Returns the currently loaded preset within nt\_helper as a JSON object.
+    *   `update_preset`: Accepts a JSON object to update the currently loaded preset within nt\_helper.
+*   Provide UI elements in Settings to enable/disable the server and configure the port.
+*   The server must adhere to the application's privacy requirement (no external network requests).
+
+## 7. Non‑Functional Requirements
+
+| Category      | Requirement                                                                                                             |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Performance   | UI refresh ≤16 ms; SysEx throughput ≥50 messages/s sustained without drops                                              |
+| Reliability   | Connection recovery after cable reconnection without app restart                                                        |
+| Portability   | Single Flutter codebase builds on Windows, macOS (signed/notarised), Linux (AppImage), Android (APK) & iOS (TestFlight) |
+| Accessibility | All controls reachable with screen readers; haptic feedback toggle                                                      |
+| Privacy       | Application must never perform network requests                                                                         |
+
+## 8. UX Guidelines
+
+* **Material 3** style with adaptive light/dark theme.
+* Use haptic feedback on slider change (if enabled).
+* Display connection state (Disconnected ▸ Syncing ▸ Ready) as status chip.
+
+## 9. Dependencies
+
+* Flutter ≥3.22
+* `flutter_midi_command` for USB‑MIDI transport
+* `json_annotation` + build\_runner for preset model
+* `provider` for state management
+* macOS notarisation scripts (GitHub Actions)
+* `flutter_mcp` for the embedded MCP server ([https://github.com/thorinside/flutter_mcp](https://github.com/thorinside/flutter_mcp))
+
+## 10. Acceptance Criteria
+
+1. User can install release build, connect to NT, and complete first sync in <10 s.
+2. Adding a Sample Player algorithm from the “Add” flow reflects on the module and in tab bar.
+3. Mapping a MIDI CC via detector updates parameter in real time when CC is sent.
+4. Saving preset locally and loading in Expert Sleepers browser editor preserves all values.
+5. App passes privacy audit (no outbound traffic captured during full session).
+
+## 11. Metrics (post‑launch)
+
+* Crash‑free sessions ≥99 %.
+* Mean Sync duration ≤3 s with standard USB‑C cable.
+* Issue backlog triage SLA ≤3 business days.
+
+## 12. Risks & Mitigations
+
+| Risk                                                    | Impact                                | Mitigation                                                  |
+| ------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| USB‑MIDI device enumeration inconsistencies across OSes | Connection failures                   | Maintain platform‑specific port filters & community testing |
+| Excessive SysEx traffic causing NT audio glitches       | Show‑stopping pops during performance | Implement rate limit & batching; expose delay setting       |
+| Flutter breaking API changes                            | Build failures                        | Pin stable SDK & include CI smoke tests                     |
+
+## 13. Roadmap & Milestones
+
+| Date       | Milestone        | Deliverables                                                          |
+| ---------- | ---------------- | --------------------------------------------------------------------- |
+| 2025‑05‑31 | **MVP Beta**     | Connection, Sync, Editor core, Preset Save/Load                       |
+| 2025‑06‑30 | **v1.0 Release** | Mapping, Routing Analysis, Perform view, Signed builds                |
+| 2025‑08‑31 | **v1.1**         | Localisation (EN/FR/DE), Drag‑drop algorithm reorder, CV live updates |
+| 2025‑12‑31 | **v2.0**         | Scriptable macros, Bluetooth BLE MIDI transport (optional)            |
+
+## 14. Future Ideas
+
+* Cloud preset sharing (opt‑in, privacy‑respecting).
+* Embedded Lua scripting editor & live preview.
+* OSC control surface mode for external controllers.
+
+---
+
+*References:*
+
+* nt\_helper documentation citeturn1view0
+* Expert Sleepers preset editor protocol citeturn1view0

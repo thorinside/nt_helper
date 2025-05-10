@@ -4,9 +4,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
-import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
-import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/domain/i_disting_midi_manager.dart'
+    show IDistingMidiManager;
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:collection/collection.dart';
 
@@ -346,93 +346,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   void reset() {
     _isMetadataSyncCancelled = false; // Ensure cancelled is reset
     emit(const MetadataSyncState.idle());
-  }
-
-  // Helper method to fetch data for a single slot needed for saving
-  Future<FullPresetSlot> _fetchPresetSlotDetails(
-      int slotIndex, IDistingMidiManager manager) async {
-    // 1. Fetch Core Info
-    final algoGuidResult = await manager.requestAlgorithmGuid(slotIndex);
-    final guid = algoGuidResult?.guid;
-    final String? customName = algoGuidResult?.name;
-    if (guid == null) {
-      throw Exception("Failed to get algorithm GUID for slot $slotIndex.");
-    }
-    final algoMetadata = await _metadataDao.getFullAlgorithmDetails(guid);
-    if (algoMetadata == null) {
-      throw Exception(
-          "Local metadata for GUID '$guid' not found. Sync needed.");
-    }
-    final algorithmEntry = algoMetadata.algorithm;
-
-    // 2. Fetch Actual Parameter Values from device for this slot
-    final paramValuesResult =
-        await manager.requestAllParameterValues(slotIndex);
-    // Build map directly from the device response
-    final parameterValuesMap = <int, int>{};
-    if (paramValuesResult != null) {
-      for (final pVal in paramValuesResult.values) {
-        parameterValuesMap[pVal.parameterNumber] = pVal.value;
-      }
-    }
-    if (kDebugMode) {
-      debugPrint(
-          "  >> Slot $slotIndex: Fetched ${parameterValuesMap.length} parameter values.");
-    }
-
-    // 3. Fetch Mappings & Strings based on *actual* parameters found
-    final Map<int, PackedMappingData> mappingsMap = {};
-    final Map<int, String> parameterStringValuesMap = {};
-
-    // Iterate through the parameter numbers we *know* exist in this slot instance
-    for (final pNum in parameterValuesMap.keys) {
-      if (kDebugMode) {
-        debugPrint(
-            "  >> Slot $slotIndex: Fetching details for actual parameter #$pNum");
-      }
-      // Fetch Mapping for this specific parameter number
-      final mappingResult = await manager.requestMappings(slotIndex, pNum);
-      if (mappingResult != null && mappingResult.packedMappingData.isMapped()) {
-        mappingsMap[pNum] = mappingResult.packedMappingData;
-      }
-
-      // Fetch Parameter String Value for this specific parameter number
-      final stringValueResult =
-          await manager.requestParameterValueString(slotIndex, pNum);
-      // Check for null result and non-empty/non-filler value
-      if (stringValueResult?.value != null &&
-          stringValueResult!.value.isNotEmpty) {
-        // Potentially add more checks here to avoid storing simple int strings
-        // if desired, e.g., `int.tryParse(stringValueResult.value) == null`
-        parameterStringValuesMap[pNum] = stringValueResult.value;
-      }
-      // Optional small delay to avoid overwhelming the device
-      await Future.delayed(const Duration(milliseconds: 15));
-    }
-    if (kDebugMode) {
-      debugPrint(
-          "  >> Slot $slotIndex: Found ${mappingsMap.length} mappings and ${parameterStringValuesMap.length} string values.");
-    }
-
-    // 4. Create PresetSlotEntry
-    final presetSlotEntry = PresetSlotEntry(
-      id: -1, // Use -1 as placeholder for DAO
-      presetId: -1, // Use -1 as placeholder for DAO
-      slotIndex: slotIndex,
-      algorithmGuid: guid,
-      customName: customName,
-    );
-
-    // 5. Assemble and return FullPresetSlot
-    return FullPresetSlot(
-      slot: presetSlotEntry,
-      algorithm: algorithmEntry,
-      parameterValues:
-          parameterValuesMap, // Map derived from actual device values
-      parameterStringValues:
-          parameterStringValuesMap, // Map derived from actual device values
-      mappings: mappingsMap, // Map derived from actual device values
-    );
   }
 
   Future<void> deletePreset(int presetId) async {

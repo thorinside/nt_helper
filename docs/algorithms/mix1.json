@@ -1,0 +1,186 @@
+{
+  "guid": "mix1",
+  "name": "Mixer Mono",
+  "categories": [
+    "Utility",
+    "Mixer"
+  ],
+  "description": "A mono mixer with up to 12 input channels and up to 4 pre/post-fader aux sends.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": {
+        "minValue": 1,
+        "maxValue": 12,
+        "defaultValue": 4
+      },
+      "description": "The number of mixer channels."
+    },
+    {
+      "name": "Sends",
+      "value": {
+        "minValue": 0,
+        "maxValue": 4,
+        "defaultValue": 0
+      },
+      "description": "The number of aux sends per channel."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The main mixer output bus (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Duplicate output",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "An optional duplicate output bus (0=None).",
+      "scope": "global"
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode for the main/duplicate outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Output gain",
+      "unit": "dB",
+      "defaultValue": 0.0,
+      "minValue": -70.0,
+      "maxValue": 6.0,
+      "description": "The main mixer output gain.",
+      "scope": "global"
+    },
+    {
+      "name": "Send Destination",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The output bus for the send (Uses 'Add' mode). Indexed per send.",
+      "scope": "send"
+    },
+    {
+      "name": "Send Pre/post",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Pre-fade",
+        "Post-fade"
+      ],
+      "description": "Whether the send is Pre-fade or Post-fade. Indexed per send.",
+      "scope": "send"
+    },
+    {
+      "name": "Send Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Output mode selector for the send bus. Indexed per send.",
+      "scope": "send"
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The channel input bus (0=None). Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": -70.0,
+      "minValue": -70.0,
+      "maxValue": 6.0,
+      "description": "The channel gain. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Mute",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Mutes the channel. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Solo",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Solos the channel. Indexed per channel.",
+      "scope": "channel"
+    },
+    {
+      "name": "Name",
+      "unit": null,
+      "description": "A text name for the channel for identification. Indexed per channel.",
+      "scope": "channel",
+      "type": "string"
+    },
+    {
+      "name": "Send gain",
+      "unit": "dB",
+      "defaultValue": -70.0,
+      "minValue": -70.0,
+      "maxValue": 6.0,
+      "description": "The send gain for this channel to the specific send bus. Indexed per channel, per send.",
+      "scope": "channel-send"
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_channel",
+      "name": "Channel Input",
+      "description": "Mono input for a mixer channel. Use busIdRef based on channel index.",
+      "busIdRef": "Input"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out_main",
+      "name": "Main Output",
+      "description": "Main mono mix output.",
+      "busIdRef": "Output"
+    },
+    {
+      "id": "out_dup",
+      "name": "Duplicate Output",
+      "description": "Optional duplicate mono mix output.",
+      "busIdRef": "Duplicate output"
+    },
+    {
+      "id": "out_send",
+      "name": "Send Output",
+      "description": "Mono aux send output. Use busIdRef based on send index.",
+      "busIdRef": "Send Destination"
+    }
+  ]
+}

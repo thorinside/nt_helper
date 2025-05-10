@@ -1,0 +1,196 @@
+{
+  "guid": "pycv",
+  "name": "Poly CV",
+  "categories": [
+    "Utility",
+    "MIDI",
+    "CV"
+  ],
+  "description": "A polyphonic MIDI/CV converter that takes polysynth control logic (MIDI, I2C, CV/Gate, Chord/Arp) and outputs CVs/gates instead of sound. Supports microtuning.",
+  "specifications": [
+    {
+      "name": "Voices",
+      "value": {
+        "minValue": 1,
+        "maxValue": 14,
+        "defaultValue": 1
+      },
+      "description": "The number of simultaneous voices."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 16,
+      "description": "The MIDI channel to listen on (0=Omni).",
+      "scope": "global"
+    },
+    {
+      "name": "MPE channels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "Controls how the algorithm responds to MPE.",
+      "scope": "global"
+    },
+    {
+      "name": "I2C channel",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 255,
+      "description": "Sets the I2C channel (0=Off).",
+      "scope": "global"
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -60,
+      "maxValue": 60,
+      "description": "Coarse tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "defaultValue": 0,
+      "minValue": -100,
+      "maxValue": 100,
+      "description": "Fine tuning control.",
+      "scope": "global"
+    },
+    {
+      "name": "Bend range",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 48,
+      "description": "The MIDI pitch bend range in semitones.",
+      "scope": "global"
+    },
+    {
+      "name": "Min vel gate",
+      "unit": "V",
+      "defaultValue": 1.0,
+      "minValue": 0.0,
+      "maxValue": 5.0,
+      "description": "Minimum gate voltage if gates are scaled by velocity (Velocity=0). Max is 5V (Velocity=127).",
+      "scope": "global"
+    },
+    {
+      "name": "Voices",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 14,
+      "description": "The number of voices to use (up to the specification limit).",
+      "scope": "global"
+    },
+    {
+      "name": "First output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The first output bus to use for voice allocation (gate, pitch, velocity).",
+      "scope": "global"
+    },
+    {
+      "name": "Gate outputs",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Off",
+        "On",
+        "Velocity"
+      ],
+      "description": "Whether to include gate outputs, and if they are scaled by velocity.",
+      "scope": "global"
+    },
+    {
+      "name": "Pitch outputs",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Whether to include pitch CV outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Velocity outputs",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "Whether to include velocity outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate mode",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for gate outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Pitch mode",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for pitch CV outputs.",
+      "scope": "global"
+    },
+    {
+      "name": "Velocity mode",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "Add/Replace mode for velocity outputs.",
+      "scope": "global"
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "id": "gate",
+      "name": "Gate Output",
+      "description": "Gate output for a voice. Bus determined by 'First output' and voice index."
+    },
+    {
+      "id": "pitch",
+      "name": "Pitch Output",
+      "description": "Pitch CV output for a voice. Bus determined by 'First output' and voice index."
+    },
+    {
+      "id": "velocity",
+      "name": "Velocity Output",
+      "description": "Velocity CV output for a voice. Bus determined by 'First output' and voice index."
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "name": "Delayed Function",
+  "guid": "delf",
+  "short_description": "Generates functions after a delay",
+  "description": "This algorithm generates a variety of one-shot functions (Pulse, Step, Ramp, Sawtooth) after a specified delay, when triggered. Each channel operates independently. When triggered, the channel jumps to its idle voltage, waits for the delay duration, executes the function (for the specified time, if applicable), and then remains at either the active or idle voltage until retriggered.",
+  "use_cases": [
+    "Creating delayed envelopes or LFOs",
+    "Triggering events after a specific time interval",
+    "Generating complex timed sequences by chaining channels",
+    "Sequenced voltage generation"
+  ],
+  "gui_description": "The display shows, for each channel, from top to bottom: The remaining time of the delay (once triggered), the remaining time of the function, and the output function as a bar graph.",
+  "categories": [],
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 8,
+      "description": "The number of functions to generate."
+    },
+    {
+      "name": "Stereo Link",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "unit": null,
+      "description": "Sets the stereo link mode."
+    }
+  ],
+  "parameters": [
+    {
+      "page": "Common",
+      "params": [
+        {
+          "name": "Disable all",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "If set, disables all channels.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Detection",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Sets the method of trigger detection.",
+          "enum_values": [
+            "Efficient",
+            "Accurate"
+          ]
+        }
+      ]
+    },
+    {
+      "page": "Channel {i+1}",
+      "is_per_channel": true,
+      "params": [
+        {
+          "name": "Enable",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Enables the channel.",
+          "enum_values": [
+            "Off",
+            "On"
+          ]
+        },
+        {
+          "name": "Function",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "unit": null,
+          "description": "Chooses the function.",
+          "enum_values": [
+            "Pulse",
+            "Step",
+            "Ramp",
+            "Sawtooth"
+          ]
+        },
+        {
+          "name": "Delay",
+          "min": 0,
+          "max": 1000,
+          "default": 0,
+          "unit": "ms",
+          "description": "Sets the delay time."
+        },
+        {
+          "name": "Delay multiplier",
+          "min": 0,
+          "max": 6,
+          "default": 0,
+          "unit": null,
+          "description": "Sets a multiplier for the delay time.",
+          "enum_values": [
+            "x1",
+            "x2",
+            "x5",
+            "x10",
+            "x20",
+            "x50",
+            "x100"
+          ]
+        },
+        {
+          "name": "Time",
+          "min": 1,
+          "max": 1000,
+          "default": 100,
+          "unit": "ms",
+          "description": "Sets the function duration."
+        },
+        {
+          "name": "Time multiplier",
+          "min": 0,
+          "max": 6,
+          "default": 0,
+          "unit": null,
+          "description": "Sets a multiplier for the function duration.",
+          "enum_values": [
+            "x1",
+            "x2",
+            "x5",
+            "x10",
+            "x20",
+            "x50",
+            "x100"
+          ]
+        },
+        {
+          "name": "Active voltage",
+          "min": -10.0,
+          "max": 10.0,
+          "default": 5.0,
+          "unit": "V",
+          "description": "Sets the channel's active voltage."
+        },
+        {
+          "name": "Idle voltage",
+          "min": -10.0,
+          "max": 10.0,
+          "default": 0.0,
+          "unit": "V",
+          "description": "Sets the channel's idle voltage."
+        }
+      ]
+    },
+    {
+      "page": "Channel {i+1} Routing",
+      "is_per_channel": true,
+      "params": [
+        {
+          "name": "Trigger input",
+          "min": 0,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The bus to use for the trigger input. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Output",
+          "min": 0,
+          "max": 28,
+          "default": 15,
+          "unit": null,
+          "description": "The bus to use for the channel output. 0 = None.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        },
+        {
+          "name": "MIDI channel",
+          "min": 0,
+          "max": 16,
+          "default": 0,
+          "unit": null,
+          "description": "The MIDI channel on which notes can trigger the function generator. 0 = None."
+        },
+        {
+          "name": "I2C channel",
+          "min": 0,
+          "max": 255,
+          "default": 0,
+          "unit": null,
+          "description": "The I2C channel on which notes can trigger the function generator. 0 = None."
+        },
+        {
+          "name": "Note number",
+          "min": -1,
+          "max": 127,
+          "default": -1,
+          "unit": null,
+          "description": "The MIDI or I2C note number that will trigger the function generator, or '-1' for 'Any'."
+        }
+      ]
+    }
+  ]
+}

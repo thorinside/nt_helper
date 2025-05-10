@@ -1,0 +1,174 @@
+{
+  "guid": "fbnk",
+  "name": "Filter bank",
+  "categories": [
+    "Filter",
+    "Effect",
+    "Resonator"
+  ],
+  "description": "A bank of parallel filters or resonators (up to 12). Can operate in Resonator, Bandpass, or Multiband modes. Levels can be controlled manually, via CV, or internal envelopes. Can be played polyphonically via MIDI.",
+  "specifications": [
+    {
+      "name": "Filters",
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 12,
+      "description": "The number of filters in the bank."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Audio input",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first audio input bus."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "scope": "global",
+      "description": "The number of audio input busses (e.g., set to 2 for stereo)."
+    },
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Resonator",
+        "Bandpass",
+        "Multiband"
+      ],
+      "scope": "global",
+      "description": "The filter mode."
+    },
+    {
+      "name": "Resonance/Q",
+      "unit": "%",
+      "defaultValue": 50,
+      "minValue": 1,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "Sets the filter gain (for resonators) or resonance (for bandpass/multiband)."
+    },
+    {
+      "name": "Attack time",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 1023,
+      "scope": "global",
+      "description": "The envelope attack time. The scale is exponential, from 1ms up to 4s."
+    },
+    {
+      "name": "Release time",
+      "unit": null,
+      "defaultValue": 64,
+      "minValue": 0,
+      "maxValue": 1023,
+      "scope": "global",
+      "description": "The envelope release time. The scale is exponential, from 1ms up to 4s."
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 24,
+      "scope": "global",
+      "description": "An overall gain control."
+    },
+    {
+      "name": "Pitch",
+      "unit": "MIDI Note",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 127,
+      "scope": "channel",
+      "description": "The filter frequency/pitch, as a MIDI note number."
+    },
+    {
+      "name": "Gate",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
+      "scope": "channel",
+      "description": "The filter gate."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "The filter's (first) output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "channel",
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "defaultValue": 0.0,
+      "minValue": -40.0,
+      "maxValue": 24.0,
+      "scope": "channel",
+      "description": "The filter's gain."
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 15,
+      "scope": "channel",
+      "description": "The MIDI channel on which to receive notes (0 = Off)."
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [
+    {
+      "id": "audio",
+      "name": "Audio",
+      "description": "First audio input bus.",
+      "busIdRef": "Audio input",
+      "channelCountRef": "Width"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "First output bus for each filter.",
+      "busIdRef": "Output",
+      "isPerChannel": true,
+      "channelCountRef": "Width"
+    }
+  ]
+}

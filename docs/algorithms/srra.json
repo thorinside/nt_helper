@@ -1,0 +1,178 @@
+{
+  "guid": "srra",
+  "name": "Shift Register Random",
+  "categories": [
+    "CV",
+    "Random"
+  ],
+  "description": "Generates random CVs using the rotating shift register method (\"Turing Machine\"). Creates a looping sequence of CVs with controllable likelihood of change. Can lock the loop. Outputs CVs and/or triggers.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Unrandomness",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "register",
+      "description": "Likelihood of pattern not changing. 0% = 50/50 chance of bit flip (most random). 100% = never flips (locked). -100% = always flips (locks pattern with 2x length)."
+    },
+    {
+      "name": "Direction",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Forwards",
+        "Reverse"
+      ],
+      "scope": "register",
+      "description": "Sets whether the pattern moves forwards or in reverse when clocked."
+    },
+    {
+      "name": "Length",
+      "unit": "steps",
+      "min": 1,
+      "max": 32,
+      "default": 8,
+      "scope": "register",
+      "description": "Sets the length of the shift register (number of steps in the sequence)."
+    },
+    {
+      "name": "Scale",
+      "unit": "V",
+      "min": -20.0,
+      "max": 20.0,
+      "default": 10.0,
+      "scope": "cv",
+      "description": "Scales the output CV."
+    },
+    {
+      "name": "Offset",
+      "unit": "V",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
+      "scope": "cv",
+      "description": "Offsets the output CV."
+    },
+    {
+      "name": "Cause",
+      "unit": "enum",
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "values": [
+        "New bit high",
+        "New bit low",
+        "Bit changes",
+        "Bit low to high",
+        "Bit high to low"
+      ],
+      "scope": "trigger",
+      "description": "Chooses what will cause a trigger to be generated."
+    },
+    {
+      "name": "Type",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Fixed length",
+        "% of clock"
+      ],
+      "scope": "trigger",
+      "description": "Chooses trigger output type: fixed length or percentage of clock length."
+    },
+    {
+      "name": "Length (ms)",
+      "unit": "ms",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "scope": "trigger",
+      "description": "The trigger length, if fixed length is chosen."
+    },
+    {
+      "name": "Length (%)",
+      "unit": "%",
+      "min": 1,
+      "max": 100,
+      "default": 50,
+      "scope": "trigger",
+      "description": "The trigger length, if percentage of clock is chosen."
+    },
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "Chooses the clock input bus."
+    },
+    {
+      "name": "Modify input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "Chooses the \"modify\" input bus. High gate forces pattern modification, even if locked."
+    },
+    {
+      "name": "CV output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "scope": "routing",
+      "description": "The output bus for the CV."
+    },
+    {
+      "name": "Trigger output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "The output bus for the trigger."
+    },
+    {
+      "name": "CV output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "The Add/Replace mode for the CV bus."
+    },
+    {
+      "name": "Trigger output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "The Add/Replace mode for the trigger bus."
+    }
+  ],
+  "input_ports": [
+    "Clock",
+    "Gate (Modify)"
+  ],
+  "output_ports": [
+    "CV",
+    "Trigger"
+  ]
+}

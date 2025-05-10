@@ -1,0 +1,132 @@
+{
+  "name": "Accent Sweep",
+  "guid": "acsw",
+  "short_description": "AD envelope with variable peak",
+  "description": "This algorithm recreates a very specific aspect of the Roland TB-303's circuitry. There is a lengthy write-up on it on the Devil Fish page here^50 (https://www.firstpr.com.au/rwi/dfish/303-unique.html), but essentially it creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered.",
+  "categories": [],
+  "use_cases": [
+    "TB-303 style accent simulation",
+    "Dynamic envelope shaping"
+  ],
+  "gui_description": "The display shows the input (dark) and output (light) signals.",
+  "specifications": [],
+  "parameters": [
+    {
+      "page": "Envelope",
+      "params": [
+        {
+          "name": "Input mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "Sets how the input is treated: \"Direct\" feeds the input signal directly into the AD shaper. \"Trigger\" uses the input to trigger an internal pulse, which is fed into the shaper.",
+          "enum_values": [
+            "Direct",
+            "Trigger"
+          ]
+        },
+        {
+          "name": "Trigger length",
+          "min": 1,
+          "max": 200,
+          "default": 100,
+          "unit": "ms",
+          "description": "If the input mode is \"Trigger\", the length of the pulse."
+        },
+        {
+          "name": "Trigger voltage",
+          "min": 0.1,
+          "max": 10.0,
+          "default": 10.0,
+          "unit": "V",
+          "description": "If the input mode is \"Trigger\", the voltage of the pulse."
+        },
+        {
+          "name": "Shape",
+          "min": 0,
+          "max": 100,
+          "default": 100,
+          "unit": "%",
+          "description": "This is the position of the pot (potentiometer), if you studied the Devil Fish write-up. At 0% the output is quite close to the input; at 100% it is heavily affected by the AD shaper."
+        },
+        {
+          "name": "Gain",
+          "min": 0,
+          "max": 24,
+          "default": 0,
+          "unit": "dB",
+          "description": "Applies a gain to the output shape."
+        },
+        {
+          "name": "Charge",
+          "min": 1,
+          "max": 470,
+          "default": 47,
+          "unit": "kΩ",
+          "description": "The value of the charge resistor."
+        },
+        {
+          "name": "Discharge",
+          "min": 1,
+          "max": 470,
+          "default": 100,
+          "unit": "kΩ",
+          "description": "The value of the discharge resistor."
+        },
+        {
+          "name": "Pot",
+          "min": 1,
+          "max": 470,
+          "default": 100,
+          "unit": "kΩ",
+          "description": "The value of the potentiometer."
+        },
+        {
+          "name": "Capacitance",
+          "min": 0.1,
+          "max": 10.0,
+          "default": 1.0,
+          "unit": "μF",
+          "description": "The value of the capacitor."
+        }
+      ]
+    },
+    {
+      "page": "Routing",
+      "params": [
+        {
+          "name": "Input",
+          "min": 1,
+          "max": 28,
+          "default": 1,
+          "unit": null,
+          "description": "The bus to use as input.",
+          "is_bus": true
+        },
+        {
+          "name": "Output",
+          "min": 1,
+          "max": 28,
+          "default": 15,
+          "unit": null,
+          "description": "The bus to use as output.",
+          "is_bus": true
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "unit": null,
+          "description": "The standard Add/Replace mode selector as described above.",
+          "enum_values": [
+            "Replace",
+            "Add"
+          ],
+          "is_common": true
+        }
+      ]
+    }
+  ]
+}

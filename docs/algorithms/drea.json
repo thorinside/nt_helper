@@ -1,0 +1,197 @@
+{
+  "guid": "drea",
+  "name": "Dream Machine",
+  "categories": [
+    "Physical Modelling",
+    "Oscillator"
+  ],
+  "description": "Creates dreamy pads, strings and bells. Based on the Mutable Instruments Plaits physical modelling oscillator models.",
+  "specifications": [
+    {
+      "name": "Polyphony",
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 8,
+      "description": "The number of voices."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "V/Oct",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The V/Oct input."
+    },
+    {
+      "name": "Trigger",
+      "unit": "bus",
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The trigger input."
+    },
+    {
+      "name": "Mode CV",
+      "unit": "bus",
+      "defaultValue": 3,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The CV input selecting the oscillator mode."
+    },
+    {
+      "name": "Timbre CV",
+      "unit": "bus",
+      "defaultValue": 4,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The CV input for the timbre parameter."
+    },
+    {
+      "name": "Harmonics CV",
+      "unit": "bus",
+      "defaultValue": 5,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The CV input for the harmonics parameter."
+    },
+    {
+      "name": "Morph CV",
+      "unit": "bus",
+      "defaultValue": 6,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The CV input for the morph parameter."
+    },
+    {
+      "name": "Level CV",
+      "unit": "bus",
+      "defaultValue": 7,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "The CV input for the level parameter."
+    },
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "String and pads",
+        "Bells and chimes",
+        "Flutes and pipes"
+      ],
+      "description": "Selects the oscillator mode."
+    },
+    {
+      "name": "Timbre",
+      "unit": null,
+      "defaultValue": 0.5,
+      "minValue": 0.0,
+      "maxValue": 1.0,
+      "description": "The timbre parameter."
+    },
+    {
+      "name": "Harmonics",
+      "unit": null,
+      "defaultValue": 0.5,
+      "minValue": 0.0,
+      "maxValue": 1.0,
+      "description": "The harmonics parameter."
+    },
+    {
+      "name": "Morph",
+      "unit": null,
+      "defaultValue": 0.5,
+      "minValue": 0.0,
+      "maxValue": 1.0,
+      "description": "The morph parameter."
+    },
+    {
+      "name": "Level",
+      "unit": null,
+      "defaultValue": 1.0,
+      "minValue": 0.0,
+      "maxValue": 1.0,
+      "description": "The level parameter."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "features": [
+    "feat_poly_params"
+  ],
+  "input_ports": [
+    {
+      "id": "v_oct",
+      "name": "V/Oct",
+      "description": "V/Oct input bus.",
+      "busIdRef": "V/Oct"
+    },
+    {
+      "id": "trigger",
+      "name": "Trigger",
+      "description": "Trigger input bus.",
+      "busIdRef": "Trigger"
+    },
+    {
+      "id": "mode_cv",
+      "name": "Mode CV",
+      "description": "Mode CV input bus.",
+      "busIdRef": "Mode CV"
+    },
+    {
+      "id": "timbre_cv",
+      "name": "Timbre CV",
+      "description": "Timbre CV input bus.",
+      "busIdRef": "Timbre CV"
+    },
+    {
+      "id": "harmonics_cv",
+      "name": "Harmonics CV",
+      "description": "Harmonics CV input bus.",
+      "busIdRef": "Harmonics CV"
+    },
+    {
+      "id": "morph_cv",
+      "name": "Morph CV",
+      "description": "Morph CV input bus.",
+      "busIdRef": "Morph CV"
+    },
+    {
+      "id": "level_cv",
+      "name": "Level CV",
+      "description": "Level CV input bus.",
+      "busIdRef": "Level CV"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Output bus.",
+      "busIdRef": "Output"
+    }
+  ]
+}

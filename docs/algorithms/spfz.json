@@ -1,0 +1,220 @@
+{
+  "guid": "spfz",
+  "name": "Spectral Freeze",
+  "categories": [
+    "Effect",
+    "Spectral"
+  ],
+  "description": "An audio 'freeze' effect based on the phase vocoder technique. Captures sound at a moment and sustains it indefinitely, working in the frequency domain. Allows time stretching and pitch shifting. Supports multiple voices for simultaneous freezes. Based on the disting EX algorithm of the same name.",
+  "specifications": [
+    {
+      "name": "Voices",
+      "unit": null,
+      "min": 1,
+      "max": 8,
+      "description": "The number of simultaneous voices."
+    },
+    {
+      "name": "History",
+      "unit": "frames",
+      "min": 4,
+      "max": 2048,
+      "description": "The length of the history stored for each voice (in FFT frames)."
+    },
+    {
+      "name": "FFT size",
+      "unit": "power of 2",
+      "min": 8,
+      "max": 12,
+      "description": "The size of the FFT used internally (2^N)."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Freeze toggle",
+      "unit": "toggle",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from '0' to '1'."
+    },
+    {
+      "name": "Freeze gate",
+      "unit": "gate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates a new freeze when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'."
+    },
+    {
+      "name": "Freeze target",
+      "unit": "enum",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Chooses the voice for the next freeze, or '0' for 'Auto'."
+    },
+    {
+      "name": "Unfreeze all",
+      "unit": "trigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes to '1', all active freezes are released."
+    },
+    {
+      "name": "Movement",
+      "unit": "enum",
+      "min": 0,
+      "max": 4,
+      "default": 2,
+      "values": [
+        "Forwards",
+        "Backwards",
+        "Alternating",
+        "Random walk",
+        "Random skip"
+      ],
+      "description": "Chooses the type of movement."
+    },
+    {
+      "name": "Rate",
+      "unit": "scaled",
+      "min": 0,
+      "max": 1000,
+      "default": 340,
+      "description": "Sets the rate of movement. '0' is stopped; '1000' is 'normal speed'. Scale is non-linear."
+    },
+    {
+      "name": "Depth",
+      "unit": "frames",
+      "min": 1,
+      "max": null,
+      "default": null,
+      "description": "Sets the maximum amount of movement in FFT frames. If 1, motion is disabled."
+    },
+    {
+      "name": "Offset",
+      "unit": "scaled",
+      "min": 0,
+      "max": null,
+      "default": 0,
+      "description": "Offsets the freeze position back in time."
+    },
+    {
+      "name": "Etherization",
+      "unit": "%",
+      "min": 0.0,
+      "max": 100.0,
+      "default": 0.0,
+      "description": "Drops out transient elements of the sound."
+    },
+    {
+      "name": "Live process",
+      "unit": "trigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "When this parameter changes to '1', a new voice is started which uses live audio input instead of actually freezing."
+    },
+    {
+      "name": "Attack",
+      "unit": "scaled",
+      "min": 0,
+      "max": 127,
+      "default": 10,
+      "description": "Sets the envelope attack time."
+    },
+    {
+      "name": "Release",
+      "unit": "scaled",
+      "min": 0,
+      "max": 127,
+      "default": 10,
+      "description": "Sets the envelope release time."
+    },
+    {
+      "name": "Coarse shift",
+      "unit": "ST",
+      "min": -48,
+      "max": 24,
+      "default": 0,
+      "scope": "global",
+      "description": "Sets the coarse pitch shift amount for all voices. Added to the individual voice shifts."
+    },
+    {
+      "name": "Fine shift",
+      "unit": "cents",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "global",
+      "description": "Sets the fine pitch shift amount for all voices. Added to the individual voice shifts."
+    },
+    {
+      "name": "Freeze",
+      "unit": "gate",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "scope": "per-voice",
+      "description": "Activates a new freeze on the corresponding voice when the parameter changes from '0' to '1', and releases the freeze when the parameter changes from '1' to '0'."
+    },
+    {
+      "name": "Coarse shift",
+      "unit": "ST",
+      "min": -48,
+      "max": 24,
+      "default": 0,
+      "scope": "per-voice",
+      "description": "Sets the coarse pitch shift amount for this voice."
+    },
+    {
+      "name": "Fine shift",
+      "unit": "cents",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "per-voice",
+      "description": "Sets the fine pitch shift amount for this voice."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "per-voice",
+      "description": "Sets the output bus for the voice."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "per-voice",
+      "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "Sets the input audio bus."
+    }
+  ],
+  "input_ports": [
+    "Audio",
+    "Gate (Freeze)"
+  ],
+  "output_ports": [
+    "Audio"
+  ]
+}
