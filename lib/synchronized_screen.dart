@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
@@ -27,6 +28,7 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
+import 'package:nt_helper/ui/bpm_editor_widget.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -1109,6 +1111,11 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     // Check if we are on a wide screen or a smaller screen
     bool widescreen = MediaQuery.of(context).size.width > 600;
 
+    // Determine if the unit is BPM
+    final bool isBpmUnit = widget.unit?.toUpperCase().contains('BPM') ?? false;
+
+    debugPrint("${widget.name} isBpmUnit: $isBpmUnit ${widget.unit}");
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
       child: Row(
@@ -1149,7 +1156,8 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               flex: widescreen ? 8 : 6, // Decreased flex
               // Proportionally larger space for the slider
               child: GestureDetector(
-                onDoubleTap: () => _showAlternateEditor
+                onDoubleTap: () => isBpmUnit ||
+                        _showAlternateEditor // Do not allow double tap to change editor for BPM or if alternate is already shown
                     ? {}
                     : setState(() {
                         currentValue = widget.defaultValue;
@@ -1159,65 +1167,85 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                   duration: Duration(milliseconds: 150),
                   child: SizedBox(
                     height: 45,
-                    child: _showAlternateEditor
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            spacing: 16,
-                            children: [
-                                OutlinedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      currentValue = min(
-                                          max(currentValue - 1, widget.min),
-                                          widget.max);
-                                    });
-                                    _updateCubitValue(currentValue);
-                                  },
-                                  child: Text("-"),
-                                ),
-                                OutlinedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      currentValue = min(
-                                          max(currentValue + 1, widget.min),
-                                          widget.max);
-                                    });
-                                    _updateCubitValue(currentValue);
-                                  },
-                                  child: Text("+"),
-                                )
-                              ])
-                        : Slider(
-                            value: currentValue.toDouble(),
-                            min: widget.min.toDouble(),
-                            max: widget.max.toDouble(),
-                            divisions: (widget.max - widget.min > 0)
-                                ? widget.max - widget.min
-                                : null,
-                            onChangeStart: (value) {
-                              isChanging = true;
-                            },
-                            onChangeEnd: (value) {
-                              isChanging = false;
+                    child: isBpmUnit
+                        ? BpmEditorWidget(
+                            initialValue: currentValue,
+                            min: widget.min,
+                            max: widget.max,
+                            powerOfTen: widget.powerOfTen,
+                            onChanged: (newBpm) {
                               setState(() {
-                                currentValue = value.toInt();
-                                if (widget.isOnOff) {
-                                  isChecked = currentValue == 1;
-                                }
+                                currentValue = newBpm;
                               });
-                              _updateCubitValue(currentValue);
+                              _updateCubitValue(newBpm);
                             },
-                            onChanged: (value) {
+                            onEditingStatusChanged: (isEditing) {
                               setState(() {
-                                currentValue = value.toInt();
-                                if (widget.isOnOff) {
-                                  isChecked = currentValue == 1;
-                                }
+                                isChanging = isEditing;
                               });
-                              // Throttle a bit
-                              onSliderChanged(currentValue);
                             },
-                          ),
+                          )
+                        : _showAlternateEditor
+                            ? Row(
+                                // Alternate +/- editor
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                spacing: 16,
+                                children: [
+                                    OutlinedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          currentValue = min(
+                                              max(currentValue - 1, widget.min),
+                                              widget.max);
+                                        });
+                                        _updateCubitValue(currentValue);
+                                      },
+                                      child: Text("-"),
+                                    ),
+                                    OutlinedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          currentValue = min(
+                                              max(currentValue + 1, widget.min),
+                                              widget.max);
+                                        });
+                                        _updateCubitValue(currentValue);
+                                      },
+                                      child: Text("+"),
+                                    )
+                                  ])
+                            : Slider(
+                                // Default Slider editor
+                                value: currentValue.toDouble(),
+                                min: widget.min.toDouble(),
+                                max: widget.max.toDouble(),
+                                divisions: (widget.max - widget.min > 0)
+                                    ? widget.max - widget.min
+                                    : null,
+                                onChangeStart: (value) {
+                                  isChanging = true;
+                                },
+                                onChangeEnd: (value) {
+                                  isChanging = false;
+                                  setState(() {
+                                    currentValue = value.toInt();
+                                    if (widget.isOnOff) {
+                                      isChecked = currentValue == 1;
+                                    }
+                                  });
+                                  _updateCubitValue(currentValue);
+                                },
+                                onChanged: (value) {
+                                  setState(() {
+                                    currentValue = value.toInt();
+                                    if (widget.isOnOff) {
+                                      isChecked = currentValue == 1;
+                                    }
+                                  });
+                                  // Throttle a bit
+                                  onSliderChanged(currentValue);
+                                },
+                              ),
                   ),
                 ),
               )),
@@ -1226,81 +1254,88 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
-              child: widget.isOnOff
-                  ? Checkbox(
-                      value: isChecked,
-                      onChanged: (value) {
-                        setState(() {
-                          isChecked = value!;
-                          currentValue = isChecked ? 1 : 0;
-                        });
-                        _updateCubitValue(currentValue);
-                      },
-                    )
-                  : widget.dropdownItems != null
-                      ? DropdownMenu(
-                          requestFocusOnTap: false,
-                          initialSelection: widget.dropdownItems![currentValue],
-                          inputDecorationTheme: const InputDecorationTheme(
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12.0, vertical: 8.0),
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          textStyle: widescreen
-                              ? textTheme.labelLarge
-                              : textTheme.labelMedium,
-                          dropdownMenuEntries: widget.dropdownItems!
-                              .map((item) =>
-                                  DropdownMenuEntry(value: item, label: item))
-                              .toList(),
-                          onSelected: (value) {
+              child: isBpmUnit // Check if it's the BPM unit
+                  ? const SizedBox
+                      .shrink() // If BPM, render an empty box to hide default text
+                  : widget.isOnOff
+                      ? Checkbox(
+                          value: isChecked,
+                          onChanged: (value) {
                             setState(() {
-                              currentValue = min(
-                                  max(widget.dropdownItems!.indexOf(value!),
-                                      widget.min),
-                                  widget.max);
+                              isChecked = value!;
+                              currentValue = isChecked ? 1 : 0;
                             });
                             _updateCubitValue(currentValue);
                           },
                         )
-                      : widget.name.toLowerCase().contains("note")
-                          ? Text(midiNoteToNoteString(currentValue))
-                          : widget.displayString != null
-                              ? GestureDetector(
-                                  onLongPress: () => setState(() {
-                                    // Show alternate editor
-                                    _showAlternateEditor =
-                                        !_showAlternateEditor;
-                                  }),
-                                  child: Text(
-                                    widget.displayString!,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: widescreen
-                                        ? textTheme.labelLarge
-                                        : textTheme.labelSmall,
-                                  ),
-                                )
-                              : widget.unit != null
-                                  ? Text(
-                                      formatWithUnit(
-                                        currentValue,
-                                        name: widget.name,
-                                        min: widget.min,
-                                        max: widget.max,
-                                        unit: widget.unit,
-                                        powerOfTen: widget.powerOfTen,
+                      : widget.dropdownItems != null
+                          ? DropdownMenu(
+                              requestFocusOnTap: false,
+                              initialSelection:
+                                  widget.dropdownItems![currentValue],
+                              inputDecorationTheme: const InputDecorationTheme(
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 8.0),
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              textStyle: widescreen
+                                  ? textTheme.labelLarge
+                                  : textTheme.labelMedium,
+                              dropdownMenuEntries: widget.dropdownItems!
+                                  .map((item) => DropdownMenuEntry(
+                                      value: item, label: item))
+                                  .toList(),
+                              onSelected: (value) {
+                                setState(() {
+                                  currentValue = min(
+                                      max(widget.dropdownItems!.indexOf(value!),
+                                          widget.min),
+                                      widget.max);
+                                });
+                                _updateCubitValue(currentValue);
+                              },
+                            )
+                          : widget.name.toLowerCase().contains("note")
+                              ? Text(midiNoteToNoteString(currentValue))
+                              : widget.displayString != null
+                                  ? GestureDetector(
+                                      onLongPress: () => setState(() {
+                                        // Show alternate editor only if not BPM
+                                        if (!isBpmUnit) {
+                                          _showAlternateEditor =
+                                              !_showAlternateEditor;
+                                        }
+                                      }),
+                                      child: Text(
+                                        widget.displayString!,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: widescreen
+                                            ? textTheme.labelLarge
+                                            : textTheme.labelSmall,
                                       ),
-                                      style: widescreen
-                                          ? textTheme.labelLarge
-                                          : textTheme.labelSmall,
                                     )
-                                  : Text(
-                                      currentValue.toString(),
-                                      style: widescreen
-                                          ? textTheme.labelLarge
-                                          : textTheme.labelSmall,
-                                    ),
+                                  // Only show unit text if it's NOT BPM and unit is present
+                                  : widget.unit != null && !isBpmUnit
+                                      ? Text(
+                                          formatWithUnit(
+                                            currentValue,
+                                            name: widget.name,
+                                            min: widget.min,
+                                            max: widget.max,
+                                            unit: widget.unit,
+                                            powerOfTen: widget.powerOfTen,
+                                          ),
+                                          style: widescreen
+                                              ? textTheme.labelLarge
+                                              : textTheme.labelSmall,
+                                        )
+                                      : Text(
+                                          currentValue.toString(),
+                                          style: widescreen
+                                              ? textTheme.labelLarge
+                                              : textTheme.labelSmall,
+                                        ),
             ),
           ),
         ],
