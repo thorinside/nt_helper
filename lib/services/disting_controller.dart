@@ -34,11 +34,15 @@ abstract class DistingController {
   /// Throws ArgumentError if the slot index is invalid.
   Future<void> clearSlot(int slotIndex);
 
-  /// Moves the algorithm from the source slot to the destination slot.
-  /// Overwrites the algorithm in the destination slot.
-  /// Throws StateError if the Disting is not in a synchronized state.
-  /// Throws ArgumentError if slot indices are invalid or the source slot is empty.
-  Future<void> moveAlgorithm(int sourceSlotIndex, int destSlotIndex);
+  /// Moves the algorithm in the specified slot one position up.
+  /// Throws StateError if the Disting is not in a synchronized state or if the slot is already at the top.
+  /// Throws ArgumentError if the slot index is invalid.
+  Future<void> moveAlgorithmUp(int slotIndex);
+
+  /// Moves the algorithm in the specified slot one position down.
+  /// Throws StateError if the Disting is not in a synchronized state or if the slot is already at the bottom.
+  /// Throws ArgumentError if the slot index is invalid.
+  Future<void> moveAlgorithmDown(int slotIndex);
 
   /// Updates the value of a specific parameter for the algorithm in the given slot.
   /// The `value` type should match the expected type for the parameter.

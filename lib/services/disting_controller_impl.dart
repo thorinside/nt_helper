@@ -100,24 +100,15 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
-  Future<void> moveAlgorithm(int sourceSlotIndex, int destSlotIndex) async {
-    _validateSlotIndex(sourceSlotIndex);
-    _validateSlotIndex(destSlotIndex);
-    if (sourceSlotIndex == destSlotIndex) return;
+  Future<void> moveAlgorithmUp(int slotIndex) async {
+    _validateSlotIndex(slotIndex);
+    await _distingCubit.moveAlgorithmUp(slotIndex);
+  }
 
-    final state = _getSynchronizedState();
-    final algoToMove = state.slots[sourceSlotIndex].algorithm;
-    if (algoToMove == null) {
-      throw StateError('Source slot $sourceSlotIndex is empty.');
-    }
-
-    if (destSlotIndex < sourceSlotIndex) {
-      throw UnimplementedError(
-          "moveAlgorithm needs robust implementation using cubit's up/down methods, mapping slot index to algorithm index correctly, or a dedicated cubit method.");
-    } else {
-      throw UnimplementedError(
-          "moveAlgorithm needs robust implementation using cubit's up/down methods, mapping slot index to algorithm index correctly, or a dedicated cubit method.");
-    }
+  @override
+  Future<void> moveAlgorithmDown(int slotIndex) async {
+    _validateSlotIndex(slotIndex);
+    await _distingCubit.moveAlgorithmDown(slotIndex);
   }
 
   @override

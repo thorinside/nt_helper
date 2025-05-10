@@ -118,9 +118,13 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'get_algorithm_details',
       description:
-          'Retrieves full metadata for a specific algorithm by its GUID.',
+          'Retrieves full metadata for a specific algorithm by its GUID. IMPORTANT: The order of parameters in this tool\'s output may NOT correspond to the `parameter_index` required by `setParameterValue` or `getParameterValue`. Use `getCurrentPreset` to find the correct live `parameterNumber` (which is used as `parameter_index`).',
       inputSchemaProperties: {
-        'guid': {'type': 'string', 'description': 'Algorithm GUID'},
+        'guid': {
+          'type': 'string',
+          'description':
+              'Algorithm GUID. Must be a valid GUID discoverable via `list_algorithms` or `find_algorithms` (see nt_helper_mcp.mdc for details on GUID validity).'
+        },
         'expand_features': {
           'type': 'boolean',
           'description': 'Expand parameters from features',
@@ -141,7 +145,7 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'list_algorithms',
       description:
-          'Returns a list of available algorithms, optionally filtered.',
+          'Returns a list of available algorithms, optionally filtered. The GUIDs returned by this tool are the valid identifiers to be used with tools like `addAlgorithm` and `get_algorithm_details`.',
       inputSchemaProperties: {
         'category': {
           'type': 'string',
@@ -160,7 +164,8 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'find_algorithms',
-      description: 'Performs text search across algorithm metadata.',
+      description:
+          'Performs text search across algorithm metadata. The GUIDs found can be used with tools like `addAlgorithm` and `get_algorithm_details`.',
       inputSchemaProperties: {
         'query': {'type': 'string', 'description': 'Search query text'}
       },
@@ -173,7 +178,7 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'get_current_routing_state',
       description:
-          'Retrieves the current routing state decoded into RoutingInformation objects.',
+          'Retrieves the current routing state decoded into RoutingInformation objects. Interpreting this state relies on understanding Disting NT Bus numbering: Physical Inputs 1-12 are Bus 1-12; Physical Outputs 1-8 are Bus 13-20; Aux Channels 1-8 are Bus 21-28. Bus 0 means "None/Not Connected". For stereo signals, if an algorithm uses a single main bus parameter and a `Width=2` parameter, it implies Bus N for Left and N+1 for Right. Algorithms with distinct L/R parameters require both to be set explicitly.',
       inputSchemaProperties: {},
       callback: ({args, extra}) async {
         final resultJson =
@@ -185,11 +190,12 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'getCurrentPreset',
       description:
-          'Gets the entire current preset state (name, slots, parameters).',
+          'Gets the entire current preset state (name, slots, parameters). CRITICAL: Each parameter in the output includes a `parameterNumber` field; this `parameterNumber` is the value that MUST be used as the `parameter_index` for `setParameterValue` and `getParameterValue` tools. Empty slots in the preset are represented as null.',
       inputSchemaProperties: {
         'random_string': {
           'type': 'string',
-          'description': 'Dummy parameter for no-parameter tools'
+          'description':
+              'Dummy parameter for no-parameter tools. See nt_helper_mcp.mdc regarding the critical `parameterNumber` field in the output of this tool, used for identifying parameters in other operations.'
         }
       },
       callback: ({args, extra}) async {
@@ -200,11 +206,13 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'addAlgorithm',
-      description: 'Adds an algorithm to the first available empty slot.',
+      description:
+          'Adds an algorithm to the first available empty slot. The `algorithm_guid` MUST be a valid GUID discoverable via `list_algorithms` or `find_algorithms`. The firmware determines the slot; this tool does not specify it.',
       inputSchemaProperties: {
         'algorithm_guid': {
           'type': 'string',
-          'description': 'GUID of the algorithm to add'
+          'description':
+              'GUID of the algorithm to add. MUST be a valid GUID discoverable via `list_algorithms` or `find_algorithms` (see nt_helper_mcp.mdc).'
         }
       },
       callback: ({args, extra}) async {
@@ -215,11 +223,13 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'removeAlgorithm',
-      description: 'Removes (clears) the algorithm from a specific slot.',
+      description:
+          'Removes (clears) the algorithm from a specific slot. CRITICAL BEHAVIOR - SLOT SHIFTING: When an algorithm is removed from `slot_index N`, all subsequent algorithms shift down (e.g., algorithm at N+1 moves to N). The internal `algorithmIndex` (device MIDI reference) of the remaining algorithms will also be updated by the device.',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
-          'description': 'Index of the slot to clear'
+          'description':
+              '0-based index of the slot to clear. Note the slot shifting behavior detailed in nt_helper_mcp.mdc when an algorithm is removed.'
         }
       },
       callback: ({args, extra}) async {
@@ -231,21 +241,22 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'setParameterValue',
       description:
-          'Sets the value of a specific parameter in a slot, using its display value (handles powerOfTen scaling automatically).',
+          'Sets the value of a specific parameter in a slot, using its display value. Handles `powerOfTen` scaling automatically. \nIMPORTANT `parameter_index` USAGE: The `parameter_index` MUST be the `parameterNumber` obtained from the `getCurrentPreset` tool for that specific parameter in the slot. DO NOT use the parameter order from `get_algorithm_details`.\nWORKFLOW: 1. Call `getCurrentPreset`. 2. Find your parameter by `name` in the correct slot. 3. Use its `parameterNumber` as `parameter_index` here.\nBUS PARAMETERS: For parameters assigning audio/CV paths, use Disting NT bus numbers: Phys Inputs 1-12 are Bus 1-12; Phys Outputs 1-8 are Bus 13-20; Aux 1-8 are Bus 21-28; Bus 0 is None. \nSTEREO BUS HANDLING: If an algorithm has a single main audio bus parameter (e.g., "Audio input") and a `Width=2` parameter, setting the main bus to N implies N for Left, N+1 for Right. For algorithms with distinct "Left input" and "Right input" parameters, both must be set explicitly (for mono, set both to the same source bus).',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
-          'description': '0-based index of the slot containing the algorithm.'
+          'description':
+              '0-based index of the slot (0-31) containing the algorithm. See nt_helper_mcp.mdc for slot behaviors.'
         },
         'parameter_index': {
           'type': 'integer',
           'description':
-              "0-based index of the parameter within the algorithm's list."
+              "CRITICAL: This MUST be the `parameterNumber` obtained from `getCurrentPreset` for the target parameter. DO NOT use ordering from `get_algorithm_details`. See nt_helper_mcp.mdc for full workflow."
         },
         'display_value': {
           'type': 'number', // Can be int or double (e.g., 5 or 2.5 for Hz)
           'description':
-              'The human-readable display value for the parameter (e.g., 5 for 5Hz, 2.5 for 2.5s).'
+              'The human-readable display value (e.g., 5 for 5Hz). If this parameter assigns an audio/CV bus, use Disting NT bus numbers (0 for None, 1-12 for Inputs, etc. - see nt_helper_mcp.mdc for full mapping and stereo handling).'
         }
       },
       callback: ({args, extra}) async {
@@ -257,16 +268,17 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'getParameterValue',
       description:
-          'Gets the current value of a specific parameter from the device.',
+          'Gets the current value of a specific parameter from the device. The `parameter_index` MUST be the `parameterNumber` obtained from the `getCurrentPreset` tool for that specific parameter in the slot.',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
-          'description': '0-based index of the slot containing the algorithm.'
+          'description':
+              '0-based index of the slot (0-31) containing the algorithm.'
         },
         'parameter_index': {
           'type': 'integer',
           'description':
-              "0-based index of the parameter within the algorithm's list."
+              "The parameter\'s unique, 0-based device index. This MUST be the `parameterNumber` obtained from `getCurrentPreset`. See nt_helper_mcp.mdc."
         }
       },
       callback: ({args, extra}) async {
@@ -278,11 +290,12 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'setPresetName',
       description:
-          'Sets the name of the currently loaded preset on the device.',
+          'Sets the name of the currently loaded preset on the device. This change is in working memory and requires `savePreset` to persist it.',
       inputSchemaProperties: {
         'name': {
           'type': 'string',
-          'description': 'The new name for the preset.'
+          'description':
+              'The new name for the preset. This change is in working memory; use `savePreset` to persist (see nt_helper_mcp.mdc).'
         }
       },
       callback: ({args, extra}) async {
@@ -293,15 +306,17 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'setSlotName',
-      description: 'Sets a custom name for the algorithm in a specific slot.',
+      description:
+          'Sets a custom name for the algorithm in a specific slot. This change is in working memory and requires `savePreset` to persist it.',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
-          'description': '0-based index of the slot to name.'
+          'description': '0-based index of the slot (0-31) to name.'
         },
         'name': {
           'type': 'string',
-          'description': 'The desired custom name for the slot.'
+          'description':
+              'The desired custom name for the slot. This change is in working memory; use `savePreset` to persist (see nt_helper_mcp.mdc).'
         }
       },
       callback: ({args, extra}) async {
@@ -313,14 +328,14 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'newPreset',
       description:
-          'Tells the device to clear the current preset and start a new, empty one.',
+          'Tells the device to clear the current preset and start a new, empty one. This affects the working preset; any unsaved changes will be lost unless `savePreset` was used prior.',
       inputSchemaProperties: {
         // No specific parameters needed, but schema can be empty
         'random_string': {
           // Gemini seems to prefer at least one dummy param for no-arg tools
           'type': 'string',
           'description':
-              'Dummy parameter for no-parameter tools (can be any string).'
+              'Dummy parameter (can be any string). This action clears the working preset; see nt_helper_mcp.mdc regarding persistence of changes via `savePreset`.'
         }
       },
       callback: ({args, extra}) async {
@@ -331,17 +346,52 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'savePreset',
-      description: 'Tells the device to save the current working preset.',
+      description:
+          'Tells the device to save the current working preset, persisting all changes made to names, slots, and parameters.',
       inputSchemaProperties: {
         'random_string': {
           // Dummy parameter
           'type': 'string',
           'description':
-              'Dummy parameter for no-parameter tools (can be any string).'
+              'Dummy parameter (can be any string). This action persists the current working preset state. See nt_helper_mcp.mdc.'
         }
       },
       callback: ({args, extra}) async {
         final resultJson = await _distingTools.save_preset(args ?? {});
+        return CallToolResult(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'move_algorithm_up',
+      description:
+          'Moves an algorithm in a specified slot one position up in the slot list. The evaluation order of algorithms is from top to bottom (slot 0 to N). If an algorithm expects modulation from another, the modulating algorithm must appear in an earlier slot (lower index). Note: This may change the internal `algorithmIndex` (device MIDI reference) of the moved algorithm and the one it swapped with.',
+      inputSchemaProperties: {
+        'slot_index': {
+          'type': 'integer',
+          'description':
+              '0-based index of the slot containing the algorithm to move up. See nt_helper_mcp.mdc for notes on evaluation order and potential `algorithmIndex` changes.'
+        }
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await _distingTools.move_algorithm_up(args ?? {});
+        return CallToolResult(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'move_algorithm_down',
+      description:
+          'Moves an algorithm in a specified slot one position down in the slot list. The evaluation order of algorithms is from top to bottom (slot 0 to N). If an algorithm expects modulation from another, the modulating algorithm must appear in an earlier slot (lower index). Note: This may change the internal `algorithmIndex` (device MIDI reference) of the moved algorithm and the one it swapped with.',
+      inputSchemaProperties: {
+        'slot_index': {
+          'type': 'integer',
+          'description':
+              '0-based index of the slot containing the algorithm to move down. See nt_helper_mcp.mdc for notes on evaluation order and potential `algorithmIndex` changes.'
+        }
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await _distingTools.move_algorithm_down(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );

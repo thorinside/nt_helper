@@ -319,4 +319,86 @@ class DistingTools {
       return jsonEncode({'success': false, 'error': e.toString()});
     }
   }
+
+  /// MCP Tool: Moves an algorithm in a specified slot one position up in the slot list.
+  /// The evaluation order of algorithms is from top to bottom (slot 0 to N).
+  /// If an algorithm expects modulation from another, the modulating algorithm
+  /// must appear in an earlier slot (lower index).
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot to move up.
+  /// Returns:
+  ///   A JSON string confirming the move or an error.
+  Future<String> move_algorithm_up(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+
+    if (slotIndex == null) {
+      return jsonEncode(
+          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+    }
+
+    if (slotIndex == 0) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Cannot move algorithm in slot 0 further up.'
+      });
+    }
+    // Ensure slotIndex is within a reasonable range if needed, though controller might handle this.
+    // For now, just check against 0. Max slot check can be added if necessary or rely on controller.
+
+    final int sourceSlotIndex = slotIndex;
+    final int destSlotIndex = slotIndex - 1;
+
+    try {
+      await _controller.moveAlgorithmUp(sourceSlotIndex);
+      return jsonEncode({
+        'success': true,
+        'message': 'Algorithm from slot $sourceSlotIndex moved up.'
+      });
+    } catch (e) {
+      return jsonEncode({'success': false, 'error': e.toString()});
+    }
+  }
+
+  /// MCP Tool: Moves an algorithm in a specified slot one position down in the slot list.
+  /// The evaluation order of algorithms is from top to bottom (slot 0 to N).
+  /// If an algorithm expects modulation from another, the modulating algorithm
+  /// must appear in an earlier slot (lower index).
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot to move down.
+  /// Returns:
+  ///   A JSON string confirming the move or an error.
+  Future<String> move_algorithm_down(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+
+    if (slotIndex == null) {
+      return jsonEncode(
+          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+    }
+
+    // Assuming maxSlots is available or a way to check upper bound exists.
+    // For simplicity, we'll rely on the controller to handle upper boundary errors if any.
+    // A check like `if (slotIndex >= maxSlots - 1)` could be added.
+    // For now, we'll assume maxSlots is dynamic or handled by the controller.
+
+    final int sourceSlotIndex = slotIndex;
+    final int destSlotIndex = slotIndex + 1;
+
+    try {
+      // Check if sourceSlotIndex is already the last possible slot.
+      // This requires knowing the total number of slots, which is `maxSlots`.
+      if (sourceSlotIndex >= maxSlots - 1) {
+        return jsonEncode({
+          'success': false,
+          'error': 'Cannot move algorithm in slot ${maxSlots - 1} further down.'
+        });
+      }
+      await _controller.moveAlgorithmDown(sourceSlotIndex);
+      return jsonEncode({
+        'success': true,
+        'message': 'Algorithm from slot $sourceSlotIndex moved down.'
+      });
+    } catch (e) {
+      return jsonEncode({'success': false, 'error': e.toString()});
+    }
+  }
 }
