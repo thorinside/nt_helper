@@ -366,8 +366,63 @@ class SynchronizedScreen extends StatelessWidget {
               enabled: !loading,
               onTap: loading
                   ? null
-                  : () {
-                      popupCtx.read<DistingCubit>().newPreset();
+                  : () async {
+                      final cubit = popupCtx.read<DistingCubit>();
+                      final currentState = cubit.state;
+                      bool hasAlgorithms = false;
+
+                      if (currentState is DistingStateSynchronized) {
+                        hasAlgorithms = currentState.slots.isNotEmpty;
+                      }
+
+                      if (hasAlgorithms) {
+                        // Show confirmation dialog
+                        final result = await showDialog<String>(
+                          context:
+                              popupCtx, // Use the context from the PopupMenuItem
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Create New Preset?'),
+                            content: const Text(
+                                'The current preset has algorithms. Creating a new preset will clear them.\n\nWould you like to save the current preset first?'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('Cancel'),
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop('cancel');
+                                },
+                              ),
+                              TextButton(
+                                child: const Text('Discard & New'),
+                                onPressed: () {
+                                  Navigator.of(dialogContext)
+                                      .pop('new_discard');
+                                },
+                              ),
+                              TextButton(
+                                child: const Text('Save First & New'),
+                                onPressed: () {
+                                  Navigator.of(dialogContext)
+                                      .pop('save_first_new');
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (result == 'new_discard') {
+                          cubit.newPreset();
+                        } else if (result == 'save_first_new') {
+                          cubit.requireDisting().requestSavePreset();
+                          // It's generally okay to call newPreset() immediately after
+                          // requestSavePreset() for MIDI operations. The device handles
+                          // commands sequentially.
+                          cubit.newPreset();
+                        }
+                        // If 'cancel' or dialog dismissed, do nothing.
+                      } else {
+                        // No algorithms, proceed directly
+                        cubit.newPreset();
+                      }
                     },
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
