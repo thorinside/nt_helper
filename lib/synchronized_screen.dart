@@ -24,6 +24,9 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
+import 'dart:io';
+import 'package:provider/provider.dart';
 
 class SynchronizedScreen extends StatelessWidget {
   final List<Slot> slots;
@@ -160,6 +163,17 @@ class SynchronizedScreen extends StatelessWidget {
           SizedBox.fromSize(
             size: Size.fromWidth(24),
           ),
+          // MCP server status indicator (desktop only)
+          if (Platform.isMacOS || Platform.isWindows)
+            ChangeNotifierProvider.value(
+              value: McpServerService.instance,
+              child: Consumer<McpServerService>(
+                builder: (context, mcpService, child) {
+                  return _McpStatusIndicator();
+                },
+              ),
+            ),
+          const SizedBox(width: 8),
           DistingVersion(
               distingVersion: distingVersion,
               requiredVersion: Constants.requiredDistingVersion),
@@ -351,8 +365,8 @@ class SynchronizedScreen extends StatelessWidget {
               onTap: loading
                   ? null
                   : () {
-                popupCtx.read<DistingCubit>().newPreset();
-              },
+                      popupCtx.read<DistingCubit>().newPreset();
+                    },
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -465,7 +479,61 @@ class SynchronizedScreen extends StatelessWidget {
               onTap: loading
                   ? null
                   : () async {
-                      await popupCtx.showSettingsDialog();
+                      // Original call to show the dialog
+                      final result = await popupCtx.showSettingsDialog();
+
+                      // Logic copied and adapted from _DistingPageState._handleSettingsDialog
+                      if (result == true && popupCtx.mounted) {
+                        // Ensure context is still valid
+                        final settings = SettingsService();
+                        final mcpInstance = McpServerService.instance;
+                        final bool isMcpEnabledAfterDialog =
+                            settings.mcpEnabled;
+                        final bool isServerStillRunningBeforeAction =
+                            mcpInstance.isRunning;
+
+                        debugPrint(
+                            "[SyncScreenSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction");
+
+                        if (Platform.isMacOS || Platform.isWindows) {
+                          if (isMcpEnabledAfterDialog) {
+                            if (!isServerStillRunningBeforeAction) {
+                              debugPrint(
+                                  "[SyncScreenSettings] MCP Setting is ON, Server is OFF. Attempting to START server.");
+                              await mcpInstance.start().catchError((e) {
+                                debugPrint(
+                                    '[SyncScreenSettings] Error starting MCP Server: $e');
+                              });
+                              debugPrint(
+                                  "[SyncScreenSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}");
+                            } else {
+                              debugPrint(
+                                  "[SyncScreenSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}");
+                            }
+                          } else {
+                            // MCP Setting is OFF
+                            if (isServerStillRunningBeforeAction) {
+                              debugPrint(
+                                  "[SyncScreenSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.");
+                              await mcpInstance.stop().catchError((e) {
+                                debugPrint(
+                                    '[SyncScreenSettings] Error stopping MCP Server: $e');
+                              });
+                              debugPrint(
+                                  "[SyncScreenSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}");
+                            } else {
+                              debugPrint(
+                                  "[SyncScreenSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}");
+                            }
+                          }
+                        } else {
+                          debugPrint(
+                              "[SyncScreenSettings] Not on MacOS/Windows. No MCP server action taken.");
+                        }
+                      } else {
+                        debugPrint(
+                            "[SyncScreenSettings] Settings dialog cancelled or no changes saved. No MCP server action taken.");
+                      }
                     },
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1403,4 +1471,125 @@ String midiNoteToNoteString(int midiNoteNumber) {
   String note = noteNames[midiNoteNumber % 12];
 
   return '$note$octave';
+}
+
+/// Small round LED indicator for MCP server status with tooltip
+class _McpStatusIndicator extends StatelessWidget {
+  static const int mcpPort = 3000;
+  const _McpStatusIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = SettingsService(); // Get SettingsService instance
+    final mcpInstance =
+        McpServerService.instance; // Get McpServerService instance
+    final isRunning = context.watch<McpServerService>().isRunning;
+    final baseColor = isRunning ? Colors.green.shade600 : Colors.grey.shade600;
+    final highlightColor =
+        isRunning ? Colors.green.shade300 : Colors.grey.shade400;
+    final shadowColor =
+        isRunning ? Colors.green.shade800 : Colors.grey.shade800;
+
+    final tooltip = isRunning
+        ? 'MCP server running at http://localhost:$mcpPort (Tap to disable)'
+        : 'MCP server is disabled (Tap to enable)';
+
+    return GestureDetector(
+      onTap: () async {
+        // Check if on supported platform first
+        if (!(Platform.isMacOS || Platform.isWindows)) {
+          debugPrint("[McpIndicatorTap] Not on MacOS/Windows. Toggle ignored.");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    "MCP Service can only be toggled on macOS or Windows.")),
+          );
+          return;
+        }
+
+        final bool currentMcpSetting = settings.mcpEnabled;
+        final newMcpSetting = !currentMcpSetting;
+        await settings.setMcpEnabled(newMcpSetting);
+        debugPrint(
+            "[McpIndicatorTap] Toggled MCP setting. Old: $currentMcpSetting, New: $newMcpSetting");
+
+        // Now apply the logic to start/stop the server
+        final bool isServerCurrentlyRunning = mcpInstance.isRunning;
+        debugPrint(
+            "[McpIndicatorTap] Server was running: $isServerCurrentlyRunning. New MCP setting: $newMcpSetting");
+
+        if (newMcpSetting) {
+          // Try to turn ON
+          if (!isServerCurrentlyRunning) {
+            debugPrint(
+                "[McpIndicatorTap] MCP Setting is ON, Server is OFF. Attempting to START server.");
+            await mcpInstance.start().catchError((e) {
+              debugPrint('[McpIndicatorTap] Error starting MCP Server: $e');
+            });
+            debugPrint(
+                "[McpIndicatorTap] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}");
+          } else {
+            debugPrint(
+                "[McpIndicatorTap] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}");
+          }
+        } else {
+          // Try to turn OFF
+          if (isServerCurrentlyRunning) {
+            debugPrint(
+                "[McpIndicatorTap] MCP Setting is OFF, Server is ON. Attempting to STOP server.");
+            await mcpInstance.stop().catchError((e) {
+              debugPrint('[McpIndicatorTap] Error stopping MCP Server: $e');
+            });
+            debugPrint(
+                "[McpIndicatorTap] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}");
+          } else {
+            debugPrint(
+                "[McpIndicatorTap] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}");
+          }
+        }
+        // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.
+      },
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          width: 16, // Slightly larger for better effect
+          height: 16,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              center: Alignment(
+                  -0.3, -0.4), // Offset center for top-right light source
+              radius: 0.9,
+              colors: [
+                highlightColor,
+                baseColor,
+                shadowColor,
+              ],
+              stops: [0.0, 0.6, 1.0],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 2,
+                offset: Offset(1, 1),
+              ),
+            ],
+          ),
+          child: Center(
+            // For specular highlight
+            child: Container(
+              width: 5, // Size of specular highlight
+              height: 5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.7),
+              ),
+              margin: const EdgeInsets.only(
+                  right: 3, bottom: 3), // Position highlight
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

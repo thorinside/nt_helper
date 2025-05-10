@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 /// Application theme with Material 3 enabled
 ThemeData appTheme() {
@@ -23,11 +24,13 @@ class SettingsService {
   static const String _requestTimeoutKey = 'request_timeout_ms';
   static const String _interMessageDelayKey = 'inter_message_delay_ms';
   static const String _hapticsEnabledKey = 'haptics_enabled';
+  static const String _mcpEnabledKey = 'mcp_enabled';
 
   // Default values
   static const int defaultRequestTimeout = 300;
   static const int defaultInterMessageDelay = 50;
   static const bool defaultHapticsEnabled = true;
+  static const bool defaultMcpEnabled = false;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -61,11 +64,20 @@ class SettingsService {
     return await _prefs?.setBool(_hapticsEnabledKey, value) ?? false;
   }
 
+  /// Check if MCP service is enabled
+  bool get mcpEnabled => _prefs?.getBool(_mcpEnabledKey) ?? defaultMcpEnabled;
+
+  /// Set whether MCP service is enabled
+  Future<bool> setMcpEnabled(bool value) async {
+    return await _prefs?.setBool(_mcpEnabledKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
     await setInterMessageDelay(defaultInterMessageDelay);
     await setHapticsEnabled(defaultHapticsEnabled);
+    await setMcpEnabled(defaultMcpEnabled);
   }
 }
 
@@ -82,6 +94,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _requestTimeoutController = TextEditingController();
   final _interMessageDelayController = TextEditingController();
   late bool _hapticsEnabled;
+  late bool _mcpEnabled;
 
   @override
   void initState() {
@@ -95,6 +108,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _interMessageDelayController.text = settings.interMessageDelay.toString();
     setState(() {
       _hapticsEnabled = settings.hapticsEnabled;
+      _mcpEnabled = settings.mcpEnabled;
     });
   }
 
@@ -106,6 +120,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings
           .setInterMessageDelay(int.parse(_interMessageDelayController.text));
       await settings.setHapticsEnabled(_hapticsEnabled);
+      await settings.setMcpEnabled(_mcpEnabled);
 
       if (mounted) {
         Navigator.of(context)
@@ -216,6 +231,24 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       },
                       contentPadding: EdgeInsets.zero,
                     ),
+
+                    // MCP enabled setting (desktop only)
+                    if (Platform.isMacOS || Platform.isWindows)
+                      SwitchListTile(
+                        title: Text(
+                          'Enable MCP Service',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        subtitle: const Text(
+                            'Enable the MCP server for desktop integrations (Windows/MacOS only)'),
+                        value: _mcpEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _mcpEnabled = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
                   ],
                 ),
               ),

@@ -7,6 +7,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
+import 'dart:io';
 
 class DistingApp extends StatelessWidget {
   const DistingApp({super.key});
@@ -91,34 +92,105 @@ class _DistingPageState extends State<DistingPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize and start the MCP server here, after DistingCubit is available
-    // Use WidgetsBinding.instance.addPostFrameCallback to ensure context is mounted
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
-        // Check if the widget is still in the tree
         try {
           final distingCubit = context.read<DistingCubit>();
           McpServerService.initialize(distingCubit: distingCubit);
-          McpServerService.instance.start().catchError((e) {
-            // Handle potential errors during server start (e.g., port in use)
-            debugPrint('Error starting MCP Server: $e');
-            // Optionally show an error message to the user
-          });
-          debugPrint("MCP Server Initialized and Started");
+          final settings = SettingsService();
+          debugPrint(
+              "[InitState] Initializing MCP Server. MCP Enabled Setting: ${settings.mcpEnabled}, IsMacOS: ${Platform.isMacOS}, IsWindows: ${Platform.isWindows}");
+          if ((Platform.isMacOS || Platform.isWindows) && settings.mcpEnabled) {
+            if (!McpServerService.instance.isRunning) {
+              await McpServerService.instance.start().catchError((e) {
+                debugPrint('[InitState] Error starting MCP Server: $e');
+              });
+              debugPrint(
+                  "[InitState] MCP Server Initialized and Started. Now Running: ${McpServerService.instance.isRunning}");
+            } else {
+              debugPrint(
+                  "[InitState] MCP Server was already running (unexpected). Running: ${McpServerService.instance.isRunning}");
+            }
+          } else {
+            debugPrint(
+                "[InitState] MCP Server not started (setting disabled or wrong platform).");
+          }
         } catch (e) {
-          debugPrint('Error initializing/starting MCP Server: $e');
+          debugPrint('[InitState] Error in MCP Server setup: $e');
         }
       }
     });
   }
 
+  Future<void> _handleSettingsDialog(BuildContext context) async {
+    final settings = SettingsService();
+    final mcpInstance = McpServerService.instance;
+
+    final bool wasMcpEnabledBeforeDialog = settings.mcpEnabled;
+    final bool wasServerRunningBeforeDialog = mcpInstance.isRunning;
+    debugPrint(
+        "[HandleSettings] Before dialog: MCP Setting: $wasMcpEnabledBeforeDialog, Server Running: $wasServerRunningBeforeDialog");
+
+    final result = await context.showSettingsDialog();
+
+    if (result == true) {
+      // Settings were saved
+      final bool isMcpEnabledAfterDialog = settings.mcpEnabled;
+      final bool isServerStillRunningBeforeAction = mcpInstance
+          .isRunning; // Check state *before* explicitly starting/stopping
+
+      debugPrint(
+          "[HandleSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction");
+
+      if (Platform.isMacOS || Platform.isWindows) {
+        if (isMcpEnabledAfterDialog) {
+          if (!isServerStillRunningBeforeAction) {
+            debugPrint(
+                "[HandleSettings] MCP Setting is ON, Server is OFF. Attempting to START server.");
+            await mcpInstance.start().catchError((e) {
+              debugPrint('[HandleSettings] Error starting MCP Server: $e');
+            });
+            debugPrint(
+                "[HandleSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}");
+          } else {
+            debugPrint(
+                "[HandleSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}");
+          }
+        } else {
+          // MCP Setting is OFF
+          if (isServerStillRunningBeforeAction) {
+            debugPrint(
+                "[HandleSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.");
+            await mcpInstance.stop().catchError((e) {
+              debugPrint('[HandleSettings] Error stopping MCP Server: $e');
+            });
+            debugPrint(
+                "[HandleSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}");
+          } else {
+            debugPrint(
+                "[HandleSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}");
+          }
+        }
+      } else {
+        debugPrint(
+            "[HandleSettings] Not on MacOS/Windows. No MCP server action taken.");
+      }
+    } else {
+      debugPrint(
+          "[HandleSettings] Settings dialog cancelled or no changes saved. No MCP server action taken. MCP Setting: ${settings.mcpEnabled}, Server Running: ${mcpInstance.isRunning}");
+    }
+  }
+
   @override
   void dispose() {
     // Stop the MCP server when the widget is disposed
-    McpServerService.instance.stop().catchError((e) {
-      debugPrint('Error stopping MCP Server: $e');
-    });
-    debugPrint("MCP Server Stopped");
+    if ((Platform.isMacOS || Platform.isWindows) &&
+        McpServerService.instance.isRunning) {
+      McpServerService.instance.stop().catchError((e) {
+        debugPrint('Error stopping MCP Server: $e');
+      });
+      debugPrint("MCP Server Stopped");
+    }
     super.dispose();
   }
 
@@ -151,7 +223,7 @@ class _DistingPageState extends State<DistingPage> {
                   context.read<DistingCubit>().loadDevices();
                 },
                 onSettingsPressed: () async {
-                  await context.showSettingsDialog();
+                  await _handleSettingsDialog(context);
                 },
                 onDemoPressed: () async {
                   context.read<DistingCubit>().onDemo();
