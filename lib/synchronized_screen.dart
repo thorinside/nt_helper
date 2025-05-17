@@ -163,7 +163,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           child: widget.slots.isNotEmpty && _selectedIndex < widget.slots.length
               ? SlotDetailView(
                   key: ValueKey(
-                      "${_selectedIndex} - ${widget.slots[_selectedIndex].algorithm.guid}"),
+                      "$_selectedIndex - ${widget.slots[_selectedIndex].algorithm.guid}"),
                   slot: widget.slots[_selectedIndex],
                   units: widget.units,
                 )
@@ -918,11 +918,11 @@ class AlgorithmListView extends StatelessWidget {
   final ValueChanged<int> onSelectionChanged;
 
   const AlgorithmListView({
-    Key? key,
+    super.key,
     required this.slots,
     required this.selectedIndex,
     required this.onSelectionChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

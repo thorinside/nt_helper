@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:math'; // Added for pow
 
 import 'package:drift/drift.dart';
@@ -102,8 +101,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<AlgorithmInfo?> requestAlgorithmInfo(int algorithmIndex) async {
     try {
       final algorithms = await _metadataDao.getAllAlgorithms();
-      if (algorithmIndex < 0 || algorithmIndex >= algorithms.length)
+      if (algorithmIndex < 0 || algorithmIndex >= algorithms.length) {
         return null;
+      }
       final entry = algorithms[algorithmIndex];
       final specs = await (_metadataDao.select(_metadataDao.specifications)
             ..where((s) => s.algorithmGuid.equals(entry.guid))

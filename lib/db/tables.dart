@@ -1,5 +1,5 @@
 import 'dart:convert'; // For JSON encoding/decoding
-import 'dart:typed_data'; // For Uint8List in converter
+// For Uint8List in converter
 
 import 'package:drift/drift.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart'; // Import needed for converter

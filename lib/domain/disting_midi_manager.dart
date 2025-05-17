@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/domain/disting_message_scheduler.dart';
@@ -468,6 +467,7 @@ class DistingMidiManager implements IDistingMidiManager {
     );
   }
 
+  @override
   Future<void> requestSetMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) {
     final cvPacket = DistingNT.encodeSetCVMapping(
@@ -614,7 +614,7 @@ class DistingMidiManager implements IDistingMidiManager {
       throw Exception("Failed to get algorithm GUID for slot $slotIndex.");
     }
     final guid = algoGuidResult.guid;
-    final String? customName =
+    final String customName =
         algoGuidResult.name; // Device returns custom or default
 
     // Fetch number of parameters for this specific slot instance

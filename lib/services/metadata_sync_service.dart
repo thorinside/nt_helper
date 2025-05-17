@@ -35,7 +35,7 @@ class MetadataSyncService {
     int totalAlgorithms = 0;
     int algorithmsProcessed = 0;
 
-    void _reportProgress(String mainMessage, String subMessage,
+    void reportProgress(String mainMessage, String subMessage,
         {bool incrementCount = false}) {
       if (incrementCount) {
         algorithmsProcessed++;
@@ -45,24 +45,24 @@ class MetadataSyncService {
       onProgress?.call(progress, algorithmsProcessed, totalAlgorithms,
           mainMessage, subMessage);
       debugPrint(
-          "[MetadataSync] Progress: ${algorithmsProcessed}/${totalAlgorithms} - $mainMessage - $subMessage");
+          "[MetadataSync] Progress: $algorithmsProcessed/$totalAlgorithms - $mainMessage - $subMessage");
     }
 
     // Helper to check cancellation
     bool checkCancel() => isCancelled?.call() ?? false;
 
     try {
-      _reportProgress("Initializing Sync", "Starting...");
+      reportProgress("Initializing Sync", "Starting...");
       if (checkCancel()) return;
 
       // Ensure device is awake
-      _reportProgress("Initializing Sync", "Waking device...");
+      reportProgress("Initializing Sync", "Waking device...");
       await _distingManager.requestWake();
       await Future.delayed(const Duration(milliseconds: 200));
       if (checkCancel()) return;
 
       // Clear device preset and DB cache
-      _reportProgress(
+      reportProgress(
           "Initializing Sync", "Clearing device preset and local cache...");
       await metadataDao.clearAllMetadata(); // Clear DB first
       await _distingManager.requestNewPreset(); // Clear on device
@@ -79,7 +79,7 @@ class MetadataSyncService {
       }
 
       // 1. Sync Unit Strings
-      _reportProgress(
+      reportProgress(
           "Fetching Prerequisite Data", "Requesting unit strings...");
       final unitStrings = await _distingManager.requestUnitStrings() ?? [];
       final unitIdMap = <String, int>{};
@@ -92,7 +92,7 @@ class MetadataSyncService {
         }
       }
       await Future.wait(unitFutures);
-      _reportProgress("Fetching Prerequisite Data",
+      reportProgress("Fetching Prerequisite Data",
           "Cached ${unitIdMap.length} unit strings.");
       if (checkCancel()) return;
 
@@ -109,16 +109,16 @@ class MetadataSyncService {
       // --- END NEW ---
 
       // 2. Get All Algorithm Basic Info
-      _reportProgress(
+      reportProgress(
           "Fetching Algorithm List", "Requesting number of algorithms...");
       final numAlgoTypes = await _distingManager.requestNumberOfAlgorithms();
       if (numAlgoTypes == null || numAlgoTypes == 0) {
-        _reportProgress(
+        reportProgress(
             "Fetching Algorithm List", "No algorithm types found on device.");
         throw Exception("No algorithm types found on device.");
       }
       totalAlgorithms = numAlgoTypes;
-      _reportProgress("Fetching Algorithm List ($totalAlgorithms total)",
+      reportProgress("Fetching Algorithm List ($totalAlgorithms total)",
           "Requesting basic info...");
 
       final allAlgorithmInfo = <AlgorithmInfo>[];
@@ -160,7 +160,7 @@ class MetadataSyncService {
         }
         final fetchProgressMsg =
             "Fetched basic info ${globalAlgoIndex + 1}/$totalAlgorithms";
-        _reportProgress("Fetching Algorithm List ($totalAlgorithms total)",
+        reportProgress("Fetching Algorithm List ($totalAlgorithms total)",
             fetchProgressMsg);
       }
       if (checkCancel()) return;
@@ -168,7 +168,7 @@ class MetadataSyncService {
       // Upsert basic info *before* instantiation loop
       await metadataDao.upsertAlgorithms(algoEntries);
       await metadataDao.upsertSpecifications(specEntries);
-      _reportProgress("Fetching Algorithm List ($totalAlgorithms total)",
+      reportProgress("Fetching Algorithm List ($totalAlgorithms total)",
           "Cached basic info for ${allAlgorithmInfo.length} algorithms.");
       if (checkCancel()) return;
 
@@ -176,7 +176,7 @@ class MetadataSyncService {
       algorithmsProcessed = 0;
 
       // 3. Instantiate Each Algorithm to Get Parameter Details
-      _reportProgress(
+      reportProgress(
           "Processing Algorithms", "Preparing instantiation loop...");
       final dbUnits = await metadataDao.getAllUnits();
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
@@ -189,11 +189,11 @@ class MetadataSyncService {
             "Processing ${algoInfo.name} (${algorithmsProcessed + 1}/$totalAlgorithms)";
 
         // Report start, INCREMENTING the count
-        _reportProgress(mainProgressMsg, "Starting...", incrementCount: true);
+        reportProgress(mainProgressMsg, "Starting...", incrementCount: true);
 
         try {
           // A. Add algorithm with default specs to slot 0
-          _reportProgress(mainProgressMsg, "Adding to preset...");
+          reportProgress(mainProgressMsg, "Adding to preset...");
           if (checkCancel()) break;
           final defaultSpecs =
               algoInfo.specifications.map((s) => s.defaultValue).toList();
@@ -211,13 +211,13 @@ class MetadataSyncService {
           }
 
           // B. Query the instantiated algorithm at slot index 0
-          _reportProgress(mainProgressMsg, "Querying parameters...");
+          reportProgress(mainProgressMsg, "Querying parameters...");
           if (checkCancel()) break;
           await _syncInstantiatedAlgorithmParams(
               metadataDao, algoInfo, unitIdMap, dbUnitStrings);
 
           // C. Remove algorithm from slot 0
-          _reportProgress(mainProgressMsg, "Removing from preset...");
+          reportProgress(mainProgressMsg, "Removing from preset...");
           if (checkCancel()) break;
           await _distingManager.requestRemoveAlgorithm(0);
           await Future.delayed(
@@ -233,7 +233,7 @@ class MetadataSyncService {
                 "[MetadataSync] Warning: Failed to remove ${algoInfo.name} cleanly (expected 0, found $numInPreset).");
           }
 
-          _reportProgress(mainProgressMsg, "Done."); // Simplified final report
+          reportProgress(mainProgressMsg, "Done."); // Simplified final report
         } catch (instantiationError, stackTrace) {
           // Report the main error first
           final errorMsg =
@@ -243,7 +243,7 @@ class MetadataSyncService {
           onError?.call(errorMsg);
 
           // Attempt DB cleanup
-          _reportProgress(mainProgressMsg, "Attempting DB cleanup...");
+          reportProgress(mainProgressMsg, "Attempting DB cleanup...");
           try {
             await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
             // ALSO delete the base algorithm and specification entries
@@ -253,21 +253,21 @@ class MetadataSyncService {
             await (metadataDao.delete(metadataDao.algorithms)
                   ..where((a) => a.guid.equals(algoInfo.guid)))
                 .go();
-            _reportProgress(
+            reportProgress(
                 mainProgressMsg, "DB cleared for failed ${algoInfo.name}.");
           } catch (dbClearError) {
-            _reportProgress(
+            reportProgress(
                 mainProgressMsg, "DB cleanup failed: $dbClearError");
           }
 
           // Attempt device cleanup
-          _reportProgress(mainProgressMsg, "Attempting device preset clear...");
+          reportProgress(mainProgressMsg, "Attempting device preset clear...");
           try {
             await _distingManager.requestNewPreset();
             await Future.delayed(const Duration(milliseconds: 500));
-            _reportProgress(mainProgressMsg, "Device preset cleared.");
+            reportProgress(mainProgressMsg, "Device preset cleared.");
           } catch (presetClearError) {
-            _reportProgress(mainProgressMsg,
+            reportProgress(mainProgressMsg,
                 "Device preset clear failed: $presetClearError");
           }
           // No final "Done" report here, as it failed.
@@ -276,10 +276,10 @@ class MetadataSyncService {
 
       // Check cancellation one last time before final success message
       if (checkCancel()) {
-        _reportProgress(
+        reportProgress(
             "Synchronization Cancelled", "Process stopped by user.");
       } else {
-        _reportProgress("Synchronization Complete", "Finished all algorithms.");
+        reportProgress("Synchronization Complete", "Finished all algorithms.");
       }
     } catch (e, stackTrace) {
       final errorMsg = "Synchronization failed: $e";
@@ -287,7 +287,7 @@ class MetadataSyncService {
       debugPrintStack(stackTrace: stackTrace);
       // Avoid reporting progress if cancelled, let the main error handler do it
       if (!checkCancel()) {
-        _reportProgress("Synchronization Failed", "Error: $e");
+        reportProgress("Synchronization Failed", "Error: $e");
       }
       onError?.call(errorMsg);
     }

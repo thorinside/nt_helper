@@ -11,8 +11,8 @@ class AlgorithmMetadataService {
   factory AlgorithmMetadataService() => _instance;
   AlgorithmMetadataService._internal();
 
-  Map<String, AlgorithmMetadata> _algorithms = {};
-  Map<String, AlgorithmFeature> _features = {};
+  final Map<String, AlgorithmMetadata> _algorithms = {};
+  final Map<String, AlgorithmFeature> _features = {};
   bool _isInitialized = false;
 
   // --- Initialization ---

@@ -14,7 +14,7 @@ class McpServerService extends ChangeNotifier {
   McpServerService._(this._distingCubit)
       : _distingController = DistingControllerImpl(_distingCubit),
         _mcpAlgorithmTools = MCPAlgorithmTools(_distingCubit),
-        _distingTools = DistingTools(DistingControllerImpl(_distingCubit)) {}
+        _distingTools = DistingTools(DistingControllerImpl(_distingCubit));
 
   static McpServerService? _instance;
   static McpServerService get instance {
@@ -278,7 +278,7 @@ class McpServerService extends ChangeNotifier {
         'parameter_index': {
           'type': 'integer',
           'description':
-              "The parameter\'s unique, 0-based device index. This MUST be the `parameterNumber` obtained from `getCurrentPreset`. See nt_helper_mcp.mdc."
+              "The parameter's unique, 0-based device index. This MUST be the `parameterNumber` obtained from `getCurrentPreset`. See nt_helper_mcp.mdc."
         }
       },
       callback: ({args, extra}) async {

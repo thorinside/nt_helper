@@ -83,7 +83,7 @@ class SettingsService {
 
 /// A dialog to edit application settings
 class SettingsDialog extends StatefulWidget {
-  const SettingsDialog({Key? key}) : super(key: key);
+  const SettingsDialog({super.key});
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();

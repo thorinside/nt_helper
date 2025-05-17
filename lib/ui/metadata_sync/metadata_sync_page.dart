@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
-import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
@@ -353,8 +352,7 @@ class _PresetListView extends StatelessWidget {
       required this.isOffline,
       this.loadedOfflinePresetId,
       required this.distingCubit,
-      required this.metadataSyncCubit,
-      super.key});
+      required this.metadataSyncCubit});
 
   @override
   Widget build(BuildContext context) {
@@ -563,8 +561,7 @@ class _AlgorithmMetadataListView extends StatefulWidget {
 
   const _AlgorithmMetadataListView(
       {required this.algorithms,
-      required this.parameterCounts,
-      super.key // Added key
+      required this.parameterCounts // Added key
       });
 
   @override

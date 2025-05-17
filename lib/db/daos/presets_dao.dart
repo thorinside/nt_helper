@@ -47,7 +47,7 @@ class FullPresetSlot {
   Algorithms,
 ])
 class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
-  PresetsDao(AppDatabase db) : super(db);
+  PresetsDao(super.db);
 
   // --- Query Methods ---
 

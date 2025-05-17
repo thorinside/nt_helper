@@ -200,7 +200,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   // View for managing history
   Widget _buildManagementView() {
     // Use a fixed height container for the list to prevent dialog overflow
-    return Container(
+    return SizedBox(
       height: 300, // Adjust height as needed
       child: _history.isEmpty
           ? Center(child: Text('No preset history.'))

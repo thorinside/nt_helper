@@ -31,8 +31,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   // --- Metadata Sync Methods ---
 
   Future<void> startMetadataSync(IDistingMidiManager manager) async {
-    if (state.maybeMap(syncingMetadata: (_) => true, orElse: () => false))
+    if (state.maybeMap(syncingMetadata: (_) => true, orElse: () => false)) {
       return;
+    }
 
     _isMetadataSyncCancelled = false; // Reset cancellation flag
 
@@ -111,7 +112,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       final name = detailsToSave.preset.name; // Get name for success message
       debugPrint(
-          " >> saveCurrentPreset: Fetched details for preset '${name}' (ID: ${detailsToSave.preset.id}) with ${detailsToSave.slots.length} slots from manager.");
+          " >> saveCurrentPreset: Fetched details for preset '$name' (ID: ${detailsToSave.preset.id}) with ${detailsToSave.slots.length} slots from manager.");
 
       // 2. Save to Database using the details obtained from the manager
       debugPrint("Saving preset to database...");
