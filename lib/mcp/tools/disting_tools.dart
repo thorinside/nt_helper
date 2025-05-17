@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data'; // Added for Uint8List
 import 'dart:math'; // For min function
+import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Added for DistingNT.decodeBitmap
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 
 /// Defines MCP tools for interacting with the Disting state (presets, slots, parameters)
@@ -30,7 +31,25 @@ class DistingTools {
         final algorithm = slotAlgorithms[i];
         if (algorithm != null) {
           // To get parameters, we need to call getParametersForSlot for each non-empty slot
-          final parameters = await _controller.getParametersForSlot(i);
+          final List<ParameterInfo> parameterInfos =
+              await _controller.getParametersForSlot(i);
+
+          List<Map<String, dynamic>> parametersJsonList = [];
+          for (final pInfo in parameterInfos) {
+            final int? liveValue =
+                await _controller.getParameterValue(i, pInfo.parameterNumber);
+            parametersJsonList.add({
+              'parameterNumber': pInfo.parameterNumber,
+              'name': pInfo.name,
+              'min': pInfo.min,
+              'max': pInfo.max,
+              'defaultValue': pInfo.defaultValue,
+              'unit': pInfo.unit,
+              'powerOfTen': pInfo.powerOfTen,
+              'value': liveValue, // Added live parameter value
+            });
+          }
+
           slotsJson[i] = {
             'slotIndex': i,
             'algorithm': {
@@ -38,19 +57,7 @@ class DistingTools {
               'name': algorithm.name,
               'algorithmIndex': algorithm.algorithmIndex,
             },
-            'parameters': parameters
-                .map((p) => {
-                      'parameterNumber':
-                          p.parameterNumber, // This is the 0-based index
-                      'name': p.name,
-                      'min': p.min,
-                      'max': p.max,
-                      'defaultValue': p.defaultValue,
-                      'unit': p.unit,
-                      'powerOfTen': p.powerOfTen,
-                      // Removed p.value as ParameterInfo doesn't reliably hold current live value
-                    })
-                .toList(),
+            'parameters': parametersJsonList,
           };
         }
       }
@@ -399,6 +406,49 @@ class DistingTools {
       });
     } catch (e) {
       return jsonEncode({'success': false, 'error': e.toString()});
+    }
+  }
+
+  /// MCP Tool: Retrieves the current module screenshot as a base64 encoded string.
+  /// Parameters: None
+  /// Returns:
+  ///   A JSON string containing the base64 encoded screenshot and its format,
+  ///   or an error message if not connected or screenshot is unavailable.
+  Future<String> get_module_screenshot(Map<String, dynamic> params) async {
+    try {
+      final Uint8List? rawScreenshotBytes =
+          await _controller.getModuleScreenshot();
+
+      if (rawScreenshotBytes != null && rawScreenshotBytes.isNotEmpty) {
+        // Decode/process the raw bytes into a PNG format using the existing utility
+        final Uint8List pngBytes = DistingNT.decodeBitmap(rawScreenshotBytes);
+
+        if (pngBytes.isNotEmpty) {
+          final String base64Image = base64Encode(pngBytes);
+          return jsonEncode({
+            'success': true,
+            'screenshot_base64': base64Image,
+            'format': 'png', // decodeBitmap ensures PNG format
+          });
+        } else {
+          // decodeBitmap returned empty, indicating an error during processing
+          return jsonEncode({
+            'success': false,
+            'error': 'Failed to process module screenshot data.'
+          });
+        }
+      } else {
+        return jsonEncode({
+          'success': false,
+          'error':
+              'Module screenshot is currently unavailable or device not connected.'
+        });
+      }
+    } catch (e) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Failed to retrieve module screenshot: ${e.toString()}'
+      });
     }
   }
 }

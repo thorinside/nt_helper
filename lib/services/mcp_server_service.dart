@@ -396,6 +396,24 @@ class McpServerService extends ChangeNotifier {
       },
     );
 
+    server.tool(
+      'get_module_screenshot',
+      description:
+          'Retrieves the current module screenshot as a base64 encoded string if connected to the hardware. Returns an error or specific message if not connected or screenshot is unavailable.',
+      inputSchemaProperties: {
+        'random_string': {
+          // Dummy parameter for consistency if no real params needed
+          'type': 'string',
+          'description': 'Dummy parameter (can be any string).'
+        }
+      },
+      callback: ({args, extra}) async {
+        final resultJson =
+            await _distingTools.get_module_screenshot(args ?? {});
+        return CallToolResult(content: [TextContent(text: resultJson)]);
+      },
+    );
+
     for (final t in _pendingTools) {
       server.tool(
         t.name,

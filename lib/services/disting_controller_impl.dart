@@ -1,3 +1,4 @@
+import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -197,5 +198,18 @@ class DistingControllerImpl implements DistingController {
   Future<void> savePreset() async {
     _getSynchronizedState();
     await _getManager().requestSavePreset();
+  }
+
+  @override
+  Future<Uint8List?> getModuleScreenshot() async {
+    // Assuming DistingCubit has a method like getHardwareScreenshot
+    // that handles connection checks and returns null if unavailable.
+    try {
+      // _getSynchronizedState(); // Determine if sync state is strictly needed for a screenshot
+      return await _distingCubit.getHardwareScreenshot();
+    } catch (e) {
+      debugPrint('Error in getModuleScreenshot: ${e.toString()}');
+      return null; // Ensure null is returned on any error
+    }
   }
 }

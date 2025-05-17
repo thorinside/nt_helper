@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 /// Abstract interface defining operations to control the Disting state,
@@ -73,4 +74,9 @@ abstract class DistingController {
   /// Tells the device to save the current working preset.
   /// Throws StateError if the Disting is not in a synchronized state.
   Future<void> savePreset();
+
+  /// Retrieves the current module screenshot as byte data.
+  /// Returns null if not connected, screenshot unavailable, or an error occurs.
+  /// Throws StateError if the Disting is not in a synchronized state (if applicable for this operation).
+  Future<Uint8List?> getModuleScreenshot();
 }
