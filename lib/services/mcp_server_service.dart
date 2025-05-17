@@ -415,7 +415,7 @@ class McpServerService extends ChangeNotifier {
             ImageContent(
               // type: 'image', // The 'type' field is automatically set by the ImageContent constructor
               data: result['screenshot_base64'] as String,
-              mimeType: 'image/png', // Our decodeBitmap ensures PNG
+              mimeType: 'image/jpeg', // Changed to JPEG
             )
           ]);
         } else {

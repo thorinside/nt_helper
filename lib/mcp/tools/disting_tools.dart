@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:math'; // For min function
-import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Added for DistingNT.decodeBitmap
+import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Re-added for Algorithm, ParameterInfo etc.
+import 'package:image/image.dart' as img; // For image processing
 
 import 'package:nt_helper/services/disting_controller.dart';
 
@@ -417,29 +418,48 @@ class DistingTools {
   Future<Map<String, dynamic>> get_module_screenshot(
       Map<String, dynamic> params) async {
     try {
-      final Uint8List? screenshotBytes = await _controller
-          .getModuleScreenshot(); // Assume these are already final PNG bytes
+      final Uint8List? pngBytesFromController =
+          await _controller.getModuleScreenshot(); // Assumed to be PNG bytes
 
-      if (screenshotBytes != null && screenshotBytes.isNotEmpty) {
-        // We now assume screenshotBytes are the final PNG bytes.
+      if (pngBytesFromController != null && pngBytesFromController.isNotEmpty) {
+        // 1. Decode PNG bytes (directly from controller) into an Image object
+        final img.Image? image = img.decodeImage(pngBytesFromController);
 
-        final String base64Image = base64Encode(screenshotBytes);
-        return {
-          'success': true,
-          'screenshot_base64': base64Image,
-          'format': 'png', // Assuming the bytes from controller are already PNG
-        };
+        if (image != null) {
+          // 2. Encode the Image object to JPEG bytes
+          final Uint8List jpegBytes = img.encodeJpg(image);
+
+          if (jpegBytes.isNotEmpty) {
+            final String base64Image = base64Encode(jpegBytes);
+            return {
+              'success': true,
+              'screenshot_base64': base64Image,
+              'format': 'jpeg', // Format is JPEG
+            };
+          } else {
+            return {
+              'success': false,
+              'error': 'Failed to encode screenshot to JPEG after decoding.'
+            };
+          }
+        } else {
+          return {
+            'success': false,
+            'error':
+                'Failed to decode PNG bytes (from controller) into an image object.'
+          };
+        }
       } else {
         return {
           'success': false,
           'error':
-              'Module screenshot is currently unavailable or device not connected.'
+              'Module screenshot is currently unavailable (controller returned null/empty) or device not connected.'
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'error': 'Failed to retrieve module screenshot: ${e.toString()}'
+        'error': 'Exception in get_module_screenshot: ${e.toString()}'
       };
     }
   }

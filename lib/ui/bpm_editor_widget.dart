@@ -36,11 +36,18 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
   final FocusNode _focusNode = FocusNode();
 
   Timer? _longPressAccelerationTimer;
-  int _accelerationMultiplier = 1;
-  static const Duration _initialAccelerationDelay = Duration(milliseconds: 400);
-  static const Duration _acceleratingInterval = Duration(milliseconds: 80);
-  static const int _maxAccelerationMultiplier =
-      20; // Max raw step value for acceleration
+  double _accelerationMultiplier = 1.0;
+  static const Duration _initialAccelerationDelay = Duration(milliseconds: 500);
+  static const Duration _acceleratingInterval =
+      Duration(milliseconds: 200); // Slowed down from 80ms
+  static const double _maxAccelerationMultiplier =
+      10.0; // Reduced max from 20 to 10
+  static const double _accelerationRate =
+      1.15; // Reduced from 1.25 for slower acceleration
+
+  int _accelerationStepCount = 0;
+  static const int _stepsBeforeAcceleration =
+      5; // Number of steps at constant speed before acceleration starts
 
   Timer? _tapVerificationTimer; // Timer to verify if tap becomes long press
   bool _didPerformInitialStep = false; // Track if onTapDown executed a step
@@ -72,20 +79,20 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     }
   }
 
+  // Display as whole numbers while accounting for powerOfTen internally
   String _formatBpmForDisplay(int rawBpm) {
-    if (widget.powerOfTen == 0) {
-      return rawBpm.toString();
-    }
-    double displayValue = rawBpm / pow(10, widget.powerOfTen);
-    return displayValue.toStringAsFixed(widget.powerOfTen);
+    int displayValue = (rawBpm / pow(10, widget.powerOfTen)).round();
+    return displayValue.toString();
   }
 
   void _validateAndSubmit() {
     final textValue = _textController.text;
-    double? parsedDisplayValue = double.tryParse(textValue);
+    int? parsedValue = int.tryParse(textValue);
 
-    if (parsedDisplayValue != null) {
-      int newRawBpm = (parsedDisplayValue * pow(10, widget.powerOfTen)).round();
+    if (parsedValue != null) {
+      // Convert to the raw internal value
+      int newRawBpm = (parsedValue * pow(10, widget.powerOfTen)).round();
+
       newRawBpm = newRawBpm.clamp(widget.min, widget.max);
 
       if (newRawBpm != _currentBpm) {
@@ -102,15 +109,18 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     }
   }
 
-  // Renamed from _executeSingleStep for clarity
+  // Step by powerOfTen units for each increment/decrement
   void _performSingleStep(bool increment, {bool isUndo = false}) {
     // If it's an undo, we reverse the original direction
     bool actualIncrement = isUndo ? !_initialStepWasIncrement : increment;
 
+    // Step by 10^powerOfTen to represent one whole unit change in display
+    int stepSize = pow(10, widget.powerOfTen).round();
+
     if (actualIncrement) {
       if (_currentBpm < widget.max) {
         setState(() {
-          _currentBpm++;
+          _currentBpm = min(_currentBpm + stepSize, widget.max);
           _textController.text = _formatBpmForDisplay(_currentBpm);
         });
         if (!isUndo) widget.onChanged(_currentBpm);
@@ -118,7 +128,7 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     } else {
       if (_currentBpm > widget.min) {
         setState(() {
-          _currentBpm--;
+          _currentBpm = max(_currentBpm - stepSize, widget.min);
           _textController.text = _formatBpmForDisplay(_currentBpm);
         });
         if (!isUndo) widget.onChanged(_currentBpm);
@@ -149,7 +159,9 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     }
 
     _stopAcceleratedChange(performSnap: false);
-    _accelerationMultiplier = 1;
+    _accelerationMultiplier = 1.0;
+    _accelerationStepCount = 0;
+
     _longPressAccelerationTimer =
         Timer.periodic(_initialAccelerationDelay, (timerAfterDelay) {
       timerAfterDelay.cancel();
@@ -165,23 +177,41 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
       _stopAcceleratedChange(performSnap: false);
       return;
     }
+
+    // Increment the step count
+    _accelerationStepCount++;
+
+    // Only start accelerating after certain number of steps
+    if (_accelerationStepCount > _stepsBeforeAcceleration) {
+      if (_accelerationMultiplier < _maxAccelerationMultiplier) {
+        _accelerationMultiplier = min(
+            _accelerationMultiplier * _accelerationRate,
+            _maxAccelerationMultiplier);
+      }
+    }
+
+    // Step by 10^powerOfTen * accelerationMultiplier
+    int stepSize =
+        (pow(10, widget.powerOfTen) * _accelerationMultiplier).round();
+
+    // Ensure minimum step size is at least one unit
+    stepSize = max(stepSize, pow(10, widget.powerOfTen).round());
+
     setState(() {
-      final step = _accelerationMultiplier;
       if (increment) {
-        _currentBpm = (_currentBpm + step).clamp(widget.min, widget.max);
+        _currentBpm = min(_currentBpm + stepSize, widget.max);
       } else {
-        _currentBpm = (_currentBpm - step).clamp(widget.min, widget.max);
+        _currentBpm = max(_currentBpm - stepSize, widget.min);
       }
       _textController.text = _formatBpmForDisplay(_currentBpm);
-      if (_accelerationMultiplier < _maxAccelerationMultiplier) {
-        _accelerationMultiplier = (_accelerationMultiplier * 1.25)
-            .ceil()
-            .clamp(1, _maxAccelerationMultiplier);
-      }
     });
+
     widget.onChanged(_currentBpm);
-    if (SettingsService().hapticsEnabled)
+
+    // Only vibrate on certain steps to avoid excessive haptics
+    if (_accelerationStepCount % 2 == 0 && SettingsService().hapticsEnabled) {
       Haptics.vibrate(HapticsType.selection);
+    }
 
     if ((increment && _currentBpm == widget.max) ||
         (!increment && _currentBpm == widget.min)) {
@@ -193,24 +223,8 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     _longPressAccelerationTimer?.cancel();
     _longPressAccelerationTimer = null;
     _didPerformInitialStep = false;
-
-    if (performSnap && widget.powerOfTen > 0) {
-      double displayedValue = _currentBpm / pow(10, widget.powerOfTen);
-      double roundedDisplayValue = displayedValue.roundToDouble();
-      int snappedRawBpm =
-          (roundedDisplayValue * pow(10, widget.powerOfTen)).round();
-
-      snappedRawBpm = snappedRawBpm.clamp(widget.min, widget.max);
-
-      if (_currentBpm != snappedRawBpm) {
-        setState(() {
-          _currentBpm = snappedRawBpm;
-          _textController.text = _formatBpmForDisplay(_currentBpm);
-        });
-        widget.onChanged(_currentBpm);
-      }
-    }
-    _accelerationMultiplier = 1;
+    _accelerationMultiplier = 1.0;
+    _accelerationStepCount = 0;
   }
 
   @override
@@ -239,32 +253,47 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: TextField(
-            controller: _textController,
-            focusNode: _focusNode,
-            textAlign: TextAlign.center,
-            keyboardType:
-                TextInputType.numberWithOptions(decimal: widget.powerOfTen > 0),
-            style: textStyle?.copyWith(fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(
-                  vertical: (widescreen ? 14.0 : 10.0) - 2.0, horizontal: 8),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              suffixText: " BPM",
-              suffixStyle: textStyle?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.normal),
-            ),
-            onSubmitted: (_) => _validateAndSubmit(),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(
-                  RegExp(widget.powerOfTen > 0 ? r'[0-9.]' : r'[0-9]')),
-              if (widget.powerOfTen > 0)
-                DecimalTextInputFormatter(decimalRange: widget.powerOfTen),
-              LengthLimitingTextInputFormatter(
-                  widget.powerOfTen > 0 ? 3 + widget.powerOfTen + 1 : 3),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              TextField(
+                controller: _textController,
+                focusNode: _focusNode,
+                textAlign: TextAlign.center,
+                textAlignVertical: TextAlignVertical.center,
+                keyboardType: TextInputType.number,
+                style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12.0,
+                    horizontal: 8.0,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  // Remove suffix text entirely
+                  suffixText: null,
+                ),
+                onSubmitted: (_) => _validateAndSubmit(),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(
+                      3), // Limit to 3 digits (up to 999 BPM)
+                ],
+              ),
+              // Position "BPM" as a separate widget to prevent it from affecting text alignment
+              if (widescreen)
+                Positioned(
+                  right: 16,
+                  child: Text(
+                    "BPM",
+                    style: textStyle?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -296,25 +325,4 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
   }
 }
 
-// Helper class for input formatting to allow only one decimal point and control decimal places
-class DecimalTextInputFormatter extends TextInputFormatter {
-  final int decimalRange;
-
-  DecimalTextInputFormatter({required this.decimalRange});
-
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    String newText = newValue.text;
-    if (newText.contains('.')) {
-      if (newText.substring(newText.indexOf('.') + 1).length > decimalRange) {
-        return oldValue;
-      }
-      if (newText.indexOf('.') != newText.lastIndexOf('.')) {
-        // More than one decimal point
-        return oldValue;
-      }
-    }
-    return newValue;
-  }
-}
+// No longer need the DecimalTextInputFormatter class since we only use whole numbers now
