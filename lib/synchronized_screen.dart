@@ -30,7 +30,7 @@ import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
 
-class SynchronizedScreen extends StatelessWidget {
+class SynchronizedScreen extends StatefulWidget {
   final List<Slot> slots;
   final List<AlgorithmInfo> algorithms;
   final List<String> units;
@@ -51,17 +51,130 @@ class SynchronizedScreen extends StatelessWidget {
   });
 
   @override
+  State<SynchronizedScreen> createState() => _SynchronizedScreenState();
+}
+
+class _SynchronizedScreenState extends State<SynchronizedScreen>
+    with SingleTickerProviderStateMixin {
+  late int _selectedIndex;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = 0;
+    _tabController = TabController(
+      length: widget.slots.length,
+      vsync: this,
+    );
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabSelection);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(SynchronizedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.slots.length != oldWidget.slots.length) {
+      _tabController.dispose();
+      _tabController = TabController(
+        length: widget.slots.length,
+        vsync: this,
+      );
+      _tabController.addListener(_handleTabSelection);
+      // Ensure selected index is valid
+      if (_selectedIndex >= widget.slots.length) {
+        setState(() {
+          _selectedIndex = widget.slots.length - 1;
+        });
+      }
+      _tabController.index = _selectedIndex;
+    }
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.index != _selectedIndex) {
+      setState(() {
+        _selectedIndex = _tabController.index;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: slots.length,
-      child: Scaffold(
+    bool isWideScreen = MediaQuery.of(context).size.width > 900;
+
+    // Use a conditional widget based on screen width
+    if (isWideScreen && widget.slots.isNotEmpty) {
+      // Wide screen layout with vertical list
+      return Scaffold(
         resizeToAvoidBottomInset: true,
-        appBar: _buildAppBar(context),
+        appBar: _buildAppBar(context, isWideScreen),
+        body: _buildWideScreenBody(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
+        floatingActionButton: _buildFloatingActionButton(),
+        bottomNavigationBar: _buildBottomAppBar(),
+      );
+    } else {
+      // Default layout with TabBar
+      return Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: _buildAppBar(context, isWideScreen),
         body: _buildBody(),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
         bottomNavigationBar: _buildBottomAppBar(),
-      ),
+      );
+    }
+  }
+
+  Widget _buildWideScreenBody() {
+    return Row(
+      children: [
+        // Left side algorithm list
+        Container(
+          width: 250,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(
+                color: Theme.of(context).dividerColor,
+                width: 1,
+              ),
+            ),
+          ),
+          child: AlgorithmListView(
+            slots: widget.slots,
+            selectedIndex: _selectedIndex,
+            onSelectionChanged: (index) {
+              setState(() {
+                _selectedIndex = index;
+                _tabController.animateTo(index);
+              });
+            },
+          ),
+        ),
+        // Right side content
+        Expanded(
+          child: widget.slots.isNotEmpty && _selectedIndex < widget.slots.length
+              ? SlotDetailView(
+                  key: ValueKey(
+                      "${_selectedIndex} - ${widget.slots[_selectedIndex].algorithm.guid}"),
+                  slot: widget.slots[_selectedIndex],
+                  units: widget.units,
+                )
+              : Center(
+                  child: Text(
+                    "No algorithms",
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
+                ),
+        ),
+      ],
     );
   }
 
@@ -177,7 +290,7 @@ class SynchronizedScreen extends StatelessWidget {
             ),
           const SizedBox(width: 8),
           DistingVersion(
-              distingVersion: distingVersion,
+              distingVersion: widget.distingVersion,
               requiredVersion: Constants.requiredDistingVersion),
         ],
       ),
@@ -188,13 +301,14 @@ class SynchronizedScreen extends StatelessWidget {
     return AnimatedSwitcher(
       duration: Duration(seconds: 1),
       child: Builder(builder: (context) {
-        return slots.isNotEmpty
+        return widget.slots.isNotEmpty
             ? TabBarView(
-                children: slots.mapIndexed((index, slot) {
+                controller: _tabController,
+                children: widget.slots.mapIndexed((index, slot) {
                   return SlotDetailView(
                     key: ValueKey("$index - ${slot.algorithm.guid}"),
                     slot: slot,
-                    units: units,
+                    units: widget.units,
                   );
                 }).toList(),
               )
@@ -212,7 +326,7 @@ class SynchronizedScreen extends StatelessWidget {
     );
   }
 
-  AppBar _buildAppBar(BuildContext context) {
+  AppBar _buildAppBar(BuildContext context, bool isWideScreen) {
     return AppBar(
       title: const Text('NT Helper'),
       actions: _buildAppBarActions(),
@@ -221,19 +335,21 @@ class SynchronizedScreen extends StatelessWidget {
       notificationPredicate: (ScrollNotification notification) =>
           notification.depth == 1,
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(66.0),
+        preferredSize: Size.fromHeight(isWideScreen ? 40.0 : 66.0),
         child: Column(
           children: [
-            _buildPresetInfoEditor(context), // The TabBar
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: _buildTabBar(context),
-                ),
-              ],
-            ),
+            _buildPresetInfoEditor(context), // The preset info
+            // Only show TabBar on narrow screens
+            if (!isWideScreen)
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: _buildTabBar(context),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -251,7 +367,7 @@ class SynchronizedScreen extends StatelessWidget {
         return IconButton(
           icon: Icon(Icons.refresh_rounded),
           tooltip: 'Refresh',
-          onPressed: loading || isOffline // <-- Updated condition
+          onPressed: widget.loading || isOffline // <-- Updated condition
               ? null
               : () {
                   ctx.read<DistingCubit>().refresh();
@@ -267,7 +383,7 @@ class SynchronizedScreen extends StatelessWidget {
         return IconButton(
           icon: Icon(Icons.alarm_on_rounded),
           tooltip: "Wake",
-          onPressed: loading || isOffline
+          onPressed: widget.loading || isOffline
               ? null
               : () {
                   ctx.read<DistingCubit>().requireDisting().requestWake();
@@ -279,16 +395,16 @@ class SynchronizedScreen extends StatelessWidget {
         return IconButton(
           icon: const Icon(Icons.arrow_upward_rounded),
           tooltip: 'Move Algorithm Up',
-          onPressed: loading
+          onPressed: widget.loading
               ? null
               : () async {
-                  final tabController = DefaultTabController.of(ctx);
-                  if (tabController.index > 0) {
-                    final newIndex = await ctx
-                        .read<DistingCubit>()
-                        .moveAlgorithmUp(tabController.index);
-                    tabController.animateTo(newIndex);
-                  }
+                  final newIndex = await ctx
+                      .read<DistingCubit>()
+                      .moveAlgorithmUp(_selectedIndex);
+                  setState(() {
+                    _selectedIndex = newIndex;
+                  });
+                  _tabController.animateTo(newIndex);
                 },
         );
       }),
@@ -297,20 +413,22 @@ class SynchronizedScreen extends StatelessWidget {
         return IconButton(
           icon: const Icon(Icons.arrow_downward_rounded),
           tooltip: 'Move Algorithm Down',
-          onPressed: loading
+          onPressed: widget.loading
               ? null
               : () async {
-                  final tabController = DefaultTabController.of(ctx);
                   final cubit = ctx.read<DistingCubit>();
                   final currentState = cubit.state;
                   int slotCount = 0;
                   if (currentState is DistingStateSynchronized) {
                     slotCount = currentState.slots.length;
                   }
-                  if (tabController.index < slotCount - 1) {
+                  if (_selectedIndex < slotCount - 1) {
                     final newIndex =
-                        await cubit.moveAlgorithmDown(tabController.index);
-                    tabController.animateTo(newIndex);
+                        await cubit.moveAlgorithmDown(_selectedIndex);
+                    setState(() {
+                      _selectedIndex = newIndex;
+                    });
+                    _tabController.animateTo(newIndex);
                   }
                 },
         );
@@ -321,11 +439,12 @@ class SynchronizedScreen extends StatelessWidget {
           return IconButton(
               icon: const Icon(Icons.delete_forever_rounded),
               tooltip: 'Remove Algorithm',
-              onPressed: loading
+              onPressed: widget.loading
                   ? null
                   : () async {
-                      ctx.read<DistingCubit>().onRemoveAlgorithm(
-                          DefaultTabController.of(ctx).index);
+                      ctx
+                          .read<DistingCubit>()
+                          .onRemoveAlgorithm(_selectedIndex);
                     });
         },
       ),
@@ -340,8 +459,8 @@ class SynchronizedScreen extends StatelessWidget {
           return [
             PopupMenuItem(
               value: "load",
-              enabled: !loading && !isOffline,
-              onTap: loading || isOffline
+              enabled: !widget.loading && !isOffline,
+              onTap: widget.loading || isOffline
                   ? null
                   : () async {
                       var cubit = popupCtx.read<DistingCubit>();
@@ -363,8 +482,8 @@ class SynchronizedScreen extends StatelessWidget {
             ),
             PopupMenuItem(
               value: "new",
-              enabled: !loading,
-              onTap: loading
+              enabled: !widget.loading,
+              onTap: widget.loading
                   ? null
                   : () async {
                       final cubit = popupCtx.read<DistingCubit>();
@@ -433,8 +552,8 @@ class SynchronizedScreen extends StatelessWidget {
             ),
             PopupMenuItem(
               value: "save",
-              enabled: !loading,
-              onTap: loading
+              enabled: !widget.loading,
+              onTap: widget.loading
                   ? null
                   : () {
                       popupCtx
@@ -452,8 +571,8 @@ class SynchronizedScreen extends StatelessWidget {
             // Routing: Disabled by loading OR offline
             PopupMenuItem(
               value: 'routing',
-              enabled: !loading && !isOffline,
-              onTap: loading || isOffline
+              enabled: !widget.loading && !isOffline,
+              onTap: widget.loading || isOffline
                   ? null
                   : () async {
                       final routingInformation = popupCtx
@@ -474,8 +593,8 @@ class SynchronizedScreen extends StatelessWidget {
             // Screenshot: Disabled by loading OR offline
             PopupMenuItem(
               value: 'screenshot',
-              enabled: !loading && !isOffline,
-              onTap: loading || isOffline
+              enabled: !widget.loading && !isOffline,
+              onTap: widget.loading || isOffline
                   ? null
                   : () {
                       _showScreenshotOverlay(popupCtx);
@@ -490,8 +609,8 @@ class SynchronizedScreen extends StatelessWidget {
             // Perform: Disabled by loading OR offline
             PopupMenuItem(
               value: 'perform',
-              enabled: !loading && !isOffline,
-              onTap: loading || isOffline
+              enabled: !widget.loading && !isOffline,
+              onTap: widget.loading || isOffline
                   ? null
                   : () {
                       final cubit = popupCtx.read<DistingCubit>();
@@ -504,7 +623,7 @@ class SynchronizedScreen extends StatelessWidget {
                               BlocProvider.value(value: cubit),
                               BlocProvider.value(value: midiListener),
                             ],
-                            child: PerformanceScreen(units: units),
+                            child: PerformanceScreen(units: widget.units),
                           ),
                         ),
                       );
@@ -519,8 +638,8 @@ class SynchronizedScreen extends StatelessWidget {
             // Switch Devices: Only disabled by loading (Fix context usage)
             PopupMenuItem(
               value: 'Switch Devices',
-              enabled: !loading,
-              onTap: loading
+              enabled: !widget.loading,
+              onTap: widget.loading
                   ? null
                   : () {
                       popupCtx.read<DistingCubit>().goOnline();
@@ -532,8 +651,8 @@ class SynchronizedScreen extends StatelessWidget {
             // Settings: Only disabled by loading
             PopupMenuItem(
               value: 'Settings',
-              enabled: !loading,
-              onTap: loading
+              enabled: !widget.loading,
+              onTap: widget.loading
                   ? null
                   : () async {
                       // Original call to show the dialog
@@ -599,8 +718,8 @@ class SynchronizedScreen extends StatelessWidget {
             // Sync Metadata: Only disabled by loading
             PopupMenuItem(
               value: 'sync_metadata',
-              enabled: !loading,
-              onTap: loading
+              enabled: !widget.loading,
+              onTap: widget.loading
                   ? null
                   : () {
                       final distingCubit = popupCtx.read<DistingCubit>();
@@ -621,7 +740,7 @@ class SynchronizedScreen extends StatelessWidget {
             PopupMenuItem(
               value: 'about',
               enabled: true,
-              onTap: loading
+              onTap: widget.loading
                   ? null
                   : () async {
                       final info = await PackageInfo.fromPlatform();
@@ -638,7 +757,8 @@ class SynchronizedScreen extends StatelessWidget {
                               padding: const EdgeInsets.all(24.0),
                               child: Column(
                                 children: [
-                                  Text("Disting Firmware: $distingVersion",
+                                  Text(
+                                      "Disting Firmware: ${widget.distingVersion}",
                                       style: Theme.of(dialogCtx)
                                           .textTheme
                                           .bodySmall),
@@ -670,13 +790,13 @@ class SynchronizedScreen extends StatelessWidget {
               final newName = await showDialog<String>(
                 context: context,
                 builder: (context) => RenamePresetDialog(
-                  initialName: presetName,
+                  initialName: widget.presetName,
                 ),
               );
 
               if (newName != null &&
                   newName.isNotEmpty &&
-                  newName != presetName) {
+                  newName != widget.presetName) {
                 cubit.renamePreset(newName);
               }
             },
@@ -697,7 +817,7 @@ class SynchronizedScreen extends StatelessWidget {
                             ),
                       ),
                       TextSpan(
-                        text: presetName.trim(),
+                        text: widget.presetName.trim(),
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -729,6 +849,7 @@ class SynchronizedScreen extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: TabBar(
+                controller: _tabController,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
                 indicatorSize: TabBarIndicatorSize.tab,
@@ -787,6 +908,68 @@ class SynchronizedScreen extends StatelessWidget {
     );
 
     Overlay.of(context).insert(overlayEntry);
+  }
+}
+
+/// A vertical list widget that displays algorithm slots in a list view
+class AlgorithmListView extends StatelessWidget {
+  final List<Slot> slots;
+  final int selectedIndex;
+  final ValueChanged<int> onSelectionChanged;
+
+  const AlgorithmListView({
+    Key? key,
+    required this.slots,
+    required this.selectedIndex,
+    required this.onSelectionChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DistingCubit, DistingState>(
+      builder: (context, state) {
+        return state.maybeMap(
+          synchronized: (syncState) {
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 8.0),
+              itemCount: slots.length,
+              itemBuilder: (context, index) {
+                final slot = slots[index];
+                final displayName = slot.algorithm.name;
+
+                return ListTile(
+                  title: Text(
+                    displayName,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                  selected: index == selectedIndex,
+                  selectedTileColor:
+                      Theme.of(context).colorScheme.secondaryContainer,
+                  selectedColor:
+                      Theme.of(context).colorScheme.onSecondaryContainer,
+                  onTap: () => onSelectionChanged(index),
+                  onLongPress: () async {
+                    var cubit = context.read<DistingCubit>();
+                    final newName = await showDialog<String>(
+                      context: context,
+                      builder: (dialogCtx) => RenameSlotDialog(
+                        initialName: displayName,
+                      ),
+                    );
+
+                    if (newName != null && newName != displayName) {
+                      cubit.renameSlot(index, newName);
+                    }
+                  },
+                );
+              },
+            );
+          },
+          orElse: () => const Center(child: Text("Loading slots...")),
+        );
+      },
+    );
   }
 }
 
