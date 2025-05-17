@@ -409,46 +409,38 @@ class DistingTools {
     }
   }
 
-  /// MCP Tool: Retrieves the current module screenshot as a base64 encoded string.
+  /// MCP Tool: Retrieves the current module screenshot data.
   /// Parameters: None
   /// Returns:
-  ///   A JSON string containing the base64 encoded screenshot and its format,
-  ///   or an error message if not connected or screenshot is unavailable.
-  Future<String> get_module_screenshot(Map<String, dynamic> params) async {
+  ///   A Map containing success status, and either base64 encoded screenshot_base64
+  ///   and format, or an error message.
+  Future<Map<String, dynamic>> get_module_screenshot(
+      Map<String, dynamic> params) async {
     try {
-      final Uint8List? rawScreenshotBytes =
-          await _controller.getModuleScreenshot();
+      final Uint8List? screenshotBytes = await _controller
+          .getModuleScreenshot(); // Assume these are already final PNG bytes
 
-      if (rawScreenshotBytes != null && rawScreenshotBytes.isNotEmpty) {
-        // Decode/process the raw bytes into a PNG format using the existing utility
-        final Uint8List pngBytes = DistingNT.decodeBitmap(rawScreenshotBytes);
+      if (screenshotBytes != null && screenshotBytes.isNotEmpty) {
+        // We now assume screenshotBytes are the final PNG bytes.
 
-        if (pngBytes.isNotEmpty) {
-          final String base64Image = base64Encode(pngBytes);
-          return jsonEncode({
-            'success': true,
-            'screenshot_base64': base64Image,
-            'format': 'png', // decodeBitmap ensures PNG format
-          });
-        } else {
-          // decodeBitmap returned empty, indicating an error during processing
-          return jsonEncode({
-            'success': false,
-            'error': 'Failed to process module screenshot data.'
-          });
-        }
+        final String base64Image = base64Encode(screenshotBytes);
+        return {
+          'success': true,
+          'screenshot_base64': base64Image,
+          'format': 'png', // Assuming the bytes from controller are already PNG
+        };
       } else {
-        return jsonEncode({
+        return {
           'success': false,
           'error':
               'Module screenshot is currently unavailable or device not connected.'
-        });
+        };
       }
     } catch (e) {
-      return jsonEncode({
+      return {
         'success': false,
         'error': 'Failed to retrieve module screenshot: ${e.toString()}'
-      });
+      };
     }
   }
 }

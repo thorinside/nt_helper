@@ -408,9 +408,23 @@ class McpServerService extends ChangeNotifier {
         }
       },
       callback: ({args, extra}) async {
-        final resultJson =
+        final Map<String, dynamic> result =
             await _distingTools.get_module_screenshot(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        if (result['success'] == true) {
+          return CallToolResult(content: [
+            ImageContent(
+              // type: 'image', // The 'type' field is automatically set by the ImageContent constructor
+              data: result['screenshot_base64'] as String,
+              mimeType: 'image/png', // Our decodeBitmap ensures PNG
+            )
+          ]);
+        } else {
+          return CallToolResult(content: [
+            TextContent(
+                text: result['error'] as String? ??
+                    'Unknown error retrieving screenshot')
+          ]);
+        }
       },
     );
 

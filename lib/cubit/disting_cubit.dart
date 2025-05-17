@@ -286,6 +286,13 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  Future<Uint8List?> getHardwareScreenshot() async {
+    final disting = requireDisting();
+    await disting.requestWake();
+    final screenshot = await disting.encodeTakeScreenshot();
+    return screenshot;
+  }
+
   Future<void> updateScreenshot() async {
     final disting = requireDisting();
     await disting.requestWake();
