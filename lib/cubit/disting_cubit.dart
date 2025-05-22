@@ -49,6 +49,7 @@ class DistingCubit extends Cubit<DistingState> {
       _moveVerificationOperation; // Add verification operation tracker
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
+  Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
 
   // Added: Store last known online connection details
   MidiDevice? _lastOnlineInputDevice;
@@ -807,6 +808,22 @@ class DistingCubit extends Cubit<DistingState> {
             parameterNumber,
           );
 
+          // Anomaly Check
+          if (this.state is DistingStateSynchronized) {
+            final syncState = this.state as DistingStateSynchronized;
+            if (algorithmIndex < syncState.slots.length &&
+                parameterNumber < syncState.slots[algorithmIndex].parameters.length) {
+              final parameterInfo = syncState.slots[algorithmIndex].parameters.elementAt(parameterNumber);
+              if (newValue != null && (newValue.value < parameterInfo.min || newValue.value > parameterInfo.max)) {
+                debugPrint(
+                    "Out-of-bounds data from device: algo $algorithmIndex, param $parameterNumber, value ${newValue.value}, expected ${parameterInfo.min}-${parameterInfo.max}");
+                _refreshSlotAfterAnomaly(algorithmIndex);
+                return; // Return early as the slot will be refreshed
+              }
+            }
+          }
+          // End Anomaly Check
+
           final state = (this.state as DistingStateSynchronized);
 
           var valueStrings = [
@@ -1412,9 +1429,31 @@ class DistingCubit extends Cubit<DistingState> {
       );
       if (newValue == null) return;
 
+      // Anomaly Check
+      if (newValue.value < mapped.parameter.min || newValue.value > mapped.parameter.max) {
+        debugPrint(
+            "Out-of-bounds data from device (polling): algo ${mapped.parameter.algorithmIndex}, param ${mapped.parameter.parameterNumber}, value ${newValue.value}, expected ${mapped.parameter.min}-${mapped.parameter.max}");
+        _refreshSlotAfterAnomaly(mapped.parameter.algorithmIndex);
+        // Unlike in updateParameterValue, we don't return early here.
+        // The polling loop will continue, and the refresh will eventually correct the state.
+      }
+      // End Anomaly Check
+
       final currentState = state;
       if (currentState is DistingStateSynchronized) {
+        // Add boundary checks before accessing slots and values
+        if (mapped.parameter.algorithmIndex >= currentState.slots.length) {
+          debugPrint("[Polling] Slot index ${mapped.parameter.algorithmIndex} is out of bounds after potential refresh. Stopping poll for this parameter.");
+          _pollingTasks.remove(key); // Remove task to stop polling
+          return;
+        }
         final currentSlot = currentState.slots[mapped.parameter.algorithmIndex];
+        // Check if parameter number is still valid
+        if (mapped.parameter.parameterNumber >= currentSlot.values.length) {
+           debugPrint("[Polling] Parameter number ${mapped.parameter.parameterNumber} out of bounds for slot ${mapped.parameter.algorithmIndex} after potential refresh. Stopping poll for this parameter.");
+          _pollingTasks.remove(key); // Remove task to stop polling
+          return;
+        }
         final currentValue =
             currentSlot.values[mapped.parameter.parameterNumber];
         if (newValue.value != currentValue.value) {
@@ -1631,5 +1670,41 @@ class DistingCubit extends Cubit<DistingState> {
       'output':
           devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
     };
+  }
+
+  Future<void> _refreshSlotAfterAnomaly(int algorithmIndex) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (state is! DistingStateSynchronized) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastAttempt = _lastAnomalyRefreshAttempt[algorithmIndex];
+    if (lastAttempt != null &&
+        now.difference(lastAttempt) < const Duration(seconds: 10)) {
+      debugPrint(
+          "[Anomaly Refresh] Skipping refresh for slot $algorithmIndex, last attempt was too recent.");
+      return;
+    }
+    _lastAnomalyRefreshAttempt[algorithmIndex] = now;
+
+    debugPrint(
+        "[Anomaly Refresh] Triggering refresh for slot $algorithmIndex due to data anomaly.");
+
+    try {
+      final disting = requireDisting();
+      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final currentState = state as DistingStateSynchronized;
+      final newSlots = List<Slot>.from(currentState.slots);
+      newSlots[algorithmIndex] = updatedSlot;
+      emit(currentState.copyWith(slots: newSlots, loading: false));
+    } catch (e, stackTrace) {
+      debugPrint(
+          "[Anomaly Refresh] Error refreshing slot $algorithmIndex: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // Optionally, clear the timestamp to allow immediate retry if fetch failed
+      // _lastAnomalyRefreshAttempt.remove(algorithmIndex);
+    }
   }
 }
