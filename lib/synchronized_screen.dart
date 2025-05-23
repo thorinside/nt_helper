@@ -55,7 +55,7 @@ class SynchronizedScreen extends StatefulWidget {
 }
 
 class _SynchronizedScreenState extends State<SynchronizedScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late int _selectedIndex;
   late TabController _tabController;
 
