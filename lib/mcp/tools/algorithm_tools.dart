@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/util/case_converter.dart';
 
 /// Class containing methods representing MCP tools.
 /// Requires DistingCubit for accessing application state.
@@ -35,15 +36,26 @@ class MCPAlgorithmTools {
       return null; // Not found
     }
 
+    AlgorithmMetadata algoToProcess;
     if (expandFeatures) {
       // Access static service for now
       final expandedParams = _metadataService.getExpandedParameters(guid);
       // Create a new AlgorithmMetadata object with expanded parameters
-      final expandedAlgorithm = algorithm.copyWith(parameters: expandedParams);
-      return jsonEncode(expandedAlgorithm.toJson());
+      algoToProcess = algorithm.copyWith(parameters: expandedParams);
     } else {
-      return jsonEncode(algorithm.toJson());
+      algoToProcess = algorithm;
     }
+
+    Map<String, dynamic> algoJson = algoToProcess.toJson();
+    if (algoJson['parameters'] is List) {
+      List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
+      for (var param in paramsList) {
+        if (param is Map<String, dynamic>) {
+          param.remove('parameterNumber');
+        }
+      }
+    }
+    return jsonEncode(convertToSnakeCaseKeys(algoJson));
   }
 
   /// MCP Tool: Lists algorithms, optionally filtered.
@@ -73,7 +85,21 @@ class MCPAlgorithmTools {
     }
 
     // Return full metadata for now
-    return jsonEncode(algorithms.map((a) => a.toJson()).toList());
+    // return jsonEncode(algorithms.map((a) => a.toJson()).toList());
+    List<Map<String, dynamic>> resultList = [];
+    for (var alg in algorithms) {
+      Map<String, dynamic> algoJson = alg.toJson();
+      if (algoJson['parameters'] is List) {
+        List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
+        for (var param in paramsList) {
+          if (param is Map<String, dynamic>) {
+            param.remove('parameterNumber');
+          }
+        }
+      }
+      resultList.add(algoJson);
+    }
+    return jsonEncode(convertToSnakeCaseKeys(resultList));
   }
 
   /// MCP Tool: Finds algorithms based on a text query.
@@ -95,7 +121,21 @@ class MCPAlgorithmTools {
     final results = _metadataService.findAlgorithmsByQuery(query);
 
     // Return full metadata for now
-    return jsonEncode(results.map((a) => a.toJson()).toList());
+    // return jsonEncode(results.map((a) => a.toJson()).toList());
+    List<Map<String, dynamic>> resultList = [];
+    for (var alg in results) {
+      Map<String, dynamic> algoJson = alg.toJson();
+      if (algoJson['parameters'] is List) {
+        List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
+        for (var param in paramsList) {
+          if (param is Map<String, dynamic>) {
+            param.remove('parameterNumber');
+          }
+        }
+      }
+      resultList.add(algoJson);
+    }
+    return jsonEncode(convertToSnakeCaseKeys(resultList));
   }
 
   /// MCP Tool: Retrieves the current routing state decoded into RoutingInformation objects.
@@ -108,8 +148,11 @@ class MCPAlgorithmTools {
     final routingInfoList = _distingCubit.buildRoutingInformation();
 
     // Use the toJson method added to RoutingInformation
-    final jsonList = routingInfoList.map((info) => info.toJson()).toList();
+    // final jsonList = routingInfoList.map((info) => info.toJson()).toList();
+    // return jsonEncode(jsonList);
 
-    return jsonEncode(jsonList);
+    // Convert to JSON, then convert keys to snake_case
+    final jsonList = routingInfoList.map((info) => info.toJson()).toList();
+    return jsonEncode(convertToSnakeCaseKeys(jsonList));
   }
 }
