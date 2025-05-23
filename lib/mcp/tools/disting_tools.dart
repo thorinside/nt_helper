@@ -3,6 +3,7 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'dart:math'; // For min function
 import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Re-added for Algorithm, ParameterInfo etc.
 import 'package:image/image.dart' as img; // For image processing
+import 'package:nt_helper/util/case_converter.dart'; // Added import
 
 import 'package:nt_helper/services/disting_controller.dart';
 
@@ -26,7 +27,7 @@ class DistingTools {
       final Map<int, Algorithm?> slotAlgorithms =
           await _controller.getAllSlots();
 
-      List<Map<String, dynamic>?> slotsJson = List.filled(maxSlots, null);
+      List<Map<String, dynamic>?> slotsJsonList = List.filled(maxSlots, null);
 
       for (int i = 0; i < maxSlots; i++) {
         final algorithm = slotAlgorithms[i];
@@ -40,37 +41,45 @@ class DistingTools {
             final int? liveValue =
                 await _controller.getParameterValue(i, pInfo.parameterNumber);
             parametersJsonList.add({
-              'parameterNumber': pInfo.parameterNumber,
+              'parameter_number': pInfo.parameterNumber,
               'name': pInfo.name,
               'min': pInfo.min,
               'max': pInfo.max,
-              'defaultValue': pInfo.defaultValue,
+              'default_value': pInfo.defaultValue,
               'unit': pInfo.unit,
-              'powerOfTen': pInfo.powerOfTen,
+              'power_of_ten': pInfo.powerOfTen,
               'value': liveValue, // Added live parameter value
             });
           }
 
-          slotsJson[i] = {
-            'slotIndex': i,
+          slotsJsonList[i] = {
+            'slot_index': i,
             'algorithm': {
               'guid': algorithm.guid,
               'name': algorithm.name,
-              'algorithmIndex': algorithm.algorithmIndex,
+              'algorithm_index': algorithm.algorithmIndex,
             },
             'parameters': parametersJsonList,
           };
         }
       }
 
-      return jsonEncode({
-        'success': true,
-        'presetName': presetName,
-        'slots': slotsJson,
-      });
+      final Map<String, dynamic> presetData =
+          _buildPresetJson(presetName, slotsJsonList);
+      return jsonEncode(
+          convertToSnakeCaseKeys(presetData)); // Apply converter here
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
+  }
+
+  Map<String, dynamic> _buildPresetJson(
+      String presetName, List<Map<String, dynamic>?> slotsData) {
+    return {
+      'preset_name': presetName,
+      'slots': slotsData,
+    };
   }
 
   /// MCP Tool: Adds an algorithm to the first available slot (determined by hardware).
@@ -102,12 +111,13 @@ class DistingTools {
 
       // Since the hardware determines the slot, we can't report the index here.
       // The user/client might need to call getCurrentPreset after to see the result.
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'Request to add algorithm $algorithmGuid sent.'
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -125,47 +135,50 @@ class DistingTools {
 
     try {
       await _controller.clearSlot(slotIndex);
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'Algorithm removed from slot $slotIndex.'
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
   // Updated method to set parameter value, handling display_value and powerOfTen
   Future<String> set_parameter_value(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
-    final int? parameterIndex = params['parameter_index'] as int?;
+    final int? parameterNumber = params['parameter_number'] as int?;
     // Expect 'display_value' which can be int or double (or string parsable to double)
     final dynamic displayValue = params['display_value'];
 
     if (slotIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+      return jsonEncode(convertToSnakeCaseKeys(
+          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
-    if (parameterIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "parameter_index" parameter.'});
+    if (parameterNumber == null) {
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error': 'Missing "parameter_number" parameter.'
+      }));
     }
     if (displayValue == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "display_value" parameter.'});
+      return jsonEncode(convertToSnakeCaseKeys(
+          {'success': false, 'error': 'Missing "display_value" parameter.'}));
     }
 
     try {
       // Fetch parameter info to get powerOfTen
       final List<ParameterInfo> paramInfos =
           await _controller.getParametersForSlot(slotIndex);
-      if (parameterIndex >= paramInfos.length) {
-        return jsonEncode({
+      if (parameterNumber >= paramInfos.length) {
+        return jsonEncode(convertToSnakeCaseKeys({
           'success': false,
           'error':
-              'Parameter index $parameterIndex is out of bounds for slot $slotIndex.'
-        });
+              'Parameter number $parameterNumber is out of bounds for slot $slotIndex.'
+        }));
       }
-      final ParameterInfo paramInfo = paramInfos[parameterIndex];
+      final ParameterInfo paramInfo = paramInfos[parameterNumber];
       final int powerOfTen = paramInfo.powerOfTen ?? 0;
 
       // Parse displayValue to double first for consistent scaling
@@ -191,56 +204,60 @@ class DistingTools {
 
       // The controller.updateParameterValue will perform min/max validation against this finalIntValue
       await _controller.updateParameterValue(
-          slotIndex, parameterIndex, finalIntValue);
+          slotIndex, parameterNumber, finalIntValue);
 
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message':
-            'Parameter $parameterIndex in slot $slotIndex set with display value $displayValue (sent as $finalIntValue).'
-      });
+            'Parameter $parameterNumber in slot $slotIndex set with display value $displayValue (sent as $finalIntValue).'
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
   /// MCP Tool: Gets the value of a specific parameter.
   /// Parameters:
   ///   - slot_index (int, required): The 0-based index of the slot.
-  ///   - parameter_index (int, required): The 0-based index of the parameter within the algorithm.
+  ///   - parameter_number (int, required): The 0-based index of the parameter within the algorithm.
   /// Returns:
   ///   A JSON string with the parameter value or an error.
   Future<String> get_parameter_value(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
-    final int? parameterIndex = params['parameter_index'] as int?;
+    final int? parameterNumber = params['parameter_number'] as int?;
 
     if (slotIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+      return jsonEncode(convertToSnakeCaseKeys(
+          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
-    if (parameterIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "parameter_index" parameter.'});
+    if (parameterNumber == null) {
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error': 'Missing "parameter_number" parameter.'
+      }));
     }
 
     try {
       final int? value =
-          await _controller.getParameterValue(slotIndex, parameterIndex);
+          await _controller.getParameterValue(slotIndex, parameterNumber);
       if (value != null) {
-        return jsonEncode({
+        return jsonEncode(convertToSnakeCaseKeys({
           'success': true,
-          'slotIndex': slotIndex,
-          'parameterIndex': parameterIndex,
+          'slot_index': slotIndex,
+          'parameter_number': parameterNumber,
           'value': value,
-        });
+        }));
       } else {
-        return jsonEncode({
+        return jsonEncode(convertToSnakeCaseKeys({
           'success': false,
           'error':
-              'Failed to retrieve parameter value for slot $slotIndex, parameter $parameterIndex. Value was null, possibly due to MIDI error, empty slot, or invalid parameter.',
-        });
+              'Failed to retrieve parameter value for slot $slotIndex, parameter $parameterNumber. Value was null, possibly due to MIDI error, empty slot, or invalid parameter.',
+        }));
       }
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -259,12 +276,13 @@ class DistingTools {
 
     try {
       await _controller.setPresetName(name);
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'Preset name set to "$name".',
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -289,12 +307,13 @@ class DistingTools {
 
     try {
       await _controller.setSlotName(slotIndex, name);
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'Name for slot $slotIndex set to "$name".',
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -304,12 +323,13 @@ class DistingTools {
   Future<String> new_preset(Map<String, dynamic> params) async {
     try {
       await _controller.newPreset();
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'New empty preset initiated on the device.',
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -319,12 +339,13 @@ class DistingTools {
   Future<String> save_preset(Map<String, dynamic> params) async {
     try {
       await _controller.savePreset();
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'Request to save current preset sent to the device.',
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -358,12 +379,13 @@ class DistingTools {
 
     try {
       await _controller.moveAlgorithmUp(sourceSlotIndex);
-      return jsonEncode({
+      return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message': 'Algorithm from slot $sourceSlotIndex moved up.'
-      });
+      }));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
