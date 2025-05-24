@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:mcp_dart/mcp_dart.dart';
@@ -7,6 +8,21 @@ import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart'; // Needed for DistingTools
+
+// Define SessionResources to hold per-session data including the ping timer and transport
+class SessionResources {
+  final McpServer server;
+  final SseServerManager manager;
+  final SseServerTransport? transport;
+  Timer? pingTimer;
+
+  SessionResources({
+    required this.server,
+    required this.manager,
+    this.transport,
+    this.pingTimer,
+  });
+}
 
 /// Singleton that lets a Flutter app start/stop an SSE MCP server.
 class McpServerService extends ChangeNotifier {
@@ -68,6 +84,7 @@ class McpServerService extends ChangeNotifier {
       _sub = _httpServer!.listen(
         (HttpRequest request) async {
           String? sessionIdFromQuery = request.uri.queryParameters['sessionId'];
+          // Use the new SessionResources class for type safety
           SessionResources? sessionResources;
 
           if (request.uri.path == '/sse' && request.method == 'GET') {
@@ -81,32 +98,77 @@ class McpServerService extends ChangeNotifier {
                   '[MCP] After newSseManager.handleRequest for GET /sse. Active transports in newSseManager: ${newSseManager.activeSseTransports.keys}');
 
               if (newSseManager.activeSseTransports.isNotEmpty) {
-                // This is the hacky part. If there are multiple, which one is it?
-                // If SseServerManager always clears and adds one, .first or .single might work.
                 final newSessionId =
                     newSseManager.activeSseTransports.keys.first;
+                final transport =
+                    newSseManager.activeSseTransports[newSessionId];
                 debugPrint(
                     '[MCP] Attempting to map using presumed newSessionId: $newSessionId');
 
-                _activeSessions[newSessionId] = SessionResources(
-                    server: newMcpServer, manager: newSseManager);
-                debugPrint(
-                    '[MCP] New SSE session $newSessionId established and mapped.');
-
-                final transport =
-                    newSseManager.activeSseTransports[newSessionId];
                 if (transport != null) {
+                  final currentSessionResources = SessionResources(
+                    server: newMcpServer,
+                    manager: newSseManager,
+                    transport: transport,
+                  );
+                  _activeSessions[newSessionId] = currentSessionResources;
+                  debugPrint(
+                      '[MCP] New SSE session $newSessionId established and mapped with transport.');
+
+                  // Store the original onclose from SseServerManager if any (it sets one)
+                  final originalTransportOnClose = transport.onclose;
+
+                  // Set our combined onclose handler
                   transport.onclose = () {
                     debugPrint(
-                        '[MCP] SSE transport closed for session $newSessionId. Cleaning up resources.');
-                    _activeSessions.remove(newSessionId);
-                    // If McpServer had a dispose method: newMcpServer.dispose();
+                        '[MCP] SSE transport closed (onclose callback) for session $newSessionId. Cleaning up ping timer.');
+                    currentSessionResources.pingTimer?.cancel();
+                    originalTransportOnClose
+                        ?.call(); // Call SseServerManager's original onclose handler
                   };
                   debugPrint(
-                      '[MCP] onclose handler set for transport of session $newSessionId');
+                      '[MCP] Combined onclose handler (with ping timer cancellation) set for session $newSessionId.');
+
+                  currentSessionResources.pingTimer =
+                      Timer.periodic(const Duration(seconds: 15), (_) {
+                    // We can't directly check if transport.isClosed without modifying SseServerTransport.
+                    // We will try to send and catch errors if it's already closed.
+                    try {
+                      final randomString = DateTime.now()
+                              .millisecondsSinceEpoch
+                              .toRadixString(36) +
+                          Random().nextInt(99999).toString();
+
+                      // Ensure using JsonRpcNotification for server-initiated keep-alive
+                      final keepAliveNotification = JsonRpcNotification(
+                        method: 'ping', // Method is 'ping'
+                        params: {
+                          'random_string': randomString
+                        }, // Params include random_string
+                      );
+
+                      // Use the transport directly associated with this session to send.
+                      currentSessionResources.transport
+                          ?.send(keepAliveNotification)
+                          .catchError((e) {
+                        debugPrint(
+                            '[MCP] Error during transport.send() for keepalive (session $newSessionId): $e. Cancelling timer.');
+                        currentSessionResources.pingTimer?.cancel();
+                        return null;
+                      });
+                      debugPrint(
+                          '[MCP] Sent keep-alive ping notification for session $newSessionId');
+                    } catch (e, s) {
+                      debugPrint(
+                          '[MCP] Synchronous error attempting to send keepalive (session $newSessionId): $e. Cancelling timer. Stack: $s');
+                      currentSessionResources.pingTimer?.cancel();
+                    }
+                  });
+                  debugPrint(
+                      '[MCP] Keep-alive timer started for session $newSessionId.');
                 } else {
                   debugPrint(
-                      '[MCP] WARNING: Could not get transport for session $newSessionId to set onclose handler.');
+                      '[MCP] WARNING: Could not get transport for session $newSessionId to set onclose handler or start ping timer.');
                 }
               } else {
                 debugPrint(
@@ -395,7 +457,7 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'set_parameter_value',
       description:
-          'Sets parameter to `value`. `parameter_number` MUST be from `get_current_preset`. `value` must be between parameter\'s min/max.',
+          'Sets parameter to `value`. Either `parameter_number` or `parameter_name` MUST be provided (but not both). `parameter_number` MUST be from `get_current_preset`. If using `parameter_name`, ensure it is unique for the slot or an error will be returned. `value` must be between parameter\'s min/max.',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
@@ -403,11 +465,18 @@ class McpServerService extends ChangeNotifier {
         },
         'parameter_number': {
           'type': 'integer',
-          'description': 'Parameter number from `get_current_preset`.'
+          'description':
+              'Parameter number from `get_current_preset`. Use this OR `parameter_name`.'
+        },
+        'parameter_name': {
+          'type': 'string',
+          'description':
+              'Parameter name. Use this OR `parameter_number`. If ambiguous for the slot, an error is returned.'
         },
         'value': {
-          'type': 'integer',
-          'description': 'Integer value to set, between parameter\'s min/max.'
+          'type': 'number',
+          'description':
+              'Value to set (can be integer or float for scaled parameters), between parameter\'s effective min/max.'
         }
       },
       callback: ({args, extra}) async {
@@ -548,6 +617,25 @@ class McpServerService extends ChangeNotifier {
       },
     );
 
+    server.tool(
+      'ping',
+      description:
+          'Responds to a client\'s ping request to verify connection health, as per MCP specification. Returns an empty result.',
+      inputSchemaProperties: {
+        'random_string': {
+          'type': 'string',
+          'description':
+              'A random string provided by the client, helps ensure request uniqueness if needed by client.'
+        }
+      },
+      callback: ({args, extra}) async {
+        // As per MCP spec, a ping response should have an empty result.
+        // The mcp_dart library will construct the full JSON-RPC response.
+        // We provide a JSON string representing an empty map for the "result" field.
+        return CallToolResult(content: [TextContent(text: '{}')]);
+      },
+    );
+
     for (final t in _pendingTools) {
       server.tool(
         t.name,
@@ -558,6 +646,22 @@ class McpServerService extends ChangeNotifier {
     }
     return server;
   }
+
+  void _sendHttpErrorSync(HttpRequest request, int statusCode, String message) {
+    // Synchronous error sending, use with caution and only if absolutely necessary
+    // when an async version cannot be used (e.g. certain error handlers).
+    debugPrint('[MCP] Sending HTTP error (sync): $statusCode - $message');
+    try {
+      request.response.statusCode = statusCode;
+      request.response.headers.contentType = ContentType.text;
+      request.response.write(message);
+      request.response
+          .close(); // This is synchronous if no async operations preceded it within this call
+    } catch (e) {
+      debugPrint('[MCP] Exception sending sync HTTP error: $e');
+      // If an error occurs here, it's likely the connection is already broken.
+    }
+  }
 }
 
 class _ToolSpec {
@@ -567,11 +671,4 @@ class _ToolSpec {
   final ToolCallback callback;
   _ToolSpec(
       this.name, this.description, this.inputSchemaProperties, this.callback);
-}
-
-// Helper class to hold session-specific resources
-class SessionResources {
-  final McpServer server;
-  final SseServerManager manager;
-  SessionResources({required this.server, required this.manager});
 }

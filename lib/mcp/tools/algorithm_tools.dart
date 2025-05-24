@@ -120,20 +120,13 @@ class MCPAlgorithmTools {
     // Access static service for now
     final results = _metadataService.findAlgorithmsByQuery(query);
 
-    // Return full metadata for now
-    // return jsonEncode(results.map((a) => a.toJson()).toList());
     List<Map<String, dynamic>> resultList = [];
     for (var alg in results) {
-      Map<String, dynamic> algoJson = alg.toJson();
-      if (algoJson['parameters'] is List) {
-        List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
-        for (var param in paramsList) {
-          if (param is Map<String, dynamic>) {
-            param.remove('parameterNumber');
-          }
-        }
-      }
-      resultList.add(algoJson);
+      resultList.add({
+        'guid': alg.guid,
+        'name': alg.name,
+        'description': alg.description,
+      });
     }
     return jsonEncode(convertToSnakeCaseKeys(resultList));
   }

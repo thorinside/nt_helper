@@ -109,11 +109,7 @@ class AlgorithmMetadataService {
     return _algorithms.values
         .where((alg) =>
             alg.name.toLowerCase().contains(lowerQuery) ||
-            alg.description.toLowerCase().contains(lowerQuery) ||
-            alg.categories
-                .any((cat) => cat.toLowerCase().contains(lowerQuery)) ||
-            getExpandedParameters(alg.guid)
-                .any((param) => param.name.toLowerCase().contains(lowerQuery)))
+            alg.description.toLowerCase().contains(lowerQuery))
         .toList();
   }
 
