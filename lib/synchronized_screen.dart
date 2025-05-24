@@ -1338,7 +1338,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   @override
   void initState() {
     super.initState();
-    currentValue = widget.initialValue;
+    currentValue = widget.initialValue.clamp(widget.min, widget.max);
     isChecked = widget.isOnOff && currentValue == 1;
   }
 
@@ -1347,9 +1347,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     super.didUpdateWidget(oldWidget);
 
     // Update internal state when the widget is updated
-    if (widget.initialValue != oldWidget.initialValue) {
+    if (widget.initialValue != oldWidget.initialValue || widget.min != oldWidget.min || widget.max != oldWidget.max) {
       setState(() {
-        currentValue = widget.initialValue;
+        currentValue = widget.initialValue.clamp(widget.min, widget.max);
         isChecked = widget.isOnOff && currentValue == 1;
       });
     }
