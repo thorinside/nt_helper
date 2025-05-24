@@ -2,7 +2,7 @@ import Cocoa
 import FlutterMacOS
 import bitsdojo_window_macos
 
-class MainFlutterWindow: BitsdojoWindow {
+class MainFlutterWindow: BitsdojoWindow, NSWindowDelegate { // Conforming to NSWindowDelegate
     private var windowEventsChannel: FlutterMethodChannel?
 
     override func bitsdojo_window_configure() -> UInt {
@@ -23,14 +23,14 @@ class MainFlutterWindow: BitsdojoWindow {
     // Initialize the MethodChannel
     let registrar = flutterViewController.registrar(forPlugin: "com.nt_helper.app.WindowStatePlugin")
     self.windowEventsChannel = FlutterMethodChannel(name: "com.nt_helper.app/window_events",
-                                                    binaryMessenger: registrar.messenger())
+                                                    binaryMessenger: registrar.messenger) // Removed parentheses
 
     super.awakeFromNib()
     // Set the window delegate to self to ensure windowShouldClose is called.
     self.delegate = self
   }
 
-  override func windowShouldClose(_ sender: NSWindow) -> Bool {
+  @objc func windowShouldClose(_ sender: NSWindow) -> Bool { // Added @objc, removed override
     print("Swift: windowShouldClose called. Sending 'windowWillClose' event to Dart.")
     self.windowEventsChannel?.invokeMethod("windowWillClose", arguments: nil)
     // Return true to allow the window to close.
