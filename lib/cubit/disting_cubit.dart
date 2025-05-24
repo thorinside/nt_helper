@@ -1632,4 +1632,19 @@ class DistingCubit extends Cubit<DistingState> {
           devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
     };
   }
+
+  Future<void> refreshRouting() async {
+    final disting = requireDisting();
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    // For each slot, update the routing information
+    final updatedSlots = await Future.wait(currentState.slots.map(
+        (slot) async => slot.copyWith(
+            routing: await disting
+                    .requestRoutingInformation(slot.algorithm.algorithmIndex) ??
+                slot.routing)));
+
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
 }

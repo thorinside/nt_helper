@@ -618,14 +618,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading || isOffline
                   ? null
                   : () async {
-                      final routingInformation = popupCtx
-                          .read<DistingCubit>()
-                          .buildRoutingInformation();
+                      final cubit = popupCtx.read<DistingCubit>();
                       Navigator.push(
                         popupCtx,
                         MaterialPageRoute(
-                            builder: (_) =>
-                                RoutingPage(routing: routingInformation)),
+                            builder: (_) => RoutingPage(cubit: cubit)),
                       );
                     },
               child: const Row(
