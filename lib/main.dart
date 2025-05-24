@@ -1,11 +1,15 @@
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Added for MethodChannel
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
 import 'package:shared_preferences/shared_preferences.dart';
+
+// Define the static MethodChannel
+const MethodChannel _windowEventsChannel = MethodChannel('com.nt_helper.app/window_events');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,19 +26,25 @@ void main() async {
     ),
   );
 
-  appWindow.onWindowClose = () async {
-    final prefs = await SharedPreferences.getInstance();
-    try {
-      await prefs.setDouble('window_x', appWindow.rect.left);
-      await prefs.setDouble('window_y', appWindow.rect.top);
-      await prefs.setDouble('window_width', appWindow.rect.width);
-      await prefs.setDouble('window_height', appWindow.rect.height);
-    } catch (e) {
-      // Handle error saving window state
-      print('Error saving window state: $e');
+  // Set up the method call handler for _windowEventsChannel
+  _windowEventsChannel.setMethodCallHandler((call) async {
+    if (call.method == 'windowWillClose') {
+      print('Dart: windowWillClose event received');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final windowRect = appWindow.rect;
+        await prefs.setDouble('window_x', windowRect.left);
+        await prefs.setDouble('window_y', windowRect.top);
+        await prefs.setDouble('window_width', windowRect.width);
+        await prefs.setDouble('window_height', windowRect.height);
+        print('Dart: Window state saved successfully.');
+      } catch (e) {
+        print('Dart: Error saving window state: $e');
+      }
     }
-    return true; // Allow window to close
-  };
+  });
+
+  // The old appWindow.onWindowClose assignment has been removed.
 
   doWhenWindowReady(() async {
     // SettingsService().init() is already called above, so SharedPreferences should be initialized.
