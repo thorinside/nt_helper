@@ -395,7 +395,7 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'set_parameter_value',
       description:
-          'Sets parameter value using display value. `parameter_number` MUST be `parameter_number` from `get_current_preset`. Bus params: 0=None, 1-12=Inputs, 13-20=Outputs, 21-28=Aux.',
+          'Sets parameter to `value`. `parameter_number` MUST be from `get_current_preset`. `value` must be between parameter\'s min/max.',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
@@ -405,10 +405,9 @@ class McpServerService extends ChangeNotifier {
           'type': 'integer',
           'description': 'Parameter number from `get_current_preset`.'
         },
-        'display_value': {
-          'type': 'number',
-          'description':
-              'Human-readable display value. For bus assignments, use Disting NT bus numbers.'
+        'value': {
+          'type': 'integer',
+          'description': 'Integer value to set, between parameter\'s min/max.'
         }
       },
       callback: ({args, extra}) async {

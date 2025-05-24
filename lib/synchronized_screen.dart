@@ -68,6 +68,31 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       vsync: this,
     );
     _tabController.addListener(_handleTabSelection);
+
+    // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
+    int newValidIndex = _selectedIndex;
+
+    if (widget.slots.length == 0) {
+      newValidIndex = 0;
+    } else {
+      if (newValidIndex >= widget.slots.length) {
+        newValidIndex = widget.slots.length - 1;
+      }
+      // Ensure index is not negative (shouldn't happen with current logic elsewhere but good safeguard)
+      if (newValidIndex < 0) {
+        newValidIndex = 0;
+      }
+    }
+
+    // If the state variable _selectedIndex needs to be updated for other parts of the UI or internal logic.
+    if (_selectedIndex != newValidIndex) {
+      setState(() {
+        _selectedIndex = newValidIndex;
+      });
+    }
+
+    // Set the TabController's index to the new_valid_index that was just calculated.
+    _tabController.index = newValidIndex;
   }
 
   @override
@@ -87,13 +112,31 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         vsync: this,
       );
       _tabController.addListener(_handleTabSelection);
-      // Ensure selected index is valid
-      if (_selectedIndex >= widget.slots.length) {
+
+      // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
+      int newValidIndex = _selectedIndex;
+
+      if (widget.slots.length == 0) {
+        newValidIndex = 0;
+      } else {
+        if (newValidIndex >= widget.slots.length) {
+          newValidIndex = widget.slots.length - 1;
+        }
+        // Ensure index is not negative (shouldn't happen with current logic elsewhere but good safeguard)
+        if (newValidIndex < 0) {
+          newValidIndex = 0;
+        }
+      }
+
+      // If the state variable _selectedIndex needs to be updated for other parts of the UI or internal logic.
+      if (_selectedIndex != newValidIndex) {
         setState(() {
-          _selectedIndex = widget.slots.length - 1;
+          _selectedIndex = newValidIndex;
         });
       }
-      _tabController.index = _selectedIndex;
+
+      // Set the TabController's index to the new_valid_index that was just calculated.
+      _tabController.index = newValidIndex;
     }
   }
 

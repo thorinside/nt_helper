@@ -149,8 +149,8 @@ class DistingTools {
   Future<String> set_parameter_value(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
     final int? parameterNumber = params['parameter_number'] as int?;
-    // Expect 'display_value' which can be int or double (or string parsable to double)
-    final dynamic displayValue = params['display_value'];
+    final int? value = params['value']
+        as int?; // Changed from display_value to value, and expect int
 
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
@@ -162,16 +162,19 @@ class DistingTools {
         'error': 'Missing "parameter_number" parameter.'
       }));
     }
-    if (displayValue == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing "display_value" parameter.'}));
+    if (value == null) {
+      // Changed from displayValue
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error': 'Missing "value" parameter.'
+      })); // Changed error message
     }
 
     try {
-      // Fetch parameter info to get powerOfTen
+      // Fetch parameter info to validate min/max (optional, but good practice)
       final List<ParameterInfo> paramInfos =
           await _controller.getParametersForSlot(slotIndex);
-      if (parameterNumber >= paramInfos.length) {
+      if (parameterNumber >= paramInfos.length || parameterNumber < 0) {
         return jsonEncode(convertToSnakeCaseKeys({
           'success': false,
           'error':
@@ -179,37 +182,23 @@ class DistingTools {
         }));
       }
       final ParameterInfo paramInfo = paramInfos[parameterNumber];
-      final int powerOfTen = paramInfo.powerOfTen ?? 0;
 
-      // Parse displayValue to double first for consistent scaling
-      double parsedDisplayValue;
-      if (displayValue is double) {
-        parsedDisplayValue = displayValue;
-      } else if (displayValue is int) {
-        parsedDisplayValue = displayValue.toDouble();
-      } else if (displayValue is String) {
-        parsedDisplayValue = double.tryParse(displayValue) ??
-            (throw ArgumentError(
-                'Cannot parse display_value string "$displayValue" to double.'));
-      } else {
-        throw ArgumentError(
-            'Invalid display_value type: ${displayValue.runtimeType}. Expected number or parsable string.');
+      // Validate if the provided value is within the parameter's min/max range
+      if (value < paramInfo.min || value > paramInfo.max) {
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error':
+              'Value $value is out of range for parameter ${paramInfo.name} (min: ${paramInfo.min}, max: ${paramInfo.max}).'
+        }));
       }
 
-      // Scale the value
-      final double scaledValueDouble = parsedDisplayValue * pow(10, powerOfTen);
-      // The controller expects an integer, so round the scaled value.
-      // This matches how hardware often handles floating point parameters internally.
-      final int finalIntValue = scaledValueDouble.round();
-
-      // The controller.updateParameterValue will perform min/max validation against this finalIntValue
-      await _controller.updateParameterValue(
-          slotIndex, parameterNumber, finalIntValue);
+      // Directly use the integer value, no scaling needed
+      await _controller.updateParameterValue(slotIndex, parameterNumber, value);
 
       return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message':
-            'Parameter $parameterNumber in slot $slotIndex set with display value $displayValue (sent as $finalIntValue).'
+            'Parameter $parameterNumber in slot $slotIndex set to $value.'
       }));
     } catch (e) {
       return jsonEncode(
