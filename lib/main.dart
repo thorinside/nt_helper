@@ -29,7 +29,6 @@ void main() async {
   // Set up the method call handler for _windowEventsChannel
   _windowEventsChannel.setMethodCallHandler((call) async {
     if (call.method == 'windowWillClose') {
-      print('Dart: windowWillClose event received. Attempting to save state...');
       try {
         final prefs = await SharedPreferences.getInstance();
         final windowRect = appWindow.rect;
@@ -47,14 +46,11 @@ void main() async {
 
         // Check if all operations were successful (SharedPreferences.setDouble returns true on success)
         if (results.every((result) => result)) {
-          print('Dart: Window state saved successfully.');
           return true; // Signal success to native side
         } else {
-          print('Dart: One or more SharedPreferences operations failed.');
           return false; // Signal failure
         }
       } catch (e) {
-        print('Dart: Error saving window state: $e');
         return false; // Signal failure
       }
     }
@@ -73,56 +69,35 @@ void main() async {
       y = prefs.getDouble('window_y');
       width = prefs.getDouble('window_width');
       height = prefs.getDouble('window_height');
-      print('Loaded from prefs: x=$x, y=$y, width=$width, height=$height');
     } catch (e) {
       // Handle error loading window state
-      print('Error loading window state from SharedPreferences: $e');
+      // Consider logging this to a file or analytics in a real app
     }
 
     appWindow.minSize = Size(640, 720);
-    print('Set minSize to ${appWindow.minSize}');
 
     bool hasSavedPositionAndSize = x != null && y != null && width != null && height != null;
-    print('Condition (x != null && y != null && width != null && height != null) is: $hasSavedPositionAndSize');
 
     if (hasSavedPositionAndSize) {
       // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
       if (width! <= 0 || height! <= 0) {
-          print('Warning: Loaded width or height is not positive. width=$width, height=$height. Falling back to default size.');
           const initialSize = Size(720, 1080);
           appWindow.size = initialSize;
-          print('Set initialSize to $initialSize');
           appWindow.alignment = Alignment.center;
-          print('Set alignment to center');
       } else {
           // Create Size and Offset objects
           Size savedSize = Size(width, height);
           Offset savedPosition = Offset(x!, y!);
           
-          print('Applying saved size: $savedSize and position: $savedPosition');
-          
-          print('Before appWindow.size = savedSize; Current appWindow.size is ${appWindow.size}');
           appWindow.size = savedSize;
-          print('After appWindow.size = savedSize; Current appWindow.size is ${appWindow.size}');
-          
-          print('Before appWindow.position = savedPosition; Current appWindow.position is ${appWindow.position}');
           appWindow.position = savedPosition;
-          print('After appWindow.position = savedPosition; Current appWindow.position is ${appWindow.position}');
-          
-          // For debugging, also print the resulting rect
-          print('Resulting appWindow.rect after setting size and position separately is ${appWindow.rect}');
       }
     } else {
-      print('Using default window size and alignment.');
       const initialSize = Size(720, 1080);
       appWindow.size = initialSize;
-      print('Set initialSize to $initialSize');
       appWindow.alignment = Alignment.center;
-      print('Set alignment to center');
     }
 
-    print('Final check before show: appWindow.rect=${appWindow.rect}, appWindow.size=${appWindow.size}, appWindow.position=${appWindow.position}');
     appWindow.show();
-    print('Called appWindow.show()');
   });
 }
