@@ -6,6 +6,7 @@ import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
+import 'package:nt_helper/disting_app.dart'; // Import DistingApp for the route name
 
 class MetadataSyncPage extends StatelessWidget {
   // Accept DistingCubit as a parameter
@@ -121,6 +122,30 @@ class MetadataSyncPage extends StatelessWidget {
                                   .read<MetadataSyncCubit>()
                                   .saveCurrentPreset(currentManager)
                               : null,
+                        );
+                      },
+                    ),
+                    // --- Scan SD Card Button ---
+                    BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                      builder: (metaCtx, metaState) {
+                        // Reuse busy logic or simplify if not dependent on metaState specifics
+                        final isMetaBusy = metaState is! ViewingLocalData &&
+                            metaState is! Idle &&
+                            metaState is! Failure;
+                        final isDistingBusy = distingState.maybeMap(
+                            synchronized: (s) => s.loading,
+                            orElse: () => false);
+                        final isBusy = isMetaBusy || isDistingBusy;
+
+                        return IconButton(
+                          icon: const Icon(Icons.sd_storage_outlined),
+                          tooltip: 'Scan SD Card Presets',
+                          onPressed: isBusy
+                              ? null
+                              : () {
+                                  Navigator.pushNamed(
+                                      context, DistingApp.sdCardScannerRoute);
+                                },
                         );
                       },
                     ),
@@ -560,8 +585,7 @@ class _AlgorithmMetadataListView extends StatefulWidget {
   final Map<String, int> parameterCounts;
 
   const _AlgorithmMetadataListView(
-      {required this.algorithms,
-      required this.parameterCounts // Added key
+      {required this.algorithms, required this.parameterCounts // Added key
       });
 
   @override

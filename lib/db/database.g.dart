@@ -3605,12 +3605,11 @@ class PresetRoutingsCompanion extends UpdateCompanion<PresetRoutingEntry> {
   }
 }
 
-class $FileSystemEntriesTable extends FileSystemEntries
-    with TableInfo<$FileSystemEntriesTable, FileSystemEntry> {
+class $SdCardsTable extends SdCards with TableInfo<$SdCardsTable, SdCardEntry> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $FileSystemEntriesTable(this.attachedDatabase, [this._alias]);
+  $SdCardsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -3620,76 +3619,48 @@ class $FileSystemEntriesTable extends FileSystemEntries
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _parentIdMeta =
-      const VerificationMeta('parentId');
+  static const VerificationMeta _userLabelMeta =
+      const VerificationMeta('userLabel');
   @override
-  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
-      'parent_id', aliasedName, true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'REFERENCES file_system_entries (id)'));
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _isDirectoryMeta =
-      const VerificationMeta('isDirectory');
-  @override
-  late final GeneratedColumn<bool> isDirectory = GeneratedColumn<bool>(
-      'is_directory', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("is_directory" IN (0, 1))'));
-  static const VerificationMeta _fullPathMeta =
-      const VerificationMeta('fullPath');
-  @override
-  late final GeneratedColumn<String> fullPath = GeneratedColumn<String>(
-      'full_path', aliasedName, false,
+  late final GeneratedColumn<String> userLabel = GeneratedColumn<String>(
+      'user_label', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: true,
       defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _systemIdentifierMeta =
+      const VerificationMeta('systemIdentifier');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, parentId, name, isDirectory, fullPath];
+  late final GeneratedColumn<String> systemIdentifier = GeneratedColumn<String>(
+      'system_identifier', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  @override
+  List<GeneratedColumn> get $columns => [id, userLabel, systemIdentifier];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'file_system_entries';
+  static const String $name = 'sd_cards';
   @override
-  VerificationContext validateIntegrity(Insertable<FileSystemEntry> instance,
+  VerificationContext validateIntegrity(Insertable<SdCardEntry> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('parent_id')) {
-      context.handle(_parentIdMeta,
-          parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta));
+    if (data.containsKey('user_label')) {
+      context.handle(_userLabelMeta,
+          userLabel.isAcceptableOrUnknown(data['user_label']!, _userLabelMeta));
+    } else if (isInserting) {
+      context.missing(_userLabelMeta);
     }
-    if (data.containsKey('name')) {
+    if (data.containsKey('system_identifier')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('is_directory')) {
-      context.handle(
-          _isDirectoryMeta,
-          isDirectory.isAcceptableOrUnknown(
-              data['is_directory']!, _isDirectoryMeta));
-    } else if (isInserting) {
-      context.missing(_isDirectoryMeta);
-    }
-    if (data.containsKey('full_path')) {
-      context.handle(_fullPathMeta,
-          fullPath.isAcceptableOrUnknown(data['full_path']!, _fullPathMeta));
-    } else if (isInserting) {
-      context.missing(_fullPathMeta);
+          _systemIdentifierMeta,
+          systemIdentifier.isAcceptableOrUnknown(
+              data['system_identifier']!, _systemIdentifierMeta));
     }
     return context;
   }
@@ -3697,74 +3668,58 @@ class $FileSystemEntriesTable extends FileSystemEntries
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  FileSystemEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SdCardEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return FileSystemEntry(
+    return SdCardEntry(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      parentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parent_id']),
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      isDirectory: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_directory'])!,
-      fullPath: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}full_path'])!,
+      userLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_label'])!,
+      systemIdentifier: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}system_identifier']),
     );
   }
 
   @override
-  $FileSystemEntriesTable createAlias(String alias) {
-    return $FileSystemEntriesTable(attachedDatabase, alias);
+  $SdCardsTable createAlias(String alias) {
+    return $SdCardsTable(attachedDatabase, alias);
   }
 }
 
-class FileSystemEntry extends DataClass implements Insertable<FileSystemEntry> {
+class SdCardEntry extends DataClass implements Insertable<SdCardEntry> {
   final int id;
-  final int? parentId;
-  final String name;
-  final bool isDirectory;
-  final String fullPath;
-  const FileSystemEntry(
-      {required this.id,
-      this.parentId,
-      required this.name,
-      required this.isDirectory,
-      required this.fullPath});
+  final String userLabel;
+  final String? systemIdentifier;
+  const SdCardEntry(
+      {required this.id, required this.userLabel, this.systemIdentifier});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    if (!nullToAbsent || parentId != null) {
-      map['parent_id'] = Variable<int>(parentId);
+    map['user_label'] = Variable<String>(userLabel);
+    if (!nullToAbsent || systemIdentifier != null) {
+      map['system_identifier'] = Variable<String>(systemIdentifier);
     }
-    map['name'] = Variable<String>(name);
-    map['is_directory'] = Variable<bool>(isDirectory);
-    map['full_path'] = Variable<String>(fullPath);
     return map;
   }
 
-  FileSystemEntriesCompanion toCompanion(bool nullToAbsent) {
-    return FileSystemEntriesCompanion(
+  SdCardsCompanion toCompanion(bool nullToAbsent) {
+    return SdCardsCompanion(
       id: Value(id),
-      parentId: parentId == null && nullToAbsent
+      userLabel: Value(userLabel),
+      systemIdentifier: systemIdentifier == null && nullToAbsent
           ? const Value.absent()
-          : Value(parentId),
-      name: Value(name),
-      isDirectory: Value(isDirectory),
-      fullPath: Value(fullPath),
+          : Value(systemIdentifier),
     );
   }
 
-  factory FileSystemEntry.fromJson(Map<String, dynamic> json,
+  factory SdCardEntry.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return FileSystemEntry(
+    return SdCardEntry(
       id: serializer.fromJson<int>(json['id']),
-      parentId: serializer.fromJson<int?>(json['parentId']),
-      name: serializer.fromJson<String>(json['name']),
-      isDirectory: serializer.fromJson<bool>(json['isDirectory']),
-      fullPath: serializer.fromJson<String>(json['fullPath']),
+      userLabel: serializer.fromJson<String>(json['userLabel']),
+      systemIdentifier: serializer.fromJson<String?>(json['systemIdentifier']),
     );
   }
   @override
@@ -3772,112 +3727,87 @@ class FileSystemEntry extends DataClass implements Insertable<FileSystemEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'parentId': serializer.toJson<int?>(parentId),
-      'name': serializer.toJson<String>(name),
-      'isDirectory': serializer.toJson<bool>(isDirectory),
-      'fullPath': serializer.toJson<String>(fullPath),
+      'userLabel': serializer.toJson<String>(userLabel),
+      'systemIdentifier': serializer.toJson<String?>(systemIdentifier),
     };
   }
 
-  FileSystemEntry copyWith(
+  SdCardEntry copyWith(
           {int? id,
-          Value<int?> parentId = const Value.absent(),
-          String? name,
-          bool? isDirectory,
-          String? fullPath}) =>
-      FileSystemEntry(
+          String? userLabel,
+          Value<String?> systemIdentifier = const Value.absent()}) =>
+      SdCardEntry(
         id: id ?? this.id,
-        parentId: parentId.present ? parentId.value : this.parentId,
-        name: name ?? this.name,
-        isDirectory: isDirectory ?? this.isDirectory,
-        fullPath: fullPath ?? this.fullPath,
+        userLabel: userLabel ?? this.userLabel,
+        systemIdentifier: systemIdentifier.present
+            ? systemIdentifier.value
+            : this.systemIdentifier,
       );
-  FileSystemEntry copyWithCompanion(FileSystemEntriesCompanion data) {
-    return FileSystemEntry(
+  SdCardEntry copyWithCompanion(SdCardsCompanion data) {
+    return SdCardEntry(
       id: data.id.present ? data.id.value : this.id,
-      parentId: data.parentId.present ? data.parentId.value : this.parentId,
-      name: data.name.present ? data.name.value : this.name,
-      isDirectory:
-          data.isDirectory.present ? data.isDirectory.value : this.isDirectory,
-      fullPath: data.fullPath.present ? data.fullPath.value : this.fullPath,
+      userLabel: data.userLabel.present ? data.userLabel.value : this.userLabel,
+      systemIdentifier: data.systemIdentifier.present
+          ? data.systemIdentifier.value
+          : this.systemIdentifier,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('FileSystemEntry(')
+    return (StringBuffer('SdCardEntry(')
           ..write('id: $id, ')
-          ..write('parentId: $parentId, ')
-          ..write('name: $name, ')
-          ..write('isDirectory: $isDirectory, ')
-          ..write('fullPath: $fullPath')
+          ..write('userLabel: $userLabel, ')
+          ..write('systemIdentifier: $systemIdentifier')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, parentId, name, isDirectory, fullPath);
+  int get hashCode => Object.hash(id, userLabel, systemIdentifier);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is FileSystemEntry &&
+      (other is SdCardEntry &&
           other.id == this.id &&
-          other.parentId == this.parentId &&
-          other.name == this.name &&
-          other.isDirectory == this.isDirectory &&
-          other.fullPath == this.fullPath);
+          other.userLabel == this.userLabel &&
+          other.systemIdentifier == this.systemIdentifier);
 }
 
-class FileSystemEntriesCompanion extends UpdateCompanion<FileSystemEntry> {
+class SdCardsCompanion extends UpdateCompanion<SdCardEntry> {
   final Value<int> id;
-  final Value<int?> parentId;
-  final Value<String> name;
-  final Value<bool> isDirectory;
-  final Value<String> fullPath;
-  const FileSystemEntriesCompanion({
+  final Value<String> userLabel;
+  final Value<String?> systemIdentifier;
+  const SdCardsCompanion({
     this.id = const Value.absent(),
-    this.parentId = const Value.absent(),
-    this.name = const Value.absent(),
-    this.isDirectory = const Value.absent(),
-    this.fullPath = const Value.absent(),
+    this.userLabel = const Value.absent(),
+    this.systemIdentifier = const Value.absent(),
   });
-  FileSystemEntriesCompanion.insert({
+  SdCardsCompanion.insert({
     this.id = const Value.absent(),
-    this.parentId = const Value.absent(),
-    required String name,
-    required bool isDirectory,
-    required String fullPath,
-  })  : name = Value(name),
-        isDirectory = Value(isDirectory),
-        fullPath = Value(fullPath);
-  static Insertable<FileSystemEntry> custom({
+    required String userLabel,
+    this.systemIdentifier = const Value.absent(),
+  }) : userLabel = Value(userLabel);
+  static Insertable<SdCardEntry> custom({
     Expression<int>? id,
-    Expression<int>? parentId,
-    Expression<String>? name,
-    Expression<bool>? isDirectory,
-    Expression<String>? fullPath,
+    Expression<String>? userLabel,
+    Expression<String>? systemIdentifier,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (parentId != null) 'parent_id': parentId,
-      if (name != null) 'name': name,
-      if (isDirectory != null) 'is_directory': isDirectory,
-      if (fullPath != null) 'full_path': fullPath,
+      if (userLabel != null) 'user_label': userLabel,
+      if (systemIdentifier != null) 'system_identifier': systemIdentifier,
     });
   }
 
-  FileSystemEntriesCompanion copyWith(
+  SdCardsCompanion copyWith(
       {Value<int>? id,
-      Value<int?>? parentId,
-      Value<String>? name,
-      Value<bool>? isDirectory,
-      Value<String>? fullPath}) {
-    return FileSystemEntriesCompanion(
+      Value<String>? userLabel,
+      Value<String?>? systemIdentifier}) {
+    return SdCardsCompanion(
       id: id ?? this.id,
-      parentId: parentId ?? this.parentId,
-      name: name ?? this.name,
-      isDirectory: isDirectory ?? this.isDirectory,
-      fullPath: fullPath ?? this.fullPath,
+      userLabel: userLabel ?? this.userLabel,
+      systemIdentifier: systemIdentifier ?? this.systemIdentifier,
     );
   }
 
@@ -3887,29 +3817,551 @@ class FileSystemEntriesCompanion extends UpdateCompanion<FileSystemEntry> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (parentId.present) {
-      map['parent_id'] = Variable<int>(parentId.value);
+    if (userLabel.present) {
+      map['user_label'] = Variable<String>(userLabel.value);
     }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (isDirectory.present) {
-      map['is_directory'] = Variable<bool>(isDirectory.value);
-    }
-    if (fullPath.present) {
-      map['full_path'] = Variable<String>(fullPath.value);
+    if (systemIdentifier.present) {
+      map['system_identifier'] = Variable<String>(systemIdentifier.value);
     }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('FileSystemEntriesCompanion(')
+    return (StringBuffer('SdCardsCompanion(')
           ..write('id: $id, ')
-          ..write('parentId: $parentId, ')
-          ..write('name: $name, ')
-          ..write('isDirectory: $isDirectory, ')
-          ..write('fullPath: $fullPath')
+          ..write('userLabel: $userLabel, ')
+          ..write('systemIdentifier: $systemIdentifier')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IndexedPresetFilesTable extends IndexedPresetFiles
+    with TableInfo<$IndexedPresetFilesTable, IndexedPresetFileEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IndexedPresetFilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _sdCardIdMeta =
+      const VerificationMeta('sdCardId');
+  @override
+  late final GeneratedColumn<int> sdCardId = GeneratedColumn<int>(
+      'sd_card_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sd_cards (id)'));
+  static const VerificationMeta _relativePathMeta =
+      const VerificationMeta('relativePath');
+  @override
+  late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
+      'relative_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fileNameMeta =
+      const VerificationMeta('fileName');
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+      'file_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _absolutePathAtScanTimeMeta =
+      const VerificationMeta('absolutePathAtScanTime');
+  @override
+  late final GeneratedColumn<String> absolutePathAtScanTime =
+      GeneratedColumn<String>('absolute_path_at_scan_time', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _algorithmNameFromPresetMeta =
+      const VerificationMeta('algorithmNameFromPreset');
+  @override
+  late final GeneratedColumn<String> algorithmNameFromPreset =
+      GeneratedColumn<String>('algorithm_name_from_preset', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _notesFromPresetMeta =
+      const VerificationMeta('notesFromPreset');
+  @override
+  late final GeneratedColumn<String> notesFromPreset = GeneratedColumn<String>(
+      'notes_from_preset', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _otherExtractedMetadataJsonMeta =
+      const VerificationMeta('otherExtractedMetadataJson');
+  @override
+  late final GeneratedColumn<String> otherExtractedMetadataJson =
+      GeneratedColumn<String>(
+          'other_extracted_metadata_json', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lastSeenUtcMeta =
+      const VerificationMeta('lastSeenUtc');
+  @override
+  late final GeneratedColumn<DateTime> lastSeenUtc = GeneratedColumn<DateTime>(
+      'last_seen_utc', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        sdCardId,
+        relativePath,
+        fileName,
+        absolutePathAtScanTime,
+        algorithmNameFromPreset,
+        notesFromPreset,
+        otherExtractedMetadataJson,
+        lastSeenUtc
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'indexed_preset_files';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<IndexedPresetFileEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sd_card_id')) {
+      context.handle(_sdCardIdMeta,
+          sdCardId.isAcceptableOrUnknown(data['sd_card_id']!, _sdCardIdMeta));
+    } else if (isInserting) {
+      context.missing(_sdCardIdMeta);
+    }
+    if (data.containsKey('relative_path')) {
+      context.handle(
+          _relativePathMeta,
+          relativePath.isAcceptableOrUnknown(
+              data['relative_path']!, _relativePathMeta));
+    } else if (isInserting) {
+      context.missing(_relativePathMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(_fileNameMeta,
+          fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta));
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('absolute_path_at_scan_time')) {
+      context.handle(
+          _absolutePathAtScanTimeMeta,
+          absolutePathAtScanTime.isAcceptableOrUnknown(
+              data['absolute_path_at_scan_time']!,
+              _absolutePathAtScanTimeMeta));
+    } else if (isInserting) {
+      context.missing(_absolutePathAtScanTimeMeta);
+    }
+    if (data.containsKey('algorithm_name_from_preset')) {
+      context.handle(
+          _algorithmNameFromPresetMeta,
+          algorithmNameFromPreset.isAcceptableOrUnknown(
+              data['algorithm_name_from_preset']!,
+              _algorithmNameFromPresetMeta));
+    }
+    if (data.containsKey('notes_from_preset')) {
+      context.handle(
+          _notesFromPresetMeta,
+          notesFromPreset.isAcceptableOrUnknown(
+              data['notes_from_preset']!, _notesFromPresetMeta));
+    }
+    if (data.containsKey('other_extracted_metadata_json')) {
+      context.handle(
+          _otherExtractedMetadataJsonMeta,
+          otherExtractedMetadataJson.isAcceptableOrUnknown(
+              data['other_extracted_metadata_json']!,
+              _otherExtractedMetadataJsonMeta));
+    }
+    if (data.containsKey('last_seen_utc')) {
+      context.handle(
+          _lastSeenUtcMeta,
+          lastSeenUtc.isAcceptableOrUnknown(
+              data['last_seen_utc']!, _lastSeenUtcMeta));
+    } else if (isInserting) {
+      context.missing(_lastSeenUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IndexedPresetFileEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IndexedPresetFileEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      sdCardId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sd_card_id'])!,
+      relativePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}relative_path'])!,
+      fileName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_name'])!,
+      absolutePathAtScanTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}absolute_path_at_scan_time'])!,
+      algorithmNameFromPreset: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}algorithm_name_from_preset']),
+      notesFromPreset: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}notes_from_preset']),
+      otherExtractedMetadataJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}other_extracted_metadata_json']),
+      lastSeenUtc: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_seen_utc'])!,
+    );
+  }
+
+  @override
+  $IndexedPresetFilesTable createAlias(String alias) {
+    return $IndexedPresetFilesTable(attachedDatabase, alias);
+  }
+}
+
+class IndexedPresetFileEntry extends DataClass
+    implements Insertable<IndexedPresetFileEntry> {
+  final int id;
+  final int sdCardId;
+  final String relativePath;
+  final String fileName;
+  final String absolutePathAtScanTime;
+  final String? algorithmNameFromPreset;
+  final String? notesFromPreset;
+  final String? otherExtractedMetadataJson;
+  final DateTime lastSeenUtc;
+  const IndexedPresetFileEntry(
+      {required this.id,
+      required this.sdCardId,
+      required this.relativePath,
+      required this.fileName,
+      required this.absolutePathAtScanTime,
+      this.algorithmNameFromPreset,
+      this.notesFromPreset,
+      this.otherExtractedMetadataJson,
+      required this.lastSeenUtc});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['sd_card_id'] = Variable<int>(sdCardId);
+    map['relative_path'] = Variable<String>(relativePath);
+    map['file_name'] = Variable<String>(fileName);
+    map['absolute_path_at_scan_time'] =
+        Variable<String>(absolutePathAtScanTime);
+    if (!nullToAbsent || algorithmNameFromPreset != null) {
+      map['algorithm_name_from_preset'] =
+          Variable<String>(algorithmNameFromPreset);
+    }
+    if (!nullToAbsent || notesFromPreset != null) {
+      map['notes_from_preset'] = Variable<String>(notesFromPreset);
+    }
+    if (!nullToAbsent || otherExtractedMetadataJson != null) {
+      map['other_extracted_metadata_json'] =
+          Variable<String>(otherExtractedMetadataJson);
+    }
+    map['last_seen_utc'] = Variable<DateTime>(lastSeenUtc);
+    return map;
+  }
+
+  IndexedPresetFilesCompanion toCompanion(bool nullToAbsent) {
+    return IndexedPresetFilesCompanion(
+      id: Value(id),
+      sdCardId: Value(sdCardId),
+      relativePath: Value(relativePath),
+      fileName: Value(fileName),
+      absolutePathAtScanTime: Value(absolutePathAtScanTime),
+      algorithmNameFromPreset: algorithmNameFromPreset == null && nullToAbsent
+          ? const Value.absent()
+          : Value(algorithmNameFromPreset),
+      notesFromPreset: notesFromPreset == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notesFromPreset),
+      otherExtractedMetadataJson:
+          otherExtractedMetadataJson == null && nullToAbsent
+              ? const Value.absent()
+              : Value(otherExtractedMetadataJson),
+      lastSeenUtc: Value(lastSeenUtc),
+    );
+  }
+
+  factory IndexedPresetFileEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IndexedPresetFileEntry(
+      id: serializer.fromJson<int>(json['id']),
+      sdCardId: serializer.fromJson<int>(json['sdCardId']),
+      relativePath: serializer.fromJson<String>(json['relativePath']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      absolutePathAtScanTime:
+          serializer.fromJson<String>(json['absolutePathAtScanTime']),
+      algorithmNameFromPreset:
+          serializer.fromJson<String?>(json['algorithmNameFromPreset']),
+      notesFromPreset: serializer.fromJson<String?>(json['notesFromPreset']),
+      otherExtractedMetadataJson:
+          serializer.fromJson<String?>(json['otherExtractedMetadataJson']),
+      lastSeenUtc: serializer.fromJson<DateTime>(json['lastSeenUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sdCardId': serializer.toJson<int>(sdCardId),
+      'relativePath': serializer.toJson<String>(relativePath),
+      'fileName': serializer.toJson<String>(fileName),
+      'absolutePathAtScanTime':
+          serializer.toJson<String>(absolutePathAtScanTime),
+      'algorithmNameFromPreset':
+          serializer.toJson<String?>(algorithmNameFromPreset),
+      'notesFromPreset': serializer.toJson<String?>(notesFromPreset),
+      'otherExtractedMetadataJson':
+          serializer.toJson<String?>(otherExtractedMetadataJson),
+      'lastSeenUtc': serializer.toJson<DateTime>(lastSeenUtc),
+    };
+  }
+
+  IndexedPresetFileEntry copyWith(
+          {int? id,
+          int? sdCardId,
+          String? relativePath,
+          String? fileName,
+          String? absolutePathAtScanTime,
+          Value<String?> algorithmNameFromPreset = const Value.absent(),
+          Value<String?> notesFromPreset = const Value.absent(),
+          Value<String?> otherExtractedMetadataJson = const Value.absent(),
+          DateTime? lastSeenUtc}) =>
+      IndexedPresetFileEntry(
+        id: id ?? this.id,
+        sdCardId: sdCardId ?? this.sdCardId,
+        relativePath: relativePath ?? this.relativePath,
+        fileName: fileName ?? this.fileName,
+        absolutePathAtScanTime:
+            absolutePathAtScanTime ?? this.absolutePathAtScanTime,
+        algorithmNameFromPreset: algorithmNameFromPreset.present
+            ? algorithmNameFromPreset.value
+            : this.algorithmNameFromPreset,
+        notesFromPreset: notesFromPreset.present
+            ? notesFromPreset.value
+            : this.notesFromPreset,
+        otherExtractedMetadataJson: otherExtractedMetadataJson.present
+            ? otherExtractedMetadataJson.value
+            : this.otherExtractedMetadataJson,
+        lastSeenUtc: lastSeenUtc ?? this.lastSeenUtc,
+      );
+  IndexedPresetFileEntry copyWithCompanion(IndexedPresetFilesCompanion data) {
+    return IndexedPresetFileEntry(
+      id: data.id.present ? data.id.value : this.id,
+      sdCardId: data.sdCardId.present ? data.sdCardId.value : this.sdCardId,
+      relativePath: data.relativePath.present
+          ? data.relativePath.value
+          : this.relativePath,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      absolutePathAtScanTime: data.absolutePathAtScanTime.present
+          ? data.absolutePathAtScanTime.value
+          : this.absolutePathAtScanTime,
+      algorithmNameFromPreset: data.algorithmNameFromPreset.present
+          ? data.algorithmNameFromPreset.value
+          : this.algorithmNameFromPreset,
+      notesFromPreset: data.notesFromPreset.present
+          ? data.notesFromPreset.value
+          : this.notesFromPreset,
+      otherExtractedMetadataJson: data.otherExtractedMetadataJson.present
+          ? data.otherExtractedMetadataJson.value
+          : this.otherExtractedMetadataJson,
+      lastSeenUtc:
+          data.lastSeenUtc.present ? data.lastSeenUtc.value : this.lastSeenUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IndexedPresetFileEntry(')
+          ..write('id: $id, ')
+          ..write('sdCardId: $sdCardId, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('absolutePathAtScanTime: $absolutePathAtScanTime, ')
+          ..write('algorithmNameFromPreset: $algorithmNameFromPreset, ')
+          ..write('notesFromPreset: $notesFromPreset, ')
+          ..write('otherExtractedMetadataJson: $otherExtractedMetadataJson, ')
+          ..write('lastSeenUtc: $lastSeenUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      sdCardId,
+      relativePath,
+      fileName,
+      absolutePathAtScanTime,
+      algorithmNameFromPreset,
+      notesFromPreset,
+      otherExtractedMetadataJson,
+      lastSeenUtc);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IndexedPresetFileEntry &&
+          other.id == this.id &&
+          other.sdCardId == this.sdCardId &&
+          other.relativePath == this.relativePath &&
+          other.fileName == this.fileName &&
+          other.absolutePathAtScanTime == this.absolutePathAtScanTime &&
+          other.algorithmNameFromPreset == this.algorithmNameFromPreset &&
+          other.notesFromPreset == this.notesFromPreset &&
+          other.otherExtractedMetadataJson == this.otherExtractedMetadataJson &&
+          other.lastSeenUtc == this.lastSeenUtc);
+}
+
+class IndexedPresetFilesCompanion
+    extends UpdateCompanion<IndexedPresetFileEntry> {
+  final Value<int> id;
+  final Value<int> sdCardId;
+  final Value<String> relativePath;
+  final Value<String> fileName;
+  final Value<String> absolutePathAtScanTime;
+  final Value<String?> algorithmNameFromPreset;
+  final Value<String?> notesFromPreset;
+  final Value<String?> otherExtractedMetadataJson;
+  final Value<DateTime> lastSeenUtc;
+  const IndexedPresetFilesCompanion({
+    this.id = const Value.absent(),
+    this.sdCardId = const Value.absent(),
+    this.relativePath = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.absolutePathAtScanTime = const Value.absent(),
+    this.algorithmNameFromPreset = const Value.absent(),
+    this.notesFromPreset = const Value.absent(),
+    this.otherExtractedMetadataJson = const Value.absent(),
+    this.lastSeenUtc = const Value.absent(),
+  });
+  IndexedPresetFilesCompanion.insert({
+    this.id = const Value.absent(),
+    required int sdCardId,
+    required String relativePath,
+    required String fileName,
+    required String absolutePathAtScanTime,
+    this.algorithmNameFromPreset = const Value.absent(),
+    this.notesFromPreset = const Value.absent(),
+    this.otherExtractedMetadataJson = const Value.absent(),
+    required DateTime lastSeenUtc,
+  })  : sdCardId = Value(sdCardId),
+        relativePath = Value(relativePath),
+        fileName = Value(fileName),
+        absolutePathAtScanTime = Value(absolutePathAtScanTime),
+        lastSeenUtc = Value(lastSeenUtc);
+  static Insertable<IndexedPresetFileEntry> custom({
+    Expression<int>? id,
+    Expression<int>? sdCardId,
+    Expression<String>? relativePath,
+    Expression<String>? fileName,
+    Expression<String>? absolutePathAtScanTime,
+    Expression<String>? algorithmNameFromPreset,
+    Expression<String>? notesFromPreset,
+    Expression<String>? otherExtractedMetadataJson,
+    Expression<DateTime>? lastSeenUtc,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sdCardId != null) 'sd_card_id': sdCardId,
+      if (relativePath != null) 'relative_path': relativePath,
+      if (fileName != null) 'file_name': fileName,
+      if (absolutePathAtScanTime != null)
+        'absolute_path_at_scan_time': absolutePathAtScanTime,
+      if (algorithmNameFromPreset != null)
+        'algorithm_name_from_preset': algorithmNameFromPreset,
+      if (notesFromPreset != null) 'notes_from_preset': notesFromPreset,
+      if (otherExtractedMetadataJson != null)
+        'other_extracted_metadata_json': otherExtractedMetadataJson,
+      if (lastSeenUtc != null) 'last_seen_utc': lastSeenUtc,
+    });
+  }
+
+  IndexedPresetFilesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? sdCardId,
+      Value<String>? relativePath,
+      Value<String>? fileName,
+      Value<String>? absolutePathAtScanTime,
+      Value<String?>? algorithmNameFromPreset,
+      Value<String?>? notesFromPreset,
+      Value<String?>? otherExtractedMetadataJson,
+      Value<DateTime>? lastSeenUtc}) {
+    return IndexedPresetFilesCompanion(
+      id: id ?? this.id,
+      sdCardId: sdCardId ?? this.sdCardId,
+      relativePath: relativePath ?? this.relativePath,
+      fileName: fileName ?? this.fileName,
+      absolutePathAtScanTime:
+          absolutePathAtScanTime ?? this.absolutePathAtScanTime,
+      algorithmNameFromPreset:
+          algorithmNameFromPreset ?? this.algorithmNameFromPreset,
+      notesFromPreset: notesFromPreset ?? this.notesFromPreset,
+      otherExtractedMetadataJson:
+          otherExtractedMetadataJson ?? this.otherExtractedMetadataJson,
+      lastSeenUtc: lastSeenUtc ?? this.lastSeenUtc,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sdCardId.present) {
+      map['sd_card_id'] = Variable<int>(sdCardId.value);
+    }
+    if (relativePath.present) {
+      map['relative_path'] = Variable<String>(relativePath.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (absolutePathAtScanTime.present) {
+      map['absolute_path_at_scan_time'] =
+          Variable<String>(absolutePathAtScanTime.value);
+    }
+    if (algorithmNameFromPreset.present) {
+      map['algorithm_name_from_preset'] =
+          Variable<String>(algorithmNameFromPreset.value);
+    }
+    if (notesFromPreset.present) {
+      map['notes_from_preset'] = Variable<String>(notesFromPreset.value);
+    }
+    if (otherExtractedMetadataJson.present) {
+      map['other_extracted_metadata_json'] =
+          Variable<String>(otherExtractedMetadataJson.value);
+    }
+    if (lastSeenUtc.present) {
+      map['last_seen_utc'] = Variable<DateTime>(lastSeenUtc.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IndexedPresetFilesCompanion(')
+          ..write('id: $id, ')
+          ..write('sdCardId: $sdCardId, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('absolutePathAtScanTime: $absolutePathAtScanTime, ')
+          ..write('algorithmNameFromPreset: $algorithmNameFromPreset, ')
+          ..write('notesFromPreset: $notesFromPreset, ')
+          ..write('otherExtractedMetadataJson: $otherExtractedMetadataJson, ')
+          ..write('lastSeenUtc: $lastSeenUtc')
           ..write(')'))
         .toString();
   }
@@ -4131,12 +4583,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PresetParameterStringValuesTable(this);
   late final $PresetMappingsTable presetMappings = $PresetMappingsTable(this);
   late final $PresetRoutingsTable presetRoutings = $PresetRoutingsTable(this);
-  late final $FileSystemEntriesTable fileSystemEntries =
-      $FileSystemEntriesTable(this);
+  late final $SdCardsTable sdCards = $SdCardsTable(this);
+  late final $IndexedPresetFilesTable indexedPresetFiles =
+      $IndexedPresetFilesTable(this);
   late final $MetadataCacheTable metadataCache = $MetadataCacheTable(this);
   late final MetadataDao metadataDao = MetadataDao(this as AppDatabase);
   late final PresetsDao presetsDao = PresetsDao(this as AppDatabase);
-  late final FileSystemDao fileSystemDao = FileSystemDao(this as AppDatabase);
+  late final SdCardsDao sdCardsDao = SdCardsDao(this as AppDatabase);
+  late final IndexedPresetFilesDao indexedPresetFilesDao =
+      IndexedPresetFilesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4155,7 +4610,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         presetParameterStringValues,
         presetMappings,
         presetRoutings,
-        fileSystemEntries,
+        sdCards,
+        indexedPresetFiles,
         metadataCache
       ];
   @override
@@ -8011,48 +8467,43 @@ typedef $$PresetRoutingsTableProcessedTableManager = ProcessedTableManager<
     (PresetRoutingEntry, $$PresetRoutingsTableReferences),
     PresetRoutingEntry,
     PrefetchHooks Function({bool presetSlotId})>;
-typedef $$FileSystemEntriesTableCreateCompanionBuilder
-    = FileSystemEntriesCompanion Function({
+typedef $$SdCardsTableCreateCompanionBuilder = SdCardsCompanion Function({
   Value<int> id,
-  Value<int?> parentId,
-  required String name,
-  required bool isDirectory,
-  required String fullPath,
+  required String userLabel,
+  Value<String?> systemIdentifier,
 });
-typedef $$FileSystemEntriesTableUpdateCompanionBuilder
-    = FileSystemEntriesCompanion Function({
+typedef $$SdCardsTableUpdateCompanionBuilder = SdCardsCompanion Function({
   Value<int> id,
-  Value<int?> parentId,
-  Value<String> name,
-  Value<bool> isDirectory,
-  Value<String> fullPath,
+  Value<String> userLabel,
+  Value<String?> systemIdentifier,
 });
 
-final class $$FileSystemEntriesTableReferences extends BaseReferences<
-    _$AppDatabase, $FileSystemEntriesTable, FileSystemEntry> {
-  $$FileSystemEntriesTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+final class $$SdCardsTableReferences
+    extends BaseReferences<_$AppDatabase, $SdCardsTable, SdCardEntry> {
+  $$SdCardsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $FileSystemEntriesTable _parentIdTable(_$AppDatabase db) =>
-      db.fileSystemEntries.createAlias($_aliasNameGenerator(
-          db.fileSystemEntries.parentId, db.fileSystemEntries.id));
+  static MultiTypedResultKey<$IndexedPresetFilesTable,
+      List<IndexedPresetFileEntry>> _indexedPresetFilesRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.indexedPresetFiles,
+          aliasName: $_aliasNameGenerator(
+              db.sdCards.id, db.indexedPresetFiles.sdCardId));
 
-  $$FileSystemEntriesTableProcessedTableManager? get parentId {
-    final $_column = $_itemColumn<int>('parent_id');
-    if ($_column == null) return null;
+  $$IndexedPresetFilesTableProcessedTableManager get indexedPresetFilesRefs {
     final manager =
-        $$FileSystemEntriesTableTableManager($_db, $_db.fileSystemEntries)
-            .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_parentIdTable($_db));
-    if (item == null) return manager;
+        $$IndexedPresetFilesTableTableManager($_db, $_db.indexedPresetFiles)
+            .filter((f) => f.sdCardId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_indexedPresetFilesRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+        manager.$state.copyWith(prefetchedData: cache));
   }
 }
 
-class $$FileSystemEntriesTableFilterComposer
-    extends Composer<_$AppDatabase, $FileSystemEntriesTable> {
-  $$FileSystemEntriesTableFilterComposer({
+class $$SdCardsTableFilterComposer
+    extends Composer<_$AppDatabase, $SdCardsTable> {
+  $$SdCardsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8062,39 +8513,38 @@ class $$FileSystemEntriesTableFilterComposer
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get userLabel => $composableBuilder(
+      column: $table.userLabel, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get isDirectory => $composableBuilder(
-      column: $table.isDirectory, builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get systemIdentifier => $composableBuilder(
+      column: $table.systemIdentifier,
+      builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get fullPath => $composableBuilder(
-      column: $table.fullPath, builder: (column) => ColumnFilters(column));
-
-  $$FileSystemEntriesTableFilterComposer get parentId {
-    final $$FileSystemEntriesTableFilterComposer composer = $composerBuilder(
+  Expression<bool> indexedPresetFilesRefs(
+      Expression<bool> Function($$IndexedPresetFilesTableFilterComposer f) f) {
+    final $$IndexedPresetFilesTableFilterComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.parentId,
-        referencedTable: $db.fileSystemEntries,
-        getReferencedColumn: (t) => t.id,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.indexedPresetFiles,
+        getReferencedColumn: (t) => t.sdCardId,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$FileSystemEntriesTableFilterComposer(
+            $$IndexedPresetFilesTableFilterComposer(
               $db: $db,
-              $table: $db.fileSystemEntries,
+              $table: $db.indexedPresetFiles,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
                   $removeJoinBuilderFromRootComposer,
             ));
-    return composer;
+    return f(composer);
   }
 }
 
-class $$FileSystemEntriesTableOrderingComposer
-    extends Composer<_$AppDatabase, $FileSystemEntriesTable> {
-  $$FileSystemEntriesTableOrderingComposer({
+class $$SdCardsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SdCardsTable> {
+  $$SdCardsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8104,39 +8554,17 @@ class $$FileSystemEntriesTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<String> get userLabel => $composableBuilder(
+      column: $table.userLabel, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get isDirectory => $composableBuilder(
-      column: $table.isDirectory, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get fullPath => $composableBuilder(
-      column: $table.fullPath, builder: (column) => ColumnOrderings(column));
-
-  $$FileSystemEntriesTableOrderingComposer get parentId {
-    final $$FileSystemEntriesTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.parentId,
-        referencedTable: $db.fileSystemEntries,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$FileSystemEntriesTableOrderingComposer(
-              $db: $db,
-              $table: $db.fileSystemEntries,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
+  ColumnOrderings<String> get systemIdentifier => $composableBuilder(
+      column: $table.systemIdentifier,
+      builder: (column) => ColumnOrderings(column));
 }
 
-class $$FileSystemEntriesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $FileSystemEntriesTable> {
-  $$FileSystemEntriesTableAnnotationComposer({
+class $$SdCardsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SdCardsTable> {
+  $$SdCardsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8146,96 +8574,414 @@ class $$FileSystemEntriesTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
+  GeneratedColumn<String> get userLabel =>
+      $composableBuilder(column: $table.userLabel, builder: (column) => column);
 
-  GeneratedColumn<bool> get isDirectory => $composableBuilder(
-      column: $table.isDirectory, builder: (column) => column);
+  GeneratedColumn<String> get systemIdentifier => $composableBuilder(
+      column: $table.systemIdentifier, builder: (column) => column);
 
-  GeneratedColumn<String> get fullPath =>
-      $composableBuilder(column: $table.fullPath, builder: (column) => column);
-
-  $$FileSystemEntriesTableAnnotationComposer get parentId {
-    final $$FileSystemEntriesTableAnnotationComposer composer =
+  Expression<T> indexedPresetFilesRefs<T extends Object>(
+      Expression<T> Function($$IndexedPresetFilesTableAnnotationComposer a) f) {
+    final $$IndexedPresetFilesTableAnnotationComposer composer =
         $composerBuilder(
             composer: this,
-            getCurrentColumn: (t) => t.parentId,
-            referencedTable: $db.fileSystemEntries,
-            getReferencedColumn: (t) => t.id,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.indexedPresetFiles,
+            getReferencedColumn: (t) => t.sdCardId,
             builder: (joinBuilder,
                     {$addJoinBuilderToRootComposer,
                     $removeJoinBuilderFromRootComposer}) =>
-                $$FileSystemEntriesTableAnnotationComposer(
+                $$IndexedPresetFilesTableAnnotationComposer(
                   $db: $db,
-                  $table: $db.fileSystemEntries,
+                  $table: $db.indexedPresetFiles,
                   $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                   joinBuilder: joinBuilder,
                   $removeJoinBuilderFromRootComposer:
                       $removeJoinBuilderFromRootComposer,
                 ));
-    return composer;
+    return f(composer);
   }
 }
 
-class $$FileSystemEntriesTableTableManager extends RootTableManager<
+class $$SdCardsTableTableManager extends RootTableManager<
     _$AppDatabase,
-    $FileSystemEntriesTable,
-    FileSystemEntry,
-    $$FileSystemEntriesTableFilterComposer,
-    $$FileSystemEntriesTableOrderingComposer,
-    $$FileSystemEntriesTableAnnotationComposer,
-    $$FileSystemEntriesTableCreateCompanionBuilder,
-    $$FileSystemEntriesTableUpdateCompanionBuilder,
-    (FileSystemEntry, $$FileSystemEntriesTableReferences),
-    FileSystemEntry,
-    PrefetchHooks Function({bool parentId})> {
-  $$FileSystemEntriesTableTableManager(
-      _$AppDatabase db, $FileSystemEntriesTable table)
+    $SdCardsTable,
+    SdCardEntry,
+    $$SdCardsTableFilterComposer,
+    $$SdCardsTableOrderingComposer,
+    $$SdCardsTableAnnotationComposer,
+    $$SdCardsTableCreateCompanionBuilder,
+    $$SdCardsTableUpdateCompanionBuilder,
+    (SdCardEntry, $$SdCardsTableReferences),
+    SdCardEntry,
+    PrefetchHooks Function({bool indexedPresetFilesRefs})> {
+  $$SdCardsTableTableManager(_$AppDatabase db, $SdCardsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$FileSystemEntriesTableFilterComposer($db: db, $table: table),
+              $$SdCardsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$FileSystemEntriesTableOrderingComposer($db: db, $table: table),
+              $$SdCardsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$FileSystemEntriesTableAnnotationComposer(
-                  $db: db, $table: table),
+              $$SdCardsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int?> parentId = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<bool> isDirectory = const Value.absent(),
-            Value<String> fullPath = const Value.absent(),
+            Value<String> userLabel = const Value.absent(),
+            Value<String?> systemIdentifier = const Value.absent(),
           }) =>
-              FileSystemEntriesCompanion(
+              SdCardsCompanion(
             id: id,
-            parentId: parentId,
-            name: name,
-            isDirectory: isDirectory,
-            fullPath: fullPath,
+            userLabel: userLabel,
+            systemIdentifier: systemIdentifier,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int?> parentId = const Value.absent(),
-            required String name,
-            required bool isDirectory,
-            required String fullPath,
+            required String userLabel,
+            Value<String?> systemIdentifier = const Value.absent(),
           }) =>
-              FileSystemEntriesCompanion.insert(
+              SdCardsCompanion.insert(
             id: id,
-            parentId: parentId,
-            name: name,
-            isDirectory: isDirectory,
-            fullPath: fullPath,
+            userLabel: userLabel,
+            systemIdentifier: systemIdentifier,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) =>
+                  (e.readTable(table), $$SdCardsTableReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: ({indexedPresetFilesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (indexedPresetFilesRefs) db.indexedPresetFiles
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (indexedPresetFilesRefs)
+                    await $_getPrefetchedData<SdCardEntry, $SdCardsTable,
+                            IndexedPresetFileEntry>(
+                        currentTable: table,
+                        referencedTable: $$SdCardsTableReferences
+                            ._indexedPresetFilesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$SdCardsTableReferences(db, table, p0)
+                                .indexedPresetFilesRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.sdCardId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$SdCardsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SdCardsTable,
+    SdCardEntry,
+    $$SdCardsTableFilterComposer,
+    $$SdCardsTableOrderingComposer,
+    $$SdCardsTableAnnotationComposer,
+    $$SdCardsTableCreateCompanionBuilder,
+    $$SdCardsTableUpdateCompanionBuilder,
+    (SdCardEntry, $$SdCardsTableReferences),
+    SdCardEntry,
+    PrefetchHooks Function({bool indexedPresetFilesRefs})>;
+typedef $$IndexedPresetFilesTableCreateCompanionBuilder
+    = IndexedPresetFilesCompanion Function({
+  Value<int> id,
+  required int sdCardId,
+  required String relativePath,
+  required String fileName,
+  required String absolutePathAtScanTime,
+  Value<String?> algorithmNameFromPreset,
+  Value<String?> notesFromPreset,
+  Value<String?> otherExtractedMetadataJson,
+  required DateTime lastSeenUtc,
+});
+typedef $$IndexedPresetFilesTableUpdateCompanionBuilder
+    = IndexedPresetFilesCompanion Function({
+  Value<int> id,
+  Value<int> sdCardId,
+  Value<String> relativePath,
+  Value<String> fileName,
+  Value<String> absolutePathAtScanTime,
+  Value<String?> algorithmNameFromPreset,
+  Value<String?> notesFromPreset,
+  Value<String?> otherExtractedMetadataJson,
+  Value<DateTime> lastSeenUtc,
+});
+
+final class $$IndexedPresetFilesTableReferences extends BaseReferences<
+    _$AppDatabase, $IndexedPresetFilesTable, IndexedPresetFileEntry> {
+  $$IndexedPresetFilesTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $SdCardsTable _sdCardIdTable(_$AppDatabase db) =>
+      db.sdCards.createAlias(
+          $_aliasNameGenerator(db.indexedPresetFiles.sdCardId, db.sdCards.id));
+
+  $$SdCardsTableProcessedTableManager get sdCardId {
+    final $_column = $_itemColumn<int>('sd_card_id')!;
+
+    final manager = $$SdCardsTableTableManager($_db, $_db.sdCards)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sdCardIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$IndexedPresetFilesTableFilterComposer
+    extends Composer<_$AppDatabase, $IndexedPresetFilesTable> {
+  $$IndexedPresetFilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get relativePath => $composableBuilder(
+      column: $table.relativePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+      column: $table.fileName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get absolutePathAtScanTime => $composableBuilder(
+      column: $table.absolutePathAtScanTime,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get algorithmNameFromPreset => $composableBuilder(
+      column: $table.algorithmNameFromPreset,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notesFromPreset => $composableBuilder(
+      column: $table.notesFromPreset,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get otherExtractedMetadataJson => $composableBuilder(
+      column: $table.otherExtractedMetadataJson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSeenUtc => $composableBuilder(
+      column: $table.lastSeenUtc, builder: (column) => ColumnFilters(column));
+
+  $$SdCardsTableFilterComposer get sdCardId {
+    final $$SdCardsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sdCardId,
+        referencedTable: $db.sdCards,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SdCardsTableFilterComposer(
+              $db: $db,
+              $table: $db.sdCards,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$IndexedPresetFilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $IndexedPresetFilesTable> {
+  $$IndexedPresetFilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get relativePath => $composableBuilder(
+      column: $table.relativePath,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+      column: $table.fileName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get absolutePathAtScanTime => $composableBuilder(
+      column: $table.absolutePathAtScanTime,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get algorithmNameFromPreset => $composableBuilder(
+      column: $table.algorithmNameFromPreset,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notesFromPreset => $composableBuilder(
+      column: $table.notesFromPreset,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get otherExtractedMetadataJson => $composableBuilder(
+      column: $table.otherExtractedMetadataJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSeenUtc => $composableBuilder(
+      column: $table.lastSeenUtc, builder: (column) => ColumnOrderings(column));
+
+  $$SdCardsTableOrderingComposer get sdCardId {
+    final $$SdCardsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sdCardId,
+        referencedTable: $db.sdCards,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SdCardsTableOrderingComposer(
+              $db: $db,
+              $table: $db.sdCards,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$IndexedPresetFilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IndexedPresetFilesTable> {
+  $$IndexedPresetFilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get relativePath => $composableBuilder(
+      column: $table.relativePath, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<String> get absolutePathAtScanTime => $composableBuilder(
+      column: $table.absolutePathAtScanTime, builder: (column) => column);
+
+  GeneratedColumn<String> get algorithmNameFromPreset => $composableBuilder(
+      column: $table.algorithmNameFromPreset, builder: (column) => column);
+
+  GeneratedColumn<String> get notesFromPreset => $composableBuilder(
+      column: $table.notesFromPreset, builder: (column) => column);
+
+  GeneratedColumn<String> get otherExtractedMetadataJson => $composableBuilder(
+      column: $table.otherExtractedMetadataJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSeenUtc => $composableBuilder(
+      column: $table.lastSeenUtc, builder: (column) => column);
+
+  $$SdCardsTableAnnotationComposer get sdCardId {
+    final $$SdCardsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sdCardId,
+        referencedTable: $db.sdCards,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SdCardsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.sdCards,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$IndexedPresetFilesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $IndexedPresetFilesTable,
+    IndexedPresetFileEntry,
+    $$IndexedPresetFilesTableFilterComposer,
+    $$IndexedPresetFilesTableOrderingComposer,
+    $$IndexedPresetFilesTableAnnotationComposer,
+    $$IndexedPresetFilesTableCreateCompanionBuilder,
+    $$IndexedPresetFilesTableUpdateCompanionBuilder,
+    (IndexedPresetFileEntry, $$IndexedPresetFilesTableReferences),
+    IndexedPresetFileEntry,
+    PrefetchHooks Function({bool sdCardId})> {
+  $$IndexedPresetFilesTableTableManager(
+      _$AppDatabase db, $IndexedPresetFilesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IndexedPresetFilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IndexedPresetFilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IndexedPresetFilesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> sdCardId = const Value.absent(),
+            Value<String> relativePath = const Value.absent(),
+            Value<String> fileName = const Value.absent(),
+            Value<String> absolutePathAtScanTime = const Value.absent(),
+            Value<String?> algorithmNameFromPreset = const Value.absent(),
+            Value<String?> notesFromPreset = const Value.absent(),
+            Value<String?> otherExtractedMetadataJson = const Value.absent(),
+            Value<DateTime> lastSeenUtc = const Value.absent(),
+          }) =>
+              IndexedPresetFilesCompanion(
+            id: id,
+            sdCardId: sdCardId,
+            relativePath: relativePath,
+            fileName: fileName,
+            absolutePathAtScanTime: absolutePathAtScanTime,
+            algorithmNameFromPreset: algorithmNameFromPreset,
+            notesFromPreset: notesFromPreset,
+            otherExtractedMetadataJson: otherExtractedMetadataJson,
+            lastSeenUtc: lastSeenUtc,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int sdCardId,
+            required String relativePath,
+            required String fileName,
+            required String absolutePathAtScanTime,
+            Value<String?> algorithmNameFromPreset = const Value.absent(),
+            Value<String?> notesFromPreset = const Value.absent(),
+            Value<String?> otherExtractedMetadataJson = const Value.absent(),
+            required DateTime lastSeenUtc,
+          }) =>
+              IndexedPresetFilesCompanion.insert(
+            id: id,
+            sdCardId: sdCardId,
+            relativePath: relativePath,
+            fileName: fileName,
+            absolutePathAtScanTime: absolutePathAtScanTime,
+            algorithmNameFromPreset: algorithmNameFromPreset,
+            notesFromPreset: notesFromPreset,
+            otherExtractedMetadataJson: otherExtractedMetadataJson,
+            lastSeenUtc: lastSeenUtc,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
                     e.readTable(table),
-                    $$FileSystemEntriesTableReferences(db, table, e)
+                    $$IndexedPresetFilesTableReferences(db, table, e)
                   ))
               .toList(),
-          prefetchHooksCallback: ({parentId = false}) {
+          prefetchHooksCallback: ({sdCardId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -8252,14 +8998,14 @@ class $$FileSystemEntriesTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic>>(state) {
-                if (parentId) {
+                if (sdCardId) {
                   state = state.withJoin(
                     currentTable: table,
-                    currentColumn: table.parentId,
+                    currentColumn: table.sdCardId,
                     referencedTable:
-                        $$FileSystemEntriesTableReferences._parentIdTable(db),
-                    referencedColumn: $$FileSystemEntriesTableReferences
-                        ._parentIdTable(db)
+                        $$IndexedPresetFilesTableReferences._sdCardIdTable(db),
+                    referencedColumn: $$IndexedPresetFilesTableReferences
+                        ._sdCardIdTable(db)
                         .id,
                   ) as T;
                 }
@@ -8274,18 +9020,18 @@ class $$FileSystemEntriesTableTableManager extends RootTableManager<
         ));
 }
 
-typedef $$FileSystemEntriesTableProcessedTableManager = ProcessedTableManager<
+typedef $$IndexedPresetFilesTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
-    $FileSystemEntriesTable,
-    FileSystemEntry,
-    $$FileSystemEntriesTableFilterComposer,
-    $$FileSystemEntriesTableOrderingComposer,
-    $$FileSystemEntriesTableAnnotationComposer,
-    $$FileSystemEntriesTableCreateCompanionBuilder,
-    $$FileSystemEntriesTableUpdateCompanionBuilder,
-    (FileSystemEntry, $$FileSystemEntriesTableReferences),
-    FileSystemEntry,
-    PrefetchHooks Function({bool parentId})>;
+    $IndexedPresetFilesTable,
+    IndexedPresetFileEntry,
+    $$IndexedPresetFilesTableFilterComposer,
+    $$IndexedPresetFilesTableOrderingComposer,
+    $$IndexedPresetFilesTableAnnotationComposer,
+    $$IndexedPresetFilesTableCreateCompanionBuilder,
+    $$IndexedPresetFilesTableUpdateCompanionBuilder,
+    (IndexedPresetFileEntry, $$IndexedPresetFilesTableReferences),
+    IndexedPresetFileEntry,
+    PrefetchHooks Function({bool sdCardId})>;
 typedef $$MetadataCacheTableCreateCompanionBuilder = MetadataCacheCompanion
     Function({
   required String cacheKey,
@@ -8446,8 +9192,10 @@ class $AppDatabaseManager {
       $$PresetMappingsTableTableManager(_db, _db.presetMappings);
   $$PresetRoutingsTableTableManager get presetRoutings =>
       $$PresetRoutingsTableTableManager(_db, _db.presetRoutings);
-  $$FileSystemEntriesTableTableManager get fileSystemEntries =>
-      $$FileSystemEntriesTableTableManager(_db, _db.fileSystemEntries);
+  $$SdCardsTableTableManager get sdCards =>
+      $$SdCardsTableTableManager(_db, _db.sdCards);
+  $$IndexedPresetFilesTableTableManager get indexedPresetFiles =>
+      $$IndexedPresetFilesTableTableManager(_db, _db.indexedPresetFiles);
   $$MetadataCacheTableTableManager get metadataCache =>
       $$MetadataCacheTableTableManager(_db, _db.metadataCache);
 }

@@ -22,6 +22,12 @@ class _RoutingPageState extends State<RoutingPage> {
   Timer? _timer;
 
   @override
+  void initState() {
+    super.initState();
+    _requestRoutingRefresh(); // Load initial data
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     super.dispose();

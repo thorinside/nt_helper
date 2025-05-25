@@ -7,10 +7,13 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
+import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_page.dart';
 import 'dart:io';
 
 class DistingApp extends StatelessWidget {
   const DistingApp({super.key});
+
+  static const String sdCardScannerRoute = '/sd-card-scanner';
 
   @override
   Widget build(BuildContext context) {
@@ -34,18 +37,23 @@ class DistingApp extends StatelessWidget {
       // Dark theme using copyWith
       themeMode: ThemeMode.system,
       // Follow system settings
-      home: BlocProvider(
-        create: (context) {
-          // Get the AppDatabase instance from the context
-          final database = context.read<AppDatabase>();
+      initialRoute: '/',
+      routes: {
+        '/': (context) => BlocProvider(
+              create: (context) {
+                // Get the AppDatabase instance from the context
+                final database = context.read<AppDatabase>();
 
-          // Create DistingCubit and pass the database instance
-          final cubit = DistingCubit(database); // Pass database here
-          cubit.initialize(); // Load settings and auto-connect if possible
-          return cubit;
-        },
-        child: Material(child: DistingPage()),
-      ),
+                // Create DistingCubit and pass the database instance
+                final cubit = DistingCubit(database); // Pass database here
+                cubit
+                    .initialize(); // Load settings and auto-connect if possible
+                return cubit;
+              },
+              child: Material(child: DistingPage()),
+            ),
+        sdCardScannerRoute: (context) => const SdCardScannerPage(),
+      },
     );
   }
 
