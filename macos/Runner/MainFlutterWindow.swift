@@ -30,11 +30,32 @@ class MainFlutterWindow: BitsdojoWindow, NSWindowDelegate { // Conforming to NSW
     self.delegate = self
   }
 
-  @objc func windowShouldClose(_ sender: NSWindow) -> Bool { // Added @objc, removed override
-    print("Swift: windowShouldClose called. Sending 'windowWillClose' event to Dart.")
-    self.windowEventsChannel?.invokeMethod("windowWillClose", arguments: nil)
-    // Return true to allow the window to close.
-    // We are not waiting for a response from Dart to keep things simple.
-    return true
+  @objc func windowShouldClose(_ sender: NSWindow) -> Bool {
+      print("Swift: 'windowWillClose' event sent to Dart. Waiting for Dart to complete save...")
+
+      self.windowEventsChannel?.invokeMethod("windowWillClose", arguments: nil) { (result: Any?) -> Void in
+          // This callback is executed when Dart side's MethodCallHandler for "windowWillClose" returns.
+          if let dartResult = result as? Bool, dartResult == true {
+              print("Swift: Dart 'windowWillClose' handler completed successfully.")
+          } else if let error = result as? FlutterError {
+              print("Swift: Dart 'windowWillClose' handler failed with FlutterError: \(error.message ?? "No message")")
+          } else {
+              print("Swift: Dart 'windowWillClose' handler completed with an unexpected result or failure: \(String(describing: result))")
+          }
+
+          // IMPORTANT: Ensure UI updates (like closing a window) are on the main thread.
+          DispatchQueue.main.async {
+              // Call NSWindow's close method directly.
+              // This bypasses windowShouldClose and other delegate methods again,
+              // preventing a loop and ensuring the window actually closes.
+              print("Swift: Programmatically closing window now.")
+              self.close()
+          }
+      }
+      
+      // Return false to prevent the window from closing immediately.
+      // The window will be closed programmatically in the invokeMethod's callback.
+      print("Swift: windowShouldClose returning false (will close programmatically).")
+      return false 
   }
 }

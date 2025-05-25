@@ -70,23 +70,46 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     }
   }
 
-  // Handle WM_CLOSE specifically to notify Dart.
+  // Handle WM_CLOSE specifically to notify Dart and wait for confirmation.
   if (message == WM_CLOSE) {
     if (window_events_channel_) {
-      OutputDebugString(L"C++: WM_CLOSE received, sending 'windowWillClose' to Dart.\n");
-      // Use flutter::EncodableValue() for nullptr to avoid ambiguity
-      window_events_channel_->InvokeMethod("windowWillClose",
-                                         std::make_unique<flutter::EncodableValue>());
+      OutputDebugString(L"C++: WM_CLOSE received. Invoking 'windowWillClose' on Dart and waiting for result.\n");
+      
+      HWND main_hwnd = GetHandle(); // Get the HWND for PostMessage
+
+      window_events_channel_->InvokeMethod(
+          "windowWillClose",
+          std::make_unique<flutter::EncodableValue>(), // nullptr equivalent
+          [main_hwnd](const flutter::EncodableValue* result) { // Success callback
+              OutputDebugString(L"C++: Dart 'windowWillClose' handler completed successfully.\n");
+              PostMessage(main_hwnd, WM_DESTROY, 0, 0);
+          },
+          [main_hwnd](const std::string& error_code, const std::string& error_message, const flutter::EncodableValue* error_details) { // Error callback
+              OutputDebugString(L"C++: Dart 'windowWillClose' handler failed. Forcing close.\n");
+              // TODO: Log error_code, error_message if desired.
+              PostMessage(main_hwnd, WM_DESTROY, 0, 0);
+          });
+      
+      return 0; // Crucial: Indicate that we've handled WM_CLOSE.
+                  // Prevents DefWindowProc from processing it and closing the window immediately.
+    } else {
+      OutputDebugString(L"C++: WM_CLOSE received, but MethodChannel is null. Proceeding with default close.\n");
+      // Fall through to default handling if channel is not available
+      // This will call Win32Window::MessageHandler below.
     }
-    // Important: After invoking, proceed with default handling by calling the base class.
-    // This allows the window to close as normal.
-    return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+    // If channel was null, we reach here and then the default handler outside the if/else.
+    // If channel was not null, we returned 0.
   }
 
+  // The base class's message handler will be called for other messages,
+  // or if WM_CLOSE was received but the channel was null.
+  // WM_DESTROY will also be handled by this, which should lead to PostQuitMessage.
   switch (message) {
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
+    // WM_DESTROY is handled by the default Win32Window::MessageHandler below.
+    // No specific FlutterWindow cleanup needed for WM_DESTROY beyond what Win32Window does.
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
