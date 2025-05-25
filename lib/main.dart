@@ -95,11 +95,22 @@ void main() async {
           appWindow.alignment = Alignment.center;
           print('Set alignment to center');
       } else {
-          Rect savedRect = Rect.fromLTWH(x!, y!, width, height);
-          print('Applying saved rect: $savedRect');
-          print('Before appWindow.rect = savedRect');
-          appWindow.rect = savedRect;
-          print('After appWindow.rect = savedRect. Current appWindow.rect is ${appWindow.rect}');
+          // Create Size and Offset objects
+          Size savedSize = Size(width, height);
+          Offset savedPosition = Offset(x!, y!);
+          
+          print('Applying saved size: $savedSize and position: $savedPosition');
+          
+          print('Before appWindow.size = savedSize; Current appWindow.size is ${appWindow.size}');
+          appWindow.size = savedSize;
+          print('After appWindow.size = savedSize; Current appWindow.size is ${appWindow.size}');
+          
+          print('Before appWindow.position = savedPosition; Current appWindow.position is ${appWindow.position}');
+          appWindow.position = savedPosition;
+          print('After appWindow.position = savedPosition; Current appWindow.position is ${appWindow.position}');
+          
+          // For debugging, also print the resulting rect
+          print('Resulting appWindow.rect after setting size and position separately is ${appWindow.rect}');
       }
     } else {
       print('Using default window size and alignment.');
