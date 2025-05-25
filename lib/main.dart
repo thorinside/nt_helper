@@ -55,20 +55,45 @@ void main() async {
       y = prefs.getDouble('window_y');
       width = prefs.getDouble('window_width');
       height = prefs.getDouble('window_height');
+      print('Loaded from prefs: x=$x, y=$y, width=$width, height=$height');
     } catch (e) {
       // Handle error loading window state
-      print('Error loading window state: $e');
+      print('Error loading window state from SharedPreferences: $e');
     }
 
     appWindow.minSize = Size(640, 720);
+    print('Set minSize to ${appWindow.minSize}');
 
-    if (x != null && y != null && width != null && height != null) {
-      appWindow.rect = Rect.fromLTWH(x, y, width, height);
+    bool hasSavedPositionAndSize = x != null && y != null && width != null && height != null;
+    print('Condition (x != null && y != null && width != null && height != null) is: $hasSavedPositionAndSize');
+
+    if (hasSavedPositionAndSize) {
+      // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
+      if (width! <= 0 || height! <= 0) {
+          print('Warning: Loaded width or height is not positive. width=$width, height=$height. Falling back to default size.');
+          const initialSize = Size(720, 1080);
+          appWindow.size = initialSize;
+          print('Set initialSize to $initialSize');
+          appWindow.alignment = Alignment.center;
+          print('Set alignment to center');
+      } else {
+          Rect savedRect = Rect.fromLTWH(x!, y!, width, height);
+          print('Applying saved rect: $savedRect');
+          print('Before appWindow.rect = savedRect');
+          appWindow.rect = savedRect;
+          print('After appWindow.rect = savedRect. Current appWindow.rect is ${appWindow.rect}');
+      }
     } else {
+      print('Using default window size and alignment.');
       const initialSize = Size(720, 1080);
       appWindow.size = initialSize;
+      print('Set initialSize to $initialSize');
       appWindow.alignment = Alignment.center;
+      print('Set alignment to center');
     }
+
+    print('Final check before show: appWindow.rect=${appWindow.rect}, appWindow.size=${appWindow.size}, appWindow.position=${appWindow.position}');
     appWindow.show();
+    print('Called appWindow.show()');
   });
 }

@@ -84,14 +84,20 @@ class MCPAlgorithmTools {
           .toList();
     }
 
-    // Return only guid and name
+    // Return full metadata for now
+    // return jsonEncode(algorithms.map((a) => a.toJson()).toList());
     List<Map<String, dynamic>> resultList = [];
     for (var alg in algorithms) {
-      resultList.add({
-        'guid': alg.guid,
-        'name': alg.name,
-        // Remove other fields like description, categories, parameters etc.
-      });
+      Map<String, dynamic> algoJson = alg.toJson();
+      if (algoJson['parameters'] is List) {
+        List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
+        for (var param in paramsList) {
+          if (param is Map<String, dynamic>) {
+            param.remove('parameterNumber');
+          }
+        }
+      }
+      resultList.add(algoJson);
     }
     return jsonEncode(convertToSnakeCaseKeys(resultList));
   }

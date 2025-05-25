@@ -367,7 +367,7 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'list_algorithms',
       description:
-          'Lists available algorithms, optionally filtered by category or feature GUID. Returns only algorithm name and GUID. GUIDs are used with `add_algorithm` and `get_algorithm_details`.',
+          'Lists available algorithms, optionally filtered by category or feature GUID. GUIDs are used with `add_algorithm` and `get_algorithm_details`.',
       inputSchemaProperties: {
         'category': {
           'type': 'string',
