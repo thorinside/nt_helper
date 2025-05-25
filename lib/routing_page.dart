@@ -22,6 +22,22 @@ class _RoutingPageState extends State<RoutingPage> {
   Timer? _timer;
 
   @override
+  void initState() {
+    super.initState();
+    // Try to get initial data from the cubit
+    final initialData = widget.cubit.buildRoutingInformation();
+    if (initialData.isNotEmpty) {
+      // If data already exists, use it and stop loading
+      _routingInformation = initialData;
+      _loading = false;
+    } else {
+      // If no data, request a refresh
+      // _requestRoutingRefresh will handle setState and update _loading
+      _requestRoutingRefresh();
+    }
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
@@ -30,6 +46,7 @@ class _RoutingPageState extends State<RoutingPage> {
   void _requestRoutingRefresh() async {
     try {
       await widget.cubit.refreshRouting();
+      if (!mounted) return;
       setState(() {
         _routingInformation = widget.cubit.buildRoutingInformation();
         _loading = false;
@@ -42,6 +59,7 @@ class _RoutingPageState extends State<RoutingPage> {
         setState(() {
           _isRealtimeActive = false;
           _timer?.cancel();
+          _loading = false; // Ensure spinner stops on error
         });
       }
     }
