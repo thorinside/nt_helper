@@ -104,7 +104,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   /// Ensures the list remains sorted after adding.
   Future<void> _addNameToHistory(String name) async {
     name = name.trim();
-    if (name.isNotEmpty && widget.preferences != null) {
+    if (name.isNotEmpty) {
       final prefs = widget.preferences ?? await SharedPreferences.getInstance();
       setState(() {
         // Remove if exists to avoid duplicates, then add and re-sort
@@ -117,14 +117,12 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   }
 
   Future<void> _removeNameFromHistory(String name) async {
-    if (widget.preferences != null) {
-      final prefs = widget.preferences ?? await SharedPreferences.getInstance();
-      setState(() {
-        _history.remove(name);
-        // List remains sorted after removal
-      });
-      await prefs.setStringList('presetHistory', _history);
-    }
+    final prefs = widget.preferences ?? await SharedPreferences.getInstance();
+    setState(() {
+      _history.remove(name);
+      // List remains sorted after removal
+    });
+    await prefs.setStringList('presetHistory', _history);
   }
 
   void _onCancel() {
@@ -152,6 +150,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         String sdCardAbsolutePath = actualRelativePath.startsWith('/')
             ? actualRelativePath
             : "/$actualRelativePath";
+        await _addNameToHistory(trimmed);
         Navigator.of(context).pop(
             {"sdCardAbsolutePath": sdCardAbsolutePath, "append": isAppending});
         return;
@@ -183,6 +182,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         String sdCardAbsolutePath = actualRelativePath.startsWith('/')
             ? actualRelativePath
             : "/$actualRelativePath";
+        await _addNameToHistory(trimmed);
         Navigator.of(context).pop(
             {"sdCardAbsolutePath": sdCardAbsolutePath, "append": isAppending});
         return;
@@ -210,7 +210,22 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isManagingHistory ? 'Manage History' : 'Load Preset'),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Text(_isManagingHistory ? 'Manage History' : 'Load Preset'),
+          if (!_isManagingHistory)
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Manage Preset History',
+              onPressed: () {
+                setState(() {
+                  _isManagingHistory = true;
+                });
+              },
+            ),
+        ],
+      ),
       content: SizedBox(
         width: 400, // Wider dialog
         child: SingleChildScrollView(
