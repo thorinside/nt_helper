@@ -8,6 +8,23 @@
 - Why it's important
 - How it works at a high level]
 
+- Feature: SD Card Preset Scanning and Local Indexing
+  - What it does: Allows users to scan a connected SD card (either directly mounted or via Disting NT's Disk Mode) to discover and index preset files (.json). The application will parse these files, extract metadata and relevant text, and store this information (including full path and SD card identifier) in the local application database.
+  - Why it's important: Enables users to see a comprehensive list of presets actually available on their SD card(s) directly within the 'Load Preset' dialog. This is crucial for users with multiple SD cards or large preset libraries, as it ensures they can easily find and load existing presets.
+  - How it works at a high level:
+    1. User initiates an SD card scan, selecting the mounted path to the SD card (or the Disting NT in Disk Mode).
+    2. User can optionally provide a name/label for the SD card being scanned.
+    3. The application recursively scans the `/presets` directory on the selected path for `.json` files.
+    4. For each found preset file, the application:
+        - Stores its full path.
+        - Stores the associated SD card identifier (if provided by the user).
+        - Parses the JSON content to extract key metadata (e.g., algorithm name, user-provided notes if any).
+        - Stores this information as a record in the local database.
+    5. The 'Load Preset' dialog will be updated to:
+        - Display these locally indexed presets.
+        - Indicate which SD card a preset belongs to (if multiple cards have been scanned).
+        - Allow users to filter the preset list by SD card name.
+
 # User Experience  
 [Describe the user journey and experience. Include:
 - User personas
