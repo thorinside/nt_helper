@@ -507,14 +507,22 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ? null
                   : () async {
                       var cubit = popupCtx.read<DistingCubit>();
-                      final preset = await showDialog<dynamic>(
+                      final result = await showDialog<Map<String, dynamic>>(
                         context: popupCtx,
-                        builder: (dialogCtx) =>
-                            LoadPresetDialog(initialName: ""),
+                        builder: (dialogCtx) => LoadPresetDialog(
+                            initialName: "", db: cubit.database),
                       );
-                      if (preset == null) return;
-                      cubit.loadPreset(
-                          preset["name"] as String, preset["append"] as bool);
+                      if (result == null) return;
+
+                      if (result.containsKey('sdCardAbsolutePath')) {
+                        final String sdCardAbsolutePath =
+                            result['sdCardAbsolutePath'] as String;
+                        final bool append = result['append'] as bool? ?? false;
+                        cubit.loadPreset(sdCardAbsolutePath, append);
+                      } else {
+                        debugPrint(
+                            "LoadPresetDialog returned an unexpected structure (expected 'sdCardAbsolutePath'): $result");
+                      }
                     },
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1347,7 +1355,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     super.didUpdateWidget(oldWidget);
 
     // Update internal state when the widget is updated
-    if (widget.initialValue != oldWidget.initialValue || widget.min != oldWidget.min || widget.max != oldWidget.max) {
+    if (widget.initialValue != oldWidget.initialValue ||
+        widget.min != oldWidget.min ||
+        widget.max != oldWidget.max) {
       setState(() {
         currentValue = widget.initialValue.clamp(widget.min, widget.max);
         isChecked = widget.isOnOff && currentValue == 1;

@@ -32,15 +32,16 @@ class _PollingTask {
 }
 
 class DistingCubit extends Cubit<DistingState> {
-  final AppDatabase _database; // Added
+  final AppDatabase database; // Renamed from _database to make it public
   late final MetadataDao _metadataDao; // Added
   final Future<SharedPreferences> _prefs;
 
   // Modified constructor
-  DistingCubit(this._database)
+  DistingCubit(this.database)
       : _prefs = SharedPreferences.getInstance(),
         super(const DistingState.initial()) {
-    _metadataDao = _database.metadataDao; // Initialize DAO
+    _metadataDao =
+        database.metadataDao; // Initialize DAO using public database field
   }
 
   MidiCommand _midiCommand = MidiCommand();
@@ -417,7 +418,7 @@ class DistingCubit extends Cubit<DistingState> {
           ?.dispose(); // Ensure offline is disposed if manager wasn't it
 
       // Create and initialize the offline manager
-      _offlineManager = OfflineDistingMidiManager(_database);
+      _offlineManager = OfflineDistingMidiManager(database);
       await _offlineManager!.initializeFromDb(null);
       final version =
           await _offlineManager!.requestVersionString() ?? "Offline";
