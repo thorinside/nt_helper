@@ -103,9 +103,23 @@ std::wstring FlutterWindow::GetSavePath()
 void FlutterWindow::SaveWindowPlacement()
 {
   HWND handle = GetHandle();
+  std::wstring log_msg_save = L"SaveWindowPlacement: Entered. Handle value from GetHandle(): ";
+  if (handle)
+  {
+    // Use swprintf for safer pointer to string conversion
+    wchar_t buffer[20];
+    swprintf(buffer, 20, L"%p", reinterpret_cast<void *>(handle));
+    log_msg_save += buffer;
+  }
+  else
+  {
+    log_msg_save += L"NULL";
+  }
+  OutputDebugStringW((log_msg_save + L"\n").c_str());
+
   if (!handle)
   {
-    OutputDebugStringW(L"SaveWindowPlacement: Invalid window handle, cannot save.\n");
+    OutputDebugStringW(L"SaveWindowPlacement: Handle is NULL or invalid, cannot save.\n");
     return;
   }
 
@@ -283,8 +297,11 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
             std::to_wstring(client_rect_before_show.bottom - client_rect_before_show.top) + L"\n";
         OutputDebugStringW(log_msg_show.c_str());
     }
-    this->Show(); });
-  flutter_controller_->ForceRedraw();
+    this->Show();
+    OutputDebugStringW(L"SetNextFrameCallback: this->Show() completed. Calling ForceRedraw().\n");
+    if (flutter_controller_) { // Add a null check for safety, though unlikely to be null here
+        flutter_controller_->ForceRedraw();
+    } });
 
   return true;
 }
@@ -304,12 +321,29 @@ bool FlutterWindow::OnCreate()
 
 void FlutterWindow::OnDestroy()
 {
+  HWND current_handle = GetHandle();
+  std::wstring log_msg = L"FlutterWindow::OnDestroy: Entered. Handle value from GetHandle() before SaveWindowPlacement: ";
+  if (current_handle)
+  {
+    wchar_t buffer[20];
+    swprintf(buffer, 20, L"%p", reinterpret_cast<void *>(current_handle));
+    log_msg += buffer;
+  }
+  else
+  {
+    log_msg += L"NULL";
+  }
+  OutputDebugStringW((log_msg + L"\n").c_str());
+
   SaveWindowPlacement(); // Save window state before destruction.
   if (flutter_controller_)
   {
+    OutputDebugStringW(L"FlutterWindow::OnDestroy: Nullifying flutter_controller_.\n");
     flutter_controller_ = nullptr;
   }
+  OutputDebugStringW(L"FlutterWindow::OnDestroy: Calling Win32Window::OnDestroy().\n");
   Win32Window::OnDestroy();
+  OutputDebugStringW(L"FlutterWindow::OnDestroy: Exited.\n");
 }
 
 LRESULT
