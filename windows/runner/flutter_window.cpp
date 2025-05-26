@@ -7,8 +7,8 @@
 #include <pathcch.h> // Added for PathCchAppend
 
 #include "flutter/generated_plugin_registrant.h"
-#include "flutter/encodable_value.h"         // Required for flutter::EncodableValue()
-#include "flutter/method_result_functions.h" // Required for custom MethodResult
+#include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
+#include "flutter/method_result.h"   // Changed from method_result_functions.h
 
 #pragma comment(lib, "Pathcch.lib") // Link Pathcch.lib
 
