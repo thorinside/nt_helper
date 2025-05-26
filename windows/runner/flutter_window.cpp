@@ -289,18 +289,28 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
   flutter_controller_->engine()->SetNextFrameCallback([&]()
                                                       {
     OutputDebugStringW(L"SetNextFrameCallback: Calling this->Show().\n");
-    RECT client_rect_before_show;
-    if (GetHandle()) { // Ensure handle is valid before calling GetClientRect
-        GetClientRect(GetHandle(), &client_rect_before_show);
-        std::wstring log_msg_show = L"Client RECT before ShowWindow: " +
-            std::to_wstring(client_rect_before_show.right - client_rect_before_show.left) + L"x" +
-            std::to_wstring(client_rect_before_show.bottom - client_rect_before_show.top) + L"\n";
-        OutputDebugStringW(log_msg_show.c_str());
-    }
     this->Show();
-    OutputDebugStringW(L"SetNextFrameCallback: this->Show() completed. Calling ForceRedraw().\n");
-    if (flutter_controller_) { // Add a null check for safety, though unlikely to be null here
-        flutter_controller_->ForceRedraw();
+    OutputDebugStringW(L"SetNextFrameCallback: this->Show() completed.\n");
+
+    if (GetHandle() && flutter_controller_ && flutter_controller_->view()) {
+        RECT final_client_rect;
+        GetClientRect(GetHandle(), &final_client_rect);
+        long final_width = final_client_rect.right - final_client_rect.left;
+        long final_height = final_client_rect.bottom - final_client_rect.top;
+
+        std::wstring resize_log = L"SetNextFrameCallback: Resizing Flutter view to: " +
+                                std::to_wstring(final_width) + L"x" + std::to_wstring(final_height) + L"\n";
+        OutputDebugStringW(resize_log.c_str());
+
+        if (final_width > 0 && final_height > 0) {
+            flutter_controller_->view()->Resize(final_width, final_height);
+            OutputDebugStringW(L"SetNextFrameCallback: Called Resize. Now calling ForceRedraw().\n");
+            flutter_controller_->ForceRedraw();
+        } else {
+            OutputDebugStringW(L"SetNextFrameCallback: final_width or final_height is not positive. Not resizing/redrawing.\n");
+        }
+    } else {
+        OutputDebugStringW(L"SetNextFrameCallback: Handle or flutter_controller/view is null. Cannot resize/redraw.\n");
     } });
 
   return true;
