@@ -9,7 +9,7 @@
 #include "flutter/generated_plugin_registrant.h"
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
-#include <flutter/flutter_engine.h>  // Added for FlutterWindowMetricsEvent and engine methods
+#include <flutter/flutter_windows.h> // Changed for Windows specific Flutter API
 
 #pragma comment(lib, "Pathcch.lib") // Link Pathcch.lib
 
