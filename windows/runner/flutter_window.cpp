@@ -21,13 +21,13 @@ namespace
     explicit WindowCloseResult(HWND hwnd) : hwnd_(hwnd) {}
     ~WindowCloseResult() override = default;
 
-    void Success(const flutter::EncodableValue *result) override
+    void Success(const flutter::EncodableValue &result) override
     {
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
     }
     void Error(const std::string &error_code,
                const std::string &error_message,
-               const flutter::EncodableValue *error_details) override
+               const flutter::EncodableValue &error_details) override
     {
       // Optionally log the error
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
