@@ -22,20 +22,20 @@ namespace
     ~WindowCloseResult() override = default;
 
   protected:
-    void Success(const flutter::EncodableValue *result) override
+    void SuccessInternal(const flutter::EncodableValue *result) override
     {
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
     }
 
-    void Error(const std::string *error_code,
-               const std::string *error_message,
-               const flutter::EncodableValue *error_details) override
+    void ErrorInternal(const std::string &error_code,
+                       const std::string &error_message,
+                       const flutter::EncodableValue *error_details) override
     {
       // Optionally log the error
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
     }
 
-    void NotImplemented() override
+    void NotImplementedInternal() override
     {
       // Fallback if Dart side doesn't implement 'windowWillClose'
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
