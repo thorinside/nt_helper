@@ -1,9 +1,14 @@
 #include "flutter_window.h"
 
 #include <optional>
+#include <fstream>   // Added for file operations
+#include <shlobj.h>  // Added for SHGetFolderPath
+#include <windows.h> // Already implicitly included, but good for clarity for SHGetKnownFolderPath
+#include <pathcch.h> // Added for PathCchAppend
 
 #include "flutter/generated_plugin_registrant.h"
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
+#include "flutter/method_result.h"   // Changed from method_result_functions.h
 
 FlutterWindow::FlutterWindow(const flutter::DartProject &project)
     : project_(project) {}
