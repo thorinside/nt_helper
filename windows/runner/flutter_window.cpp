@@ -62,29 +62,42 @@ FlutterWindow::~FlutterWindow()
 std::wstring FlutterWindow::GetSavePath()
 {
   PWSTR path_app_data = nullptr;
-  // Roaming app data is usually best for user-specific settings that should roam.
-  // Use FOLDERID_LocalAppData for local-machine only settings if preferred.
-  if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &path_app_data)))
+  if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &path_app_data)))
   {
-    std::wstring save_path_str(path_app_data);
-    CoTaskMemFree(path_app_data); // Free the memory allocated by SHGetKnownFolderPath
-
-    // Append your application's folder and filename
-    std::wstring app_folder_name = L"\\nt_helper_settings"; // Using nt_helper_settings
-    std::wstring app_folder_path = save_path_str + app_folder_name;
-
-    // Create the directory if it doesn't exist.
-    // CreateDirectory returns 0 on failure, non-zero on success (or if already exists).
-    // We don't strictly need to check the return for this simple case,
-    // as fstream will fail gracefully if the path is invalid.
-    CreateDirectory(app_folder_path.c_str(), NULL);
-
-    std::wstring file_path = app_folder_path + L"\\window_placement.dat";
-    return file_path;
+    OutputDebugStringW(L"GetSavePath: SHGetKnownFolderPath FAILED. Falling back to local file window_placement.dat\n");
+    return L"window_placement.dat";
   }
-  // Fallback or error: return empty or a local path.
-  // For simplicity, returning a local path. A more robust solution would log an error.
-  return L"window_placement.dat";
+
+  std::wstring base_path(path_app_data);
+  CoTaskMemFree(path_app_data);
+
+  // Path structure: AppData\Roaming\VendorName\AppName\file.dat
+  // Adjust VendorName and AppName as per your application's identifier structure.
+  // For com.example.nt_helper, using "com.example" as vendor and "nt_helper" as app.
+  std::wstring vendor_dir_name = L"com.example";
+  std::wstring app_dir_name = L"nt_helper";
+
+  std::wstring final_path = base_path;
+
+  // Append and create vendor directory
+  final_path += (L"\\" + vendor_dir_name);
+  if (!(CreateDirectory(final_path.c_str(), NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
+  {
+    OutputDebugStringW((L"GetSavePath: Failed to create/access vendor directory: " + final_path + L". Falling back.\n").c_str());
+    return L"window_placement.dat";
+  }
+
+  // Append and create app directory
+  final_path += (L"\\" + app_dir_name);
+  if (!(CreateDirectory(final_path.c_str(), NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
+  {
+    OutputDebugStringW((L"GetSavePath: Failed to create/access app directory: " + final_path + L". Falling back.\n").c_str());
+    return L"window_placement.dat";
+  }
+
+  final_path += L"\\window_placement.dat";
+  OutputDebugStringW((L"GetSavePath: Using path: " + final_path + L"\n").c_str());
+  return final_path;
 }
 
 void FlutterWindow::SaveWindowPlacement()
@@ -102,10 +115,11 @@ void FlutterWindow::SaveWindowPlacement()
     std::wstring save_path = GetSavePath();
     OutputDebugStringW((L"SaveWindowPlacement: Attempting to save to: " + save_path + L"\n").c_str());
 
-    if (save_path.empty())
+    if (save_path.empty() || save_path == L"window_placement.dat")
     {
-      OutputDebugStringW(L"SaveWindowPlacement: GetSavePath returned empty path, cannot save.\n");
-      return;
+      OutputDebugStringW(L"SaveWindowPlacement: GetSavePath returned empty or fallback path, cannot save to roaming profile.\n");
+      if (save_path.empty())
+        return;
     }
 
     std::ofstream save_file(save_path, std::ios::binary | std::ios::out);
@@ -138,9 +152,9 @@ bool FlutterWindow::LoadWindowPlacement(Point &origin, Size &size)
   std::wstring load_path = GetSavePath();
   OutputDebugStringW((L"LoadWindowPlacement: Attempting to load from: " + load_path + L"\n").c_str());
 
-  if (load_path.empty())
+  if (load_path.empty() || load_path == L"window_placement.dat")
   {
-    OutputDebugStringW(L"LoadWindowPlacement: GetSavePath returned empty path.\n");
+    OutputDebugStringW(L"LoadWindowPlacement: GetSavePath returned empty or fallback path. Not loading from roaming profile.\n");
     return false;
   }
 
