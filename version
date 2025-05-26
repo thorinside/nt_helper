@@ -42,7 +42,7 @@ sed -i "" "s/^version: .*/version: ${new_version}/" pubspec.yaml
 # Commit changes
 git add pubspec.yaml
 git commit -m "Bump version to ${new_version}"
-git tag "v${major}.${minor}.${patch"
+git tag "v${major}.${minor}.${patch}"
 
 # Output the new version
 echo "Version bumped to ${new_version}"
