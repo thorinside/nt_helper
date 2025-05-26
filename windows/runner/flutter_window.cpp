@@ -21,17 +21,20 @@ namespace
     explicit WindowCloseResult(HWND hwnd) : hwnd_(hwnd) {}
     ~WindowCloseResult() override = default;
 
-    void Success(const flutter::EncodableValue &result) override
+  protected:
+    void Success(const flutter::EncodableValue *result) override
     {
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
     }
-    void Error(const std::string &error_code,
-               const std::string &error_message,
-               const flutter::EncodableValue &error_details) override
+
+    void Error(const std::string *error_code,
+               const std::string *error_message,
+               const flutter::EncodableValue *error_details) override
     {
       // Optionally log the error
       PostMessage(hwnd_, WM_DESTROY, 0, 0);
     }
+
     void NotImplemented() override
     {
       // Fallback if Dart side doesn't implement 'windowWillClose'
@@ -150,25 +153,53 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
 {
   Point origin = default_origin;
   Size size = default_size;
+  bool loaded_successfully = LoadWindowPlacement(origin, size);
 
-  // Attempt to load saved placement. If successful, 'origin' and 'size' will be updated.
-  LoadWindowPlacement(origin, size);
+  std::wstring log_msg1 = L"Default origin: (" + std::to_wstring(default_origin.x) + L", " + std::to_wstring(default_origin.y) + L") Default size: (" + std::to_wstring(default_size.width) + L"x" + std::to_wstring(default_size.height) + L")\n";
+  OutputDebugStringW(log_msg1.c_str());
+  if (loaded_successfully)
+  {
+    std::wstring log_msg_loaded = L"Loaded origin: (" + std::to_wstring(origin.x) + L", " + std::to_wstring(origin.y) + L") Loaded size: (" + std::to_wstring(size.width) + L"x" + std::to_wstring(size.height) + L")\n";
+    OutputDebugStringW(log_msg_loaded.c_str());
+  }
+  else
+  {
+    OutputDebugStringW(L"Failed to load window placement, using defaults.\n");
+  }
 
-  // Now call the base Win32Window::Create with the determined origin and size
   if (!Win32Window::Create(title, origin, size))
   {
-    return false; // Base creation failed
+    OutputDebugStringW(L"Win32Window::Create failed.\n");
+    return false;
+  }
+  OutputDebugStringW(L"Win32Window::Create succeeded.\n");
+
+  RECT frame = GetClientArea();
+  long view_width = frame.right - frame.left;
+  long view_height = frame.bottom - frame.top;
+
+  std::wstring log_msg2 = L"GetClientArea after Win32Window::Create: (" + std::to_wstring(view_width) + L"x" + std::to_wstring(view_height) + L")\n";
+  OutputDebugStringW(log_msg2.c_str());
+
+  if (view_width <= 0 || view_height <= 0)
+  {
+    std::wstring log_msg_fallback = L"Warning: Window client area is zero or negative. Falling back to default Flutter view size: (" + std::to_wstring(default_size.width) + L"x" + std::to_wstring(default_size.height) + L")\n";
+    OutputDebugStringW(log_msg_fallback.c_str());
+    view_width = default_size.width;
+    view_height = default_size.height;
   }
 
-  // The rest is similar to the original OnCreate logic,
-  // now part of this overridden Create method.
-  RECT frame = GetClientArea();
+  std::wstring log_msg3 = L"Creating FlutterViewController with size: (" + std::to_wstring(view_width) + L"x" + std::to_wstring(view_height) + L")\n";
+  OutputDebugStringW(log_msg3.c_str());
+
   flutter_controller_ = std::make_unique<flutter::FlutterViewController>(
-      frame.right - frame.left, frame.bottom - frame.top, project_);
+      view_width, view_height, project_);
   if (!flutter_controller_->engine() || !flutter_controller_->view())
   {
-    return false; // Flutter controller setup failed
+    OutputDebugStringW(L"FlutterViewController setup failed.\n");
+    return false;
   }
+  OutputDebugStringW(L"FlutterViewController setup succeeded.\n");
 
   window_events_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
@@ -180,10 +211,20 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]()
-                                                      { this->Show(); });
+                                                      {
+    OutputDebugStringW(L"SetNextFrameCallback: Calling this->Show().\n");
+    RECT client_rect_before_show;
+    if (GetHandle()) { // Ensure handle is valid before calling GetClientRect
+        GetClientRect(GetHandle(), &client_rect_before_show);
+        std::wstring log_msg_show = L"Client RECT before ShowWindow: " +
+            std::to_wstring(client_rect_before_show.right - client_rect_before_show.left) + L"x" +
+            std::to_wstring(client_rect_before_show.bottom - client_rect_before_show.top) + L"\n";
+        OutputDebugStringW(log_msg_show.c_str());
+    }
+    this->Show(); });
   flutter_controller_->ForceRedraw();
 
-  return true; // Successfully created and initialized Flutter
+  return true;
 }
 
 bool FlutterWindow::OnCreate()
