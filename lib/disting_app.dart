@@ -10,10 +10,61 @@ import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_page.dart';
 import 'dart:io';
 
-class DistingApp extends StatelessWidget {
+class DistingApp extends StatefulWidget {
   const DistingApp({super.key});
 
   static const String sdCardScannerRoute = '/sd-card-scanner';
+
+  @override
+  State<DistingApp> createState() => _DistingAppState();
+}
+
+class _DistingAppState extends State<DistingApp> {
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isWindows) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Delay slightly to ensure the window is shown and initial rendering attempted
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            setState(() {}); // Trigger a rebuild to force repaint
+          }
+        });
+      });
+    }
+  }
+
+  ThemeData buildThemeData(ColorScheme baseColorScheme) {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: baseColorScheme,
+      appBarTheme: AppBarTheme(
+        elevation: 4.0,
+        shadowColor: baseColorScheme.shadow,
+        backgroundColor: baseColorScheme.surface,
+        foregroundColor: baseColorScheme.onSurface,
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(
+            color: baseColorScheme.secondary,
+            width: 2.0,
+          ),
+        ),
+        labelColor: baseColorScheme.secondary,
+        unselectedLabelColor: baseColorScheme.secondary.withAlpha(170),
+        labelStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,39 +103,8 @@ class DistingApp extends StatelessWidget {
               },
               child: Material(child: DistingPage()),
             ),
-        sdCardScannerRoute: (context) => const SdCardScannerPage(),
+        DistingApp.sdCardScannerRoute: (context) => const SdCardScannerPage(),
       },
-    );
-  }
-
-  ThemeData buildThemeData(ColorScheme baseColorScheme) {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: baseColorScheme,
-      appBarTheme: AppBarTheme(
-        elevation: 4.0,
-        shadowColor: baseColorScheme.shadow,
-        backgroundColor: baseColorScheme.surface,
-        foregroundColor: baseColorScheme.onSurface,
-      ),
-      tabBarTheme: TabBarThemeData(
-        indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(
-            color: baseColorScheme.secondary,
-            width: 2.0,
-          ),
-        ),
-        labelColor: baseColorScheme.secondary,
-        unselectedLabelColor: baseColorScheme.secondary.withAlpha(170),
-        labelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
     );
   }
 }
