@@ -7,11 +7,12 @@ import 'package:nt_helper/ui/sd_card_scanner/bloc/sd_card_scanner_bloc.dart';
 import 'package:nt_helper/ui/sd_card_scanner/bloc/sd_card_scanner_event.dart'; // Added import for events
 import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_state.dart'; // For ScanStatus
 import 'package:nt_helper/util/file_system_utils.dart';
-import 'package:nt_helper/util/preset_parser_utils.dart'; // Import the parser
 import 'package:path/path.dart' as p; // For joining paths
 import 'package:nt_helper/ui/sd_card_scanner/widgets/sd_card_selection_card.dart';
 import 'package:nt_helper/ui/sd_card_scanner/widgets/scanning_progress_card.dart'; // Import progress card
 import 'package:nt_helper/ui/sd_card_scanner/widgets/scanned_card_management_item.dart'; // Import management item
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:docman/docman.dart' as docman; // For DocumentFile type checking
 
 // Model for scanned card data
 class ScannedCardData {
@@ -36,10 +37,10 @@ class SdCardScannerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (blocContext) => SdCardScannerBloc(blocContext
-          .read<AppDatabase>()), // Provide AppDatabase using blocContext
-      child:
-          const _SdCardScannerView(), // Extracted the main UI to a new widget
+      create: (blocContext) =>
+          SdCardScannerBloc(blocContext.read<AppDatabase>())
+            ..add(const LoadScannedCards()), // Load cards on creation
+      child: const _SdCardScannerView(),
     );
   }
 }
@@ -49,26 +50,18 @@ class _SdCardScannerView extends StatelessWidget {
   const _SdCardScannerView();
 
   void _showSdCardSelectionDialog(BuildContext context) {
-    // context here is from _SdCardScannerView, which has BlocProvider in its ancestry
-    final sdCardScannerBloc =
-        context.read<SdCardScannerBloc>(); // Get BLoC instance once
+    final sdCardScannerBloc = context.read<SdCardScannerBloc>();
 
     showDialog(
       context: context,
-      // barrierDismissible can also be controlled by BLoC state
       barrierDismissible:
           sdCardScannerBloc.state.status != ScanStatus.validating &&
               sdCardScannerBloc.state.status != ScanStatus.findingFiles &&
               sdCardScannerBloc.state.status != ScanStatus.parsing &&
               sdCardScannerBloc.state.status != ScanStatus.saving,
       builder: (BuildContext dialogContext) {
-        // It's often better to use a BlocBuilder here if the dialog needs to react to multiple state changes
-        // For just enabling/disabling a button based on current state when dialog opens, reading once might be okay,
-        // but for dynamic updates *while open*, BlocBuilder is safer.
-        // Let's use BlocBuilder to ensure the button state updates if BLoC state changes while dialog is open.
         return BlocBuilder<SdCardScannerBloc, SdCardScannerState>(
-            bloc:
-                sdCardScannerBloc, // Pass the instance if read outside, or context.watch inside builder
+            bloc: sdCardScannerBloc,
             builder: (context, state) {
               final bool isScanningDialog =
                   state.status == ScanStatus.validating ||
@@ -79,10 +72,29 @@ class _SdCardScannerView extends StatelessWidget {
                 title: const Text('Scan New SD Card'),
                 content: SingleChildScrollView(
                   child: SdCardSelectionCard(
-                    onScanRequested: (String path, String cardName) {
+                    onScanRequested:
+                        (dynamic pickedDirIdentifier, String cardName) {
                       Navigator.of(dialogContext).pop();
-                      sdCardScannerBloc
-                          .add(ScanRequested(path: path, cardName: cardName));
+                      if (pickedDirIdentifier == null) return;
+
+                      String pathOrUriForBloc;
+                      if (!kIsWeb &&
+                          Platform.isAndroid &&
+                          pickedDirIdentifier is docman.DocumentFile) {
+                        pathOrUriForBloc = pickedDirIdentifier.uri.toString();
+                      } else if (pickedDirIdentifier is String) {
+                        pathOrUriForBloc = pickedDirIdentifier;
+                      } else {
+                        // Should not happen if pickSdCardRootDirectory works as expected
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Error: Invalid directory type selected.')),
+                        );
+                        return;
+                      }
+                      sdCardScannerBloc.add(ScanRequested(
+                          path: pathOrUriForBloc, cardName: cardName));
                     },
                   ),
                 ),
@@ -90,10 +102,8 @@ class _SdCardScannerView extends StatelessWidget {
                   TextButton(
                     child: const Text('Close'),
                     onPressed: isScanningDialog
-                        ? null // Disable if scanning
-                        : () {
-                            Navigator.of(dialogContext).pop();
-                          },
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
                   ),
                 ],
               );
@@ -131,7 +141,7 @@ class _SdCardScannerView extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('SD Card Preset Scanner (BLoC)'),
+            title: const Text('SD Card Preset Scanner'),
           ),
           body: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -163,9 +173,7 @@ class _SdCardScannerView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       if (state.scannedCards.isEmpty &&
-                          state.status !=
-                              ScanStatus
-                                  .initial) // Removed state.status != ScanStatus.loading
+                          state.status != ScanStatus.initial)
                         Expanded(
                           child: Center(
                             child: Padding(
@@ -173,8 +181,7 @@ class _SdCardScannerView extends StatelessWidget {
                               child: Text(
                                 state.status == ScanStatus.error &&
                                         state.errorMessage != null
-                                    ? state
-                                        .errorMessage! // Show BLoC error if scan failed and list is empty
+                                    ? state.errorMessage!
                                     : 'No SD cards have been scanned yet. Click the "+" button below to scan your first card.',
                                 style: Theme.of(context)
                                     .textTheme
@@ -188,8 +195,7 @@ class _SdCardScannerView extends StatelessWidget {
                             ),
                           ),
                         )
-                      else if (state.status ==
-                          ScanStatus.initial) // Changed from ScanStatus.loading
+                      else if (state.status == ScanStatus.initial)
                         const Expanded(
                             child: Center(child: CircularProgressIndicator()))
                       else
@@ -201,8 +207,7 @@ class _SdCardScannerView extends StatelessWidget {
                               return ScannedCardManagementItem(
                                 key: ValueKey(card.id),
                                 cardName: card.name,
-                                lastScanDate:
-                                    card.lastScanDate, // Already nullable
+                                lastScanDate: card.lastScanDate,
                                 presetCount: card.presetCount,
                                 onRescan: () =>
                                     context.read<SdCardScannerBloc>().add(
@@ -218,7 +223,6 @@ class _SdCardScannerView extends StatelessWidget {
                             },
                           ),
                         ),
-                      // Success/Error messages are handled by BlocListener via Snackbars
                     ],
                   ),
           ),
