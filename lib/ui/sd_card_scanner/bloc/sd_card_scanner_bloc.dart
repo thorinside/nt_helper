@@ -97,6 +97,21 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
     dynamic sdCardRootIdentifier = cardIdentifier;
     String displayPath = cardIdentifier;
 
+    // --- iOS Debug: Print selected root path and check existence ---
+    if (!kIsWeb && Platform.isIOS && sdCardRootIdentifier is String) {
+      debugPrint(
+          "iOS - Selected SD Card Root Path from FilePicker: $sdCardRootIdentifier");
+      try {
+        final rootDir = Directory(sdCardRootIdentifier);
+        final exists = await rootDir.exists();
+        debugPrint(
+            "iOS - Root Directory ($sdCardRootIdentifier) reported exists: $exists");
+      } catch (e) {
+        debugPrint("iOS - Error checking rootDir.exists(): $e");
+      }
+    }
+    // --- End iOS Debug ---
+
     if (!kIsWeb &&
         Platform.isAndroid &&
         cardIdentifier.startsWith('content://')) {
@@ -143,6 +158,21 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       presetsDisplayPath = presetsDirIdentifier.name ?? "presets";
     } else if (sdCardRootIdentifier is String) {
       presetsDirIdentifier = p.join(sdCardRootIdentifier, 'presets');
+
+      // --- iOS Debug: Print expected presets path and check existence ---
+      if (!kIsWeb && Platform.isIOS) {
+        debugPrint("iOS - Calculated presets path: $presetsDirIdentifier");
+        try {
+          final presetsDirObj = Directory(presetsDirIdentifier as String);
+          final presetsExists = await presetsDirObj.exists();
+          debugPrint(
+              "iOS - Presets Directory ($presetsDirIdentifier) reported exists: $presetsExists");
+        } catch (e) {
+          debugPrint("iOS - Error checking presetsDirObj.exists(): $e");
+        }
+      }
+      // --- End iOS Debug ---
+
       // For desktop, check if this path exists and is a directory
       final desktopPresetsDir = Directory(presetsDirIdentifier as String);
       if (!await desktopPresetsDir.exists()) {
