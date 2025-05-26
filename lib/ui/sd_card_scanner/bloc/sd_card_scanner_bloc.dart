@@ -65,35 +65,36 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
   }
 
   Future<void> _onScanRequested(
-      ScanRequested event, Emitter<SdCardScannerState> emit) async {
-    await _performScanAndSaveOperations(
-        event.path, event.cardName, emit, "Scan");
-    add(const LoadScannedCards());
+    ScanRequested event,
+    Emitter<SdCardScannerState> emit,
+  ) async {
+    await _performScanAndSaveOperations(event.path, event.cardName, emit,
+        isRescan: false);
   }
 
   Future<void> _onRescanCardRequested(
-      RescanCardRequested event, Emitter<SdCardScannerState> emit) async {
-    await _performScanAndSaveOperations(
-        event.cardIdPath, event.cardName, emit, "Rescan");
+    RescanCardRequested event,
+    Emitter<SdCardScannerState> emit,
+  ) async {
+    await _performScanAndSaveOperations(event.cardIdPath, event.cardName, emit,
+        isRescan: true);
     add(const LoadScannedCards());
   }
 
   Future<void> _performScanAndSaveOperations(
-    String cardIdentifier,
-    String cardName,
-    Emitter<SdCardScannerState> emit,
-    String operationType,
-  ) async {
+      String cardIdentifier, String cardName, Emitter<SdCardScannerState> emit,
+      {bool isRescan = false}) async {
+    final String operationType = isRescan ? "Rescan" : "Scan";
     emit(state.copyWith(
-        status: ScanStatus.validating,
-        currentFile: "Validating path for $operationType...",
-        errorMessage: null,
-        successMessage: null,
+        status: ScanStatus.findingFiles,
+        currentFile: "Preparing for $operationType of '$cardName'...",
         scanProgress: 0.0,
         filesProcessed: 0,
-        totalFiles: 0));
+        totalFiles: 0,
+        errorMessage: null,
+        successMessage: null));
 
-    dynamic sdCardRootIdentifier;
+    dynamic sdCardRootIdentifier = cardIdentifier;
     String displayPath = cardIdentifier;
 
     if (!kIsWeb &&
@@ -102,28 +103,63 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       try {
         sdCardRootIdentifier =
             await docman.DocumentFile.fromUri(cardIdentifier);
-        if (sdCardRootIdentifier == null ||
-            !(await sdCardRootIdentifier.exists())) {
+        if (sdCardRootIdentifier == null || !sdCardRootIdentifier.exists) {
           emit(state.copyWith(
               status: ScanStatus.error,
               errorMessage:
-                  "Error: Could not access SD card at '$cardIdentifier'. Please re-select."));
+                  "Error: Could not access SD card at '$cardIdentifier'. Please re-select. DocumentFile is null or does not exist."));
           return;
         }
         displayPath = sdCardRootIdentifier.name ?? cardIdentifier;
       } catch (e) {
+        debugPrint(
+            'Error getting DocumentFile from URI $cardIdentifier: ${e.toString()}');
         emit(state.copyWith(
             status: ScanStatus.error,
             errorMessage:
-                "Error accessing Android SD card URI '$cardIdentifier': $e"));
+                "Error accessing SD card at '$cardIdentifier'. Details: ${e.toString()}"));
         return;
       }
-    } else if (!kIsWeb &&
-        Platform.isAndroid &&
-        !cardIdentifier.startsWith('content://')) {
-      sdCardRootIdentifier = cardIdentifier;
+    }
+
+    emit(state.copyWith(
+        status: ScanStatus.findingFiles,
+        currentFile: "Locating 'presets' directory in $displayPath..."));
+
+    dynamic presetsDirIdentifier;
+    String presetsDisplayPath = "presets"; // Default display name
+
+    if (sdCardRootIdentifier is docman.DocumentFile) {
+      presetsDirIdentifier = await sdCardRootIdentifier.find('presets');
+      if (presetsDirIdentifier == null ||
+          !presetsDirIdentifier.exists ||
+          !presetsDirIdentifier.isDirectory) {
+        emit(state.copyWith(
+            status: ScanStatus.error,
+            errorMessage:
+                "Error: Could not find or access 'presets' directory on '$displayPath'. It may not exist or is not a directory."));
+        return;
+      }
+      presetsDisplayPath = presetsDirIdentifier.name ?? "presets";
+    } else if (sdCardRootIdentifier is String) {
+      presetsDirIdentifier = p.join(sdCardRootIdentifier, 'presets');
+      // For desktop, check if this path exists and is a directory
+      final desktopPresetsDir = Directory(presetsDirIdentifier as String);
+      if (!await desktopPresetsDir.exists()) {
+        emit(state.copyWith(
+            status: ScanStatus.error,
+            errorMessage:
+                "Error: Could not find 'presets' directory at '$presetsDirIdentifier'."));
+        return;
+      }
+      presetsDisplayPath =
+          presetsDirIdentifier; // Use the full path for display on desktop
     } else {
-      sdCardRootIdentifier = cardIdentifier;
+      emit(state.copyWith(
+          status: ScanStatus.error,
+          errorMessage:
+              "Internal error: Invalid SD card root identifier type. Path: $sdCardRootIdentifier"));
+      return;
     }
 
     final isValid =
@@ -136,88 +172,57 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       return;
     }
 
-    dynamic presetsDirIdentifier;
-    String presetsDisplayPath = "presets";
-
-    if (sdCardRootIdentifier is docman.DocumentFile) {
-      presetsDirIdentifier = await sdCardRootIdentifier.find('presets');
-      if (presetsDirIdentifier == null ||
-          !(await presetsDirIdentifier.exists()) ||
-          !presetsDirIdentifier.isDirectory) {
-        emit(state.copyWith(
-            status: ScanStatus.error,
-            errorMessage:
-                "Error: Could not find or access 'presets' directory on '$displayPath'."));
-        return;
-      }
-      presetsDisplayPath = presetsDirIdentifier.name ?? "presets";
-    } else if (sdCardRootIdentifier is String) {
-      presetsDirIdentifier = p.join(sdCardRootIdentifier, 'presets');
-      presetsDisplayPath = presetsDirIdentifier;
-    } else {
-      emit(state.copyWith(
-          status: ScanStatus.error,
-          errorMessage:
-              "Internal error: Invalid SD card root identifier type. Path: $sdCardRootIdentifier"));
-      return;
-    }
-
     emit(state.copyWith(
         status: ScanStatus.findingFiles,
         currentFile: "Finding preset files in $presetsDisplayPath..."));
 
-    final List<String> presetFilePathsOrUris =
-        await FileSystemUtils.findPresetFiles(presetsDirIdentifier);
-
-    if (presetFilePathsOrUris.isEmpty) {
+    final List<(String uri, String relativePath)> presetFileIdentifiers;
+    try {
+      presetFileIdentifiers =
+          await FileSystemUtils.findPresetFiles(presetsDirIdentifier);
+    } catch (e, s) {
+      debugPrint('Error finding preset files: $e\n$s');
       emit(state.copyWith(
           status: ScanStatus.error,
-          errorMessage:
-              "No preset files (.json) found in $presetsDisplayPath."));
+          errorMessage: "Failed to find preset files: ${e.toString()}"));
+      return;
+    }
+
+    if (presetFileIdentifiers.isEmpty) {
+      emit(state.copyWith(
+          status: ScanStatus.error,
+          errorMessage: "No preset files (.json) found in $displayPath."));
       return;
     }
 
     emit(state.copyWith(
         status: ScanStatus.parsing,
-        totalFiles: presetFilePathsOrUris.length,
+        totalFiles: presetFileIdentifiers.length,
         currentFile:
-            "Found ${presetFilePathsOrUris.length} files. Starting parse..."));
+            "Found ${presetFileIdentifiers.length} files. Starting parse..."));
 
-    List<(String, ParsedPresetData)> successfullyParsedWithOriginalIdentifier =
-        [];
-    for (int i = 0; i < presetFilePathsOrUris.length; i++) {
-      if (state.status == ScanStatus.cancelled) break;
-      final fileIdentifier = presetFilePathsOrUris[i];
+    final List<ParsedPresetData> parsedPresets = [];
+    int processedFileCount = 0;
 
-      String currentFileNameForDisplay;
-      if (!kIsWeb &&
-          Platform.isAndroid &&
-          fileIdentifier.startsWith('content://')) {
-        try {
-          final tempDocFile = await docman.DocumentFile.fromUri(fileIdentifier);
-          currentFileNameForDisplay =
-              tempDocFile?.name ?? p.basename(fileIdentifier);
-        } catch (_) {
-          currentFileNameForDisplay = p.basename(fileIdentifier);
-        }
+    for (final (fileUri, fileRelativePath) in presetFileIdentifiers) {
+      processedFileCount++;
+      final parsedData = await PresetParserUtils.parsePresetFile(
+        fileUri,
+        sdCardRootPathOrUri: cardIdentifier,
+        knownRelativePath: fileRelativePath,
+      );
+
+      if (parsedData != null) {
+        parsedPresets.add(parsedData);
       } else {
-        currentFileNameForDisplay = p.basename(fileIdentifier);
+        // ... (log, maybe collect errors to show user)
       }
 
       emit(state.copyWith(
-        filesProcessed: i + 1,
-        currentFile: "Parsing: $currentFileNameForDisplay",
-        scanProgress: (i + 1) / presetFilePathsOrUris.length,
+        filesProcessed: processedFileCount,
+        currentFile: "Parsing: $fileRelativePath",
+        scanProgress: processedFileCount / presetFileIdentifiers.length,
       ));
-
-      final parsedData = await PresetParserUtils.parsePresetFile(
-        fileIdentifier,
-        sdCardRootPathOrUri: cardIdentifier,
-      );
-      if (parsedData != null) {
-        successfullyParsedWithOriginalIdentifier
-            .add((fileIdentifier, parsedData));
-      }
       await Future.delayed(const Duration(milliseconds: 5));
     }
 
@@ -256,15 +261,15 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
         await _db.indexedPresetFilesDao.deletePresetsForSdCard(sdCardId);
 
         List<IndexedPresetFilesCompanion> presetEntries = [];
-        for (var (fileId, pData) in successfullyParsedWithOriginalIdentifier) {
+        for (var parsedData in parsedPresets) {
           presetEntries.add(IndexedPresetFilesCompanion.insert(
             sdCardId: sdCardId,
-            relativePath: pData.relativePath,
-            fileName: pData.fileName,
-            absolutePathAtScanTime: fileId,
-            algorithmNameFromPreset: Value(pData.algorithmName),
-            notesFromPreset: Value(pData.notes),
-            otherExtractedMetadataJson: Value(pData.otherMetadataJson),
+            relativePath: parsedData.relativePath,
+            fileName: parsedData.fileName,
+            absolutePathAtScanTime: parsedData.absolutePathAtScanTime,
+            algorithmNameFromPreset: Value(parsedData.algorithmName),
+            notesFromPreset: Value(parsedData.notes),
+            otherExtractedMetadataJson: Value(parsedData.otherMetadataJson),
             lastSeenUtc: nowUtc,
           ));
         }
@@ -279,7 +284,7 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       emit(state.copyWith(
           status: ScanStatus.complete,
           successMessage:
-              "$operationType complete for $cardName. Found ${successfullyParsedWithOriginalIdentifier.length} presets.",
+              "$operationType complete for $cardName. Found ${parsedPresets.length} presets.",
           scanProgress: 0.0,
           filesProcessed: 0,
           totalFiles: 0,

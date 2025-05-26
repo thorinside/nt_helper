@@ -61,47 +61,77 @@ class FileSystemUtils {
   /// For other platforms, it's a `String` path.
   /// Currently checks for the existence of a subdirectory named "presets".
   static Future<bool> isValidDistingSdCard(dynamic pathOrDocumentFile) async {
-    try {
-      if (pathOrDocumentFile == null) return false;
+    if (kIsWeb) return false;
 
-      if (pathOrDocumentFile is docman.DocumentFile) {
-        // Android SAF path
-        // Check if a "presets" directory exists within the selected DocumentFile
-        final presetsDirDocFile = await pathOrDocumentFile.find('presets');
-        return presetsDirDocFile != null && presetsDirDocFile.isDirectory;
-      } else if (pathOrDocumentFile is String) {
-        // Desktop/other platform path
-        final presetsPath = p.join(pathOrDocumentFile, 'presets');
-        final presetsDir = Directory(presetsPath);
-        return await presetsDir.exists();
+    if (pathOrDocumentFile is docman.DocumentFile) {
+      // Android with docman.DocumentFile
+      try {
+        final presetsDir = await pathOrDocumentFile.find('presets');
+        if (presetsDir != null && presetsDir.exists && presetsDir.isDirectory) {
+          return true;
+        }
+      } catch (e) {
+        debugPrint('Error validating Disting SD card: $e');
+        return false;
       }
-      return false;
-    } catch (e) {
-      debugPrint('Error validating Disting SD card: $e');
-      return false;
+    } else if (pathOrDocumentFile is String) {
+      // Desktop/other platform path
+      final presetsPath = p.join(pathOrDocumentFile, 'presets');
+      final presetsDir = Directory(presetsPath);
+      return await presetsDir.exists();
     }
+    return false;
   }
 
   // Helper for recursive listing with DocMan
   static Future<void> _findPresetFilesRecursiveDocman(
-    docman.DocumentFile directory, // This is a DocumentFile
-    List<String> presetFiles,
-  ) async {
+      docman.DocumentFile parent,
+      List<(String uri, String relativePath)> allFiles,
+      String currentRelativePath,
+      {int currentDepth = 0,
+      int maxDepth = 10}) async {
+    debugPrint(
+        '[DocManRecursive] Entering for: ${parent.name ?? parent.uri.toString()}, Depth: $currentDepth');
+    if (currentDepth > maxDepth) {
+      debugPrint(
+          '[DocManRecursive] Max recursion depth reached for docman directory: ${parent.uri}');
+      return;
+    }
+
     try {
-      final List<docman.DocumentFile> documents =
-          await directory.listDocuments();
-      for (final doc in documents) {
-        if (doc.isFile &&
-            doc.name != null &&
-            doc.name!.toLowerCase().endsWith('.json')) {
-          presetFiles.add(doc.uri.toString());
-        }
-        if (doc.isDirectory) {
-          await _findPresetFilesRecursiveDocman(doc, presetFiles);
+      debugPrint(
+          '[DocManRecursive] Attempting to list documents for ${parent.name ?? parent.uri.toString()}');
+      final List<docman.DocumentFile> documentsInDirectory =
+          await parent.listDocuments();
+      debugPrint(
+          '[DocManRecursive] Got ${documentsInDirectory.length} documents for ${parent.name ?? parent.uri.toString()}');
+
+      if (documentsInDirectory.isEmpty) {
+        debugPrint(
+            '[DocManRecursive] Directory is empty: ${parent.name ?? parent.uri.toString()}');
+      }
+
+      for (final docFile in documentsInDirectory) {
+        debugPrint(
+            '[DocManRecursive] Processing item: ${docFile.name ?? docFile.uri.toString()}, isDirectory: ${docFile.isDirectory}');
+        if (docFile.isDirectory) {
+          await _findPresetFilesRecursiveDocman(docFile, allFiles,
+              p.join(currentRelativePath, docFile.name ?? 'unknown_dir'),
+              currentDepth: currentDepth + 1, maxDepth: maxDepth);
+        } else if (docFile.isFile &&
+            (docFile.name?.toLowerCase().endsWith('.json') ?? false)) {
+          String actualRelativePath =
+              p.join(currentRelativePath, docFile.name ?? 'unknown_file.json');
+          debugPrint('[DocManRecursive] Added JSON file: $actualRelativePath');
+          allFiles.add((docFile.uri.toString(), actualRelativePath));
         }
       }
-    } catch (e) {
-      debugPrint('Error during recursive DocMan scan in ${directory.name}: $e');
+      debugPrint(
+          '[DocManRecursive] Exiting for: ${parent.name ?? parent.uri.toString()}');
+    } catch (e, s) {
+      debugPrint(
+          '[DocManRecursive] Error during recursive DocMan scan in ${parent.name ?? parent.uri.toString()}: $e\nStackTrace: $s');
+      rethrow;
     }
   }
 
@@ -109,10 +139,10 @@ class FileSystemUtils {
   ///
   /// For Android, `presetsDirIdentifier` is expected to be a `docman.DocumentFile` representing the 'presets' directory.
   /// For other platforms, it's a `String` path to the 'presets' directory.
-  /// Returns a list of full file paths (or URIs for Android) for all files ending with '.json'.
-  static Future<List<String>> findPresetFiles(
+  /// Returns a list of tuples (uri, relativePath) for all files ending with '.json'.
+  static Future<List<(String uri, String relativePath)>> findPresetFiles(
       dynamic presetsDirIdentifier) async {
-    final List<String> presetFiles = [];
+    final List<(String uri, String relativePath)> presetFiles = [];
 
     if (presetsDirIdentifier == null) {
       debugPrint('Presets directory identifier is null.');
@@ -121,16 +151,21 @@ class FileSystemUtils {
 
     try {
       if (presetsDirIdentifier is docman.DocumentFile) {
-        // Android SAF path (DocumentFile for 'presets' dir)
         if (!presetsDirIdentifier.isDirectory) {
           debugPrint(
               'Provided DocumentFile is not a directory: ${presetsDirIdentifier.name}');
           return presetFiles;
         }
-        await _findPresetFilesRecursiveDocman(
-            presetsDirIdentifier, presetFiles);
+        try {
+          String initialRelativePathForAndroid =
+              presetsDirIdentifier.name ?? 'presets';
+          await _findPresetFilesRecursiveDocman(
+              presetsDirIdentifier, presetFiles, initialRelativePathForAndroid);
+        } catch (e) {
+          debugPrint(
+              '[findPresetFiles] Error from _findPresetFilesRecursiveDocman: $e');
+        }
       } else if (presetsDirIdentifier is String) {
-        // Desktop/other platform path
         final directory = Directory(presetsDirIdentifier);
         if (!await directory.exists()) {
           debugPrint('Presets directory not found: $presetsDirIdentifier');
@@ -139,7 +174,11 @@ class FileSystemUtils {
         await for (final entity
             in directory.list(recursive: true, followLinks: false)) {
           if (entity is File && entity.path.toLowerCase().endsWith('.json')) {
-            presetFiles.add(entity.path);
+            String pathWithinPresets =
+                p.relative(entity.path, from: presetsDirIdentifier);
+            String finalRelativePath =
+                p.join(p.basename(presetsDirIdentifier), pathWithinPresets);
+            presetFiles.add((entity.path, finalRelativePath));
           }
         }
       } else {
@@ -149,7 +188,6 @@ class FileSystemUtils {
       }
     } catch (e) {
       debugPrint('Error scanning for preset files: $e');
-      // Return any files found so far
     }
     return presetFiles;
   }

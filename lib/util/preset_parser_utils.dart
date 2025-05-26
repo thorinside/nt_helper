@@ -12,10 +12,12 @@ class PresetParserUtils {
   /// Parses a Disting NT preset JSON file from the given [filePathOrUri].
   ///
   /// [sdCardRootPathOrUri] is the path or URI of the SD card's root directory.
+  /// [knownRelativePath] is the pre-calculated relative path of the file
+  /// with respect to the 'presets' directory, especially for Android URIs.
   /// Extracts top-level metadata and prepares for detailed slot parsing.
   /// Returns a [model.ParsedPresetData] object if successful, or `null` if an error occurs.
   static Future<model.ParsedPresetData?> parsePresetFile(String filePathOrUri,
-      {String? sdCardRootPathOrUri}) async {
+      {String? sdCardRootPathOrUri, String? knownRelativePath}) async {
     String fileContent;
     Map<String, dynamic> jsonData;
     String fileNameToDisplay = p.basename(filePathOrUri);
@@ -89,61 +91,54 @@ class PresetParserUtils {
         }
       }
 
-      String relativePathValue = fileNameToDisplay; // Default to just filename
-      // Calculate relativePath based on the 'presets' directory.
-      // This assumes filePathOrUri contains enough info to derive this.
-      // For file paths, it's filePathOrUri relative to sdCardRootPathOrUri/presets.
-      // For content URIs, this is trickier. The current structure in the BLoC passes
-      // the file's direct URI. We need to ensure `ParsedPresetData.relativePath`
-      // correctly reflects the path *within* the `presets` folder.
+      String relativePathValue;
 
-      // If sdCardRootPathOrUri is provided and filePathOrUri is a file path:
-      if (sdCardRootPathOrUri != null &&
+      if (knownRelativePath != null && knownRelativePath.isNotEmpty) {
+        // If knownRelativePath is provided (primarily for Android URIs), use it directly.
+        // Ensure it's not an absolute path by mistake, though the scanning logic should ensure this.
+        relativePathValue = knownRelativePath;
+        // Make sure to normalize slashes for consistency if coming from mixed sources
+        // Although p.join in FileSystemUtils should handle this for Android.
+        // For desktop, p.relative already normalizes.
+        relativePathValue = p.normalize(relativePathValue);
+      } else if (sdCardRootPathOrUri != null &&
           !filePathOrUri.startsWith('content://') &&
           filePathOrUri.startsWith(sdCardRootPathOrUri)) {
+        // Original logic for desktop/file paths if knownRelativePath is not given
         String pathRelativeToRoot =
             p.relative(filePathOrUri, from: sdCardRootPathOrUri);
-        // We expect files to be in a subdirectory like 'presets/bank1/file.json'
-        // So, if pathRelativeToRoot is 'presets/bank1/file.json', we want 'bank1/file.json'
         if (pathRelativeToRoot.startsWith(p.join('presets', ''))) {
           relativePathValue = p.relative(pathRelativeToRoot, from: 'presets');
         } else {
-          // Fallback or error: file is not in a 'presets' subdirectory as expected from root
-          relativePathValue = pathRelativeToRoot; // Or handle as an error/log
+          relativePathValue = pathRelativeToRoot;
           debugPrint(
               "Warning: Preset file $filePathOrUri not in a 'presets' subdir relative to root $sdCardRootPathOrUri");
         }
-      } else if (filePathOrUri.startsWith('content://')) {
-        // For content URIs, determining relative path to a virtual 'presets' folder is complex
-        // without more context about the URI structure from DocMan or how the picker was used.
-        // The filename is often the best we can get easily unless DocMan provides parent info.
-        // The BLoC logic aims to get the file identifier (URI) from FileSystemUtils.findPresetFiles,
-        // which itself gets it from DocMan's DocumentFile.uri.
-        // For now, ParsedPresetData.fileName will hold the name, and absolutePathAtScanTime the URI.
-        // The relativePath might need to be reconstructed differently or stored if DocMan can provide it.
-        // For Disting, presets are often like: presets/BankA/01_MyPreset.json
-        // The URI might not directly reflect this structure easily for p.relative.
-        // We rely on the filename for now for `relativePathValue` in this case.
-        // A more robust solution might involve storing the display path from SAF picker if it has relative structure.
-        String? docManName;
-        if (!kIsWeb && Platform.isAndroid) {
+      } else {
+        // Fallback: if no knownRelativePath and not a clear desktop path structure,
+        // default to the filename. This was the problematic part for Android before.
+        // This branch should ideally not be hit for Android if scanning provides knownRelativePath.
+        String? docManNameOnFallback;
+        if (!kIsWeb &&
+            Platform.isAndroid &&
+            filePathOrUri.startsWith('content://')) {
           try {
             final tempDoc = await docman.DocumentFile.fromUri(filePathOrUri);
-            docManName = tempDoc?.name;
+            docManNameOnFallback = tempDoc?.name;
           } catch (_) {}
         }
-        relativePathValue = docManName ?? p.basename(filePathOrUri);
+        relativePathValue = docManNameOnFallback ?? p.basename(filePathOrUri);
+        debugPrint(
+            "Warning: Using fallback relativePath (filename: $relativePathValue) for $filePathOrUri. knownRelativePath was not provided.");
       }
 
       return model.ParsedPresetData(
-        relativePath:
-            relativePathValue, // This is now more carefully considered
-        fileName:
-            fileNameToDisplay, // This is the actual file name, e.g., "01_MyPreset.json"
-        absolutePathAtScanTime: filePathOrUri, // Store the full path or URI
+        relativePath: relativePathValue,
+        fileName: fileNameToDisplay,
+        absolutePathAtScanTime: filePathOrUri,
         algorithmName: jsonPresetName.trim(),
         notes: descriptionLines,
-        otherMetadataJson: fileContent, // Store the raw JSON content
+        otherMetadataJson: fileContent,
       );
     } catch (e, s) {
       debugPrint(

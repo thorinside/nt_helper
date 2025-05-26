@@ -146,13 +146,15 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       final presetOnCurrentCard = _presetsForSelectedCard.firstWhereOrNull(
           (p) => _getDisplayPath(p) == trimmed || p.fileName == trimmed);
       if (presetOnCurrentCard != null) {
-        String actualRelativePath = presetOnCurrentCard.relativePath;
-        String sdCardAbsolutePath = actualRelativePath.startsWith('/')
-            ? actualRelativePath
-            : "/$actualRelativePath";
+        // presetOnCurrentCard.relativePath is now e.g., "presets/BankA/file.json"
+        String pathForEngine = "/" + presetOnCurrentCard.relativePath;
         await _addNameToHistory(trimmed);
-        Navigator.of(context).pop(
-            {"sdCardAbsolutePath": sdCardAbsolutePath, "append": isAppending});
+        Navigator.of(context).pop({
+          "sdCardPath":
+              pathForEngine, // Key indicating path relative to SD root, starting with /
+          "append": isAppending,
+          "displayName": trimmed
+        });
         return;
       }
     }
@@ -178,13 +180,15 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       });
 
       if (matchedPreset != null) {
-        String actualRelativePath = matchedPreset.relativePath;
-        String sdCardAbsolutePath = actualRelativePath.startsWith('/')
-            ? actualRelativePath
-            : "/$actualRelativePath";
+        // matchedPreset.relativePath is now e.g., "presets/BankA/file.json"
+        String pathForEngine = "/" + matchedPreset.relativePath;
         await _addNameToHistory(trimmed);
-        Navigator.of(context).pop(
-            {"sdCardAbsolutePath": sdCardAbsolutePath, "append": isAppending});
+        Navigator.of(context).pop({
+          "sdCardPath":
+              pathForEngine, // Key indicating path relative to SD root, starting with /
+          "append": isAppending,
+          "displayName": trimmed
+        });
         return;
       }
     }

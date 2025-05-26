@@ -514,14 +514,18 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       );
                       if (result == null) return;
 
-                      if (result.containsKey('sdCardAbsolutePath')) {
-                        final String sdCardAbsolutePath =
-                            result['sdCardAbsolutePath'] as String;
+                      if (result.containsKey('sdCardPath')) {
+                        final String pathFromDialog =
+                            result['sdCardPath'] as String;
                         final bool append = result['append'] as bool? ?? false;
-                        cubit.loadPreset(sdCardAbsolutePath, append);
+
+                        debugPrint(
+                            "SynchronizedScreen: Path to load via cubit.loadPreset: '$pathFromDialog'");
+
+                        cubit.loadPreset(pathFromDialog, append);
                       } else {
                         debugPrint(
-                            "LoadPresetDialog returned an unexpected structure (expected 'sdCardAbsolutePath'): $result");
+                            "LoadPresetDialog returned an unexpected structure (expected 'sdCardPath'): $result");
                       }
                     },
               child: const Row(
