@@ -9,7 +9,7 @@
 #include "flutter/generated_plugin_registrant.h"
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
-#include <flutter/flutter_windows.h> // Changed for Windows specific Flutter API
+#include <flutter/flutter_engine.h>  // Explicitly include for flutter::FlutterEngine and related types
 
 #pragma comment(lib, "Pathcch.lib") // Link Pathcch.lib
 
@@ -309,8 +309,8 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
         OutputDebugStringW(metrics_log.c_str());
 
         if (final_width > 0 && final_height > 0) {
-            FlutterWindowMetricsEvent event = {};
-            event.struct_size = sizeof(FlutterWindowMetricsEvent);
+            flutter::FlutterWindowMetricsEvent event = {};
+            event.struct_size = sizeof(flutter::FlutterWindowMetricsEvent);
             event.width = static_cast<size_t>(final_width);
             event.height = static_cast<size_t>(final_height);
             event.pixel_ratio = pixel_ratio;
