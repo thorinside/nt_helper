@@ -2,7 +2,8 @@ import 'dart:io'; // Required for Directory, FileSystemEntity, and Platform
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p; // For joining paths
 import 'package:flutter/foundation.dart'
-    show kIsWeb, debugPrint; // To check for web platform and for debug prints
+    show kIsWeb; // To check for web platform and for debug prints
+import 'package:nt_helper/util/in_app_logger.dart'; // Added for InAppLogger
 
 // Import for docman
 import 'package:docman/docman.dart' as docman;
@@ -30,7 +31,7 @@ class FileSystemUtils {
         return directoryPath; // This is a String
       }
     } catch (e) {
-      debugPrint('Error picking directory: $e');
+      InAppLogger().log('Error picking directory: $e');
       return null;
     }
   }
@@ -50,7 +51,7 @@ class FileSystemUtils {
       }
       return [];
     } catch (e) {
-      debugPrint('Error listing directory contents for $path: $e');
+      InAppLogger().log('Error listing directory contents for $path: $e');
       return [];
     }
   }
@@ -71,7 +72,7 @@ class FileSystemUtils {
           return true;
         }
       } catch (e) {
-        debugPrint('Error validating Disting SD card: $e');
+        InAppLogger().log('Error validating Disting SD card: $e');
         return false;
       }
     } else if (pathOrDocumentFile is String) {
@@ -90,29 +91,29 @@ class FileSystemUtils {
       String currentRelativePath,
       {int currentDepth = 0,
       int maxDepth = 10}) async {
-    debugPrint(
+    InAppLogger().log(
         '[DocManRecursive] Entering for: ${parent.name ?? parent.uri.toString()}, Depth: $currentDepth');
     if (currentDepth > maxDepth) {
-      debugPrint(
+      InAppLogger().log(
           '[DocManRecursive] Max recursion depth reached for docman directory: ${parent.uri}');
       return;
     }
 
     try {
-      debugPrint(
+      InAppLogger().log(
           '[DocManRecursive] Attempting to list documents for ${parent.name ?? parent.uri.toString()}');
       final List<docman.DocumentFile> documentsInDirectory =
           await parent.listDocuments();
-      debugPrint(
+      InAppLogger().log(
           '[DocManRecursive] Got ${documentsInDirectory.length} documents for ${parent.name ?? parent.uri.toString()}');
 
       if (documentsInDirectory.isEmpty) {
-        debugPrint(
+        InAppLogger().log(
             '[DocManRecursive] Directory is empty: ${parent.name ?? parent.uri.toString()}');
       }
 
       for (final docFile in documentsInDirectory) {
-        debugPrint(
+        InAppLogger().log(
             '[DocManRecursive] Processing item: ${docFile.name ?? docFile.uri.toString()}, isDirectory: ${docFile.isDirectory}');
         if (docFile.isDirectory) {
           await _findPresetFilesRecursiveDocman(docFile, allFiles,
@@ -122,14 +123,15 @@ class FileSystemUtils {
             (docFile.name?.toLowerCase().endsWith('.json') ?? false)) {
           String actualRelativePath =
               p.join(currentRelativePath, docFile.name ?? 'unknown_file.json');
-          debugPrint('[DocManRecursive] Added JSON file: $actualRelativePath');
+          InAppLogger()
+              .log('[DocManRecursive] Added JSON file: $actualRelativePath');
           allFiles.add((docFile.uri.toString(), actualRelativePath));
         }
       }
-      debugPrint(
+      InAppLogger().log(
           '[DocManRecursive] Exiting for: ${parent.name ?? parent.uri.toString()}');
     } catch (e, s) {
-      debugPrint(
+      InAppLogger().log(
           '[DocManRecursive] Error during recursive DocMan scan in ${parent.name ?? parent.uri.toString()}: $e\nStackTrace: $s');
       rethrow;
     }
@@ -145,14 +147,15 @@ class FileSystemUtils {
     final List<(String uri, String relativePath)> presetFiles = [];
 
     if (presetsDirIdentifier == null) {
-      debugPrint('Presets directory identifier is null.');
+      InAppLogger()
+          .log('findPresetFiles: Presets directory identifier is null.');
       return presetFiles;
     }
 
     try {
       if (presetsDirIdentifier is docman.DocumentFile) {
         if (!presetsDirIdentifier.isDirectory) {
-          debugPrint(
+          InAppLogger().log(
               'Provided DocumentFile is not a directory: ${presetsDirIdentifier.name}');
           return presetFiles;
         }
@@ -162,18 +165,39 @@ class FileSystemUtils {
           await _findPresetFilesRecursiveDocman(
               presetsDirIdentifier, presetFiles, initialRelativePathForAndroid);
         } catch (e) {
-          debugPrint(
+          InAppLogger().log(
               '[findPresetFiles] Error from _findPresetFilesRecursiveDocman: $e');
         }
       } else if (presetsDirIdentifier is String) {
+        // --- iOS/Desktop Path ---
+        InAppLogger().log(
+            "findPresetFiles (iOS/Desktop): Received presetsDirIdentifier (string path): $presetsDirIdentifier");
         final directory = Directory(presetsDirIdentifier);
-        if (!await directory.exists()) {
-          debugPrint('Presets directory not found: $presetsDirIdentifier');
+
+        final bool directoryExists = await directory.exists();
+        InAppLogger().log(
+            "findPresetFiles (iOS/Desktop): Directory $presetsDirIdentifier exists: $directoryExists");
+
+        if (!directoryExists) {
+          InAppLogger().log(
+              'findPresetFiles (iOS/Desktop): Presets directory not found at path: $presetsDirIdentifier');
           return presetFiles;
         }
+
+        InAppLogger().log(
+            "findPresetFiles (iOS/Desktop): Starting recursive list for $presetsDirIdentifier");
+        int entityCount = 0;
+        int jsonFileCount = 0;
+
         await for (final entity
             in directory.list(recursive: true, followLinks: false)) {
+          entityCount++;
+          InAppLogger().log(
+              "findPresetFiles (iOS/Desktop): Found entity: ${entity.path} (type: ${entity.runtimeType})");
           if (entity is File && entity.path.toLowerCase().endsWith('.json')) {
+            jsonFileCount++;
+            InAppLogger().log(
+                "findPresetFiles (iOS/Desktop): Found JSON file: ${entity.path}");
             String pathWithinPresets =
                 p.relative(entity.path, from: presetsDirIdentifier);
             String finalRelativePath =
@@ -181,13 +205,16 @@ class FileSystemUtils {
             presetFiles.add((entity.path, finalRelativePath));
           }
         }
+        InAppLogger().log(
+            "findPresetFiles (iOS/Desktop): Finished recursive list. Total entities processed: $entityCount. JSON files added: ${jsonFileCount}.");
       } else {
-        debugPrint(
-            'Unsupported type for presetsDirIdentifier: ${presetsDirIdentifier.runtimeType}');
+        InAppLogger().log(
+            'findPresetFiles: Unsupported type for presetsDirIdentifier: ${presetsDirIdentifier.runtimeType}');
         return presetFiles;
       }
-    } catch (e) {
-      debugPrint('Error scanning for preset files: $e');
+    } catch (e, s) {
+      InAppLogger().log(
+          'findPresetFiles: Error scanning for preset files: $e\nStackTrace: $s');
     }
     return presetFiles;
   }

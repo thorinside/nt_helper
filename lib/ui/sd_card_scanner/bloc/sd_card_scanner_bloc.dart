@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/database.dart'; // For AppDatabase and appDatabaseProvider
@@ -12,6 +12,7 @@ import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_page.dart'
 import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart' hide Column;
 import 'package:docman/docman.dart' as docman;
+import 'package:nt_helper/util/in_app_logger.dart';
 
 import 'sd_card_scanner_event.dart';
 
@@ -99,15 +100,15 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
 
     // --- iOS Debug: Print selected root path and check existence ---
     if (!kIsWeb && Platform.isIOS && sdCardRootIdentifier is String) {
-      debugPrint(
+      InAppLogger().log(
           "iOS - Selected SD Card Root Path from FilePicker: $sdCardRootIdentifier");
       try {
         final rootDir = Directory(sdCardRootIdentifier);
         final exists = await rootDir.exists();
-        debugPrint(
+        InAppLogger().log(
             "iOS - Root Directory ($sdCardRootIdentifier) reported exists: $exists");
       } catch (e) {
-        debugPrint("iOS - Error checking rootDir.exists(): $e");
+        InAppLogger().log("iOS - Error checking rootDir.exists(): $e");
       }
     }
     // --- End iOS Debug ---
@@ -127,7 +128,7 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
         }
         displayPath = sdCardRootIdentifier.name ?? cardIdentifier;
       } catch (e) {
-        debugPrint(
+        InAppLogger().log(
             'Error getting DocumentFile from URI $cardIdentifier: ${e.toString()}');
         emit(state.copyWith(
             status: ScanStatus.error,
@@ -161,14 +162,15 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
 
       // --- iOS Debug: Print expected presets path and check existence ---
       if (!kIsWeb && Platform.isIOS) {
-        debugPrint("iOS - Calculated presets path: $presetsDirIdentifier");
+        InAppLogger()
+            .log("iOS - Calculated presets path: $presetsDirIdentifier");
         try {
           final presetsDirObj = Directory(presetsDirIdentifier as String);
           final presetsExists = await presetsDirObj.exists();
-          debugPrint(
+          InAppLogger().log(
               "iOS - Presets Directory ($presetsDirIdentifier) reported exists: $presetsExists");
         } catch (e) {
-          debugPrint("iOS - Error checking presetsDirObj.exists(): $e");
+          InAppLogger().log("iOS - Error checking presetsDirObj.exists(): $e");
         }
       }
       // --- End iOS Debug ---
@@ -211,7 +213,7 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       presetFileIdentifiers =
           await FileSystemUtils.findPresetFiles(presetsDirIdentifier);
     } catch (e, s) {
-      debugPrint('Error finding preset files: $e\n$s');
+      InAppLogger().log('Error finding preset files: $e\n$s');
       emit(state.copyWith(
           status: ScanStatus.error,
           errorMessage: "Failed to find preset files: ${e.toString()}"));
@@ -236,6 +238,14 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
 
     for (final (fileUri, fileRelativePath) in presetFileIdentifiers) {
       processedFileCount++;
+      // Update progress before parsing each file
+      emit(state.copyWith(
+        scanProgress: processedFileCount / presetFileIdentifiers.length,
+        currentFile:
+            "Parsing: $fileRelativePath ($processedFileCount/${presetFileIdentifiers.length})",
+        filesProcessed: processedFileCount,
+      ));
+
       final parsedData = await PresetParserUtils.parsePresetFile(
         fileUri,
         sdCardRootPathOrUri: cardIdentifier,
@@ -245,15 +255,9 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       if (parsedData != null) {
         parsedPresets.add(parsedData);
       } else {
-        // ... (log, maybe collect errors to show user)
+        InAppLogger()
+            .log('Failed to parse preset: $fileRelativePath (URI: $fileUri)');
       }
-
-      emit(state.copyWith(
-        filesProcessed: processedFileCount,
-        currentFile: "Parsing: $fileRelativePath",
-        scanProgress: processedFileCount / presetFileIdentifiers.length,
-      ));
-      await Future.delayed(const Duration(milliseconds: 5));
     }
 
     if (state.status == ScanStatus.cancelled) {
@@ -320,7 +324,7 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
           totalFiles: 0,
           currentFile: ''));
     } catch (e, s) {
-      debugPrint('Error saving $operationType results: $e\n$s');
+      InAppLogger().log('Error saving $operationType results: $e\n$s');
       emit(state.copyWith(
           status: ScanStatus.error,
           errorMessage:
@@ -337,37 +341,48 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
           status: ScanStatus.cancelled,
           successMessage: 'Scan cancelled by user.'));
     } else {
-      debugPrint("BLOC: Cannot cancel scan in status: ${state.status}");
+      InAppLogger().log("BLOC: Cannot cancel scan in status: ${state.status}");
     }
   }
 
   Future<void> _onRemoveCardRequested(
-      RemoveCardRequested event, Emitter<SdCardScannerState> emit) async {
+    RemoveCardRequested event,
+    Emitter<SdCardScannerState> emit,
+  ) async {
+    emit(state.copyWith(
+        status: ScanStatus.saving, successMessage: null, errorMessage: null));
     try {
-      final cardToDelete =
+      // First, get the SD card by its system identifier to find its primary key ID
+      final SdCardEntry? cardToDelete =
           await _db.sdCardsDao.getSdCardBySystemIdentifier(event.cardIdPath);
+
       if (cardToDelete != null) {
+        // Delete associated presets using the card's primary key ID
         await _db.indexedPresetFilesDao.deletePresetsForSdCard(cardToDelete.id);
+        // Delete the SD card itself using its primary key ID
         await _db.sdCardsDao.deleteSdCard(cardToDelete.id);
+
+        add(const LoadScannedCards());
         emit(state.copyWith(
-            successMessage: "Removed card: ${cardToDelete.userLabel}"));
+            successMessage:
+                "Card '${cardToDelete.userLabel}' removed successfully.",
+            status: ScanStatus.complete));
       } else {
+        InAppLogger().log(
+            'Error removing card: Card not found with identifier ${event.cardIdPath}');
         emit(state.copyWith(
             status: ScanStatus.error,
-            errorMessage:
-                "Failed to remove card: Card not found with identifier ${event.cardIdPath}"));
+            errorMessage: "Failed to remove card: Card not found."));
       }
-    } catch (e, s) {
-      debugPrint('Error removing card: $e\n$s');
+    } catch (e) {
+      InAppLogger().log('Error removing card ${event.cardIdPath}: $e');
       emit(state.copyWith(
           status: ScanStatus.error,
           errorMessage: "Failed to remove card: ${e.toString()}"));
     }
-    add(const LoadScannedCards());
   }
 
   void _onClearMessages(ClearMessages event, Emitter<SdCardScannerState> emit) {
-    emit(state.copyWith(
-        errorMessage: null, successMessage: null, newlyScannedCard: null));
+    emit(state.copyWith(errorMessage: null, successMessage: null));
   }
 }

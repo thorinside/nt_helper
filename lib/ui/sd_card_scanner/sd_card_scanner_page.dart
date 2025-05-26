@@ -13,6 +13,7 @@ import 'package:nt_helper/ui/sd_card_scanner/widgets/scanning_progress_card.dart
 import 'package:nt_helper/ui/sd_card_scanner/widgets/scanned_card_management_item.dart'; // Import management item
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:docman/docman.dart' as docman; // For DocumentFile type checking
+import 'package:nt_helper/ui/common/log_display_page.dart'; // Import the log page
 
 // Model for scanned card data
 class ScannedCardData {
@@ -49,25 +50,25 @@ class SdCardScannerPage extends StatelessWidget {
 class _SdCardScannerView extends StatelessWidget {
   const _SdCardScannerView();
 
+  // Method to show the dialog for new card scanning
   void _showSdCardSelectionDialog(BuildContext context) {
     final sdCardScannerBloc = context.read<SdCardScannerBloc>();
 
     showDialog(
       context: context,
       barrierDismissible:
-          sdCardScannerBloc.state.status != ScanStatus.validating &&
-              sdCardScannerBloc.state.status != ScanStatus.findingFiles &&
+          sdCardScannerBloc.state.status != ScanStatus.findingFiles &&
               sdCardScannerBloc.state.status != ScanStatus.parsing &&
               sdCardScannerBloc.state.status != ScanStatus.saving,
       builder: (BuildContext dialogContext) {
         return BlocBuilder<SdCardScannerBloc, SdCardScannerState>(
             bloc: sdCardScannerBloc,
             builder: (context, state) {
-              final bool isScanningDialog =
-                  state.status == ScanStatus.validating ||
-                      state.status == ScanStatus.findingFiles ||
+              final bool isScanningInDialog =
+                  state.status == ScanStatus.findingFiles ||
                       state.status == ScanStatus.parsing ||
                       state.status == ScanStatus.saving;
+
               return AlertDialog(
                 title: const Text('Scan New SD Card'),
                 content: SingleChildScrollView(
@@ -85,7 +86,6 @@ class _SdCardScannerView extends StatelessWidget {
                       } else if (pickedDirIdentifier is String) {
                         pathOrUriForBloc = pickedDirIdentifier;
                       } else {
-                        // Should not happen if pickSdCardRootDirectory works as expected
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text(
@@ -101,7 +101,7 @@ class _SdCardScannerView extends StatelessWidget {
                 actions: <Widget>[
                   TextButton(
                     child: const Text('Close'),
-                    onPressed: isScanningDialog
+                    onPressed: isScanningInDialog
                         ? null
                         : () => Navigator.of(dialogContext).pop(),
                   ),
@@ -114,127 +114,145 @@ class _SdCardScannerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<SdCardScannerBloc, SdCardScannerState>(
-      listener: (context, state) {
-        if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: Colors.red),
-          );
-          context.read<SdCardScannerBloc>().add(const ClearMessages());
-        }
-        if (state.successMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(state.successMessage!),
-                backgroundColor: Colors.green),
-          );
-          context.read<SdCardScannerBloc>().add(const ClearMessages());
-        }
-      },
-      builder: (context, state) {
-        final bool isScanning = state.status == ScanStatus.validating ||
-            state.status == ScanStatus.findingFiles ||
-            state.status == ScanStatus.parsing ||
-            state.status == ScanStatus.saving;
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('SD Card Preset Scanner'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('SD Card Scanner'),
+        actions: [
+          IconButton(
+            icon:
+                const Icon(Icons.developer_mode), // Or any other suitable icon
+            tooltip: 'View Scan Logs',
+            onPressed: () {
+              Navigator.of(context).push(LogDisplayPage.route());
+            },
           ),
-          body: Padding(
+        ],
+      ),
+      body: BlocConsumer<SdCardScannerBloc, SdCardScannerState>(
+        listener: (context, state) {
+          if (state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(state.errorMessage!),
+                  backgroundColor: Colors.red),
+            );
+            context.read<SdCardScannerBloc>().add(const ClearMessages());
+          }
+          if (state.successMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(state.successMessage!),
+                  backgroundColor: Colors.green),
+            );
+            context.read<SdCardScannerBloc>().add(const ClearMessages());
+          }
+        },
+        builder: (context, state) {
+          final bool isScanning = state.status == ScanStatus.findingFiles ||
+              state.status == ScanStatus.parsing ||
+              state.status == ScanStatus.saving;
+
+          return Padding(
             padding: const EdgeInsets.all(16.0),
             child: isScanning
-                ? Center(
-                    child: ScanningProgressCard(
-                      progress: state.scanProgress,
-                      filesProcessed: state.filesProcessed,
-                      totalFiles: state.totalFiles,
-                      currentFile: state.currentFile,
-                      onCancel: () => context
-                          .read<SdCardScannerBloc>()
-                          .add(const ScanCancelled()),
-                    ),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Scanned SD Cards',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          Text('${state.scannedCards.length} card(s)',
-                              style: Theme.of(context).textTheme.bodySmall)
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (state.scannedCards.isEmpty &&
-                          state.status != ScanStatus.initial)
-                        Expanded(
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text(
-                                state.status == ScanStatus.error &&
-                                        state.errorMessage != null
-                                    ? state.errorMessage!
-                                    : 'No SD cards have been scanned yet. Click the "+" button below to scan your first card.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                        color: state.status == ScanStatus.error
-                                            ? Colors.red
-                                            : Colors.grey[600]),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                        )
-                      else if (state.status == ScanStatus.initial)
-                        const Expanded(
-                            child: Center(child: CircularProgressIndicator()))
-                      else
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: state.scannedCards.length,
-                            itemBuilder: (context, index) {
-                              final card = state.scannedCards[index];
-                              return ScannedCardManagementItem(
-                                key: ValueKey(card.id),
-                                cardName: card.name,
-                                lastScanDate: card.lastScanDate,
-                                presetCount: card.presetCount,
-                                onRescan: () =>
-                                    context.read<SdCardScannerBloc>().add(
-                                          RescanCardRequested(
-                                              cardIdPath: card.id,
-                                              cardName: card.name),
-                                        ),
-                                onRemove: () => context
-                                    .read<SdCardScannerBloc>()
-                                    .add(RemoveCardRequested(
-                                        cardIdPath: card.id)),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-          ),
-          floatingActionButton: isScanning
-              ? null
+                ? _buildScanningUI(context, state) // Pass context here
+                : _buildInitialOrCompleteUI(state, context),
+          );
+        },
+      ),
+      floatingActionButton: BlocBuilder<SdCardScannerBloc, SdCardScannerState>(
+        builder: (context, state) {
+          final bool isScanning = state.status == ScanStatus.findingFiles ||
+              state.status == ScanStatus.parsing ||
+              state.status == ScanStatus.saving;
+          return isScanning
+              ? const SizedBox.shrink() // Hide FAB when scanning
               : FloatingActionButton.extended(
-                  onPressed: () => _showSdCardSelectionDialog(context),
-                  icon: const Icon(Icons.add),
+                  onPressed: () => _showSdCardSelectionDialog(
+                      context), // Corrected to call dialog
+                  icon: const Icon(Icons.add), // Standard add icon
                   label: const Text('Scan New Card'),
+                );
+        },
+      ),
+    );
+  }
+
+  Widget _buildScanningUI(BuildContext context, SdCardScannerState state) {
+    // Added context parameter
+    return Center(
+      child: ScanningProgressCard(
+        progress: state.scanProgress,
+        filesProcessed: state.filesProcessed,
+        totalFiles: state.totalFiles,
+        currentFile: state.currentFile,
+        onCancel: () => context
+            .read<SdCardScannerBloc>()
+            .add(const ScanCancelled()), // context is now defined
+      ),
+    );
+  }
+
+  Widget _buildInitialOrCompleteUI(
+      SdCardScannerState state, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Scanned SD Cards',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            Text('${state.scannedCards.length} card(s)',
+                style: Theme.of(context).textTheme.bodySmall)
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (state.scannedCards.isEmpty && state.status != ScanStatus.initial)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  state.status == ScanStatus.error && state.errorMessage != null
+                      ? state.errorMessage!
+                      : 'No SD cards have been scanned yet. Click the "+" button below to scan your first card.',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: state.status == ScanStatus.error
+                          ? Colors.red
+                          : Colors.grey[600]),
+                  textAlign: TextAlign.center,
                 ),
-        );
-      },
+              ),
+            ),
+          )
+        else if (state.status == ScanStatus.initial)
+          const Expanded(child: Center(child: CircularProgressIndicator()))
+        else
+          Expanded(
+            child: ListView.builder(
+              itemCount: state.scannedCards.length,
+              itemBuilder: (context, index) {
+                final card = state.scannedCards[index];
+                return ScannedCardManagementItem(
+                  key: ValueKey(card.id),
+                  cardName: card.name,
+                  lastScanDate: card.lastScanDate,
+                  presetCount: card.presetCount,
+                  onRescan: () => context.read<SdCardScannerBloc>().add(
+                        RescanCardRequested(
+                            cardIdPath: card.id, cardName: card.name),
+                      ),
+                  onRemove: () => context
+                      .read<SdCardScannerBloc>()
+                      .add(RemoveCardRequested(cardIdPath: card.id)),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }

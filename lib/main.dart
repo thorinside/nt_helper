@@ -7,6 +7,8 @@ import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/util/in_app_logger.dart';
+import 'package:provider/provider.dart';
 
 // Define the static MethodChannel
 const MethodChannel _windowEventsChannel =
@@ -20,8 +22,11 @@ void main() async {
   final database = AppDatabase();
 
   runApp(
-    RepositoryProvider<AppDatabase>(
-      create: (context) => database,
+    MultiProvider(
+      providers: [
+        RepositoryProvider<AppDatabase>(create: (context) => database),
+        ChangeNotifierProvider(create: (_) => InAppLogger()),
+      ],
       child: DistingApp(),
     ),
   );
