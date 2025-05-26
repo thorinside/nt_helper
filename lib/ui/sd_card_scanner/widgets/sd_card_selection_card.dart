@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io'; // Import for Platform
 import 'package:nt_helper/util/file_system_utils.dart'; // Import FileSystemUtils
+import 'package:docman/docman.dart' as docman; // Ensure docman is imported
 
 class SdCardSelectionCard extends StatefulWidget {
-  final Function(String path, String cardName)? onScanRequested;
+  final Function(String pathOrUri, String cardName)? onScanRequested;
 
   const SdCardSelectionCard({super.key, this.onScanRequested});
 
@@ -28,12 +29,20 @@ class _SdCardSelectionCardState extends State<SdCardSelectionCard> {
   }
 
   Future<void> _pickDirectory() async {
-    final String? path = await FileSystemUtils.pickSdCardRootDirectory();
-    if (path != null) {
+    final dynamic pickedIdentifier =
+        await FileSystemUtils.pickSdCardRootDirectory(); // Changed to dynamic
+    if (pickedIdentifier != null) {
       setState(() {
-        _selectedPath = path;
-        _manualPathController.text =
-            path; // Also update the text field for visibility
+        if (pickedIdentifier is String) {
+          _selectedPath = pickedIdentifier;
+          _manualPathController.text = pickedIdentifier;
+        } else if (pickedIdentifier is docman.DocumentFile) {
+          // Use aliased docman
+          _selectedPath =
+              pickedIdentifier.uri.toString(); // Store the URI string
+          _manualPathController.text =
+              _selectedPath!; // Update text field with URI string
+        }
         _isPathSelectedByPicker = true;
       });
     }
