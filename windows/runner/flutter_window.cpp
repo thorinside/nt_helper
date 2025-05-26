@@ -91,22 +91,45 @@ void FlutterWindow::SaveWindowPlacement()
 {
   HWND handle = GetHandle();
   if (!handle)
-    return; // Don't try to save if the handle is invalid
+  {
+    OutputDebugStringW(L"SaveWindowPlacement: Invalid window handle, cannot save.\n");
+    return;
+  }
 
   WINDOWPLACEMENT wp = {sizeof(wp)};
   if (GetWindowPlacement(handle, &wp))
   {
     std::wstring save_path = GetSavePath();
+    OutputDebugStringW((L"SaveWindowPlacement: Attempting to save to: " + save_path + L"\n").c_str());
+
     if (save_path.empty())
-      return; // Could not determine save path
+    {
+      OutputDebugStringW(L"SaveWindowPlacement: GetSavePath returned empty path, cannot save.\n");
+      return;
+    }
 
     std::ofstream save_file(save_path, std::ios::binary | std::ios::out);
     if (save_file.is_open())
     {
-      // We only care about the normal position, not minimized/maximized specifics for simple restore.
       save_file.write(reinterpret_cast<char *>(&wp.rcNormalPosition), sizeof(wp.rcNormalPosition));
+      if (save_file.good())
+      {
+        OutputDebugStringW(L"SaveWindowPlacement: Successfully wrote data to file.\n");
+      }
+      else
+      {
+        OutputDebugStringW(L"SaveWindowPlacement: Failed to write data to file.\n");
+      }
       save_file.close();
     }
+    else
+    {
+      OutputDebugStringW((L"SaveWindowPlacement: Failed to open file for writing: " + save_path + L"\n").c_str());
+    }
+  }
+  else
+  {
+    OutputDebugStringW(L"SaveWindowPlacement: GetWindowPlacement failed.\n");
   }
 }
 
