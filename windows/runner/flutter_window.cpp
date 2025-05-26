@@ -80,31 +80,46 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   // Handle WM_CLOSE specifically to notify Dart and wait for confirmation.
   if (message == WM_CLOSE)
   {
-    if (window_events_channel_)
+    // Show a confirmation dialog.
+    if (MessageBox(hwnd, L"Are you sure you want to quit?", L"Confirm Close",
+                   MB_YESNO | MB_ICONQUESTION) == IDYES)
     {
-      HWND main_hwnd = GetHandle(); // Get the HWND for PostMessage
+      HWND main_hwnd = hwnd; // Capture for use in lambdas
 
-      window_events_channel_->InvokeMethod(
-          "windowWillClose",
-          std::make_unique<flutter::EncodableValue>(),         // nullptr equivalent
-          [main_hwnd](const flutter::EncodableValue *result) { // Success callback
+      // Prepare MethodResult handler
+      auto result_handler = std::make_unique<flutter::MethodResultFunctions<flutter::EncodableValue>>(
+          [main_hwnd](const flutter::EncodableValue *result) { // Success
+            // The Dart side might return true/false, but we close regardless.
+            // This callback mainly confirms the method was invoked.
             PostMessage(main_hwnd, WM_DESTROY, 0, 0);
           },
-          [main_hwnd](const std::string &error_code, const std::string &error_message, const flutter::EncodableValue *error_details) { // Error callback
-            // Optionally log the error here if desired for production
+          [main_hwnd](const std::string &error_code,
+                      const std::string &error_message,
+                      const flutter::EncodableValue *error_details) { // Error
+            // Log an error if desired, then close.
+            // Example: OutputDebugStringA(("Error invoking windowWillClose: " + error_code + " - " + error_message + "\\n").c_str());
+            PostMessage(main_hwnd, WM_DESTROY, 0, 0);
+          },
+          [main_hwnd]() { // Not Implemented
+            // Log if desired, then close.
+            // Example: OutputDebugStringA("windowWillClose not implemented on Dart side.\\n");
             PostMessage(main_hwnd, WM_DESTROY, 0, 0);
           });
 
-      return 0; // Crucial: Indicate that we've handled WM_CLOSE.
-                // Prevents DefWindowProc from processing it and closing the window immediately.
+      if (window_events_channel_)
+      {
+        window_events_channel_->InvokeMethod(
+            "windowWillClose",
+            nullptr, // No arguments being sent to Dart
+            std::move(result_handler));
+      }
+      else
+      {
+        // Fallback if channel is somehow null, though it shouldn't be
+        PostMessage(main_hwnd, WM_DESTROY, 0, 0);
+      }
     }
-    else
-    {
-      // Fall through to default handling if channel is not available
-      // This will call Win32Window::MessageHandler below.
-    }
-    // If channel was null, we reach here and then the default handler outside the if/else.
-    // If channel was not null, we returned 0.
+    return 0; // We've handled WM_CLOSE.
   }
 
   // The base class's message handler will be called for other messages,
