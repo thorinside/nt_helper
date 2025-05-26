@@ -848,6 +848,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  security_scoped_resource:
+    dependency: "direct main"
+    description:
+      name: security_scoped_resource
+      sha256: "82279652f4932530f67cf848a55117bb2dcb5a542cb95a84b6ee78ecec9ee31f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   shared_preferences:
     dependency: "direct main"
     description:

@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p; // For joining paths
 import 'package:flutter/foundation.dart'
     show kIsWeb; // To check for web platform and for debug prints
 import 'package:nt_helper/util/in_app_logger.dart'; // Added for InAppLogger
+import 'package:security_scoped_resource/security_scoped_resource.dart'; // Added for iOS scoped access
 
 // Import for docman
 import 'package:docman/docman.dart' as docman;
@@ -16,6 +17,7 @@ class FileSystemUtils {
   /// Returns `null` if the user cancels the dialog.
   static Future<dynamic?> pickSdCardRootDirectory() async {
     // Return type changed to dynamic?
+    final logger = InAppLogger();
     try {
       if (!kIsWeb && Platform.isAndroid) {
         // Use DocMan for Android to pick a directory via SAF
@@ -31,7 +33,7 @@ class FileSystemUtils {
         return directoryPath; // This is a String
       }
     } catch (e) {
-      InAppLogger().log('Error picking directory: $e');
+      logger.log('Error picking directory: $e');
       return null;
     }
   }
@@ -44,6 +46,7 @@ class FileSystemUtils {
       String path) async {
     // This method might not be needed if using DocMan for directory listing on Android
     // or could be adapted for non-Android platforms.
+    final logger = InAppLogger();
     try {
       final dir = Directory(path);
       if (await dir.exists()) {
@@ -51,7 +54,7 @@ class FileSystemUtils {
       }
       return [];
     } catch (e) {
-      InAppLogger().log('Error listing directory contents for $path: $e');
+      logger.log('Error listing directory contents for $path: $e');
       return [];
     }
   }
@@ -62,6 +65,7 @@ class FileSystemUtils {
   /// For other platforms, it's a `String` path.
   /// Currently checks for the existence of a subdirectory named "presets".
   static Future<bool> isValidDistingSdCard(dynamic pathOrDocumentFile) async {
+    final logger = InAppLogger();
     if (kIsWeb) return false;
 
     if (pathOrDocumentFile is docman.DocumentFile) {
@@ -72,15 +76,23 @@ class FileSystemUtils {
           return true;
         }
       } catch (e) {
-        InAppLogger().log('Error validating Disting SD card: $e');
+        logger.log('Error validating Disting SD card (DocFile): $e');
         return false;
       }
     } else if (pathOrDocumentFile is String) {
       // Desktop/other platform path
       final presetsPath = p.join(pathOrDocumentFile, 'presets');
       final presetsDir = Directory(presetsPath);
-      return await presetsDir.exists();
+      try {
+        return await presetsDir.exists();
+      } catch (e) {
+        logger.log(
+            'Error validating Disting SD card (String path): $e - Path: $presetsPath');
+        return false;
+      }
     }
+    logger.log(
+        'isValidDistingSdCard: Invalid type for pathOrDocumentFile: ${pathOrDocumentFile.runtimeType}');
     return false;
   }
 
@@ -91,29 +103,30 @@ class FileSystemUtils {
       String currentRelativePath,
       {int currentDepth = 0,
       int maxDepth = 10}) async {
-    InAppLogger().log(
+    final logger = InAppLogger();
+    logger.log(
         '[DocManRecursive] Entering for: ${parent.name ?? parent.uri.toString()}, Depth: $currentDepth');
     if (currentDepth > maxDepth) {
-      InAppLogger().log(
+      logger.log(
           '[DocManRecursive] Max recursion depth reached for docman directory: ${parent.uri}');
       return;
     }
 
     try {
-      InAppLogger().log(
+      logger.log(
           '[DocManRecursive] Attempting to list documents for ${parent.name ?? parent.uri.toString()}');
       final List<docman.DocumentFile> documentsInDirectory =
           await parent.listDocuments();
-      InAppLogger().log(
+      logger.log(
           '[DocManRecursive] Got ${documentsInDirectory.length} documents for ${parent.name ?? parent.uri.toString()}');
 
       if (documentsInDirectory.isEmpty) {
-        InAppLogger().log(
+        logger.log(
             '[DocManRecursive] Directory is empty: ${parent.name ?? parent.uri.toString()}');
       }
 
       for (final docFile in documentsInDirectory) {
-        InAppLogger().log(
+        logger.log(
             '[DocManRecursive] Processing item: ${docFile.name ?? docFile.uri.toString()}, isDirectory: ${docFile.isDirectory}');
         if (docFile.isDirectory) {
           await _findPresetFilesRecursiveDocman(docFile, allFiles,
@@ -123,15 +136,14 @@ class FileSystemUtils {
             (docFile.name?.toLowerCase().endsWith('.json') ?? false)) {
           String actualRelativePath =
               p.join(currentRelativePath, docFile.name ?? 'unknown_file.json');
-          InAppLogger()
-              .log('[DocManRecursive] Added JSON file: $actualRelativePath');
+          logger.log('[DocManRecursive] Added JSON file: $actualRelativePath');
           allFiles.add((docFile.uri.toString(), actualRelativePath));
         }
       }
-      InAppLogger().log(
+      logger.log(
           '[DocManRecursive] Exiting for: ${parent.name ?? parent.uri.toString()}');
     } catch (e, s) {
-      InAppLogger().log(
+      logger.log(
           '[DocManRecursive] Error during recursive DocMan scan in ${parent.name ?? parent.uri.toString()}: $e\nStackTrace: $s');
       rethrow;
     }
@@ -145,17 +157,18 @@ class FileSystemUtils {
   static Future<List<(String uri, String relativePath)>> findPresetFiles(
       dynamic presetsDirIdentifier) async {
     final List<(String uri, String relativePath)> presetFiles = [];
+    final logger = InAppLogger(); // Get logger instance
 
     if (presetsDirIdentifier == null) {
-      InAppLogger()
-          .log('findPresetFiles: Presets directory identifier is null.');
+      logger.log('findPresetFiles: Presets directory identifier is null.');
       return presetFiles;
     }
 
     try {
       if (presetsDirIdentifier is docman.DocumentFile) {
+        // Android Path (DocMan)
         if (!presetsDirIdentifier.isDirectory) {
-          InAppLogger().log(
+          logger.log(
               'Provided DocumentFile is not a directory: ${presetsDirIdentifier.name}');
           return presetFiles;
         }
@@ -165,56 +178,103 @@ class FileSystemUtils {
           await _findPresetFilesRecursiveDocman(
               presetsDirIdentifier, presetFiles, initialRelativePathForAndroid);
         } catch (e) {
-          InAppLogger().log(
+          logger.log(
               '[findPresetFiles] Error from _findPresetFilesRecursiveDocman: $e');
         }
       } else if (presetsDirIdentifier is String) {
-        // --- iOS/Desktop Path ---
-        InAppLogger().log(
+        // iOS / Desktop Path (String path)
+        logger.log(
             "findPresetFiles (iOS/Desktop): Received presetsDirIdentifier (string path): $presetsDirIdentifier");
         final directory = Directory(presetsDirIdentifier);
+        bool accessGranted = false;
 
-        final bool directoryExists = await directory.exists();
-        InAppLogger().log(
-            "findPresetFiles (iOS/Desktop): Directory $presetsDirIdentifier exists: $directoryExists");
-
-        if (!directoryExists) {
-          InAppLogger().log(
-              'findPresetFiles (iOS/Desktop): Presets directory not found at path: $presetsDirIdentifier');
-          return presetFiles;
-        }
-
-        InAppLogger().log(
-            "findPresetFiles (iOS/Desktop): Starting recursive list for $presetsDirIdentifier");
-        int entityCount = 0;
-        int jsonFileCount = 0;
-
-        await for (final entity
-            in directory.list(recursive: true, followLinks: false)) {
-          entityCount++;
-          InAppLogger().log(
-              "findPresetFiles (iOS/Desktop): Found entity: ${entity.path} (type: ${entity.runtimeType})");
-          if (entity is File && entity.path.toLowerCase().endsWith('.json')) {
-            jsonFileCount++;
-            InAppLogger().log(
-                "findPresetFiles (iOS/Desktop): Found JSON file: ${entity.path}");
-            String pathWithinPresets =
-                p.relative(entity.path, from: presetsDirIdentifier);
-            String finalRelativePath =
-                p.join(p.basename(presetsDirIdentifier), pathWithinPresets);
-            presetFiles.add((entity.path, finalRelativePath));
+        if (!kIsWeb && Platform.isIOS) {
+          logger.log(
+              "findPresetFiles (iOS): Attempting to start security scoped access for $presetsDirIdentifier");
+          try {
+            accessGranted = await SecurityScopedResource.instance
+                .startAccessingSecurityScopedResource(directory);
+            logger.log(
+                "findPresetFiles (iOS): Security scoped access granted: $accessGranted for $presetsDirIdentifier");
+            if (!accessGranted) {
+              logger.log(
+                  "findPresetFiles (iOS): Failed to gain security scoped access to $presetsDirIdentifier. Check entitlements and user permissions.");
+              // No need to stop access if it wasn't granted
+              return presetFiles;
+            }
+          } catch (e, s) {
+            logger.log(
+                "findPresetFiles (iOS): Error during startAccessingSecurityScopedResource for $presetsDirIdentifier: $e\nStackTrace: $s");
+            // No need to stop access if it failed to start
+            return presetFiles;
           }
+        } else {
+          // For non-iOS (Desktop), assume direct access is fine (or already handled by entitlements like on macOS for user-selected folders)
+          accessGranted = true;
         }
-        InAppLogger().log(
-            "findPresetFiles (iOS/Desktop): Finished recursive list. Total entities processed: $entityCount. JSON files added: ${jsonFileCount}.");
+
+        // Proceed only if access is granted (either by scoped resource on iOS or assumed for desktop)
+        if (accessGranted) {
+          try {
+            final bool directoryExists = await directory.exists();
+            logger.log(
+                "findPresetFiles (iOS/Desktop): Directory $presetsDirIdentifier exists: $directoryExists");
+
+            if (!directoryExists) {
+              logger.log(
+                  'findPresetFiles (iOS/Desktop): Presets directory not found at path: $presetsDirIdentifier');
+              return presetFiles;
+            }
+
+            logger.log(
+                "findPresetFiles (iOS/Desktop): Starting recursive list for $presetsDirIdentifier");
+            int entityCount = 0;
+            int jsonFileCount = 0;
+
+            await for (final entity
+                in directory.list(recursive: true, followLinks: false)) {
+              entityCount++;
+              logger.log(
+                  "findPresetFiles (iOS/Desktop): Found entity: ${entity.path} (type: ${entity.runtimeType})");
+              if (entity is File &&
+                  entity.path.toLowerCase().endsWith('.json')) {
+                jsonFileCount++;
+                logger.log(
+                    "findPresetFiles (iOS/Desktop): Found JSON file: ${entity.path}");
+                String pathWithinPresets =
+                    p.relative(entity.path, from: presetsDirIdentifier);
+                String finalRelativePath =
+                    p.join(p.basename(presetsDirIdentifier), pathWithinPresets);
+                presetFiles.add((entity.path, finalRelativePath));
+              }
+            }
+            logger.log(
+                "findPresetFiles (iOS/Desktop): Finished recursive list. Total entities processed: $entityCount. JSON files added: ${jsonFileCount}.");
+          } finally {
+            if (!kIsWeb && Platform.isIOS && accessGranted) {
+              // Only stop access if it was started for iOS
+              logger.log(
+                  "findPresetFiles (iOS): Attempting to stop security scoped access for $presetsDirIdentifier");
+              try {
+                await SecurityScopedResource.instance
+                    .stopAccessingSecurityScopedResource(directory);
+                logger.log(
+                    "findPresetFiles (iOS): Security scoped access stopped for $presetsDirIdentifier");
+              } catch (e, s) {
+                logger.log(
+                    "findPresetFiles (iOS): Error during stopAccessingSecurityScopedResource for $presetsDirIdentifier: $e\nStackTrace: $s");
+              }
+            }
+          }
+        } // end if(accessGranted)
       } else {
-        InAppLogger().log(
+        logger.log(
             'findPresetFiles: Unsupported type for presetsDirIdentifier: ${presetsDirIdentifier.runtimeType}');
         return presetFiles;
       }
     } catch (e, s) {
-      InAppLogger().log(
-          'findPresetFiles: Error scanning for preset files: $e\nStackTrace: $s');
+      logger.log(
+          'findPresetFiles: Outer catch - Error scanning for preset files: $e\nStackTrace: $s');
     }
     return presetFiles;
   }
