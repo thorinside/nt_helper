@@ -292,25 +292,37 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
     this->Show();
     OutputDebugStringW(L"SetNextFrameCallback: this->Show() completed.\n");
 
-    if (GetHandle() && flutter_controller_ && flutter_controller_->view()) {
+    HWND handle = GetHandle();
+    if (handle && flutter_controller_ && flutter_controller_->engine()) {
         RECT final_client_rect;
-        GetClientRect(GetHandle(), &final_client_rect);
+        GetClientRect(handle, &final_client_rect);
         long final_width = final_client_rect.right - final_client_rect.left;
         long final_height = final_client_rect.bottom - final_client_rect.top;
 
-        std::wstring resize_log = L"SetNextFrameCallback: Resizing Flutter view to: " +
-                                std::to_wstring(final_width) + L"x" + std::to_wstring(final_height) + L"\n";
-        OutputDebugStringW(resize_log.c_str());
+        UINT dpi = GetDpiForWindow(handle);
+        double pixel_ratio = static_cast<double>(dpi) / 96.0; // 96 DPI is the default/standard
+
+        std::wstring metrics_log = L"SetNextFrameCallback: Preparing SendWindowMetricsEvent - Width: " +
+                                 std::to_wstring(final_width) + L", Height: " + std::to_wstring(final_height) +
+                                 L", PixelRatio: " + std::to_wstring(pixel_ratio) + L"\n";
+        OutputDebugStringW(metrics_log.c_str());
 
         if (final_width > 0 && final_height > 0) {
-            flutter_controller_->view()->Resize(final_width, final_height);
-            OutputDebugStringW(L"SetNextFrameCallback: Called Resize. Now calling ForceRedraw().\n");
+            FlutterWindowMetricsEvent event = {};
+            event.struct_size = sizeof(FlutterWindowMetricsEvent);
+            event.width = static_cast<size_t>(final_width);
+            event.height = static_cast<size_t>(final_height);
+            event.pixel_ratio = pixel_ratio;
+            // Other fields like view_insets, padding, etc., default to 0 which is often fine.
+
+            flutter_controller_->engine()->SendWindowMetricsEvent(event);
+            OutputDebugStringW(L"SetNextFrameCallback: Called SendWindowMetricsEvent. Now calling ForceRedraw().\n");
             flutter_controller_->ForceRedraw();
         } else {
-            OutputDebugStringW(L"SetNextFrameCallback: final_width or final_height is not positive. Not resizing/redrawing.\n");
+            OutputDebugStringW(L"SetNextFrameCallback: final_width or final_height is not positive. Not sending metrics/redrawing.\n");
         }
     } else {
-        OutputDebugStringW(L"SetNextFrameCallback: Handle or flutter_controller/view is null. Cannot resize/redraw.\n");
+        OutputDebugStringW(L"SetNextFrameCallback: Handle or flutter_controller/engine is null. Cannot send metrics/redraw.\n");
     } });
 
   return true;
