@@ -113,39 +113,64 @@ void FlutterWindow::SaveWindowPlacement()
 bool FlutterWindow::LoadWindowPlacement(Point &origin, Size &size)
 {
   std::wstring load_path = GetSavePath();
+  OutputDebugStringW((L"LoadWindowPlacement: Attempting to load from: " + load_path + L"\n").c_str());
+
   if (load_path.empty())
-    return false;
-
-  RECT RLYwindow_rect = {0}; // Renamed to avoid conflict
-  std::ifstream load_file(load_path, std::ios::binary | std::ios::in);
-  if (load_file.is_open())
   {
-    load_file.read(reinterpret_cast<char *>(&RLYwindow_rect), sizeof(RLYwindow_rect));
-    load_file.close();
-
-    // Basic validation: ensure width and height are positive.
-    // Also check for extremely small or large values if necessary.
-    if (RLYwindow_rect.left == 0 && RLYwindow_rect.top == 0 && RLYwindow_rect.right == 0 && RLYwindow_rect.bottom == 0)
-    {
-      // File might exist but be empty or invalid from a previous error.
-      return false;
-    }
-
-    long loaded_width = RLYwindow_rect.right - RLYwindow_rect.left;
-    long loaded_height = RLYwindow_rect.bottom - RLYwindow_rect.top;
-
-    if (loaded_width > 0 && loaded_height > 0)
-    {
-      // Optional: Add checks for reasonable min/max dimensions,
-      // or ensure it's on a visible monitor.
-      // For now, accept any valid positive size.
-      origin.x = RLYwindow_rect.left;
-      origin.y = RLYwindow_rect.top;
-      size.width = loaded_width;
-      size.height = loaded_height;
-      return true;
-    }
+    OutputDebugStringW(L"LoadWindowPlacement: GetSavePath returned empty path.\n");
+    return false;
   }
+
+  RECT RLYwindow_rect = {0};
+  std::ifstream load_file(load_path, std::ios::binary | std::ios::in);
+
+  if (!load_file.is_open())
+  {
+    OutputDebugStringW((L"LoadWindowPlacement: Failed to open file: " + load_path + L"\n").c_str());
+    return false;
+  }
+
+  OutputDebugStringW((L"LoadWindowPlacement: Successfully opened file: " + load_path + L"\n").c_str());
+
+  load_file.read(reinterpret_cast<char *>(&RLYwindow_rect), sizeof(RLYwindow_rect));
+
+  if (load_file.gcount() != sizeof(RLYwindow_rect))
+  {
+    OutputDebugStringW((L"LoadWindowPlacement: Read " + std::to_wstring(load_file.gcount()) + L" bytes, expected " + std::to_wstring(sizeof(RLYwindow_rect)) + L" bytes.\n").c_str());
+    load_file.close();
+    return false;
+  }
+  load_file.close();
+  OutputDebugStringW(L"LoadWindowPlacement: Successfully read and closed file.\n");
+
+  std::wstring rect_data_log = L"LoadWindowPlacement: Read RECT data - L:" + std::to_wstring(RLYwindow_rect.left) +
+                               L" T:" + std::to_wstring(RLYwindow_rect.top) +
+                               L" R:" + std::to_wstring(RLYwindow_rect.right) +
+                               L" B:" + std::to_wstring(RLYwindow_rect.bottom) + L"\n";
+  OutputDebugStringW(rect_data_log.c_str());
+
+  if (RLYwindow_rect.left == 0 && RLYwindow_rect.top == 0 && RLYwindow_rect.right == 0 && RLYwindow_rect.bottom == 0)
+  {
+    OutputDebugStringW(L"LoadWindowPlacement: RECT data is all zeros, treating as invalid.\n");
+    return false;
+  }
+
+  long loaded_width = RLYwindow_rect.right - RLYwindow_rect.left;
+  long loaded_height = RLYwindow_rect.bottom - RLYwindow_rect.top;
+
+  std::wstring size_log = L"LoadWindowPlacement: Calculated loaded_width: " + std::to_wstring(loaded_width) + L", loaded_height: " + std::to_wstring(loaded_height) + L"\n";
+  OutputDebugStringW(size_log.c_str());
+
+  if (loaded_width > 0 && loaded_height > 0)
+  {
+    origin.x = RLYwindow_rect.left;
+    origin.y = RLYwindow_rect.top;
+    size.width = loaded_width;
+    size.height = loaded_height;
+    OutputDebugStringW(L"LoadWindowPlacement: Successfully validated and applied loaded dimensions.\n");
+    return true;
+  }
+  OutputDebugStringW(L"LoadWindowPlacement: Loaded dimensions are invalid (width/height not positive).\n");
   return false;
 }
 
