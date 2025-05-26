@@ -210,8 +210,8 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
 
     final List<(String uri, String relativePath)> presetFileIdentifiers;
     try {
-      presetFileIdentifiers =
-          await FileSystemUtils.findPresetFiles(presetsDirIdentifier);
+      presetFileIdentifiers = await FileSystemUtils.findPresetFiles(
+          sdCardRootIdentifier, "presets");
     } catch (e, s) {
       InAppLogger().log('Error finding preset files: $e\n$s');
       emit(state.copyWith(
