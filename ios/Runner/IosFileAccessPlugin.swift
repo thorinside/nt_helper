@@ -102,24 +102,18 @@ public class IosFileAccessPlugin: NSObject, FlutterPlugin, UIDocumentPickerDeleg
             // Use rawValue for withSecurityScope, which is (1UL << 8)
             let resolutionOptions = URL.BookmarkResolutionOptions(rawValue: 1 << 8)
             resolvedUrl = try URL(resolvingBookmarkData: bookmarkData, options: resolutionOptions, relativeTo: nil, bookmarkDataIsStale: &isStale)
+            print("IosFileAccessPlugin: Resolved bookmarked URL: \(resolvedUrl.absoluteString)")
+            print("IosFileAccessPlugin: Resolved bookmarked path: \(resolvedUrl.path)")
             
             if isStale {
-                print("Bookmark for \(bookmarkedPath) is stale. Attempting to refresh.")
-                // Attempt to refresh and re-save the bookmark
-                // Note: This requires the original URL to be accessible, 
-                // which might not always be the case if the resource is gone.
-                // For simplicity here, we re-create from the resolved stale URL. 
-                // A more robust solution might require re-prompting the user if this fails.
+                print("IosFileAccessPlugin: Bookmark for \(bookmarkedPath) is stale. Attempting to refresh.")
                 do {
-                    // Use rawValue for withSecurityScope, which is (1UL << 10)
                     let creationOptionsStale = URL.BookmarkCreationOptions(rawValue: 1 << 10)
                     let newBookmarkData = try resolvedUrl.bookmarkData(options: creationOptionsStale, includingResourceValuesForKeys: nil, relativeTo: nil)
                     UserDefaults.standard.set(newBookmarkData, forKey: bookmarkedPath)
                     print("Bookmark refreshed and re-saved for \(bookmarkedPath).")
                 } catch let refreshError {
                     print("Error refreshing stale bookmark for \(bookmarkedPath): \(refreshError.localizedDescription). Proceeding with stale URL if possible.")
-                    // If refreshing fails, we still try to use the stale resolvedUrl, 
-                    // but access might fail later.
                 }
             }
         } catch {
@@ -136,23 +130,28 @@ public class IosFileAccessPlugin: NSObject, FlutterPlugin, UIDocumentPickerDeleg
             resolvedUrl.stopAccessingSecurityScopedResource()
         }
 
-        var fileList: [[String: String]] = []
+        var fullPathList: [String] = []
         let fileManager = FileManager.default
+        let presetsFolderName = "presets"
         
-        var isDirectory: ObjCBool = false
-        guard fileManager.fileExists(atPath: resolvedUrl.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-             result(FlutterError(code: "NOT_A_DIRECTORY", message: "Bookmarked path is not a directory: \(resolvedUrl.path)", details: nil))
+        let presetsDirectoryUrl = resolvedUrl.appendingPathComponent(presetsFolderName)
+        print("IosFileAccessPlugin: Checking for presets directory at: \(presetsDirectoryUrl.path)")
+
+        var isPresetsDir: ObjCBool = false
+        guard fileManager.fileExists(atPath: presetsDirectoryUrl.path, isDirectory: &isPresetsDir), isPresetsDir.boolValue else {
+            print("IosFileAccessPlugin: Presets directory not found or is not a directory at \(presetsDirectoryUrl.path). Returning empty list.")
+            result(fullPathList) // Return empty list of strings
             return
         }
+        
+        print("IosFileAccessPlugin: Presets directory found. Enumerating within: \(presetsDirectoryUrl.path)")
 
         let errorHandler = { (url: URL, error: Error) -> Bool in
             print("Error during enumeration of \(url.path): \(error.localizedDescription)")
-            // Returning true tells the enumerator to skip the problematic file/directory and continue.
-            // Returning false would stop the enumeration.
             return true
         }
 
-        let enumerator = fileManager.enumerator(at: resolvedUrl, 
+        let enumerator = fileManager.enumerator(at: presetsDirectoryUrl, // Enumerate starting from the presets directory
                                               includingPropertiesForKeys: [.nameKey, .isDirectoryKey, .isPackageKey],
                                               options: [.skipsHiddenFiles, .skipsPackageDescendants],
                                               errorHandler: errorHandler)
@@ -161,107 +160,100 @@ public class IosFileAccessPlugin: NSObject, FlutterPlugin, UIDocumentPickerDeleg
             for case let fileURL as URL in strongEnumerator {
                 do {
                     let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
-                    // Skip directories and package contents (like .app bundles)
                     if !(resourceValues.isDirectory ?? true) && !(resourceValues.isPackage ?? true) {
-                        let fullPath = fileURL.path
-                        var relativePathValue = fullPath
-                        
-                        let baseDirPath = resolvedUrl.path.hasSuffix("/") ? resolvedUrl.path : resolvedUrl.path + "/"
-                        
-                        if fullPath.hasPrefix(baseDirPath) {
-                            relativePathValue = String(fullPath.dropFirst(baseDirPath.count))
-                        } else if fullPath.hasPrefix(resolvedUrl.path) { 
-                            relativePathValue = String(fullPath.dropFirst(resolvedUrl.path.count))
-                            if relativePathValue.hasPrefix("/") {
-                                relativePathValue = String(relativePathValue.dropFirst())
-                            }
+                        // We are only interested in files. Check if it's a .json file.
+                        if fileURL.pathExtension.lowercased() == "json" {
+                            print("IosFileAccessPlugin: Enumerator found JSON file: \(fileURL.absoluteString)")
+                            fullPathList.append(fileURL.absoluteString) // Add full URI string
+                        } else {
+                            print("IosFileAccessPlugin: Enumerator skipped non-JSON file: \(fileURL.path)")
                         }
-                        fileList.append(["uri": fileURL.absoluteString, "relativePath": relativePathValue])
+                    } else {
+                        print("IosFileAccessPlugin: Enumerator skipped directory or package: \(fileURL.path)")
                     }
                 } catch {
-                    print("Error getting resource values for \(fileURL.path): \(error.localizedDescription)")
+                    print("IosFileAccessPlugin: Error getting resource values for \(fileURL.path): \(error.localizedDescription)")
                 }
             }
         }
-        result(fileList)
+        print("IosFileAccessPlugin: Final fullPathList to be sent to Dart: \(fullPathList)")
+        result(fullPathList) // Return list of full URI strings
     }
 
     private func readBookmarkedFile(bookmarkedPath: String, relativePath: String, result: @escaping FlutterResult) {
+        print("IosFileAccessPlugin: readBookmarkedFile called. BookmarkedPath: \(bookmarkedPath), RelativePath: \(relativePath)")
         guard let bookmarkData = UserDefaults.standard.data(forKey: bookmarkedPath) else {
+            print("IosFileAccessPlugin: readBookmarkedFile - No bookmark data found for path: \(bookmarkedPath)")
             result(FlutterError(code: "NO_BOOKMARK", message: "No bookmark found for path: \(bookmarkedPath)", details: nil))
             return
         }
+        print("IosFileAccessPlugin: readBookmarkedFile - Found bookmark data.")
 
         var resolvedUrl: URL
         do {
             var isStale = false
-            // Use rawValue for withSecurityScope, which is (1UL << 8)
             let resolutionOptionsStale = URL.BookmarkResolutionOptions(rawValue: 1 << 8)
             resolvedUrl = try URL(resolvingBookmarkData: bookmarkData, options: resolutionOptionsStale, relativeTo: nil, bookmarkDataIsStale: &isStale)
+            print("IosFileAccessPlugin: readBookmarkedFile - Resolved bookmarked URL: \(resolvedUrl.path)")
             
             if isStale {
-                print("Bookmark for \(bookmarkedPath) is stale in readBookmarkedFile. Attempting to refresh.")
+                print("IosFileAccessPlugin: readBookmarkedFile - Bookmark for \(bookmarkedPath) is stale. Attempting to refresh.")
                  do {
-                    // Use rawValue for withSecurityScope, which is (1UL << 10)
                     let creationOptionsReadStale = URL.BookmarkCreationOptions(rawValue: 1 << 10)
                     let newBookmarkData = try resolvedUrl.bookmarkData(options: creationOptionsReadStale, includingResourceValuesForKeys: nil, relativeTo: nil)
                     UserDefaults.standard.set(newBookmarkData, forKey: bookmarkedPath)
-                    print("Bookmark refreshed and re-saved for \(bookmarkedPath) in readBookmarkedFile.")
+                    print("IosFileAccessPlugin: readBookmarkedFile - Bookmark refreshed and re-saved for \(bookmarkedPath).")
                 } catch let refreshError {
-                    print("Error refreshing stale bookmark for \(bookmarkedPath) in readBookmarkedFile: \(refreshError.localizedDescription).")
+                    print("IosFileAccessPlugin: readBookmarkedFile - Error refreshing stale bookmark for \(bookmarkedPath): \(refreshError.localizedDescription).")
+                    // Proceeding with stale URL if possible
                 }
             }
         } catch {
+            print("IosFileAccessPlugin: readBookmarkedFile - Failed to resolve bookmark: \(error.localizedDescription)")
             result(FlutterError(code: "BOOKMARK_RESOLUTION_ERROR", message: "Failed to resolve bookmark: \(error.localizedDescription)", details: nil))
             return
         }
 
         let targetFileUrl = resolvedUrl.appendingPathComponent(relativePath)
+        print("IosFileAccessPlugin: readBookmarkedFile - Target file URL: \(targetFileUrl.path)")
 
-        guard targetFileUrl.startAccessingSecurityScopedResource() else {
-            // If direct access to sub-URL fails, try to start access on the base resolved URL
-            // This is often necessary as bookmarks grant access from the bookmarked URL downwards.
-            if resolvedUrl.startAccessingSecurityScopedResource() {
-                 print("Started security access on base URL for reading file: \(resolvedUrl.path)")
-                 // If base URL access is successful, we can proceed with it.
-                 // However, the 'guard' statement requires this 'else' block to exit the current scope.
-                 // Since we've successfully started access on the resolvedUrl, we might be able to proceed,
-                 // but the original guard was on targetFileUrl. For strictness and to satisfy the guard,
-                 // if targetFileUrl failed, we should consider it a failure for this path of the guard.
-                 // Alternatively, if proceeding with resolvedUrl access is intended, the logic flow needs restructuring.
-                 // For now, to fix the guard error, we must exit.
-                 // If we want to actually USE the fact that resolvedUrl succeeded, we'd need to not be in the guard's else.
-                 // Let's assume for now that if targetFileUrl fails, we report an error, even if resolvedUrl could be accessed.
-                 // This maintains the original intent more closely that we need access to the *specific* targetFileUrl.
-                 // So, if targetFileUrl.startAccessingSecurityScopedResource() is false, this whole block is an error path.
-                 result(FlutterError(code: "ACCESS_DENIED", message: "Failed to start accessing security-scoped resource for specific file: \(targetFileUrl.path) even if base was accessible.", details: nil))
-                return // Exit for the guard statement
-            } else {
-                 result(FlutterError(code: "ACCESS_DENIED", message: "Failed to start accessing security-scoped resource for file: \(targetFileUrl.path) or base \(resolvedUrl.path)", details: nil))
-                return
-            }
+        // Try to start access on the base resolved URL first.
+        // Bookmarks grant access from the bookmarked URL downwards.
+        print("IosFileAccessPlugin: readBookmarkedFile - Attempting to start security access on base URL: \(resolvedUrl.path)")
+        guard resolvedUrl.startAccessingSecurityScopedResource() else {
+            print("IosFileAccessPlugin: readBookmarkedFile - Failed to start security access on base URL: \(resolvedUrl.path)")
+            result(FlutterError(code: "ACCESS_DENIED", message: "Failed to start accessing security-scoped resource for base bookmarked path: \(resolvedUrl.path)", details: nil))
+            return
         }
+        print("IosFileAccessPlugin: readBookmarkedFile - Successfully started security access on base URL: \(resolvedUrl.path)")
 
         defer {
-            // It's important to stop access on the URL that successfully started it.
-            // If targetFileUrl.startAccessingSecurityScopedResource() was true, this stops it.
-            // If only resolvedUrl.startAccessingSecurityScopedResource() was true, this won't affect targetFileUrl unless they are the same.
-            // Thus, we ensure the main bookmarked URL is stopped.
+            print("IosFileAccessPlugin: readBookmarkedFile - Defer: Stopping security access on base URL: \(resolvedUrl.path)")
             resolvedUrl.stopAccessingSecurityScopedResource()
-             // And if targetFileUrl is different and successfully started, stop it too.
-            if targetFileUrl.absoluteString != resolvedUrl.absoluteString {
-                // Check if targetFileUrl is still accessible. This is a bit of a proxy. A more direct check is hard.
-                // The idea is if startAccessingSecurityScopedResource was called on it and succeeded, it should be stopped.
-                // However, the `startAccessingSecurityScopedResource` returns a Bool but doesn't maintain state for `isAccessing`.
-                // So we stop it if it was the one that started access. For simplicity, we just stop the base URL that always needs stopping.
-                // The individual file URL (targetFileUrl) might not need explicit stop if the base URL stop covers it, which is typical.
-            }
         }
 
         do {
+            print("IosFileAccessPlugin: readBookmarkedFile - Attempting to read data from: \(targetFileUrl.path)")
+            // Check if file exists using FileManager, respecting security scope
+            var isTargetFileDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: targetFileUrl.path, isDirectory: &isTargetFileDirectory) {
+                if isTargetFileDirectory.boolValue {
+                    print("IosFileAccessPlugin: readBookmarkedFile - Error: Target path is a directory, not a file: \(targetFileUrl.path)")
+                    result(FlutterError(code: "IS_DIRECTORY", message: "Target path is a directory: \(targetFileUrl.path)", details: nil))
+                    return
+                }
+                print("IosFileAccessPlugin: readBookmarkedFile - File confirmed to exist by FileManager at: \(targetFileUrl.path)")
+            } else {
+                print("IosFileAccessPlugin: readBookmarkedFile - Error: File does not exist according to FileManager at: \(targetFileUrl.path) (even with scoped access)")
+                result(FlutterError(code: "FILE_NOT_FOUND_NATIVE", message: "File not found by native FileManager: \(targetFileUrl.path)", details: nil))
+                return
+            }
+
             let fileData = try Data(contentsOf: targetFileUrl)
-            result(FlutterStandardTypedData(bytes: fileData)) // Return as Uint8List equivalent
+            print("IosFileAccessPlugin: readBookmarkedFile - Successfully read \(fileData.count) bytes from \(targetFileUrl.path)")
+            result(FlutterStandardTypedData(bytes: fileData))
         } catch {
+            print("IosFileAccessPlugin: readBookmarkedFile - Failed to read file \(targetFileUrl.path): \(error.localizedDescription)")
             result(FlutterError(code: "FILE_READ_ERROR", message: "Failed to read file \(targetFileUrl.path): \(error.localizedDescription)", details: nil))
         }
     }

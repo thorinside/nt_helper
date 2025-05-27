@@ -55,9 +55,9 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access so that you can select your SD Card root directory to index your presets in disk mode.</string>
-	<key>UISupportsDocumentBrowser</key>
-	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
 	<true/>
 	</dict>
 </plist>

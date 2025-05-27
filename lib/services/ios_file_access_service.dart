@@ -35,15 +35,13 @@ class IosFileAccessService {
   /// - 'relativePath': The path of the file relative to the bookmarked directory.
   ///
   /// Returns null if the bookmark is invalid, access cannot be granted, or an error occurs.
-  Future<List<Map<String, String>>?> listBookmarkedDirectoryContents(
+  Future<List<String>?> listBookmarkedDirectoryContents(
       String bookmarkedPath) async {
     try {
       final List<dynamic>? results = await _channel.invokeMethod(
           'listBookmarkedDirectoryContents',
           {'bookmarkedPath': bookmarkedPath});
-      return results
-          ?.map((item) => Map<String, String>.from(item as Map))
-          .toList();
+      return results?.cast<String>().toList();
     } on PlatformException catch (e) {
       print("Failed to list directory contents: '${e.message}'.");
       return null;

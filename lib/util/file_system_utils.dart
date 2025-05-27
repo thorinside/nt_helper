@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p; // For joining paths
 import 'package:flutter/foundation.dart'
     show kIsWeb; // To check for web platform and for debug prints
+import 'package:flutter/services.dart'; // Added for PlatformException
 import 'package:nt_helper/util/in_app_logger.dart'; // Added for InAppLogger
 import 'package:security_scoped_resource/security_scoped_resource.dart'; // Added for iOS scoped access
 import 'package:nt_helper/services/ios_file_access_service.dart'; // Import the new service
@@ -63,6 +64,7 @@ class FileSystemUtils {
         return null;
       }
     }
+    // For Desktop (macOS, Windows, Linux)
     InAppLogger().log("Desktop: Picking directory with FilePicker");
     try {
       final String? directoryPath = await FilePicker.platform.getDirectoryPath(
@@ -71,11 +73,16 @@ class FileSystemUtils {
       if (directoryPath != null) {
         InAppLogger().log("Desktop: Picked directory path: $directoryPath");
       } else {
-        InAppLogger().log("Desktop: Directory picking cancelled or failed.");
+        InAppLogger().log(
+            "Desktop: Directory picking cancelled or failed (directoryPath is null).");
       }
       return directoryPath;
-    } catch (e) {
-      InAppLogger().log("Error picking directory on Desktop: $e");
+    } on PlatformException catch (pe) {
+      InAppLogger().log(
+          "Desktop: PlatformException picking directory: ${pe.code} - ${pe.message} - ${pe.details}");
+      return null;
+    } catch (e, s) {
+      InAppLogger().log("Desktop: Generic error picking directory: $e\n$s");
       return null;
     }
   }
@@ -127,11 +134,11 @@ class FileSystemUtils {
       if (Platform.isIOS) {
         InAppLogger().log(
             "iOS: Checking for 'presets' directory in bookmarked path: $sdCardRootIdentifier");
-        final List<Map<String, String>>? files = await _iosFileAccessService
+        final List<String>? files = await _iosFileAccessService
             .listBookmarkedDirectoryContents(sdCardRootIdentifier);
         if (files != null) {
           for (final fileEntry in files) {
-            if (fileEntry['relativePath']?.startsWith('presets/') ?? false) {
+            if (fileEntry.startsWith('presets/')) {
               InAppLogger().log("iOS: Found 'presets/' in relative paths.");
               return true;
             }
@@ -162,31 +169,35 @@ class FileSystemUtils {
   // Helper for recursive listing with DocMan
   static Future<void> _findPresetFilesRecursiveDocman(
       docman.DocumentFile directory,
-      String currentRelativePathWithinPresets,
-      List<(String uri, String relativePath)> presetFilesList,
+      String
+          currentRelativePathWithinPresets, // This is relative to the *presets* folder itself
+      List<String>
+          presetFilesList, // Changed from List<(String uri, String relativePath)>
       String presetsFolderName) async {
+    // presetsFolderName is "presets"
     final documents = await directory.listDocuments();
     for (final doc in documents) {
       final String entryName = doc.name ?? 'unknown';
-      String itemRelativePathWithinPresets;
-      if (currentRelativePathWithinPresets.isEmpty) {
-        itemRelativePathWithinPresets = entryName;
-      } else {
-        itemRelativePathWithinPresets =
-            p.join(currentRelativePathWithinPresets, entryName);
-      }
+      // currentRelativePathWithinPresets is something like "Factory" or "Factory/Subdir"
+      // entryName is "MyFile.json" or "AnotherSubdir"
 
       if (doc.isDirectory) {
+        String nextRelativePathWithinPresets;
+        if (currentRelativePathWithinPresets.isEmpty) {
+          nextRelativePathWithinPresets = entryName;
+        } else {
+          nextRelativePathWithinPresets =
+              p.join(currentRelativePathWithinPresets, entryName);
+        }
         InAppLogger().log(
-            "Android (Recursive): Entering directory: $entryName, currentRelativePathWithinPresets: $itemRelativePathWithinPresets");
+            "Android (Recursive): Entering directory: $entryName, nextRelativePathWithinPresets: $nextRelativePathWithinPresets");
         await _findPresetFilesRecursiveDocman(doc,
-            itemRelativePathWithinPresets, presetFilesList, presetsFolderName);
+            nextRelativePathWithinPresets, presetFilesList, presetsFolderName);
       } else if (entryName.toLowerCase().endsWith('.json')) {
-        final String fullRelativePath =
-            p.join(presetsFolderName, itemRelativePathWithinPresets);
+        // For Android, doc.uri is the content:// URI we need
         InAppLogger().log(
-            "Android (Recursive): Found JSON file: ${doc.uri}, Name: $entryName, Full Relative Path: $fullRelativePath");
-        presetFilesList.add((doc.uri.toString(), fullRelativePath));
+            "Android (Recursive): Found JSON file: ${doc.uri}, Name: $entryName");
+        presetFilesList.add(doc.uri.toString());
       }
     }
   }
@@ -195,12 +206,14 @@ class FileSystemUtils {
   ///
   /// For Android, `presetsDirIdentifier` is expected to be a `docman.DocumentFile` representing the 'presets' directory.
   /// For other platforms, it's a `String` path to the 'presets' directory.
-  /// Returns a list of tuples (uri, relativePath) for all files ending with '.json'.
-  static Future<List<(String uri, String relativePath)>> findPresetFiles(
-      dynamic sdCardRootIdentifier, String presetsFolderName) async {
+  /// Returns a list of full URI strings for all files ending with '.json'.
+  static Future<List<String>> findPresetFiles(
+      // Changed return type
+      dynamic sdCardRootIdentifier,
+      String presetsFolderName) async {
     InAppLogger().log(
         "findPresetFiles called with identifier: $sdCardRootIdentifier, presetsFolderName: $presetsFolderName");
-    final List<(String uri, String relativePath)> presetFiles = [];
+    final List<String> presetFiles = []; // Changed type
 
     if (sdCardRootIdentifier == null) {
       InAppLogger()
@@ -218,6 +231,7 @@ class FileSystemUtils {
           presetsDocFileDir.isDirectory) {
         InAppLogger().log(
             "Android: Found '$presetsFolderName' directory. Starting recursive search.");
+        // Pass empty string for currentRelativePathWithinPresets initially
         await _findPresetFilesRecursiveDocman(
             presetsDocFileDir, '', presetFiles, presetsFolderName);
       } else {
@@ -229,23 +243,21 @@ class FileSystemUtils {
       if (Platform.isIOS) {
         InAppLogger()
             .log("iOS: Finding preset files in bookmarked path: $rootPath");
-        final List<Map<String, String>>? allFiles = await _iosFileAccessService
+        // The native plugin now directly returns a list of full file URIs (strings)
+        // for .json files within the "presets" subdirectory of the bookmarked root.
+        final List<String>? allFileUris = await _iosFileAccessService
             .listBookmarkedDirectoryContents(rootPath);
-        if (allFiles != null) {
-          for (final fileEntry in allFiles) {
-            final String fileUri = fileEntry['uri']!;
-            final String relativePath = fileEntry['relativePath']!;
-            InAppLogger().log(
-                "iOS: Found file URI: $fileUri, Relative path: $relativePath");
-            if (relativePath.startsWith('$presetsFolderName/') &&
-                relativePath.toLowerCase().endsWith('.json')) {
-              InAppLogger()
-                  .log("iOS: Added preset file: $relativePath (URI: $fileUri)");
-              presetFiles.add((fileUri, relativePath));
-            }
+        if (allFileUris != null) {
+          InAppLogger().log(
+              "iOS (FileSystemUtils): Received ${allFileUris.length} file URI entries from native plugin.");
+          for (final String fileUri in allFileUris) {
+            InAppLogger()
+                .log("iOS (FileSystemUtils): Adding preset file URI: $fileUri");
+            presetFiles.add(fileUri);
           }
         } else {
-          InAppLogger().log("iOS: Failed to list files from bookmarked path.");
+          InAppLogger().log(
+              "iOS (FileSystemUtils): Failed to list files from bookmarked path (native plugin returned null).");
         }
       } else {
         InAppLogger().log("Desktop: Finding preset files in path: $rootPath");
@@ -253,14 +265,14 @@ class FileSystemUtils {
         final directory = Directory(presetsDirPath);
         if (await directory.exists()) {
           InAppLogger().log(
-              "Desktop: '$presetsFolderName' directory exists. Starting recursive search.");
+              "Desktop: '$presetsFolderName' directory exists. Starting recursive search from $presetsDirPath");
           final files = directory.list(recursive: true, followLinks: false);
           await for (final FileSystemEntity entity in files) {
             if (entity is File && entity.path.toLowerCase().endsWith('.json')) {
-              final relativePath = p.relative(entity.path, from: rootPath);
+              // For desktop, entity.uri.toString() gives the file:/// URI
               InAppLogger().log(
-                  "Desktop: Found file: ${entity.path}, Relative path: $relativePath");
-              presetFiles.add((entity.uri.toString(), relativePath));
+                  "Desktop: Found file: ${entity.path}, URI: ${entity.uri.toString()}");
+              presetFiles.add(entity.uri.toString());
             }
           }
         } else {
@@ -280,8 +292,20 @@ class FileSystemUtils {
     String? knownRelativePath, // Used by iOS
     String sdCardRootIdentifier, // Used by iOS (bookmarkedPath)
   ) async {
+    // Extremely basic entry log using both print and InAppLogger
+    print("--- FileSystemUtils.readFileBytes --- ENTRY ---");
+    InAppLogger().log("--- FileSystemUtils.readFileBytes --- ENTRY ---");
+
+    // Log all arguments using InAppLogger
     InAppLogger().log(
-        "readFileBytes called with fileUriOrPath: $fileUriOrPath, knownRelativePath: $knownRelativePath, sdCardRootIdentifier: $sdCardRootIdentifier");
+        "Args: fileUriOrPath: $fileUriOrPath, knownRelativePath: $knownRelativePath, sdCardRootIdentifier: $sdCardRootIdentifier");
+
+    // Explicitly check and log Platform.isIOS using both print and InAppLogger
+    final bool isIOS = Platform.isIOS;
+    print("--- FileSystemUtils.readFileBytes --- Platform.isIOS: $isIOS ---");
+    InAppLogger().log(
+        "--- FileSystemUtils.readFileBytes --- Platform.isIOS: $isIOS ---");
+
     if (Platform.isAndroid) {
       if (fileUriOrPath.startsWith('content://')) {
         try {
@@ -320,7 +344,9 @@ class FileSystemUtils {
             "Android: fileUriOrPath is not a content URI: $fileUriOrPath. This indicates an issue with how URIs are passed.");
         return null;
       }
-    } else if (Platform.isIOS) {
+    } else if (isIOS) {
+      // Use the stored boolean
+      InAppLogger().log("iOS branch taken in readFileBytes."); // Added this log
       if (knownRelativePath == null) {
         InAppLogger().log(
             "iOS: knownRelativePath is null. Cannot read file without it.");
@@ -344,18 +370,28 @@ class FileSystemUtils {
         return null;
       }
     } else {
-      InAppLogger().log("Desktop: Reading file from path: $fileUriOrPath");
+      InAppLogger()
+          .log("Desktop/Else branch taken in readFileBytes."); // Added this log
+      InAppLogger().log("Desktop: Reading file from URI/Path: $fileUriOrPath");
       try {
-        // On desktop, fileUriOrPath is expected to be a direct file path.
-        final file = File(fileUriOrPath);
+        File file;
+        if (fileUriOrPath.startsWith('file:///')) {
+          Uri uri = Uri.parse(fileUriOrPath);
+          file = File.fromUri(uri);
+          InAppLogger().log("Desktop: Parsed URI to file path: ${file.path}");
+        } else {
+          file = File(fileUriOrPath); // For plain paths
+          InAppLogger().log("Desktop: Using plain file path: ${file.path}");
+        }
+
         if (await file.exists()) {
           final Uint8List bytes = await file.readAsBytes();
-          InAppLogger()
-              .log("Desktop: Successfully read ${bytes.lengthInBytes} bytes.");
+          InAppLogger().log(
+              "Desktop: Successfully read ${bytes.lengthInBytes} bytes from ${file.path}.");
           return bytes;
         } else {
-          InAppLogger()
-              .log("Desktop: File does not exist at path: $fileUriOrPath");
+          InAppLogger().log(
+              "Desktop: File does not exist at parsed path: ${file.path} (original URI/Path: $fileUriOrPath)");
           return null;
         }
       } catch (e) {

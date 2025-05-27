@@ -208,7 +208,7 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
         status: ScanStatus.findingFiles,
         currentFile: "Finding preset files in $presetsDisplayPath..."));
 
-    final List<(String uri, String relativePath)> presetFileIdentifiers;
+    final List<String> presetFileIdentifiers;
     try {
       presetFileIdentifiers = await FileSystemUtils.findPresetFiles(
           sdCardRootIdentifier, "presets");
@@ -236,27 +236,32 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
     final List<ParsedPresetData> parsedPresets = [];
     int processedFileCount = 0;
 
-    for (final (fileUri, fileRelativePath) in presetFileIdentifiers) {
+    for (final String fileUriOrPath in presetFileIdentifiers) {
       processedFileCount++;
       // Update progress before parsing each file
+      String displayFileName = p.basename(fileUriOrPath);
+      try {
+        if (fileUriOrPath.startsWith('file://')) {
+          displayFileName = p.basename(Uri.parse(fileUriOrPath).toFilePath());
+        }
+      } catch (_) {/* ignore, use original fileUriOrPath if parsing fails */}
+
       emit(state.copyWith(
         scanProgress: processedFileCount / presetFileIdentifiers.length,
         currentFile:
-            "Parsing: $fileRelativePath ($processedFileCount/${presetFileIdentifiers.length})",
+            "Parsing: $displayFileName ($processedFileCount/${presetFileIdentifiers.length})",
         filesProcessed: processedFileCount,
       ));
 
       final parsedData = await PresetParserUtils.parsePresetFile(
-        fileUri,
+        fileUriOrPath,
         sdCardRootPathOrUri: cardIdentifier,
-        knownRelativePath: fileRelativePath,
       );
 
       if (parsedData != null) {
         parsedPresets.add(parsedData);
       } else {
-        InAppLogger()
-            .log('Failed to parse preset: $fileRelativePath (URI: $fileUri)');
+        InAppLogger().log('Failed to parse preset: $fileUriOrPath');
       }
     }
 
