@@ -19,8 +19,11 @@ mixin _$SdCardScannerEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
@@ -30,8 +33,12 @@ mixin _$SdCardScannerEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
@@ -40,8 +47,12 @@ mixin _$SdCardScannerEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,
@@ -144,8 +155,11 @@ class _$LoadScannedCardsImpl implements LoadScannedCards {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
@@ -158,8 +172,12 @@ class _$LoadScannedCardsImpl implements LoadScannedCards {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
@@ -171,8 +189,12 @@ class _$LoadScannedCardsImpl implements LoadScannedCards {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,
@@ -238,7 +260,10 @@ abstract class _$$ScanRequestedImplCopyWith<$Res> {
           _$ScanRequestedImpl value, $Res Function(_$ScanRequestedImpl) then) =
       __$$ScanRequestedImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String path, String cardName});
+  $Res call(
+      {String sdCardRootPathOrUri,
+      String relativePresetsPath,
+      String cardName});
 }
 
 /// @nodoc
@@ -254,13 +279,18 @@ class __$$ScanRequestedImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? path = null,
+    Object? sdCardRootPathOrUri = null,
+    Object? relativePresetsPath = null,
     Object? cardName = null,
   }) {
     return _then(_$ScanRequestedImpl(
-      path: null == path
-          ? _value.path
-          : path // ignore: cast_nullable_to_non_nullable
+      sdCardRootPathOrUri: null == sdCardRootPathOrUri
+          ? _value.sdCardRootPathOrUri
+          : sdCardRootPathOrUri // ignore: cast_nullable_to_non_nullable
+              as String,
+      relativePresetsPath: null == relativePresetsPath
+          ? _value.relativePresetsPath
+          : relativePresetsPath // ignore: cast_nullable_to_non_nullable
               as String,
       cardName: null == cardName
           ? _value.cardName
@@ -273,16 +303,21 @@ class __$$ScanRequestedImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$ScanRequestedImpl implements ScanRequested {
-  const _$ScanRequestedImpl({required this.path, required this.cardName});
+  const _$ScanRequestedImpl(
+      {required this.sdCardRootPathOrUri,
+      required this.relativePresetsPath,
+      required this.cardName});
 
   @override
-  final String path;
+  final String sdCardRootPathOrUri;
+  @override
+  final String relativePresetsPath;
   @override
   final String cardName;
 
   @override
   String toString() {
-    return 'SdCardScannerEvent.scanRequested(path: $path, cardName: $cardName)';
+    return 'SdCardScannerEvent.scanRequested(sdCardRootPathOrUri: $sdCardRootPathOrUri, relativePresetsPath: $relativePresetsPath, cardName: $cardName)';
   }
 
   @override
@@ -290,13 +325,17 @@ class _$ScanRequestedImpl implements ScanRequested {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ScanRequestedImpl &&
-            (identical(other.path, path) || other.path == path) &&
+            (identical(other.sdCardRootPathOrUri, sdCardRootPathOrUri) ||
+                other.sdCardRootPathOrUri == sdCardRootPathOrUri) &&
+            (identical(other.relativePresetsPath, relativePresetsPath) ||
+                other.relativePresetsPath == relativePresetsPath) &&
             (identical(other.cardName, cardName) ||
                 other.cardName == cardName));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, path, cardName);
+  int get hashCode => Object.hash(
+      runtimeType, sdCardRootPathOrUri, relativePresetsPath, cardName);
 
   /// Create a copy of SdCardScannerEvent
   /// with the given fields replaced by the non-null parameter values.
@@ -310,42 +349,54 @@ class _$ScanRequestedImpl implements ScanRequested {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
     required TResult Function() clearMessages,
   }) {
-    return scanRequested(path, cardName);
+    return scanRequested(sdCardRootPathOrUri, relativePresetsPath, cardName);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
   }) {
-    return scanRequested?.call(path, cardName);
+    return scanRequested?.call(
+        sdCardRootPathOrUri, relativePresetsPath, cardName);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,
     required TResult orElse(),
   }) {
     if (scanRequested != null) {
-      return scanRequested(path, cardName);
+      return scanRequested(sdCardRootPathOrUri, relativePresetsPath, cardName);
     }
     return orElse();
   }
@@ -396,10 +447,12 @@ class _$ScanRequestedImpl implements ScanRequested {
 
 abstract class ScanRequested implements SdCardScannerEvent {
   const factory ScanRequested(
-      {required final String path,
+      {required final String sdCardRootPathOrUri,
+      required final String relativePresetsPath,
       required final String cardName}) = _$ScanRequestedImpl;
 
-  String get path;
+  String get sdCardRootPathOrUri;
+  String get relativePresetsPath;
   String get cardName;
 
   /// Create a copy of SdCardScannerEvent
@@ -415,7 +468,7 @@ abstract class _$$RescanCardRequestedImplCopyWith<$Res> {
           $Res Function(_$RescanCardRequestedImpl) then) =
       __$$RescanCardRequestedImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String cardIdPath, String cardName});
+  $Res call({String cardIdPath, String relativePresetsPath, String cardName});
 }
 
 /// @nodoc
@@ -432,12 +485,17 @@ class __$$RescanCardRequestedImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? cardIdPath = null,
+    Object? relativePresetsPath = null,
     Object? cardName = null,
   }) {
     return _then(_$RescanCardRequestedImpl(
       cardIdPath: null == cardIdPath
           ? _value.cardIdPath
           : cardIdPath // ignore: cast_nullable_to_non_nullable
+              as String,
+      relativePresetsPath: null == relativePresetsPath
+          ? _value.relativePresetsPath
+          : relativePresetsPath // ignore: cast_nullable_to_non_nullable
               as String,
       cardName: null == cardName
           ? _value.cardName
@@ -451,16 +509,20 @@ class __$$RescanCardRequestedImplCopyWithImpl<$Res>
 
 class _$RescanCardRequestedImpl implements RescanCardRequested {
   const _$RescanCardRequestedImpl(
-      {required this.cardIdPath, required this.cardName});
+      {required this.cardIdPath,
+      required this.relativePresetsPath,
+      required this.cardName});
 
   @override
   final String cardIdPath;
+  @override
+  final String relativePresetsPath;
   @override
   final String cardName;
 
   @override
   String toString() {
-    return 'SdCardScannerEvent.rescanCardRequested(cardIdPath: $cardIdPath, cardName: $cardName)';
+    return 'SdCardScannerEvent.rescanCardRequested(cardIdPath: $cardIdPath, relativePresetsPath: $relativePresetsPath, cardName: $cardName)';
   }
 
   @override
@@ -470,12 +532,15 @@ class _$RescanCardRequestedImpl implements RescanCardRequested {
             other is _$RescanCardRequestedImpl &&
             (identical(other.cardIdPath, cardIdPath) ||
                 other.cardIdPath == cardIdPath) &&
+            (identical(other.relativePresetsPath, relativePresetsPath) ||
+                other.relativePresetsPath == relativePresetsPath) &&
             (identical(other.cardName, cardName) ||
                 other.cardName == cardName));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, cardIdPath, cardName);
+  int get hashCode =>
+      Object.hash(runtimeType, cardIdPath, relativePresetsPath, cardName);
 
   /// Create a copy of SdCardScannerEvent
   /// with the given fields replaced by the non-null parameter values.
@@ -490,42 +555,53 @@ class _$RescanCardRequestedImpl implements RescanCardRequested {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
     required TResult Function() clearMessages,
   }) {
-    return rescanCardRequested(cardIdPath, cardName);
+    return rescanCardRequested(cardIdPath, relativePresetsPath, cardName);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
   }) {
-    return rescanCardRequested?.call(cardIdPath, cardName);
+    return rescanCardRequested?.call(cardIdPath, relativePresetsPath, cardName);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,
     required TResult orElse(),
   }) {
     if (rescanCardRequested != null) {
-      return rescanCardRequested(cardIdPath, cardName);
+      return rescanCardRequested(cardIdPath, relativePresetsPath, cardName);
     }
     return orElse();
   }
@@ -577,9 +653,11 @@ class _$RescanCardRequestedImpl implements RescanCardRequested {
 abstract class RescanCardRequested implements SdCardScannerEvent {
   const factory RescanCardRequested(
       {required final String cardIdPath,
+      required final String relativePresetsPath,
       required final String cardName}) = _$RescanCardRequestedImpl;
 
   String get cardIdPath;
+  String get relativePresetsPath;
   String get cardName;
 
   /// Create a copy of SdCardScannerEvent
@@ -631,8 +709,11 @@ class _$ScanCancelledImpl implements ScanCancelled {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
@@ -645,8 +726,12 @@ class _$ScanCancelledImpl implements ScanCancelled {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
@@ -658,8 +743,12 @@ class _$ScanCancelledImpl implements ScanCancelled {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,
@@ -790,8 +879,11 @@ class _$RemoveCardRequestedImpl implements RemoveCardRequested {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
@@ -804,8 +896,12 @@ class _$RemoveCardRequestedImpl implements RemoveCardRequested {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
@@ -817,8 +913,12 @@ class _$RemoveCardRequestedImpl implements RemoveCardRequested {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,
@@ -929,8 +1029,11 @@ class _$ClearMessagesImpl implements ClearMessages {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loadScannedCards,
-    required TResult Function(String path, String cardName) scanRequested,
-    required TResult Function(String cardIdPath, String cardName)
+    required TResult Function(String sdCardRootPathOrUri,
+            String relativePresetsPath, String cardName)
+        scanRequested,
+    required TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)
         rescanCardRequested,
     required TResult Function() scanCancelled,
     required TResult Function(String cardIdPath) removeCardRequested,
@@ -943,8 +1046,12 @@ class _$ClearMessagesImpl implements ClearMessages {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loadScannedCards,
-    TResult? Function(String path, String cardName)? scanRequested,
-    TResult? Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult? Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult? Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult? Function()? scanCancelled,
     TResult? Function(String cardIdPath)? removeCardRequested,
     TResult? Function()? clearMessages,
@@ -956,8 +1063,12 @@ class _$ClearMessagesImpl implements ClearMessages {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loadScannedCards,
-    TResult Function(String path, String cardName)? scanRequested,
-    TResult Function(String cardIdPath, String cardName)? rescanCardRequested,
+    TResult Function(String sdCardRootPathOrUri, String relativePresetsPath,
+            String cardName)?
+        scanRequested,
+    TResult Function(
+            String cardIdPath, String relativePresetsPath, String cardName)?
+        rescanCardRequested,
     TResult Function()? scanCancelled,
     TResult Function(String cardIdPath)? removeCardRequested,
     TResult Function()? clearMessages,

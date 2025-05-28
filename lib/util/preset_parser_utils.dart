@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 // Import for docman if on Android
 import 'package:docman/docman.dart' as docman;
 import 'package:nt_helper/util/in_app_logger.dart'; // Added for InAppLogger
+import 'package:nt_helper/util/file_system_utils.dart'; // Import FileSystemUtils
 
 class PresetParserUtils {
   /// Parses a Disting NT preset JSON file from the given [filePathOrUri].
@@ -25,9 +26,12 @@ class PresetParserUtils {
     logger.log(
         'parsePresetFile args: URI: $filePathOrUri, sdCardRoot: $sdCardRootPathOrUri');
 
-    String fileContent;
-    Map<String, dynamic> jsonData;
+    String fileContent =
+        ""; // Initialize to empty, might be populated if read succeeds
+    Map<String, dynamic>?
+        jsonData; // Initialize to null, populated if JSON parse succeeds
     String fileNameToDisplay; // Will be set below
+    String relativePathValue; // Will be set below
 
     // Determine fileNameToDisplay early, before potential errors in reading
     if (!kIsWeb &&
@@ -53,81 +57,136 @@ class PresetParserUtils {
     }
     logger.log('Determined fileNameToDisplay: $fileNameToDisplay');
 
-    try {
+    // Calculate relativePathValue early, as it only depends on paths
+    if (sdCardRootPathOrUri == null || sdCardRootPathOrUri.isEmpty) {
+      logger.log(
+          "Warning: sdCardRootPathOrUri is null or empty. Using filename as relativePath.");
+      relativePathValue = fileNameToDisplay;
+    } else {
+      // Common case: calculate path relative to the provided SD card root.
       if (!kIsWeb &&
           Platform.isAndroid &&
+          sdCardRootPathOrUri.startsWith('content://') &&
           filePathOrUri.startsWith('content://')) {
-        final docFile = await docman.DocumentFile.fromUri(filePathOrUri);
-        if (docFile == null || !docFile.exists || !docFile.isFile) {
-          debugPrint(
-              'DocMan: File not found or not a file: $filePathOrUri (exists: ${docFile?.exists}, isFile: ${docFile?.isFile})');
-          logger.log('DocMan: File not found or not a file for $filePathOrUri');
-          return null;
+        // Android Content URIs
+        String rootUriStr = sdCardRootPathOrUri;
+        String fileUriStr = filePathOrUri;
+        if (rootUriStr.endsWith('/')) {
+          rootUriStr = rootUriStr.substring(0, rootUriStr.length - 1);
         }
-        // fileNameToDisplay already set
-        final Uint8List? bytes = await docFile.read();
-        if (bytes == null) {
-          debugPrint('DocMan: Failed to read bytes from $filePathOrUri');
-          logger.log('DocMan: Failed to read bytes from $filePathOrUri');
-          return null;
+        Uri rootUri = Uri.parse(sdCardRootPathOrUri);
+        Uri fileUri = Uri.parse(filePathOrUri);
+        String fileUriDecodedPath = Uri.decodeComponent(fileUri.path);
+        String rootUriDecodedPath = Uri.decodeComponent(rootUri.path);
+        String fileRelevantPathPart = fileUriDecodedPath
+            .substring(fileUriDecodedPath.indexOf('/', 1) + 1);
+        String rootRelevantPathPart = rootUriDecodedPath
+            .substring(rootUriDecodedPath.indexOf('/', 1) + 1);
+
+        if (fileRelevantPathPart.startsWith(rootRelevantPathPart)) {
+          relativePathValue =
+              fileRelevantPathPart.substring(rootRelevantPathPart.length);
+          if (relativePathValue.startsWith('/')) {
+            relativePathValue = relativePathValue.substring(1);
+          }
+          if (relativePathValue.isEmpty) {
+            logger.log(
+                "Warning: Android relative path calculation resulted in empty string. Root: $sdCardRootPathOrUri, File: $filePathOrUri. Using filename $fileNameToDisplay as fallback.");
+            relativePathValue = fileNameToDisplay;
+          } else {
+            logger.log(
+                "Android Content URI - Calculated relative path: $relativePathValue (Root: $rootUriStr, File: $fileUriStr)");
+          }
+        } else {
+          logger.log(
+              "Warning: Android could not determine relative path. Root: $sdCardRootPathOrUri, File: $filePathOrUri. Root relevant part: $rootRelevantPathPart, File relevant part: $fileRelevantPathPart. Using filename $fileNameToDisplay as fallback.");
+          relativePathValue = fileNameToDisplay;
         }
-        fileContent = utf8.decode(bytes);
-      } else if (!kIsWeb &&
-          (Platform.isIOS ||
-              Platform.isMacOS ||
-              Platform.isLinux ||
-              Platform.isWindows)) {
-        // Desktop and iOS use file paths (potentially from file:// URIs)
-        Uri uri = Uri.parse(filePathOrUri); // filePathOrUri is a file:/// URI
-        final file = File(uri.toFilePath());
-        if (!await file.exists()) {
-          debugPrint('File not found: ${file.path}');
-          logger.log('File not found: ${file.path}');
-          return null;
+      } else if ((!kIsWeb &&
+              (Platform.isIOS ||
+                  Platform.isMacOS ||
+                  Platform.isLinux ||
+                  Platform.isWindows)) &&
+          (sdCardRootPathOrUri.startsWith('file://') ||
+              p.isAbsolute(sdCardRootPathOrUri)) &&
+          (filePathOrUri.startsWith('file://') ||
+              p.isAbsolute(filePathOrUri))) {
+        String rootPath;
+        String filePath;
+        if (sdCardRootPathOrUri.startsWith('file://')) {
+          rootPath = Uri.parse(sdCardRootPathOrUri).toFilePath();
+        } else {
+          rootPath = sdCardRootPathOrUri;
         }
-        // fileNameToDisplay already set
-        fileContent = await file.readAsString();
-      } else {
-        // Fallback for web or other unexpected scenarios
-        debugPrint(
-            'Unsupported platform or URI scheme for file reading: $filePathOrUri');
+        if (filePathOrUri.startsWith('file://')) {
+          filePath = Uri.parse(filePathOrUri).toFilePath();
+        } else {
+          filePath = filePathOrUri;
+        }
+        rootPath = p.normalize(rootPath);
+        filePath = p.normalize(filePath);
         logger.log(
-            'Unsupported platform or URI scheme for file reading: $filePathOrUri');
-        return null; // Or handle web if it becomes a requirement
+            "File URI/Path - Normalized Root: $rootPath, Normalized File: $filePath");
+        if (p.isWithin(rootPath, filePath)) {
+          relativePathValue = p.relative(filePath, from: rootPath);
+          logger.log(
+              "File URI/Path - Calculated relative path: $relativePathValue");
+        } else {
+          logger.log(
+              "Warning: File path $filePath is not within root path $rootPath. Using filename $fileNameToDisplay as fallback.");
+          relativePathValue = fileNameToDisplay;
+        }
+      } else {
+        logger.log(
+            "Warning: Unhandled URI scheme, platform, or paths for relative path calculation. Root: $sdCardRootPathOrUri, File: $filePathOrUri. Using filename $fileNameToDisplay as fallback.");
+        relativePathValue = fileNameToDisplay;
       }
-    } on FileSystemException catch (e) {
-      debugPrint(
-          'FileSystemException while reading file $fileNameToDisplay: ${e.message} (OS Error: ${e.osError?.message})');
-      logger.log('FileSystemException for $fileNameToDisplay: ${e.message}');
-      return null;
-    } catch (e, s) {
-      debugPrint('Unexpected error reading file $fileNameToDisplay: $e\\n$s');
-      logger.log('Unexpected error reading file $fileNameToDisplay: $e\\n$s');
-      return null;
     }
+    relativePathValue = p.normalize(relativePathValue);
+    logger.log("Early calculated relativePathValue: $relativePathValue");
+
+    // Default values for metadata - used if parsing fails
+    String algorithmNameToUse = fileNameToDisplay; // Fallback to filename
+    String? notesToUse = null;
+    String? otherMetadataJsonToUse =
+        null; // Or consider: '{"error":"failed to parse"}';
 
     try {
+      Uint8List? fileBytes;
+      if (!kIsWeb && Platform.isIOS) {
+        // *** FIX: Use FileSystemUtils.readFileBytes for iOS ***
+        // sdCardRootPathOrUri is the session ID for iOS
+        fileBytes = await FileSystemUtils.readFileBytes(filePathOrUri,
+            sdCardRootIdentifier: sdCardRootPathOrUri);
+      } else if (!kIsWeb &&
+          Platform.isAndroid &&
+          filePathOrUri.startsWith('content://')) {
+        // Android SAF - Use FileSystemUtils.readFileBytes which handles docman
+        fileBytes = await FileSystemUtils.readFileBytes(filePathOrUri);
+      } else if (!kIsWeb) {
+        // Desktop and other non-Android/iOS cases using dart:io
+        fileBytes = await FileSystemUtils.readFileBytes(filePathOrUri);
+      } else {
+        // Web is not supported for file system access
+        throw UnsupportedError("Unsupported platform for file reading: Web");
+      }
+
+      if (fileBytes == null) {
+        throw FileSystemException("Failed to read file bytes", filePathOrUri);
+      }
+      fileContent = utf8.decode(fileBytes);
+
+      // Attempt to parse JSON
       jsonData = jsonDecode(fileContent) as Map<String, dynamic>;
-    } on FormatException catch (e) {
-      debugPrint(
-          'Error parsing JSON from $fileNameToDisplay (FormatException): ${e.message}');
-      logger.log(
-          'Error parsing JSON from $fileNameToDisplay (FormatException): ${e.message}');
-      return null;
-    } catch (e, s) {
-      debugPrint(
-          'Unexpected error parsing JSON from $fileNameToDisplay: $e\\n$s');
-      logger.log(
-          'Unexpected error parsing JSON from $fileNameToDisplay: $e\\n$s');
-      return null;
-    }
 
-    try {
-      final String jsonPresetName =
-          jsonData['name'] as String? ?? 'Unnamed Preset';
+      // If JSON parsing was successful, try to extract detailed metadata
+      final String? parsedJsonPresetName = jsonData?['name'] as String?;
+      if (parsedJsonPresetName != null &&
+          parsedJsonPresetName.trim().isNotEmpty) {
+        algorithmNameToUse = parsedJsonPresetName.trim();
+      }
 
-      String? descriptionLines;
-      final dynamic slotsRaw = jsonData['slots'];
+      final dynamic slotsRaw = jsonData?['slots'];
       if (slotsRaw is List<dynamic>) {
         for (var slotData in slotsRaw) {
           if (slotData is Map<String, dynamic> && slotData['guid'] == 'note') {
@@ -138,132 +197,47 @@ class PresetParserUtils {
                   .where((line) => line.isNotEmpty)
                   .toList();
               if (lines.isNotEmpty) {
-                descriptionLines = lines.join('\\n');
+                notesToUse = lines.join('\\n');
               }
             }
-            if (descriptionLines != null) break;
+            if (notesToUse != null) break;
           }
         }
       }
+      // Use the full successfully read content as metadata if parsing was successful
+      otherMetadataJsonToUse = fileContent;
 
-      String relativePathValue;
-
-      if (sdCardRootPathOrUri == null || sdCardRootPathOrUri.isEmpty) {
-        logger.log(
-            "Warning: sdCardRootPathOrUri is null or empty. Using filename as relativePath.");
-        relativePathValue = fileNameToDisplay;
-      } else {
-        if (!kIsWeb &&
-            Platform.isAndroid &&
-            sdCardRootPathOrUri.startsWith('content://') &&
-            filePathOrUri.startsWith('content://')) {
-          // Android with content URIs
-          Uri fileUri = Uri.parse(filePathOrUri);
-          // We try to find "presets/" in the file URI path segments
-          // This is often more reliable than trying to subtract opaque content URI paths.
-          List<String> fileSegments = fileUri.pathSegments;
-          int presetsIndex = -1;
-          // Iterate through segments to find the "presets" directory robustly
-          // Segments can be like: tree, PRIMARY%3AMyFiles, document, PRIMARY%3AMyFiles%2Fpresets%2FUser%2FMyPreset.json
-          // Or sometimes more direct like: ... msf:presets, User, MyPreset.json
-          for (int i = 0; i < fileSegments.length; i++) {
-            // Decode segment before comparison as it might be URL encoded e.g. PRIMARY%3AMyFiles%2Fpresets
-            String decodedSegment = Uri.decodeComponent(fileSegments[i]);
-            // Check if the decoded segment contains 'presets' or ends with 'presets'
-            // This handles cases like "MyFiles/presets" or just "presets"
-            if (decodedSegment.toLowerCase().contains('presets')) {
-              // More robustly, check if this segment *ends* with presets or is 'presets'
-              // or if splitting by '/' gives 'presets' as the last part.
-              var parts = decodedSegment.split('/');
-              if (parts.last.toLowerCase() == 'presets') {
-                presetsIndex = i;
-                break;
-              }
-            }
-          }
-
-          if (presetsIndex != -1 && presetsIndex + 1 < fileSegments.length) {
-            relativePathValue =
-                p.joinAll(fileSegments.sublist(presetsIndex + 1));
-            logger.log(
-                "Android content URI - Extracted relative path from segments: $relativePathValue");
-          } else {
-            // If "presets" segment not found clearly, check if the entire path after host somehow contains presets/...
-            String fullPathPart = fileUri
-                .path; // e.g. /tree/PRIMARY%3AMusic%2Fpresets%2FUser%2FMyPreset.json/document/PRIMARY%3AMusic%2Fpresets%2FUser%2FMyPreset.json
-            int presetsInFullPathIndex =
-                fullPathPart.toLowerCase().indexOf("/presets/");
-            if (presetsInFullPathIndex != -1) {
-              relativePathValue = Uri.decodeComponent(fullPathPart
-                  .substring(presetsInFullPathIndex + "/presets/".length));
-              logger.log(
-                  "Android content URI - Extracted relative path from full path part: $relativePathValue");
-            } else {
-              logger.log(
-                  "Warning: Android could not determine relative path from content URIs using segments or full path. Root: $sdCardRootPathOrUri, File: $filePathOrUri. Using filename as fallback: $fileNameToDisplay");
-              relativePathValue = fileNameToDisplay;
-            }
-          }
-        } else if ((!kIsWeb &&
-                (Platform.isIOS ||
-                    Platform.isMacOS ||
-                    Platform.isLinux ||
-                    Platform.isWindows)) &&
-            sdCardRootPathOrUri.startsWith('file://') &&
-            filePathOrUri.startsWith('file://')) {
-          // iOS, Desktop with file URIs
-          Uri rootUri = Uri.parse(sdCardRootPathOrUri);
-          Uri fileUri = Uri.parse(filePathOrUri);
-
-          String rootPath = rootUri.toFilePath();
-          String filePath = fileUri.toFilePath();
-
-          // Ensure rootPath ends with a separator for correct p.join
-          String normalizedRootPath = rootPath.endsWith(p.separator)
-              ? rootPath
-              : rootPath + p.separator;
-          String presetsDirInRoot = p.join(normalizedRootPath, 'presets');
-
-          logger.log(
-              "File URI - rootPath: $rootPath, filePath: $filePath, presetsDirInRoot: $presetsDirInRoot");
-
-          if (filePath
-              .toLowerCase()
-              .startsWith(presetsDirInRoot.toLowerCase())) {
-            // p.relative can be case-sensitive on some platforms, ensure consistency or handle it.
-            // Here, we're making presetsDirInRoot lowercase for the startWith check,
-            // but p.relative will use the original casing from presetsDirInRoot.
-            relativePathValue = p.relative(filePath, from: presetsDirInRoot);
-          } else {
-            logger.log(
-                "Warning: File path $filePath not in 'presets' subdir ($presetsDirInRoot) relative to root $rootPath. Using filename.");
-            relativePathValue = fileNameToDisplay;
-          }
-        } else {
-          logger.log(
-              "Warning: Unhandled URI scheme or platform for relative path calculation. Root: $sdCardRootPathOrUri, File: $filePathOrUri. Using filename.");
-          relativePathValue = fileNameToDisplay;
-        }
-      }
-
-      // Normalize slashes for consistency
-      relativePathValue = p.normalize(relativePathValue);
-      logger.log("Calculated relativePathValue: $relativePathValue");
-
-      return model.ParsedPresetData(
-        relativePath: relativePathValue,
-        fileName: fileNameToDisplay,
-        absolutePathAtScanTime: filePathOrUri, // This is the full URI
-        algorithmName: jsonPresetName.trim(),
-        notes: descriptionLines,
-        otherMetadataJson: fileContent,
-      );
-    } catch (e, s) {
-      debugPrint(
-          'Error during data extraction from preset JSON ($fileNameToDisplay): $e\\nStackTrace: $s');
       logger.log(
-          'Error during data extraction from preset JSON ($fileNameToDisplay): $e\\n$s');
-      return null;
+          "Successfully read and parsed JSON for $fileNameToDisplay. Algorithm: $algorithmNameToUse");
+    } on FileSystemException catch (e) {
+      logger.log(
+          'FileSystemException for $fileNameToDisplay (while reading content): ${e.message}. Using fallback metadata.');
+      // Fallback values are already set, fileContent will remain empty or be from a previous attempt if structured differently
+      // For robustness, ensure otherMetadataJsonToUse is null if content reading failed for this specific preset.
+      otherMetadataJsonToUse = null;
+    } on FormatException catch (e) {
+      logger.log(
+          'FormatException for $fileNameToDisplay (while parsing JSON): ${e.message}. Using fallback metadata.');
+      // Fallback values are already set
+      otherMetadataJsonToUse =
+          null; // Content was read but not valid JSON for this preset
+    } catch (e, s) {
+      logger.log(
+          'Unexpected error processing file content for $fileNameToDisplay: $e\\n$s. Using fallback metadata.');
+      otherMetadataJsonToUse = null; // General error
     }
+
+    // Always return a ParsedPresetData object, using fallbacks if necessary
+    logger.log(
+        "Final relativePathValue for $fileNameToDisplay: $relativePathValue");
+    return model.ParsedPresetData(
+      relativePath: relativePathValue,
+      fileName: fileNameToDisplay,
+      absolutePathAtScanTime: filePathOrUri, // This is the full URI
+      algorithmName: algorithmNameToUse, // Uses filename or parsed name
+      notes: notesToUse, // Uses null or parsed notes
+      otherMetadataJson:
+          otherMetadataJsonToUse, // Uses null or full file content
+    );
   }
 }

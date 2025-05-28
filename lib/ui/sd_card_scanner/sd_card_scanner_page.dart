@@ -50,8 +50,11 @@ class SdCardScannerPage extends StatelessWidget {
 class _SdCardScannerView extends StatelessWidget {
   const _SdCardScannerView();
 
-  // Method to show the dialog for new card scanning
-  void _showSdCardSelectionDialog(BuildContext context) {
+  // Method to show the dialog for new card scanning or rescan
+  void _showSdCardSelectionDialog(BuildContext context,
+      {String? existingSdCardRootPath,
+      String? existingCardName,
+      bool isRescan = false}) {
     final sdCardScannerBloc = context.read<SdCardScannerBloc>();
 
     showDialog(
@@ -70,31 +73,55 @@ class _SdCardScannerView extends StatelessWidget {
                       state.status == ScanStatus.saving;
 
               return AlertDialog(
-                title: const Text('Scan New SD Card'),
+                title: const Text('Scan SD Card'), // General title
                 content: SingleChildScrollView(
+                  // Assuming SdCardSelectionCard is updated as per previous instructions
+                  // to handle sdCardRoot and relativePresetsPath input.
                   child: SdCardSelectionCard(
-                    onScanRequested:
-                        (dynamic pickedDirIdentifier, String cardName) {
-                      Navigator.of(dialogContext).pop();
-                      if (pickedDirIdentifier == null) return;
+                    initialSdCardRootPath: existingSdCardRootPath,
+                    initialCardName: existingCardName,
+                    isRescan: isRescan,
+                    onScanRequested: (dynamic pickedSdCardRootIdentifier,
+                        String relativePresetsPath, String cardName) {
+                      Navigator.of(dialogContext).pop(); // Close dialog first
 
-                      String pathOrUriForBloc;
+                      if (pickedSdCardRootIdentifier == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('SD Card Root not selected.')),
+                        );
+                        return;
+                      }
+
+                      String sdCardRootPathOrUriString;
                       if (!kIsWeb &&
                           Platform.isAndroid &&
-                          pickedDirIdentifier is docman.DocumentFile) {
-                        pathOrUriForBloc = pickedDirIdentifier.uri.toString();
-                      } else if (pickedDirIdentifier is String) {
-                        pathOrUriForBloc = pickedDirIdentifier;
+                          pickedSdCardRootIdentifier is docman.DocumentFile) {
+                        sdCardRootPathOrUriString =
+                            pickedSdCardRootIdentifier.uri.toString();
+                      } else if (pickedSdCardRootIdentifier is String) {
+                        sdCardRootPathOrUriString = pickedSdCardRootIdentifier;
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text(
-                                  'Error: Invalid directory type selected.')),
+                                  'Error: Invalid SD Card Root directory type.')),
                         );
                         return;
                       }
-                      sdCardScannerBloc.add(ScanRequested(
-                          path: pathOrUriForBloc, cardName: cardName));
+
+                      if (isRescan) {
+                        sdCardScannerBloc.add(RescanCardRequested(
+                            cardIdPath:
+                                sdCardRootPathOrUriString, // This is the SD card root
+                            relativePresetsPath: relativePresetsPath,
+                            cardName: cardName));
+                      } else {
+                        sdCardScannerBloc.add(ScanRequested(
+                            sdCardRootPathOrUri: sdCardRootPathOrUriString,
+                            relativePresetsPath: relativePresetsPath,
+                            cardName: cardName));
+                      }
                     },
                   ),
                 ),
@@ -168,10 +195,10 @@ class _SdCardScannerView extends StatelessWidget {
           return isScanning
               ? const SizedBox.shrink() // Hide FAB when scanning
               : FloatingActionButton.extended(
-                  onPressed: () => _showSdCardSelectionDialog(
-                      context), // Corrected to call dialog
-                  icon: const Icon(Icons.add), // Standard add icon
-                  label: const Text('Scan New Card'),
+                  onPressed: () =>
+                      _showSdCardSelectionDialog(context, isRescan: false),
+                  icon: const Icon(Icons.add_circle_outline), // Changed Icon
+                  label: const Text('Scan SD Card'), // Changed FAB label
                 );
         },
       ),
@@ -218,7 +245,7 @@ class _SdCardScannerView extends StatelessWidget {
                 child: Text(
                   state.status == ScanStatus.error && state.errorMessage != null
                       ? state.errorMessage!
-                      : 'No SD cards have been scanned yet. Click the "+" button below to scan your first card.',
+                      : 'No SD cards have been scanned yet. Click the "+" button below to specify an SD card root and its presets path.', // Updated empty state text
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: state.status == ScanStatus.error
                           ? Colors.red
@@ -241,10 +268,13 @@ class _SdCardScannerView extends StatelessWidget {
                   cardName: card.name,
                   lastScanDate: card.lastScanDate,
                   presetCount: card.presetCount,
-                  onRescan: () => context.read<SdCardScannerBloc>().add(
-                        RescanCardRequested(
-                            cardIdPath: card.id, cardName: card.name),
-                      ),
+                  onRescan: () {
+                    _showSdCardSelectionDialog(context,
+                        existingSdCardRootPath:
+                            card.id, // card.id is the root path/URI
+                        existingCardName: card.name,
+                        isRescan: true);
+                  },
                   onRemove: () => context
                       .read<SdCardScannerBloc>()
                       .add(RemoveCardRequested(cardIdPath: card.id)),

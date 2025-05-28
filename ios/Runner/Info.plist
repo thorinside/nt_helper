@@ -51,8 +51,6 @@
 	<string>This app cannot connect to the device over the network, it requires a USB cable.</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <string>NO</string>
-	<key>com.apple.security.files.user-selected.read-only</key>
-	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access so that you can select your SD Card root directory to index your presets in disk mode.</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

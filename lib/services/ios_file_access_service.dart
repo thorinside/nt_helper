@@ -1,69 +1,138 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
+
+// Cache entry for listDirectoryInSession results, might still be useful
+// for performance if the same directory is listed multiple times *within* a session.
+class _ListCacheEntry {
+  final List<String> contents;
+  final DateTime expiryTime;
+
+  _ListCacheEntry(this.contents, this.expiryTime);
+
+  bool get isValid => DateTime.now().isBefore(expiryTime);
+}
 
 class IosFileAccessService {
   static const MethodChannel _channel =
       MethodChannel('com.example.nt_helper/ios_file_access');
 
-  /// Prompts the user to pick a directory using UIDocumentPickerViewController.
-  ///
-  /// If successful, it natively creates a security-scoped bookmark for the selected
-  /// directory's URL, stores this bookmark in UserDefaults (keyed by the URL's path),
-  /// and returns the path string of the selected directory.
-  ///
-  /// Returns the path string of the selected directory on success, or null on failure/cancel.
-  Future<String?> pickDirectoryAndStoreBookmark() async {
+  final Map<String, _ListCacheEntry> _listDirectoryCache = {};
+  static const Duration _cacheDuration =
+      Duration(seconds: 2); // Short cache for in-session listings
+
+  /// Prompts the user to pick a directory. The native side will create and store
+  /// a security-scoped bookmark for this directory.
+  /// Returns the path string of the selected directory (which is also used as the bookmark key
+  /// and implicitly the session ID for subsequent operations) on success, or null.
+  Future<String?> pickDirectoryAndCreateBookmark() async {
     try {
-      final String? directoryPath =
+      final String? path =
           await _channel.invokeMethod('pickDirectoryAndStoreBookmark');
-      return directoryPath;
-    } on PlatformException catch (e) {
-      // Handle potential exceptions or log them
-      print("Failed to pick directory and store bookmark: '${e.message}'.");
+      // This path will be used as the session identifier by convention.
+      return path;
+    } catch (e) {
+      print('Error in pickDirectoryAndCreateBookmark: $e');
       return null;
     }
   }
 
-  /// Lists the contents of a previously bookmarked directory.
-  ///
-  /// [bookmarkedPath] should be the path string obtained from a successful
-  /// call to [pickDirectoryAndStoreBookmark].
-  ///
-  /// Returns a list of maps, where each map contains:
-  /// - 'uri': The absolute file URI string.
-  /// - 'relativePath': The path of the file relative to the bookmarked directory.
-  ///
-  /// Returns null if the bookmark is invalid, access cannot be granted, or an error occurs.
-  Future<List<String>?> listBookmarkedDirectoryContents(
-      String bookmarkedPath) async {
+  /// Starts an access session for a previously bookmarked directory.
+  /// This must be called before listDirectoryInSession or readFileInSession.
+  /// [bookmarkedPathKey] is the path obtained from pickDirectoryAndCreateBookmark.
+  /// Returns true on success, false on failure.
+  Future<bool> startAccessSession({required String bookmarkedPathKey}) async {
     try {
-      final List<dynamic>? results = await _channel.invokeMethod(
-          'listBookmarkedDirectoryContents',
-          {'bookmarkedPath': bookmarkedPath});
-      return results?.cast<String>().toList();
-    } on PlatformException catch (e) {
-      print("Failed to list directory contents: '${e.message}'.");
+      final bool? success = await _channel.invokeMethod(
+          'startAccessSession', {'bookmarkedPathKey': bookmarkedPathKey});
+      return success ?? false;
+    } catch (e) {
+      print('Error starting access session for $bookmarkedPathKey: $e');
+      return false;
+    }
+  }
+
+  /// Lists the contents of a directory within an active access session.
+  /// [sessionId] must be the bookmarkedPathKey used to start the session.
+  /// [directoryPathToList] is the full path of the directory to list.
+  Future<List<String>?> listDirectoryInSession(
+      {required String sessionId, required String directoryPathToList}) async {
+    final cacheKey =
+        '$sessionId::$directoryPathToList'; // Session-aware cache key
+    final cachedEntry = _listDirectoryCache[cacheKey];
+
+    if (cachedEntry != null && cachedEntry.isValid) {
+      print(
+          'iOS File Access: Returning cached list for $directoryPathToList in session $sessionId');
+      return List<String>.from(cachedEntry.contents); // Return a copy
+    }
+
+    try {
+      final List<dynamic>? result = await _channel.invokeMethod(
+        'listDirectoryInSession',
+        {
+          'sessionId':
+              sessionId, // Corresponds to bookmarkedPathKey on native side
+          'directoryPathToList': directoryPathToList,
+        },
+      );
+
+      if (result != null) {
+        final contents = result.cast<String>();
+        _listDirectoryCache[cacheKey] =
+            _ListCacheEntry(contents, DateTime.now().add(_cacheDuration));
+        print(
+            'iOS File Access: Fetched and cached list for $directoryPathToList in session $sessionId');
+        return contents;
+      } else {
+        _listDirectoryCache.remove(cacheKey);
+        print(
+            'iOS File Access: Native list returned null for $directoryPathToList in session $sessionId, not caching.');
+        return null;
+      }
+    } catch (e) {
+      print(
+          'Error listing directory $directoryPathToList in session $sessionId: $e');
+      _listDirectoryCache.remove(cacheKey);
       return null;
     }
   }
 
-  /// Reads the contents of a file within a bookmarked directory.
-  ///
-  /// [bookmarkedPath] should be the path string of the parent bookmarked directory.
-  /// [relativePath] is the path of the file relative to the bookmarked directory.
-  ///
-  /// Returns Uint8List of the file contents on success, or null on failure.
-  Future<Uint8List?> readBookmarkedFile(
-      String bookmarkedPath, String relativePath) async {
+  /// Reads a file within an active access session.
+  /// [sessionId] must be the bookmarkedPathKey used to start the session.
+  /// [filePathToRead] is the full path of the file to read.
+  Future<Uint8List?> readFileInSession(
+      {required String sessionId, required String filePathToRead}) async {
     try {
       final Uint8List? fileData = await _channel.invokeMethod(
-          'readBookmarkedFile',
-          {'bookmarkedPath': bookmarkedPath, 'relativePath': relativePath});
+        'readFileInSession',
+        {
+          'sessionId':
+              sessionId, // Corresponds to bookmarkedPathKey on native side
+          'filePathToRead': filePathToRead,
+        },
+      );
       return fileData;
-    } on PlatformException catch (e) {
-      print("Failed to read file: '${e.message}'.");
+    } catch (e) {
+      print('Error reading file $filePathToRead in session $sessionId: $e');
       return null;
+    }
+  }
+
+  /// Stops an access session, releasing the security-scoped resource.
+  /// [sessionId] must be the bookmarkedPathKey used to start the session.
+  Future<void> stopAccessSession({required String sessionId}) async {
+    try {
+      await _channel
+          .invokeMethod('stopAccessSession', {'sessionId': sessionId});
+      print('iOS File Access: Session $sessionId stopped.');
+      // Optionally clear all cache entries related to this session if desired,
+      // though timed expiry might be sufficient.
+      _listDirectoryCache
+          .removeWhere((key, value) => key.startsWith('$sessionId::'));
+    } catch (e) {
+      print('Error stopping access session $sessionId: $e');
     }
   }
 }

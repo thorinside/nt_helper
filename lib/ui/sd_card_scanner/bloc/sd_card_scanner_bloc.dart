@@ -13,11 +13,13 @@ import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart' hide Column;
 import 'package:docman/docman.dart' as docman;
 import 'package:nt_helper/util/in_app_logger.dart';
+import 'package:nt_helper/services/ios_file_access_service.dart'; // Import iOS file access service
 
 import 'sd_card_scanner_event.dart';
 
 class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
   final AppDatabase _db;
+  final IosFileAccessService _iosFileAccessService = IosFileAccessService();
 
   SdCardScannerBloc(this._db) : super(const SdCardScannerState()) {
     on<LoadScannedCards>(_onLoadScannedCards);
@@ -69,7 +71,8 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
     ScanRequested event,
     Emitter<SdCardScannerState> emit,
   ) async {
-    await _performScanAndSaveOperations(event.path, event.cardName, emit,
+    await _performScanAndSaveOperations(event.sdCardRootPathOrUri,
+        event.relativePresetsPath, event.cardName, emit,
         isRescan: false);
   }
 
@@ -77,13 +80,17 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
     RescanCardRequested event,
     Emitter<SdCardScannerState> emit,
   ) async {
-    await _performScanAndSaveOperations(event.cardIdPath, event.cardName, emit,
+    await _performScanAndSaveOperations(
+        event.cardIdPath, event.relativePresetsPath, event.cardName, emit,
         isRescan: true);
     add(const LoadScannedCards());
   }
 
   Future<void> _performScanAndSaveOperations(
-      String cardIdentifier, String cardName, Emitter<SdCardScannerState> emit,
+      String sdCardRootPathOrUri,
+      String relativePresetsPath,
+      String cardName,
+      Emitter<SdCardScannerState> emit,
       {bool isRescan = false}) async {
     final String operationType = isRescan ? "Rescan" : "Scan";
     emit(state.copyWith(
@@ -95,173 +102,163 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
         errorMessage: null,
         successMessage: null));
 
-    dynamic sdCardRootIdentifier = cardIdentifier;
-    String displayPath = cardIdentifier;
+    dynamic sdCardRootIdentifier = sdCardRootPathOrUri;
+    String displayRootPath = sdCardRootPathOrUri;
 
-    // --- iOS Debug: Print selected root path and check existence ---
-    if (!kIsWeb && Platform.isIOS && sdCardRootIdentifier is String) {
-      InAppLogger().log(
-          "iOS - Selected SD Card Root Path from FilePicker: $sdCardRootIdentifier");
+    String? iosSessionId;
+    bool iosSessionStarted = false;
+
+    if (!kIsWeb && Platform.isIOS) {
+      iosSessionId = sdCardRootPathOrUri;
       try {
-        final rootDir = Directory(sdCardRootIdentifier);
-        final exists = await rootDir.exists();
+        iosSessionStarted = await _iosFileAccessService.startAccessSession(
+            bookmarkedPathKey: iosSessionId);
+        if (!iosSessionStarted) {
+          InAppLogger().log(
+              "iOS Scan: Failed to start session $iosSessionId at start of $operationType.");
+          emit(state.copyWith(
+              status: ScanStatus.error,
+              errorMessage:
+                  "Failed to start file access session for $operationType."));
+          return;
+        }
+        InAppLogger()
+            .log("iOS Scan: Session $iosSessionId started for $operationType.");
+      } catch (e, s) {
         InAppLogger().log(
-            "iOS - Root Directory ($sdCardRootIdentifier) reported exists: $exists");
-      } catch (e) {
-        InAppLogger().log("iOS - Error checking rootDir.exists(): $e");
+            'iOS Scan: Error starting session $iosSessionId for $operationType: $e\n$s');
+        emit(state.copyWith(
+            status: ScanStatus.error,
+            errorMessage:
+                "Error initializing file access for $operationType: ${e.toString()}"));
+        return;
       }
     }
-    // --- End iOS Debug ---
 
+    // Android Specific Root Handling
     if (!kIsWeb &&
         Platform.isAndroid &&
-        cardIdentifier.startsWith('content://')) {
+        sdCardRootPathOrUri.startsWith('content://')) {
       try {
         sdCardRootIdentifier =
-            await docman.DocumentFile.fromUri(cardIdentifier);
+            await docman.DocumentFile.fromUri(sdCardRootPathOrUri);
         if (sdCardRootIdentifier == null || !sdCardRootIdentifier.exists) {
           emit(state.copyWith(
               status: ScanStatus.error,
               errorMessage:
-                  "Error: Could not access SD card at '$cardIdentifier'. Please re-select. DocumentFile is null or does not exist."));
+                  "Error: Could not access SD card root at '$sdCardRootPathOrUri'. DocumentFile null or not found."));
+          if (iosSessionStarted) {
+            await _iosFileAccessService.stopAccessSession(
+                sessionId: iosSessionId!);
+          }
           return;
         }
-        displayPath = sdCardRootIdentifier.name ?? cardIdentifier;
+        displayRootPath = sdCardRootIdentifier.name ?? sdCardRootPathOrUri;
       } catch (e) {
         InAppLogger().log(
-            'Error getting DocumentFile from URI $cardIdentifier: ${e.toString()}');
+            'Android: Error getting DocumentFile from $sdCardRootPathOrUri: ${e.toString()}');
         emit(state.copyWith(
             status: ScanStatus.error,
             errorMessage:
-                "Error accessing SD card at '$cardIdentifier'. Details: ${e.toString()}"));
-        return;
-      }
-    }
-
-    emit(state.copyWith(
-        status: ScanStatus.findingFiles,
-        currentFile: "Locating 'presets' directory in $displayPath..."));
-
-    dynamic presetsDirIdentifier;
-    String presetsDisplayPath = "presets"; // Default display name
-
-    if (sdCardRootIdentifier is docman.DocumentFile) {
-      presetsDirIdentifier = await sdCardRootIdentifier.find('presets');
-      if (presetsDirIdentifier == null ||
-          !presetsDirIdentifier.exists ||
-          !presetsDirIdentifier.isDirectory) {
-        emit(state.copyWith(
-            status: ScanStatus.error,
-            errorMessage:
-                "Error: Could not find or access 'presets' directory on '$displayPath'. It may not exist or is not a directory."));
-        return;
-      }
-      presetsDisplayPath = presetsDirIdentifier.name ?? "presets";
-    } else if (sdCardRootIdentifier is String) {
-      presetsDirIdentifier = p.join(sdCardRootIdentifier, 'presets');
-
-      // --- iOS Debug: Print expected presets path and check existence ---
-      if (!kIsWeb && Platform.isIOS) {
-        InAppLogger()
-            .log("iOS - Calculated presets path: $presetsDirIdentifier");
-        try {
-          final presetsDirObj = Directory(presetsDirIdentifier as String);
-          final presetsExists = await presetsDirObj.exists();
-          InAppLogger().log(
-              "iOS - Presets Directory ($presetsDirIdentifier) reported exists: $presetsExists");
-        } catch (e) {
-          InAppLogger().log("iOS - Error checking presetsDirObj.exists(): $e");
+                "Error accessing SD card root (Android): ${e.toString()}"));
+        if (iosSessionStarted) {
+          await _iosFileAccessService.stopAccessSession(
+              sessionId: iosSessionId!);
         }
-      }
-      // --- End iOS Debug ---
-
-      // For desktop, check if this path exists and is a directory
-      final desktopPresetsDir = Directory(presetsDirIdentifier as String);
-      if (!await desktopPresetsDir.exists()) {
-        emit(state.copyWith(
-            status: ScanStatus.error,
-            errorMessage:
-                "Error: Could not find 'presets' directory at '$presetsDirIdentifier'."));
         return;
       }
-      presetsDisplayPath =
-          presetsDirIdentifier; // Use the full path for display on desktop
-    } else {
-      emit(state.copyWith(
-          status: ScanStatus.error,
-          errorMessage:
-              "Internal error: Invalid SD card root identifier type. Path: $sdCardRootIdentifier"));
-      return;
     }
 
-    final isValid =
-        await FileSystemUtils.isValidDistingSdCard(sdCardRootIdentifier);
-    if (!isValid) {
+    String fullDisplayPath = displayRootPath;
+    if (relativePresetsPath.isNotEmpty) {
+      fullDisplayPath = p.join(displayRootPath, relativePresetsPath);
+    }
+
+    emit(state.copyWith(
+        status: ScanStatus.validating,
+        currentFile: "Validating presets directory: $fullDisplayPath..."));
+
+    final isValidPresetsDir = await FileSystemUtils.isValidDistingSdCard(
+        sdCardRootIdentifier, relativePresetsPath,
+        sessionId: iosSessionId);
+    if (!isValidPresetsDir) {
       emit(state.copyWith(
           status: ScanStatus.error,
           errorMessage:
-              "Error: '$displayPath' is not a valid Disting SD Card (missing /presets folder)."));
+              "Error: Presets directory '$fullDisplayPath' is not valid or accessible."));
+      if (iosSessionStarted) {
+        await _iosFileAccessService.stopAccessSession(sessionId: iosSessionId!);
+      }
       return;
     }
 
     emit(state.copyWith(
         status: ScanStatus.findingFiles,
-        currentFile: "Finding preset files in $presetsDisplayPath..."));
+        currentFile: "Finding preset files in $fullDisplayPath..."));
 
-    final List<String> presetFileIdentifiers;
+    List<String> presetFileUrisOrFullPaths = [];
     try {
-      presetFileIdentifiers = await FileSystemUtils.findPresetFiles(
-          sdCardRootIdentifier, "presets");
+      presetFileUrisOrFullPaths = await FileSystemUtils.findPresetFiles(
+          sdCardRootIdentifier, relativePresetsPath,
+          sessionId: iosSessionId);
     } catch (e, s) {
-      InAppLogger().log('Error finding preset files: $e\n$s');
+      InAppLogger()
+          .log('Error finding preset files during $operationType: $e\n$s');
       emit(state.copyWith(
           status: ScanStatus.error,
           errorMessage: "Failed to find preset files: ${e.toString()}"));
+      // Main finally block will stop the session if it was started
       return;
     }
 
-    if (presetFileIdentifiers.isEmpty) {
+    if (presetFileUrisOrFullPaths.isEmpty) {
       emit(state.copyWith(
           status: ScanStatus.error,
-          errorMessage: "No preset files (.json) found in $displayPath."));
+          errorMessage: "No preset files (.json) found in $fullDisplayPath."));
+      // Main finally block will stop the session if it was started
       return;
     }
 
     emit(state.copyWith(
         status: ScanStatus.parsing,
-        totalFiles: presetFileIdentifiers.length,
+        totalFiles: presetFileUrisOrFullPaths.length,
         currentFile:
-            "Found ${presetFileIdentifiers.length} files. Starting parse..."));
+            "Found ${presetFileUrisOrFullPaths.length} files. Parsing..."));
 
     final List<ParsedPresetData> parsedPresets = [];
     int processedFileCount = 0;
 
-    for (final String fileUriOrPath in presetFileIdentifiers) {
+    for (final String fileUriOrFullPath in presetFileUrisOrFullPaths) {
+      if (state.status == ScanStatus.cancelled) {
+        break;
+      }
       processedFileCount++;
-      // Update progress before parsing each file
-      String displayFileName = p.basename(fileUriOrPath);
+      String displayFileName = p.basename(fileUriOrFullPath);
       try {
-        if (fileUriOrPath.startsWith('file://')) {
-          displayFileName = p.basename(Uri.parse(fileUriOrPath).toFilePath());
+        if (fileUriOrFullPath.startsWith('file://')) {
+          displayFileName =
+              p.basename(Uri.parse(fileUriOrFullPath).toFilePath());
         }
-      } catch (_) {/* ignore, use original fileUriOrPath if parsing fails */}
+      } catch (_) {/* ignore */}
 
       emit(state.copyWith(
-        scanProgress: processedFileCount / presetFileIdentifiers.length,
+        scanProgress: processedFileCount / presetFileUrisOrFullPaths.length,
         currentFile:
-            "Parsing: $displayFileName ($processedFileCount/${presetFileIdentifiers.length})",
+            "Parsing: $displayFileName ($processedFileCount/${presetFileUrisOrFullPaths.length})",
         filesProcessed: processedFileCount,
       ));
 
       final parsedData = await PresetParserUtils.parsePresetFile(
-        fileUriOrPath,
-        sdCardRootPathOrUri: cardIdentifier,
+        fileUriOrFullPath,
+        sdCardRootPathOrUri:
+            sdCardRootPathOrUri, // This is used as sessionId for iOS by readFileBytes
       );
 
       if (parsedData != null) {
         parsedPresets.add(parsedData);
       } else {
-        InAppLogger().log('Failed to parse preset: $fileUriOrPath');
+        InAppLogger()
+            .log('$operationType: Failed to parse preset: $fileUriOrFullPath');
       }
     }
 
@@ -269,6 +266,7 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
       emit(state.copyWith(
           status: ScanStatus.cancelled,
           successMessage: '$operationType cancelled by user.'));
+      // Main finally block will stop the session if it was started
       return;
     }
 
@@ -278,10 +276,9 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
 
     try {
       await _db.transaction(() async {
-        SdCardEntry? existingCard =
-            await _db.sdCardsDao.getSdCardBySystemIdentifier(cardIdentifier);
+        SdCardEntry? existingCard = await _db.sdCardsDao
+            .getSdCardBySystemIdentifier(sdCardRootPathOrUri);
         int sdCardId;
-
         final nowUtc = DateTime.now().toUtc();
 
         if (existingCard != null) {
@@ -291,14 +288,12 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
               .copyWith(userLabel: Value(cardName)));
         } else {
           final sdCardCompanion = SdCardsCompanion.insert(
-            systemIdentifier: Value(cardIdentifier),
-            userLabel: cardName,
-          );
+              systemIdentifier: Value(sdCardRootPathOrUri),
+              userLabel: cardName);
           sdCardId = await _db.sdCardsDao.insertSdCard(sdCardCompanion);
         }
 
         await _db.indexedPresetFilesDao.deletePresetsForSdCard(sdCardId);
-
         List<IndexedPresetFilesCompanion> presetEntries = [];
         for (var parsedData in parsedPresets) {
           presetEntries.add(IndexedPresetFilesCompanion.insert(
@@ -312,18 +307,16 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
             lastSeenUtc: nowUtc,
           ));
         }
-
         if (presetEntries.isNotEmpty) {
-          await _db.batch((batch) {
-            batch.insertAll(_db.indexedPresetFiles, presetEntries);
-          });
+          await _db.batch((batch) =>
+              batch.insertAll(_db.indexedPresetFiles, presetEntries));
         }
       });
 
       emit(state.copyWith(
           status: ScanStatus.complete,
           successMessage:
-              "$operationType complete for $cardName. Found ${parsedPresets.length} presets.",
+              "$operationType complete for '$cardName'. Found ${parsedPresets.length} presets.",
           scanProgress: 0.0,
           filesProcessed: 0,
           totalFiles: 0,
@@ -334,6 +327,12 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
           status: ScanStatus.error,
           errorMessage:
               "Failed to save $operationType results: ${e.toString()}"));
+    } finally {
+      if (iosSessionStarted) {
+        await _iosFileAccessService.stopAccessSession(sessionId: iosSessionId!);
+        InAppLogger().log(
+            "iOS Scan: Session $iosSessionId stopped in main finally for $operationType.");
+      }
     }
     add(const LoadScannedCards());
   }
@@ -357,14 +356,11 @@ class SdCardScannerBloc extends Bloc<SdCardScannerEvent, SdCardScannerState> {
     emit(state.copyWith(
         status: ScanStatus.saving, successMessage: null, errorMessage: null));
     try {
-      // First, get the SD card by its system identifier to find its primary key ID
       final SdCardEntry? cardToDelete =
           await _db.sdCardsDao.getSdCardBySystemIdentifier(event.cardIdPath);
 
       if (cardToDelete != null) {
-        // Delete associated presets using the card's primary key ID
         await _db.indexedPresetFilesDao.deletePresetsForSdCard(cardToDelete.id);
-        // Delete the SD card itself using its primary key ID
         await _db.sdCardsDao.deleteSdCard(cardToDelete.id);
 
         add(const LoadScannedCards());
