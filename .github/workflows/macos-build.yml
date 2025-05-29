@@ -83,6 +83,7 @@ jobs:
         run: |
           codesign --deep --force --verbose --options runtime \
             --sign "Developer ID Application: Neal Sanche (KN424RZG26)" \
+            --entitlements macos/Runner/Release.entitlements \
             build/macos/Build/Products/Release/nt_helper.app
 
       - name: Zip the macOS App for Notarization
