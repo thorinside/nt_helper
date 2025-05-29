@@ -49,6 +49,7 @@ class _SdCardSelectionCardState extends State<SdCardSelectionCard> {
     if (widget.initialCardName != null) {
       _cardNameController.text = widget.initialCardName!;
     }
+    _relativePresetsPathController.text = 'presets'; // Default to 'presets'
   }
 
   @override
@@ -105,75 +106,148 @@ class _SdCardSelectionCardState extends State<SdCardSelectionCard> {
               const SizedBox(height: 24),
 
               // Directory Picker Button and Display Field
-              TextFormField(
-                controller:
-                    _manualPathController, // Use this to display picked path or allow manual entry
-                decoration: InputDecoration(
-                  labelText: 'SD Card Root Directory', // Updated label
-                  hintText: _isPathSelectedByPicker ||
-                          (widget.isRescan &&
-                              widget.initialSdCardRootPath != null)
-                      ? _manualPathController
-                          .text // Show current value if pre-filled or picked
-                      : 'Enter path or pick SD Card Root', // Updated hint
-                  border: const OutlineInputBorder(),
-                  // Optionally, add a clear button if path is selected by picker or it's a rescan and user hasn't picked a new one
-                  suffixIcon: (_isPathSelectedByPicker ||
-                          (widget.isRescan &&
-                              widget.initialSdCardRootPath != null &&
-                              !_didUserInteractWithRootPicker))
-                      ? IconButton(
+              if (Platform.isIOS) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    'SD Card Root Directory',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).hintColor,
+                          fontWeight: FontWeight.normal,
+                        ),
+                  ),
+                ),
+                if (_selectedIdentifier == null &&
+                    _manualPathController.text.isEmpty)
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.folder_open),
+                    label: const Text('Choose SD Card Root Directory...'),
+                    onPressed: _pickDirectory,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 8.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(context)
+                                  .inputDecorationTheme
+                                  .border
+                                  ?.borderSide
+                                  .color ??
+                              Colors.grey),
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _manualPathController.text.isNotEmpty
+                                ? _manualPathController.text
+                                    .split('/')
+                                    .last // Show only last part for brevity
+                                : 'No directory selected',
+                            style: const TextStyle(fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.folder_open),
+                          tooltip: 'Change SD Card Root',
+                          onPressed: _pickDirectory,
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.clear),
+                          tooltip: 'Clear Selection',
                           onPressed: () {
                             setState(() {
                               _selectedPath = null;
                               _selectedIdentifier = null;
                               _manualPathController.clear();
                               _isPathSelectedByPicker = false;
-                              _didUserInteractWithRootPicker =
-                                  true; // Treat clear as an interaction
+                              _didUserInteractWithRootPicker = true;
                             });
                           },
-                        )
-                      : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+              ] else ...[
+                // Non-iOS: Row with TextFormField and Button
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _manualPathController,
+                        decoration: InputDecoration(
+                          labelText: 'SD Card Root Directory',
+                          hintText: _isPathSelectedByPicker ||
+                                  (widget.isRescan &&
+                                      widget.initialSdCardRootPath != null)
+                              ? _manualPathController.text
+                              : 'Enter path or pick SD Card Root',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: (_isPathSelectedByPicker ||
+                                  (widget.isRescan &&
+                                      widget.initialSdCardRootPath != null &&
+                                      !_didUserInteractWithRootPicker))
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedPath = null;
+                                      _selectedIdentifier = null;
+                                      _manualPathController.clear();
+                                      _isPathSelectedByPicker = false;
+                                      _didUserInteractWithRootPicker = true;
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedPath = value;
+                            _selectedIdentifier = value;
+                            _isPathSelectedByPicker = false;
+                            _didUserInteractWithRootPicker = true;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please pick or enter an SD card root path.';
+                          }
+                          if (widget.isRescan &&
+                              value == widget.initialSdCardRootPath &&
+                              !_didUserInteractWithRootPicker) {
+                            return null;
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('Browse...'),
+                      onPressed: _pickDirectory,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 15), // Ensure decent height
+                      ),
+                    ),
+                  ],
                 ),
-                onChanged: (value) {
-                  // If user types, it's no longer considered picked by picker
-                  setState(() {
-                    _selectedPath = value;
-                    _isPathSelectedByPicker = false;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please pick or enter an SD card root path.'; // Updated message
-                  }
-                  // If it's a rescan and the path is the initial (likely URI), skip complex validation.
-                  if (widget.isRescan &&
-                      value == widget.initialSdCardRootPath &&
-                      !_didUserInteractWithRootPicker) {
-                    return null;
-                  }
-                  // TODO: Add more robust path validation (e.g. check if directory exists)
-                  return null;
-                },
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.folder_open),
-                label: Text(widget.isRescan &&
-                        widget.initialSdCardRootPath != null &&
-                        !_didUserInteractWithRootPicker
-                    ? 'Change SD Card Root...'
-                    : 'Choose SD Card Root Directory...'), // Updated label
-                onPressed: _pickDirectory,
-                style: ElevatedButton.styleFrom(
-                  minimumSize:
-                      const Size(double.infinity, 36), // Make button full width
-                ),
-              ),
-              const SizedBox(height: 16),
-
+                const SizedBox(height: 16), // Spacing after the row
+              ],
               // Relative Presets Path
               TextFormField(
                 controller: _relativePresetsPathController,
@@ -219,7 +293,23 @@ class _SdCardSelectionCardState extends State<SdCardSelectionCard> {
                     textStyle: Theme.of(context).textTheme.labelLarge,
                   ),
                   onPressed: () {
-                    if (_formKey.currentState!.validate()) {
+                    bool isRootPathValidOnIOS = true;
+                    if (Platform.isIOS) {
+                      // On iOS, _manualPathController.text should reflect the picked/initial path.
+                      // _selectedIdentifier also holds the picked object.
+                      if (_manualPathController.text.isEmpty &&
+                          _selectedIdentifier == null) {
+                        isRootPathValidOnIOS = false;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Please choose an SD card root directory.')),
+                        );
+                      }
+                    }
+
+                    if (_formKey.currentState!.validate() &&
+                        isRootPathValidOnIOS) {
                       // Use _selectedIdentifier if path was picked, otherwise use the text field value.
                       // This ensures we pass the DocumentFile URI for Android if available and picked.
                       // For rescan, if user hasn't re-picked, pass the initial string.
