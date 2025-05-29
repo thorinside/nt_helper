@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*" # e.g., v1.0, v1.2.3, etc.
+    branches:
+      - ios-build
 
 jobs:
   build-ios:
