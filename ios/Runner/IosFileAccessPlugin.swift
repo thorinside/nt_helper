@@ -86,7 +86,7 @@ public class IosFileAccessPlugin: NSObject, FlutterPlugin, UIDocumentPickerDeleg
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) {
             if isDirectory.boolValue {
                 do {
-                    let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                    let bookmarkData = try url.bookmarkData(includingResourceValuesForKeys: nil, relativeTo: nil)
                     UserDefaults.standard.set(bookmarkData, forKey: url.path)
                     flutterResultForPicker?(url.path) 
                 } catch {
@@ -121,10 +121,10 @@ public class IosFileAccessPlugin: NSObject, FlutterPlugin, UIDocumentPickerDeleg
 
         do {
             var isStale = false
-            let resolvedUrl = try URL(resolvingBookmarkData: bookmarkData, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale)
+            let resolvedUrl = try URL(resolvingBookmarkData: bookmarkData, relativeTo: nil, bookmarkDataIsStale: &isStale)
             
             if isStale {
-                let newBookmarkData = try resolvedUrl.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                let newBookmarkData = try resolvedUrl.bookmarkData(includingResourceValuesForKeys: nil, relativeTo: nil)
                 UserDefaults.standard.set(newBookmarkData, forKey: bookmarkedPathKey)
             }
 
