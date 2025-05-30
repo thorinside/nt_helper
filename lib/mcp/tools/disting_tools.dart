@@ -491,7 +491,6 @@ class DistingTools {
     // For now, we'll assume maxSlots is dynamic or handled by the controller.
 
     final int sourceSlotIndex = slotIndex;
-    final int destSlotIndex = slotIndex + 1;
 
     try {
       // Check if sourceSlotIndex is already the last possible slot.

@@ -398,9 +398,17 @@ class McpServerService extends ChangeNotifier {
     );
 
     server.tool(
-      'get_current_routing_state',
-      description:
-          'Retrieves current routing state. Bus numbering: Inputs 1-12=Bus 1-12, Outputs 1-8=Bus 13-20, Aux 1-8=Bus 21-28, None=Bus 0.',
+      'get_routing',
+      description: '''
+Retrieves current routing state. 
+Physical name to bus number mapping: 
+  - Input N=Bus N, 
+  - Output N=Bus N+12, 
+  - Aux N=Bus N+20,
+  - None=Bus 0
+  
+  Never disclose bus numbers to the user, always refer to a bus by the physical name.
+  ''',
       inputSchemaProperties: {},
       callback: ({args, extra}) async {
         final resultJson =
@@ -411,8 +419,15 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'get_current_preset',
-      description:
-          'Gets entire current preset (name, slots, parameters). Parameter `parameter_number` from this tool is used as `parameter_number` for `set_parameter_value` and `get_parameter_value`.',
+      description: '''
+Gets entire current preset (name, slots, parameters).
+Parameter `parameter_number` from this tool is used 
+as `parameter_number` for `set_parameter_value` and 
+`get_parameter_value`.
+
+Parameters should be referred to by their name, not their numbers.
+Never disclose bus numbers to the user, always refer to a bus by the physical name.
+''',
       inputSchemaProperties: {
         'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
       },
@@ -456,8 +471,14 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'set_parameter_value',
-      description:
-          'Sets parameter to `value`. Either `parameter_number` or `parameter_name` MUST be provided (but not both). `parameter_number` MUST be from `get_current_preset`. If using `parameter_name`, ensure it is unique for the slot or an error will be returned. `value` must be between parameter\'s min/max.',
+      description: '''
+          Sets parameter to `value`. Either `parameter_number` or `parameter_name` MUST be 
+          provided (but not both). `parameter_number` MUST be from `get_current_preset`. 
+          If using `parameter_name`, ensure it is unique for the slot or an error 
+          will be returned. `value` must be between parameter's min/max.
+          If the parameter is an input or output, keep in mind that physical Input N = bus N, Output N = bus N+12, and Aux N = bus N+20.
+          Never disclose bus numbers to the user, always refer to a bus by the physical name.
+          ''',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
@@ -617,25 +638,6 @@ class McpServerService extends ChangeNotifier {
       },
     );
 
-    server.tool(
-      'ping',
-      description:
-          'Responds to a client\'s ping request to verify connection health, as per MCP specification. Returns an empty result.',
-      inputSchemaProperties: {
-        'random_string': {
-          'type': 'string',
-          'description':
-              'A random string provided by the client, helps ensure request uniqueness if needed by client.'
-        }
-      },
-      callback: ({args, extra}) async {
-        // As per MCP spec, a ping response should have an empty result.
-        // The mcp_dart library will construct the full JSON-RPC response.
-        // We provide a JSON string representing an empty map for the "result" field.
-        return CallToolResult(content: [TextContent(text: '{}')]);
-      },
-    );
-
     for (final t in _pendingTools) {
       server.tool(
         t.name,
@@ -645,22 +647,6 @@ class McpServerService extends ChangeNotifier {
       );
     }
     return server;
-  }
-
-  void _sendHttpErrorSync(HttpRequest request, int statusCode, String message) {
-    // Synchronous error sending, use with caution and only if absolutely necessary
-    // when an async version cannot be used (e.g. certain error handlers).
-    debugPrint('[MCP] Sending HTTP error (sync): $statusCode - $message');
-    try {
-      request.response.statusCode = statusCode;
-      request.response.headers.contentType = ContentType.text;
-      request.response.write(message);
-      request.response
-          .close(); // This is synchronous if no async operations preceded it within this call
-    } catch (e) {
-      debugPrint('[MCP] Exception sending sync HTTP error: $e');
-      // If an error occurs here, it's likely the connection is already broken.
-    }
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/util/case_converter.dart';
+import 'package:nt_helper/util/routing_analyzer.dart';
 
 /// Class containing methods representing MCP tools.
 /// Requires DistingCubit for accessing application state.
@@ -134,18 +135,17 @@ class MCPAlgorithmTools {
   /// MCP Tool: Retrieves the current routing state decoded into RoutingInformation objects.
   /// Parameters: None
   /// Returns:
-  ///   A JSON string representing a list of RoutingInformation objects.
+  ///   A JSON string representing the input and output busses of each slot.
   ///   Returns an empty list '[]' if the state is not synchronized.
   Future<String> get_current_routing_state(Map<String, dynamic> params) async {
     // Access the injected DistingCubit instance
     final routingInfoList = _distingCubit.buildRoutingInformation();
 
-    // Use the toJson method added to RoutingInformation
-    // final jsonList = routingInfoList.map((info) => info.toJson()).toList();
-    // return jsonEncode(jsonList);
+    RoutingAnalyzer analyzer = RoutingAnalyzer(
+        routing: routingInfoList, showSignals: true, showMappings: false);
 
-    // Convert to JSON, then convert keys to snake_case
-    final jsonList = routingInfoList.map((info) => info.toJson()).toList();
-    return jsonEncode(convertToSnakeCaseKeys(jsonList));
+    return jsonEncode(
+      convertToSnakeCaseKeys(analyzer.generateSlotBusUsageJson()),
+    );
   }
 }
