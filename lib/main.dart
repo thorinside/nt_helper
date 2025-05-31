@@ -16,10 +16,9 @@ const MethodChannel _windowEventsChannel =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SettingsService().init();
-  await AlgorithmMetadataService().initialize();
-
   final database = AppDatabase();
+  await SettingsService().init();
+  await AlgorithmMetadataService().initialize(database);
 
   runApp(
     MultiProvider(
@@ -89,14 +88,14 @@ void main() async {
 
     if (hasSavedPositionAndSize) {
       // Ensure width and height are positive, otherwise bitsdojo might ignore the rect.
-      if (width! <= 0 || height! <= 0) {
+      if (width <= 0 || height <= 0) {
         const initialSize = Size(720, 1080);
         appWindow.size = initialSize;
         appWindow.alignment = Alignment.center;
       } else {
         // Create Size and Offset objects
         Size savedSize = Size(width, height);
-        Offset savedPosition = Offset(x!, y!);
+        Offset savedPosition = Offset(x, y);
 
         appWindow.size = savedSize;
         appWindow.position = savedPosition;
