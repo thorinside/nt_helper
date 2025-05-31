@@ -3,6 +3,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
 import 'package:nt_helper/models/algorithm_parameter.dart';
+import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/db/daos/metadata_dao.dart';
 
 class AlgorithmMetadataService {
   // Singleton pattern
@@ -17,15 +19,17 @@ class AlgorithmMetadataService {
 
   // --- Initialization ---
 
-  Future<void> initialize() async {
+  Future<void> initialize(AppDatabase database) async {
     if (_isInitialized) return;
 
     await _loadFeatures();
     await _loadAlgorithms();
 
+    await _mergeSyncedAlgorithms(database);
+
     _isInitialized = true;
     print(
-        'AlgorithmMetadataService initialized with ${_algorithms.length} algorithms and ${_features.length} features.');
+        'AlgorithmMetadataService initialized with a total of ${_algorithms.length} algorithms (from JSON and DB) and ${_features.length} features.');
   }
 
   Future<void> _loadAlgorithms() async {
@@ -73,6 +77,39 @@ class AlgorithmMetadataService {
       } catch (e, stacktrace) {
         print('Error processing feature file $path: $e\n$stacktrace');
       }
+    }
+  }
+
+  Future<void> _mergeSyncedAlgorithms(AppDatabase database) async {
+    final metadataDao = database.metadataDao;
+    final List<AlgorithmEntry> syncedEntries =
+        await metadataDao.getAllAlgorithms();
+    int mergedCount = 0;
+
+    print(
+        '[AlgorithmMetadataService] Found ${syncedEntries.length} algorithm entries in local DB for potential merging.');
+
+    for (final entry in syncedEntries) {
+      if (!_algorithms.containsKey(entry.guid)) {
+        final newAlgo = AlgorithmMetadata(
+          guid: entry.guid,
+          name: entry.name,
+          description:
+              "Synced from device. Full documentation may be unavailable locally.",
+          categories: ["Synced From Device"],
+          features: [],
+          parameters: [],
+        );
+        _algorithms[entry.guid] = newAlgo;
+        mergedCount++;
+      }
+    }
+    if (mergedCount > 0) {
+      print(
+          '[AlgorithmMetadataService] Successfully merged $mergedCount new algorithms from the local database.');
+    } else {
+      print(
+          '[AlgorithmMetadataService] No new algorithms from local DB to merge (all already present in JSON or DB empty).');
     }
   }
 
@@ -151,7 +188,7 @@ class AlgorithmMetadataService {
   void _ensureInitialized() {
     if (!_isInitialized) {
       throw Exception(
-          'AlgorithmMetadataService not initialized. Call initialize() first.');
+          'AlgorithmMetadataService not initialized. Call initialize(database) first.');
     }
   }
 }

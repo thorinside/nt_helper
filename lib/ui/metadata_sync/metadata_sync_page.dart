@@ -770,7 +770,7 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
   Widget build(BuildContext context) {
     return ExpansionTile(
       key: PageStorageKey(widget.algorithm.guid),
-      title: Text(widget.algorithm.name),
+      title: Text("${widget.algorithm.name} [${widget.algorithm.guid}]"),
       subtitle: Text("Params: ${widget.parameterCount}"),
       childrenPadding:
           const EdgeInsets.only(left: 32.0, right: 16.0, bottom: 8.0),
