@@ -127,10 +127,10 @@ class _SdCardScannerView extends StatelessWidget {
                 ),
                 actions: <Widget>[
                   TextButton(
-                    child: const Text('Close'),
                     onPressed: isScanningInDialog
                         ? null
                         : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Close'),
                   ),
                 ],
               );

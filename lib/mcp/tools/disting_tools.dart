@@ -107,7 +107,7 @@ class DistingTools {
       return jsonEncode(convertToSnakeCaseKeys({
         // Ensure snake case for error response
         'success': false,
-        'error': 'Missing or empty \"algorithm_guid\" parameter.'
+        'error': 'Missing or empty "algorithm_guid" parameter.'
       }));
     }
 
@@ -147,7 +147,7 @@ class DistingTools {
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
           // Ensure snake case for error response
-          {'success': false, 'error': 'Missing \"slot_index\" parameter.'}));
+          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
 
     try {
@@ -172,18 +172,18 @@ class DistingTools {
 
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing \"slot_index\" parameter.'}));
+          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
     if (displayValue == null) {
       return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing \"value\" parameter.'}));
+          {'success': false, 'error': 'Missing "value" parameter.'}));
     }
 
     if (parameterNumberParam == null && parameterNameParam == null) {
       return jsonEncode(convertToSnakeCaseKeys({
         'success': false,
         'error':
-            'Either \"parameter_number\" or \"parameter_name\" must be provided.'
+            'Either "parameter_number" or "parameter_name" must be provided.'
       }));
     }
 
@@ -191,7 +191,7 @@ class DistingTools {
       return jsonEncode(convertToSnakeCaseKeys({
         'success': false,
         'error':
-            'Provide either \"parameter_number\" or \"parameter_name\", not both.'
+            'Provide either "parameter_number" or "parameter_name", not both.'
       }));
     }
 
@@ -223,14 +223,14 @@ class DistingTools {
           return jsonEncode(convertToSnakeCaseKeys({
             'success': false,
             'error':
-                'Parameter with name \"$parameterNameParam\" not found in slot $slotIndex. Check `get_current_preset` for available parameters.'
+                'Parameter with name "${parameterNameParam}" not found in slot $slotIndex. Check `get_current_preset` for available parameters.'
           }));
         }
         if (matchingParams.length > 1) {
           return jsonEncode(convertToSnakeCaseKeys({
             'success': false,
             'error':
-                'Parameter name \"$parameterNameParam\" is ambiguous in slot $slotIndex. Please use \"parameter_number\". Check `get_current_preset` for details.'
+                'Parameter name "${parameterNameParam}" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.'
           }));
         }
         paramInfo = matchingParams.first;
@@ -247,8 +247,8 @@ class DistingTools {
       }
 
       int rawValue;
-      if (paramInfo.powerOfTen != null && paramInfo.powerOfTen! > 0) {
-        rawValue = (displayValue * pow(10, paramInfo.powerOfTen!)).round();
+      if (paramInfo.powerOfTen > 0) {
+        rawValue = (displayValue * pow(10, paramInfo.powerOfTen)).round();
       } else {
         rawValue =
             displayValue.round(); // Round even if no powerOfTen, to ensure int
@@ -293,12 +293,12 @@ class DistingTools {
 
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing \"slot_index\" parameter.'}));
+          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
     if (parameterNumber == null) {
       return jsonEncode(convertToSnakeCaseKeys({
         'success': false,
-        'error': 'Missing \"parameter_number\" parameter.'
+        'error': 'Missing "parameter_number" parameter.'
       }));
     }
 

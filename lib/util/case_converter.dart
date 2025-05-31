@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 String _stringToSnakeCase(String input) {
   if (input.isEmpty) return '';
   // Add underscore before uppercase letters that are not at the start,

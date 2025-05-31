@@ -22,7 +22,7 @@ class FileSystemUtils {
   /// Returns the selected directory path as a [String] for non-Android platforms,
   /// or a [docman.DocumentFile] for Android if a directory is picked via SAF.
   /// Returns `null` if the user cancels the dialog.
-  static Future<dynamic?> pickSdCardRootDirectory() async {
+  static Future<dynamic> pickSdCardRootDirectory() async {
     InAppLogger().log(
         "pickSdCardRootDirectory called (targeting SD Card ROOT directory)");
     if (kIsWeb) {
@@ -153,7 +153,7 @@ class FileSystemUtils {
                 sessionId: sessionId, directoryPathToList: fullPresetsPath);
         final bool isValid = presetsContents != null;
         logger.log(
-            "iOS: isValidDistingSdCard - Listing ${isValid ? "succeeded (count: ${presetsContents?.length})" : "failed (null list)"}. Valid directory: $isValid");
+            "iOS: isValidDistingSdCard - Listing ${isValid ? "succeeded (count: ${presetsContents.length})" : "failed (null list)"}. Valid directory: $isValid");
         return isValid;
       } catch (e) {
         logger.log(

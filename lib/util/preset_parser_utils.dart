@@ -147,9 +147,9 @@ class PresetParserUtils {
 
     // Default values for metadata - used if parsing fails
     String algorithmNameToUse = fileNameToDisplay; // Fallback to filename
-    String? notesToUse = null;
-    String? otherMetadataJsonToUse =
-        null; // Or consider: '{"error":"failed to parse"}';
+    String? notesToUse;
+    String?
+        otherMetadataJsonToUse; // Or consider: '{"error":"failed to parse"}';
 
     try {
       Uint8List? fileBytes;
@@ -180,13 +180,13 @@ class PresetParserUtils {
       jsonData = jsonDecode(fileContent) as Map<String, dynamic>;
 
       // If JSON parsing was successful, try to extract detailed metadata
-      final String? parsedJsonPresetName = jsonData?['name'] as String?;
+      final String? parsedJsonPresetName = jsonData['name'] as String?;
       if (parsedJsonPresetName != null &&
           parsedJsonPresetName.trim().isNotEmpty) {
         algorithmNameToUse = parsedJsonPresetName.trim();
       }
 
-      final dynamic slotsRaw = jsonData?['slots'];
+      final dynamic slotsRaw = jsonData['slots'];
       if (slotsRaw is List<dynamic>) {
         for (var slotData in slotsRaw) {
           if (slotData is Map<String, dynamic> && slotData['guid'] == 'note') {

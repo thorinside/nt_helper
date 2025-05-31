@@ -72,7 +72,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
     int newValidIndex = _selectedIndex;
 
-    if (widget.slots.length == 0) {
+    if (widget.slots.isEmpty) {
       newValidIndex = 0;
     } else {
       if (newValidIndex >= widget.slots.length) {
@@ -116,7 +116,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
       int newValidIndex = _selectedIndex;
 
-      if (widget.slots.length == 0) {
+      if (widget.slots.isEmpty) {
         newValidIndex = 0;
       } else {
         if (newValidIndex >= widget.slots.length) {

@@ -14,7 +14,7 @@ class SdCardWithPresetCount {
 
 @DriftAccessor(tables: [SdCards, IndexedPresetFiles])
 class SdCardsDao extends DatabaseAccessor<AppDatabase> with _$SdCardsDaoMixin {
-  SdCardsDao(AppDatabase db) : super(db);
+  SdCardsDao(super.db);
 
   Future<List<SdCardEntry>> getAllSdCards() => select(sdCards).get();
 

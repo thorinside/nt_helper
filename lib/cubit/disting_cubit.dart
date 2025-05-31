@@ -50,7 +50,7 @@ class DistingCubit extends Cubit<DistingState> {
       _moveVerificationOperation; // Add verification operation tracker
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
-  Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
+  final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
 
   // Added: Store last known online connection details
   MidiDevice? _lastOnlineInputDevice;

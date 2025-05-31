@@ -7,7 +7,7 @@ part 'indexed_preset_files_dao.g.dart';
 @DriftAccessor(tables: [IndexedPresetFiles])
 class IndexedPresetFilesDao extends DatabaseAccessor<AppDatabase>
     with _$IndexedPresetFilesDaoMixin {
-  IndexedPresetFilesDao(AppDatabase db) : super(db);
+  IndexedPresetFilesDao(super.db);
 
   Future<List<IndexedPresetFileEntry>> getAllIndexedPresetFiles() =>
       select(indexedPresetFiles).get();

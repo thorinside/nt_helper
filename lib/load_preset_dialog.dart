@@ -147,7 +147,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           (p) => _getDisplayPath(p) == trimmed || p.fileName == trimmed);
       if (presetOnCurrentCard != null) {
         // presetOnCurrentCard.relativePath is now e.g., "presets/BankA/file.json"
-        String pathForEngine = "/" + presetOnCurrentCard.relativePath;
+        String pathForEngine = "/${presetOnCurrentCard.relativePath}";
         await _addNameToHistory(trimmed);
         Navigator.of(context).pop({
           "sdCardPath":
@@ -181,7 +181,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
       if (matchedPreset != null) {
         // matchedPreset.relativePath is now e.g., "presets/BankA/file.json"
-        String pathForEngine = "/" + matchedPreset.relativePath;
+        String pathForEngine = "/${matchedPreset.relativePath}";
         await _addNameToHistory(trimmed);
         Navigator.of(context).pop({
           "sdCardPath":
@@ -198,9 +198,10 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   }
 
   String _getDisplayPath(IndexedPresetFileEntry preset) {
-    if (preset.relativePath.isEmpty)
+    if (preset.relativePath.isEmpty) {
       return preset
           .fileName; // Should not happen if relativePath includes filename
+    }
     final segments = preset.relativePath.split('/');
     if (segments.length > 1) {
       // Takes the last folder and the filename
