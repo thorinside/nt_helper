@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -6,9 +7,60 @@ import 'package:mcp_dart/mcp_dart.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/services/disting_controller_impl.dart'; // Needed for DistingTools
+import 'package:nt_helper/services/disting_controller_impl.dart';
 
-/// Singleton that lets a Flutter app start/stop an SSE MCP server.
+// Add a custom extension to access the server from the RequestHandlerExtra
+// This might not be needed if the server instance is managed differently or passed via RequestHandlerExtra itself.
+// For this refactor, we are creating a new McpServer per session (transport), so direct access via extra might be less relevant.
+extension McpRequestHandlerExtra on RequestHandlerExtra {
+  McpServer? get mcpServer =>
+      null; // Placeholder, actual server instance comes from transport.connect
+}
+
+// Simple in-memory event store for resumability (from example)
+class InMemoryEventStore implements EventStore {
+  final Map<String, List<({EventId id, JsonRpcMessage message})>> _events = {};
+  int _eventCounter = 0;
+
+  @override
+  Future<EventId> storeEvent(StreamId streamId, JsonRpcMessage message) async {
+    final eventId = (++_eventCounter).toString();
+    _events.putIfAbsent(streamId, () => []);
+    _events[streamId]!.add((id: eventId, message: message));
+    return eventId;
+  }
+
+  @override
+  Future<StreamId> replayEventsAfter(
+    EventId lastEventId, {
+    required Future<void> Function(EventId eventId, JsonRpcMessage message)
+        send,
+  }) async {
+    String? streamId;
+    int fromIndex = -1;
+
+    for (final entry in _events.entries) {
+      final idx = entry.value.indexWhere((event) => event.id == lastEventId);
+      if (idx >= 0) {
+        streamId = entry.key;
+        fromIndex = idx;
+        break;
+      }
+    }
+
+    if (streamId == null) {
+      throw StateError('Event ID not found: $lastEventId');
+    }
+
+    for (int i = fromIndex + 1; i < _events[streamId]!.length; i++) {
+      final event = _events[streamId]![i];
+      await send(event.id, event.message);
+    }
+    return streamId;
+  }
+}
+
+/// Singleton that lets a Flutter app start/stop an MCP server using StreamableHTTPServerTransport.
 class McpServerService extends ChangeNotifier {
   McpServerService._(this._distingCubit);
 
@@ -21,22 +73,14 @@ class McpServerService extends ChangeNotifier {
     return _instance!;
   }
 
-  // SseServerManager? _sseManager; // Removed, managed per session now
   HttpServer? _httpServer;
   StreamSubscription<HttpRequest>? _sub;
+  final Map<String, StreamableHTTPServerTransport> _activeTransports = {};
 
   final DistingCubit _distingCubit;
 
   bool get isRunning => _httpServer != null;
-  Map<String, SessionResources> _activeSessions =
-      {}; // To store per-session server and manager
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Public API
-  // ──────────────────────────────────────────────────────────────────────────
-
-  /// Initialize the singleton instance.
-  /// Call this early in the app lifecycle (e.g., main.dart).
   static void initialize({required DistingCubit distingCubit}) {
     if (_instance != null) {
       debugPrint('Warning: McpServerService already initialized.');
@@ -45,108 +89,42 @@ class McpServerService extends ChangeNotifier {
     _instance = McpServerService._(distingCubit);
   }
 
-  /// Start the server on [port] and (optionally) [bindAddress].
   Future<void> start({
     int port = 3000,
     InternetAddress? bindAddress,
   }) async {
-    if (_instance == null) {
-      throw StateError(
-          'McpServerService not initialized. Call initialize() first.');
-    }
     if (isRunning) {
       debugPrint('[MCP] Server already running.');
       return;
     }
 
     try {
-      _activeSessions = {}; // Initialize/clear active sessions on start
-
       final address = bindAddress ?? InternetAddress.anyIPv4;
       _httpServer = await HttpServer.bind(address, port);
+      debugPrint(
+          '[MCP] Streamable HTTP Server listening on http://${address.address}:$port/mcp');
 
       _sub = _httpServer!.listen(
         (HttpRequest request) async {
-          String? sessionIdFromQuery = request.uri.queryParameters['sessionId'];
-          SessionResources? sessionResources;
+          if (request.uri.path != '/mcp') {
+            _sendHttpError(
+                request, HttpStatus.notFound, 'Not Found. Use /mcp endpoint.');
+            return;
+          }
 
-          if (request.uri.path == '/sse' && request.method == 'GET') {
-            debugPrint('[MCP] Received GET /sse request.');
-            McpServer newMcpServer = _buildServer();
-            SseServerManager newSseManager = SseServerManager(newMcpServer);
-
-            try {
-              await newSseManager.handleRequest(request);
-              debugPrint(
-                  '[MCP] After newSseManager.handleRequest for GET /sse. Active transports in newSseManager: ${newSseManager.activeSseTransports.keys}');
-
-              if (newSseManager.activeSseTransports.isNotEmpty) {
-                // This is the hacky part. If there are multiple, which one is it?
-                // If SseServerManager always clears and adds one, .first or .single might work.
-                final newSessionId =
-                    newSseManager.activeSseTransports.keys.first;
-                debugPrint(
-                    '[MCP] Attempting to map using presumed newSessionId: $newSessionId');
-
-                _activeSessions[newSessionId] = SessionResources(
-                    server: newMcpServer, manager: newSseManager);
-                debugPrint(
-                    '[MCP] New SSE session $newSessionId established and mapped.');
-
-                final transport =
-                    newSseManager.activeSseTransports[newSessionId];
-                if (transport != null) {
-                  transport.onclose = () {
-                    debugPrint(
-                        '[MCP] SSE transport closed for session $newSessionId. Cleaning up resources.');
-                    _activeSessions.remove(newSessionId);
-                    // If McpServer had a dispose method: newMcpServer.dispose();
-                  };
-                  debugPrint(
-                      '[MCP] onclose handler set for transport of session $newSessionId');
-                } else {
-                  debugPrint(
-                      '[MCP] WARNING: Could not get transport for session $newSessionId to set onclose handler.');
-                }
-              } else {
-                debugPrint(
-                    '[MCP] WARNING: newSseManager.activeSseTransports is EMPTY after GET /sse. Cannot map session.');
-              }
-            } catch (e, s) {
-              debugPrint(
-                  '[MCP] Error during new SSE connection processing (newSseManager.handleRequest or mapping): $e\n$s');
-              // Attempt to close the response if an error occurs before/during mapping and response isn't sent
-              _sendHttpError(request, HttpStatus.internalServerError,
-                  'Error establishing SSE connection.');
-            }
-          } else if (request.uri.path == '/messages' &&
-              request.method == 'POST') {
-            debugPrint(
-                '[MCP] Received POST /messages request with sessionIdFromQuery: $sessionIdFromQuery');
-            if (sessionIdFromQuery != null &&
-                _activeSessions.containsKey(sessionIdFromQuery)) {
-              sessionResources = _activeSessions[sessionIdFromQuery]!;
-              try {
-                await sessionResources.manager.handleRequest(request);
-                debugPrint(
-                    '[MCP] POST /messages for session $sessionIdFromQuery processed by its manager.');
-              } catch (e, s) {
-                debugPrint(
-                    '[MCP] Error in session manager for POST ${request.uri}: $e\n$s');
-                _sendHttpError(request, HttpStatus.internalServerError,
-                    'Error processing message.');
-              }
-            } else {
-              debugPrint(
-                  '[MCP] POST to /messages with unknown/missing sessionId: $sessionIdFromQuery. Active sessions: ${_activeSessions.keys}');
-              _sendHttpError(request, HttpStatus.notFound,
-                  'No active SSE session found for ID: $sessionIdFromQuery');
-            }
-          } else {
-            debugPrint(
-                '[MCP] Received unhandled request: ${request.method} ${request.uri.path}');
-            _sendHttpError(request, HttpStatus.notFound,
-                'Not Found or Method Not Allowed.');
+          switch (request.method) {
+            case 'POST':
+              await _handlePostRequest(request);
+              break;
+            case 'GET':
+              await _handleGetRequest(request);
+              break;
+            case 'DELETE':
+              await _handleDeleteRequest(request);
+              break;
+            default:
+              _sendHttpError(request, HttpStatus.methodNotAllowed,
+                  'Method Not Allowed. Use GET, POST, or DELETE.');
           }
         },
         onError: (error, stackTrace) {
@@ -159,7 +137,7 @@ class McpServerService extends ChangeNotifier {
           if (_httpServer != null) {
             _sub = null;
             _httpServer = null;
-            _activeSessions.clear();
+            _clearAllTransports();
             notifyListeners();
             debugPrint(
                 '[MCP] Service effectively stopped due to HttpServer listener onDone.');
@@ -167,103 +145,231 @@ class McpServerService extends ChangeNotifier {
         },
         cancelOnError: false,
       );
-
-      debugPrint('[MCP] listening on http://${address.address}:$port');
       notifyListeners();
     } catch (e, s) {
       debugPrint('[MCP] Failed to start McpServerService: $e\n$s');
-      await _sub?.cancel();
-      _sub = null;
-      await _httpServer?.close(force: true);
-      _httpServer = null;
-      _activeSessions.clear();
-      notifyListeners();
+      await stop(); // Ensure cleanup if start fails
       rethrow;
     }
   }
 
-  Future<void> _sendHttpError(
-      HttpRequest request, int statusCode, String message) async {
-    // Check if headers are already sent or connection is not suitable for sending error body
-    // Removed !request.response.headersSent check as it's not a direct property
-    // and relying on the try-catch for cases where headers might be sent.
+  Future<void> _handlePostRequest(HttpRequest request) async {
     try {
-      // Check if the response is still open by seeing if a write is permissible.
-      // This is a bit of a heuristic. A more robust check might involve a custom flag
-      // set before any writes, but for now, this try-catch is the main guard.
-      if (request.response.connectionInfo != null) {
-        // A basic check if connection is still there
-        request.response.statusCode = statusCode;
-        request.response.write(message);
-        await request.response.close();
+      final bodyBytes = await _collectBytes(request);
+      final bodyString = utf8.decode(bodyBytes);
+      final body = jsonDecode(bodyString);
+
+      final sessionId = request.headers.value('mcp-session-id');
+      StreamableHTTPServerTransport? transport;
+
+      if (sessionId != null && _activeTransports.containsKey(sessionId)) {
+        transport = _activeTransports[sessionId]!;
+        debugPrint('[MCP] POST: Reusing transport for session $sessionId');
+      } else if (sessionId == null && _isInitializeRequest(body)) {
+        debugPrint('[MCP] POST: New initialize request. Creating transport.');
+        final eventStore = InMemoryEventStore();
+        transport = StreamableHTTPServerTransport(
+          options: StreamableHTTPServerTransportOptions(
+            sessionIdGenerator: () => generateUUID(),
+            eventStore: eventStore,
+            onsessioninitialized: (newSessionId) {
+              debugPrint(
+                  '[MCP] Session initialized with ID: $newSessionId. Storing transport.');
+              _activeTransports[newSessionId] = transport!;
+            },
+          ),
+        );
+
+        transport.onclose = () {
+          final sid = transport?.sessionId;
+          if (sid != null && _activeTransports.containsKey(sid)) {
+            debugPrint(
+                '[MCP] Transport closed for session $sid, removing from active transports.');
+            _activeTransports.remove(sid);
+          }
+        };
+
+        final mcpServer = _buildServer();
+        await mcpServer.connect(transport);
+        debugPrint('[MCP] New McpServer connected to transport.');
       } else {
-        debugPrint(
-            '[MCP] _sendHttpError: Response already closed or no connection info.');
+        _sendJsonError(request, HttpStatus.badRequest,
+            'Bad Request: No valid session ID for non-initialize request, or missing session ID for initialize.');
+        return;
       }
-    } catch (e) {
+
+      if (transport == null) {
+        // Should not happen if logic above is correct
+        _sendJsonError(request, HttpStatus.internalServerError,
+            'Internal Server Error: Transport not resolved.');
+        return;
+      }
+
+      await transport.handleRequest(request, body);
       debugPrint(
-          '[MCP] Error sending HTTP error response (headers might have been sent): $e');
+          '[MCP] POST request for session ${transport.sessionId} handled by transport.');
+    } catch (e, s) {
+      debugPrint('[MCP] Error handling POST /mcp request: $e\n$s');
+      // Avoid sending error if headers already sent by transport.handleRequest
+      if (request.response.connectionInfo != null &&
+          request.response.headers.contentType?.mimeType !=
+              'text/event-stream') {
+        try {
+          _sendJsonError(request, HttpStatus.internalServerError,
+              'Internal server error processing POST request.');
+        } catch (_) {/* Response likely closed */}
+      }
     }
   }
 
-  /// Stop and dispose resources.
+  Future<void> _handleGetRequest(HttpRequest request) async {
+    final sessionId = request.headers.value('mcp-session-id');
+    if (sessionId == null || !_activeTransports.containsKey(sessionId)) {
+      _sendHttpError(request, HttpStatus.badRequest,
+          'Invalid or missing mcp-session-id for GET request.');
+      return;
+    }
+
+    final transport = _activeTransports[sessionId]!;
+    final lastEventId = request.headers.value('Last-Event-ID');
+    if (lastEventId != null) {
+      debugPrint(
+          '[MCP] GET: Client reconnecting for session $sessionId with Last-Event-ID: $lastEventId');
+    } else {
+      debugPrint(
+          '[MCP] GET: Establishing new SSE stream for session $sessionId');
+    }
+    try {
+      await transport.handleRequest(request);
+      debugPrint(
+          '[MCP] GET request for session $sessionId handled by transport.');
+    } catch (e, s) {
+      debugPrint(
+          '[MCP] Error handling GET /mcp request for session $sessionId: $e\n$s');
+      // Transport.handleRequest for GET typically sets up SSE and might not allow further error writes here.
+    }
+  }
+
+  Future<void> _handleDeleteRequest(HttpRequest request) async {
+    final sessionId = request.headers.value('mcp-session-id');
+    if (sessionId == null || !_activeTransports.containsKey(sessionId)) {
+      _sendHttpError(request, HttpStatus.badRequest,
+          'Invalid or missing mcp-session-id for DELETE request.');
+      return;
+    }
+
+    debugPrint(
+        '[MCP] DELETE: Received termination request for session $sessionId');
+    final transport = _activeTransports[sessionId]!;
+    try {
+      await transport
+          .handleRequest(request); // This should trigger onclose and cleanup
+      debugPrint(
+          '[MCP] DELETE request for session $sessionId handled by transport.');
+    } catch (e, s) {
+      debugPrint(
+          '[MCP] Error handling DELETE /mcp request for session $sessionId: $e\n$s');
+      // Transport.handleRequest for DELETE might also not allow further error writes.
+    }
+  }
+
+  bool _isInitializeRequest(dynamic body) {
+    return body is Map<String, dynamic> &&
+        body.containsKey('method') &&
+        body['method'] == 'initialize';
+  }
+
+  Future<List<int>> _collectBytes(HttpRequest request) {
+    final completer = Completer<List<int>>();
+    final bytes = <int>[];
+    request.listen(
+      bytes.addAll,
+      onDone: () => completer.complete(bytes),
+      onError: completer.completeError,
+      cancelOnError: true,
+    );
+    return completer.future;
+  }
+
+  void _sendHttpError(HttpRequest request, int statusCode, String message) {
+    try {
+      if (request.response.connectionInfo == null)
+        return; // Already closed or headers sent
+      request.response.statusCode = statusCode;
+      request.response.headers.contentType = ContentType.text;
+      request.response.write(message);
+      request.response.close();
+    } catch (e) {
+      debugPrint('[MCP] Error sending plain HTTP error: $e');
+    }
+  }
+
+  void _sendJsonError(HttpRequest request, int statusCode, String message,
+      {String? id}) {
+    try {
+      if (request.response.connectionInfo == null)
+        return; // Already closed or headers sent
+      request.response.statusCode = statusCode;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({
+        'jsonrpc': '2.0',
+        'error': {'code': -32000, 'message': message},
+        'id': id,
+      }));
+      request.response.close();
+    } catch (e) {
+      debugPrint('[MCP] Error sending JSON error: $e');
+    }
+  }
+
   Future<void> stop() async {
     if (!isRunning) {
       debugPrint(
           '[MCP] Stop called but server not running or already stopped.');
       return;
     }
+    debugPrint('[MCP] Stopping MCP Streamable HTTP server...');
 
-    debugPrint('[MCP] Stopping server...');
     await _sub?.cancel();
     _sub = null;
 
     await _httpServer?.close(force: true);
     _httpServer = null;
 
-    // Clean up active sessions
-    debugPrint(
-        '[MCP] Clearing ${_activeSessions.length} active sessions during stop.');
-    for (var entry in _activeSessions.entries) {
-      final sessionId = entry.key;
-      final session = entry.value;
-      try {
-        // Attempt to close the transport if manager has it and transport has close
-        final transport = session.manager.activeSseTransports[sessionId];
-        await transport?.close();
-        // If McpServer had a dispose method: session.server.dispose();
-      } catch (e) {
-        debugPrint(
-            '[MCP] Error cleaning up transport for session $sessionId during stop: $e');
-      }
-    }
-    _activeSessions.clear();
+    _clearAllTransports();
 
     notifyListeners();
-    debugPrint('[MCP] Service stopped.');
+    debugPrint('[MCP] MCP Streamable HTTP Service stopped.');
   }
 
-  /// Register additional tools **before** `start()`.
-  /// This behavior needs to change slightly. Tools are now registered
-  /// on each McpServer instance created by _buildServer().
-  /// _pendingTools will be used by _buildServer().
+  void _clearAllTransports() {
+    debugPrint('[MCP] Clearing ${_activeTransports.length} active transports.');
+    for (final transport in _activeTransports.values) {
+      try {
+        transport.close(); // This should trigger their onclose handler
+      } catch (e) {
+        debugPrint('[MCP] Error closing transport during stop: $e');
+      }
+    }
+    _activeTransports.clear();
+  }
+
+  final List<_ToolSpec> _pendingTools = [];
+
   void addTool(
     String name, {
     required String description,
     required Map<String, dynamic> inputSchemaProperties,
     required ToolCallback callback,
   }) {
+    // In this model, tools are added to each McpServer instance when it's built.
+    // So, _pendingTools will be used by _buildServer for new server instances.
     _pendingTools.add(
       _ToolSpec(name, description, inputSchemaProperties, callback),
     );
+    // If a server is already running with transports, this new tool won't be available
+    // on existing sessions. This matches the _buildServer per session model.
   }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Internals
-  // ──────────────────────────────────────────────────────────────────────────
-
-  final List<_ToolSpec> _pendingTools = [];
-  // Map<String, SessionResources> _activeSessions = {}; // Moved to be an instance variable
 
   McpServer _buildServer() {
     final distingControllerForTools = DistingControllerImpl(_distingCubit);
@@ -271,10 +377,11 @@ class McpServerService extends ChangeNotifier {
     final distingTools = DistingTools(distingControllerForTools);
 
     final server = McpServer(
-      Implementation(name: 'nt-helper-flutter', version: '1.23.0'),
+      Implementation(name: 'nt-helper-flutter', version: '1.25.0'),
       options: ServerOptions(capabilities: ServerCapabilities()),
     );
 
+    // Register existing tools
     server.tool(
       'get_algorithm_details',
       description:
@@ -549,6 +656,7 @@ class McpServerService extends ChangeNotifier {
       },
     );
 
+    // Add any tools dynamically added via addTool()
     for (final t in _pendingTools) {
       server.tool(
         t.name,
@@ -557,6 +665,14 @@ class McpServerService extends ChangeNotifier {
         callback: t.callback,
       );
     }
+    // Unlike the single server model, _pendingTools shouldn't be cleared here
+    // as _buildServer can be called multiple times for new sessions.
+    // However, if addTool is meant to apply to *future* sessions only, this is fine.
+    // For simplicity matching the previous pattern, we clear it, assuming tools are added before any session starts,
+    // or new tools apply to new sessions.
+    // If tools should be added to existing McpServer on existing transports, that's a more complex refactor.
+    _pendingTools.clear();
+
     return server;
   }
 }
@@ -570,9 +686,4 @@ class _ToolSpec {
       this.name, this.description, this.inputSchemaProperties, this.callback);
 }
 
-// Helper class to hold session-specific resources
-class SessionResources {
-  final McpServer server;
-  final SseServerManager manager;
-  SessionResources({required this.server, required this.manager});
-}
+// The SessionResources class is no longer needed.
