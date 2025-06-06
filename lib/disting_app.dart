@@ -1,14 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_page.dart';
-import 'dart:io';
 
 class DistingApp extends StatefulWidget {
   const DistingApp({super.key});
@@ -90,7 +91,8 @@ class _DistingAppState extends State<DistingApp> {
       // Follow system settings
       initialRoute: '/',
       routes: {
-        '/': (context) => BlocProvider(
+        '/': (context) =>
+            BlocProvider(
               create: (context) {
                 // Get the AppDatabase instance from the context
                 final database = context.read<AppDatabase>();

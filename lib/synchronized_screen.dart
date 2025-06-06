@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -17,18 +18,17 @@ import 'package:nt_helper/performance_screen.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
+import 'package:nt_helper/ui/bpm_editor_widget.dart';
+import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
-import 'package:nt_helper/services/mcp_server_service.dart';
-import 'dart:io';
 import 'package:provider/provider.dart';
-import 'package:nt_helper/ui/bpm_editor_widget.dart';
 
 class SynchronizedScreen extends StatefulWidget {
   final List<Slot> slots;
@@ -112,31 +112,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         vsync: this,
       );
       _tabController.addListener(_handleTabSelection);
-
-      // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
-      int newValidIndex = _selectedIndex;
-
-      if (widget.slots.isEmpty) {
-        newValidIndex = 0;
-      } else {
-        if (newValidIndex >= widget.slots.length) {
-          newValidIndex = widget.slots.length - 1;
-        }
-        // Ensure index is not negative (shouldn't happen with current logic elsewhere but good safeguard)
-        if (newValidIndex < 0) {
-          newValidIndex = 0;
-        }
-      }
-
-      // If the state variable _selectedIndex needs to be updated for other parts of the UI or internal logic.
-      if (_selectedIndex != newValidIndex) {
+      // Clamp selectedIndex into valid range [0, slots.length-1] (or 0 if no slots).
+      final int maxIndex = widget.slots.isEmpty ? 0 : widget.slots.length - 1;
+      int newIndex = _selectedIndex.clamp(0, maxIndex);
+      if (newIndex != _selectedIndex) {
         setState(() {
-          _selectedIndex = newValidIndex;
+          _selectedIndex = newIndex;
         });
       }
-
-      // Set the TabController's index to the new_valid_index that was just calculated.
-      _tabController.index = newValidIndex;
+      _tabController.index = newIndex;
     }
   }
 
@@ -340,32 +324,28 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
-  AnimatedSwitcher _buildBody() {
-    return AnimatedSwitcher(
-      duration: Duration(seconds: 1),
-      child: Builder(builder: (context) {
-        return widget.slots.isNotEmpty
-            ? TabBarView(
-                controller: _tabController,
-                children: widget.slots.mapIndexed((index, slot) {
-                  return SlotDetailView(
-                    key: ValueKey("$index - ${slot.algorithm.guid}"),
-                    slot: slot,
-                    units: widget.units,
-                  );
-                }).toList(),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    "No algorithms",
-                    style: Theme.of(context).textTheme.displaySmall,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              );
-      }),
+  Widget _buildBody() {
+    if (widget.slots.isNotEmpty) {
+      return TabBarView(
+        controller: _tabController,
+        children: widget.slots.mapIndexed((index, slot) {
+          return SlotDetailView(
+            key: ValueKey("$index - ${slot.algorithm.guid}"),
+            slot: slot,
+            units: widget.units,
+          );
+        }).toList(),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "No algorithms",
+          style: Theme.of(context).textTheme.displaySmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -1106,13 +1086,13 @@ class SectionParameterListView extends StatefulWidget {
 }
 
 class _SectionParameterListViewState extends State<SectionParameterListView> {
-  late final List<ExpansionTileController> _tileControllers;
+  late final List<ExpansibleController> _tileControllers;
   var _isCollapsed = false;
 
   @override
   void initState() {
-    _tileControllers = List.generate(
-        widget.pages.pages.length, (_) => ExpansionTileController());
+    _tileControllers =
+        List.generate(widget.pages.pages.length, (_) => ExpansibleController());
     super.initState();
   }
 
@@ -1803,6 +1783,7 @@ String midiNoteToNoteString(int midiNoteNumber) {
 /// Small round LED indicator for MCP server status with tooltip
 class _McpStatusIndicator extends StatelessWidget {
   static const int mcpPort = 3000;
+
   const _McpStatusIndicator();
 
   @override
@@ -1896,7 +1877,7 @@ class _McpStatusIndicator extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 2,
                 offset: Offset(1, 1),
               ),
@@ -1909,7 +1890,7 @@ class _McpStatusIndicator extends StatelessWidget {
               height: 5,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               margin: const EdgeInsets.only(
                   right: 3, bottom: 3), // Position highlight
