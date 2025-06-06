@@ -214,20 +214,31 @@ class PresetRoutings extends Table {
   Set<Column> get primaryKey => {presetSlotId};
 }
 
-// --- SD Card Structure ---
+// --- SD Card Preset Indexing ---
 
-@DataClassName('FileSystemEntry')
-class FileSystemEntries extends Table {
+@DataClassName('SdCardEntry')
+class SdCards extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get parentId =>
-      integer().nullable().references(FileSystemEntries, #id)();
-  TextColumn get name => text()();
-  BoolColumn get isDirectory => boolean()();
-  TextColumn get fullPath =>
-      text().unique()(); // e.g., '/sdcard/presets/MyPreset.dspreset'
+  TextColumn get userLabel => text().unique()();
+  TextColumn get systemIdentifier =>
+      text().nullable().unique()(); // Optional system-level unique ID
+}
+
+@DataClassName('IndexedPresetFileEntry')
+class IndexedPresetFiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sdCardId => integer().references(SdCards, #id)();
+  TextColumn get relativePath =>
+      text()(); // Relative to SD card's presets directory
+  TextColumn get fileName => text()();
+  TextColumn get absolutePathAtScanTime => text()();
+  TextColumn get algorithmNameFromPreset => text().nullable()();
+  TextColumn get notesFromPreset => text().nullable()();
+  TextColumn get otherExtractedMetadataJson => text().nullable()();
+  DateTimeColumn get lastSeenUtc => dateTime()();
 
   @override
-  List<String> get customConstraints => ['UNIQUE (parent_id, name)'];
+  List<String> get customConstraints => ['UNIQUE (sd_card_id, relative_path)'];
 }
 
 // --- General Metadata Cache ---

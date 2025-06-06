@@ -32,15 +32,16 @@ class _PollingTask {
 }
 
 class DistingCubit extends Cubit<DistingState> {
-  final AppDatabase _database; // Added
+  final AppDatabase database; // Renamed from _database to make it public
   late final MetadataDao _metadataDao; // Added
   final Future<SharedPreferences> _prefs;
 
   // Modified constructor
-  DistingCubit(this._database)
+  DistingCubit(this.database)
       : _prefs = SharedPreferences.getInstance(),
         super(const DistingState.initial()) {
-    _metadataDao = _database.metadataDao; // Initialize DAO
+    _metadataDao =
+        database.metadataDao; // Initialize DAO using public database field
   }
 
   MidiCommand _midiCommand = MidiCommand();
@@ -49,6 +50,7 @@ class DistingCubit extends Cubit<DistingState> {
       _moveVerificationOperation; // Add verification operation tracker
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
+  final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
 
   // Added: Store last known online connection details
   MidiDevice? _lastOnlineInputDevice;
@@ -115,105 +117,6 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<void> onDemo() async {
-    // // --- Define Standard I/O Enum Values --- // Removed - Moved to Mock Manager
-    // final List<String> ioEnumValues = [
-    //   ...List.generate(12, (i) => "Input ${i + 1}"),
-    //   ...List.generate(8, (i) => "Output ${i + 1}"),
-    //   ...List.generate(8, (i) => "Aux ${i + 1}"),
-    // ];
-    // const int ioEnumMax = 27; // 12 + 8 + 8 - 1
-
-    // // --- Define Demo Algorithms --- // Removed - Moved to Mock Manager
-    // final List<AlgorithmInfo> demoAlgorithms = <AlgorithmInfo>[
-    //   AlgorithmInfo(
-    //       algorithmIndex: 0,
-    //       guid: "clk ",
-    //       name: "Clock",
-    //       numSpecifications: 0,
-    //       specifications: []),
-    //   AlgorithmInfo(
-    //       algorithmIndex: 1,
-    //       guid: "seq ",
-    //       name: "Step Sequencer",
-    //       numSpecifications: 0,
-    //       specifications: []),
-    //   AlgorithmInfo(
-    //       algorithmIndex: 2,
-    //       guid: "sine",
-    //       name: "Sine Oscillator",
-    //       numSpecifications: 0,
-    //       specifications: []),
-    // ];
-
-    // // --- Define Demo Slot 0: Clock --- // Removed - Moved to Mock Manager
-    // final List<ParameterInfo> clockParams = <ParameterInfo>[
-    //   ParameterInfo(
-    //       algorithmIndex: 0,
-    //       parameterNumber: 0,
-    //       name: "BPM",
-    //       min: 20,
-    //       max: 300,
-    //       defaultValue: 120,
-    //       unit: 0,
-    //       powerOfTen: 0),
-    //   // ... other clock params ...
-    // ];
-    // final List<ParameterValue> clockValues = <ParameterValue>[
-    //    ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 120),
-    //    // ... other clock values ...
-    // ];
-    // final List<ParameterEnumStrings> clockEnums = <ParameterEnumStrings>[
-    //   ParameterEnumStrings.filler(), // BPM
-    //   // ... other clock enums ...
-    // ];
-    // final ParameterPages clockPages = ParameterPages(algorithmIndex: 0, pages: [
-    //   ParameterPage(name: "Timing", parameters: [0, 1]),
-    //   // ... other clock pages ...
-    // ]);
-    // final List<Mapping> clockMappings =
-    //     List<Mapping>.generate(clockParams.length, (_) => Mapping.filler());
-    // final List<ParameterValueString> clockValueStrings =
-    //     List<ParameterValueString>.generate(
-    //         clockParams.length, (_) => ParameterValueString.filler());
-    // final Slot clockSlot = Slot(
-    //   algorithm: Algorithm(algorithmIndex: 0, guid: "clk ", name: "Clock"),
-    //   routing: RoutingInfo.filler(),
-    //   pages: clockPages,
-    //   parameters: clockParams,
-    //   values: clockValues,
-    //   enums: clockEnums,
-    //   mappings: clockMappings,
-    //   valueStrings: clockValueStrings,
-    // );
-
-    // // --- Define Demo Slot 1: Step Sequencer --- // Removed - Moved to Mock Manager
-    // // ... similar definitions for sequencer ...
-    // final Slot sequencerSlot = Slot(
-    //   algorithm:
-    //       Algorithm(algorithmIndex: 1, guid: "seq ", name: "Step Sequencer"),
-    //   routing: RoutingInfo.filler(),
-    //   pages: seqPages,
-    //   parameters: seqParams,
-    //   values: seqValues,
-    //   enums: seqEnums,
-    //   mappings: seqMappings,
-    //   valueStrings: seqValueStrings,
-    // );
-
-    // // --- Define Demo Slot 2: Sine Oscillator --- // Removed - Moved to Mock Manager
-    // // ... similar definitions for sine ...
-    // final Slot sineSlot = Slot(
-    //   algorithm:
-    //       Algorithm(algorithmIndex: 2, guid: "sine", name: "Sine Oscillator"),
-    //   routing: RoutingInfo.filler(),
-    //   pages: sinePages,
-    //   parameters: sineParams,
-    //   values: sineValues,
-    //   enums: sineEnums,
-    //   mappings: sineMappings,
-    //   valueStrings: sineValueStrings,
-    // );
-
     // --- Create Mock Manager and Fetch State ---
     final mockManager = MockDistingMidiManager();
     final distingVersion =
@@ -515,7 +418,7 @@ class DistingCubit extends Cubit<DistingState> {
           ?.dispose(); // Ensure offline is disposed if manager wasn't it
 
       // Create and initialize the offline manager
-      _offlineManager = OfflineDistingMidiManager(_database);
+      _offlineManager = OfflineDistingMidiManager(database);
       await _offlineManager!.initializeFromDb(null);
       final version =
           await _offlineManager!.requestVersionString() ?? "Offline";
@@ -806,6 +709,26 @@ class DistingCubit extends Cubit<DistingState> {
             algorithmIndex,
             parameterNumber,
           );
+
+          // Anomaly Check
+          if (this.state is DistingStateSynchronized) {
+            final syncState = this.state as DistingStateSynchronized;
+            if (algorithmIndex < syncState.slots.length &&
+                parameterNumber <
+                    syncState.slots[algorithmIndex].parameters.length) {
+              final parameterInfo = syncState.slots[algorithmIndex].parameters
+                  .elementAt(parameterNumber);
+              if (newValue != null &&
+                  (newValue.value < parameterInfo.min ||
+                      newValue.value > parameterInfo.max)) {
+                debugPrint(
+                    "Out-of-bounds data from device: algo $algorithmIndex, param $parameterNumber, value ${newValue.value}, expected ${parameterInfo.min}-${parameterInfo.max}");
+                _refreshSlotAfterAnomaly(algorithmIndex);
+                return; // Return early as the slot will be refreshed
+              }
+            }
+          }
+          // End Anomaly Check
 
           final state = (this.state as DistingStateSynchronized);
 
@@ -1412,9 +1335,34 @@ class DistingCubit extends Cubit<DistingState> {
       );
       if (newValue == null) return;
 
+      // Anomaly Check
+      if (newValue.value < mapped.parameter.min ||
+          newValue.value > mapped.parameter.max) {
+        debugPrint(
+            "Out-of-bounds data from device (polling): algo ${mapped.parameter.algorithmIndex}, param ${mapped.parameter.parameterNumber}, value ${newValue.value}, expected ${mapped.parameter.min}-${mapped.parameter.max}");
+        _refreshSlotAfterAnomaly(mapped.parameter.algorithmIndex);
+        // Unlike in updateParameterValue, we don't return early here.
+        // The polling loop will continue, and the refresh will eventually correct the state.
+      }
+      // End Anomaly Check
+
       final currentState = state;
       if (currentState is DistingStateSynchronized) {
+        // Add boundary checks before accessing slots and values
+        if (mapped.parameter.algorithmIndex >= currentState.slots.length) {
+          debugPrint(
+              "[Polling] Slot index ${mapped.parameter.algorithmIndex} is out of bounds after potential refresh. Stopping poll for this parameter.");
+          _pollingTasks.remove(key); // Remove task to stop polling
+          return;
+        }
         final currentSlot = currentState.slots[mapped.parameter.algorithmIndex];
+        // Check if parameter number is still valid
+        if (mapped.parameter.parameterNumber >= currentSlot.values.length) {
+          debugPrint(
+              "[Polling] Parameter number ${mapped.parameter.parameterNumber} out of bounds for slot ${mapped.parameter.algorithmIndex} after potential refresh. Stopping poll for this parameter.");
+          _pollingTasks.remove(key); // Remove task to stop polling
+          return;
+        }
         final currentValue =
             currentSlot.values[mapped.parameter.parameterNumber];
         if (newValue.value != currentValue.value) {
@@ -1631,5 +1579,55 @@ class DistingCubit extends Cubit<DistingState> {
       'output':
           devices?.where((it) => it.outputPorts.isNotEmpty).toList() ?? [],
     };
+  }
+
+  Future<void> refreshRouting() async {
+    final disting = requireDisting();
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    // For each slot, update the routing information
+    final updatedSlots = await Future.wait(currentState.slots.map(
+        (slot) async => slot.copyWith(
+            routing: await disting
+                    .requestRoutingInformation(slot.algorithm.algorithmIndex) ??
+                slot.routing)));
+
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  Future<void> _refreshSlotAfterAnomaly(int algorithmIndex) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (state is! DistingStateSynchronized) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastAttempt = _lastAnomalyRefreshAttempt[algorithmIndex];
+    if (lastAttempt != null &&
+        now.difference(lastAttempt) < const Duration(seconds: 10)) {
+      debugPrint(
+          "[Anomaly Refresh] Skipping refresh for slot $algorithmIndex, last attempt was too recent.");
+      return;
+    }
+    _lastAnomalyRefreshAttempt[algorithmIndex] = now;
+
+    debugPrint(
+        "[Anomaly Refresh] Triggering refresh for slot $algorithmIndex due to data anomaly.");
+
+    try {
+      final disting = requireDisting();
+      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final currentState = state as DistingStateSynchronized;
+      final newSlots = List<Slot>.from(currentState.slots);
+      newSlots[algorithmIndex] = updatedSlot;
+      emit(currentState.copyWith(slots: newSlots, loading: false));
+    } catch (e, stackTrace) {
+      debugPrint("[Anomaly Refresh] Error refreshing slot $algorithmIndex: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // Optionally, clear the timestamp to allow immediate retry if fetch failed
+      // _lastAnomalyRefreshAttempt.remove(algorithmIndex);
+    }
   }
 }

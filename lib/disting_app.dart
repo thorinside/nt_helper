@@ -1,52 +1,39 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/services/mcp_server_service.dart';
-import 'dart:io';
+import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_page.dart';
 
-class DistingApp extends StatelessWidget {
+class DistingApp extends StatefulWidget {
   const DistingApp({super.key});
 
+  static const String sdCardScannerRoute = '/sd-card-scanner';
+
   @override
-  Widget build(BuildContext context) {
-    final lightTheme = buildThemeData(ColorScheme.fromSeed(
-      seedColor: Colors.tealAccent.shade700,
-      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-      brightness: Brightness.light,
-    ).copyWith(surfaceTint: Colors.transparent));
+  State<DistingApp> createState() => _DistingAppState();
+}
 
-    final darkTheme = buildThemeData(ColorScheme.fromSeed(
-      seedColor: Colors.tealAccent.shade100,
-      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-      brightness: Brightness.dark,
-    ).copyWith(surfaceTint: Colors.transparent));
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: lightTheme,
-      // Light theme
-      darkTheme: darkTheme,
-      // Dark theme using copyWith
-      themeMode: ThemeMode.system,
-      // Follow system settings
-      home: BlocProvider(
-        create: (context) {
-          // Get the AppDatabase instance from the context
-          final database = context.read<AppDatabase>();
-
-          // Create DistingCubit and pass the database instance
-          final cubit = DistingCubit(database); // Pass database here
-          cubit.initialize(); // Load settings and auto-connect if possible
-          return cubit;
-        },
-        child: Material(child: DistingPage()),
-      ),
-    );
+class _DistingAppState extends State<DistingApp> {
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isWindows) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Delay slightly to ensure the window is shown and initial rendering attempted
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            setState(() {}); // Trigger a rebuild to force repaint
+          }
+        });
+      });
+    }
   }
 
   ThemeData buildThemeData(ColorScheme baseColorScheme) {
@@ -77,6 +64,49 @@ class DistingApp extends StatelessWidget {
           fontWeight: FontWeight.w400,
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lightTheme = buildThemeData(ColorScheme.fromSeed(
+      seedColor: Colors.tealAccent.shade700,
+      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+      brightness: Brightness.light,
+    ).copyWith(surfaceTint: Colors.transparent));
+
+    final darkTheme = buildThemeData(ColorScheme.fromSeed(
+      seedColor: Colors.tealAccent.shade100,
+      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+      brightness: Brightness.dark,
+    ).copyWith(surfaceTint: Colors.transparent));
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: lightTheme,
+      // Light theme
+      darkTheme: darkTheme,
+      // Dark theme using copyWith
+      themeMode: ThemeMode.system,
+      // Follow system settings
+      initialRoute: '/',
+      routes: {
+        '/': (context) =>
+            BlocProvider(
+              create: (context) {
+                // Get the AppDatabase instance from the context
+                final database = context.read<AppDatabase>();
+
+                // Create DistingCubit and pass the database instance
+                final cubit = DistingCubit(database); // Pass database here
+                cubit
+                    .initialize(); // Load settings and auto-connect if possible
+                return cubit;
+              },
+              child: Material(child: DistingPage()),
+            ),
+        DistingApp.sdCardScannerRoute: (context) => const SdCardScannerPage(),
+      },
     );
   }
 }

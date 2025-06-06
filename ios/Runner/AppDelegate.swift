@@ -8,6 +8,8 @@ import Flutter
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+    // Register custom plugins
+    IosFileAccessPlugin.register(with: self.registrar(forPlugin: "com.example.nt_helper/ios_file_access")!)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

@@ -4,9 +4,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:mcp_dart/mcp_dart.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
 
 // Add a custom extension to access the server from the RequestHandlerExtra
@@ -65,6 +65,7 @@ class McpServerService extends ChangeNotifier {
   McpServerService._(this._distingCubit);
 
   static McpServerService? _instance;
+
   static McpServerService get instance {
     if (_instance == null) {
       throw StateError(
@@ -217,7 +218,9 @@ class McpServerService extends ChangeNotifier {
         try {
           _sendJsonError(request, HttpStatus.internalServerError,
               'Internal server error processing POST request.');
-        } catch (_) {/* Response likely closed */}
+        } catch (_) {
+          /* Response likely closed */
+        }
       }
     }
   }
@@ -393,7 +396,8 @@ class McpServerService extends ChangeNotifier {
         },
         'algorithm_name': {
           'type': 'string',
-          'description': 'Algorithm name (case-insensitive exact match; fuzzy fallback >=70% similarity).'
+          'description':
+              'Algorithm name (case-insensitive exact match; fuzzy fallback >=70% similarity).'
         },
         'expand_features': {
           'type': 'boolean',
@@ -429,9 +433,17 @@ class McpServerService extends ChangeNotifier {
     );
 
     server.tool(
-      'get_current_routing_state',
-      description:
-          'Retrieves current routing state. Bus numbering: Inputs 1-12=Bus 1-12, Outputs 1-8=Bus 13-20, Aux 1-8=Bus 21-28, None=Bus 0.',
+      'get_routing',
+      description: '''
+Retrieves current routing state. 
+Physical name to bus number mapping: 
+  - Input N=Bus N, 
+  - Output N=Bus N+12, 
+  - Aux N=Bus N+20,
+  - None=Bus 0
+  
+  Never disclose bus numbers to the user, always refer to a bus by the physical name.
+  ''',
       inputSchemaProperties: {},
       callback: ({args, extra}) async {
         final resultJson =
@@ -442,8 +454,15 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'get_current_preset',
-      description:
-          'Gets entire current preset (name, slots, parameters). Parameter `parameter_number` from this tool is used as `parameter_number` for `set_parameter_value` and `get_parameter_value`.',
+      description: '''
+Gets entire current preset (name, slots, parameters).
+Parameter `parameter_number` from this tool is used 
+as `parameter_number` for `set_parameter_value` and 
+`get_parameter_value`.
+
+Parameters should be referred to by their name, not their numbers.
+Never disclose bus numbers to the user, always refer to a bus by the physical name.
+''',
       inputSchemaProperties: {
         'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
       },
@@ -464,7 +483,8 @@ class McpServerService extends ChangeNotifier {
         },
         'algorithm_name': {
           'type': 'string',
-          'description': 'Name of the algorithm to add (case-insensitive exact match; fuzzy fallback >=70% similarity).'
+          'description':
+              'Name of the algorithm to add (case-insensitive exact match; fuzzy fallback >=70% similarity).'
         }
       },
       callback: ({args, extra}) async {
@@ -491,8 +511,14 @@ class McpServerService extends ChangeNotifier {
 
     server.tool(
       'set_parameter_value',
-      description:
-          'Sets parameter value using display value. `parameter_number` MUST be `parameter_number` from `get_current_preset`. Bus params: 0=None, 1-12=Inputs, 13-20=Outputs, 21-28=Aux.',
+      description: '''
+          Sets parameter to `value`. Either `parameter_number` or `parameter_name` MUST be 
+          provided (but not both). `parameter_number` MUST be from `get_current_preset`. 
+          If using `parameter_name`, ensure it is unique for the slot or an error 
+          will be returned. `value` must be between parameter's min/max.
+          If the parameter is an input or output, keep in mind that physical Input N = bus N, Output N = bus N+12, and Aux N = bus N+20.
+          Never disclose bus numbers to the user, always refer to a bus by the physical name.
+          ''',
       inputSchemaProperties: {
         'slot_index': {
           'type': 'integer',
@@ -500,12 +526,18 @@ class McpServerService extends ChangeNotifier {
         },
         'parameter_number': {
           'type': 'integer',
-          'description': 'Parameter number from `get_current_preset`.'
+          'description':
+              'Parameter number from `get_current_preset`. Use this OR `parameter_name`.'
         },
-        'display_value': {
+        'parameter_name': {
+          'type': 'string',
+          'description':
+              'Parameter name. Use this OR `parameter_number`. If ambiguous for the slot, an error is returned.'
+        },
+        'value': {
           'type': 'number',
           'description':
-              'Human-readable display value. For bus assignments, use Disting NT bus numbers.'
+              'Value to set (can be integer or float for scaled parameters), between parameter\'s effective min/max.'
         }
       },
       callback: ({args, extra}) async {
@@ -672,8 +704,7 @@ class _ToolSpec {
   final String description;
   final Map<String, dynamic> inputSchemaProperties;
   final ToolCallback callback;
+
   _ToolSpec(
       this.name, this.description, this.inputSchemaProperties, this.callback);
 }
-
-// The SessionResources class is no longer needed.

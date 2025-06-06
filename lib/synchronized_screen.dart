@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -17,18 +18,17 @@ import 'package:nt_helper/performance_screen.dart';
 import 'package:nt_helper/rename_preset_dialog.dart';
 import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
+import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
+import 'package:nt_helper/ui/bpm_editor_widget.dart';
+import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
-import 'package:nt_helper/services/mcp_server_service.dart';
-import 'dart:io';
 import 'package:provider/provider.dart';
-import 'package:nt_helper/ui/bpm_editor_widget.dart';
 
 class SynchronizedScreen extends StatefulWidget {
   final List<Slot> slots;
@@ -68,6 +68,31 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       vsync: this,
     );
     _tabController.addListener(_handleTabSelection);
+
+    // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
+    int newValidIndex = _selectedIndex;
+
+    if (widget.slots.isEmpty) {
+      newValidIndex = 0;
+    } else {
+      if (newValidIndex >= widget.slots.length) {
+        newValidIndex = widget.slots.length - 1;
+      }
+      // Ensure index is not negative (shouldn't happen with current logic elsewhere but good safeguard)
+      if (newValidIndex < 0) {
+        newValidIndex = 0;
+      }
+    }
+
+    // If the state variable _selectedIndex needs to be updated for other parts of the UI or internal logic.
+    if (_selectedIndex != newValidIndex) {
+      setState(() {
+        _selectedIndex = newValidIndex;
+      });
+    }
+
+    // Set the TabController's index to the new_valid_index that was just calculated.
+    _tabController.index = newValidIndex;
   }
 
   @override
@@ -89,7 +114,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       _tabController.addListener(_handleTabSelection);
       // Clamp selectedIndex into valid range [0, slots.length-1] (or 0 if no slots).
       final int maxIndex = widget.slots.isEmpty ? 0 : widget.slots.length - 1;
-      int newIndex = _selectedIndex.clamp(0, maxIndex) as int;
+      int newIndex = _selectedIndex.clamp(0, maxIndex);
       if (newIndex != _selectedIndex) {
         setState(() {
           _selectedIndex = newIndex;
@@ -462,14 +487,26 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ? null
                   : () async {
                       var cubit = popupCtx.read<DistingCubit>();
-                      final preset = await showDialog<dynamic>(
+                      final result = await showDialog<Map<String, dynamic>>(
                         context: popupCtx,
-                        builder: (dialogCtx) =>
-                            LoadPresetDialog(initialName: ""),
+                        builder: (dialogCtx) => LoadPresetDialog(
+                            initialName: "", db: cubit.database),
                       );
-                      if (preset == null) return;
-                      cubit.loadPreset(
-                          preset["name"] as String, preset["append"] as bool);
+                      if (result == null) return;
+
+                      if (result.containsKey('sdCardPath')) {
+                        final String pathFromDialog =
+                            result['sdCardPath'] as String;
+                        final bool append = result['append'] as bool? ?? false;
+
+                        debugPrint(
+                            "SynchronizedScreen: Path to load via cubit.loadPreset: '$pathFromDialog'");
+
+                        cubit.loadPreset(pathFromDialog, append);
+                      } else {
+                        debugPrint(
+                            "LoadPresetDialog returned an unexpected structure (expected 'sdCardPath'): $result");
+                      }
                     },
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -573,14 +610,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading || isOffline
                   ? null
                   : () async {
-                      final routingInformation = popupCtx
-                          .read<DistingCubit>()
-                          .buildRoutingInformation();
+                      final cubit = popupCtx.read<DistingCubit>();
                       Navigator.push(
                         popupCtx,
                         MaterialPageRoute(
-                            builder: (_) =>
-                                RoutingPage(routing: routingInformation)),
+                            builder: (_) => RoutingPage(cubit: cubit)),
                       );
                     },
               child: const Row(
@@ -1052,13 +1086,13 @@ class SectionParameterListView extends StatefulWidget {
 }
 
 class _SectionParameterListViewState extends State<SectionParameterListView> {
-  late final List<ExpansionTileController> _tileControllers;
+  late final List<ExpansibleController> _tileControllers;
   var _isCollapsed = false;
 
   @override
   void initState() {
-    _tileControllers = List.generate(
-        widget.pages.pages.length, (_) => ExpansionTileController());
+    _tileControllers =
+        List.generate(widget.pages.pages.length, (_) => ExpansibleController());
     super.initState();
   }
 
@@ -1296,7 +1330,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   @override
   void initState() {
     super.initState();
-    currentValue = widget.initialValue;
+    currentValue = widget.initialValue.clamp(widget.min, widget.max);
     isChecked = widget.isOnOff && currentValue == 1;
   }
 
@@ -1305,9 +1339,11 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     super.didUpdateWidget(oldWidget);
 
     // Update internal state when the widget is updated
-    if (widget.initialValue != oldWidget.initialValue) {
+    if (widget.initialValue != oldWidget.initialValue ||
+        widget.min != oldWidget.min ||
+        widget.max != oldWidget.max) {
       setState(() {
-        currentValue = widget.initialValue;
+        currentValue = widget.initialValue.clamp(widget.min, widget.max);
         isChecked = widget.isOnOff && currentValue == 1;
       });
     }
@@ -1747,6 +1783,7 @@ String midiNoteToNoteString(int midiNoteNumber) {
 /// Small round LED indicator for MCP server status with tooltip
 class _McpStatusIndicator extends StatelessWidget {
   static const int mcpPort = 3000;
+
   const _McpStatusIndicator();
 
   @override
@@ -1840,7 +1877,7 @@ class _McpStatusIndicator extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 2,
                 offset: Offset(1, 1),
               ),
@@ -1853,7 +1890,7 @@ class _McpStatusIndicator extends StatelessWidget {
               height: 5,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               margin: const EdgeInsets.only(
                   right: 3, bottom: 3), // Position highlight

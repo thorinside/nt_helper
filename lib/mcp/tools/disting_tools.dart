@@ -1,21 +1,30 @@
 import 'dart:convert';
+import 'dart:math'; // For min, pow functions
 import 'dart:typed_data'; // Added for Uint8List
-import 'dart:math'; // For min function
-import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Re-added for Algorithm, ParameterInfo etc.
+
 import 'package:image/image.dart' as img; // For image processing
-import 'package:nt_helper/util/case_converter.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Re-added for Algorithm, ParameterInfo etc.
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
-import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/disting_controller.dart';
+import 'package:nt_helper/util/case_converter.dart';
 
 /// Defines MCP tools for interacting with the Disting state (presets, slots, parameters)
 /// via the DistingController.
 class DistingTools {
   final DistingController _controller;
+
   // Assuming a maximum number of slots for finding the first empty one
   final int maxSlots = 32;
 
   DistingTools(this._controller);
+
+  // Helper to scale value based on powerOfTen for display
+  num _scaleForDisplay(int value, int? powerOfTen) {
+    if (powerOfTen != null && powerOfTen > 0) {
+      return value / pow(10, powerOfTen);
+    }
+    return value;
+  }
 
   /// MCP Tool: Gets the entire current preset state.
   /// Parameters: None
@@ -39,17 +48,22 @@ class DistingTools {
 
           List<Map<String, dynamic>> parametersJsonList = [];
           for (final pInfo in parameterInfos) {
-            final int? liveValue =
+            final int? liveRawValue =
                 await _controller.getParameterValue(i, pInfo.parameterNumber);
+
             parametersJsonList.add({
               'parameter_number': pInfo.parameterNumber,
               'name': pInfo.name,
-              'min': pInfo.min,
-              'max': pInfo.max,
-              'default_value': pInfo.defaultValue,
+              'min_value':
+                  _scaleForDisplay(pInfo.min, pInfo.powerOfTen), // Scaled
+              'max_value':
+                  _scaleForDisplay(pInfo.max, pInfo.powerOfTen), // Scaled
+              'default_value': _scaleForDisplay(
+                  pInfo.defaultValue, pInfo.powerOfTen), // Scaled
               'unit': pInfo.unit,
-              'power_of_ten': pInfo.powerOfTen,
-              'value': liveValue, // Added live parameter value
+              'value': liveRawValue != null
+                  ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
+                  : null, // Scaled
             });
           }
 
@@ -69,7 +83,8 @@ class DistingTools {
           _buildPresetJson(presetName, slotsJsonList);
       return jsonEncode(
           convertToSnakeCaseKeys(presetData)); // Apply converter here
-    } catch (e) {
+    } catch (e, s) {
+      print('[MCP DistingTools] Error in get_current_preset: $e\\n$s');
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -127,7 +142,8 @@ class DistingTools {
         (algorithmName == null || algorithmName.isEmpty)) {
       return jsonEncode({
         'success': false,
-        'error': 'Missing or empty "algorithm_guid" or "algorithm_name" parameter.'
+        'error':
+            'Missing or empty "algorithm_guid" or "algorithm_name" parameter.'
       });
     }
 
@@ -135,7 +151,8 @@ class DistingTools {
     if (algorithmGuid == null || algorithmGuid.isEmpty) {
       final algorithms = AlgorithmMetadataService().getAllAlgorithms();
       final exactMatches = algorithms
-          .where((alg) => alg.name.toLowerCase() == algorithmName!.toLowerCase())
+          .where(
+              (alg) => alg.name.toLowerCase() == algorithmName!.toLowerCase())
           .toList();
       if (exactMatches.isEmpty) {
         final fuzzyMatches = algorithms.where((alg) {
@@ -173,10 +190,8 @@ class DistingTools {
     }
 
     try {
-      final algoStub = Algorithm(
-          algorithmIndex: -1,
-          guid: resolvedGuid,
-          name: '');
+      final algoStub =
+          Algorithm(algorithmIndex: -1, guid: resolvedGuid, name: '');
 
       await _controller.addAlgorithm(algoStub);
 
@@ -184,7 +199,8 @@ class DistingTools {
         'success': true,
         'message': 'Request to add algorithm $resolvedGuid sent.'
       }));
-    } catch (e) {
+    } catch (e, s) {
+      print('[MCP DistingTools] Error in add_algorithm: $e\\n$s');
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -198,8 +214,9 @@ class DistingTools {
   Future<String> remove_algorithm(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'];
     if (slotIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+      return jsonEncode(convertToSnakeCaseKeys(
+          // Ensure snake case for error response
+          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
 
     try {
@@ -208,7 +225,8 @@ class DistingTools {
         'success': true,
         'message': 'Algorithm removed from slot $slotIndex.'
       }));
-    } catch (e) {
+    } catch (e, s) {
+      print('[MCP DistingTools] Error in remove_algorithm: $e\\n$s');
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -217,70 +235,116 @@ class DistingTools {
   // Updated method to set parameter value, handling display_value and powerOfTen
   Future<String> set_parameter_value(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
-    final int? parameterNumber = params['parameter_number'] as int?;
-    // Expect 'display_value' which can be int or double (or string parsable to double)
-    final dynamic displayValue = params['display_value'];
+    final int? parameterNumberParam = params['parameter_number'] as int?;
+    final String? parameterNameParam = params['parameter_name'] as String?;
+    final num? displayValue = params['value'] as num?;
 
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
           {'success': false, 'error': 'Missing "slot_index" parameter.'}));
     }
-    if (parameterNumber == null) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error': 'Missing "parameter_number" parameter.'
-      }));
-    }
     if (displayValue == null) {
       return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing "display_value" parameter.'}));
+          {'success': false, 'error': 'Missing "value" parameter.'}));
+    }
+
+    if (parameterNumberParam == null && parameterNameParam == null) {
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error':
+            'Either "parameter_number" or "parameter_name" must be provided.'
+      }));
+    }
+
+    if (parameterNumberParam != null && parameterNameParam != null) {
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error':
+            'Provide either "parameter_number" or "parameter_name", not both.'
+      }));
     }
 
     try {
-      // Fetch parameter info to get powerOfTen
       final List<ParameterInfo> paramInfos =
           await _controller.getParametersForSlot(slotIndex);
-      if (parameterNumber >= paramInfos.length) {
+
+      int? targetParameterNumber;
+      ParameterInfo? paramInfo;
+
+      if (parameterNumberParam != null) {
+        if (parameterNumberParam >= paramInfos.length ||
+            parameterNumberParam < 0) {
+          return jsonEncode(convertToSnakeCaseKeys({
+            'success': false,
+            'error':
+                'Parameter number $parameterNumberParam is out of bounds for slot $slotIndex.'
+          }));
+        }
+        targetParameterNumber = parameterNumberParam;
+        paramInfo = paramInfos[targetParameterNumber];
+      } else if (parameterNameParam != null) {
+        final matchingParams = paramInfos
+            .where(
+                (p) => p.name.toLowerCase() == parameterNameParam.toLowerCase())
+            .toList();
+
+        if (matchingParams.isEmpty) {
+          return jsonEncode(convertToSnakeCaseKeys({
+            'success': false,
+            'error':
+                'Parameter with name "${parameterNameParam}" not found in slot $slotIndex. Check `get_current_preset` for available parameters.'
+          }));
+        }
+        if (matchingParams.length > 1) {
+          return jsonEncode(convertToSnakeCaseKeys({
+            'success': false,
+            'error':
+                'Parameter name "${parameterNameParam}" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.'
+          }));
+        }
+        paramInfo = matchingParams.first;
+        // We need to find the original index (parameterNumber) of this paramInfo
+        targetParameterNumber = paramInfos.indexOf(paramInfo);
+      }
+
+      if (paramInfo == null || targetParameterNumber == null) {
+        // Should not happen if logic above is correct
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Failed to identify target parameter.'
+        }));
+      }
+
+      int rawValue;
+      if (paramInfo.powerOfTen > 0) {
+        rawValue = (displayValue * pow(10, paramInfo.powerOfTen)).round();
+      } else {
+        rawValue =
+            displayValue.round(); // Round even if no powerOfTen, to ensure int
+      }
+
+      if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
+        final effectiveMin =
+            _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
+        final effectiveMax =
+            _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
         return jsonEncode(convertToSnakeCaseKeys({
           'success': false,
           'error':
-              'Parameter number $parameterNumber is out of bounds for slot $slotIndex.'
+              'Provided value $displayValue (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).'
         }));
       }
-      final ParameterInfo paramInfo = paramInfos[parameterNumber];
-      final int powerOfTen = paramInfo.powerOfTen ?? 0;
 
-      // Parse displayValue to double first for consistent scaling
-      double parsedDisplayValue;
-      if (displayValue is double) {
-        parsedDisplayValue = displayValue;
-      } else if (displayValue is int) {
-        parsedDisplayValue = displayValue.toDouble();
-      } else if (displayValue is String) {
-        parsedDisplayValue = double.tryParse(displayValue) ??
-            (throw ArgumentError(
-                'Cannot parse display_value string "$displayValue" to double.'));
-      } else {
-        throw ArgumentError(
-            'Invalid display_value type: ${displayValue.runtimeType}. Expected number or parsable string.');
-      }
-
-      // Scale the value
-      final double scaledValueDouble = parsedDisplayValue * pow(10, powerOfTen);
-      // The controller expects an integer, so round the scaled value.
-      // This matches how hardware often handles floating point parameters internally.
-      final int finalIntValue = scaledValueDouble.round();
-
-      // The controller.updateParameterValue will perform min/max validation against this finalIntValue
       await _controller.updateParameterValue(
-          slotIndex, parameterNumber, finalIntValue);
+          slotIndex, targetParameterNumber, rawValue);
 
       return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
         'message':
-            'Parameter $parameterNumber in slot $slotIndex set with display value $displayValue (sent as $finalIntValue).'
+            'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.'
       }));
-    } catch (e) {
+    } catch (e, s) {
+      print('[MCP DistingTools] Error in set_parameter_value: $e\\n$s');
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -308,23 +372,39 @@ class DistingTools {
     }
 
     try {
-      final int? value =
+      final int? liveRawValue =
           await _controller.getParameterValue(slotIndex, parameterNumber);
-      if (value != null) {
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': true,
-          'slot_index': slotIndex,
-          'parameter_number': parameterNumber,
-          'value': value,
-        }));
-      } else {
+
+      if (liveRawValue == null) {
         return jsonEncode(convertToSnakeCaseKeys({
           'success': false,
           'error':
-              'Failed to retrieve parameter value for slot $slotIndex, parameter $parameterNumber. Value was null, possibly due to MIDI error, empty slot, or invalid parameter.',
+              'Could not retrieve value for parameter $parameterNumber in slot $slotIndex.'
         }));
       }
-    } catch (e) {
+
+      // Fetch parameter info to get powerOfTen for scaling
+      final List<ParameterInfo> paramInfos =
+          await _controller.getParametersForSlot(slotIndex);
+      if (parameterNumber >= paramInfos.length || parameterNumber < 0) {
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error':
+              'Parameter number $parameterNumber is out of bounds for slot $slotIndex (for scaling info).'
+        }));
+      }
+      final ParameterInfo paramInfo = paramInfos[parameterNumber];
+
+      final Map<String, dynamic> result = {
+        'success': true,
+        'slot_index': slotIndex,
+        'parameter_number': parameterNumber,
+        'value': _scaleForDisplay(
+            liveRawValue, paramInfo.powerOfTen), // Scaled value
+      };
+      return jsonEncode(convertToSnakeCaseKeys(result));
+    } catch (e, s) {
+      print('[MCP DistingTools] Error in get_parameter_value: $e\\n$s');
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -480,7 +560,6 @@ class DistingTools {
     // For now, we'll assume maxSlots is dynamic or handled by the controller.
 
     final int sourceSlotIndex = slotIndex;
-    final int destSlotIndex = slotIndex + 1;
 
     try {
       // Check if sourceSlotIndex is already the last possible slot.
