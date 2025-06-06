@@ -55,7 +55,7 @@ class SynchronizedScreen extends StatefulWidget {
 }
 
 class _SynchronizedScreenState extends State<SynchronizedScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late int _selectedIndex;
   late TabController _tabController;
 
@@ -87,13 +87,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         vsync: this,
       );
       _tabController.addListener(_handleTabSelection);
-      // Ensure selected index is valid
-      if (_selectedIndex >= widget.slots.length) {
+      // Clamp selectedIndex into valid range [0, slots.length-1] (or 0 if no slots).
+      final int maxIndex = widget.slots.isEmpty ? 0 : widget.slots.length - 1;
+      int newIndex = _selectedIndex.clamp(0, maxIndex) as int;
+      if (newIndex != _selectedIndex) {
         setState(() {
-          _selectedIndex = widget.slots.length - 1;
+          _selectedIndex = newIndex;
         });
       }
-      _tabController.index = _selectedIndex;
+      _tabController.index = newIndex;
     }
   }
 
@@ -297,32 +299,28 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
-  AnimatedSwitcher _buildBody() {
-    return AnimatedSwitcher(
-      duration: Duration(seconds: 1),
-      child: Builder(builder: (context) {
-        return widget.slots.isNotEmpty
-            ? TabBarView(
-                controller: _tabController,
-                children: widget.slots.mapIndexed((index, slot) {
-                  return SlotDetailView(
-                    key: ValueKey("$index - ${slot.algorithm.guid}"),
-                    slot: slot,
-                    units: widget.units,
-                  );
-                }).toList(),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    "No algorithms",
-                    style: Theme.of(context).textTheme.displaySmall,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              );
-      }),
+  Widget _buildBody() {
+    if (widget.slots.isNotEmpty) {
+      return TabBarView(
+        controller: _tabController,
+        children: widget.slots.mapIndexed((index, slot) {
+          return SlotDetailView(
+            key: ValueKey("$index - ${slot.algorithm.guid}"),
+            slot: slot,
+            units: widget.units,
+          );
+        }).toList(),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "No algorithms",
+          style: Theme.of(context).textTheme.displaySmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 

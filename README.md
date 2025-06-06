@@ -45,12 +45,13 @@ The `nt_helper` application exposes several functions via its built-in MCP (Mode
 
 These tools interact with the locally cached algorithm metadata.
 
--   **`get_algorithm_details`**
-    -   Description: Retrieves full metadata for a specific algorithm by its GUID.
+   **`get_algorithm_details`**
+    -   Description: Retrieves full metadata for a specific algorithm by its GUID or name (case-insensitive exact match; if no exact match, fuzzy matching ≥70% similarity is attempted). If multiple or no match, returns an error.
     -   Parameters:
-        -   `guid` (string, required): The unique identifier of the algorithm.
+        -   `guid` (string, optional): The unique identifier of the algorithm.
+        -   `algorithm_name` (string, optional): The human‑readable name of the algorithm (case-insensitive exact match; fuzzy fallback ≥70% similarity).
         -   `expand_features` (bool, optional, default: `false`): If `true`, resolves and includes parameters defined within features directly in the main parameter list.
-    -   Returns: A JSON string representing the `AlgorithmMetadata` object for the specified GUID, or `null` if not found.
+    -   Returns: A JSON string representing the `AlgorithmMetadata` object for the specified algorithm, or an error JSON (`"success": false`, `"error"`).
 
 -   **`list_algorithms`**
     -   Description: Lists available algorithms, optionally filtered.
@@ -58,12 +59,6 @@ These tools interact with the locally cached algorithm metadata.
         -   `category` (string, optional): Filters the list to algorithms belonging to this category (case-insensitive).
         -   `feature_guid` (string, optional): Filters the list to algorithms that include this feature GUID.
     -   Returns: A JSON string representing a list of `AlgorithmMetadata` objects.
-
--   **`find_algorithms`**
-    -   Description: Performs a text search across algorithm names, descriptions, and categories.
-    -   Parameters:
-        -   `query` (string, required): The search query text.
-    -   Returns: A JSON string representing a list of matching `AlgorithmMetadata` objects.
 
 -   **`get_current_routing_state`**
     -   Description: Retrieves the current routing state of all algorithms in the preset, decoded into `RoutingInformation` objects. This helps visualize how audio and CV signals are passed between algorithms.
@@ -85,10 +80,11 @@ These tools interact directly with the connected Disting NT module or the offlin
             -   `algorithm` (object): Details of the algorithm in the slot (`guid`, `name`, `algorithmIndex` which is the module's internal reference for this instance).
             -   `parameters` (array): A list of parameter information objects for the algorithm in this slot (`parameterNumber` which is the 0-based index for API calls, `name`, `min`, `max`, `defaultValue`, `unit`, `powerOfTen`). **Note**: The live `value` is NOT returned here; use `get_parameter_value` for that.
 
--   **`add_algorithm`**
-    -   Description: Adds a specified algorithm to the *first available empty slot* on the Disting NT. The actual slot index is determined by the module's firmware.
+   **`add_algorithm`**
+    -   Description: Adds a specified algorithm to the *first available empty slot* on the Disting NT (as determined by firmware). Accepts GUID or name (case-insensitive exact match; if no exact match, fuzzy matching ≥70% similarity is attempted). If multiple or no match, returns an error.
     -   Parameters:
-        -   `algorithm_guid` (string, required): The GUID of the algorithm to add.
+        -   `algorithm_guid` (string, optional): The GUID of the algorithm to add.
+        -   `algorithm_name` (string, optional): The human‑readable name of the algorithm (case-insensitive exact match; fuzzy fallback ≥70% similarity).
     -   Returns: A JSON string with a success or error message.
 
 -   **`remove_algorithm`**

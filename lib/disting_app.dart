@@ -59,7 +59,7 @@ class DistingApp extends StatelessWidget {
         backgroundColor: baseColorScheme.surface,
         foregroundColor: baseColorScheme.onSurface,
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         indicator: UnderlineTabIndicator(
           borderSide: BorderSide(
             color: baseColorScheme.secondary,

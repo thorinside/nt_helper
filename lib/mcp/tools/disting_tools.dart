@@ -3,8 +3,9 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'dart:math'; // For min function
 import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Re-added for Algorithm, ParameterInfo etc.
 import 'package:image/image.dart' as img; // For image processing
-import 'package:nt_helper/util/case_converter.dart'; // Added import
-
+import 'package:nt_helper/util/case_converter.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 
 /// Defines MCP tools for interacting with the Disting state (presets, slots, parameters)
@@ -82,6 +83,38 @@ class DistingTools {
     };
   }
 
+  static int _levenshteinDistance(String s, String t) {
+    final int sLen = s.length;
+    final int tLen = t.length;
+    if (sLen == 0) return tLen;
+    if (tLen == 0) return sLen;
+    final v = List.generate(sLen + 1, (_) => List<int>.filled(tLen + 1, 0));
+    for (var i = 0; i <= sLen; i++) {
+      v[i][0] = i;
+    }
+    for (var j = 0; j <= tLen; j++) {
+      v[0][j] = j;
+    }
+    for (var i = 1; i <= sLen; i++) {
+      for (var j = 1; j <= tLen; j++) {
+        final cost = s[i - 1].toLowerCase() == t[j - 1].toLowerCase() ? 0 : 1;
+        v[i][j] = [
+          v[i - 1][j] + 1,
+          v[i][j - 1] + 1,
+          v[i - 1][j - 1] + cost,
+        ].reduce((a, b) => a < b ? a : b);
+      }
+    }
+    return v[sLen][tLen];
+  }
+
+  static double _similarity(String s, String t) {
+    final dist = _levenshteinDistance(s, t);
+    final maxLen = s.length > t.length ? s.length : t.length;
+    if (maxLen == 0) return 1.0;
+    return (maxLen - dist) / maxLen;
+  }
+
   /// MCP Tool: Adds an algorithm to the first available slot (determined by hardware).
   /// Parameters:
   ///   - algorithm_guid (string, required): The GUID of the algorithm to add.
@@ -89,31 +122,67 @@ class DistingTools {
   ///   A JSON string confirming the addition or an error.
   Future<String> add_algorithm(Map<String, dynamic> params) async {
     final String? algorithmGuid = params['algorithm_guid'];
-    if (algorithmGuid == null || algorithmGuid.isEmpty) {
+    final String? algorithmName = params['algorithm_name'];
+    if ((algorithmGuid == null || algorithmGuid.isEmpty) &&
+        (algorithmName == null || algorithmName.isEmpty)) {
       return jsonEncode({
         'success': false,
-        'error': 'Missing or empty "algorithm_guid" parameter.'
+        'error': 'Missing or empty "algorithm_guid" or "algorithm_name" parameter.'
       });
     }
 
-    try {
-      // Create a minimal Algorithm object with just the GUID.
-      // The controller/cubit uses this to find the full AlgorithmInfo.
-      // The algorithmIndex here is arbitrary as it's not used for adding.
-      final algoStub = Algorithm(
-          algorithmIndex: -1, // Placeholder, not used for adding
-          guid: algorithmGuid,
-          name: '' // Placeholder, not used
-          );
+    String resolvedGuid = algorithmGuid ?? '';
+    if (algorithmGuid == null || algorithmGuid.isEmpty) {
+      final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+      final exactMatches = algorithms
+          .where((alg) => alg.name.toLowerCase() == algorithmName!.toLowerCase())
+          .toList();
+      if (exactMatches.isEmpty) {
+        final fuzzyMatches = algorithms.where((alg) {
+          return _similarity(alg.name, algorithmName!) >= 0.7;
+        }).toList();
+        if (fuzzyMatches.isEmpty) {
+          return jsonEncode(convertToSnakeCaseKeys({
+            'success': false,
+            'error': 'No algorithm named "$algorithmName" found.'
+          }));
+        }
+        if (fuzzyMatches.length > 1) {
+          final candidates = fuzzyMatches
+              .map((alg) => {'name': alg.name, 'guid': alg.guid})
+              .toList();
+          return jsonEncode(convertToSnakeCaseKeys({
+            'success': false,
+            'error':
+                'Ambiguous algorithm name "$algorithmName". Fuzzy matches (>=70%): $candidates. Please specify more precisely or use the GUID.'
+          }));
+        }
+        resolvedGuid = fuzzyMatches.first.guid;
+      } else if (exactMatches.length > 1) {
+        final candidates = exactMatches
+            .map((alg) => {'name': alg.name, 'guid': alg.guid})
+            .toList();
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error':
+              'Ambiguous algorithm name "$algorithmName". Matches: $candidates. Please specify more precisely.'
+        }));
+      } else {
+        resolvedGuid = exactMatches.first.guid;
+      }
+    }
 
-      // Call the updated controller method
+    try {
+      final algoStub = Algorithm(
+          algorithmIndex: -1,
+          guid: resolvedGuid,
+          name: '');
+
       await _controller.addAlgorithm(algoStub);
 
-      // Since the hardware determines the slot, we can't report the index here.
-      // The user/client might need to call getCurrentPreset after to see the result.
       return jsonEncode(convertToSnakeCaseKeys({
         'success': true,
-        'message': 'Request to add algorithm $algorithmGuid sent.'
+        'message': 'Request to add algorithm $resolvedGuid sent.'
       }));
     } catch (e) {
       return jsonEncode(

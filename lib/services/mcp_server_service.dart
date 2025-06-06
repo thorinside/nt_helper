@@ -385,12 +385,15 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'get_algorithm_details',
       description:
-          'Retrieves full metadata for an algorithm by its GUID. Use `get_current_preset` for live parameter numbers for `set_parameter_value` / `get_parameter_value`.',
+          'Retrieves full metadata for an algorithm by its GUID or name (case-insensitive exact match; if no exact match, fuzzy matching >=70% accuracy is attempted). Use `get_current_preset` for live parameter numbers for `set_parameter_value` / `get_parameter_value`. If multiple or no match, an error is returned.',
       inputSchemaProperties: {
         'guid': {
           'type': 'string',
-          'description':
-              'Algorithm GUID (from `list_algorithms` or `find_algorithms`).'
+          'description': 'Algorithm GUID (from `list_algorithms`).'
+        },
+        'algorithm_name': {
+          'type': 'string',
+          'description': 'Algorithm name (case-insensitive exact match; fuzzy fallback >=70% similarity).'
         },
         'expand_features': {
           'type': 'boolean',
@@ -401,10 +404,6 @@ class McpServerService extends ChangeNotifier {
       callback: ({args, extra}) async {
         final resultJson =
             await mcpAlgorithmTools.get_algorithm_details(args ?? {});
-        if (resultJson == null) {
-          return CallToolResult(
-              content: [TextContent(text: 'Error: Algorithm not found')]);
-        }
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -412,32 +411,19 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'list_algorithms',
       description:
-          'Lists available algorithms, optionally filtered by category or feature GUID. GUIDs are used with `add_algorithm` and `get_algorithm_details`.',
+          'Lists available algorithms, optionally filtered by category or a text query. GUIDs are used with `add_algorithm` and `get_algorithm_details`.',
       inputSchemaProperties: {
         'category': {
           'type': 'string',
           'description': 'Filter by category (case-insensitive).'
         },
-        'feature_guid': {
+        'query': {
           'type': 'string',
-          'description': 'Filter by included feature GUID.'
+          'description': 'Filter by a text search query.'
         }
       },
       callback: ({args, extra}) async {
         final resultJson = await mcpAlgorithmTools.list_algorithms(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
-      },
-    );
-
-    server.tool(
-      'find_algorithms',
-      description:
-          'Text search for algorithms. GUIDs found are used with `add_algorithm` and `get_algorithm_details`.',
-      inputSchemaProperties: {
-        'query': {'type': 'string', 'description': 'Search query text.'}
-      },
-      callback: ({args, extra}) async {
-        final resultJson = await mcpAlgorithmTools.find_algorithms(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -470,11 +456,15 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'add_algorithm',
       description:
-          'Adds an algorithm to the first available slot. Use GUID from `list_algorithms` or `find_algorithms`.',
+          'Adds an algorithm to the first available slot. Use GUID or name (case-insensitive exact match; if no exact match, fuzzy matching >=70% accuracy is attempted). If multiple or no match, an error is returned.',
       inputSchemaProperties: {
         'algorithm_guid': {
           'type': 'string',
           'description': 'GUID of the algorithm to add.'
+        },
+        'algorithm_name': {
+          'type': 'string',
+          'description': 'Name of the algorithm to add (case-insensitive exact match; fuzzy fallback >=70% similarity).'
         }
       },
       callback: ({args, extra}) async {
