@@ -1,0 +1,139 @@
+{
+  "guid": "saml",
+  "name": "Sample Player (Sliced)",
+  "categories": [
+    "Sample Player"
+  ],
+  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It\u2019s your go-to algorithm for breakbeat slicing. Please review the section on the features common to the various Sample Players, above.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Slice",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 24,
+      "scope": "global",
+      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the \u2018Play\u2019 parameter."
+    },
+    {
+      "name": "Slices",
+      "unit": null,
+      "defaultValue": 24,
+      "minValue": 1,
+      "maxValue": 24,
+      "scope": "global",
+      "description": "Sets the number of slices in use."
+    },
+    {
+      "name": "Stop at slice end",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "If enabled, playback will stop when it reaches the next slice. Otherwise, playback continues to the end of the sample."
+    },
+    {
+      "name": "Clock source",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "scope": "global",
+      "description": "Sets the clock source: \u2018Off\u2019, \u2018External\u2019, or \u2018MIDI\u2019."
+    },
+    {
+      "name": "Auto trigger",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "scope": "global",
+      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop."
+    },
+    {
+      "name": "Auto divisor",
+      "unit": null,
+      "defaultValue": 15,
+      "minValue": 0,
+      "maxValue": 19,
+      "scope": "global",
+      "description": "Sets how often the sample will be triggered, if \u2018Auto trigger\u2019 is \u2018Fixed\u2019."
+    },
+    {
+      "name": "Time sig num",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 1,
+      "maxValue": 99,
+      "scope": "global",
+      "description": "The time signature numerator."
+    },
+    {
+      "name": "Time sig denom",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 4,
+      "scope": "global",
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
+    },
+    {
+      "name": "Slice input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the slice CV input (V/oct, scaled at one semitone per slice)."
+    },
+    {
+      "name": "Clock input",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the clock input (24 ppqn)."
+    },
+    {
+      "name": "Run/stop input",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the run/stop input."
+    },
+    {
+      "name": "Coarse",
+      "unit": "%",
+      "defaultValue": 0.0,
+      "minValue": 0.0,
+      "maxValue": 100.0,
+      "scope": "global",
+      "description": "The coarse slice position, as a percentage of the sample length."
+    },
+    {
+      "name": "Fine",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -500,
+      "maxValue": 500,
+      "scope": "global",
+      "description": "The fine slice position, in sample frames."
+    },
+    {
+      "name": "Speed",
+      "unit": "%",
+      "defaultValue": 100.0,
+      "minValue": -200.0,
+      "maxValue": 200.0,
+      "scope": "global",
+      "description": "The playback speed for the slice."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

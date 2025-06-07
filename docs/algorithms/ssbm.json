@@ -1,0 +1,92 @@
+{
+  "guid": "ssbm",
+  "name": "SSB Modulator",
+  "categories": [],
+  "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs. For a (rather technical) description of single side band modulation, see the Wikipedia article here^93. If you use a pure sine wave for one of the inputs, you essentially have a frequency shifter, but one where you control the shift by controlling the frequency of your input oscillator.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Mix",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "Level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 0,
+      "scope": "global",
+      "description": "The output gain applied to the modulated signal."
+    },
+    {
+      "name": "Input 1",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first input bus to process for the first signal."
+    },
+    {
+      "name": "Input 2",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first input bus to process for the second signal."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "scope": "global",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Upper SB output",
+      "unit": null,
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first output bus for the upper side band."
+    },
+    {
+      "name": "Upper SB mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The standard Add/Replace mode selector as described above for the upper side band."
+    },
+    {
+      "name": "Lower SB output",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first output bus for the lower side band."
+    },
+    {
+      "name": "Lower SB mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The standard Add/Replace mode selector as described above for the lower side band."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

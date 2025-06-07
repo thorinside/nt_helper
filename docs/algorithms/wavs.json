@@ -1,0 +1,102 @@
+{
+  "guid": "wavs",
+  "name": "Waveshaper",
+  "categories": [
+    "Waveshaper/wavefolder"
+  ],
+  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch the video on that algorithm here^105. From the disting mk4 manual: \u201cType 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes. \u201cType 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.\u201d",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Input gain",
+      "unit": null,
+      "defaultValue": 1.0,
+      "minValue": -32.0,
+      "maxValue": 32.0,
+      "scope": "global",
+      "description": "The input gain. Negative values invert the signal."
+    },
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The waveshaping mode: \u2018Wavefolder\u2019 or \u2018Tri-to-sine shaper\u2019.",
+      "enumValues": [
+        "Wavefolder",
+        "Tri-to-sine shaper"
+      ]
+    },
+    {
+      "name": "Mix",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "Level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 0,
+      "scope": "global",
+      "description": "The output gain applied to the shaped signal."
+    },
+    {
+      "name": "Gain input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use to control the input gain. Scaled such that a 5V CV gives 32x gain."
+    },
+    {
+      "name": "Input",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first input bus to process."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "scope": "global",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output",
+      "unit": null,
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The standard Add/Replace mode selector as described above.",
+      "enumValues": [
+        "Add",
+        "Replace"
+      ]
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

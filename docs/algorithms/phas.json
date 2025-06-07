@@ -1,0 +1,153 @@
+{
+  "guid": "phas",
+  "name": "Phaser",
+  "categories": [
+    "Effect"
+  ],
+  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. You may like to view the video on that algorithm, which is here^79. It\u2019s a classic phaser effect, using a number of all-pass filters to introduce notches into the audio\u2019s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Sweep",
+      "unit": null,
+      "defaultValue": 0.0,
+      "minValue": -1.0,
+      "maxValue": 1.0,
+      "scope": "global",
+      "description": "Sweeps the all-pass filters over the audio spectrum."
+    },
+    {
+      "name": "Stages",
+      "unit": null,
+      "defaultValue": 8,
+      "minValue": 1,
+      "maxValue": 32,
+      "scope": "global",
+      "description": "Sets the number of all-pass filter stages."
+    },
+    {
+      "name": "Feedback",
+      "unit": "%",
+      "defaultValue": 0.0,
+      "minValue": -100.0,
+      "maxValue": 100.0,
+      "scope": "global",
+      "description": "Sets the amount of feedback around the effect. Negative values invert the signal."
+    },
+    {
+      "name": "Warp",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "If enabled, warps the sweep parameter/CV for a more perceptually linear sweep."
+    },
+    {
+      "name": "Input scale",
+      "unit": "%",
+      "defaultValue": 20,
+      "minValue": -100,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "Sets the scaling of the sweep CV input."
+    },
+    {
+      "name": "Mix",
+      "unit": "%",
+      "defaultValue": 50,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "Level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 0,
+      "scope": "global",
+      "description": "The output gain applied to the effected signal."
+    },
+    {
+      "name": "Sweep input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the sweep CV."
+    },
+    {
+      "name": "Input",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first audio input bus."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "scope": "global",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output",
+      "unit": null,
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The standard Add/Replace mode selector as described above."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "sweep_input",
+      "name": "Sweep input",
+      "description": "The bus to use for the sweep CV.",
+      "busIdRef": "0"
+    },
+    {
+      "id": "input",
+      "name": "Input",
+      "description": "The first audio input bus.",
+      "busIdRef": "1"
+    },
+    {
+      "id": "width",
+      "name": "Width",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "busIdRef": "1"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "The first output bus.",
+      "busIdRef": "13"
+    },
+    {
+      "id": "output_mode",
+      "name": "Output mode",
+      "description": "The standard Add/Replace mode selector as described above.",
+      "busIdRef": "0"
+    }
+  ]
+}

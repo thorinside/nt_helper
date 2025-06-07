@@ -1,0 +1,127 @@
+{
+  "guid": "logi",
+  "name": "Logic",
+  "categories": [
+    "Utility",
+    "Logic"
+  ],
+  "description": "Performs logical operations (AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop) on pairs of inputs, based on the disting mk4 algorithm.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 8,
+      "description": "The number of channels to process."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Threshold",
+      "unit": "V",
+      "defaultValue": 1.00,
+      "minValue": 0.00,
+      "maxValue": 10.00,
+      "scope": "global",
+      "description": "Signals above this voltage are treated as a logic ‘1’/true."
+    },
+    {
+      "name": "Hysteresis",
+      "unit": "V",
+      "defaultValue": 0.50,
+      "minValue": 0.00,
+      "maxValue": 10.00,
+      "scope": "global",
+      "description": "Once over the threshold, signals must fall by this amount before being treated as a logic ‘0’/false."
+    },
+    {
+      "name": "Output true",
+      "unit": "V",
+      "defaultValue": 5.00,
+      "minValue": -10.00,
+      "maxValue": 10.00,
+      "scope": "global",
+      "description": "The output voltage for logic ‘1’/true; logic ‘0’/false is always output as 0V."
+    },
+    {
+      "name": "Enable",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Off", "On"],
+      "scope": "channel",
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Operation",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 7,
+      "enumValues": ["AND", "OR", "XOR", "NAND", "NOR", "XNOR", "SR flip-flop", "D flip-flop"],
+      "scope": "channel",
+      "description": "Selects the logical operation."
+    },
+    {
+      "name": "Input X",
+      "unit": "bus",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "Chooses the X input bus."
+    },
+    {
+      "name": "Input Y",
+      "unit": "bus",
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "Chooses the Y input bus."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "channel",
+      "description": "Chooses the output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Add", "Replace"],
+      "scope": "channel",
+      "description": "The standard Add/Replace mode selector."
+    }
+  ],
+  "input_ports": [
+    {
+      "id": "in_x",
+      "name": "Input X",
+      "description": "First logic input.",
+      "busIdRef": "Input X"
+    },
+    {
+      "id": "in_y",
+      "name": "Input Y",
+      "description": "Second logic input.",
+      "busIdRef": "Input Y"
+    }
+  ],
+  "output_ports": [
+    {
+      "id": "out",
+      "name": "Output",
+      "description": "Logic function result.",
+      "busIdRef": "Output"
+    }
+  ]
+}

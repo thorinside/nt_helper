@@ -1,0 +1,65 @@
+{
+  "guid": "samb",
+  "name": "Sample Player (Scrub)",
+  "categories": [],
+  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. You might like to watch the video on that algorithm, here^88. From the disting mk4 manual: \u201cIn this algorithm the sample playback position is directly driven from the [input]. Imagine a piece of audio tape passing over a tape head \u2013 in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself.\u201d You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have \u2018Retrigger on change\u2019 on). Please review the section on the features common to the various Sample Players, above.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Scrub",
+      "unit": "%",
+      "defaultValue": 50.0,
+      "minValue": 0.0,
+      "maxValue": 100.0,
+      "scope": "global",
+      "description": "Sets the scrub position."
+    },
+    {
+      "name": "Max speed",
+      "unit": null,
+      "defaultValue": 16,
+      "minValue": 1,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "Sets the maximum playback speed."
+    },
+    {
+      "name": "Slew",
+      "unit": null,
+      "defaultValue": 400,
+      "minValue": 0,
+      "maxValue": 1000,
+      "scope": "global",
+      "description": "Sets the amount of slew applied to the scrub position."
+    },
+    {
+      "name": "Min CV",
+      "unit": "V",
+      "defaultValue": -5,
+      "minValue": -10,
+      "maxValue": 10,
+      "scope": "global",
+      "description": "Sets the CV voltage corresponding to scrubbing to the start of the sample."
+    },
+    {
+      "name": "Max CV",
+      "unit": "V",
+      "defaultValue": 5,
+      "minValue": -10,
+      "maxValue": 10,
+      "scope": "global",
+      "description": "Sets the CV voltage corresponding to scrubbing to the end of the sample."
+    },
+    {
+      "name": "Scrub input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use as the scrub CV input."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

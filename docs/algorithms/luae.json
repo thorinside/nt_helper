@@ -9,125 +9,210 @@
   "specifications": [
     {
       "name": "Expressions",
-      "value": {
-        "minValue": 1,
-        "maxValue": 8,
-        "defaultValue": 1
-      },
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 8,
       "description": "The number of independent expressions to evaluate."
     }
   ],
   "parameters": [
+    {
+      "name": "Input a",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable a."
+    },
+    {
+      "name": "Input a mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input b",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable b."
+    },
+    {
+      "name": "Input b mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input c",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable c."
+    },
+    {
+      "name": "Input c mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input d",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable d."
+    },
+    {
+      "name": "Input d mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input e",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable e."
+    },
+    {
+      "name": "Input e mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input f",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable f."
+    },
+    {
+      "name": "Input f mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input g",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable g."
+    },
+    {
+      "name": "Input g mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Input h",
+      "unit": "bus",
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for variable h."
+    },
+    {
+      "name": "Input h mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Voltage", "Logic"],
+      "scope": "global",
+      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "defaultValue": 15,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "expression",
+      "description": "The bus to use for the expression output."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "enumValues": ["Add", "Replace"],
+      "scope": "expression",
+      "description": "The standard Add/Replace mode selector."
+    },
     {
       "name": "Enable",
       "unit": null,
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "description": "Enables the expression evaluation.",
-      "scope": "expression"
+      "scope": "expression",
+      "description": "Enables evaluation of the expression."
     },
     {
       "name": "Expression",
       "unit": null,
-      "defaultValue": "a",
-      "description": "The Lua expression to evaluate. Inputs are available as variables a-h.",
+      "defaultValue": "",
       "scope": "expression",
+      "description": "The Lua expression to evaluate. Inputs are available as variables a-h.",
       "type": "string"
     },
     {
-      "name": "Input a",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable a (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input b",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable b (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input c",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable c (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input d",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable d (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input e",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable e (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input f",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable f (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input g",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable g (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Input h",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for variable h (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "defaultValue": 15,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Output bus for the expression result (0 = None).",
-      "scope": "expression"
-    },
-    {
-      "name": "Output mode",
+      "name": "Rate",
       "unit": null,
-      "defaultValue": 1,
+      "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Output mode (Add/Replace).",
-      "scope": "expression"
+      "scope": "expression",
+      "description": "Whether the expression is evaluated at control rate or audio rate."
     }
   ],
   "input_ports": [

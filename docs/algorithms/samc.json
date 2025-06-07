@@ -1,0 +1,110 @@
+{
+  "guid": "samc",
+  "name": "Sample Player (Clocked)",
+  "categories": [],
+  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here^87. Please review the section on the features common to the various Sample Players, above. To use the algorithm, first give it a clock, either from an input bus, or by telling it to follow MIDI clock. You also need to trigger the sample \u2013 you can do this via a bus, or via MIDI, or manually, but it\u2019s also possible to have the algorithm continuously trigger the sample in a loop via the \u2018Auto trigger\u2019 parameter. The algorithm looks at the length of the chosen sample, and uses the current tempo and time signature to figure out a number of bars that best fits. It then adjusts the playback speed so that the sample will fit that number of bars. You can use the \u2018Speed tune\u2019 parameter to adjust the speed \u2013 this is particularly useful if the sample is not actually a full number of bars long.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Speed tune",
+      "unit": "%",
+      "defaultValue": 100.0,
+      "minValue": 50.0,
+      "maxValue": 200.0,
+      "scope": "global",
+      "description": "Adjusts the playback speed, relative to the one calculated by the algorithm."
+    },
+    {
+      "name": "Input clock div",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 0,
+      "maxValue": 19,
+      "scope": "global",
+      "description": "Sets the interpretation of the input clock pulse."
+    },
+    {
+      "name": "Time sig num",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 1,
+      "maxValue": 99,
+      "scope": "global",
+      "description": "The time signature numerator."
+    },
+    {
+      "name": "Time sig denom",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 4,
+      "scope": "global",
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
+    },
+    {
+      "name": "Auto trigger",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "scope": "global",
+      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop."
+    },
+    {
+      "name": "Auto divisor",
+      "unit": null,
+      "defaultValue": 15,
+      "minValue": 0,
+      "maxValue": 19,
+      "scope": "global",
+      "description": "Sets how often the sample will be triggered, if \u2018Auto trigger\u2019 is \u2018Fixed\u2019."
+    },
+    {
+      "name": "Clock",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "Whether to follow MIDI clock."
+    },
+    {
+      "name": "Clock divisor",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 0,
+      "maxValue": 19,
+      "scope": "global",
+      "description": "Sets how often the MIDI clock will cause an internal clock event. This should normally match the \u2018Input clock div\u2019 parameter."
+    },
+    {
+      "name": "Clock input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use as the clock input."
+    },
+    {
+      "name": "Reset input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use as the reset input."
+    },
+    {
+      "name": "Reset mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "Sets the type of reset signal: \u2018Trigger\u2019 or \u2018Run/stop\u2019."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

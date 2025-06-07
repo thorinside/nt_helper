@@ -1,0 +1,398 @@
+{
+  "guid": "ensq",
+  "name": "Envelope Sequencer",
+  "categories": [],
+  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer (below), and some of the documentation for this algorithm cross-references with that for the other. Each step has a curve shape, a scale, and an offset. It also has a \u201cDivision\u201d, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock). The algorithm has a function for randomising the curves in various ways. Each Envelope Sequencer has internal storage for 32 sequences, which you can use like \u2018snapshots\u2019 or \u2018patterns\u2019 to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures. Remember that every curve shape, level, etc. is a parameter and therefore mappable.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Sequence",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 32,
+      "scope": "global",
+      "description": "Selects the current sequence."
+    },
+    {
+      "name": "Start",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "scope": "global",
+      "description": "The first step to play. A reset will jump to this step."
+    },
+    {
+      "name": "End",
+      "unit": null,
+      "defaultValue": 16,
+      "minValue": 1,
+      "maxValue": 16,
+      "scope": "global",
+      "description": "The last step to play."
+    },
+    {
+      "name": "Direction",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 6,
+      "scope": "global",
+      "description": "The sequencer direction."
+    },
+    {
+      "name": "Permutation",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "scope": "global",
+      "description": "The sequencer permutation."
+    },
+    {
+      "name": "Reset offset",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": -16,
+      "maxValue": 16,
+      "scope": "global",
+      "description": "Offsets the step that will jumped to when the sequencer is reset."
+    },
+    {
+      "name": "Length type",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "Sets how the length of a step is determined: \u201c% of clock\u201d or \u201cFixed\u201d."
+    },
+    {
+      "name": "% length",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 1,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "Sets the length of the step if the type is \u201c% of clock\u201d."
+    },
+    {
+      "name": "Fixed length",
+      "unit": "ms",
+      "defaultValue": 100,
+      "minValue": 1,
+      "maxValue": 1000,
+      "scope": "global",
+      "description": "Sets the length of the step if the type is \u201cFixed\u201d."
+    },
+    {
+      "name": "Curve",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 11,
+      "scope": "step",
+      "description": "Chooses the curve shape for the step."
+    },
+    {
+      "name": "Scale",
+      "unit": "V",
+      "defaultValue": 0.0,
+      "minValue": -10.0,
+      "maxValue": 10.0,
+      "scope": "step",
+      "description": "Sets the amplitude of the curve over the step."
+    },
+    {
+      "name": "Offset",
+      "unit": "V",
+      "defaultValue": 0.0,
+      "minValue": -10.0,
+      "maxValue": 10.0,
+      "scope": "step",
+      "description": "Sets the offset added to the curve during the step."
+    },
+    {
+      "name": "Division",
+      "unit": null,
+      "defaultValue": 7,
+      "minValue": 0,
+      "maxValue": 14,
+      "scope": "step",
+      "description": "Sets the step repeat or ratchet count."
+    },
+    {
+      "name": "Mute",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "step",
+      "description": "Sets the probability that the step will be muted."
+    },
+    {
+      "name": "Skip",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "step",
+      "description": "Sets the probability that the step will be skipped."
+    },
+    {
+      "name": "Reset",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "step",
+      "description": "Sets the probability that the step causes a reset."
+    },
+    {
+      "name": "Repeat",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "step",
+      "description": "Sets the probability that the step will be repeated."
+    },
+    {
+      "name": "Randomise",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "randomise",
+      "description": "When this parameter changes from 0 to 1, the sequence steps between the current start and end steps will be randomised according to the parameters that follow."
+    },
+    {
+      "name": "Levels",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "randomise",
+      "description": "If set, the curve levels (scales) will be randomised."
+    },
+    {
+      "name": "Curves",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "randomise",
+      "description": "If set, the curve shapes will be randomised."
+    },
+    {
+      "name": "Repeats",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "randomise",
+      "description": "If set, the repeats/ratchets will be randomised."
+    },
+    {
+      "name": "Min repeat",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 2,
+      "maxValue": 8,
+      "scope": "randomise",
+      "description": "The minimum repeat count, if a step is a repeat."
+    },
+    {
+      "name": "Max repeat",
+      "unit": null,
+      "defaultValue": 8,
+      "minValue": 2,
+      "maxValue": 8,
+      "scope": "randomise",
+      "description": "The maximum repeat count, if a step is a repeat."
+    },
+    {
+      "name": "Min ratchet",
+      "unit": null,
+      "defaultValue": 2,
+      "minValue": 2,
+      "maxValue": 8,
+      "scope": "randomise",
+      "description": "The minimum ratchet count, if a step is a ratchet."
+    },
+    {
+      "name": "Max ratchet",
+      "unit": null,
+      "defaultValue": 8,
+      "minValue": 2,
+      "maxValue": 8,
+      "scope": "randomise",
+      "description": "The maximum ratchet count, if a step is a ratchet."
+    },
+    {
+      "name": "Repeat probability",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "randomise",
+      "description": "The probability that a step will be a repeat."
+    },
+    {
+      "name": "Ratchet probability",
+      "unit": "%",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "randomise",
+      "description": "The probability that a step will be a ratchet."
+    },
+    {
+      "name": "Clock input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "routing",
+      "description": "The bus to use as the clock input."
+    },
+    {
+      "name": "Reset input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "routing",
+      "description": "The bus to use as the reset input."
+    },
+    {
+      "name": "Reset mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "scope": "routing",
+      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger, the input is a run/stop signal, the input is a \u2018one shot\u2019 trigger."
+    },
+    {
+      "name": "Output",
+      "unit": null,
+      "defaultValue": 15,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "routing",
+      "description": "The bus to use for the CV output."
+    },
+    {
+      "name": "Output mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "routing",
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Sequence CV input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "routing",
+      "description": "The bus to use to select the sequence."
+    },
+    {
+      "name": "Sequence trigger input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "routing",
+      "description": "The bus to use for the sequence select trigger."
+    },
+    {
+      "name": "Sequence change mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "routing",
+      "description": "How the sequence CV will be used to change sequences: \u2018Switch\u2019 or \u2018Load\u2019."
+    },
+    {
+      "name": "Follow MIDI clock",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "MIDI",
+      "description": "Sets whether the sequencer follows MIDI clock."
+    },
+    {
+      "name": "Divisor",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 0,
+      "maxValue": 19,
+      "scope": "MIDI",
+      "description": "Sets the clock divisor when following MIDI clock."
+    },
+    {
+      "name": "MIDI channel",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 16,
+      "scope": "MIDI",
+      "description": "Sets the output MIDI channel."
+    },
+    {
+      "name": "MIDI CC",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 127,
+      "scope": "MIDI",
+      "description": "Sets the MIDI CC number to send."
+    },
+    {
+      "name": "Output to breakout",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "MIDI",
+      "description": "Enables MIDI output to the breakout."
+    },
+    {
+      "name": "Output to Select Bus",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "MIDI",
+      "description": "Enables MIDI output to the Select Bus."
+    },
+    {
+      "name": "Output to USB",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "MIDI",
+      "description": "Enables MIDI output to USB."
+    },
+    {
+      "name": "Output to internal",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "MIDI",
+      "description": "Enables internal MIDI output \u2013 that is, MIDI is sent to the other algorithms."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

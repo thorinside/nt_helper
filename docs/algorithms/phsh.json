@@ -1,0 +1,103 @@
+{
+  "guid": "phsh",
+  "name": "Phase Shifter",
+  "categories": [
+    "Signal Processing"
+  ],
+  "description": "This algorithm is based on the Phase Shifter algorithm on the disting mk4. You may like to view the video on that algorithm, which is here^78. The algorithm is a phase shifter \u2013 it generates two outputs, one of which is in a fixed phase relationship to the other. Unlike the Phaser algorithm (see below), which is simply designed to create a swooshy sound, this algorithm is designed for mathematical accuracy, and can produce some interesting psycho-acoustic effects. It can also produce swooshy sounds.",
+  "specifications": [],
+  "parameters": [
+    {
+      "name": "Shift",
+      "unit": "deg",
+      "defaultValue": 0,
+      "minValue": -360,
+      "maxValue": 360,
+      "scope": "global",
+      "description": "Sets the phase shift."
+    },
+    {
+      "name": "Mix",
+      "unit": "%",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 100,
+      "scope": "global",
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "Level",
+      "unit": "dB",
+      "defaultValue": 0,
+      "minValue": -40,
+      "maxValue": 0,
+      "scope": "global",
+      "description": "The output gain applied to the effected signal."
+    },
+    {
+      "name": "Shift input",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the phase shift CV, scaled as 5V per 360\u00b0."
+    },
+    {
+      "name": "Input",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The first audio input bus."
+    },
+    {
+      "name": "Width",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 8,
+      "scope": "global",
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "+ve shift output",
+      "unit": null,
+      "defaultValue": 13,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the positive shifted output."
+    },
+    {
+      "name": "+ve shift mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The standard Add/Replace mode selector as described above for the positive shifted output."
+    },
+    {
+      "name": "-ve shift output",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "scope": "global",
+      "description": "The bus to use for the negative shifted output."
+    },
+    {
+      "name": "-ve shift mode",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "scope": "global",
+      "description": "The standard Add/Replace mode selector as described above for the negative shifted output."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}
