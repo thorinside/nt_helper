@@ -3,7 +3,7 @@
   "name": "Saturation",
   "categories": [
     "Effect",
-    "Dynamics"
+    "Distortion"
   ],
   "description": "Simple soft-clipping saturation effect. Useful for tone-shaping or avoiding harsh digital clipping. Based on the output bus limiter used in many disting EX algorithms.",
   "specifications": [

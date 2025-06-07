@@ -3,8 +3,8 @@
   "name": "Temporal MIDI Quantizer",
   "categories": [
     "MIDI",
-    "Utility",
-    "Quantizer"
+    "Quantizer",
+    "Sequencer"
   ],
   "description": "Quantizes the timing of MIDI notes based on MIDI clock or input clock pulses. Does not affect pitch. Only processes MIDI Note On/Off messages. Recommend using different input/output MIDI channels.",
   "specifications": [

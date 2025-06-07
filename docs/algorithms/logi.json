@@ -2,8 +2,8 @@
   "guid": "logi",
   "name": "Logic",
   "categories": [
-    "Utility",
-    "Logic"
+    "Logic",
+    "Utility"
   ],
   "description": "Performs logical operations (AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop) on pairs of inputs, based on the disting mk4 algorithm.",
   "specifications": [
@@ -50,7 +50,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Off", "On"],
+      "enumValues": [
+        "Off",
+        "On"
+      ],
       "scope": "channel",
       "description": "Enables the channel."
     },
@@ -60,7 +63,16 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 7,
-      "enumValues": ["AND", "OR", "XOR", "NAND", "NOR", "XNOR", "SR flip-flop", "D flip-flop"],
+      "enumValues": [
+        "AND",
+        "OR",
+        "XOR",
+        "NAND",
+        "NOR",
+        "XNOR",
+        "SR flip-flop",
+        "D flip-flop"
+      ],
       "scope": "channel",
       "description": "Selects the logical operation."
     },
@@ -97,7 +109,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Add", "Replace"],
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
       "scope": "channel",
       "description": "The standard Add/Replace mode selector."
     }

@@ -2,8 +2,8 @@
   "guid": "eucp",
   "name": "Euclidean patterns",
   "categories": [
-    "Rhythm",
-    "Pattern Generator"
+    "Sequencer",
+    "Rhythm"
   ],
   "description": "Generates Euclidean rhythmic patterns based on steps, pulses, and rotation. Output can be triggers or clock pulses.",
   "specifications": [

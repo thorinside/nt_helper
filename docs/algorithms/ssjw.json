@@ -1,7 +1,11 @@
 {
   "guid": "ssjw",
   "name": "Seaside Jawari",
-  "categories": [],
+  "categories": [
+    "Effect",
+    "Resonator",
+    "Physical-Modeling"
+  ],
   "description": "This algorithm is based on the open source Jawari^89 VCV Rack module by Seaside Modular. It is a simulation of the tanpura, the Indian drone instrument. The tanpura is a four-stringed instrument, without frets. The four strings are typically played in sequence, in a continuos loop, and this is what this algorithm does. Each time it gets a strum (from the strum input bus, or via the strum parameter) it advances to and plays the next string. The second, third, and fourth strings of the tanpura are generally tuned in octaves, with the fourth string an octave below the other two. The first string is tuned to another note of the scale, very often the fifth. For a completely authentic sound, you might consider using the microtuning support to tune the strings to just intervals.",
   "specifications": [],
   "parameters": [
@@ -155,7 +159,7 @@
     {
       "id": "Bridge shape",
       "name": "Bridge shape",
-      "description": "The bus to use for CV control over the \u2018bridge shape\u2019.",
+      "description": "The bus to use for CV control over the ‘bridge shape’.",
       "busIdRef": "0"
     },
     {

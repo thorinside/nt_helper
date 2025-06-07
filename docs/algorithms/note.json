@@ -2,6 +2,7 @@
   "guid": "note",
   "name": "Notes",
   "categories": [
+    "MIDI",
     "Utility"
   ],
   "description": "A simple placeholder algorithm to store text notes within a preset. It has no effect on busses and consumes no CPU.",

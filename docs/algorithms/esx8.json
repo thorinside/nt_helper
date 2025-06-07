@@ -3,7 +3,7 @@
   "name": "ESX-8CV Combiner",
   "categories": [
     "Utility",
-    "External Interface"
+    "CV"
   ],
   "description": "Drives the 8 outputs of an ESX-8CV module connected via an ES-5 expander. Features an adaptive mode for performance optimization or non-adaptive mode for predictable timing.",
   "specifications": [],

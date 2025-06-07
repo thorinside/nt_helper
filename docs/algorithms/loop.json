@@ -2,8 +2,9 @@
   "guid": "loop",
   "name": "Looper",
   "categories": [
+    "Looper",
     "Sampler",
-    "Looper"
+    "Effect"
   ],
   "description": "A feature-rich looper based on the disting EX algorithm, extended with crossfades, envelopes, clock synchronization, MIDI clock generation, and a layer system for undo/redo.",
   "specifications": [

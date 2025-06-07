@@ -3,7 +3,6 @@
   "name": "Vocoder",
   "categories": [
     "Effect",
-    "Spectral",
     "Vocoder"
   ],
   "description": "Classic vocoder algorithm. Applies spectral characteristics of the modulator input to the carrier input.",

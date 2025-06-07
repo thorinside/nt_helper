@@ -1,8 +1,10 @@
 {
   "guid": "samb",
   "name": "Sample Player (Scrub)",
-  "categories": [],
-  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. You might like to watch the video on that algorithm, here^88. From the disting mk4 manual: \u201cIn this algorithm the sample playback position is directly driven from the [input]. Imagine a piece of audio tape passing over a tape head \u2013 in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself.\u201d You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have \u2018Retrigger on change\u2019 on). Please review the section on the features common to the various Sample Players, above.",
+  "categories": [
+    "Sampler"
+  ],
+  "description": "This algorithm is based on the Audio Playback with Scrub algorithm on the disting mk4. You might like to watch the video on that algorithm, here^88. From the disting mk4 manual: “In this algorithm the sample playback position is directly driven from the [input]. Imagine a piece of audio tape passing over a tape head – in other algorithms, that tape is constantly moving at some speed or other as if driven by a motor, but in this algorithm you're basically dragging the tape back and forwards over the playhead yourself.” You can scrub the audio using a CV input, or the Scrub parameter (which can of course be mapped). Remember that you need to trigger the sample before any playback will occur, and again to change the sample (unless you have ‘Retrigger on change’ on). Please review the section on the features common to the various Sample Players, above.",
   "specifications": [],
   "parameters": [
     {

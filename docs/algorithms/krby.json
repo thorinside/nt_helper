@@ -2,9 +2,9 @@
   "guid": "krby",
   "name": "Kirbinator",
   "categories": [
-    "Effect",
-    "Sampler",
-    "Stochastic Processor"
+    "VCO",
+    "Oscillator",
+    "Chiptune"
   ],
   "description": "Stochastic audio processor that continuously records audio and plays back pitched, reversed, and panned slices based on probabilities triggered by Mark and Trigger inputs. Features random seed control and mutation for repeatable/evolving patterns.",
   "specifications": [

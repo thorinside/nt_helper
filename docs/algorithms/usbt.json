@@ -3,9 +3,7 @@
   "name": "USB audio (to host)",
   "categories": [
     "Utility",
-    "USB",
-    "Audio",
-    "CV"
+    "Audio-IO"
   ],
   "description": "Routes signals from the Disting NT's internal busses to the 12 USB audio input channels seen by the host. The signals sent depend on the algorithm's position in the processing chain.",
   "specifications": [],

@@ -1,7 +1,10 @@
 {
   "guid": "ssbm",
   "name": "SSB Modulator",
-  "categories": [],
+  "categories": [
+    "Effect",
+    "Modulation"
+  ],
   "description": "This algorithm is based on one mode of the Frequency Shifter algorithm on the disting EX. It modulates two signals with each other, and produces the upper and lower sidebands on separate outputs. For a (rather technical) description of single side band modulation, see the Wikipedia article here^93. If you use a pure sine wave for one of the inputs, you essentially have a frequency shifter, but one where you control the shift by controlling the frequency of your input oscillator.",
   "specifications": [],
   "parameters": [

@@ -9,7 +9,10 @@
     "Preventing multiple triggers from switch contact bounce"
   ],
   "gui_description": null,
-  "categories": [],
+  "categories": [
+    "Utility",
+    "Logic"
+  ],
   "specifications": [
     {
       "name": "Channels",

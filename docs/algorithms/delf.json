@@ -10,7 +10,10 @@
     "Sequenced voltage generation"
   ],
   "gui_description": "The display shows, for each channel, from top to bottom: The remaining time of the delay (once triggered), the remaining time of the function, and the output function as a bar graph.",
-  "categories": [],
+  "categories": [
+    "Delay",
+    "Utility"
+  ],
   "specifications": [
     {
       "name": "Channels",

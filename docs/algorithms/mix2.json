@@ -2,8 +2,8 @@
   "guid": "mix2",
   "name": "Mixer Stereo",
   "categories": [
-    "Utility",
-    "Mixer"
+    "Mixer",
+    "Utility"
   ],
   "description": "A stereo mixer with up to 12 mono or stereo input channels and up to 4 pre/post-fader mono or stereo aux sends.",
   "specifications": [

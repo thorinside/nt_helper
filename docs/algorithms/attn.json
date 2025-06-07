@@ -10,7 +10,10 @@
     "Generating constant offset voltages"
   ],
   "gui_description": null,
-  "categories": [],
+  "categories": [
+    "Utility",
+    "CV"
+  ],
   "specifications": [
     {
       "name": "Channels",

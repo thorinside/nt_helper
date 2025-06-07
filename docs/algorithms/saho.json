@@ -2,8 +2,9 @@
   "guid": "saho",
   "name": "Sample and Hold",
   "categories": [
-    "Utility",
-    "CV"
+    "CV",
+    "Modulation",
+    "Random"
   ],
   "description": "Simple sample (or track) and hold utility. A common gate/trigger input controls the sampling/tracking of multiple signal channels. Two modes: 'Sample and hold' (samples input on gate high) and 'Track and hold' (follows input while gate high, holds on gate low).",
   "specifications": [

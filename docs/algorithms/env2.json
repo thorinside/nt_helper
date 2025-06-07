@@ -2,7 +2,8 @@
   "guid": "env2",
   "name": "Envelope (AR/AD)",
   "categories": [
-    "Envelope Generator"
+    "Envelope",
+    "Modulation"
   ],
   "description": "Generates AR or AD envelopes. For AR, attack is followed by release if trigger stays high; goes low during attack triggers release. For AD, attack is followed by decay, then stays at zero until re-triggered.",
   "specifications": [

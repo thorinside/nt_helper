@@ -3,9 +3,7 @@
   "name": "USB audio (from host)",
   "categories": [
     "Utility",
-    "USB",
-    "Audio",
-    "CV"
+    "Audio-IO"
   ],
   "description": "Exposes the 8 USB audio output channels from the host to the Disting NT's internal busses. Allows processing host audio/CV within the Disting NT or outputting directly.",
   "specifications": [],

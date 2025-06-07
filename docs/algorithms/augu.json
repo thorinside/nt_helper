@@ -14,7 +14,11 @@
     "Delay effects with external processing in the feedback loop"
   ],
   "gui_description": "The display shows the feedback amount bottom left and the delay time bottom right. The centre area shows an animation indicating the tape direction and speed. If using a clock input, the word 'Clock' flashes up every time the algorithm receives a clock pulse. The word 'Tap' is displayed if the tap tempo function will set the delay time on the next tap i.e. it shows whether tap tempo is 'live'.",
-  "categories": [],
+  "categories": [
+    "Looper",
+    "Delay",
+    "Effect"
+  ],
   "specifications": [
     {
       "name": "Max delay time",

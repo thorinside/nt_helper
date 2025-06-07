@@ -9,7 +9,10 @@
     "Building custom sample libraries"
   ],
   "gui_description": "While sampling, the display shows a level meter, the filename of the sample currently being recorded, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card.",
-  "categories": [],
+  "categories": [
+    "Utility",
+    "Tuning"
+  ],
   "specifications": [],
   "parameters": [
     {

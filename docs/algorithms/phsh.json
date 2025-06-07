@@ -2,9 +2,10 @@
   "guid": "phsh",
   "name": "Phase Shifter",
   "categories": [
-    "Signal Processing"
+    "Effect",
+    "Modulation"
   ],
-  "description": "This algorithm is based on the Phase Shifter algorithm on the disting mk4. You may like to view the video on that algorithm, which is here^78. The algorithm is a phase shifter \u2013 it generates two outputs, one of which is in a fixed phase relationship to the other. Unlike the Phaser algorithm (see below), which is simply designed to create a swooshy sound, this algorithm is designed for mathematical accuracy, and can produce some interesting psycho-acoustic effects. It can also produce swooshy sounds.",
+  "description": "This algorithm is based on the Phase Shifter algorithm on the disting mk4. You may like to view the video on that algorithm, which is here^78. The algorithm is a phase shifter – it generates two outputs, one of which is in a fixed phase relationship to the other. Unlike the Phaser algorithm (see below), which is simply designed to create a swooshy sound, this algorithm is designed for mathematical accuracy, and can produce some interesting psycho-acoustic effects. It can also produce swooshy sounds.",
   "specifications": [],
   "parameters": [
     {
@@ -41,7 +42,7 @@
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use for the phase shift CV, scaled as 5V per 360\u00b0."
+      "description": "The bus to use for the phase shift CV, scaled as 5V per 360°."
     },
     {
       "name": "Input",

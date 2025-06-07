@@ -1,7 +1,10 @@
 {
   "guid": "vcop",
   "name": "VCO - Pulsar",
-  "categories": [],
+  "categories": [
+    "VCO",
+    "Oscillator"
+  ],
   "description": "This algorithm based on the Pulsar VCO algorithm on the disting mk4. You might like to watch the video on that algorithm here^102. It is an implementation of pulsar synthesis, inspired by the description in Curtis Roads's book Microsound (MIT Press) pp137-157. In pulsar synthesis, a small grain of sound (known as a _pulsaret_ , typically a pulse or single cycle waveform) is repeated periodically, followed by a small section of silence. The length of the sound within the repeating period (equivalently, the speed at which it is played) offers a means of control the timbre without affecting the perceived pitch of the sound. By the same token, changing the fundamental pitch without changing the speed at which the grain of sound is played offers pitch change without simply shifting the entire spectrum up and down, an effect reminiscent of 'vocal' or 'formant' synthesis. There are therefore two pitch inputs:",
   "specifications": [],
   "parameters": [

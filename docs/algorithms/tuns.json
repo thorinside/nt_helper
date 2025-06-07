@@ -3,8 +3,7 @@
   "name": "Tuner (simple)",
   "categories": [
     "Utility",
-    "Tuner",
-    "Pitch"
+    "Tuning"
   ],
   "description": "Provides four simultaneous tuners using a simple pitch detection method. Works reliably for simple tones (e.g., analogue VCOs). Consumes little CPU. Supports microtuning via Scala/MTS. For complex signals, use 'Tuner (fancy)'.",
   "specifications": [],

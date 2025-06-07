@@ -1,8 +1,11 @@
 {
   "guid": "fqsh",
   "name": "Frequency Shifter",
-  "categories": [],
-  "description": "This algorithm is based on the Frequency Shifter algorithm on the disting EX. You may like to view the video on that algorithm, which is here^66. The algorithm is a frequency shifter. Note that this is very different from a pitch shifter. A pitch shifter multiplies the frequencies of the constituent harmonics of a sound by the same amount, and so preserves their harmonic relationship. A frequency shifter adds a shift to the frequencies of the constituent harmonics of a sound, and so tends to break harmonic relationships, making sounds more \u2018clangorous\u2019 or \u2018bell-like\u2019.",
+  "categories": [
+    "Effect",
+    "Modulation"
+  ],
+  "description": "This algorithm is based on the Frequency Shifter algorithm on the disting EX. You may like to view the video on that algorithm, which is here^66. The algorithm is a frequency shifter. Note that this is very different from a pitch shifter. A pitch shifter multiplies the frequencies of the constituent harmonics of a sound by the same amount, and so preserves their harmonic relationship. A frequency shifter adds a shift to the frequencies of the constituent harmonics of a sound, and so tends to break harmonic relationships, making sounds more ‘clangorous’ or ‘bell-like’.",
   "specifications": [],
   "parameters": [
     {

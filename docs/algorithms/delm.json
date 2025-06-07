@@ -10,7 +10,10 @@
     "Clean digital delay or modulated delay sounds"
   ],
   "gui_description": null,
-  "categories": [],
+  "categories": [
+    "Delay",
+    "Effect"
+  ],
   "specifications": [
     {
       "name": "Max delay time",

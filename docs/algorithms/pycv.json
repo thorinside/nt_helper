@@ -2,9 +2,9 @@
   "guid": "pycv",
   "name": "Poly CV",
   "categories": [
+    "CV",
     "Utility",
-    "MIDI",
-    "CV"
+    "Polysynth"
   ],
   "description": "A polyphonic MIDI/CV converter that takes polysynth control logic (MIDI, I2C, CV/Gate, Chord/Arp) and outputs CVs/gates instead of sound. Supports microtuning.",
   "specifications": [

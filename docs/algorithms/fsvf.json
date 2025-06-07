@@ -2,8 +2,8 @@
   "guid": "fsvf",
   "name": "VCF (State Variable)",
   "categories": [
-    "Filter",
-    "VCF"
+    "Effect",
+    "Filter"
   ],
   "description": "Voltage controlled filter using the common 'State Variable' topology. Provides simultaneous low-pass, band-pass, and high-pass outputs, plus a blended output. Processes multiple busses based on Width parameter.",
   "specifications": [],

@@ -2,9 +2,8 @@
   "guid": "resn",
   "name": "Resonator",
   "categories": [
-    "Effects",
-    "Resonator",
-    "Synth Voice"
+    "Effect",
+    "Resonator"
   ],
   "description": "An implementation of the open-source Rings module by Émilie Gillet. Can be played via MIDI, I2C, or CV/gate.",
   "specifications": [],

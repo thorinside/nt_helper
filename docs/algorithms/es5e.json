@@ -3,7 +3,8 @@
   "name": "ES-5 Encoder",
   "categories": [
     "Utility",
-    "External Interface"
+    "CV",
+    "MIDI"
   ],
   "description": "Encodes 12 input channels into a stereo S/PDIF signal suitable for driving the Expert Sleepers ES-5 module, providing 12 additional gate/trigger/clock/sync outputs. Outputs are sample-accurate, primarily on/off but can pass intermediate voltages.",
   "specifications": [],

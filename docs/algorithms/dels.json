@@ -274,5 +274,8 @@
       ]
     }
   ],
-  "categories": []
+  "categories": [
+    "Delay",
+    "Effect"
+  ]
 }

@@ -2,8 +2,8 @@
   "guid": "slew",
   "name": "Slew rate limiter",
   "categories": [
-    "Utility",
-    "CV"
+    "CV",
+    "Utility"
   ],
   "description": "Smooths CVs and creates glissandos. Simple slew rate limiter, offering both logarithmic and linear slew. Use a single slew rate for both rising and falling signals, or specify them separately. Rates can be set per-bus or commonly.",
   "specifications": [

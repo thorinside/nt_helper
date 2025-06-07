@@ -2,9 +2,8 @@
   "guid": "vcot",
   "name": "VCO - wavetable",
   "categories": [
-    "Oscillator",
     "VCO",
-    "Wavetable"
+    "Oscillator"
   ],
   "description": "Simple VCO using wavetables for wave shapes. Wavetables are loaded from the MicroSD card.",
   "specifications": [],

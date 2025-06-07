@@ -2,8 +2,9 @@
   "guid": "quan",
   "name": "Quantizer",
   "categories": [
+    "Pitch",
     "Utility",
-    "CV Modifier"
+    "CV"
   ],
   "description": "A multi-channel CV quantizer based on the disting EX Quad Quantizer. Quantizes CV inputs to specific scales and outputs CV and/or MIDI. Supports microtuning.",
   "specifications": [

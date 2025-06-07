@@ -3,8 +3,7 @@
   "name": "Tuner (fancy)",
   "categories": [
     "Utility",
-    "Tuner",
-    "Pitch"
+    "Tuning"
   ],
   "description": "Provides four simultaneous tuners using an autocorrelation pitch detection method. CPU heavy but reliable for most signals. Supports microtuning via Scala/MTS.",
   "specifications": [],

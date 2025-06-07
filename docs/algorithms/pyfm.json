@@ -2,9 +2,9 @@
   "guid": "pyfm",
   "name": "Poly FM",
   "categories": [
-    "Oscillator",
-    "Polysynth",
-    "FM"
+    "VCO",
+    "FM",
+    "Polysynth"
   ],
   "description": "A 4-operator FM polysynth algorithm based on the disting EX algorithm. Supports microtuning.",
   "specifications": [

@@ -2,8 +2,8 @@
   "guid": "vcow",
   "name": "VCO with waveshaping",
   "categories": [
-    "Oscillator",
-    "VCO"
+    "VCO",
+    "Oscillator"
   ],
   "description": "Simple VCO based on OG disting algorithms. Outputs Triangle/Saw, Square/Pulse, Sub-octave Square, and Sine waves. Shared Waveshape parameter controls shape/pulsewidth. Supports linear through-zero FM and oscillator sync.",
   "specifications": [],

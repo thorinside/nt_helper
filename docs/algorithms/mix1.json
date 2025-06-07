@@ -2,8 +2,8 @@
   "guid": "mix1",
   "name": "Mixer Mono",
   "categories": [
-    "Utility",
-    "Mixer"
+    "Mixer",
+    "Utility"
   ],
   "description": "A mono mixer with up to 12 input channels and up to 4 pre/post-fader aux sends.",
   "specifications": [

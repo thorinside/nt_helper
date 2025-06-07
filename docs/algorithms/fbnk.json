@@ -2,9 +2,8 @@
   "guid": "fbnk",
   "name": "Filter bank",
   "categories": [
-    "Filter",
     "Effect",
-    "Resonator"
+    "Filter"
   ],
   "description": "A bank of parallel filters or resonators (up to 12). Can operate in Resonator, Bandpass, or Multiband modes. Levels can be controlled manually, via CV, or internal envelopes. Can be played polyphonically via MIDI.",
   "specifications": [

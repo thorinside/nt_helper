@@ -20,6 +20,8 @@ import 'package:nt_helper/rename_slot_dialog.dart';
 import 'package:nt_helper/routing_page.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
@@ -1136,23 +1138,50 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 ),
                 PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
-                    itemBuilder: (context) => [
+                    itemBuilder: (context) {
+                      final metadata = AlgorithmMetadataService()
+                          .getAlgorithmByGuid(widget.slot.algorithm.guid);
+                      final bool isHelpAvailable = metadata != null;
+
+                      return <PopupMenuEntry<String>>[
+                        if (isHelpAvailable)
                           PopupMenuItem(
-                            value: 'Reset Outputs',
+                            value: 'Show Help',
                             onTap: () {
-                              showResetOutputsDialog(
-                                context: context,
-                                initialCvInput: 0,
-                                onReset: (outputIndex) {
-                                  context
-                                      .read<DistingCubit>()
-                                      .resetOutputs(widget.slot, outputIndex);
-                                },
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AlgorithmDocumentationScreen(
+                                          metadata: metadata),
+                                ),
                               );
                             },
-                            child: Text('Reset Outputs'),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Show Help'),
+                                Icon(Icons.help_outline_rounded)
+                              ],
+                            ),
                           ),
-                        ]),
+                        if (isHelpAvailable) const PopupMenuDivider(),
+                        PopupMenuItem(
+                          value: 'Reset Outputs',
+                          onTap: () {
+                            showResetOutputsDialog(
+                              context: context,
+                              initialCvInput: 0,
+                              onReset: (outputIndex) {
+                                context
+                                    .read<DistingCubit>()
+                                    .resetOutputs(widget.slot, outputIndex);
+                              },
+                            );
+                          },
+                          child: const Text('Reset Outputs'),
+                        ),
+                      ];
+                    }),
               ]),
             ),
             Expanded(

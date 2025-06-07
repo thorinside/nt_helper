@@ -2,9 +2,9 @@
   "guid": "saml",
   "name": "Sample Player (Sliced)",
   "categories": [
-    "Sample Player"
+    "Sampler"
   ],
-  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It\u2019s your go-to algorithm for breakbeat slicing. Please review the section on the features common to the various Sample Players, above.",
+  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It’s your go-to algorithm for breakbeat slicing. Please review the section on the features common to the various Sample Players, above.",
   "specifications": [],
   "parameters": [
     {
@@ -14,7 +14,7 @@
       "minValue": 1,
       "maxValue": 24,
       "scope": "global",
-      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the \u2018Play\u2019 parameter."
+      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the ‘Play’ parameter."
     },
     {
       "name": "Slices",
@@ -41,7 +41,7 @@
       "minValue": 0,
       "maxValue": 2,
       "scope": "global",
-      "description": "Sets the clock source: \u2018Off\u2019, \u2018External\u2019, or \u2018MIDI\u2019."
+      "description": "Sets the clock source: ‘Off’, ‘External’, or ‘MIDI’."
     },
     {
       "name": "Auto trigger",
@@ -59,7 +59,7 @@
       "minValue": 0,
       "maxValue": 19,
       "scope": "global",
-      "description": "Sets how often the sample will be triggered, if \u2018Auto trigger\u2019 is \u2018Fixed\u2019."
+      "description": "Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’."
     },
     {
       "name": "Time sig num",

@@ -2,7 +2,7 @@
   "guid": "nois",
   "name": "Noise generator",
   "categories": [
-    "Generator",
+    "Source",
     "Noise"
   ],
   "description": "Generates various standard \"colours\" of noise (Violet, White, Pink, Red, Blended).",

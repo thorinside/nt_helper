@@ -2,9 +2,7 @@
   "guid": "spsq",
   "name": "Step Sequencer",
   "categories": [
-    "Sequencer",
-    "CV",
-    "MIDI"
+    "Sequencer"
   ],
   "description": "A 16-step note sequencer based on the Expert Sleepers FH-2. Outputs CVs and/or MIDI. Each step has pitch, velocity, and modulation values. Features repeats, ratchets, ties, and glide. Includes 32 sequence snapshots and randomization functions.",
   "specifications": [],

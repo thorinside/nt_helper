@@ -3,7 +3,9 @@
   "name": "Three Pot",
   "categories": [
     "Effect",
-    "External DSP"
+    "Modulation",
+    "Reverb",
+    "Delay"
   ],
   "description": "Runs DSP code (plug-ins) loaded from the MicroSD card, particularly designed for Spin Semiconductor FV-1 programs. Translates programs to C++ and compiles them for the Disting NT. Allows direct C++ coding as well. Uses the module's three pots for direct control, unique UI interaction.",
   "specifications": [

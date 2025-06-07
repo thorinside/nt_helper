@@ -2,7 +2,7 @@
   "guid": "sams",
   "name": "Sample Player (Speed)",
   "categories": [
-    "Sample Player"
+    "Sampler"
   ],
   "description": "This algorithm plays samples with flexible control over the playback speed, including the possibility of playing the sample backwards. It provides the features of a number of disting mk4 algorithms, including Audio Playback, Audio Playback with V/Oct, Audio Playback with Z Speed, and Audio Playback with Reverse. Please review the section on the features common to the various Sample Players, above.",
   "specifications": [],

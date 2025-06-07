@@ -7,6 +7,8 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 
 class AddAlgorithmScreen extends StatefulWidget {
   const AddAlgorithmScreen({super.key});
@@ -27,6 +29,15 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   List<AlgorithmInfo> _filteredAlgorithms = [];
   Set<String> _favoriteGuids = {}; // Store favorite GUIDs
   bool _showFavoritesOnly = false; // State for the favorite toggle
+  bool _isHelpAvailableForSelected = false;
+
+  // New state for category filters
+  List<String> _allCategories = [];
+  Set<String> _selectedCategories = {};
+
+  // New scroll controllers to fix Scrollbar exception
+  final ScrollController _chipScrollController = ScrollController();
+  final ScrollController _specScrollController = ScrollController();
 
   // Original state variables
   String? selectedAlgorithmGuid;
@@ -37,6 +48,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   void initState() {
     super.initState();
     _loadSettings(); // Load both favorites and toggle state
+    _loadCategories();
     _searchController.addListener(_onSearchChanged); // Use debounced listener
 
     // Initialize algorithm lists based on current DistingCubit state
@@ -61,6 +73,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _debounce?.cancel(); // Cancel timer on dispose
+    _chipScrollController.dispose();
+    _specScrollController.dispose();
     super.dispose();
   }
 
@@ -121,6 +135,41 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     });
   }
 
+  // --- Documentation Navigation ---
+  void _showDocumentation(String guid) async {
+    // Unfocus search field when showing docs
+    FocusScope.of(context).unfocus();
+    final metadata = AlgorithmMetadataService().getAlgorithmByGuid(guid);
+    if (metadata != null && mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              AlgorithmDocumentationScreen(metadata: metadata),
+        ),
+      );
+    } else {
+      // Optional: Show a snackbar or dialog if metadata is not found
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Full documentation for this algorithm is not available.'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _loadCategories() {
+    final allAlgos = AlgorithmMetadataService().getAllAlgorithms();
+    final allCats = allAlgos.expand((algo) => algo.categories).toSet().toList();
+    allCats.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    if (mounted) {
+      setState(() {
+        _allCategories = allCats;
+      });
+    }
+  }
+
   // --- Filtering Logic ---
 
   void _filterAlgorithms() {
@@ -135,6 +184,17 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           .toList();
     } else {
       baseList = List.from(_allAlgorithms);
+    }
+
+    // Filter by selected categories
+    if (_selectedCategories.isNotEmpty) {
+      final service = AlgorithmMetadataService();
+      baseList = baseList.where((algoInfo) {
+        final metadata = service.getAlgorithmByGuid(algoInfo.guid);
+        if (metadata == null) return false;
+        return metadata.categories
+            .any((cat) => _selectedCategories.contains(cat));
+      }).toList();
     }
 
     if (query.isEmpty) {
@@ -176,6 +236,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       _currentAlgoInfo = _allAlgorithms.firstWhereOrNull((a) => a.guid == guid);
       specValues =
           _currentAlgoInfo?.specifications.map((s) => s.defaultValue).toList();
+
+      if (guid != null) {
+        final metadata = AlgorithmMetadataService().getAlgorithmByGuid(guid);
+        _isHelpAvailableForSelected = metadata != null;
+      } else {
+        _isHelpAvailableForSelected = false;
+      }
     });
   }
 
@@ -185,6 +252,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       selectedAlgorithmGuid = null;
       _currentAlgoInfo = null;
       specValues = null;
+      _isHelpAvailableForSelected = false;
     });
   }
 
@@ -223,6 +291,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
       appBar: AppBar(
         title: const Text('Add Algorithm'),
       ),
+      floatingActionButton: _isHelpAvailableForSelected
+          ? FloatingActionButton(
+              onPressed: () => _showDocumentation(selectedAlgorithmGuid!),
+              child: const Icon(Icons.question_mark),
+            )
+          : null,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Padding(
@@ -279,10 +353,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  _buildCategoryFilters(),
+                  const Divider(),
 
                   // --- Algorithm Chips (Expanded to allow scrolling) ---
                   Expanded(
-                    flex: 2, // Adjust flex factor as needed
+                    flex: 3, // Give more space to chips
                     child: _filteredAlgorithms.isEmpty
                         ? Center(
                             child: Text(_showFavoritesOnly
@@ -291,8 +367,10 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                     : 'No favorites match "${_searchController.text}".')
                                 : 'No algorithms match "${_searchController.text}".'))
                         : Scrollbar(
+                            controller: _chipScrollController,
                             // Add scrollbar for chip area
                             child: SingleChildScrollView(
+                              controller: _chipScrollController,
                               // Inner scroll view for chips
                               padding: const EdgeInsets.only(bottom: 8.0),
                               child: Wrap(
@@ -307,10 +385,31 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                     onLongPress: () =>
                                         _toggleFavorite(algo.guid),
                                     child: ChoiceChip(
-                                      label: Text(
-                                        algo.name,
-                                        maxLines: 2, // Limit text lines
-                                        overflow: TextOverflow.ellipsis,
+                                      label: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              algo.name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (isFavorite) ...[
+                                            const SizedBox(width: 8.0),
+                                            Icon(
+                                              Icons.star,
+                                              size: 16,
+                                              color: isSelected
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       selected: isSelected,
                                       onSelected: (bool selected) {
@@ -322,21 +421,6 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                           }
                                         }
                                       },
-                                      avatar: isFavorite
-                                          ? Icon(Icons.star,
-                                              size: 18,
-                                              color: isSelected
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimaryContainer
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .primary)
-                                          : null,
-                                      labelPadding: isFavorite
-                                          ? const EdgeInsets.only(
-                                              left: 4.0, right: 8.0)
-                                          : null,
                                       selectedColor: Theme.of(context)
                                           .colorScheme
                                           .primaryContainer,
@@ -355,12 +439,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   if (_currentAlgoInfo != null &&
                       _currentAlgoInfo!.numSpecifications > 0)
                     Flexible(
-                      flex: 3, // Adjust flex factor as needed
+                      flex: 2, // Give less space to specs, but still flexible
                       child: _buildSpecificationInputs(
                           _currentAlgoInfo!, isOffline),
                     ),
 
-                  // --- Add Button (at the bottom) ---
+                  // --- Action Buttons (at the bottom) ---
                   Padding(
                     padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                     child: ElevatedButton(
@@ -385,6 +469,35 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     );
   }
 
+  Widget _buildCategoryFilters() {
+    if (_allCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Wrap(
+        spacing: 8.0,
+        runSpacing: 4.0,
+        children: _allCategories.map((category) {
+          return FilterChip(
+            label: Text(category),
+            selected: _selectedCategories.contains(category),
+            onSelected: (bool selected) {
+              setState(() {
+                if (selected) {
+                  _selectedCategories.add(category);
+                } else {
+                  _selectedCategories.remove(category);
+                }
+                _filterAlgorithms();
+              });
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildSpecificationInputs(AlgorithmInfo algorithm, bool isOffline) {
     if (specValues == null ||
         specValues!.length != algorithm.numSpecifications ||
@@ -403,7 +516,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     }
 
     return Scrollbar(
+      controller: _specScrollController,
       child: SingleChildScrollView(
+        controller: _specScrollController,
         child: Column(
           mainAxisSize: MainAxisSize.min, // Specs column takes minimum height
           crossAxisAlignment: CrossAxisAlignment.start,

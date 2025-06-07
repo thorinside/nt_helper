@@ -10,7 +10,10 @@
     "Non-linear signal processing"
   ],
   "gui_description": null,
-  "categories": [],
+  "categories": [
+    "Effect",
+    "Distortion"
+  ],
   "specifications": [],
   "parameters": [
     {

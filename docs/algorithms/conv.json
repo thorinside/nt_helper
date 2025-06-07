@@ -157,5 +157,9 @@
       ]
     }
   ],
-  "categories": []
+  "categories": [
+    "Effect",
+    "Reverb",
+    "Convolution"
+  ]
 }

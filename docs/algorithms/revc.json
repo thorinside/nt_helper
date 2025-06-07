@@ -1,8 +1,12 @@
 {
   "guid": "revc",
   "name": "Reverb (Clouds)",
-  "categories": [],
-  "description": "This algorithm implements the reverb and diffuser parts of the Clouds^86 module by \u00c9milie Gillet. The diffuser is a simple network of all-pass filters which \u2018smears\u2019 the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
+  "categories": [
+    "Effect",
+    "Reverb",
+    "Granular"
+  ],
+  "description": "This algorithm implements the reverb and diffuser parts of the Clouds^86 module by Émilie Gillet. The diffuser is a simple network of all-pass filters which ‘smears’ the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
   "specifications": [],
   "parameters": [
     {
@@ -66,7 +70,7 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "global",
-      "description": "Allows you to run the algorithm at the disting NT\u2019s own sample rate (\u2018Native\u2019) or the sample rate of a real Clouds module (\u2018Authentic (32kHz)\u2019).",
+      "description": "Allows you to run the algorithm at the disting NT’s own sample rate (‘Native’) or the sample rate of a real Clouds module (‘Authentic (32kHz)’).",
       "enumValues": [
         "Native",
         "Authentic (32kHz)"

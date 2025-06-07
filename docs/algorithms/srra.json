@@ -3,7 +3,8 @@
   "name": "Shift Register Random",
   "categories": [
     "CV",
-    "Random"
+    "Random",
+    "Logic"
   ],
   "description": "Generates random CVs using the rotating shift register method (\"Turing Machine\"). Creates a looping sequence of CVs with controllable likelihood of change. Can lock the loop. Outputs CVs and/or triggers.",
   "specifications": [],

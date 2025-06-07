@@ -2,8 +2,9 @@
   "guid": "drea",
   "name": "Dream Machine",
   "categories": [
-    "Physical Modelling",
-    "Oscillator"
+    "VCO",
+    "Oscillator",
+    "Polysynth"
   ],
   "description": "Creates dreamy pads, strings and bells. Based on the Mutable Instruments Plaits physical modelling oscillator models.",
   "specifications": [

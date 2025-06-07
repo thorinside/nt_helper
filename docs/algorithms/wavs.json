@@ -2,9 +2,11 @@
   "guid": "wavs",
   "name": "Waveshaper",
   "categories": [
-    "Waveshaper/wavefolder"
+    "Effect",
+    "Distortion",
+    "Waveshaper"
   ],
-  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch the video on that algorithm here^105. From the disting mk4 manual: \u201cType 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes. \u201cType 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.\u201d",
+  "description": "This algorithm is based on the Dual Waveshaper algorithm on the disting mk4. You may like to watch the video on that algorithm here^105. From the disting mk4 manual: “Type 0 is what is usually termed a wavefolder. This increases the harmonic content of the sound in interesting ways, especially as the gain changes. “Type 1 is a triangle-to-sine waveshaper. Used on most audio this is a relatively gentle form of overdrive/saturation. However, when fed with the right level of triangle wave, the output is exactly a sine wave, which is useful when you have a triangle wave VCO handy but really want a pure sine wave instead.”",
   "specifications": [],
   "parameters": [
     {
@@ -23,7 +25,7 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "global",
-      "description": "The waveshaping mode: \u2018Wavefolder\u2019 or \u2018Tri-to-sine shaper\u2019.",
+      "description": "The waveshaping mode: ‘Wavefolder’ or ‘Tri-to-sine shaper’.",
       "enumValues": [
         "Wavefolder",
         "Tri-to-sine shaper"

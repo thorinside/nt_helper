@@ -2,9 +2,9 @@
   "guid": "vcam",
   "name": "VCA/Multiplier",
   "categories": [
-    "Utility",
+    "VCA",
     "Dynamics",
-    "VCA"
+    "Utility"
   ],
   "description": "Voltage multiplier algorithm that can function as a VCA. Uses a common CV input to multiply voltages on other channels. Supports typical VCA (clamp to 0V) or four-quadrant multiplier behavior.",
   "specifications": [

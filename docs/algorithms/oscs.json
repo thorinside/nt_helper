@@ -3,7 +3,7 @@
   "name": "Oscilloscope",
   "categories": [
     "Utility",
-    "Visualizer"
+    "Visualization"
   ],
   "description": "A simple 2-channel oscilloscope for viewing waveforms.",
   "specifications": [],

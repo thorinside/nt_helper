@@ -148,5 +148,8 @@
       ]
     }
   ],
-  "categories": []
+  "categories": [
+    "Clock",
+    "Utility"
+  ]
 }

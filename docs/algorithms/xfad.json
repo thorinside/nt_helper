@@ -105,5 +105,8 @@
       ]
     }
   ],
-  "categories": []
+  "categories": [
+    "Mixer",
+    "Utility"
+  ]
 }

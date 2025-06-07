@@ -2,7 +2,7 @@
   "guid": "revb",
   "name": "Reverb",
   "categories": [
-    "Effects",
+    "Effect",
     "Reverb"
   ],
   "description": "A classic algorithmic reverb effect, not based on any specific hardware or physical space.",

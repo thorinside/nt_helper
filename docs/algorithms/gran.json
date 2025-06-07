@@ -2,9 +2,9 @@
   "guid": "gran",
   "name": "Granulator",
   "categories": [
-    "Effect",
     "Sampler",
-    "Granular Synthesis"
+    "Effect",
+    "Granular"
   ],
   "description": "Granular synthesis engine using live audio or samples from SD card. Spawns grains controlled by notes (CV/Gate, MIDI, I2C) or internal drones. Features various grain parameter controls with mean/spread for randomization.",
   "specifications": [

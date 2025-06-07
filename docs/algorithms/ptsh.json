@@ -2,7 +2,7 @@
   "guid": "ptsh",
   "name": "Pitch Shifter",
   "categories": [
-    "Effects",
+    "Effect",
     "Pitch"
   ],
   "description": "Performs pitch shifting using a time-domain algorithm. Can be paired with the Tracker algorithm.",

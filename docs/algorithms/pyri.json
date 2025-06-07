@@ -2,8 +2,9 @@
   "guid": "pyri",
   "name": "Poly Resonator",
   "categories": [
-    "Polysynth",
-    "Resonator"
+    "Effect",
+    "Resonator",
+    "Polysynth"
   ],
   "description": "A polyphonic synthesizer where each voice is an implementation of the open-source Rings module by Émilie Gillet. Supports microtuning.",
   "specifications": [

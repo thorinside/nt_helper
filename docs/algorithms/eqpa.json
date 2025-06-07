@@ -3,7 +3,8 @@
   "name": "EQ Parametric",
   "categories": [
     "Effect",
-    "Filter"
+    "Filter",
+    "EQ"
   ],
   "description": "A one-band parametric equaliser. Offers low shelving, peaking, or high shelving modes. Multiple instances can be run for multi-band EQ.",
   "specifications": [],

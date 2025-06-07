@@ -3,7 +3,7 @@
   "name": "Linear/Exponential",
   "categories": [
     "Utility",
-    "Converter"
+    "CV"
   ],
   "description": "Implements linear-to-exponential (Hz/V to V/Oct) and exponential-to-linear (V/Oct to Hz/V) converters. Assumes 0V V/Oct = C3 (~130.8Hz).",
   "specifications": [],

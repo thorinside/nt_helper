@@ -2,8 +2,7 @@
   "guid": "stpw",
   "name": "Stopwatch",
   "categories": [
-    "Utility",
-    "Time"
+    "Utility"
   ],
   "description": "Simple clock for timing or countdowns. Has no effect on input/output buses and consumes almost no CPU. Prevents screensaver activation while running.",
   "specifications": [],

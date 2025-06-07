@@ -32,7 +32,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -51,7 +54,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -70,7 +76,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -89,7 +98,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -108,7 +120,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -127,7 +142,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -146,7 +164,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -165,7 +186,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Voltage", "Logic"],
+      "enumValues": [
+        "Voltage",
+        "Logic"
+      ],
       "scope": "global",
       "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
     },
@@ -184,7 +208,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
-      "enumValues": ["Add", "Replace"],
+      "enumValues": [
+        "Add",
+        "Replace"
+      ],
       "scope": "expression",
       "description": "The standard Add/Replace mode selector."
     },

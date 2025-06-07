@@ -2,8 +2,8 @@
   "guid": "mac2",
   "name": "Macro Oscillator 2",
   "categories": [
-    "Oscillator",
-    "Digital"
+    "VCO",
+    "Oscillator"
   ],
   "description": "Implementation of the open source Plaits module by Émilie Gillet, offering a wide range of synthesis models.",
   "specifications": [],

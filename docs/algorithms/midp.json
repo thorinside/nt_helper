@@ -2,7 +2,6 @@
   "guid": "midp",
   "name": "MIDI Player",
   "categories": [
-    "Utility",
     "MIDI",
     "Sequencer"
   ],

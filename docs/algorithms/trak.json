@@ -2,9 +2,8 @@
   "guid": "trak",
   "name": "Tracker",
   "categories": [
-    "Utility",
-    "CV",
-    "Pitch"
+    "Sequencer",
+    "Sampler"
   ],
   "description": "Tracks pitch and envelope of an audio signal, outputting as CVs. Can generate harmony chords (as pitch CVs or pitch shift CVs). Supports microtonal tuning (Scala/MTS). Based on disting EX algorithm.",
   "specifications": [],

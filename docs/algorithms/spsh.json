@@ -1,7 +1,9 @@
 {
   "guid": "spsh",
   "name": "Step Sequencer Head",
-  "categories": [],
+  "categories": [
+    "Sampler"
+  ],
   "description": "This algorithm shares the sequence of another Step Sequencer algorithm (above), and replicates the parameters that define how that sequence is played. This allows you to, for example, have the same sequence played in different directions simultaneously, or at different speeds, or with different transpositions. The Step Sequencer Head refers to the nearest Step Sequencer above it in the algorithm list. You can have as many Step Sequencer Heads as you like for each Step Sequencer.",
   "specifications": [],
   "parameters": [
@@ -57,7 +59,7 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "global",
-      "description": "Sets the gate type: \u201c% of clock\u201d or \u201cTrigger\u201d.",
+      "description": "Sets the gate type: “% of clock” or “Trigger”.",
       "enumValues": [
         "% of clock",
         "Trigger"
@@ -70,7 +72,7 @@
       "minValue": 1,
       "maxValue": 99,
       "scope": "global",
-      "description": "Sets the length of the gate output if the type is \u201c% of clock\u201d."
+      "description": "Sets the length of the gate output if the type is “% of clock”."
     },
     {
       "name": "Trigger length",
@@ -79,7 +81,7 @@
       "minValue": 1,
       "maxValue": 100,
       "scope": "global",
-      "description": "Sets the length of the gate output if the type is \u201cTrigger\u201d."
+      "description": "Sets the length of the gate output if the type is “Trigger”."
     },
     {
       "name": "Glide",

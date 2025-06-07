@@ -3,7 +3,7 @@
   "name": "Pitch reference",
   "categories": [
     "Utility",
-    "Generator"
+    "Tuning"
   ],
   "description": "Generates a sine wave reference tone at a specified pitch or frequency.",
   "specifications": [],

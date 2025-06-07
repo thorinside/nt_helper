@@ -69,7 +69,8 @@ class MCPAlgorithmTools {
     if (guid == null || guid.isEmpty) {
       final algorithms = _metadataService.getAllAlgorithms();
       final exactMatches = algorithms
-          .where((alg) => alg.name.toLowerCase() == algorithmName!.toLowerCase())
+          .where(
+              (alg) => alg.name.toLowerCase() == algorithmName!.toLowerCase())
           .toList();
       if (exactMatches.isEmpty) {
         final fuzzyMatches = algorithms.where((alg) {

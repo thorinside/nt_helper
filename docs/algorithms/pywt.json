@@ -2,9 +2,9 @@
   "guid": "pywt",
   "name": "Poly Wavetable",
   "categories": [
-    "Oscillator",
-    "Polysynth",
-    "Wavetable"
+    "VCO",
+    "Wavetable",
+    "Polysynth"
   ],
   "description": "A complete polyphonic wavetable synthesizer based on the disting EX algorithm. Each voice has two envelopes, a filter, and an LFO. Supports microtuning.",
   "specifications": [

@@ -9,7 +9,10 @@
     "Thickening synth patches"
   ],
   "gui_description": null,
-  "categories": [],
+  "categories": [
+    "Utility",
+    "Routing"
+  ],
   "specifications": [],
   "parameters": [
     {

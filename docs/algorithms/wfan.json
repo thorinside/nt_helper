@@ -2,8 +2,8 @@
   "guid": "wfan",
   "name": "Waveform Animator",
   "categories": [
-    "Effect",
-    "Waveshaping"
+    "LFO",
+    "Modulation"
   ],
   "description": "Embiggens simple waveforms. Recreates a popular analogue wave multiplier circuit using comparators and LFOs to turn simple inputs (e.g., sawtooth) into richer, fatter sounds. Based on disting mk4 algorithm.",
   "specifications": [],
