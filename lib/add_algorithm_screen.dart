@@ -350,10 +350,29 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(12),
                       ),
+                      const SizedBox(width: 4),
+                      TextButton.icon(
+                        icon: const Icon(Icons.filter_alt_off),
+                        label: const Text('Clear Filters'),
+                        style: TextButton.styleFrom(
+                          foregroundColor:
+                              Theme.of(context).colorScheme.secondary,
+                        ),
+                        onPressed: () {
+                          FocusScope.of(context).unfocus();
+                          setState(() {
+                            _searchController.clear();
+                            _showFavoritesOnly = false;
+                            _selectedCategories.clear();
+                            _saveShowFavoritesOnlyState();
+                            _filterAlgorithms();
+                          });
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildCategoryFilters(),
+                  _buildCategoryFilterButton(),
                   const Divider(),
 
                   // --- Algorithm Chips (Expanded to allow scrolling) ---
@@ -469,31 +488,77 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     );
   }
 
-  Widget _buildCategoryFilters() {
-    if (_allCategories.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Wrap(
-        spacing: 8.0,
-        runSpacing: 4.0,
-        children: _allCategories.map((category) {
-          return FilterChip(
-            label: Text(category),
-            selected: _selectedCategories.contains(category),
-            onSelected: (bool selected) {
-              setState(() {
-                if (selected) {
-                  _selectedCategories.add(category);
-                } else {
-                  _selectedCategories.remove(category);
-                }
-                _filterAlgorithms();
-              });
+  // --- Category Filter Button (Dialog-based Multi-Select) ---
+  Widget _buildCategoryFilterButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.filter_list),
+        label: Text(
+          _selectedCategories.isEmpty
+              ? 'Filter by Category'
+              : 'Categories (${_selectedCategories.length})',
+        ),
+        onPressed: () async {
+          final selected = await showDialog<Set<String>>(
+            context: context,
+            builder: (context) {
+              final tempSelected = Set<String>.from(_selectedCategories);
+              return StatefulBuilder(
+                builder: (context, setStateDialog) => AlertDialog(
+                  title: const Text('Select Categories'),
+                  content: SizedBox(
+                    width: 320,
+                    height: 300,
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: _allCategories.map((category) {
+                        return CheckboxListTile(
+                          value: tempSelected.contains(category),
+                          title: Text(category),
+                          onChanged: (checked) {
+                            setStateDialog(() {
+                              if (checked == true) {
+                                tempSelected.add(category);
+                              } else {
+                                tempSelected.remove(category);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        setStateDialog(() {
+                          tempSelected.clear();
+                        });
+                      },
+                      child: const Text('Clear'),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.pop(context, _selectedCategories),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, tempSelected),
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                ),
+              );
             },
           );
-        }).toList(),
+          if (selected != null) {
+            setState(() {
+              _selectedCategories = selected;
+              _filterAlgorithms();
+            });
+          }
+        },
       ),
     );
   }
