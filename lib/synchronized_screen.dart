@@ -189,12 +189,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         ),
         // Right side content
         Expanded(
-          child: widget.slots.isNotEmpty && _selectedIndex < widget.slots.length
-              ? SlotDetailView(
-                  key: ValueKey(
-                      "$_selectedIndex - ${widget.slots[_selectedIndex].algorithm.guid}"),
-                  slot: widget.slots[_selectedIndex],
-                  units: widget.units,
+          child: widget.slots.isNotEmpty
+              ? IndexedStack(
+                  index: _selectedIndex,
+                  children: widget.slots.mapIndexed((index, slot) {
+                    return SlotDetailView(
+                      key: ValueKey("$index - ${slot.algorithm.guid}"),
+                      slot: slot,
+                      units: widget.units,
+                    );
+                  }).toList(),
                 )
               : Center(
                   child: Text(
@@ -1089,13 +1093,14 @@ class SectionParameterListView extends StatefulWidget {
 
 class _SectionParameterListViewState extends State<SectionParameterListView> {
   late final List<ExpansibleController> _tileControllers;
-  var _isCollapsed = false;
+  late bool _isCollapsed;
 
   @override
   void initState() {
+    super.initState();
     _tileControllers =
         List.generate(widget.pages.pages.length, (_) => ExpansibleController());
-    super.initState();
+    _isCollapsed = SettingsService().startPagesCollapsed;
   }
 
   void _collapseAllTiles() {
@@ -1192,7 +1197,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 itemBuilder: (context, index) {
                   final page = widget.pages.pages.elementAt(index);
                   return ExpansionTile(
-                    initiallyExpanded: true,
+                    initiallyExpanded: !_isCollapsed,
                     controller: _tileControllers.elementAt(index),
                     title: Text(page.name),
                     children: page.parameters.map(

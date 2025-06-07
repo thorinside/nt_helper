@@ -25,12 +25,14 @@ class SettingsService {
   static const String _interMessageDelayKey = 'inter_message_delay_ms';
   static const String _hapticsEnabledKey = 'haptics_enabled';
   static const String _mcpEnabledKey = 'mcp_enabled';
+  static const String _startPagesCollapsedKey = 'start_pages_collapsed';
 
   // Default values
   static const int defaultRequestTimeout = 300;
   static const int defaultInterMessageDelay = 50;
   static const bool defaultHapticsEnabled = true;
   static const bool defaultMcpEnabled = false;
+  static const bool defaultStartPagesCollapsed = false;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -72,12 +74,22 @@ class SettingsService {
     return await _prefs?.setBool(_mcpEnabledKey, value) ?? false;
   }
 
+  /// Check if algorithm pages should start collapsed
+  bool get startPagesCollapsed =>
+      _prefs?.getBool(_startPagesCollapsedKey) ?? defaultStartPagesCollapsed;
+
+  /// Set whether algorithm pages should start collapsed
+  Future<bool> setStartPagesCollapsed(bool value) async {
+    return await _prefs?.setBool(_startPagesCollapsedKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
     await setInterMessageDelay(defaultInterMessageDelay);
     await setHapticsEnabled(defaultHapticsEnabled);
     await setMcpEnabled(defaultMcpEnabled);
+    await setStartPagesCollapsed(defaultStartPagesCollapsed);
   }
 }
 
@@ -95,6 +107,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _interMessageDelayController = TextEditingController();
   late bool _hapticsEnabled;
   late bool _mcpEnabled;
+  late bool _startPagesCollapsed;
 
   @override
   void initState() {
@@ -109,6 +122,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     setState(() {
       _hapticsEnabled = settings.hapticsEnabled;
       _mcpEnabled = settings.mcpEnabled;
+      _startPagesCollapsed = settings.startPagesCollapsed;
     });
   }
 
@@ -121,6 +135,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
           .setInterMessageDelay(int.parse(_interMessageDelayController.text));
       await settings.setHapticsEnabled(_hapticsEnabled);
       await settings.setMcpEnabled(_mcpEnabled);
+      await settings.setStartPagesCollapsed(_startPagesCollapsed);
 
       if (mounted) {
         Navigator.of(context)
@@ -227,6 +242,23 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       onChanged: (value) {
                         setState(() {
                           _hapticsEnabled = value;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+
+                    // Start pages collapsed setting
+                    SwitchListTile(
+                      title: Text(
+                        'Collapse Algorithm Pages by Default',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: const Text(
+                          'When viewing an algorithm, all parameter pages will start collapsed'),
+                      value: _startPagesCollapsed,
+                      onChanged: (value) {
+                        setState(() {
+                          _startPagesCollapsed = value;
                         });
                       },
                       contentPadding: EdgeInsets.zero,
