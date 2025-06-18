@@ -265,9 +265,8 @@ class PackedMappingData {
     // Encode midiFlags2 based on type and relative setting
     bool isNote = midiMappingType != MidiMappingType.cc;
     bool isToggle = midiMappingType == MidiMappingType.noteToggle;
-    int midiFlags2 = (isMidiRelative ? 1 : 0) |
-        (isToggle ? 2 : 0) |
-        (isNote ? 4 : 0);
+    int midiFlags2 =
+        (isMidiRelative ? 1 : 0) | (isToggle ? 2 : 0) | (isNote ? 4 : 0);
 
     // Adjust the CC number and flags if necessary (for Aftertouch)
     if (adjustedCC == 128) {

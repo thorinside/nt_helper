@@ -77,7 +77,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
 // We don't need a custom _parametersToJson unless the serialization needs modification
 
 @freezed
-class AlgorithmMetadata with _$AlgorithmMetadata {
+sealed class AlgorithmMetadata with _$AlgorithmMetadata {
   const factory AlgorithmMetadata({
     required String guid,
     required String name,

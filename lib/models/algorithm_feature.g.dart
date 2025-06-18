@@ -6,9 +6,8 @@ part of 'algorithm_feature.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AlgorithmFeatureImpl _$$AlgorithmFeatureImplFromJson(
-        Map<String, dynamic> json) =>
-    _$AlgorithmFeatureImpl(
+_AlgorithmFeature _$AlgorithmFeatureFromJson(Map<String, dynamic> json) =>
+    _AlgorithmFeature(
       guid: json['guid'] as String,
       name: json['name'] as String,
       description: json['description'] as String?,
@@ -19,8 +18,7 @@ _$AlgorithmFeatureImpl _$$AlgorithmFeatureImplFromJson(
           const [],
     );
 
-Map<String, dynamic> _$$AlgorithmFeatureImplToJson(
-        _$AlgorithmFeatureImpl instance) =>
+Map<String, dynamic> _$AlgorithmFeatureToJson(_AlgorithmFeature instance) =>
     <String, dynamic>{
       'guid': instance.guid,
       'name': instance.name,

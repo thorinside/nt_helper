@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,312 +10,56 @@ part of 'midi_listener_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$MidiListenerState {
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)
-        data,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)?
-        data,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)?
-        data,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Initial value) initial,
-    required TResult Function(_Data value) data,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Initial value)? initial,
-    TResult? Function(_Data value)? data,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Initial value)? initial,
-    TResult Function(_Data value)? data,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MidiListenerStateCopyWith<$Res> {
-  factory $MidiListenerStateCopyWith(
-          MidiListenerState value, $Res Function(MidiListenerState) then) =
-      _$MidiListenerStateCopyWithImpl<$Res, MidiListenerState>;
-}
-
-/// @nodoc
-class _$MidiListenerStateCopyWithImpl<$Res, $Val extends MidiListenerState>
-    implements $MidiListenerStateCopyWith<$Res> {
-  _$MidiListenerStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of MidiListenerState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-abstract class _$$InitialImplCopyWith<$Res> {
-  factory _$$InitialImplCopyWith(
-          _$InitialImpl value, $Res Function(_$InitialImpl) then) =
-      __$$InitialImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$InitialImplCopyWithImpl<$Res>
-    extends _$MidiListenerStateCopyWithImpl<$Res, _$InitialImpl>
-    implements _$$InitialImplCopyWith<$Res> {
-  __$$InitialImplCopyWithImpl(
-      _$InitialImpl _value, $Res Function(_$InitialImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of MidiListenerState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$InitialImpl implements _Initial {
-  const _$InitialImpl();
-
-  @override
-  String toString() {
-    return 'MidiListenerState.initial()';
-  }
-
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$InitialImpl);
+        (other.runtimeType == runtimeType && other is MidiListenerState);
   }
 
   @override
   int get hashCode => runtimeType.hashCode;
 
   @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)
-        data,
-  }) {
-    return initial();
+  String toString() {
+    return 'MidiListenerState()';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)?
-        data,
-  }) {
-    return initial?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)?
-        data,
-    required TResult orElse(),
-  }) {
-    if (initial != null) {
-      return initial();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Initial value) initial,
-    required TResult Function(_Data value) data,
-  }) {
-    return initial(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Initial value)? initial,
-    TResult? Function(_Data value)? data,
-  }) {
-    return initial?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Initial value)? initial,
-    TResult Function(_Data value)? data,
-    required TResult orElse(),
-  }) {
-    if (initial != null) {
-      return initial(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class _Initial implements MidiListenerState {
-  const factory _Initial() = _$InitialImpl;
 }
 
 /// @nodoc
-abstract class _$$DataImplCopyWith<$Res> {
-  factory _$$DataImplCopyWith(
-          _$DataImpl value, $Res Function(_$DataImpl) then) =
-      __$$DataImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call(
-      {List<MidiDevice> devices,
-      MidiDevice? selectedDevice,
-      bool isConnected,
-      MidiEventType? lastDetectedType,
-      int? lastDetectedChannel,
-      int? lastDetectedCc,
-      int? lastDetectedNote,
-      DateTime? lastDetectedTime});
+class $MidiListenerStateCopyWith<$Res> {
+  $MidiListenerStateCopyWith(
+      MidiListenerState _, $Res Function(MidiListenerState) __);
 }
 
 /// @nodoc
-class __$$DataImplCopyWithImpl<$Res>
-    extends _$MidiListenerStateCopyWithImpl<$Res, _$DataImpl>
-    implements _$$DataImplCopyWith<$Res> {
-  __$$DataImplCopyWithImpl(_$DataImpl _value, $Res Function(_$DataImpl) _then)
-      : super(_value, _then);
 
-  /// Create a copy of MidiListenerState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
+class Initial implements MidiListenerState {
+  const Initial();
+
   @override
-  $Res call({
-    Object? devices = null,
-    Object? selectedDevice = freezed,
-    Object? isConnected = null,
-    Object? lastDetectedType = freezed,
-    Object? lastDetectedChannel = freezed,
-    Object? lastDetectedCc = freezed,
-    Object? lastDetectedNote = freezed,
-    Object? lastDetectedTime = freezed,
-  }) {
-    return _then(_$DataImpl(
-      devices: null == devices
-          ? _value._devices
-          : devices // ignore: cast_nullable_to_non_nullable
-              as List<MidiDevice>,
-      selectedDevice: freezed == selectedDevice
-          ? _value.selectedDevice
-          : selectedDevice // ignore: cast_nullable_to_non_nullable
-              as MidiDevice?,
-      isConnected: null == isConnected
-          ? _value.isConnected
-          : isConnected // ignore: cast_nullable_to_non_nullable
-              as bool,
-      lastDetectedType: freezed == lastDetectedType
-          ? _value.lastDetectedType
-          : lastDetectedType // ignore: cast_nullable_to_non_nullable
-              as MidiEventType?,
-      lastDetectedChannel: freezed == lastDetectedChannel
-          ? _value.lastDetectedChannel
-          : lastDetectedChannel // ignore: cast_nullable_to_non_nullable
-              as int?,
-      lastDetectedCc: freezed == lastDetectedCc
-          ? _value.lastDetectedCc
-          : lastDetectedCc // ignore: cast_nullable_to_non_nullable
-              as int?,
-      lastDetectedNote: freezed == lastDetectedNote
-          ? _value.lastDetectedNote
-          : lastDetectedNote // ignore: cast_nullable_to_non_nullable
-              as int?,
-      lastDetectedTime: freezed == lastDetectedTime
-          ? _value.lastDetectedTime
-          : lastDetectedTime // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is Initial);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString() {
+    return 'MidiListenerState.initial()';
   }
 }
 
 /// @nodoc
 
-class _$DataImpl implements _Data {
-  const _$DataImpl(
+class Data implements MidiListenerState {
+  const Data(
       {final List<MidiDevice> devices = const [],
       this.selectedDevice,
       this.isConnected = false,
@@ -326,7 +71,6 @@ class _$DataImpl implements _Data {
       : _devices = devices;
 
   final List<MidiDevice> _devices;
-  @override
   @JsonKey()
   List<MidiDevice> get devices {
     if (_devices is EqualUnmodifiableListView) return _devices;
@@ -334,32 +78,27 @@ class _$DataImpl implements _Data {
     return EqualUnmodifiableListView(_devices);
   }
 
-  @override
   final MidiDevice? selectedDevice;
-  @override
   @JsonKey()
   final bool isConnected;
-  @override
   final MidiEventType? lastDetectedType;
-  @override
   final int? lastDetectedChannel;
-  @override
   final int? lastDetectedCc;
-  @override
   final int? lastDetectedNote;
-  @override
   final DateTime? lastDetectedTime;
 
-  @override
-  String toString() {
-    return 'MidiListenerState.data(devices: $devices, selectedDevice: $selectedDevice, isConnected: $isConnected, lastDetectedType: $lastDetectedType, lastDetectedChannel: $lastDetectedChannel, lastDetectedCc: $lastDetectedCc, lastDetectedNote: $lastDetectedNote, lastDetectedTime: $lastDetectedTime)';
-  }
+  /// Create a copy of MidiListenerState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DataCopyWith<Data> get copyWith =>
+      _$DataCopyWithImpl<Data>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DataImpl &&
+            other is Data &&
             const DeepCollectionEquality().equals(other._devices, _devices) &&
             (identical(other.selectedDevice, selectedDevice) ||
                 other.selectedDevice == selectedDevice) &&
@@ -389,151 +128,84 @@ class _$DataImpl implements _Data {
       lastDetectedNote,
       lastDetectedTime);
 
+  @override
+  String toString() {
+    return 'MidiListenerState.data(devices: $devices, selectedDevice: $selectedDevice, isConnected: $isConnected, lastDetectedType: $lastDetectedType, lastDetectedChannel: $lastDetectedChannel, lastDetectedCc: $lastDetectedCc, lastDetectedNote: $lastDetectedNote, lastDetectedTime: $lastDetectedTime)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $DataCopyWith<$Res>
+    implements $MidiListenerStateCopyWith<$Res> {
+  factory $DataCopyWith(Data value, $Res Function(Data) _then) =
+      _$DataCopyWithImpl;
+  @useResult
+  $Res call(
+      {List<MidiDevice> devices,
+      MidiDevice? selectedDevice,
+      bool isConnected,
+      MidiEventType? lastDetectedType,
+      int? lastDetectedChannel,
+      int? lastDetectedCc,
+      int? lastDetectedNote,
+      DateTime? lastDetectedTime});
+}
+
+/// @nodoc
+class _$DataCopyWithImpl<$Res> implements $DataCopyWith<$Res> {
+  _$DataCopyWithImpl(this._self, this._then);
+
+  final Data _self;
+  final $Res Function(Data) _then;
+
   /// Create a copy of MidiListenerState
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
   @pragma('vm:prefer-inline')
-  _$$DataImplCopyWith<_$DataImpl> get copyWith =>
-      __$$DataImplCopyWithImpl<_$DataImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)
-        data,
+  $Res call({
+    Object? devices = null,
+    Object? selectedDevice = freezed,
+    Object? isConnected = null,
+    Object? lastDetectedType = freezed,
+    Object? lastDetectedChannel = freezed,
+    Object? lastDetectedCc = freezed,
+    Object? lastDetectedNote = freezed,
+    Object? lastDetectedTime = freezed,
   }) {
-    return data(
-        devices,
-        selectedDevice,
-        isConnected,
-        lastDetectedType,
-        lastDetectedChannel,
-        lastDetectedCc,
-        lastDetectedNote,
-        lastDetectedTime);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)?
-        data,
-  }) {
-    return data?.call(
-        devices,
-        selectedDevice,
-        isConnected,
-        lastDetectedType,
-        lastDetectedChannel,
-        lastDetectedCc,
-        lastDetectedNote,
-        lastDetectedTime);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(
-            List<MidiDevice> devices,
-            MidiDevice? selectedDevice,
-            bool isConnected,
-            MidiEventType? lastDetectedType,
-            int? lastDetectedChannel,
-            int? lastDetectedCc,
-            int? lastDetectedNote,
-            DateTime? lastDetectedTime)?
-        data,
-    required TResult orElse(),
-  }) {
-    if (data != null) {
-      return data(
-          devices,
-          selectedDevice,
-          isConnected,
-          lastDetectedType,
-          lastDetectedChannel,
-          lastDetectedCc,
-          lastDetectedNote,
-          lastDetectedTime);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Initial value) initial,
-    required TResult Function(_Data value) data,
-  }) {
-    return data(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Initial value)? initial,
-    TResult? Function(_Data value)? data,
-  }) {
-    return data?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Initial value)? initial,
-    TResult Function(_Data value)? data,
-    required TResult orElse(),
-  }) {
-    if (data != null) {
-      return data(this);
-    }
-    return orElse();
+    return _then(Data(
+      devices: null == devices
+          ? _self._devices
+          : devices // ignore: cast_nullable_to_non_nullable
+              as List<MidiDevice>,
+      selectedDevice: freezed == selectedDevice
+          ? _self.selectedDevice
+          : selectedDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
+      isConnected: null == isConnected
+          ? _self.isConnected
+          : isConnected // ignore: cast_nullable_to_non_nullable
+              as bool,
+      lastDetectedType: freezed == lastDetectedType
+          ? _self.lastDetectedType
+          : lastDetectedType // ignore: cast_nullable_to_non_nullable
+              as MidiEventType?,
+      lastDetectedChannel: freezed == lastDetectedChannel
+          ? _self.lastDetectedChannel
+          : lastDetectedChannel // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lastDetectedCc: freezed == lastDetectedCc
+          ? _self.lastDetectedCc
+          : lastDetectedCc // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lastDetectedNote: freezed == lastDetectedNote
+          ? _self.lastDetectedNote
+          : lastDetectedNote // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lastDetectedTime: freezed == lastDetectedTime
+          ? _self.lastDetectedTime
+          : lastDetectedTime // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
   }
 }
 
-abstract class _Data implements MidiListenerState {
-  const factory _Data(
-      {final List<MidiDevice> devices,
-      final MidiDevice? selectedDevice,
-      final bool isConnected,
-      final MidiEventType? lastDetectedType,
-      final int? lastDetectedChannel,
-      final int? lastDetectedCc,
-      final int? lastDetectedNote,
-      final DateTime? lastDetectedTime}) = _$DataImpl;
-
-  List<MidiDevice> get devices;
-  MidiDevice? get selectedDevice;
-  bool get isConnected;
-  MidiEventType? get lastDetectedType;
-  int? get lastDetectedChannel;
-  int? get lastDetectedCc;
-  int? get lastDetectedNote;
-  DateTime? get lastDetectedTime;
-
-  /// Create a copy of MidiListenerState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DataImplCopyWith<_$DataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,93 +10,56 @@ part of 'algorithm_feature.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-AlgorithmFeature _$AlgorithmFeatureFromJson(Map<String, dynamic> json) {
-  return _AlgorithmFeature.fromJson(json);
-}
 
 /// @nodoc
 mixin _$AlgorithmFeature {
-  String get guid => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  String? get description => throw _privateConstructorUsedError;
-  List<AlgorithmParameter> get parameters => throw _privateConstructorUsedError;
-
-  /// Serializes this AlgorithmFeature to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  String get guid;
+  String get name;
+  String? get description;
+  List<AlgorithmParameter> get parameters;
 
   /// Create a copy of AlgorithmFeature
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AlgorithmFeatureCopyWith<AlgorithmFeature> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AlgorithmFeatureCopyWith<$Res> {
-  factory $AlgorithmFeatureCopyWith(
-          AlgorithmFeature value, $Res Function(AlgorithmFeature) then) =
-      _$AlgorithmFeatureCopyWithImpl<$Res, AlgorithmFeature>;
-  @useResult
-  $Res call(
-      {String guid,
-      String name,
-      String? description,
-      List<AlgorithmParameter> parameters});
-}
-
-/// @nodoc
-class _$AlgorithmFeatureCopyWithImpl<$Res, $Val extends AlgorithmFeature>
-    implements $AlgorithmFeatureCopyWith<$Res> {
-  _$AlgorithmFeatureCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AlgorithmFeature
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AlgorithmFeatureCopyWith<AlgorithmFeature> get copyWith =>
+      _$AlgorithmFeatureCopyWithImpl<AlgorithmFeature>(
+          this as AlgorithmFeature, _$identity);
+
+  /// Serializes this AlgorithmFeature to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? guid = null,
-    Object? name = null,
-    Object? description = freezed,
-    Object? parameters = null,
-  }) {
-    return _then(_value.copyWith(
-      guid: null == guid
-          ? _value.guid
-          : guid // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      parameters: null == parameters
-          ? _value.parameters
-          : parameters // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmParameter>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AlgorithmFeature &&
+            (identical(other.guid, guid) || other.guid == guid) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            const DeepCollectionEquality()
+                .equals(other.parameters, parameters));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, guid, name, description,
+      const DeepCollectionEquality().hash(parameters));
+
+  @override
+  String toString() {
+    return 'AlgorithmFeature(guid: $guid, name: $name, description: $description, parameters: $parameters)';
   }
 }
 
 /// @nodoc
-abstract class _$$AlgorithmFeatureImplCopyWith<$Res>
-    implements $AlgorithmFeatureCopyWith<$Res> {
-  factory _$$AlgorithmFeatureImplCopyWith(_$AlgorithmFeatureImpl value,
-          $Res Function(_$AlgorithmFeatureImpl) then) =
-      __$$AlgorithmFeatureImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AlgorithmFeatureCopyWith<$Res> {
+  factory $AlgorithmFeatureCopyWith(
+          AlgorithmFeature value, $Res Function(AlgorithmFeature) _then) =
+      _$AlgorithmFeatureCopyWithImpl;
   @useResult
   $Res call(
       {String guid,
@@ -105,12 +69,12 @@ abstract class _$$AlgorithmFeatureImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AlgorithmFeatureImplCopyWithImpl<$Res>
-    extends _$AlgorithmFeatureCopyWithImpl<$Res, _$AlgorithmFeatureImpl>
-    implements _$$AlgorithmFeatureImplCopyWith<$Res> {
-  __$$AlgorithmFeatureImplCopyWithImpl(_$AlgorithmFeatureImpl _value,
-      $Res Function(_$AlgorithmFeatureImpl) _then)
-      : super(_value, _then);
+class _$AlgorithmFeatureCopyWithImpl<$Res>
+    implements $AlgorithmFeatureCopyWith<$Res> {
+  _$AlgorithmFeatureCopyWithImpl(this._self, this._then);
+
+  final AlgorithmFeature _self;
+  final $Res Function(AlgorithmFeature) _then;
 
   /// Create a copy of AlgorithmFeature
   /// with the given fields replaced by the non-null parameter values.
@@ -122,21 +86,21 @@ class __$$AlgorithmFeatureImplCopyWithImpl<$Res>
     Object? description = freezed,
     Object? parameters = null,
   }) {
-    return _then(_$AlgorithmFeatureImpl(
+    return _then(_self.copyWith(
       guid: null == guid
-          ? _value.guid
+          ? _self.guid
           : guid // ignore: cast_nullable_to_non_nullable
               as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       description: freezed == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
       parameters: null == parameters
-          ? _value._parameters
+          ? _self.parameters
           : parameters // ignore: cast_nullable_to_non_nullable
               as List<AlgorithmParameter>,
     ));
@@ -145,16 +109,15 @@ class __$$AlgorithmFeatureImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AlgorithmFeatureImpl implements _AlgorithmFeature {
-  const _$AlgorithmFeatureImpl(
+class _AlgorithmFeature implements AlgorithmFeature {
+  const _AlgorithmFeature(
       {required this.guid,
       required this.name,
       this.description,
       final List<AlgorithmParameter> parameters = const []})
       : _parameters = parameters;
-
-  factory _$AlgorithmFeatureImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AlgorithmFeatureImplFromJson(json);
+  factory _AlgorithmFeature.fromJson(Map<String, dynamic> json) =>
+      _$AlgorithmFeatureFromJson(json);
 
   @override
   final String guid;
@@ -171,16 +134,26 @@ class _$AlgorithmFeatureImpl implements _AlgorithmFeature {
     return EqualUnmodifiableListView(_parameters);
   }
 
+  /// Create a copy of AlgorithmFeature
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AlgorithmFeature(guid: $guid, name: $name, description: $description, parameters: $parameters)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AlgorithmFeatureCopyWith<_AlgorithmFeature> get copyWith =>
+      __$AlgorithmFeatureCopyWithImpl<_AlgorithmFeature>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AlgorithmFeatureToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AlgorithmFeatureImpl &&
+            other is _AlgorithmFeature &&
             (identical(other.guid, guid) || other.guid == guid) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
@@ -194,46 +167,64 @@ class _$AlgorithmFeatureImpl implements _AlgorithmFeature {
   int get hashCode => Object.hash(runtimeType, guid, name, description,
       const DeepCollectionEquality().hash(_parameters));
 
-  /// Create a copy of AlgorithmFeature
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AlgorithmFeatureImplCopyWith<_$AlgorithmFeatureImpl> get copyWith =>
-      __$$AlgorithmFeatureImplCopyWithImpl<_$AlgorithmFeatureImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AlgorithmFeatureImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AlgorithmFeature(guid: $guid, name: $name, description: $description, parameters: $parameters)';
   }
 }
 
-abstract class _AlgorithmFeature implements AlgorithmFeature {
-  const factory _AlgorithmFeature(
-      {required final String guid,
-      required final String name,
-      final String? description,
-      final List<AlgorithmParameter> parameters}) = _$AlgorithmFeatureImpl;
+/// @nodoc
+abstract mixin class _$AlgorithmFeatureCopyWith<$Res>
+    implements $AlgorithmFeatureCopyWith<$Res> {
+  factory _$AlgorithmFeatureCopyWith(
+          _AlgorithmFeature value, $Res Function(_AlgorithmFeature) _then) =
+      __$AlgorithmFeatureCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String guid,
+      String name,
+      String? description,
+      List<AlgorithmParameter> parameters});
+}
 
-  factory _AlgorithmFeature.fromJson(Map<String, dynamic> json) =
-      _$AlgorithmFeatureImpl.fromJson;
+/// @nodoc
+class __$AlgorithmFeatureCopyWithImpl<$Res>
+    implements _$AlgorithmFeatureCopyWith<$Res> {
+  __$AlgorithmFeatureCopyWithImpl(this._self, this._then);
 
-  @override
-  String get guid;
-  @override
-  String get name;
-  @override
-  String? get description;
-  @override
-  List<AlgorithmParameter> get parameters;
+  final _AlgorithmFeature _self;
+  final $Res Function(_AlgorithmFeature) _then;
 
   /// Create a copy of AlgorithmFeature
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AlgorithmFeatureImplCopyWith<_$AlgorithmFeatureImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? guid = null,
+    Object? name = null,
+    Object? description = freezed,
+    Object? parameters = null,
+  }) {
+    return _then(_AlgorithmFeature(
+      guid: null == guid
+          ? _self.guid
+          : guid // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      parameters: null == parameters
+          ? _self._parameters
+          : parameters // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmParameter>,
+    ));
+  }
 }
+
+// dart format on

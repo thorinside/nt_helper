@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,457 +10,93 @@ part of 'metadata_sync_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
 
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 /// @nodoc
-mixin _$MetadataSyncState {
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MetadataSyncStateCopyWith<$Res> {
-  factory $MetadataSyncStateCopyWith(
-          MetadataSyncState value, $Res Function(MetadataSyncState) then) =
-      _$MetadataSyncStateCopyWithImpl<$Res, MetadataSyncState>;
-}
-
-/// @nodoc
-class _$MetadataSyncStateCopyWithImpl<$Res, $Val extends MetadataSyncState>
-    implements $MetadataSyncStateCopyWith<$Res> {
-  _$MetadataSyncStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-abstract class _$$IdleImplCopyWith<$Res> {
-  factory _$$IdleImplCopyWith(
-          _$IdleImpl value, $Res Function(_$IdleImpl) then) =
-      __$$IdleImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$IdleImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$IdleImpl>
-    implements _$$IdleImplCopyWith<$Res> {
-  __$$IdleImplCopyWithImpl(_$IdleImpl _value, $Res Function(_$IdleImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$IdleImpl with DiagnosticableTreeMixin implements Idle {
-  const _$IdleImpl();
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.idle()';
-  }
-
+mixin _$MetadataSyncState implements DiagnosticableTreeMixin {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty('type', 'MetadataSyncState.idle'));
+    properties..add(DiagnosticsProperty('type', 'MetadataSyncState'));
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$IdleImpl);
+        (other.runtimeType == runtimeType && other is MetadataSyncState);
   }
 
   @override
   int get hashCode => runtimeType.hashCode;
 
   @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return idle();
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState()';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return idle?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (idle != null) {
-      return idle();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return idle(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return idle?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (idle != null) {
-      return idle(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class Idle implements MetadataSyncState {
-  const factory Idle() = _$IdleImpl;
 }
 
 /// @nodoc
-abstract class _$$SyncingMetadataImplCopyWith<$Res> {
-  factory _$$SyncingMetadataImplCopyWith(_$SyncingMetadataImpl value,
-          $Res Function(_$SyncingMetadataImpl) then) =
-      __$$SyncingMetadataImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call(
-      {double progress,
-      String mainMessage,
-      String subMessage,
-      int? algorithmsProcessed,
-      int? totalAlgorithms});
+class $MetadataSyncStateCopyWith<$Res> {
+  $MetadataSyncStateCopyWith(
+      MetadataSyncState _, $Res Function(MetadataSyncState) __);
 }
 
 /// @nodoc
-class __$$SyncingMetadataImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$SyncingMetadataImpl>
-    implements _$$SyncingMetadataImplCopyWith<$Res> {
-  __$$SyncingMetadataImplCopyWithImpl(
-      _$SyncingMetadataImpl _value, $Res Function(_$SyncingMetadataImpl) _then)
-      : super(_value, _then);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
+class Idle with DiagnosticableTreeMixin implements MetadataSyncState {
+  const Idle();
+
   @override
-  $Res call({
-    Object? progress = null,
-    Object? mainMessage = null,
-    Object? subMessage = null,
-    Object? algorithmsProcessed = freezed,
-    Object? totalAlgorithms = freezed,
-  }) {
-    return _then(_$SyncingMetadataImpl(
-      progress: null == progress
-          ? _value.progress
-          : progress // ignore: cast_nullable_to_non_nullable
-              as double,
-      mainMessage: null == mainMessage
-          ? _value.mainMessage
-          : mainMessage // ignore: cast_nullable_to_non_nullable
-              as String,
-      subMessage: null == subMessage
-          ? _value.subMessage
-          : subMessage // ignore: cast_nullable_to_non_nullable
-              as String,
-      algorithmsProcessed: freezed == algorithmsProcessed
-          ? _value.algorithmsProcessed
-          : algorithmsProcessed // ignore: cast_nullable_to_non_nullable
-              as int?,
-      totalAlgorithms: freezed == totalAlgorithms
-          ? _value.totalAlgorithms
-          : totalAlgorithms // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ));
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties..add(DiagnosticsProperty('type', 'MetadataSyncState.idle'));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is Idle);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.idle()';
   }
 }
 
 /// @nodoc
 
-class _$SyncingMetadataImpl
+class SyncingMetadata
     with DiagnosticableTreeMixin
-    implements SyncingMetadata {
-  const _$SyncingMetadataImpl(
+    implements MetadataSyncState {
+  const SyncingMetadata(
       {required this.progress,
       required this.mainMessage,
       required this.subMessage,
       this.algorithmsProcessed,
       this.totalAlgorithms});
 
-  @override
   final double progress;
 // 0.0 to 1.0
-  @override
   final String mainMessage;
 // e.g., "Processing Algorithm X (15/128)"
-  @override
   final String subMessage;
 // e.g., "Adding to preset..."
-  @override
   final int? algorithmsProcessed;
 // Keep for progress calculation
-  @override
   final int? totalAlgorithms;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.syncingMetadata(progress: $progress, mainMessage: $mainMessage, subMessage: $subMessage, algorithmsProcessed: $algorithmsProcessed, totalAlgorithms: $totalAlgorithms)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $SyncingMetadataCopyWith<SyncingMetadata> get copyWith =>
+      _$SyncingMetadataCopyWithImpl<SyncingMetadata>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.syncingMetadata'))
       ..add(DiagnosticsProperty('progress', progress))
@@ -473,7 +110,7 @@ class _$SyncingMetadataImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SyncingMetadataImpl &&
+            other is SyncingMetadata &&
             (identical(other.progress, progress) ||
                 other.progress == progress) &&
             (identical(other.mainMessage, mainMessage) ||
@@ -490,243 +127,88 @@ class _$SyncingMetadataImpl
   int get hashCode => Object.hash(runtimeType, progress, mainMessage,
       subMessage, algorithmsProcessed, totalAlgorithms);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$SyncingMetadataImplCopyWith<_$SyncingMetadataImpl> get copyWith =>
-      __$$SyncingMetadataImplCopyWithImpl<_$SyncingMetadataImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return syncingMetadata(progress, mainMessage, subMessage,
-        algorithmsProcessed, totalAlgorithms);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.syncingMetadata(progress: $progress, mainMessage: $mainMessage, subMessage: $subMessage, algorithmsProcessed: $algorithmsProcessed, totalAlgorithms: $totalAlgorithms)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return syncingMetadata?.call(progress, mainMessage, subMessage,
-        algorithmsProcessed, totalAlgorithms);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (syncingMetadata != null) {
-      return syncingMetadata(progress, mainMessage, subMessage,
-          algorithmsProcessed, totalAlgorithms);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return syncingMetadata(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return syncingMetadata?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (syncingMetadata != null) {
-      return syncingMetadata(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class SyncingMetadata implements MetadataSyncState {
-  const factory SyncingMetadata(
-      {required final double progress,
-      required final String mainMessage,
-      required final String subMessage,
-      final int? algorithmsProcessed,
-      final int? totalAlgorithms}) = _$SyncingMetadataImpl;
-
-  double get progress; // 0.0 to 1.0
-  String get mainMessage; // e.g., "Processing Algorithm X (15/128)"
-  String get subMessage; // e.g., "Adding to preset..."
-  int? get algorithmsProcessed; // Keep for progress calculation
-  int? get totalAlgorithms;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$SyncingMetadataImplCopyWith<_$SyncingMetadataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$MetadataSyncSuccessImplCopyWith<$Res> {
-  factory _$$MetadataSyncSuccessImplCopyWith(_$MetadataSyncSuccessImpl value,
-          $Res Function(_$MetadataSyncSuccessImpl) then) =
-      __$$MetadataSyncSuccessImplCopyWithImpl<$Res>;
+abstract mixin class $SyncingMetadataCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $SyncingMetadataCopyWith(
+          SyncingMetadata value, $Res Function(SyncingMetadata) _then) =
+      _$SyncingMetadataCopyWithImpl;
   @useResult
-  $Res call({String message});
+  $Res call(
+      {double progress,
+      String mainMessage,
+      String subMessage,
+      int? algorithmsProcessed,
+      int? totalAlgorithms});
 }
 
 /// @nodoc
-class __$$MetadataSyncSuccessImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$MetadataSyncSuccessImpl>
-    implements _$$MetadataSyncSuccessImplCopyWith<$Res> {
-  __$$MetadataSyncSuccessImplCopyWithImpl(_$MetadataSyncSuccessImpl _value,
-      $Res Function(_$MetadataSyncSuccessImpl) _then)
-      : super(_value, _then);
+class _$SyncingMetadataCopyWithImpl<$Res>
+    implements $SyncingMetadataCopyWith<$Res> {
+  _$SyncingMetadataCopyWithImpl(this._self, this._then);
+
+  final SyncingMetadata _self;
+  final $Res Function(SyncingMetadata) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? message = null,
+    Object? progress = null,
+    Object? mainMessage = null,
+    Object? subMessage = null,
+    Object? algorithmsProcessed = freezed,
+    Object? totalAlgorithms = freezed,
   }) {
-    return _then(_$MetadataSyncSuccessImpl(
-      null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
+    return _then(SyncingMetadata(
+      progress: null == progress
+          ? _self.progress
+          : progress // ignore: cast_nullable_to_non_nullable
+              as double,
+      mainMessage: null == mainMessage
+          ? _self.mainMessage
+          : mainMessage // ignore: cast_nullable_to_non_nullable
               as String,
+      subMessage: null == subMessage
+          ? _self.subMessage
+          : subMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      algorithmsProcessed: freezed == algorithmsProcessed
+          ? _self.algorithmsProcessed
+          : algorithmsProcessed // ignore: cast_nullable_to_non_nullable
+              as int?,
+      totalAlgorithms: freezed == totalAlgorithms
+          ? _self.totalAlgorithms
+          : totalAlgorithms // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
 
 /// @nodoc
 
-class _$MetadataSyncSuccessImpl
+class MetadataSyncSuccess
     with DiagnosticableTreeMixin
-    implements MetadataSyncSuccess {
-  const _$MetadataSyncSuccessImpl(this.message);
+    implements MetadataSyncState {
+  const MetadataSyncSuccess(this.message);
 
-  @override
   final String message;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.metadataSyncSuccess(message: $message)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MetadataSyncSuccessCopyWith<MetadataSyncSuccess> get copyWith =>
+      _$MetadataSyncSuccessCopyWithImpl<MetadataSyncSuccess>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(
           DiagnosticsProperty('type', 'MetadataSyncState.metadataSyncSuccess'))
@@ -737,216 +219,47 @@ class _$MetadataSyncSuccessImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MetadataSyncSuccessImpl &&
+            other is MetadataSyncSuccess &&
             (identical(other.message, message) || other.message == message));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, message);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$MetadataSyncSuccessImplCopyWith<_$MetadataSyncSuccessImpl> get copyWith =>
-      __$$MetadataSyncSuccessImplCopyWithImpl<_$MetadataSyncSuccessImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return metadataSyncSuccess(message);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.metadataSyncSuccess(message: $message)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return metadataSyncSuccess?.call(message);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (metadataSyncSuccess != null) {
-      return metadataSyncSuccess(message);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return metadataSyncSuccess(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return metadataSyncSuccess?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (metadataSyncSuccess != null) {
-      return metadataSyncSuccess(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class MetadataSyncSuccess implements MetadataSyncState {
-  const factory MetadataSyncSuccess(final String message) =
-      _$MetadataSyncSuccessImpl;
-
-  String get message;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MetadataSyncSuccessImplCopyWith<_$MetadataSyncSuccessImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$MetadataSyncFailureImplCopyWith<$Res> {
-  factory _$$MetadataSyncFailureImplCopyWith(_$MetadataSyncFailureImpl value,
-          $Res Function(_$MetadataSyncFailureImpl) then) =
-      __$$MetadataSyncFailureImplCopyWithImpl<$Res>;
+abstract mixin class $MetadataSyncSuccessCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $MetadataSyncSuccessCopyWith(
+          MetadataSyncSuccess value, $Res Function(MetadataSyncSuccess) _then) =
+      _$MetadataSyncSuccessCopyWithImpl;
   @useResult
-  $Res call({String error});
+  $Res call({String message});
 }
 
 /// @nodoc
-class __$$MetadataSyncFailureImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$MetadataSyncFailureImpl>
-    implements _$$MetadataSyncFailureImplCopyWith<$Res> {
-  __$$MetadataSyncFailureImplCopyWithImpl(_$MetadataSyncFailureImpl _value,
-      $Res Function(_$MetadataSyncFailureImpl) _then)
-      : super(_value, _then);
+class _$MetadataSyncSuccessCopyWithImpl<$Res>
+    implements $MetadataSyncSuccessCopyWith<$Res> {
+  _$MetadataSyncSuccessCopyWithImpl(this._self, this._then);
+
+  final MetadataSyncSuccess _self;
+  final $Res Function(MetadataSyncSuccess) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? error = null,
+    Object? message = null,
   }) {
-    return _then(_$MetadataSyncFailureImpl(
-      null == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
+    return _then(MetadataSyncSuccess(
+      null == message
+          ? _self.message
+          : message // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -954,22 +267,22 @@ class __$$MetadataSyncFailureImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$MetadataSyncFailureImpl
+class MetadataSyncFailure
     with DiagnosticableTreeMixin
-    implements MetadataSyncFailure {
-  const _$MetadataSyncFailureImpl(this.error);
+    implements MetadataSyncState {
+  const MetadataSyncFailure(this.error);
 
-  @override
   final String error;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.metadataSyncFailure(error: $error)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MetadataSyncFailureCopyWith<MetadataSyncFailure> get copyWith =>
+      _$MetadataSyncFailureCopyWithImpl<MetadataSyncFailure>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(
           DiagnosticsProperty('type', 'MetadataSyncState.metadataSyncFailure'))
@@ -980,622 +293,47 @@ class _$MetadataSyncFailureImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MetadataSyncFailureImpl &&
+            other is MetadataSyncFailure &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, error);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$MetadataSyncFailureImplCopyWith<_$MetadataSyncFailureImpl> get copyWith =>
-      __$$MetadataSyncFailureImplCopyWithImpl<_$MetadataSyncFailureImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return metadataSyncFailure(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return metadataSyncFailure?.call(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (metadataSyncFailure != null) {
-      return metadataSyncFailure(error);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return metadataSyncFailure(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return metadataSyncFailure?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (metadataSyncFailure != null) {
-      return metadataSyncFailure(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class MetadataSyncFailure implements MetadataSyncState {
-  const factory MetadataSyncFailure(final String error) =
-      _$MetadataSyncFailureImpl;
-
-  String get error;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MetadataSyncFailureImplCopyWith<_$MetadataSyncFailureImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class _$$SavingPresetImplCopyWith<$Res> {
-  factory _$$SavingPresetImplCopyWith(
-          _$SavingPresetImpl value, $Res Function(_$SavingPresetImpl) then) =
-      __$$SavingPresetImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$SavingPresetImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$SavingPresetImpl>
-    implements _$$SavingPresetImplCopyWith<$Res> {
-  __$$SavingPresetImplCopyWithImpl(
-      _$SavingPresetImpl _value, $Res Function(_$SavingPresetImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$SavingPresetImpl with DiagnosticableTreeMixin implements SavingPreset {
-  const _$SavingPresetImpl();
-
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.savingPreset()';
+    return 'MetadataSyncState.metadataSyncFailure(error: $error)';
   }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty('type', 'MetadataSyncState.savingPreset'));
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$SavingPresetImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return savingPreset();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return savingPreset?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (savingPreset != null) {
-      return savingPreset();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return savingPreset(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return savingPreset?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (savingPreset != null) {
-      return savingPreset(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class SavingPreset implements MetadataSyncState {
-  const factory SavingPreset() = _$SavingPresetImpl;
 }
 
 /// @nodoc
-abstract class _$$LoadingPresetImplCopyWith<$Res> {
-  factory _$$LoadingPresetImplCopyWith(
-          _$LoadingPresetImpl value, $Res Function(_$LoadingPresetImpl) then) =
-      __$$LoadingPresetImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$LoadingPresetImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$LoadingPresetImpl>
-    implements _$$LoadingPresetImplCopyWith<$Res> {
-  __$$LoadingPresetImplCopyWithImpl(
-      _$LoadingPresetImpl _value, $Res Function(_$LoadingPresetImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$LoadingPresetImpl
-    with DiagnosticableTreeMixin
-    implements LoadingPreset {
-  const _$LoadingPresetImpl();
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.loadingPreset()';
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty('type', 'MetadataSyncState.loadingPreset'));
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$LoadingPresetImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return loadingPreset();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return loadingPreset?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (loadingPreset != null) {
-      return loadingPreset();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return loadingPreset(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return loadingPreset?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (loadingPreset != null) {
-      return loadingPreset(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class LoadingPreset implements MetadataSyncState {
-  const factory LoadingPreset() = _$LoadingPresetImpl;
-}
-
-/// @nodoc
-abstract class _$$PresetSaveSuccessImplCopyWith<$Res> {
-  factory _$$PresetSaveSuccessImplCopyWith(_$PresetSaveSuccessImpl value,
-          $Res Function(_$PresetSaveSuccessImpl) then) =
-      __$$PresetSaveSuccessImplCopyWithImpl<$Res>;
+abstract mixin class $MetadataSyncFailureCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $MetadataSyncFailureCopyWith(
+          MetadataSyncFailure value, $Res Function(MetadataSyncFailure) _then) =
+      _$MetadataSyncFailureCopyWithImpl;
   @useResult
-  $Res call({String message});
+  $Res call({String error});
 }
 
 /// @nodoc
-class __$$PresetSaveSuccessImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$PresetSaveSuccessImpl>
-    implements _$$PresetSaveSuccessImplCopyWith<$Res> {
-  __$$PresetSaveSuccessImplCopyWithImpl(_$PresetSaveSuccessImpl _value,
-      $Res Function(_$PresetSaveSuccessImpl) _then)
-      : super(_value, _then);
+class _$MetadataSyncFailureCopyWithImpl<$Res>
+    implements $MetadataSyncFailureCopyWith<$Res> {
+  _$MetadataSyncFailureCopyWithImpl(this._self, this._then);
+
+  final MetadataSyncFailure _self;
+  final $Res Function(MetadataSyncFailure) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? message = null,
+    Object? error = null,
   }) {
-    return _then(_$PresetSaveSuccessImpl(
-      null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
+    return _then(MetadataSyncFailure(
+      null == error
+          ? _self.error
+          : error // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -1603,22 +341,74 @@ class __$$PresetSaveSuccessImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$PresetSaveSuccessImpl
-    with DiagnosticableTreeMixin
-    implements PresetSaveSuccess {
-  const _$PresetSaveSuccessImpl(this.message);
-
-  @override
-  final String message;
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.presetSaveSuccess(message: $message)';
-  }
+class SavingPreset with DiagnosticableTreeMixin implements MetadataSyncState {
+  const SavingPreset();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'MetadataSyncState.savingPreset'));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is SavingPreset);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.savingPreset()';
+  }
+}
+
+/// @nodoc
+
+class LoadingPreset with DiagnosticableTreeMixin implements MetadataSyncState {
+  const LoadingPreset();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+      ..add(DiagnosticsProperty('type', 'MetadataSyncState.loadingPreset'));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is LoadingPreset);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.loadingPreset()';
+  }
+}
+
+/// @nodoc
+
+class PresetSaveSuccess
+    with DiagnosticableTreeMixin
+    implements MetadataSyncState {
+  const PresetSaveSuccess(this.message);
+
+  final String message;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PresetSaveSuccessCopyWith<PresetSaveSuccess> get copyWith =>
+      _$PresetSaveSuccessCopyWithImpl<PresetSaveSuccess>(this, _$identity);
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.presetSaveSuccess'))
       ..add(DiagnosticsProperty('message', message));
@@ -1628,216 +418,47 @@ class _$PresetSaveSuccessImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PresetSaveSuccessImpl &&
+            other is PresetSaveSuccess &&
             (identical(other.message, message) || other.message == message));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, message);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$PresetSaveSuccessImplCopyWith<_$PresetSaveSuccessImpl> get copyWith =>
-      __$$PresetSaveSuccessImplCopyWithImpl<_$PresetSaveSuccessImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return presetSaveSuccess(message);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.presetSaveSuccess(message: $message)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return presetSaveSuccess?.call(message);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetSaveSuccess != null) {
-      return presetSaveSuccess(message);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return presetSaveSuccess(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return presetSaveSuccess?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetSaveSuccess != null) {
-      return presetSaveSuccess(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class PresetSaveSuccess implements MetadataSyncState {
-  const factory PresetSaveSuccess(final String message) =
-      _$PresetSaveSuccessImpl;
-
-  String get message;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PresetSaveSuccessImplCopyWith<_$PresetSaveSuccessImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$PresetSaveFailureImplCopyWith<$Res> {
-  factory _$$PresetSaveFailureImplCopyWith(_$PresetSaveFailureImpl value,
-          $Res Function(_$PresetSaveFailureImpl) then) =
-      __$$PresetSaveFailureImplCopyWithImpl<$Res>;
+abstract mixin class $PresetSaveSuccessCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $PresetSaveSuccessCopyWith(
+          PresetSaveSuccess value, $Res Function(PresetSaveSuccess) _then) =
+      _$PresetSaveSuccessCopyWithImpl;
   @useResult
-  $Res call({String error});
+  $Res call({String message});
 }
 
 /// @nodoc
-class __$$PresetSaveFailureImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$PresetSaveFailureImpl>
-    implements _$$PresetSaveFailureImplCopyWith<$Res> {
-  __$$PresetSaveFailureImplCopyWithImpl(_$PresetSaveFailureImpl _value,
-      $Res Function(_$PresetSaveFailureImpl) _then)
-      : super(_value, _then);
+class _$PresetSaveSuccessCopyWithImpl<$Res>
+    implements $PresetSaveSuccessCopyWith<$Res> {
+  _$PresetSaveSuccessCopyWithImpl(this._self, this._then);
+
+  final PresetSaveSuccess _self;
+  final $Res Function(PresetSaveSuccess) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? error = null,
+    Object? message = null,
   }) {
-    return _then(_$PresetSaveFailureImpl(
-      null == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
+    return _then(PresetSaveSuccess(
+      null == message
+          ? _self.message
+          : message // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -1845,22 +466,22 @@ class __$$PresetSaveFailureImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$PresetSaveFailureImpl
+class PresetSaveFailure
     with DiagnosticableTreeMixin
-    implements PresetSaveFailure {
-  const _$PresetSaveFailureImpl(this.error);
+    implements MetadataSyncState {
+  const PresetSaveFailure(this.error);
 
-  @override
   final String error;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.presetSaveFailure(error: $error)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PresetSaveFailureCopyWith<PresetSaveFailure> get copyWith =>
+      _$PresetSaveFailureCopyWithImpl<PresetSaveFailure>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.presetSaveFailure'))
       ..add(DiagnosticsProperty('error', error));
@@ -1870,215 +491,47 @@ class _$PresetSaveFailureImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PresetSaveFailureImpl &&
+            other is PresetSaveFailure &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, error);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$PresetSaveFailureImplCopyWith<_$PresetSaveFailureImpl> get copyWith =>
-      __$$PresetSaveFailureImplCopyWithImpl<_$PresetSaveFailureImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return presetSaveFailure(error);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.presetSaveFailure(error: $error)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return presetSaveFailure?.call(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetSaveFailure != null) {
-      return presetSaveFailure(error);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return presetSaveFailure(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return presetSaveFailure?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetSaveFailure != null) {
-      return presetSaveFailure(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class PresetSaveFailure implements MetadataSyncState {
-  const factory PresetSaveFailure(final String error) = _$PresetSaveFailureImpl;
-
-  String get error;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PresetSaveFailureImplCopyWith<_$PresetSaveFailureImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$PresetLoadSuccessImplCopyWith<$Res> {
-  factory _$$PresetLoadSuccessImplCopyWith(_$PresetLoadSuccessImpl value,
-          $Res Function(_$PresetLoadSuccessImpl) then) =
-      __$$PresetLoadSuccessImplCopyWithImpl<$Res>;
+abstract mixin class $PresetSaveFailureCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $PresetSaveFailureCopyWith(
+          PresetSaveFailure value, $Res Function(PresetSaveFailure) _then) =
+      _$PresetSaveFailureCopyWithImpl;
   @useResult
-  $Res call({String message});
+  $Res call({String error});
 }
 
 /// @nodoc
-class __$$PresetLoadSuccessImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$PresetLoadSuccessImpl>
-    implements _$$PresetLoadSuccessImplCopyWith<$Res> {
-  __$$PresetLoadSuccessImplCopyWithImpl(_$PresetLoadSuccessImpl _value,
-      $Res Function(_$PresetLoadSuccessImpl) _then)
-      : super(_value, _then);
+class _$PresetSaveFailureCopyWithImpl<$Res>
+    implements $PresetSaveFailureCopyWith<$Res> {
+  _$PresetSaveFailureCopyWithImpl(this._self, this._then);
+
+  final PresetSaveFailure _self;
+  final $Res Function(PresetSaveFailure) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? message = null,
+    Object? error = null,
   }) {
-    return _then(_$PresetLoadSuccessImpl(
-      null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
+    return _then(PresetSaveFailure(
+      null == error
+          ? _self.error
+          : error // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -2086,22 +539,22 @@ class __$$PresetLoadSuccessImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$PresetLoadSuccessImpl
+class PresetLoadSuccess
     with DiagnosticableTreeMixin
-    implements PresetLoadSuccess {
-  const _$PresetLoadSuccessImpl(this.message);
+    implements MetadataSyncState {
+  const PresetLoadSuccess(this.message);
 
-  @override
   final String message;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.presetLoadSuccess(message: $message)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PresetLoadSuccessCopyWith<PresetLoadSuccess> get copyWith =>
+      _$PresetLoadSuccessCopyWithImpl<PresetLoadSuccess>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.presetLoadSuccess'))
       ..add(DiagnosticsProperty('message', message));
@@ -2111,216 +564,47 @@ class _$PresetLoadSuccessImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PresetLoadSuccessImpl &&
+            other is PresetLoadSuccess &&
             (identical(other.message, message) || other.message == message));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, message);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$PresetLoadSuccessImplCopyWith<_$PresetLoadSuccessImpl> get copyWith =>
-      __$$PresetLoadSuccessImplCopyWithImpl<_$PresetLoadSuccessImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return presetLoadSuccess(message);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.presetLoadSuccess(message: $message)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return presetLoadSuccess?.call(message);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetLoadSuccess != null) {
-      return presetLoadSuccess(message);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return presetLoadSuccess(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return presetLoadSuccess?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetLoadSuccess != null) {
-      return presetLoadSuccess(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class PresetLoadSuccess implements MetadataSyncState {
-  const factory PresetLoadSuccess(final String message) =
-      _$PresetLoadSuccessImpl;
-
-  String get message;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PresetLoadSuccessImplCopyWith<_$PresetLoadSuccessImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$PresetLoadFailureImplCopyWith<$Res> {
-  factory _$$PresetLoadFailureImplCopyWith(_$PresetLoadFailureImpl value,
-          $Res Function(_$PresetLoadFailureImpl) then) =
-      __$$PresetLoadFailureImplCopyWithImpl<$Res>;
+abstract mixin class $PresetLoadSuccessCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $PresetLoadSuccessCopyWith(
+          PresetLoadSuccess value, $Res Function(PresetLoadSuccess) _then) =
+      _$PresetLoadSuccessCopyWithImpl;
   @useResult
-  $Res call({String error});
+  $Res call({String message});
 }
 
 /// @nodoc
-class __$$PresetLoadFailureImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$PresetLoadFailureImpl>
-    implements _$$PresetLoadFailureImplCopyWith<$Res> {
-  __$$PresetLoadFailureImplCopyWithImpl(_$PresetLoadFailureImpl _value,
-      $Res Function(_$PresetLoadFailureImpl) _then)
-      : super(_value, _then);
+class _$PresetLoadSuccessCopyWithImpl<$Res>
+    implements $PresetLoadSuccessCopyWith<$Res> {
+  _$PresetLoadSuccessCopyWithImpl(this._self, this._then);
+
+  final PresetLoadSuccess _self;
+  final $Res Function(PresetLoadSuccess) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? error = null,
+    Object? message = null,
   }) {
-    return _then(_$PresetLoadFailureImpl(
-      null == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
+    return _then(PresetLoadSuccess(
+      null == message
+          ? _self.message
+          : message // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -2328,22 +612,22 @@ class __$$PresetLoadFailureImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$PresetLoadFailureImpl
+class PresetLoadFailure
     with DiagnosticableTreeMixin
-    implements PresetLoadFailure {
-  const _$PresetLoadFailureImpl(this.error);
+    implements MetadataSyncState {
+  const PresetLoadFailure(this.error);
 
-  @override
   final String error;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.presetLoadFailure(error: $error)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PresetLoadFailureCopyWith<PresetLoadFailure> get copyWith =>
+      _$PresetLoadFailureCopyWithImpl<PresetLoadFailure>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.presetLoadFailure'))
       ..add(DiagnosticsProperty('error', error));
@@ -2353,419 +637,47 @@ class _$PresetLoadFailureImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PresetLoadFailureImpl &&
+            other is PresetLoadFailure &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, error);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$PresetLoadFailureImplCopyWith<_$PresetLoadFailureImpl> get copyWith =>
-      __$$PresetLoadFailureImplCopyWithImpl<_$PresetLoadFailureImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return presetLoadFailure(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return presetLoadFailure?.call(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetLoadFailure != null) {
-      return presetLoadFailure(error);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return presetLoadFailure(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return presetLoadFailure?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetLoadFailure != null) {
-      return presetLoadFailure(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class PresetLoadFailure implements MetadataSyncState {
-  const factory PresetLoadFailure(final String error) = _$PresetLoadFailureImpl;
-
-  String get error;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PresetLoadFailureImplCopyWith<_$PresetLoadFailureImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class _$$DeletingPresetImplCopyWith<$Res> {
-  factory _$$DeletingPresetImplCopyWith(_$DeletingPresetImpl value,
-          $Res Function(_$DeletingPresetImpl) then) =
-      __$$DeletingPresetImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$DeletingPresetImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$DeletingPresetImpl>
-    implements _$$DeletingPresetImplCopyWith<$Res> {
-  __$$DeletingPresetImplCopyWithImpl(
-      _$DeletingPresetImpl _value, $Res Function(_$DeletingPresetImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$DeletingPresetImpl
-    with DiagnosticableTreeMixin
-    implements DeletingPreset {
-  const _$DeletingPresetImpl();
-
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.deletingPreset()';
+    return 'MetadataSyncState.presetLoadFailure(error: $error)';
   }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty('type', 'MetadataSyncState.deletingPreset'));
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$DeletingPresetImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return deletingPreset();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return deletingPreset?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (deletingPreset != null) {
-      return deletingPreset();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return deletingPreset(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return deletingPreset?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (deletingPreset != null) {
-      return deletingPreset(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class DeletingPreset implements MetadataSyncState {
-  const factory DeletingPreset() = _$DeletingPresetImpl;
 }
 
 /// @nodoc
-abstract class _$$PresetDeleteSuccessImplCopyWith<$Res> {
-  factory _$$PresetDeleteSuccessImplCopyWith(_$PresetDeleteSuccessImpl value,
-          $Res Function(_$PresetDeleteSuccessImpl) then) =
-      __$$PresetDeleteSuccessImplCopyWithImpl<$Res>;
+abstract mixin class $PresetLoadFailureCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $PresetLoadFailureCopyWith(
+          PresetLoadFailure value, $Res Function(PresetLoadFailure) _then) =
+      _$PresetLoadFailureCopyWithImpl;
   @useResult
-  $Res call({String message});
+  $Res call({String error});
 }
 
 /// @nodoc
-class __$$PresetDeleteSuccessImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$PresetDeleteSuccessImpl>
-    implements _$$PresetDeleteSuccessImplCopyWith<$Res> {
-  __$$PresetDeleteSuccessImplCopyWithImpl(_$PresetDeleteSuccessImpl _value,
-      $Res Function(_$PresetDeleteSuccessImpl) _then)
-      : super(_value, _then);
+class _$PresetLoadFailureCopyWithImpl<$Res>
+    implements $PresetLoadFailureCopyWith<$Res> {
+  _$PresetLoadFailureCopyWithImpl(this._self, this._then);
+
+  final PresetLoadFailure _self;
+  final $Res Function(PresetLoadFailure) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? message = null,
+    Object? error = null,
   }) {
-    return _then(_$PresetDeleteSuccessImpl(
-      null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
+    return _then(PresetLoadFailure(
+      null == error
+          ? _self.error
+          : error // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -2773,22 +685,48 @@ class __$$PresetDeleteSuccessImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$PresetDeleteSuccessImpl
-    with DiagnosticableTreeMixin
-    implements PresetDeleteSuccess {
-  const _$PresetDeleteSuccessImpl(this.message);
-
-  @override
-  final String message;
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.presetDeleteSuccess(message: $message)';
-  }
+class DeletingPreset with DiagnosticableTreeMixin implements MetadataSyncState {
+  const DeletingPreset();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'MetadataSyncState.deletingPreset'));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is DeletingPreset);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.deletingPreset()';
+  }
+}
+
+/// @nodoc
+
+class PresetDeleteSuccess
+    with DiagnosticableTreeMixin
+    implements MetadataSyncState {
+  const PresetDeleteSuccess(this.message);
+
+  final String message;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PresetDeleteSuccessCopyWith<PresetDeleteSuccess> get copyWith =>
+      _$PresetDeleteSuccessCopyWithImpl<PresetDeleteSuccess>(this, _$identity);
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     properties
       ..add(
           DiagnosticsProperty('type', 'MetadataSyncState.presetDeleteSuccess'))
@@ -2799,216 +737,47 @@ class _$PresetDeleteSuccessImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PresetDeleteSuccessImpl &&
+            other is PresetDeleteSuccess &&
             (identical(other.message, message) || other.message == message));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, message);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$PresetDeleteSuccessImplCopyWith<_$PresetDeleteSuccessImpl> get copyWith =>
-      __$$PresetDeleteSuccessImplCopyWithImpl<_$PresetDeleteSuccessImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return presetDeleteSuccess(message);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.presetDeleteSuccess(message: $message)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return presetDeleteSuccess?.call(message);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetDeleteSuccess != null) {
-      return presetDeleteSuccess(message);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return presetDeleteSuccess(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return presetDeleteSuccess?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetDeleteSuccess != null) {
-      return presetDeleteSuccess(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class PresetDeleteSuccess implements MetadataSyncState {
-  const factory PresetDeleteSuccess(final String message) =
-      _$PresetDeleteSuccessImpl;
-
-  String get message;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PresetDeleteSuccessImplCopyWith<_$PresetDeleteSuccessImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$PresetDeleteFailureImplCopyWith<$Res> {
-  factory _$$PresetDeleteFailureImplCopyWith(_$PresetDeleteFailureImpl value,
-          $Res Function(_$PresetDeleteFailureImpl) then) =
-      __$$PresetDeleteFailureImplCopyWithImpl<$Res>;
+abstract mixin class $PresetDeleteSuccessCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $PresetDeleteSuccessCopyWith(
+          PresetDeleteSuccess value, $Res Function(PresetDeleteSuccess) _then) =
+      _$PresetDeleteSuccessCopyWithImpl;
   @useResult
-  $Res call({String error});
+  $Res call({String message});
 }
 
 /// @nodoc
-class __$$PresetDeleteFailureImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$PresetDeleteFailureImpl>
-    implements _$$PresetDeleteFailureImplCopyWith<$Res> {
-  __$$PresetDeleteFailureImplCopyWithImpl(_$PresetDeleteFailureImpl _value,
-      $Res Function(_$PresetDeleteFailureImpl) _then)
-      : super(_value, _then);
+class _$PresetDeleteSuccessCopyWithImpl<$Res>
+    implements $PresetDeleteSuccessCopyWith<$Res> {
+  _$PresetDeleteSuccessCopyWithImpl(this._self, this._then);
+
+  final PresetDeleteSuccess _self;
+  final $Res Function(PresetDeleteSuccess) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? error = null,
+    Object? message = null,
   }) {
-    return _then(_$PresetDeleteFailureImpl(
-      null == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
+    return _then(PresetDeleteSuccess(
+      null == message
+          ? _self.message
+          : message // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -3016,22 +785,22 @@ class __$$PresetDeleteFailureImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$PresetDeleteFailureImpl
+class PresetDeleteFailure
     with DiagnosticableTreeMixin
-    implements PresetDeleteFailure {
-  const _$PresetDeleteFailureImpl(this.error);
+    implements MetadataSyncState {
+  const PresetDeleteFailure(this.error);
 
-  @override
   final String error;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.presetDeleteFailure(error: $error)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PresetDeleteFailureCopyWith<PresetDeleteFailure> get copyWith =>
+      _$PresetDeleteFailureCopyWithImpl<PresetDeleteFailure>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(
           DiagnosticsProperty('type', 'MetadataSyncState.presetDeleteFailure'))
@@ -3042,240 +811,58 @@ class _$PresetDeleteFailureImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PresetDeleteFailureImpl &&
+            other is PresetDeleteFailure &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, error);
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$PresetDeleteFailureImplCopyWith<_$PresetDeleteFailureImpl> get copyWith =>
-      __$$PresetDeleteFailureImplCopyWithImpl<_$PresetDeleteFailureImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return presetDeleteFailure(error);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.presetDeleteFailure(error: $error)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return presetDeleteFailure?.call(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetDeleteFailure != null) {
-      return presetDeleteFailure(error);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return presetDeleteFailure(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return presetDeleteFailure?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (presetDeleteFailure != null) {
-      return presetDeleteFailure(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class PresetDeleteFailure implements MetadataSyncState {
-  const factory PresetDeleteFailure(final String error) =
-      _$PresetDeleteFailureImpl;
-
-  String get error;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$PresetDeleteFailureImplCopyWith<_$PresetDeleteFailureImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$ViewingLocalDataImplCopyWith<$Res> {
-  factory _$$ViewingLocalDataImplCopyWith(_$ViewingLocalDataImpl value,
-          $Res Function(_$ViewingLocalDataImpl) then) =
-      __$$ViewingLocalDataImplCopyWithImpl<$Res>;
+abstract mixin class $PresetDeleteFailureCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $PresetDeleteFailureCopyWith(
+          PresetDeleteFailure value, $Res Function(PresetDeleteFailure) _then) =
+      _$PresetDeleteFailureCopyWithImpl;
   @useResult
-  $Res call(
-      {List<AlgorithmEntry> algorithms,
-      Map<String, int> parameterCounts,
-      List<PresetEntry> presets});
+  $Res call({String error});
 }
 
 /// @nodoc
-class __$$ViewingLocalDataImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$ViewingLocalDataImpl>
-    implements _$$ViewingLocalDataImplCopyWith<$Res> {
-  __$$ViewingLocalDataImplCopyWithImpl(_$ViewingLocalDataImpl _value,
-      $Res Function(_$ViewingLocalDataImpl) _then)
-      : super(_value, _then);
+class _$PresetDeleteFailureCopyWithImpl<$Res>
+    implements $PresetDeleteFailureCopyWith<$Res> {
+  _$PresetDeleteFailureCopyWithImpl(this._self, this._then);
+
+  final PresetDeleteFailure _self;
+  final $Res Function(PresetDeleteFailure) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? algorithms = null,
-    Object? parameterCounts = null,
-    Object? presets = null,
+    Object? error = null,
   }) {
-    return _then(_$ViewingLocalDataImpl(
-      algorithms: null == algorithms
-          ? _value._algorithms
-          : algorithms // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmEntry>,
-      parameterCounts: null == parameterCounts
-          ? _value._parameterCounts
-          : parameterCounts // ignore: cast_nullable_to_non_nullable
-              as Map<String, int>,
-      presets: null == presets
-          ? _value._presets
-          : presets // ignore: cast_nullable_to_non_nullable
-              as List<PresetEntry>,
+    return _then(PresetDeleteFailure(
+      null == error
+          ? _self.error
+          : error // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
 
 /// @nodoc
 
-class _$ViewingLocalDataImpl
+class ViewingLocalData
     with DiagnosticableTreeMixin
-    implements ViewingLocalData {
-  const _$ViewingLocalDataImpl(
+    implements MetadataSyncState {
+  const ViewingLocalData(
       {required final List<AlgorithmEntry> algorithms,
       required final Map<String, int> parameterCounts,
       required final List<PresetEntry> presets})
@@ -3284,7 +871,6 @@ class _$ViewingLocalDataImpl
         _presets = presets;
 
   final List<AlgorithmEntry> _algorithms;
-  @override
   List<AlgorithmEntry> get algorithms {
     if (_algorithms is EqualUnmodifiableListView) return _algorithms;
     // ignore: implicit_dynamic_type
@@ -3292,7 +878,6 @@ class _$ViewingLocalDataImpl
   }
 
   final Map<String, int> _parameterCounts;
-  @override
   Map<String, int> get parameterCounts {
     if (_parameterCounts is EqualUnmodifiableMapView) return _parameterCounts;
     // ignore: implicit_dynamic_type
@@ -3300,21 +885,21 @@ class _$ViewingLocalDataImpl
   }
 
   final List<PresetEntry> _presets;
-  @override
   List<PresetEntry> get presets {
     if (_presets is EqualUnmodifiableListView) return _presets;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_presets);
   }
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.viewingLocalData(algorithms: $algorithms, parameterCounts: $parameterCounts, presets: $presets)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ViewingLocalDataCopyWith<ViewingLocalData> get copyWith =>
+      _$ViewingLocalDataCopyWithImpl<ViewingLocalData>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.viewingLocalData'))
       ..add(DiagnosticsProperty('algorithms', algorithms))
@@ -3326,7 +911,7 @@ class _$ViewingLocalDataImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ViewingLocalDataImpl &&
+            other is ViewingLocalData &&
             const DeepCollectionEquality()
                 .equals(other._algorithms, _algorithms) &&
             const DeepCollectionEquality()
@@ -3341,234 +926,74 @@ class _$ViewingLocalDataImpl
       const DeepCollectionEquality().hash(_parameterCounts),
       const DeepCollectionEquality().hash(_presets));
 
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$ViewingLocalDataImplCopyWith<_$ViewingLocalDataImpl> get copyWith =>
-      __$$ViewingLocalDataImplCopyWithImpl<_$ViewingLocalDataImpl>(
-          this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
-  }) {
-    return viewingLocalData(algorithms, parameterCounts, presets);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.viewingLocalData(algorithms: $algorithms, parameterCounts: $parameterCounts, presets: $presets)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return viewingLocalData?.call(algorithms, parameterCounts, presets);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (viewingLocalData != null) {
-      return viewingLocalData(algorithms, parameterCounts, presets);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return viewingLocalData(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return viewingLocalData?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (viewingLocalData != null) {
-      return viewingLocalData(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class ViewingLocalData implements MetadataSyncState {
-  const factory ViewingLocalData(
-      {required final List<AlgorithmEntry> algorithms,
-      required final Map<String, int> parameterCounts,
-      required final List<PresetEntry> presets}) = _$ViewingLocalDataImpl;
-
-  List<AlgorithmEntry> get algorithms;
-  Map<String, int> get parameterCounts;
-  List<PresetEntry> get presets;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$ViewingLocalDataImplCopyWith<_$ViewingLocalDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$FailureImplCopyWith<$Res> {
-  factory _$$FailureImplCopyWith(
-          _$FailureImpl value, $Res Function(_$FailureImpl) then) =
-      __$$FailureImplCopyWithImpl<$Res>;
+abstract mixin class $ViewingLocalDataCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $ViewingLocalDataCopyWith(
+          ViewingLocalData value, $Res Function(ViewingLocalData) _then) =
+      _$ViewingLocalDataCopyWithImpl;
   @useResult
-  $Res call({String error});
+  $Res call(
+      {List<AlgorithmEntry> algorithms,
+      Map<String, int> parameterCounts,
+      List<PresetEntry> presets});
 }
 
 /// @nodoc
-class __$$FailureImplCopyWithImpl<$Res>
-    extends _$MetadataSyncStateCopyWithImpl<$Res, _$FailureImpl>
-    implements _$$FailureImplCopyWith<$Res> {
-  __$$FailureImplCopyWithImpl(
-      _$FailureImpl _value, $Res Function(_$FailureImpl) _then)
-      : super(_value, _then);
+class _$ViewingLocalDataCopyWithImpl<$Res>
+    implements $ViewingLocalDataCopyWith<$Res> {
+  _$ViewingLocalDataCopyWithImpl(this._self, this._then);
+
+  final ViewingLocalData _self;
+  final $Res Function(ViewingLocalData) _then;
 
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? error = null,
+    Object? algorithms = null,
+    Object? parameterCounts = null,
+    Object? presets = null,
   }) {
-    return _then(_$FailureImpl(
-      null == error
-          ? _value.error
-          : error // ignore: cast_nullable_to_non_nullable
-              as String,
+    return _then(ViewingLocalData(
+      algorithms: null == algorithms
+          ? _self._algorithms
+          : algorithms // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmEntry>,
+      parameterCounts: null == parameterCounts
+          ? _self._parameterCounts
+          : parameterCounts // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+      presets: null == presets
+          ? _self._presets
+          : presets // ignore: cast_nullable_to_non_nullable
+              as List<PresetEntry>,
     ));
   }
 }
 
 /// @nodoc
 
-class _$FailureImpl with DiagnosticableTreeMixin implements Failure {
-  const _$FailureImpl(this.error);
+class Failure with DiagnosticableTreeMixin implements MetadataSyncState {
+  const Failure(this.error);
 
-  @override
   final String error;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MetadataSyncState.failure(error: $error)';
-  }
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $FailureCopyWith<Failure> get copyWith =>
+      _$FailureCopyWithImpl<Failure>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MetadataSyncState.failure'))
       ..add(DiagnosticsProperty('error', error));
@@ -3578,182 +1003,48 @@ class _$FailureImpl with DiagnosticableTreeMixin implements Failure {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$FailureImpl &&
+            other is Failure &&
             (identical(other.error, error) || other.error == error));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, error);
 
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.failure(error: $error)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $FailureCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $FailureCopyWith(Failure value, $Res Function(Failure) _then) =
+      _$FailureCopyWithImpl;
+  @useResult
+  $Res call({String error});
+}
+
+/// @nodoc
+class _$FailureCopyWithImpl<$Res> implements $FailureCopyWith<$Res> {
+  _$FailureCopyWithImpl(this._self, this._then);
+
+  final Failure _self;
+  final $Res Function(Failure) _then;
+
   /// Create a copy of MetadataSyncState
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
   @pragma('vm:prefer-inline')
-  _$$FailureImplCopyWith<_$FailureImpl> get copyWith =>
-      __$$FailureImplCopyWithImpl<_$FailureImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(double progress, String mainMessage,
-            String subMessage, int? algorithmsProcessed, int? totalAlgorithms)
-        syncingMetadata,
-    required TResult Function(String message) metadataSyncSuccess,
-    required TResult Function(String error) metadataSyncFailure,
-    required TResult Function() savingPreset,
-    required TResult Function() loadingPreset,
-    required TResult Function(String message) presetSaveSuccess,
-    required TResult Function(String error) presetSaveFailure,
-    required TResult Function(String message) presetLoadSuccess,
-    required TResult Function(String error) presetLoadFailure,
-    required TResult Function() deletingPreset,
-    required TResult Function(String message) presetDeleteSuccess,
-    required TResult Function(String error) presetDeleteFailure,
-    required TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)
-        viewingLocalData,
-    required TResult Function(String error) failure,
+  $Res call({
+    Object? error = null,
   }) {
-    return failure(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult? Function(String message)? metadataSyncSuccess,
-    TResult? Function(String error)? metadataSyncFailure,
-    TResult? Function()? savingPreset,
-    TResult? Function()? loadingPreset,
-    TResult? Function(String message)? presetSaveSuccess,
-    TResult? Function(String error)? presetSaveFailure,
-    TResult? Function(String message)? presetLoadSuccess,
-    TResult? Function(String error)? presetLoadFailure,
-    TResult? Function()? deletingPreset,
-    TResult? Function(String message)? presetDeleteSuccess,
-    TResult? Function(String error)? presetDeleteFailure,
-    TResult? Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult? Function(String error)? failure,
-  }) {
-    return failure?.call(error);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(double progress, String mainMessage, String subMessage,
-            int? algorithmsProcessed, int? totalAlgorithms)?
-        syncingMetadata,
-    TResult Function(String message)? metadataSyncSuccess,
-    TResult Function(String error)? metadataSyncFailure,
-    TResult Function()? savingPreset,
-    TResult Function()? loadingPreset,
-    TResult Function(String message)? presetSaveSuccess,
-    TResult Function(String error)? presetSaveFailure,
-    TResult Function(String message)? presetLoadSuccess,
-    TResult Function(String error)? presetLoadFailure,
-    TResult Function()? deletingPreset,
-    TResult Function(String message)? presetDeleteSuccess,
-    TResult Function(String error)? presetDeleteFailure,
-    TResult Function(List<AlgorithmEntry> algorithms,
-            Map<String, int> parameterCounts, List<PresetEntry> presets)?
-        viewingLocalData,
-    TResult Function(String error)? failure,
-    required TResult orElse(),
-  }) {
-    if (failure != null) {
-      return failure(error);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(Idle value) idle,
-    required TResult Function(SyncingMetadata value) syncingMetadata,
-    required TResult Function(MetadataSyncSuccess value) metadataSyncSuccess,
-    required TResult Function(MetadataSyncFailure value) metadataSyncFailure,
-    required TResult Function(SavingPreset value) savingPreset,
-    required TResult Function(LoadingPreset value) loadingPreset,
-    required TResult Function(PresetSaveSuccess value) presetSaveSuccess,
-    required TResult Function(PresetSaveFailure value) presetSaveFailure,
-    required TResult Function(PresetLoadSuccess value) presetLoadSuccess,
-    required TResult Function(PresetLoadFailure value) presetLoadFailure,
-    required TResult Function(DeletingPreset value) deletingPreset,
-    required TResult Function(PresetDeleteSuccess value) presetDeleteSuccess,
-    required TResult Function(PresetDeleteFailure value) presetDeleteFailure,
-    required TResult Function(ViewingLocalData value) viewingLocalData,
-    required TResult Function(Failure value) failure,
-  }) {
-    return failure(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(Idle value)? idle,
-    TResult? Function(SyncingMetadata value)? syncingMetadata,
-    TResult? Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult? Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult? Function(SavingPreset value)? savingPreset,
-    TResult? Function(LoadingPreset value)? loadingPreset,
-    TResult? Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult? Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult? Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult? Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult? Function(DeletingPreset value)? deletingPreset,
-    TResult? Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult? Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult? Function(ViewingLocalData value)? viewingLocalData,
-    TResult? Function(Failure value)? failure,
-  }) {
-    return failure?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(Idle value)? idle,
-    TResult Function(SyncingMetadata value)? syncingMetadata,
-    TResult Function(MetadataSyncSuccess value)? metadataSyncSuccess,
-    TResult Function(MetadataSyncFailure value)? metadataSyncFailure,
-    TResult Function(SavingPreset value)? savingPreset,
-    TResult Function(LoadingPreset value)? loadingPreset,
-    TResult Function(PresetSaveSuccess value)? presetSaveSuccess,
-    TResult Function(PresetSaveFailure value)? presetSaveFailure,
-    TResult Function(PresetLoadSuccess value)? presetLoadSuccess,
-    TResult Function(PresetLoadFailure value)? presetLoadFailure,
-    TResult Function(DeletingPreset value)? deletingPreset,
-    TResult Function(PresetDeleteSuccess value)? presetDeleteSuccess,
-    TResult Function(PresetDeleteFailure value)? presetDeleteFailure,
-    TResult Function(ViewingLocalData value)? viewingLocalData,
-    TResult Function(Failure value)? failure,
-    required TResult orElse(),
-  }) {
-    if (failure != null) {
-      return failure(this);
-    }
-    return orElse();
+    return _then(Failure(
+      null == error
+          ? _self.error
+          : error // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
   }
 }
 
-abstract class Failure implements MetadataSyncState {
-  const factory Failure(final String error) = _$FailureImpl;
-
-  String get error;
-
-  /// Create a copy of MetadataSyncState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$FailureImplCopyWith<_$FailureImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,112 +10,81 @@ part of 'disting_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
 
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 /// @nodoc
-mixin _$Slot {
-  Algorithm get algorithm => throw _privateConstructorUsedError;
-  RoutingInfo get routing => throw _privateConstructorUsedError;
-  ParameterPages get pages => throw _privateConstructorUsedError;
-  List<ParameterInfo> get parameters => throw _privateConstructorUsedError;
-  List<ParameterValue> get values => throw _privateConstructorUsedError;
-  List<ParameterEnumStrings> get enums => throw _privateConstructorUsedError;
-  List<Mapping> get mappings => throw _privateConstructorUsedError;
-  List<ParameterValueString> get valueStrings =>
-      throw _privateConstructorUsedError;
+mixin _$Slot implements DiagnosticableTreeMixin {
+  Algorithm get algorithm;
+  RoutingInfo get routing;
+  ParameterPages get pages;
+  List<ParameterInfo> get parameters;
+  List<ParameterValue> get values;
+  List<ParameterEnumStrings> get enums;
+  List<Mapping> get mappings;
+  List<ParameterValueString> get valueStrings;
 
   /// Create a copy of Slot
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $SlotCopyWith<Slot> get copyWith => throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $SlotCopyWith<$Res> {
-  factory $SlotCopyWith(Slot value, $Res Function(Slot) then) =
-      _$SlotCopyWithImpl<$Res, Slot>;
-  @useResult
-  $Res call(
-      {Algorithm algorithm,
-      RoutingInfo routing,
-      ParameterPages pages,
-      List<ParameterInfo> parameters,
-      List<ParameterValue> values,
-      List<ParameterEnumStrings> enums,
-      List<Mapping> mappings,
-      List<ParameterValueString> valueStrings});
-}
-
-/// @nodoc
-class _$SlotCopyWithImpl<$Res, $Val extends Slot>
-    implements $SlotCopyWith<$Res> {
-  _$SlotCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of Slot
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $SlotCopyWith<Slot> get copyWith =>
+      _$SlotCopyWithImpl<Slot>(this as Slot, _$identity);
+
   @override
-  $Res call({
-    Object? algorithm = null,
-    Object? routing = null,
-    Object? pages = null,
-    Object? parameters = null,
-    Object? values = null,
-    Object? enums = null,
-    Object? mappings = null,
-    Object? valueStrings = null,
-  }) {
-    return _then(_value.copyWith(
-      algorithm: null == algorithm
-          ? _value.algorithm
-          : algorithm // ignore: cast_nullable_to_non_nullable
-              as Algorithm,
-      routing: null == routing
-          ? _value.routing
-          : routing // ignore: cast_nullable_to_non_nullable
-              as RoutingInfo,
-      pages: null == pages
-          ? _value.pages
-          : pages // ignore: cast_nullable_to_non_nullable
-              as ParameterPages,
-      parameters: null == parameters
-          ? _value.parameters
-          : parameters // ignore: cast_nullable_to_non_nullable
-              as List<ParameterInfo>,
-      values: null == values
-          ? _value.values
-          : values // ignore: cast_nullable_to_non_nullable
-              as List<ParameterValue>,
-      enums: null == enums
-          ? _value.enums
-          : enums // ignore: cast_nullable_to_non_nullable
-              as List<ParameterEnumStrings>,
-      mappings: null == mappings
-          ? _value.mappings
-          : mappings // ignore: cast_nullable_to_non_nullable
-              as List<Mapping>,
-      valueStrings: null == valueStrings
-          ? _value.valueStrings
-          : valueStrings // ignore: cast_nullable_to_non_nullable
-              as List<ParameterValueString>,
-    ) as $Val);
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+      ..add(DiagnosticsProperty('type', 'Slot'))
+      ..add(DiagnosticsProperty('algorithm', algorithm))
+      ..add(DiagnosticsProperty('routing', routing))
+      ..add(DiagnosticsProperty('pages', pages))
+      ..add(DiagnosticsProperty('parameters', parameters))
+      ..add(DiagnosticsProperty('values', values))
+      ..add(DiagnosticsProperty('enums', enums))
+      ..add(DiagnosticsProperty('mappings', mappings))
+      ..add(DiagnosticsProperty('valueStrings', valueStrings));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is Slot &&
+            (identical(other.algorithm, algorithm) ||
+                other.algorithm == algorithm) &&
+            (identical(other.routing, routing) || other.routing == routing) &&
+            (identical(other.pages, pages) || other.pages == pages) &&
+            const DeepCollectionEquality()
+                .equals(other.parameters, parameters) &&
+            const DeepCollectionEquality().equals(other.values, values) &&
+            const DeepCollectionEquality().equals(other.enums, enums) &&
+            const DeepCollectionEquality().equals(other.mappings, mappings) &&
+            const DeepCollectionEquality()
+                .equals(other.valueStrings, valueStrings));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      algorithm,
+      routing,
+      pages,
+      const DeepCollectionEquality().hash(parameters),
+      const DeepCollectionEquality().hash(values),
+      const DeepCollectionEquality().hash(enums),
+      const DeepCollectionEquality().hash(mappings),
+      const DeepCollectionEquality().hash(valueStrings));
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
   }
 }
 
 /// @nodoc
-abstract class _$$SlotImplCopyWith<$Res> implements $SlotCopyWith<$Res> {
-  factory _$$SlotImplCopyWith(
-          _$SlotImpl value, $Res Function(_$SlotImpl) then) =
-      __$$SlotImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $SlotCopyWith<$Res> {
+  factory $SlotCopyWith(Slot value, $Res Function(Slot) _then) =
+      _$SlotCopyWithImpl;
   @useResult
   $Res call(
       {Algorithm algorithm,
@@ -128,11 +98,11 @@ abstract class _$$SlotImplCopyWith<$Res> implements $SlotCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$SlotImplCopyWithImpl<$Res>
-    extends _$SlotCopyWithImpl<$Res, _$SlotImpl>
-    implements _$$SlotImplCopyWith<$Res> {
-  __$$SlotImplCopyWithImpl(_$SlotImpl _value, $Res Function(_$SlotImpl) _then)
-      : super(_value, _then);
+class _$SlotCopyWithImpl<$Res> implements $SlotCopyWith<$Res> {
+  _$SlotCopyWithImpl(this._self, this._then);
+
+  final Slot _self;
+  final $Res Function(Slot) _then;
 
   /// Create a copy of Slot
   /// with the given fields replaced by the non-null parameter values.
@@ -148,37 +118,37 @@ class __$$SlotImplCopyWithImpl<$Res>
     Object? mappings = null,
     Object? valueStrings = null,
   }) {
-    return _then(_$SlotImpl(
+    return _then(_self.copyWith(
       algorithm: null == algorithm
-          ? _value.algorithm
+          ? _self.algorithm
           : algorithm // ignore: cast_nullable_to_non_nullable
               as Algorithm,
       routing: null == routing
-          ? _value.routing
+          ? _self.routing
           : routing // ignore: cast_nullable_to_non_nullable
               as RoutingInfo,
       pages: null == pages
-          ? _value.pages
+          ? _self.pages
           : pages // ignore: cast_nullable_to_non_nullable
               as ParameterPages,
       parameters: null == parameters
-          ? _value._parameters
+          ? _self.parameters
           : parameters // ignore: cast_nullable_to_non_nullable
               as List<ParameterInfo>,
       values: null == values
-          ? _value._values
+          ? _self.values
           : values // ignore: cast_nullable_to_non_nullable
               as List<ParameterValue>,
       enums: null == enums
-          ? _value._enums
+          ? _self.enums
           : enums // ignore: cast_nullable_to_non_nullable
               as List<ParameterEnumStrings>,
       mappings: null == mappings
-          ? _value._mappings
+          ? _self.mappings
           : mappings // ignore: cast_nullable_to_non_nullable
               as List<Mapping>,
       valueStrings: null == valueStrings
-          ? _value._valueStrings
+          ? _self.valueStrings
           : valueStrings // ignore: cast_nullable_to_non_nullable
               as List<ParameterValueString>,
     ));
@@ -187,8 +157,8 @@ class __$$SlotImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$SlotImpl with DiagnosticableTreeMixin implements _Slot {
-  const _$SlotImpl(
+class _Slot with DiagnosticableTreeMixin implements Slot {
+  const _Slot(
       {required this.algorithm,
       required this.routing,
       required this.pages,
@@ -249,14 +219,16 @@ class _$SlotImpl with DiagnosticableTreeMixin implements _Slot {
     return EqualUnmodifiableListView(_valueStrings);
   }
 
+  /// Create a copy of Slot
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$SlotCopyWith<_Slot> get copyWith =>
+      __$SlotCopyWithImpl<_Slot>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'Slot'))
       ..add(DiagnosticsProperty('algorithm', algorithm))
@@ -273,7 +245,7 @@ class _$SlotImpl with DiagnosticableTreeMixin implements _Slot {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$SlotImpl &&
+            other is _Slot &&
             (identical(other.algorithm, algorithm) ||
                 other.algorithm == algorithm) &&
             (identical(other.routing, routing) || other.routing == routing) &&
@@ -299,140 +271,147 @@ class _$SlotImpl with DiagnosticableTreeMixin implements _Slot {
       const DeepCollectionEquality().hash(_mappings),
       const DeepCollectionEquality().hash(_valueStrings));
 
-  /// Create a copy of Slot
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$SlotImplCopyWith<_$SlotImpl> get copyWith =>
-      __$$SlotImplCopyWithImpl<_$SlotImpl>(this, _$identity);
-}
-
-abstract class _Slot implements Slot {
-  const factory _Slot(
-      {required final Algorithm algorithm,
-      required final RoutingInfo routing,
-      required final ParameterPages pages,
-      required final List<ParameterInfo> parameters,
-      required final List<ParameterValue> values,
-      required final List<ParameterEnumStrings> enums,
-      required final List<Mapping> mappings,
-      required final List<ParameterValueString> valueStrings}) = _$SlotImpl;
-
-  @override
-  Algorithm get algorithm;
-  @override
-  RoutingInfo get routing;
-  @override
-  ParameterPages get pages;
-  @override
-  List<ParameterInfo> get parameters;
-  @override
-  List<ParameterValue> get values;
-  @override
-  List<ParameterEnumStrings> get enums;
-  @override
-  List<Mapping> get mappings;
-  @override
-  List<ParameterValueString> get valueStrings;
-
-  /// Create a copy of Slot
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$SlotImplCopyWith<_$SlotImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-mixin _$MappedParameter {
-  ParameterInfo get parameter => throw _privateConstructorUsedError;
-  ParameterValue get value => throw _privateConstructorUsedError;
-  ParameterEnumStrings get enums => throw _privateConstructorUsedError;
-  ParameterValueString get valueString => throw _privateConstructorUsedError;
-  Mapping get mapping => throw _privateConstructorUsedError;
-  Algorithm get algorithm => throw _privateConstructorUsedError;
-
-  /// Create a copy of MappedParameter
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $MappedParameterCopyWith<MappedParameter> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MappedParameterCopyWith<$Res> {
-  factory $MappedParameterCopyWith(
-          MappedParameter value, $Res Function(MappedParameter) then) =
-      _$MappedParameterCopyWithImpl<$Res, MappedParameter>;
-  @useResult
-  $Res call(
-      {ParameterInfo parameter,
-      ParameterValue value,
-      ParameterEnumStrings enums,
-      ParameterValueString valueString,
-      Mapping mapping,
-      Algorithm algorithm});
-}
-
-/// @nodoc
-class _$MappedParameterCopyWithImpl<$Res, $Val extends MappedParameter>
-    implements $MappedParameterCopyWith<$Res> {
-  _$MappedParameterCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of MappedParameter
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? parameter = null,
-    Object? value = null,
-    Object? enums = null,
-    Object? valueString = null,
-    Object? mapping = null,
-    Object? algorithm = null,
-  }) {
-    return _then(_value.copyWith(
-      parameter: null == parameter
-          ? _value.parameter
-          : parameter // ignore: cast_nullable_to_non_nullable
-              as ParameterInfo,
-      value: null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as ParameterValue,
-      enums: null == enums
-          ? _value.enums
-          : enums // ignore: cast_nullable_to_non_nullable
-              as ParameterEnumStrings,
-      valueString: null == valueString
-          ? _value.valueString
-          : valueString // ignore: cast_nullable_to_non_nullable
-              as ParameterValueString,
-      mapping: null == mapping
-          ? _value.mapping
-          : mapping // ignore: cast_nullable_to_non_nullable
-              as Mapping,
-      algorithm: null == algorithm
-          ? _value.algorithm
-          : algorithm // ignore: cast_nullable_to_non_nullable
-              as Algorithm,
-    ) as $Val);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'Slot(algorithm: $algorithm, routing: $routing, pages: $pages, parameters: $parameters, values: $values, enums: $enums, mappings: $mappings, valueStrings: $valueStrings)';
   }
 }
 
 /// @nodoc
-abstract class _$$MappedParameterImplCopyWith<$Res>
-    implements $MappedParameterCopyWith<$Res> {
-  factory _$$MappedParameterImplCopyWith(_$MappedParameterImpl value,
-          $Res Function(_$MappedParameterImpl) then) =
-      __$$MappedParameterImplCopyWithImpl<$Res>;
+abstract mixin class _$SlotCopyWith<$Res> implements $SlotCopyWith<$Res> {
+  factory _$SlotCopyWith(_Slot value, $Res Function(_Slot) _then) =
+      __$SlotCopyWithImpl;
   @override
+  @useResult
+  $Res call(
+      {Algorithm algorithm,
+      RoutingInfo routing,
+      ParameterPages pages,
+      List<ParameterInfo> parameters,
+      List<ParameterValue> values,
+      List<ParameterEnumStrings> enums,
+      List<Mapping> mappings,
+      List<ParameterValueString> valueStrings});
+}
+
+/// @nodoc
+class __$SlotCopyWithImpl<$Res> implements _$SlotCopyWith<$Res> {
+  __$SlotCopyWithImpl(this._self, this._then);
+
+  final _Slot _self;
+  final $Res Function(_Slot) _then;
+
+  /// Create a copy of Slot
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? algorithm = null,
+    Object? routing = null,
+    Object? pages = null,
+    Object? parameters = null,
+    Object? values = null,
+    Object? enums = null,
+    Object? mappings = null,
+    Object? valueStrings = null,
+  }) {
+    return _then(_Slot(
+      algorithm: null == algorithm
+          ? _self.algorithm
+          : algorithm // ignore: cast_nullable_to_non_nullable
+              as Algorithm,
+      routing: null == routing
+          ? _self.routing
+          : routing // ignore: cast_nullable_to_non_nullable
+              as RoutingInfo,
+      pages: null == pages
+          ? _self.pages
+          : pages // ignore: cast_nullable_to_non_nullable
+              as ParameterPages,
+      parameters: null == parameters
+          ? _self._parameters
+          : parameters // ignore: cast_nullable_to_non_nullable
+              as List<ParameterInfo>,
+      values: null == values
+          ? _self._values
+          : values // ignore: cast_nullable_to_non_nullable
+              as List<ParameterValue>,
+      enums: null == enums
+          ? _self._enums
+          : enums // ignore: cast_nullable_to_non_nullable
+              as List<ParameterEnumStrings>,
+      mappings: null == mappings
+          ? _self._mappings
+          : mappings // ignore: cast_nullable_to_non_nullable
+              as List<Mapping>,
+      valueStrings: null == valueStrings
+          ? _self._valueStrings
+          : valueStrings // ignore: cast_nullable_to_non_nullable
+              as List<ParameterValueString>,
+    ));
+  }
+}
+
+/// @nodoc
+mixin _$MappedParameter implements DiagnosticableTreeMixin {
+  ParameterInfo get parameter;
+  ParameterValue get value;
+  ParameterEnumStrings get enums;
+  ParameterValueString get valueString;
+  Mapping get mapping;
+  Algorithm get algorithm;
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $MappedParameterCopyWith<MappedParameter> get copyWith =>
+      _$MappedParameterCopyWithImpl<MappedParameter>(
+          this as MappedParameter, _$identity);
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+      ..add(DiagnosticsProperty('type', 'MappedParameter'))
+      ..add(DiagnosticsProperty('parameter', parameter))
+      ..add(DiagnosticsProperty('value', value))
+      ..add(DiagnosticsProperty('enums', enums))
+      ..add(DiagnosticsProperty('valueString', valueString))
+      ..add(DiagnosticsProperty('mapping', mapping))
+      ..add(DiagnosticsProperty('algorithm', algorithm));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is MappedParameter &&
+            (identical(other.parameter, parameter) ||
+                other.parameter == parameter) &&
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.enums, enums) || other.enums == enums) &&
+            (identical(other.valueString, valueString) ||
+                other.valueString == valueString) &&
+            (identical(other.mapping, mapping) || other.mapping == mapping) &&
+            (identical(other.algorithm, algorithm) ||
+                other.algorithm == algorithm));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, parameter, value, enums, valueString, mapping, algorithm);
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MappedParameter(parameter: $parameter, value: $value, enums: $enums, valueString: $valueString, mapping: $mapping, algorithm: $algorithm)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $MappedParameterCopyWith<$Res> {
+  factory $MappedParameterCopyWith(
+          MappedParameter value, $Res Function(MappedParameter) _then) =
+      _$MappedParameterCopyWithImpl;
   @useResult
   $Res call(
       {ParameterInfo parameter,
@@ -444,12 +423,12 @@ abstract class _$$MappedParameterImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$MappedParameterImplCopyWithImpl<$Res>
-    extends _$MappedParameterCopyWithImpl<$Res, _$MappedParameterImpl>
-    implements _$$MappedParameterImplCopyWith<$Res> {
-  __$$MappedParameterImplCopyWithImpl(
-      _$MappedParameterImpl _value, $Res Function(_$MappedParameterImpl) _then)
-      : super(_value, _then);
+class _$MappedParameterCopyWithImpl<$Res>
+    implements $MappedParameterCopyWith<$Res> {
+  _$MappedParameterCopyWithImpl(this._self, this._then);
+
+  final MappedParameter _self;
+  final $Res Function(MappedParameter) _then;
 
   /// Create a copy of MappedParameter
   /// with the given fields replaced by the non-null parameter values.
@@ -463,29 +442,29 @@ class __$$MappedParameterImplCopyWithImpl<$Res>
     Object? mapping = null,
     Object? algorithm = null,
   }) {
-    return _then(_$MappedParameterImpl(
+    return _then(_self.copyWith(
       parameter: null == parameter
-          ? _value.parameter
+          ? _self.parameter
           : parameter // ignore: cast_nullable_to_non_nullable
               as ParameterInfo,
       value: null == value
-          ? _value.value
+          ? _self.value
           : value // ignore: cast_nullable_to_non_nullable
               as ParameterValue,
       enums: null == enums
-          ? _value.enums
+          ? _self.enums
           : enums // ignore: cast_nullable_to_non_nullable
               as ParameterEnumStrings,
       valueString: null == valueString
-          ? _value.valueString
+          ? _self.valueString
           : valueString // ignore: cast_nullable_to_non_nullable
               as ParameterValueString,
       mapping: null == mapping
-          ? _value.mapping
+          ? _self.mapping
           : mapping // ignore: cast_nullable_to_non_nullable
               as Mapping,
       algorithm: null == algorithm
-          ? _value.algorithm
+          ? _self.algorithm
           : algorithm // ignore: cast_nullable_to_non_nullable
               as Algorithm,
     ));
@@ -494,10 +473,8 @@ class __$$MappedParameterImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$MappedParameterImpl
-    with DiagnosticableTreeMixin
-    implements _MappedParameter {
-  const _$MappedParameterImpl(
+class _MappedParameter with DiagnosticableTreeMixin implements MappedParameter {
+  const _MappedParameter(
       {required this.parameter,
       required this.value,
       required this.enums,
@@ -518,14 +495,16 @@ class _$MappedParameterImpl
   @override
   final Algorithm algorithm;
 
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'MappedParameter(parameter: $parameter, value: $value, enums: $enums, valueString: $valueString, mapping: $mapping, algorithm: $algorithm)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$MappedParameterCopyWith<_MappedParameter> get copyWith =>
+      __$MappedParameterCopyWithImpl<_MappedParameter>(this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'MappedParameter'))
       ..add(DiagnosticsProperty('parameter', parameter))
@@ -540,7 +519,7 @@ class _$MappedParameterImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MappedParameterImpl &&
+            other is _MappedParameter &&
             (identical(other.parameter, parameter) ||
                 other.parameter == parameter) &&
             (identical(other.value, value) || other.value == value) &&
@@ -556,411 +535,136 @@ class _$MappedParameterImpl
   int get hashCode => Object.hash(
       runtimeType, parameter, value, enums, valueString, mapping, algorithm);
 
-  /// Create a copy of MappedParameter
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$MappedParameterImplCopyWith<_$MappedParameterImpl> get copyWith =>
-      __$$MappedParameterImplCopyWithImpl<_$MappedParameterImpl>(
-          this, _$identity);
-}
-
-abstract class _MappedParameter implements MappedParameter {
-  const factory _MappedParameter(
-      {required final ParameterInfo parameter,
-      required final ParameterValue value,
-      required final ParameterEnumStrings enums,
-      required final ParameterValueString valueString,
-      required final Mapping mapping,
-      required final Algorithm algorithm}) = _$MappedParameterImpl;
-
-  @override
-  ParameterInfo get parameter;
-  @override
-  ParameterValue get value;
-  @override
-  ParameterEnumStrings get enums;
-  @override
-  ParameterValueString get valueString;
-  @override
-  Mapping get mapping;
-  @override
-  Algorithm get algorithm;
-
-  /// Create a copy of MappedParameter
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$MappedParameterImplCopyWith<_$MappedParameterImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-mixin _$DistingState {
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)
-        selectDevice,
-    required TResult Function(
-            IDistingMidiManager disting,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            bool offline,
-            bool loading)
-        connected,
-    required TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)
-        synchronized,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult? Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DistingStateInitial value) initial,
-    required TResult Function(DistingStateSelectDevice value) selectDevice,
-    required TResult Function(DistingStateConnected value) connected,
-    required TResult Function(DistingStateSynchronized value) synchronized,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DistingStateInitial value)? initial,
-    TResult? Function(DistingStateSelectDevice value)? selectDevice,
-    TResult? Function(DistingStateConnected value)? connected,
-    TResult? Function(DistingStateSynchronized value)? synchronized,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DistingStateInitial value)? initial,
-    TResult Function(DistingStateSelectDevice value)? selectDevice,
-    TResult Function(DistingStateConnected value)? connected,
-    TResult Function(DistingStateSynchronized value)? synchronized,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $DistingStateCopyWith<$Res> {
-  factory $DistingStateCopyWith(
-          DistingState value, $Res Function(DistingState) then) =
-      _$DistingStateCopyWithImpl<$Res, DistingState>;
-}
-
-/// @nodoc
-class _$DistingStateCopyWithImpl<$Res, $Val extends DistingState>
-    implements $DistingStateCopyWith<$Res> {
-  _$DistingStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-abstract class _$$DistingStateInitialImplCopyWith<$Res> {
-  factory _$$DistingStateInitialImplCopyWith(_$DistingStateInitialImpl value,
-          $Res Function(_$DistingStateInitialImpl) then) =
-      __$$DistingStateInitialImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$DistingStateInitialImplCopyWithImpl<$Res>
-    extends _$DistingStateCopyWithImpl<$Res, _$DistingStateInitialImpl>
-    implements _$$DistingStateInitialImplCopyWith<$Res> {
-  __$$DistingStateInitialImplCopyWithImpl(_$DistingStateInitialImpl _value,
-      $Res Function(_$DistingStateInitialImpl) _then)
-      : super(_value, _then);
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$DistingStateInitialImpl
-    with DiagnosticableTreeMixin
-    implements DistingStateInitial {
-  const _$DistingStateInitialImpl();
-
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.initial()';
+    return 'MappedParameter(parameter: $parameter, value: $value, enums: $enums, valueString: $valueString, mapping: $mapping, algorithm: $algorithm)';
   }
+}
 
+/// @nodoc
+abstract mixin class _$MappedParameterCopyWith<$Res>
+    implements $MappedParameterCopyWith<$Res> {
+  factory _$MappedParameterCopyWith(
+          _MappedParameter value, $Res Function(_MappedParameter) _then) =
+      __$MappedParameterCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {ParameterInfo parameter,
+      ParameterValue value,
+      ParameterEnumStrings enums,
+      ParameterValueString valueString,
+      Mapping mapping,
+      Algorithm algorithm});
+}
+
+/// @nodoc
+class __$MappedParameterCopyWithImpl<$Res>
+    implements _$MappedParameterCopyWith<$Res> {
+  __$MappedParameterCopyWithImpl(this._self, this._then);
+
+  final _MappedParameter _self;
+  final $Res Function(_MappedParameter) _then;
+
+  /// Create a copy of MappedParameter
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? parameter = null,
+    Object? value = null,
+    Object? enums = null,
+    Object? valueString = null,
+    Object? mapping = null,
+    Object? algorithm = null,
+  }) {
+    return _then(_MappedParameter(
+      parameter: null == parameter
+          ? _self.parameter
+          : parameter // ignore: cast_nullable_to_non_nullable
+              as ParameterInfo,
+      value: null == value
+          ? _self.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as ParameterValue,
+      enums: null == enums
+          ? _self.enums
+          : enums // ignore: cast_nullable_to_non_nullable
+              as ParameterEnumStrings,
+      valueString: null == valueString
+          ? _self.valueString
+          : valueString // ignore: cast_nullable_to_non_nullable
+              as ParameterValueString,
+      mapping: null == mapping
+          ? _self.mapping
+          : mapping // ignore: cast_nullable_to_non_nullable
+              as Mapping,
+      algorithm: null == algorithm
+          ? _self.algorithm
+          : algorithm // ignore: cast_nullable_to_non_nullable
+              as Algorithm,
+    ));
+  }
+}
+
+/// @nodoc
+mixin _$DistingState implements DiagnosticableTreeMixin {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty('type', 'DistingState.initial'));
+    properties..add(DiagnosticsProperty('type', 'DistingState'));
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$DistingStateInitialImpl);
+        (other.runtimeType == runtimeType && other is DistingState);
   }
 
   @override
   int get hashCode => runtimeType.hashCode;
 
   @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)
-        selectDevice,
-    required TResult Function(
-            IDistingMidiManager disting,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            bool offline,
-            bool loading)
-        connected,
-    required TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)
-        synchronized,
-  }) {
-    return initial();
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'DistingState()';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult? Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-  }) {
-    return initial?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-    required TResult orElse(),
-  }) {
-    if (initial != null) {
-      return initial();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DistingStateInitial value) initial,
-    required TResult Function(DistingStateSelectDevice value) selectDevice,
-    required TResult Function(DistingStateConnected value) connected,
-    required TResult Function(DistingStateSynchronized value) synchronized,
-  }) {
-    return initial(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DistingStateInitial value)? initial,
-    TResult? Function(DistingStateSelectDevice value)? selectDevice,
-    TResult? Function(DistingStateConnected value)? connected,
-    TResult? Function(DistingStateSynchronized value)? synchronized,
-  }) {
-    return initial?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DistingStateInitial value)? initial,
-    TResult Function(DistingStateSelectDevice value)? selectDevice,
-    TResult Function(DistingStateConnected value)? connected,
-    TResult Function(DistingStateSynchronized value)? synchronized,
-    required TResult orElse(),
-  }) {
-    if (initial != null) {
-      return initial(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class DistingStateInitial implements DistingState {
-  const factory DistingStateInitial() = _$DistingStateInitialImpl;
 }
 
 /// @nodoc
-abstract class _$$DistingStateSelectDeviceImplCopyWith<$Res> {
-  factory _$$DistingStateSelectDeviceImplCopyWith(
-          _$DistingStateSelectDeviceImpl value,
-          $Res Function(_$DistingStateSelectDeviceImpl) then) =
-      __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call(
-      {List<MidiDevice> inputDevices,
-      List<MidiDevice> outputDevices,
-      bool canWorkOffline});
+class $DistingStateCopyWith<$Res> {
+  $DistingStateCopyWith(DistingState _, $Res Function(DistingState) __);
 }
 
 /// @nodoc
-class __$$DistingStateSelectDeviceImplCopyWithImpl<$Res>
-    extends _$DistingStateCopyWithImpl<$Res, _$DistingStateSelectDeviceImpl>
-    implements _$$DistingStateSelectDeviceImplCopyWith<$Res> {
-  __$$DistingStateSelectDeviceImplCopyWithImpl(
-      _$DistingStateSelectDeviceImpl _value,
-      $Res Function(_$DistingStateSelectDeviceImpl) _then)
-      : super(_value, _then);
 
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
+class DistingStateInitial with DiagnosticableTreeMixin implements DistingState {
+  const DistingStateInitial();
+
   @override
-  $Res call({
-    Object? inputDevices = null,
-    Object? outputDevices = null,
-    Object? canWorkOffline = null,
-  }) {
-    return _then(_$DistingStateSelectDeviceImpl(
-      inputDevices: null == inputDevices
-          ? _value._inputDevices
-          : inputDevices // ignore: cast_nullable_to_non_nullable
-              as List<MidiDevice>,
-      outputDevices: null == outputDevices
-          ? _value._outputDevices
-          : outputDevices // ignore: cast_nullable_to_non_nullable
-              as List<MidiDevice>,
-      canWorkOffline: null == canWorkOffline
-          ? _value.canWorkOffline
-          : canWorkOffline // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties..add(DiagnosticsProperty('type', 'DistingState.initial'));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is DistingStateInitial);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'DistingState.initial()';
   }
 }
 
 /// @nodoc
 
-class _$DistingStateSelectDeviceImpl
+class DistingStateSelectDevice
     with DiagnosticableTreeMixin
-    implements DistingStateSelectDevice {
-  const _$DistingStateSelectDeviceImpl(
+    implements DistingState {
+  const DistingStateSelectDevice(
       {required final List<MidiDevice> inputDevices,
       required final List<MidiDevice> outputDevices,
       required this.canWorkOffline})
@@ -968,7 +672,6 @@ class _$DistingStateSelectDeviceImpl
         _outputDevices = outputDevices;
 
   final List<MidiDevice> _inputDevices;
-  @override
   List<MidiDevice> get inputDevices {
     if (_inputDevices is EqualUnmodifiableListView) return _inputDevices;
     // ignore: implicit_dynamic_type
@@ -976,24 +679,24 @@ class _$DistingStateSelectDeviceImpl
   }
 
   final List<MidiDevice> _outputDevices;
-  @override
   List<MidiDevice> get outputDevices {
     if (_outputDevices is EqualUnmodifiableListView) return _outputDevices;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_outputDevices);
   }
 
-  @override
   final bool canWorkOffline;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, canWorkOffline: $canWorkOffline)';
-  }
+  /// Create a copy of DistingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DistingStateSelectDeviceCopyWith<DistingStateSelectDevice> get copyWith =>
+      _$DistingStateSelectDeviceCopyWithImpl<DistingStateSelectDevice>(
+          this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'DistingState.selectDevice'))
       ..add(DiagnosticsProperty('inputDevices', inputDevices))
@@ -1005,7 +708,7 @@ class _$DistingStateSelectDeviceImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DistingStateSelectDeviceImpl &&
+            other is DistingStateSelectDevice &&
             const DeepCollectionEquality()
                 .equals(other._inputDevices, _inputDevices) &&
             const DeepCollectionEquality()
@@ -1021,216 +724,53 @@ class _$DistingStateSelectDeviceImpl
       const DeepCollectionEquality().hash(_outputDevices),
       canWorkOffline);
 
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DistingStateSelectDeviceImplCopyWith<_$DistingStateSelectDeviceImpl>
-      get copyWith => __$$DistingStateSelectDeviceImplCopyWithImpl<
-          _$DistingStateSelectDeviceImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)
-        selectDevice,
-    required TResult Function(
-            IDistingMidiManager disting,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            bool offline,
-            bool loading)
-        connected,
-    required TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)
-        synchronized,
-  }) {
-    return selectDevice(inputDevices, outputDevices, canWorkOffline);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'DistingState.selectDevice(inputDevices: $inputDevices, outputDevices: $outputDevices, canWorkOffline: $canWorkOffline)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult? Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-  }) {
-    return selectDevice?.call(inputDevices, outputDevices, canWorkOffline);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-    required TResult orElse(),
-  }) {
-    if (selectDevice != null) {
-      return selectDevice(inputDevices, outputDevices, canWorkOffline);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DistingStateInitial value) initial,
-    required TResult Function(DistingStateSelectDevice value) selectDevice,
-    required TResult Function(DistingStateConnected value) connected,
-    required TResult Function(DistingStateSynchronized value) synchronized,
-  }) {
-    return selectDevice(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DistingStateInitial value)? initial,
-    TResult? Function(DistingStateSelectDevice value)? selectDevice,
-    TResult? Function(DistingStateConnected value)? connected,
-    TResult? Function(DistingStateSynchronized value)? synchronized,
-  }) {
-    return selectDevice?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DistingStateInitial value)? initial,
-    TResult Function(DistingStateSelectDevice value)? selectDevice,
-    TResult Function(DistingStateConnected value)? connected,
-    TResult Function(DistingStateSynchronized value)? synchronized,
-    required TResult orElse(),
-  }) {
-    if (selectDevice != null) {
-      return selectDevice(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class DistingStateSelectDevice implements DistingState {
-  const factory DistingStateSelectDevice(
-      {required final List<MidiDevice> inputDevices,
-      required final List<MidiDevice> outputDevices,
-      required final bool canWorkOffline}) = _$DistingStateSelectDeviceImpl;
-
-  List<MidiDevice> get inputDevices;
-  List<MidiDevice> get outputDevices;
-  bool get canWorkOffline;
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DistingStateSelectDeviceImplCopyWith<_$DistingStateSelectDeviceImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DistingStateConnectedImplCopyWith<$Res> {
-  factory _$$DistingStateConnectedImplCopyWith(
-          _$DistingStateConnectedImpl value,
-          $Res Function(_$DistingStateConnectedImpl) then) =
-      __$$DistingStateConnectedImplCopyWithImpl<$Res>;
+abstract mixin class $DistingStateSelectDeviceCopyWith<$Res>
+    implements $DistingStateCopyWith<$Res> {
+  factory $DistingStateSelectDeviceCopyWith(DistingStateSelectDevice value,
+          $Res Function(DistingStateSelectDevice) _then) =
+      _$DistingStateSelectDeviceCopyWithImpl;
   @useResult
   $Res call(
-      {IDistingMidiManager disting,
-      MidiDevice? inputDevice,
-      MidiDevice? outputDevice,
-      bool offline,
-      bool loading});
+      {List<MidiDevice> inputDevices,
+      List<MidiDevice> outputDevices,
+      bool canWorkOffline});
 }
 
 /// @nodoc
-class __$$DistingStateConnectedImplCopyWithImpl<$Res>
-    extends _$DistingStateCopyWithImpl<$Res, _$DistingStateConnectedImpl>
-    implements _$$DistingStateConnectedImplCopyWith<$Res> {
-  __$$DistingStateConnectedImplCopyWithImpl(_$DistingStateConnectedImpl _value,
-      $Res Function(_$DistingStateConnectedImpl) _then)
-      : super(_value, _then);
+class _$DistingStateSelectDeviceCopyWithImpl<$Res>
+    implements $DistingStateSelectDeviceCopyWith<$Res> {
+  _$DistingStateSelectDeviceCopyWithImpl(this._self, this._then);
+
+  final DistingStateSelectDevice _self;
+  final $Res Function(DistingStateSelectDevice) _then;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
-    Object? disting = null,
-    Object? inputDevice = freezed,
-    Object? outputDevice = freezed,
-    Object? offline = null,
-    Object? loading = null,
+    Object? inputDevices = null,
+    Object? outputDevices = null,
+    Object? canWorkOffline = null,
   }) {
-    return _then(_$DistingStateConnectedImpl(
-      disting: null == disting
-          ? _value.disting
-          : disting // ignore: cast_nullable_to_non_nullable
-              as IDistingMidiManager,
-      inputDevice: freezed == inputDevice
-          ? _value.inputDevice
-          : inputDevice // ignore: cast_nullable_to_non_nullable
-              as MidiDevice?,
-      outputDevice: freezed == outputDevice
-          ? _value.outputDevice
-          : outputDevice // ignore: cast_nullable_to_non_nullable
-              as MidiDevice?,
-      offline: null == offline
-          ? _value.offline
-          : offline // ignore: cast_nullable_to_non_nullable
-              as bool,
-      loading: null == loading
-          ? _value.loading
-          : loading // ignore: cast_nullable_to_non_nullable
+    return _then(DistingStateSelectDevice(
+      inputDevices: null == inputDevices
+          ? _self._inputDevices
+          : inputDevices // ignore: cast_nullable_to_non_nullable
+              as List<MidiDevice>,
+      outputDevices: null == outputDevices
+          ? _self._outputDevices
+          : outputDevices // ignore: cast_nullable_to_non_nullable
+              as List<MidiDevice>,
+      canWorkOffline: null == canWorkOffline
+          ? _self.canWorkOffline
+          : canWorkOffline // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -1238,37 +778,34 @@ class __$$DistingStateConnectedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$DistingStateConnectedImpl
+class DistingStateConnected
     with DiagnosticableTreeMixin
-    implements DistingStateConnected {
-  const _$DistingStateConnectedImpl(
+    implements DistingState {
+  const DistingStateConnected(
       {required this.disting,
       this.inputDevice,
       this.outputDevice,
       this.offline = false,
       this.loading = false});
 
-  @override
   final IDistingMidiManager disting;
-  @override
   final MidiDevice? inputDevice;
-  @override
   final MidiDevice? outputDevice;
-  @override
   @JsonKey()
   final bool offline;
-  @override
   @JsonKey()
   final bool loading;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.connected(disting: $disting, inputDevice: $inputDevice, outputDevice: $outputDevice, offline: $offline, loading: $loading)';
-  }
+  /// Create a copy of DistingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DistingStateConnectedCopyWith<DistingStateConnected> get copyWith =>
+      _$DistingStateConnectedCopyWithImpl<DistingStateConnected>(
+          this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'DistingState.connected'))
       ..add(DiagnosticsProperty('disting', disting))
@@ -1282,7 +819,7 @@ class _$DistingStateConnectedImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DistingStateConnectedImpl &&
+            other is DistingStateConnected &&
             (identical(other.disting, disting) || other.disting == disting) &&
             (identical(other.inputDevice, inputDevice) ||
                 other.inputDevice == inputDevice) &&
@@ -1296,264 +833,65 @@ class _$DistingStateConnectedImpl
   int get hashCode => Object.hash(
       runtimeType, disting, inputDevice, outputDevice, offline, loading);
 
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$DistingStateConnectedImplCopyWith<_$DistingStateConnectedImpl>
-      get copyWith => __$$DistingStateConnectedImplCopyWithImpl<
-          _$DistingStateConnectedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)
-        selectDevice,
-    required TResult Function(
-            IDistingMidiManager disting,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            bool offline,
-            bool loading)
-        connected,
-    required TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)
-        synchronized,
-  }) {
-    return connected(disting, inputDevice, outputDevice, offline, loading);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'DistingState.connected(disting: $disting, inputDevice: $inputDevice, outputDevice: $outputDevice, offline: $offline, loading: $loading)';
   }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult? Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-  }) {
-    return connected?.call(
-        disting, inputDevice, outputDevice, offline, loading);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-    required TResult orElse(),
-  }) {
-    if (connected != null) {
-      return connected(disting, inputDevice, outputDevice, offline, loading);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DistingStateInitial value) initial,
-    required TResult Function(DistingStateSelectDevice value) selectDevice,
-    required TResult Function(DistingStateConnected value) connected,
-    required TResult Function(DistingStateSynchronized value) synchronized,
-  }) {
-    return connected(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DistingStateInitial value)? initial,
-    TResult? Function(DistingStateSelectDevice value)? selectDevice,
-    TResult? Function(DistingStateConnected value)? connected,
-    TResult? Function(DistingStateSynchronized value)? synchronized,
-  }) {
-    return connected?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DistingStateInitial value)? initial,
-    TResult Function(DistingStateSelectDevice value)? selectDevice,
-    TResult Function(DistingStateConnected value)? connected,
-    TResult Function(DistingStateSynchronized value)? synchronized,
-    required TResult orElse(),
-  }) {
-    if (connected != null) {
-      return connected(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class DistingStateConnected implements DistingState {
-  const factory DistingStateConnected(
-      {required final IDistingMidiManager disting,
-      final MidiDevice? inputDevice,
-      final MidiDevice? outputDevice,
-      final bool offline,
-      final bool loading}) = _$DistingStateConnectedImpl;
-
-  IDistingMidiManager get disting;
-  MidiDevice? get inputDevice;
-  MidiDevice? get outputDevice;
-  bool get offline;
-  bool get loading;
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DistingStateConnectedImplCopyWith<_$DistingStateConnectedImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class _$$DistingStateSynchronizedImplCopyWith<$Res> {
-  factory _$$DistingStateSynchronizedImplCopyWith(
-          _$DistingStateSynchronizedImpl value,
-          $Res Function(_$DistingStateSynchronizedImpl) then) =
-      __$$DistingStateSynchronizedImplCopyWithImpl<$Res>;
+abstract mixin class $DistingStateConnectedCopyWith<$Res>
+    implements $DistingStateCopyWith<$Res> {
+  factory $DistingStateConnectedCopyWith(DistingStateConnected value,
+          $Res Function(DistingStateConnected) _then) =
+      _$DistingStateConnectedCopyWithImpl;
   @useResult
   $Res call(
       {IDistingMidiManager disting,
-      String distingVersion,
-      String presetName,
-      List<AlgorithmInfo> algorithms,
-      List<Slot> slots,
-      List<String> unitStrings,
       MidiDevice? inputDevice,
       MidiDevice? outputDevice,
-      Uint8List? screenshot,
-      bool loading,
-      bool demo,
-      bool offline});
+      bool offline,
+      bool loading});
 }
 
 /// @nodoc
-class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
-    extends _$DistingStateCopyWithImpl<$Res, _$DistingStateSynchronizedImpl>
-    implements _$$DistingStateSynchronizedImplCopyWith<$Res> {
-  __$$DistingStateSynchronizedImplCopyWithImpl(
-      _$DistingStateSynchronizedImpl _value,
-      $Res Function(_$DistingStateSynchronizedImpl) _then)
-      : super(_value, _then);
+class _$DistingStateConnectedCopyWithImpl<$Res>
+    implements $DistingStateConnectedCopyWith<$Res> {
+  _$DistingStateConnectedCopyWithImpl(this._self, this._then);
+
+  final DistingStateConnected _self;
+  final $Res Function(DistingStateConnected) _then;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
-  @override
   $Res call({
     Object? disting = null,
-    Object? distingVersion = null,
-    Object? presetName = null,
-    Object? algorithms = null,
-    Object? slots = null,
-    Object? unitStrings = null,
     Object? inputDevice = freezed,
     Object? outputDevice = freezed,
-    Object? screenshot = freezed,
-    Object? loading = null,
-    Object? demo = null,
     Object? offline = null,
+    Object? loading = null,
   }) {
-    return _then(_$DistingStateSynchronizedImpl(
+    return _then(DistingStateConnected(
       disting: null == disting
-          ? _value.disting
+          ? _self.disting
           : disting // ignore: cast_nullable_to_non_nullable
               as IDistingMidiManager,
-      distingVersion: null == distingVersion
-          ? _value.distingVersion
-          : distingVersion // ignore: cast_nullable_to_non_nullable
-              as String,
-      presetName: null == presetName
-          ? _value.presetName
-          : presetName // ignore: cast_nullable_to_non_nullable
-              as String,
-      algorithms: null == algorithms
-          ? _value._algorithms
-          : algorithms // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmInfo>,
-      slots: null == slots
-          ? _value._slots
-          : slots // ignore: cast_nullable_to_non_nullable
-              as List<Slot>,
-      unitStrings: null == unitStrings
-          ? _value._unitStrings
-          : unitStrings // ignore: cast_nullable_to_non_nullable
-              as List<String>,
       inputDevice: freezed == inputDevice
-          ? _value.inputDevice
+          ? _self.inputDevice
           : inputDevice // ignore: cast_nullable_to_non_nullable
               as MidiDevice?,
       outputDevice: freezed == outputDevice
-          ? _value.outputDevice
+          ? _self.outputDevice
           : outputDevice // ignore: cast_nullable_to_non_nullable
               as MidiDevice?,
-      screenshot: freezed == screenshot
-          ? _value.screenshot
-          : screenshot // ignore: cast_nullable_to_non_nullable
-              as Uint8List?,
-      loading: null == loading
-          ? _value.loading
-          : loading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      demo: null == demo
-          ? _value.demo
-          : demo // ignore: cast_nullable_to_non_nullable
-              as bool,
       offline: null == offline
-          ? _value.offline
+          ? _self.offline
           : offline // ignore: cast_nullable_to_non_nullable
+              as bool,
+      loading: null == loading
+          ? _self.loading
+          : loading // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -1561,10 +899,10 @@ class __$$DistingStateSynchronizedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$DistingStateSynchronizedImpl
+class DistingStateSynchronized
     with DiagnosticableTreeMixin
-    implements DistingStateSynchronized {
-  const _$DistingStateSynchronizedImpl(
+    implements DistingState {
+  const DistingStateSynchronized(
       {required this.disting,
       required this.distingVersion,
       required this.presetName,
@@ -1581,14 +919,10 @@ class _$DistingStateSynchronizedImpl
         _slots = slots,
         _unitStrings = unitStrings;
 
-  @override
   final IDistingMidiManager disting;
-  @override
   final String distingVersion;
-  @override
   final String presetName;
   final List<AlgorithmInfo> _algorithms;
-  @override
   List<AlgorithmInfo> get algorithms {
     if (_algorithms is EqualUnmodifiableListView) return _algorithms;
     // ignore: implicit_dynamic_type
@@ -1596,7 +930,6 @@ class _$DistingStateSynchronizedImpl
   }
 
   final List<Slot> _slots;
-  @override
   List<Slot> get slots {
     if (_slots is EqualUnmodifiableListView) return _slots;
     // ignore: implicit_dynamic_type
@@ -1604,37 +937,32 @@ class _$DistingStateSynchronizedImpl
   }
 
   final List<String> _unitStrings;
-  @override
   List<String> get unitStrings {
     if (_unitStrings is EqualUnmodifiableListView) return _unitStrings;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_unitStrings);
   }
 
-  @override
   final MidiDevice? inputDevice;
-  @override
   final MidiDevice? outputDevice;
-  @override
   final Uint8List? screenshot;
-  @override
   @JsonKey()
   final bool loading;
-  @override
   @JsonKey()
   final bool demo;
-  @override
   @JsonKey()
   final bool offline;
 
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline)';
-  }
+  /// Create a copy of DistingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DistingStateSynchronizedCopyWith<DistingStateSynchronized> get copyWith =>
+      _$DistingStateSynchronizedCopyWithImpl<DistingStateSynchronized>(
+          this, _$identity);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty('type', 'DistingState.synchronized'))
       ..add(DiagnosticsProperty('disting', disting))
@@ -1655,7 +983,7 @@ class _$DistingStateSynchronizedImpl
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$DistingStateSynchronizedImpl &&
+            other is DistingStateSynchronized &&
             (identical(other.disting, disting) || other.disting == disting) &&
             (identical(other.distingVersion, distingVersion) ||
                 other.distingVersion == distingVersion) &&
@@ -1693,212 +1021,110 @@ class _$DistingStateSynchronizedImpl
       demo,
       offline);
 
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $DistingStateSynchronizedCopyWith<$Res>
+    implements $DistingStateCopyWith<$Res> {
+  factory $DistingStateSynchronizedCopyWith(DistingStateSynchronized value,
+          $Res Function(DistingStateSynchronized) _then) =
+      _$DistingStateSynchronizedCopyWithImpl;
+  @useResult
+  $Res call(
+      {IDistingMidiManager disting,
+      String distingVersion,
+      String presetName,
+      List<AlgorithmInfo> algorithms,
+      List<Slot> slots,
+      List<String> unitStrings,
+      MidiDevice? inputDevice,
+      MidiDevice? outputDevice,
+      Uint8List? screenshot,
+      bool loading,
+      bool demo,
+      bool offline});
+}
+
+/// @nodoc
+class _$DistingStateSynchronizedCopyWithImpl<$Res>
+    implements $DistingStateSynchronizedCopyWith<$Res> {
+  _$DistingStateSynchronizedCopyWithImpl(this._self, this._then);
+
+  final DistingStateSynchronized _self;
+  final $Res Function(DistingStateSynchronized) _then;
+
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
   @pragma('vm:prefer-inline')
-  _$$DistingStateSynchronizedImplCopyWith<_$DistingStateSynchronizedImpl>
-      get copyWith => __$$DistingStateSynchronizedImplCopyWithImpl<
-          _$DistingStateSynchronizedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() initial,
-    required TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)
-        selectDevice,
-    required TResult Function(
-            IDistingMidiManager disting,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            bool offline,
-            bool loading)
-        connected,
-    required TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)
-        synchronized,
+  $Res call({
+    Object? disting = null,
+    Object? distingVersion = null,
+    Object? presetName = null,
+    Object? algorithms = null,
+    Object? slots = null,
+    Object? unitStrings = null,
+    Object? inputDevice = freezed,
+    Object? outputDevice = freezed,
+    Object? screenshot = freezed,
+    Object? loading = null,
+    Object? demo = null,
+    Object? offline = null,
   }) {
-    return synchronized(
-        disting,
-        distingVersion,
-        presetName,
-        algorithms,
-        slots,
-        unitStrings,
-        inputDevice,
-        outputDevice,
-        screenshot,
-        loading,
-        demo,
-        offline);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? initial,
-    TResult? Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult? Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult? Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-  }) {
-    return synchronized?.call(
-        disting,
-        distingVersion,
-        presetName,
-        algorithms,
-        slots,
-        unitStrings,
-        inputDevice,
-        outputDevice,
-        screenshot,
-        loading,
-        demo,
-        offline);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? initial,
-    TResult Function(List<MidiDevice> inputDevices,
-            List<MidiDevice> outputDevices, bool canWorkOffline)?
-        selectDevice,
-    TResult Function(IDistingMidiManager disting, MidiDevice? inputDevice,
-            MidiDevice? outputDevice, bool offline, bool loading)?
-        connected,
-    TResult Function(
-            IDistingMidiManager disting,
-            String distingVersion,
-            String presetName,
-            List<AlgorithmInfo> algorithms,
-            List<Slot> slots,
-            List<String> unitStrings,
-            MidiDevice? inputDevice,
-            MidiDevice? outputDevice,
-            Uint8List? screenshot,
-            bool loading,
-            bool demo,
-            bool offline)?
-        synchronized,
-    required TResult orElse(),
-  }) {
-    if (synchronized != null) {
-      return synchronized(
-          disting,
-          distingVersion,
-          presetName,
-          algorithms,
-          slots,
-          unitStrings,
-          inputDevice,
-          outputDevice,
-          screenshot,
-          loading,
-          demo,
-          offline);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(DistingStateInitial value) initial,
-    required TResult Function(DistingStateSelectDevice value) selectDevice,
-    required TResult Function(DistingStateConnected value) connected,
-    required TResult Function(DistingStateSynchronized value) synchronized,
-  }) {
-    return synchronized(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(DistingStateInitial value)? initial,
-    TResult? Function(DistingStateSelectDevice value)? selectDevice,
-    TResult? Function(DistingStateConnected value)? connected,
-    TResult? Function(DistingStateSynchronized value)? synchronized,
-  }) {
-    return synchronized?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(DistingStateInitial value)? initial,
-    TResult Function(DistingStateSelectDevice value)? selectDevice,
-    TResult Function(DistingStateConnected value)? connected,
-    TResult Function(DistingStateSynchronized value)? synchronized,
-    required TResult orElse(),
-  }) {
-    if (synchronized != null) {
-      return synchronized(this);
-    }
-    return orElse();
+    return _then(DistingStateSynchronized(
+      disting: null == disting
+          ? _self.disting
+          : disting // ignore: cast_nullable_to_non_nullable
+              as IDistingMidiManager,
+      distingVersion: null == distingVersion
+          ? _self.distingVersion
+          : distingVersion // ignore: cast_nullable_to_non_nullable
+              as String,
+      presetName: null == presetName
+          ? _self.presetName
+          : presetName // ignore: cast_nullable_to_non_nullable
+              as String,
+      algorithms: null == algorithms
+          ? _self._algorithms
+          : algorithms // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmInfo>,
+      slots: null == slots
+          ? _self._slots
+          : slots // ignore: cast_nullable_to_non_nullable
+              as List<Slot>,
+      unitStrings: null == unitStrings
+          ? _self._unitStrings
+          : unitStrings // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      inputDevice: freezed == inputDevice
+          ? _self.inputDevice
+          : inputDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
+      outputDevice: freezed == outputDevice
+          ? _self.outputDevice
+          : outputDevice // ignore: cast_nullable_to_non_nullable
+              as MidiDevice?,
+      screenshot: freezed == screenshot
+          ? _self.screenshot
+          : screenshot // ignore: cast_nullable_to_non_nullable
+              as Uint8List?,
+      loading: null == loading
+          ? _self.loading
+          : loading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      demo: null == demo
+          ? _self.demo
+          : demo // ignore: cast_nullable_to_non_nullable
+              as bool,
+      offline: null == offline
+          ? _self.offline
+          : offline // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
   }
 }
 
-abstract class DistingStateSynchronized implements DistingState {
-  const factory DistingStateSynchronized(
-      {required final IDistingMidiManager disting,
-      required final String distingVersion,
-      required final String presetName,
-      required final List<AlgorithmInfo> algorithms,
-      required final List<Slot> slots,
-      required final List<String> unitStrings,
-      final MidiDevice? inputDevice,
-      final MidiDevice? outputDevice,
-      final Uint8List? screenshot,
-      final bool loading,
-      final bool demo,
-      final bool offline}) = _$DistingStateSynchronizedImpl;
-
-  IDistingMidiManager get disting;
-  String get distingVersion;
-  String get presetName;
-  List<AlgorithmInfo> get algorithms;
-  List<Slot> get slots;
-  List<String> get unitStrings;
-  MidiDevice? get inputDevice;
-  MidiDevice? get outputDevice;
-  Uint8List? get screenshot;
-  bool get loading;
-  bool get demo;
-  bool get offline;
-
-  /// Create a copy of DistingState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$DistingStateSynchronizedImplCopyWith<_$DistingStateSynchronizedImpl>
-      get copyWith => throw _privateConstructorUsedError;
-}
+// dart format on

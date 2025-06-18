@@ -1,7 +1,7 @@
 part of 'metadata_sync_cubit.dart';
 
 @freezed
-class MetadataSyncState with _$MetadataSyncState {
+sealed class MetadataSyncState with _$MetadataSyncState {
   // Initial state, ready to start
   const factory MetadataSyncState.idle() = Idle;
 

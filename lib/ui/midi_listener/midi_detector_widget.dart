@@ -78,23 +78,19 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
     // Access the Cubit from the context
     _cubit = context.read<MidiListenerCubit>();
 
-    _cubit.state.mapOrNull(
-      initial: (_) => _cubit.discoverDevices().then(
-        (devices) {
-          setState(
-            () {
-              _devices = devices ?? [];
-            },
-          );
-        },
-      ),
-      data: (value) => setState(
-        () {
-          _devices = value.devices;
-          _selectedDevice = value.selectedDevice;
-        },
-      ),
-    );
+    final s = _cubit.state;
+    if (s is Initial) {
+      _cubit.discoverDevices().then((devices) {
+        if (mounted) {
+          setState(() => _devices = devices ?? []);
+        }
+      });
+    } else if (s is Data) {
+      setState(() {
+        _devices = s.devices;
+        _selectedDevice = s.selectedDevice;
+      });
+    }
   }
 
   @override
@@ -123,46 +119,46 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
             _buildDeviceDropdown(),
             const SizedBox(height: 16),
             BlocConsumer<MidiListenerCubit, MidiListenerState>(
-              listener: (context, state) => state.map(
-                initial: (_) => _showStatusMessage('No device connected.'),
-                data: (value) {
-                  if (value.isConnected) {
-                    _showStatusMessage(
-                        'Connected to ${value.selectedDevice?.name}.');
-                  } else if (!value.isConnected) {
+              listener: (context, state) {
+                switch (state) {
+                  case Initial():
                     _showStatusMessage('No device connected.');
-                  }
-                  if (value.lastDetectedType != null &&
-                      value.lastDetectedChannel != null) {
-                    String eventTypeStr = '';
-                    int? eventNumber;
-                    switch (value.lastDetectedType!) {
-                      case MidiEventType.cc:
-                        eventTypeStr = 'CC';
-                        eventNumber = value.lastDetectedCc;
-                        break;
-                      case MidiEventType.noteOn:
-                        eventTypeStr = 'Note On';
-                        eventNumber = value.lastDetectedNote;
-                        break;
-                      case MidiEventType.noteOff:
-                        eventTypeStr = 'Note Off';
-                        eventNumber = value.lastDetectedNote;
-                        break;
-                    }
-
-                    if (eventNumber != null) {
+                  case Data(
+                      :final isConnected,
+                      :final selectedDevice,
+                      :final lastDetectedType,
+                      :final lastDetectedChannel,
+                      :final lastDetectedCc,
+                      :final lastDetectedNote
+                    ):
+                    if (isConnected) {
                       _showStatusMessage(
-                          'Detected $eventTypeStr $eventNumber on channel ${value.lastDetectedChannel! + 1}');
-                      widget.onMidiEventFound?.call(
-                          type: value.lastDetectedType!,
-                          channel: value.lastDetectedChannel!,
-                          number: eventNumber);
+                          'Connected to ${selectedDevice?.name}.');
+                    } else {
+                      _showStatusMessage('No device connected.');
                     }
-                  }
-                  return null;
-                },
-              ),
+                    if (lastDetectedType != null &&
+                        lastDetectedChannel != null) {
+                      final (String, int?) eventInfo =
+                          switch (lastDetectedType) {
+                        MidiEventType.cc => ('CC', lastDetectedCc),
+                        MidiEventType.noteOn => ('Note On', lastDetectedNote),
+                        MidiEventType.noteOff => ('Note Off', lastDetectedNote)
+                      };
+
+                      final eventNumber = eventInfo.$2;
+                      if (eventNumber != null) {
+                        final eventTypeStr = eventInfo.$1;
+                        _showStatusMessage(
+                            'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}');
+                        widget.onMidiEventFound?.call(
+                            type: lastDetectedType,
+                            channel: lastDetectedChannel,
+                            number: eventNumber);
+                      }
+                    }
+                }
+              },
               builder: (context, state) {
                 return _buildAnimatedStatus(theme);
               },

@@ -6,9 +6,8 @@ part of 'algorithm_parameter.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AlgorithmParameterImpl _$$AlgorithmParameterImplFromJson(
-        Map<String, dynamic> json) =>
-    _$AlgorithmParameterImpl(
+_AlgorithmParameter _$AlgorithmParameterFromJson(Map<String, dynamic> json) =>
+    _AlgorithmParameter(
       name: json['name'] as String,
       unit: json['unit'] as String?,
       min: json['min'],
@@ -27,8 +26,7 @@ _$AlgorithmParameterImpl _$$AlgorithmParameterImplFromJson(
       parameterNumber: (json['parameterNumber'] as num?)?.toInt(),
     );
 
-Map<String, dynamic> _$$AlgorithmParameterImplToJson(
-        _$AlgorithmParameterImpl instance) =>
+Map<String, dynamic> _$AlgorithmParameterToJson(_AlgorithmParameter instance) =>
     <String, dynamic>{
       'name': instance.name,
       'unit': instance.unit,

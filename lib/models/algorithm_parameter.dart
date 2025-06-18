@@ -4,7 +4,7 @@ part 'algorithm_parameter.freezed.dart';
 part 'algorithm_parameter.g.dart';
 
 @freezed
-class AlgorithmParameter with _$AlgorithmParameter {
+sealed class AlgorithmParameter with _$AlgorithmParameter {
   const factory AlgorithmParameter({
     required String name,
     String? unit,

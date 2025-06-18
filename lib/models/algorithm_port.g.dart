@@ -6,8 +6,8 @@ part of 'algorithm_port.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AlgorithmPortImpl _$$AlgorithmPortImplFromJson(Map<String, dynamic> json) =>
-    _$AlgorithmPortImpl(
+_AlgorithmPort _$AlgorithmPortFromJson(Map<String, dynamic> json) =>
+    _AlgorithmPort(
       id: json['id'] as String?,
       name: json['name'] as String,
       description: json['description'] as String?,
@@ -16,7 +16,7 @@ _$AlgorithmPortImpl _$$AlgorithmPortImplFromJson(Map<String, dynamic> json) =>
       isPerChannel: json['isPerChannel'] as bool?,
     );
 
-Map<String, dynamic> _$$AlgorithmPortImplToJson(_$AlgorithmPortImpl instance) =>
+Map<String, dynamic> _$AlgorithmPortToJson(_AlgorithmPort instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,

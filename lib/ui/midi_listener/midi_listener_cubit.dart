@@ -4,7 +4,6 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:nt_helper/util/extensions.dart';
 
 part 'midi_listener_cubit.freezed.dart';
 part 'midi_listener_state.dart';
@@ -45,10 +44,12 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     await _midiSubscription?.cancel();
 
     // Disconnect old device as well
-    state.maybeMap(
-        data: (d) =>
-            d.selectedDevice.let((it) => _midiCommand.disconnectDevice(it)),
-        orElse: () {});
+    final currentState = state;
+    if (currentState is Data) {
+      if (currentState.selectedDevice != null) {
+        _midiCommand.disconnectDevice(currentState.selectedDevice!);
+      }
+    }
 
     // Connect
     await _midiCommand.connectToDevice(device);
@@ -58,26 +59,23 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
         _midiCommand.onMidiDataReceived?.listen(_handleMidiData);
 
     // Update the state with selected device & isConnected
-    state.maybeMap(
-      data: (dataState) {
-        emit(
-          dataState.copyWith(
-            selectedDevice: device,
-            isConnected: true,
-          ),
-        );
-      },
-      orElse: () {
-        // If it wasn't in the data state, just create one
-        emit(
-          MidiListenerState.data(
-            devices: [device],
-            selectedDevice: device,
-            isConnected: true,
-          ),
-        );
-      },
-    );
+    if (currentState is Data) {
+      emit(
+        currentState.copyWith(
+          selectedDevice: device,
+          isConnected: true,
+        ),
+      );
+    } else {
+      // If it wasn't in the data state, just create one
+      emit(
+        MidiListenerState.data(
+          devices: [device],
+          selectedDevice: device,
+          isConnected: true,
+        ),
+      );
+    }
   }
 
   void _handleMidiData(MidiPacket packet) {
@@ -143,47 +141,44 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
           (detectedType != MidiEventType.cc /* i.e., Note On/Off */);
 
       // Update the state
-      state.maybeMap(
-        data: (dataState) {
-          // --- Debug Print Start ---
+      final currentState = state;
+      if (currentState is Data) {
+        // --- Debug Print Start ---
+        debugPrint(
+            'MIDI Event Parsed: type=$detectedType, ch=$channel, num=$detectedNumber, cc=$detectedCc, note=$detectedNote');
+        debugPrint(
+            'Consecutive Count: $_consecutiveCount, Threshold Met: $thresholdMet');
+        // --- Debug Print End ---
+
+        // Set fields only if threshold is met, otherwise null
+        final nextState = currentState.copyWith(
+          lastDetectedType: thresholdMet ? detectedType : null,
+          lastDetectedChannel: thresholdMet ? channel : null,
+          lastDetectedCc: thresholdMet ? detectedCc : null,
+          lastDetectedNote: thresholdMet ? detectedNote : null,
+          lastDetectedTime: DateTime.timestamp(),
+        );
+
+        // --- Debug Print Start ---
+        if (thresholdMet) {
           debugPrint(
-              'MIDI Event Parsed: type=$detectedType, ch=$channel, num=$detectedNumber, cc=$detectedCc, note=$detectedNote');
+              'Emitting State: type=${nextState.lastDetectedType}, ch=${nextState.lastDetectedChannel}, cc=${nextState.lastDetectedCc}, note=${nextState.lastDetectedNote}');
+        } else {
           debugPrint(
-              'Consecutive Count: $_consecutiveCount, Threshold Met: $thresholdMet');
-          // --- Debug Print End ---
+              'Threshold not met, emitting null state for detected event.');
+        }
+        // --- Debug Print End ---
 
-          // Set fields only if threshold is met, otherwise null
-          final nextState = dataState.copyWith(
-            lastDetectedType: thresholdMet ? detectedType : null,
-            lastDetectedChannel: thresholdMet ? channel : null,
-            lastDetectedCc: thresholdMet ? detectedCc : null,
-            lastDetectedNote: thresholdMet ? detectedNote : null,
-            lastDetectedTime: DateTime.timestamp(),
-          );
+        emit(nextState);
 
-          // --- Debug Print Start ---
-          if (thresholdMet) {
-            debugPrint(
-                'Emitting State: type=${nextState.lastDetectedType}, ch=${nextState.lastDetectedChannel}, cc=${nextState.lastDetectedCc}, note=${nextState.lastDetectedNote}');
-          } else {
-            debugPrint(
-                'Threshold not met, emitting null state for detected event.');
-          }
-          // --- Debug Print End ---
-
-          emit(nextState);
-
-          // Reset count and signature ONLY if the threshold was met
-          if (thresholdMet) {
-            _consecutiveCount = 0;
-            _lastEventSignature = null;
-          }
-        },
-        orElse: () {
-          debugPrint(
-              "Warning: _handleMidiData called but state was not 'data'.");
-        },
-      );
+        // Reset count and signature ONLY if the threshold was met
+        if (thresholdMet) {
+          _consecutiveCount = 0;
+          _lastEventSignature = null;
+        }
+      } else {
+        debugPrint("Warning: _handleMidiData called but state was not 'data'.");
+      }
     } else {
       // Optionally log ignored message types
       // debugPrint("Ignored MIDI message: status=0x${statusByte.toRadixString(16)}");
@@ -194,10 +189,12 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
   Future<void> close() async {
     await _midiSubscription?.cancel();
     // Disconnect device if we are managing it locally (though this cubit might not know)
-    state.maybeMap(
-        data: (d) =>
-            d.selectedDevice.let((it) => _midiCommand.disconnectDevice(it)),
-        orElse: () {});
+    final currentState = state;
+    if (currentState is Data) {
+      if (currentState.selectedDevice != null) {
+        _midiCommand.disconnectDevice(currentState.selectedDevice!);
+      }
+    }
     return super.close();
   }
 }

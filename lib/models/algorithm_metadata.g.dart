@@ -6,9 +6,8 @@ part of 'algorithm_metadata.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AlgorithmMetadataImpl _$$AlgorithmMetadataImplFromJson(
-        Map<String, dynamic> json) =>
-    _$AlgorithmMetadataImpl(
+_AlgorithmMetadata _$AlgorithmMetadataFromJson(Map<String, dynamic> json) =>
+    _AlgorithmMetadata(
       guid: json['guid'] as String,
       name: json['name'] as String,
       categories: (json['categories'] as List<dynamic>)
@@ -35,8 +34,7 @@ _$AlgorithmMetadataImpl _$$AlgorithmMetadataImplFromJson(
           : _portsFromJson(json['output_ports'] as List),
     );
 
-Map<String, dynamic> _$$AlgorithmMetadataImplToJson(
-        _$AlgorithmMetadataImpl instance) =>
+Map<String, dynamic> _$AlgorithmMetadataToJson(_AlgorithmMetadata instance) =>
     <String, dynamic>{
       'guid': instance.guid,
       'name': instance.name,

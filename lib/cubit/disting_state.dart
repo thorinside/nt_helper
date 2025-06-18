@@ -1,7 +1,7 @@
 part of 'disting_cubit.dart';
 
 @freezed
-class Slot with _$Slot {
+sealed class Slot with _$Slot {
   const factory Slot({
     required Algorithm algorithm,
     required RoutingInfo routing,
@@ -15,7 +15,7 @@ class Slot with _$Slot {
 }
 
 @freezed
-class MappedParameter with _$MappedParameter {
+sealed class MappedParameter with _$MappedParameter {
   const factory MappedParameter({
     required final ParameterInfo parameter,
     required final ParameterValue value,

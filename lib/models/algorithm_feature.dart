@@ -5,7 +5,7 @@ part 'algorithm_feature.freezed.dart';
 part 'algorithm_feature.g.dart';
 
 @freezed
-class AlgorithmFeature with _$AlgorithmFeature {
+sealed class AlgorithmFeature with _$AlgorithmFeature {
   const factory AlgorithmFeature({
     required String guid,
     required String name,

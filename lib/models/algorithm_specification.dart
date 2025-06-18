@@ -4,7 +4,7 @@ part 'algorithm_specification.freezed.dart';
 part 'algorithm_specification.g.dart';
 
 @freezed
-class AlgorithmSpecification with _$AlgorithmSpecification {
+sealed class AlgorithmSpecification with _$AlgorithmSpecification {
   const factory AlgorithmSpecification({
     required String name,
     String? unit,

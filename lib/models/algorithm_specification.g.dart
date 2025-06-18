@@ -6,9 +6,9 @@ part of 'algorithm_specification.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$AlgorithmSpecificationImpl _$$AlgorithmSpecificationImplFromJson(
+_AlgorithmSpecification _$AlgorithmSpecificationFromJson(
         Map<String, dynamic> json) =>
-    _$AlgorithmSpecificationImpl(
+    _AlgorithmSpecification(
       name: json['name'] as String,
       unit: json['unit'] as String?,
       value: json['value'],
@@ -17,8 +17,8 @@ _$AlgorithmSpecificationImpl _$$AlgorithmSpecificationImplFromJson(
       max: json['max'],
     );
 
-Map<String, dynamic> _$$AlgorithmSpecificationImplToJson(
-        _$AlgorithmSpecificationImpl instance) =>
+Map<String, dynamic> _$AlgorithmSpecificationToJson(
+        _AlgorithmSpecification instance) =>
     <String, dynamic>{
       'name': instance.name,
       'unit': instance.unit,

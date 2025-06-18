@@ -252,11 +252,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       child: Row(
         children: [
           Builder(builder: (context) {
-            final isOffline = context.watch<DistingCubit>().state.maybeMap(
-                  synchronized: (s) => s.offline,
-                  orElse: () =>
-                      false, // Default to not offline if state is not synchronized
-                );
+            final isOffline = switch (context.watch<DistingCubit>().state) {
+              DistingStateSynchronized(offline: final o) => o,
+              _ => false,
+            };
 
             if (isOffline) {
               // Show "Offline Data" button when offline
@@ -399,10 +398,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return [
       // Refresh: Only disabled by loading OR offline
       Builder(builder: (ctx) {
-        final isOffline = ctx.watch<DistingCubit>().state.maybeMap(
-              synchronized: (s) => s.offline,
-              orElse: () => false,
-            );
+        final isOffline = switch (ctx.watch<DistingCubit>().state) {
+          DistingStateSynchronized(offline: final o) => o,
+          _ => false,
+        };
         return IconButton(
           icon: Icon(Icons.refresh_rounded),
           tooltip: 'Refresh',
@@ -415,10 +414,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       }),
       // Wake: Disabled by loading OR offline
       Builder(builder: (ctx) {
-        final isOffline = ctx.watch<DistingCubit>().state.maybeMap(
-              synchronized: (s) => s.offline,
-              orElse: () => false,
-            );
+        final isOffline = switch (ctx.watch<DistingCubit>().state) {
+          DistingStateSynchronized(offline: final o) => o,
+          _ => false,
+        };
         return IconButton(
           icon: Icon(Icons.alarm_on_rounded),
           tooltip: "Wake",
@@ -491,10 +490,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         icon: const Icon(Icons.more_vert),
         itemBuilder: (popupCtx) {
           // Get offline status here for menu items that need it
-          final isOffline = popupCtx.read<DistingCubit>().state.maybeMap(
-                synchronized: (s) => s.offline,
-                orElse: () => false,
-              );
+          final isOffline = switch (popupCtx.watch<DistingCubit>().state) {
+            DistingStateSynchronized(offline: final o) => o,
+            _ => false,
+          };
           return [
             PopupMenuItem(
               value: "load",
@@ -892,9 +891,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   Widget _buildTabBar(BuildContext context) {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
-        return state.maybeMap(
-          synchronized: (syncState) {
-            return Padding(
+        return switch (state) {
+          DistingStateSynchronized(slots: final syncState) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: TabBar(
                 controller: _tabController,
@@ -905,8 +903,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 indicatorWeight: 1,
                 enableFeedback: true,
                 dividerHeight: 0,
-                tabs: List<Widget>.generate(syncState.slots.length, (index) {
-                  final slot = syncState.slots[index];
+                tabs: List<Widget>.generate(syncState.length, (index) {
+                  final slot = syncState[index];
                   // Use slot.algorithm.name directly (includes custom name)
                   final displayName = slot.algorithm.name;
 
@@ -931,10 +929,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   );
                 }),
               ),
-            );
-          },
-          orElse: () => const Center(child: Text("Loading slots...")),
-        );
+            ),
+          _ => const Center(child: Text("Loading slots..."))
+        };
       },
     );
   }
@@ -976,9 +973,8 @@ class AlgorithmListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
-        return state.maybeMap(
-          synchronized: (syncState) {
-            return ListView.builder(
+        return switch (state) {
+          DistingStateSynchronized(slots: final syncState) => ListView.builder(
               padding: const EdgeInsets.only(top: 8.0),
               itemCount: slots.length,
               itemBuilder: (context, index) {
@@ -1012,10 +1008,9 @@ class AlgorithmListView extends StatelessWidget {
                   },
                 );
               },
-            );
-          },
-          orElse: () => const Center(child: Text("Loading slots...")),
-        );
+            ),
+          _ => const Center(child: Text("Loading slots..."))
+        };
       },
     );
   }

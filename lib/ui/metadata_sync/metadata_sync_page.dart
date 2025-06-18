@@ -30,13 +30,15 @@ class MetadataSyncPage extends StatelessWidget {
           bloc: distingCubit,
           builder: (context, distingState) {
             // Determine online/offline/connected status from DistingState
-            final bool isOffline = distingState.maybeMap(
-                synchronized: (s) => s.offline, orElse: () => false);
-            final bool isConnected = distingState.maybeMap(
-                synchronized: (s) =>
-                    !s.offline, // Connected if sync'd and not offline
-                connected: (_) => true,
-                orElse: () => false);
+            final bool isOffline = switch (distingState) {
+              DistingStateSynchronized(offline: final o) => o,
+              _ => false,
+            };
+            final bool isConnected = switch (distingState) {
+              DistingStateSynchronized(offline: final o) => !o,
+              DistingStateConnected() => true,
+              _ => false,
+            };
 
             // Get the current manager if available (online or offline)
             final currentManager = distingCubit.disting();
@@ -58,8 +60,10 @@ class MetadataSyncPage extends StatelessWidget {
                       final isMetaBusy = metaState is! ViewingLocalData &&
                           metaState is! Idle &&
                           metaState is! Failure;
-                      final isDistingBusy = distingState.maybeMap(
-                          synchronized: (s) => s.loading, orElse: () => false);
+                      final isDistingBusy = switch (distingState) {
+                        DistingStateSynchronized(loading: final l) => l,
+                        _ => false,
+                      };
                       final isBusy = isMetaBusy || isDistingBusy;
 
                       return IconButton(
@@ -84,9 +88,10 @@ class MetadataSyncPage extends StatelessWidget {
                         final isMetaBusy = metaState is! ViewingLocalData &&
                             metaState is! Idle &&
                             metaState is! Failure;
-                        final isDistingBusy = distingState.maybeMap(
-                            synchronized: (s) => s.loading,
-                            orElse: () => false);
+                        final isDistingBusy = switch (distingState) {
+                          DistingStateSynchronized(loading: final l) => l,
+                          _ => false,
+                        };
                         final isBusy = isMetaBusy || isDistingBusy;
                         // Can sync if connected and not busy
                         final canSync = isConnected && !isBusy;
@@ -107,9 +112,10 @@ class MetadataSyncPage extends StatelessWidget {
                         final isMetaBusy = metaState is! ViewingLocalData &&
                             metaState is! Idle &&
                             metaState is! Failure;
-                        final isDistingBusy = distingState.maybeMap(
-                            synchronized: (s) => s.loading,
-                            orElse: () => false);
+                        final isDistingBusy = switch (distingState) {
+                          DistingStateSynchronized(loading: final l) => l,
+                          _ => false,
+                        };
                         final isBusy = isMetaBusy || isDistingBusy;
                         // Can save if connected and not busy
                         final canSave = isConnected && !isBusy;
@@ -132,9 +138,10 @@ class MetadataSyncPage extends StatelessWidget {
                         final isMetaBusy = metaState is! ViewingLocalData &&
                             metaState is! Idle &&
                             metaState is! Failure;
-                        final isDistingBusy = distingState.maybeMap(
-                            synchronized: (s) => s.loading,
-                            orElse: () => false);
+                        final isDistingBusy = switch (distingState) {
+                          DistingStateSynchronized(loading: final l) => l,
+                          _ => false,
+                        };
                         final isBusy = isMetaBusy || isDistingBusy;
 
                         return IconButton(
@@ -169,14 +176,14 @@ class MetadataSyncPage extends StatelessWidget {
                       metaState is PresetSaveFailure ||
                       metaState is PresetDeleteFailure ||
                       metaState is PresetLoadFailure) {
-                    String errorMsg = metaState.mapOrNull(
-                          failure: (s) => s.error,
-                          metadataSyncFailure: (s) => s.error,
-                          presetSaveFailure: (s) => s.error,
-                          presetDeleteFailure: (s) => s.error,
-                          presetLoadFailure: (s) => s.error,
-                        ) ??
-                        "An unknown error occurred.";
+                    final errorMsg = switch (metaState) {
+                      Failure(error: final e) => e,
+                      MetadataSyncFailure(error: final e) => e,
+                      PresetSaveFailure(error: final e) => e,
+                      PresetDeleteFailure(error: final e) => e,
+                      PresetLoadFailure(error: final e) => e,
+                      _ => "An unknown error occurred.",
+                    };
                     return Center(
                         child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -247,17 +254,21 @@ class MetadataSyncPage extends StatelessWidget {
     String mainMessage = "Processing...";
     double? progressValue; // Null for indeterminate
 
-    state.maybeWhen(
-      syncingMetadata: (progress, mainMsg, subMsg, processed, total) {
-        mainMessage = mainMsg;
-        progressValue = progress > 0 ? progress : null; // Show progress if > 0
-      },
-      savingPreset: () => mainMessage = "Saving Preset...",
-      deletingPreset: () => mainMessage = "Deleting Preset...",
-      orElse: () {
-        mainMessage = "Please wait..."; // Generic fallback
-      },
-    );
+    switch (state) {
+      case SyncingMetadata(progress: final progress, mainMessage: final msg):
+        mainMessage = msg;
+        progressValue = progress > 0 ? progress : null;
+        break;
+      case SavingPreset():
+        mainMessage = "Saving Preset...";
+        break;
+      case DeletingPreset():
+        mainMessage = "Deleting Preset...";
+        break;
+      default:
+        mainMessage = "Please wait...";
+        break;
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,

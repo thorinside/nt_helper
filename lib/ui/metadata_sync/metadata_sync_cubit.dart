@@ -32,7 +32,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   // --- Metadata Sync Methods ---
 
   Future<void> startMetadataSync(IDistingMidiManager manager) async {
-    if (state.maybeMap(syncingMetadata: (_) => true, orElse: () => false)) {
+    if (switch (state) { SyncingMetadata() => true, _ => false }) {
       return;
     }
 
@@ -84,20 +84,21 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   void cancelMetadataSync() {
-    if (state.maybeMap(syncingMetadata: (_) => true, orElse: () => false)) {
-      _isMetadataSyncCancelled = true;
-      debugPrint("[MetadataSyncCubit] Metadata sync cancellation requested.");
-    }
+    _isMetadataSyncCancelled = switch (state) {
+      SyncingMetadata() => true,
+      _ => false,
+    };
   }
 
   // --- Preset Management Methods ---
 
   Future<void> saveCurrentPreset(IDistingMidiManager manager) async {
-    if (state.maybeMap(
-        savingPreset: (_) => true,
-        loadingPreset: (_) => true,
-        orElse: () => false)) {
-      return; // Prevent concurrent operations
+    if (switch (state) {
+      SavingPreset() => true,
+      LoadingPreset() => true,
+      _ => false,
+    }) {
+      return;
     }
 
     emit(const MetadataSyncState.savingPreset());
@@ -304,15 +305,14 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   Future<void> loadLocalData() async {
-    final isBusy = state.maybeMap(
-        syncingMetadata: (_) => true,
-        savingPreset: (_) => true,
-        loadingPreset: (_) => true,
-        // deletingPreset: (_) => true, // Allow loading even if deleting just finished
-        orElse: () => false);
+    final isBusy = switch (state) {
+      SyncingMetadata() => true,
+      SavingPreset() => true,
+      LoadingPreset() => true,
+      _ => false
+    };
     // Allow proceeding if the state IS deletingPreset, because we want to load data *after* deletion.
-    if (isBusy &&
-        !state.maybeMap(deletingPreset: (_) => true, orElse: () => false)) {
+    if (isBusy && !switch (state) { DeletingPreset() => true, _ => false }) {
       return;
     }
 

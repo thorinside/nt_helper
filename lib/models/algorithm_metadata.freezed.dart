@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,139 +10,82 @@ part of 'algorithm_metadata.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-AlgorithmMetadata _$AlgorithmMetadataFromJson(Map<String, dynamic> json) {
-  return _AlgorithmMetadata.fromJson(json);
-}
 
 /// @nodoc
 mixin _$AlgorithmMetadata {
-  String get guid => throw _privateConstructorUsedError;
-  String get name => throw _privateConstructorUsedError;
-  List<String> get categories => throw _privateConstructorUsedError;
-  String get description => throw _privateConstructorUsedError;
-  List<AlgorithmSpecification> get specifications =>
-      throw _privateConstructorUsedError;
+  String get guid;
+  String get name;
+  List<String> get categories;
+  String get description;
+  List<AlgorithmSpecification> get specifications;
   @JsonKey(fromJson: _parametersFromJson)
-  List<AlgorithmParameter> get parameters =>
-      throw _privateConstructorUsedError; // Use custom parser
-  List<String> get features =>
-      throw _privateConstructorUsedError; // List of feature GUIDs
+  List<AlgorithmParameter> get parameters; // Use custom parser
+  List<String> get features; // List of feature GUIDs
   @JsonKey(name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-  List<AlgorithmPort> get inputPorts => throw _privateConstructorUsedError;
+  List<AlgorithmPort> get inputPorts;
   @JsonKey(name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-  List<AlgorithmPort> get outputPorts => throw _privateConstructorUsedError;
-
-  /// Serializes this AlgorithmMetadata to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  List<AlgorithmPort> get outputPorts;
 
   /// Create a copy of AlgorithmMetadata
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AlgorithmMetadataCopyWith<AlgorithmMetadata> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AlgorithmMetadataCopyWith<$Res> {
-  factory $AlgorithmMetadataCopyWith(
-          AlgorithmMetadata value, $Res Function(AlgorithmMetadata) then) =
-      _$AlgorithmMetadataCopyWithImpl<$Res, AlgorithmMetadata>;
-  @useResult
-  $Res call(
-      {String guid,
-      String name,
-      List<String> categories,
-      String description,
-      List<AlgorithmSpecification> specifications,
-      @JsonKey(fromJson: _parametersFromJson)
-      List<AlgorithmParameter> parameters,
-      List<String> features,
-      @JsonKey(
-          name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-      List<AlgorithmPort> inputPorts,
-      @JsonKey(
-          name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-      List<AlgorithmPort> outputPorts});
-}
-
-/// @nodoc
-class _$AlgorithmMetadataCopyWithImpl<$Res, $Val extends AlgorithmMetadata>
-    implements $AlgorithmMetadataCopyWith<$Res> {
-  _$AlgorithmMetadataCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AlgorithmMetadata
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AlgorithmMetadataCopyWith<AlgorithmMetadata> get copyWith =>
+      _$AlgorithmMetadataCopyWithImpl<AlgorithmMetadata>(
+          this as AlgorithmMetadata, _$identity);
+
+  /// Serializes this AlgorithmMetadata to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? guid = null,
-    Object? name = null,
-    Object? categories = null,
-    Object? description = null,
-    Object? specifications = null,
-    Object? parameters = null,
-    Object? features = null,
-    Object? inputPorts = null,
-    Object? outputPorts = null,
-  }) {
-    return _then(_value.copyWith(
-      guid: null == guid
-          ? _value.guid
-          : guid // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      categories: null == categories
-          ? _value.categories
-          : categories // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String,
-      specifications: null == specifications
-          ? _value.specifications
-          : specifications // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmSpecification>,
-      parameters: null == parameters
-          ? _value.parameters
-          : parameters // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmParameter>,
-      features: null == features
-          ? _value.features
-          : features // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      inputPorts: null == inputPorts
-          ? _value.inputPorts
-          : inputPorts // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmPort>,
-      outputPorts: null == outputPorts
-          ? _value.outputPorts
-          : outputPorts // ignore: cast_nullable_to_non_nullable
-              as List<AlgorithmPort>,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AlgorithmMetadata &&
+            (identical(other.guid, guid) || other.guid == guid) &&
+            (identical(other.name, name) || other.name == name) &&
+            const DeepCollectionEquality()
+                .equals(other.categories, categories) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            const DeepCollectionEquality()
+                .equals(other.specifications, specifications) &&
+            const DeepCollectionEquality()
+                .equals(other.parameters, parameters) &&
+            const DeepCollectionEquality().equals(other.features, features) &&
+            const DeepCollectionEquality()
+                .equals(other.inputPorts, inputPorts) &&
+            const DeepCollectionEquality()
+                .equals(other.outputPorts, outputPorts));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      guid,
+      name,
+      const DeepCollectionEquality().hash(categories),
+      description,
+      const DeepCollectionEquality().hash(specifications),
+      const DeepCollectionEquality().hash(parameters),
+      const DeepCollectionEquality().hash(features),
+      const DeepCollectionEquality().hash(inputPorts),
+      const DeepCollectionEquality().hash(outputPorts));
+
+  @override
+  String toString() {
+    return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
   }
 }
 
 /// @nodoc
-abstract class _$$AlgorithmMetadataImplCopyWith<$Res>
-    implements $AlgorithmMetadataCopyWith<$Res> {
-  factory _$$AlgorithmMetadataImplCopyWith(_$AlgorithmMetadataImpl value,
-          $Res Function(_$AlgorithmMetadataImpl) then) =
-      __$$AlgorithmMetadataImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AlgorithmMetadataCopyWith<$Res> {
+  factory $AlgorithmMetadataCopyWith(
+          AlgorithmMetadata value, $Res Function(AlgorithmMetadata) _then) =
+      _$AlgorithmMetadataCopyWithImpl;
   @useResult
   $Res call(
       {String guid,
@@ -161,12 +105,12 @@ abstract class _$$AlgorithmMetadataImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AlgorithmMetadataImplCopyWithImpl<$Res>
-    extends _$AlgorithmMetadataCopyWithImpl<$Res, _$AlgorithmMetadataImpl>
-    implements _$$AlgorithmMetadataImplCopyWith<$Res> {
-  __$$AlgorithmMetadataImplCopyWithImpl(_$AlgorithmMetadataImpl _value,
-      $Res Function(_$AlgorithmMetadataImpl) _then)
-      : super(_value, _then);
+class _$AlgorithmMetadataCopyWithImpl<$Res>
+    implements $AlgorithmMetadataCopyWith<$Res> {
+  _$AlgorithmMetadataCopyWithImpl(this._self, this._then);
+
+  final AlgorithmMetadata _self;
+  final $Res Function(AlgorithmMetadata) _then;
 
   /// Create a copy of AlgorithmMetadata
   /// with the given fields replaced by the non-null parameter values.
@@ -183,41 +127,41 @@ class __$$AlgorithmMetadataImplCopyWithImpl<$Res>
     Object? inputPorts = null,
     Object? outputPorts = null,
   }) {
-    return _then(_$AlgorithmMetadataImpl(
+    return _then(_self.copyWith(
       guid: null == guid
-          ? _value.guid
+          ? _self.guid
           : guid // ignore: cast_nullable_to_non_nullable
               as String,
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       categories: null == categories
-          ? _value._categories
+          ? _self.categories
           : categories // ignore: cast_nullable_to_non_nullable
               as List<String>,
       description: null == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
       specifications: null == specifications
-          ? _value._specifications
+          ? _self.specifications
           : specifications // ignore: cast_nullable_to_non_nullable
               as List<AlgorithmSpecification>,
       parameters: null == parameters
-          ? _value._parameters
+          ? _self.parameters
           : parameters // ignore: cast_nullable_to_non_nullable
               as List<AlgorithmParameter>,
       features: null == features
-          ? _value._features
+          ? _self.features
           : features // ignore: cast_nullable_to_non_nullable
               as List<String>,
       inputPorts: null == inputPorts
-          ? _value._inputPorts
+          ? _self.inputPorts
           : inputPorts // ignore: cast_nullable_to_non_nullable
               as List<AlgorithmPort>,
       outputPorts: null == outputPorts
-          ? _value._outputPorts
+          ? _self.outputPorts
           : outputPorts // ignore: cast_nullable_to_non_nullable
               as List<AlgorithmPort>,
     ));
@@ -226,8 +170,8 @@ class __$$AlgorithmMetadataImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AlgorithmMetadataImpl implements _AlgorithmMetadata {
-  const _$AlgorithmMetadataImpl(
+class _AlgorithmMetadata implements AlgorithmMetadata {
+  const _AlgorithmMetadata(
       {required this.guid,
       required this.name,
       required final List<String> categories,
@@ -248,9 +192,8 @@ class _$AlgorithmMetadataImpl implements _AlgorithmMetadata {
         _features = features,
         _inputPorts = inputPorts,
         _outputPorts = outputPorts;
-
-  factory _$AlgorithmMetadataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AlgorithmMetadataImplFromJson(json);
+  factory _AlgorithmMetadata.fromJson(Map<String, dynamic> json) =>
+      _$AlgorithmMetadataFromJson(json);
 
   @override
   final String guid;
@@ -315,16 +258,26 @@ class _$AlgorithmMetadataImpl implements _AlgorithmMetadata {
     return EqualUnmodifiableListView(_outputPorts);
   }
 
+  /// Create a copy of AlgorithmMetadata
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AlgorithmMetadataCopyWith<_AlgorithmMetadata> get copyWith =>
+      __$AlgorithmMetadataCopyWithImpl<_AlgorithmMetadata>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AlgorithmMetadataToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AlgorithmMetadataImpl &&
+            other is _AlgorithmMetadata &&
             (identical(other.guid, guid) || other.guid == guid) &&
             (identical(other.name, name) || other.name == name) &&
             const DeepCollectionEquality()
@@ -356,69 +309,99 @@ class _$AlgorithmMetadataImpl implements _AlgorithmMetadata {
       const DeepCollectionEquality().hash(_inputPorts),
       const DeepCollectionEquality().hash(_outputPorts));
 
-  /// Create a copy of AlgorithmMetadata
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AlgorithmMetadataImplCopyWith<_$AlgorithmMetadataImpl> get copyWith =>
-      __$$AlgorithmMetadataImplCopyWithImpl<_$AlgorithmMetadataImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AlgorithmMetadataImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AlgorithmMetadata(guid: $guid, name: $name, categories: $categories, description: $description, specifications: $specifications, parameters: $parameters, features: $features, inputPorts: $inputPorts, outputPorts: $outputPorts)';
   }
 }
 
-abstract class _AlgorithmMetadata implements AlgorithmMetadata {
-  const factory _AlgorithmMetadata(
-      {required final String guid,
-      required final String name,
-      required final List<String> categories,
-      required final String description,
-      final List<AlgorithmSpecification> specifications,
+/// @nodoc
+abstract mixin class _$AlgorithmMetadataCopyWith<$Res>
+    implements $AlgorithmMetadataCopyWith<$Res> {
+  factory _$AlgorithmMetadataCopyWith(
+          _AlgorithmMetadata value, $Res Function(_AlgorithmMetadata) _then) =
+      __$AlgorithmMetadataCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String guid,
+      String name,
+      List<String> categories,
+      String description,
+      List<AlgorithmSpecification> specifications,
       @JsonKey(fromJson: _parametersFromJson)
-      final List<AlgorithmParameter> parameters,
-      final List<String> features,
+      List<AlgorithmParameter> parameters,
+      List<String> features,
       @JsonKey(
           name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-      final List<AlgorithmPort> inputPorts,
+      List<AlgorithmPort> inputPorts,
       @JsonKey(
           name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-      final List<AlgorithmPort> outputPorts}) = _$AlgorithmMetadataImpl;
+      List<AlgorithmPort> outputPorts});
+}
 
-  factory _AlgorithmMetadata.fromJson(Map<String, dynamic> json) =
-      _$AlgorithmMetadataImpl.fromJson;
+/// @nodoc
+class __$AlgorithmMetadataCopyWithImpl<$Res>
+    implements _$AlgorithmMetadataCopyWith<$Res> {
+  __$AlgorithmMetadataCopyWithImpl(this._self, this._then);
 
-  @override
-  String get guid;
-  @override
-  String get name;
-  @override
-  List<String> get categories;
-  @override
-  String get description;
-  @override
-  List<AlgorithmSpecification> get specifications;
-  @override
-  @JsonKey(fromJson: _parametersFromJson)
-  List<AlgorithmParameter> get parameters; // Use custom parser
-  @override
-  List<String> get features; // List of feature GUIDs
-  @override
-  @JsonKey(name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-  List<AlgorithmPort> get inputPorts;
-  @override
-  @JsonKey(name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-  List<AlgorithmPort> get outputPorts;
+  final _AlgorithmMetadata _self;
+  final $Res Function(_AlgorithmMetadata) _then;
 
   /// Create a copy of AlgorithmMetadata
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AlgorithmMetadataImplCopyWith<_$AlgorithmMetadataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? guid = null,
+    Object? name = null,
+    Object? categories = null,
+    Object? description = null,
+    Object? specifications = null,
+    Object? parameters = null,
+    Object? features = null,
+    Object? inputPorts = null,
+    Object? outputPorts = null,
+  }) {
+    return _then(_AlgorithmMetadata(
+      guid: null == guid
+          ? _self.guid
+          : guid // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      categories: null == categories
+          ? _self._categories
+          : categories // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      description: null == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      specifications: null == specifications
+          ? _self._specifications
+          : specifications // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmSpecification>,
+      parameters: null == parameters
+          ? _self._parameters
+          : parameters // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmParameter>,
+      features: null == features
+          ? _self._features
+          : features // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      inputPorts: null == inputPorts
+          ? _self._inputPorts
+          : inputPorts // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmPort>,
+      outputPorts: null == outputPorts
+          ? _self._outputPorts
+          : outputPorts // ignore: cast_nullable_to_non_nullable
+              as List<AlgorithmPort>,
+    ));
+  }
 }
+
+// dart format on

@@ -4,7 +4,7 @@ part 'algorithm_port.freezed.dart';
 part 'algorithm_port.g.dart';
 
 @freezed
-class AlgorithmPort with _$AlgorithmPort {
+sealed class AlgorithmPort with _$AlgorithmPort {
   const factory AlgorithmPort({
     String? id,
     required String name,

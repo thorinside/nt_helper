@@ -1,3 +1,4 @@
+// dart format width=80
 // coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
@@ -9,171 +10,103 @@ part of 'algorithm_parameter.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-AlgorithmParameter _$AlgorithmParameterFromJson(Map<String, dynamic> json) {
-  return _AlgorithmParameter.fromJson(json);
-}
 
 /// @nodoc
 mixin _$AlgorithmParameter {
-  String get name => throw _privateConstructorUsedError;
-  String? get unit =>
-      throw _privateConstructorUsedError; // Using dynamic for min/max/default as they can be int, double, or null
-  dynamic get min => throw _privateConstructorUsedError;
-  dynamic get max => throw _privateConstructorUsedError;
-  dynamic get defaultValue => throw _privateConstructorUsedError;
-  String? get scope =>
-      throw _privateConstructorUsedError; // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
-  String? get description => throw _privateConstructorUsedError;
+  String get name;
+  String?
+      get unit; // Using dynamic for min/max/default as they can be int, double, or null
+  dynamic get min;
+  dynamic get max;
+  dynamic get defaultValue;
+  String?
+      get scope; // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
+  String? get description;
   @JsonKey(name: 'enumValues')
-  List<String>? get values => throw _privateConstructorUsedError;
-  String? get type =>
-      throw _privateConstructorUsedError; // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
+  List<String>? get values;
+  String?
+      get type; // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
   @JsonKey(name: 'busIdRef')
-  String? get busIdRef => throw _privateConstructorUsedError;
+  String? get busIdRef;
   @JsonKey(name: 'channelCountRef')
-  String? get channelCountRef => throw _privateConstructorUsedError;
+  String? get channelCountRef;
   @JsonKey(name: 'isPerChannel')
-  bool? get isPerChannel => throw _privateConstructorUsedError;
+  bool? get isPerChannel;
   @JsonKey(name: 'isCommon')
-  bool? get isCommon => throw _privateConstructorUsedError;
-  int? get parameterNumber => throw _privateConstructorUsedError;
-
-  /// Serializes this AlgorithmParameter to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  bool? get isCommon;
+  int? get parameterNumber;
 
   /// Create a copy of AlgorithmParameter
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $AlgorithmParameterCopyWith<AlgorithmParameter> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AlgorithmParameterCopyWith<$Res> {
-  factory $AlgorithmParameterCopyWith(
-          AlgorithmParameter value, $Res Function(AlgorithmParameter) then) =
-      _$AlgorithmParameterCopyWithImpl<$Res, AlgorithmParameter>;
-  @useResult
-  $Res call(
-      {String name,
-      String? unit,
-      dynamic min,
-      dynamic max,
-      dynamic defaultValue,
-      String? scope,
-      String? description,
-      @JsonKey(name: 'enumValues') List<String>? values,
-      String? type,
-      @JsonKey(name: 'busIdRef') String? busIdRef,
-      @JsonKey(name: 'channelCountRef') String? channelCountRef,
-      @JsonKey(name: 'isPerChannel') bool? isPerChannel,
-      @JsonKey(name: 'isCommon') bool? isCommon,
-      int? parameterNumber});
-}
-
-/// @nodoc
-class _$AlgorithmParameterCopyWithImpl<$Res, $Val extends AlgorithmParameter>
-    implements $AlgorithmParameterCopyWith<$Res> {
-  _$AlgorithmParameterCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of AlgorithmParameter
-  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
+  $AlgorithmParameterCopyWith<AlgorithmParameter> get copyWith =>
+      _$AlgorithmParameterCopyWithImpl<AlgorithmParameter>(
+          this as AlgorithmParameter, _$identity);
+
+  /// Serializes this AlgorithmParameter to a JSON map.
+  Map<String, dynamic> toJson();
+
   @override
-  $Res call({
-    Object? name = null,
-    Object? unit = freezed,
-    Object? min = freezed,
-    Object? max = freezed,
-    Object? defaultValue = freezed,
-    Object? scope = freezed,
-    Object? description = freezed,
-    Object? values = freezed,
-    Object? type = freezed,
-    Object? busIdRef = freezed,
-    Object? channelCountRef = freezed,
-    Object? isPerChannel = freezed,
-    Object? isCommon = freezed,
-    Object? parameterNumber = freezed,
-  }) {
-    return _then(_value.copyWith(
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      unit: freezed == unit
-          ? _value.unit
-          : unit // ignore: cast_nullable_to_non_nullable
-              as String?,
-      min: freezed == min
-          ? _value.min
-          : min // ignore: cast_nullable_to_non_nullable
-              as dynamic,
-      max: freezed == max
-          ? _value.max
-          : max // ignore: cast_nullable_to_non_nullable
-              as dynamic,
-      defaultValue: freezed == defaultValue
-          ? _value.defaultValue
-          : defaultValue // ignore: cast_nullable_to_non_nullable
-              as dynamic,
-      scope: freezed == scope
-          ? _value.scope
-          : scope // ignore: cast_nullable_to_non_nullable
-              as String?,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as String?,
-      values: freezed == values
-          ? _value.values
-          : values // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      type: freezed == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String?,
-      busIdRef: freezed == busIdRef
-          ? _value.busIdRef
-          : busIdRef // ignore: cast_nullable_to_non_nullable
-              as String?,
-      channelCountRef: freezed == channelCountRef
-          ? _value.channelCountRef
-          : channelCountRef // ignore: cast_nullable_to_non_nullable
-              as String?,
-      isPerChannel: freezed == isPerChannel
-          ? _value.isPerChannel
-          : isPerChannel // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      isCommon: freezed == isCommon
-          ? _value.isCommon
-          : isCommon // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      parameterNumber: freezed == parameterNumber
-          ? _value.parameterNumber
-          : parameterNumber // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AlgorithmParameter &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.unit, unit) || other.unit == unit) &&
+            const DeepCollectionEquality().equals(other.min, min) &&
+            const DeepCollectionEquality().equals(other.max, max) &&
+            const DeepCollectionEquality()
+                .equals(other.defaultValue, defaultValue) &&
+            (identical(other.scope, scope) || other.scope == scope) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            const DeepCollectionEquality().equals(other.values, values) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.busIdRef, busIdRef) ||
+                other.busIdRef == busIdRef) &&
+            (identical(other.channelCountRef, channelCountRef) ||
+                other.channelCountRef == channelCountRef) &&
+            (identical(other.isPerChannel, isPerChannel) ||
+                other.isPerChannel == isPerChannel) &&
+            (identical(other.isCommon, isCommon) ||
+                other.isCommon == isCommon) &&
+            (identical(other.parameterNumber, parameterNumber) ||
+                other.parameterNumber == parameterNumber));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      name,
+      unit,
+      const DeepCollectionEquality().hash(min),
+      const DeepCollectionEquality().hash(max),
+      const DeepCollectionEquality().hash(defaultValue),
+      scope,
+      description,
+      const DeepCollectionEquality().hash(values),
+      type,
+      busIdRef,
+      channelCountRef,
+      isPerChannel,
+      isCommon,
+      parameterNumber);
+
+  @override
+  String toString() {
+    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
   }
 }
 
 /// @nodoc
-abstract class _$$AlgorithmParameterImplCopyWith<$Res>
-    implements $AlgorithmParameterCopyWith<$Res> {
-  factory _$$AlgorithmParameterImplCopyWith(_$AlgorithmParameterImpl value,
-          $Res Function(_$AlgorithmParameterImpl) then) =
-      __$$AlgorithmParameterImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AlgorithmParameterCopyWith<$Res> {
+  factory $AlgorithmParameterCopyWith(
+          AlgorithmParameter value, $Res Function(AlgorithmParameter) _then) =
+      _$AlgorithmParameterCopyWithImpl;
   @useResult
   $Res call(
       {String name,
@@ -193,12 +126,12 @@ abstract class _$$AlgorithmParameterImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AlgorithmParameterImplCopyWithImpl<$Res>
-    extends _$AlgorithmParameterCopyWithImpl<$Res, _$AlgorithmParameterImpl>
-    implements _$$AlgorithmParameterImplCopyWith<$Res> {
-  __$$AlgorithmParameterImplCopyWithImpl(_$AlgorithmParameterImpl _value,
-      $Res Function(_$AlgorithmParameterImpl) _then)
-      : super(_value, _then);
+class _$AlgorithmParameterCopyWithImpl<$Res>
+    implements $AlgorithmParameterCopyWith<$Res> {
+  _$AlgorithmParameterCopyWithImpl(this._self, this._then);
+
+  final AlgorithmParameter _self;
+  final $Res Function(AlgorithmParameter) _then;
 
   /// Create a copy of AlgorithmParameter
   /// with the given fields replaced by the non-null parameter values.
@@ -220,61 +153,61 @@ class __$$AlgorithmParameterImplCopyWithImpl<$Res>
     Object? isCommon = freezed,
     Object? parameterNumber = freezed,
   }) {
-    return _then(_$AlgorithmParameterImpl(
+    return _then(_self.copyWith(
       name: null == name
-          ? _value.name
+          ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
       unit: freezed == unit
-          ? _value.unit
+          ? _self.unit
           : unit // ignore: cast_nullable_to_non_nullable
               as String?,
       min: freezed == min
-          ? _value.min
+          ? _self.min
           : min // ignore: cast_nullable_to_non_nullable
               as dynamic,
       max: freezed == max
-          ? _value.max
+          ? _self.max
           : max // ignore: cast_nullable_to_non_nullable
               as dynamic,
       defaultValue: freezed == defaultValue
-          ? _value.defaultValue
+          ? _self.defaultValue
           : defaultValue // ignore: cast_nullable_to_non_nullable
               as dynamic,
       scope: freezed == scope
-          ? _value.scope
+          ? _self.scope
           : scope // ignore: cast_nullable_to_non_nullable
               as String?,
       description: freezed == description
-          ? _value.description
+          ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
       values: freezed == values
-          ? _value._values
+          ? _self.values
           : values // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       type: freezed == type
-          ? _value.type
+          ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
               as String?,
       busIdRef: freezed == busIdRef
-          ? _value.busIdRef
+          ? _self.busIdRef
           : busIdRef // ignore: cast_nullable_to_non_nullable
               as String?,
       channelCountRef: freezed == channelCountRef
-          ? _value.channelCountRef
+          ? _self.channelCountRef
           : channelCountRef // ignore: cast_nullable_to_non_nullable
               as String?,
       isPerChannel: freezed == isPerChannel
-          ? _value.isPerChannel
+          ? _self.isPerChannel
           : isPerChannel // ignore: cast_nullable_to_non_nullable
               as bool?,
       isCommon: freezed == isCommon
-          ? _value.isCommon
+          ? _self.isCommon
           : isCommon // ignore: cast_nullable_to_non_nullable
               as bool?,
       parameterNumber: freezed == parameterNumber
-          ? _value.parameterNumber
+          ? _self.parameterNumber
           : parameterNumber // ignore: cast_nullable_to_non_nullable
               as int?,
     ));
@@ -283,8 +216,8 @@ class __$$AlgorithmParameterImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$AlgorithmParameterImpl implements _AlgorithmParameter {
-  const _$AlgorithmParameterImpl(
+class _AlgorithmParameter implements AlgorithmParameter {
+  const _AlgorithmParameter(
       {required this.name,
       this.unit,
       this.min,
@@ -300,9 +233,8 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
       @JsonKey(name: 'isCommon') this.isCommon,
       this.parameterNumber})
       : _values = values;
-
-  factory _$AlgorithmParameterImpl.fromJson(Map<String, dynamic> json) =>
-      _$$AlgorithmParameterImplFromJson(json);
+  factory _AlgorithmParameter.fromJson(Map<String, dynamic> json) =>
+      _$AlgorithmParameterFromJson(json);
 
   @override
   final String name;
@@ -349,16 +281,26 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
   @override
   final int? parameterNumber;
 
+  /// Create a copy of AlgorithmParameter
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AlgorithmParameterCopyWith<_AlgorithmParameter> get copyWith =>
+      __$AlgorithmParameterCopyWithImpl<_AlgorithmParameter>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AlgorithmParameterToJson(
+      this,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AlgorithmParameterImpl &&
+            other is _AlgorithmParameter &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.unit, unit) || other.unit == unit) &&
             const DeepCollectionEquality().equals(other.min, min) &&
@@ -401,84 +343,124 @@ class _$AlgorithmParameterImpl implements _AlgorithmParameter {
       isCommon,
       parameterNumber);
 
-  /// Create a copy of AlgorithmParameter
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  @pragma('vm:prefer-inline')
-  _$$AlgorithmParameterImplCopyWith<_$AlgorithmParameterImpl> get copyWith =>
-      __$$AlgorithmParameterImplCopyWithImpl<_$AlgorithmParameterImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$AlgorithmParameterImplToJson(
-      this,
-    );
+  String toString() {
+    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
   }
 }
 
-abstract class _AlgorithmParameter implements AlgorithmParameter {
-  const factory _AlgorithmParameter(
-      {required final String name,
-      final String? unit,
-      final dynamic min,
-      final dynamic max,
-      final dynamic defaultValue,
-      final String? scope,
-      final String? description,
-      @JsonKey(name: 'enumValues') final List<String>? values,
-      final String? type,
-      @JsonKey(name: 'busIdRef') final String? busIdRef,
-      @JsonKey(name: 'channelCountRef') final String? channelCountRef,
-      @JsonKey(name: 'isPerChannel') final bool? isPerChannel,
-      @JsonKey(name: 'isCommon') final bool? isCommon,
-      final int? parameterNumber}) = _$AlgorithmParameterImpl;
+/// @nodoc
+abstract mixin class _$AlgorithmParameterCopyWith<$Res>
+    implements $AlgorithmParameterCopyWith<$Res> {
+  factory _$AlgorithmParameterCopyWith(
+          _AlgorithmParameter value, $Res Function(_AlgorithmParameter) _then) =
+      __$AlgorithmParameterCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String name,
+      String? unit,
+      dynamic min,
+      dynamic max,
+      dynamic defaultValue,
+      String? scope,
+      String? description,
+      @JsonKey(name: 'enumValues') List<String>? values,
+      String? type,
+      @JsonKey(name: 'busIdRef') String? busIdRef,
+      @JsonKey(name: 'channelCountRef') String? channelCountRef,
+      @JsonKey(name: 'isPerChannel') bool? isPerChannel,
+      @JsonKey(name: 'isCommon') bool? isCommon,
+      int? parameterNumber});
+}
 
-  factory _AlgorithmParameter.fromJson(Map<String, dynamic> json) =
-      _$AlgorithmParameterImpl.fromJson;
+/// @nodoc
+class __$AlgorithmParameterCopyWithImpl<$Res>
+    implements _$AlgorithmParameterCopyWith<$Res> {
+  __$AlgorithmParameterCopyWithImpl(this._self, this._then);
 
-  @override
-  String get name;
-  @override
-  String?
-      get unit; // Using dynamic for min/max/default as they can be int, double, or null
-  @override
-  dynamic get min;
-  @override
-  dynamic get max;
-  @override
-  dynamic get defaultValue;
-  @override
-  String?
-      get scope; // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
-  @override
-  String? get description;
-  @override
-  @JsonKey(name: 'enumValues')
-  List<String>? get values;
-  @override
-  String?
-      get type; // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
-  @override
-  @JsonKey(name: 'busIdRef')
-  String? get busIdRef;
-  @override
-  @JsonKey(name: 'channelCountRef')
-  String? get channelCountRef;
-  @override
-  @JsonKey(name: 'isPerChannel')
-  bool? get isPerChannel;
-  @override
-  @JsonKey(name: 'isCommon')
-  bool? get isCommon;
-  @override
-  int? get parameterNumber;
+  final _AlgorithmParameter _self;
+  final $Res Function(_AlgorithmParameter) _then;
 
   /// Create a copy of AlgorithmParameter
   /// with the given fields replaced by the non-null parameter values.
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$AlgorithmParameterImplCopyWith<_$AlgorithmParameterImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? name = null,
+    Object? unit = freezed,
+    Object? min = freezed,
+    Object? max = freezed,
+    Object? defaultValue = freezed,
+    Object? scope = freezed,
+    Object? description = freezed,
+    Object? values = freezed,
+    Object? type = freezed,
+    Object? busIdRef = freezed,
+    Object? channelCountRef = freezed,
+    Object? isPerChannel = freezed,
+    Object? isCommon = freezed,
+    Object? parameterNumber = freezed,
+  }) {
+    return _then(_AlgorithmParameter(
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      unit: freezed == unit
+          ? _self.unit
+          : unit // ignore: cast_nullable_to_non_nullable
+              as String?,
+      min: freezed == min
+          ? _self.min
+          : min // ignore: cast_nullable_to_non_nullable
+              as dynamic,
+      max: freezed == max
+          ? _self.max
+          : max // ignore: cast_nullable_to_non_nullable
+              as dynamic,
+      defaultValue: freezed == defaultValue
+          ? _self.defaultValue
+          : defaultValue // ignore: cast_nullable_to_non_nullable
+              as dynamic,
+      scope: freezed == scope
+          ? _self.scope
+          : scope // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      values: freezed == values
+          ? _self._values
+          : values // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      type: freezed == type
+          ? _self.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      busIdRef: freezed == busIdRef
+          ? _self.busIdRef
+          : busIdRef // ignore: cast_nullable_to_non_nullable
+              as String?,
+      channelCountRef: freezed == channelCountRef
+          ? _self.channelCountRef
+          : channelCountRef // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isPerChannel: freezed == isPerChannel
+          ? _self.isPerChannel
+          : isPerChannel // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      isCommon: freezed == isCommon
+          ? _self.isCommon
+          : isCommon // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      parameterNumber: freezed == parameterNumber
+          ? _self.parameterNumber
+          : parameterNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
 }
+
+// dart format on

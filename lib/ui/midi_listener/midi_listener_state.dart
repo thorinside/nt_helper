@@ -3,9 +3,9 @@ part of 'midi_listener_cubit.dart';
 enum MidiEventType { cc, noteOn, noteOff }
 
 @freezed
-class MidiListenerState with _$MidiListenerState {
+sealed class MidiListenerState with _$MidiListenerState {
   /// The initial state: no devices discovered, not connected.
-  const factory MidiListenerState.initial() = _Initial;
+  const factory MidiListenerState.initial() = Initial;
 
   /// A data state that has all the info needed for the UI:
   const factory MidiListenerState.data({
@@ -17,5 +17,5 @@ class MidiListenerState with _$MidiListenerState {
     int? lastDetectedCc,
     int? lastDetectedNote,
     DateTime? lastDetectedTime,
-  }) = _Data;
+  }) = Data;
 }

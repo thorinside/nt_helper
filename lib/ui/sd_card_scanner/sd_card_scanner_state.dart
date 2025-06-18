@@ -15,7 +15,7 @@ enum ScanStatus {
 }
 
 @freezed
-class SdCardScannerState with _$SdCardScannerState {
+sealed class SdCardScannerState with _$SdCardScannerState {
   const factory SdCardScannerState({
     @Default(ScanStatus.initial) ScanStatus status,
     @Default([]) List<ScannedCardData> scannedCards,
