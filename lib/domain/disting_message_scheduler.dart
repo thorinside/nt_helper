@@ -5,8 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
 // Domain classes
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/request_key.dart';
+import 'package:nt_helper/domain/sysex/response_factory.dart';
+import 'package:nt_helper/domain/sysex/sysex_parser.dart';
 
 /// Indicates whether a request expects a response or not,
 /// and how to handle timeouts/no-response.
@@ -81,7 +82,7 @@ class DistingMessageScheduler {
   /// The request currently being processed.
   _ScheduledRequest? _currentRequest;
 
-  /// Whether we’re in the middle of sending a request and waiting for the next step.
+  /// Whether we're in the middle of sending a request and waiting for the next step.
   bool _isSending = false;
 
   DistingMessageScheduler({
@@ -149,7 +150,7 @@ class DistingMessageScheduler {
     return completer.future;
   }
 
-  /// Internal method to process the next request in the queue, if we aren’t
+  /// Internal method to process the next request in the queue, if we aren't
   /// already busy.
   void _tryProcessNext() {
     if (_isSending || _currentRequest != null || _queue.isEmpty) {
@@ -217,7 +218,7 @@ class DistingMessageScheduler {
     });
 
     // Rate limit: wait [messageInterval] before we allow the next request in the queue to proceed.
-    // But we do NOT free the queue here, because we’re waiting for a response or a timeout.
+    // But we do NOT free the queue here, because we're waiting for a response or a timeout.
     // The queue remains blocked until success or final failure for `required`, or until the timer
     // completes for `optional`.
   }
@@ -242,107 +243,54 @@ class DistingMessageScheduler {
   }
 
   /// Handles incoming MIDI data. If it matches the `requestKey` of our
-  /// current request, we complete that request’s future successfully.
+  /// current request, we complete that request's future successfully.
   void _handleIncomingMidi(MidiPacket packet) {
     final data = packet.data;
-    final parsedMessage = DistingNT.decodeDistingNTSysEx(data);
+    final parsedMessage = decodeDistingNTSysEx(data);
     if (parsedMessage == null) return;
     if (parsedMessage.sysExId != sysExId) return;
 
-    // Build a RequestKey from the incoming message so we know which request it matches.
-    final incomingKey = RequestKey(
-      sysExId: sysExId,
-      messageType: parsedMessage.messageType,
-      algorithmIndex: (parsedMessage.payload is HasAlgorithmIndex)
-          ? (parsedMessage.payload as HasAlgorithmIndex).algorithmIndex
-          : null,
-      parameterNumber: (parsedMessage.payload is HasParameterNumber)
-          ? (parsedMessage.payload as HasParameterNumber).parameterNumber
-          : null,
-    );
+    if (_currentRequest == null || _currentRequest!.completer.isCompleted) {
+      debugPrint("Received a valid SysEx message but no request is pending.");
+      return; // Not expecting a response or already handled.
+    }
 
-    // If it's the currently active request, fulfill it.
-    if (_currentRequest != null && _currentRequest!.requestKey == incomingKey) {
-      final current = _currentRequest!;
-      final decodedResponse = _decodeResponse(parsedMessage);
-
-      if (!current.completer.isCompleted) {
-        current.completer.complete(decodedResponse);
+    if (_currentRequest != null && !(_currentRequest!.completer.isCompleted)) {
+      debugPrint(
+          'Received SysEx: ${parsedMessage.rawBytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      // If the incoming message matches what we're waiting for
+      if (_currentRequest!.requestKey.matches(parsedMessage)) {
+        final result = ResponseFactory.fromMessageType(
+            parsedMessage.messageType, parsedMessage.payload);
+        if (result != null) {
+          final dynamic value = result.parse();
+          _currentRequest!.completer.complete(value);
+        } else {
+          // This case might occur if the message type is known but we don't have a parser,
+          // or if the type is truly unknown.
+          debugPrint("No parser found for message type: ${parsedMessage.messageType}");
+          // For 'optional' requests, completing with null is acceptable.
+          if (_currentRequest!.responseExpectation == ResponseExpectation.optional) {
+            _currentRequest!.completer.complete(null);
+          } else {
+            // For 'required' requests, this is an unexpected situation.
+            _currentRequest!.completer.completeError(Exception(
+                "Received unexpected but matching response type: ${parsedMessage.messageType}"));
+          }
+        }
+      } else {
+        debugPrint(
+            "Received a SysEx message that did not match the pending request.");
+        debugPrint("  Expected: ${_currentRequest!.requestKey}");
+        debugPrint("  Received: ${parsedMessage.messageType}");
       }
+    }
+
+    // Whether success or error, the current request is done.
+    // Wait for the message interval before processing the next item in the queue.
+    Timer(messageInterval, () {
       _cleanupCurrentRequest();
       _tryProcessNext();
-    } else {
-      // Possibly an unsolicited message or it doesn't match the current request.
-      // You can handle or ignore accordingly.
-    }
-  }
-
-  dynamic _decodeResponse(DistingNTParsedMessage parsedMessage) {
-    // Extract relevant details from the parsed message
-    final messageType = parsedMessage.messageType;
-    final payload = parsedMessage.payload;
-
-    try {
-      // Handle response types and decode accordingly
-      switch (messageType) {
-        case DistingNTRespMessageType.respNumAlgorithms:
-          return DistingNT.decodeNumberOfAlgorithms(payload);
-
-        case DistingNTRespMessageType.respNumAlgorithmsInPreset:
-          return DistingNT.decodeNumberOfAlgorithmsInPreset(payload);
-
-        case DistingNTRespMessageType.respAlgorithmInfo:
-          return DistingNT.decodeAlgorithmInfo(payload);
-
-        case DistingNTRespMessageType.respPresetName:
-          return DistingNT.decodeMessage(payload);
-
-        case DistingNTRespMessageType.respNumParameters:
-          return DistingNT.decodeNumParameters(payload);
-
-        case DistingNTRespMessageType.respParameterInfo:
-          return DistingNT.decodeParameterInfo(payload);
-
-        case DistingNTRespMessageType.respAllParameterValues:
-          return DistingNT.decodeAllParameterValues(payload);
-
-        case DistingNTRespMessageType.respParameterValue:
-          return DistingNT.decodeParameterValue(payload);
-
-        case DistingNTRespMessageType.respParameterValueString:
-          return DistingNT.decodeParameterValueString(payload);
-
-        case DistingNTRespMessageType.respEnumStrings:
-          return DistingNT.decodeEnumStrings(payload);
-
-        case DistingNTRespMessageType.respMapping:
-          return DistingNT.decodeMapping(payload);
-
-        case DistingNTRespMessageType.respRouting:
-          return DistingNT.decodeRoutingInformation(payload);
-
-        case DistingNTRespMessageType.respMessage:
-          return DistingNT.decodeMessage(payload);
-
-        case DistingNTRespMessageType.respAlgorithm:
-          return DistingNT.decodeAlgorithm(payload);
-
-        case DistingNTRespMessageType.respUnitStrings:
-          return DistingNT.decodeStrings(payload);
-
-        case DistingNTRespMessageType.respScreenshot:
-          return DistingNT.decodeBitmap(payload);
-
-        case DistingNTRespMessageType.respParameterPages:
-          return DistingNT.decodeParameterPages(payload);
-
-        default:
-          debugPrint("Unknown or unsupported message type: $messageType");
-          return null; // Unhandled message type
-      }
-    } catch (e) {
-      debugPrint("Error decoding response: $e in $parsedMessage");
-      return null;
-    }
+    });
   }
 }
