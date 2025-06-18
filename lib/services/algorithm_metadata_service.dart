@@ -4,7 +4,6 @@ import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
 import 'package:nt_helper/models/algorithm_parameter.dart';
 import 'package:nt_helper/db/database.dart';
-import 'package:nt_helper/db/daos/metadata_dao.dart';
 
 class AlgorithmMetadataService {
   // Singleton pattern

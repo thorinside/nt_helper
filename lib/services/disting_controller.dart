@@ -1,5 +1,7 @@
 import 'dart:typed_data';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show Algorithm, ParameterInfo;
 
 /// Abstract interface defining operations to control the Disting state,
 /// intended for use by MCP tools or other services.

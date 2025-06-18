@@ -1,19 +1,19 @@
 import 'dart:async';
 // import 'dart:math'; // Remove unused
-import 'dart:typed_data';
 
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/db/daos/presets_dao.dart'; // Re-add PresetsDao import
 // import 'package:nt_helper/db/database.dart'; // Remove unused
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/models/packed_mapping_data.dart';
 // import 'package:nt_helper/models/routing_information.dart';
 // import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart'; // Added import for Slot, etc.
-import 'package:drift/drift.dart';
-// import 'package:flutter/foundation.dart'; // Remove unused
+import 'package:flutter/foundation.dart'; // Remove unused
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
 
 /// Mock implementation for demo mode or testing.
 class MockDistingMidiManager implements IDistingMidiManager {
@@ -43,22 +43,16 @@ class MockDistingMidiManager implements IDistingMidiManager {
     // --- Define Demo Algorithms ---
     final availableAlgorithms = <AlgorithmInfo>[
       AlgorithmInfo(
-          algorithmIndex: 0,
-          guid: "clk ",
-          name: "Clock",
-          numSpecifications: 0,
-          specifications: []),
+          algorithmIndex: 0, guid: "clk ", name: "Clock", specifications: []),
       AlgorithmInfo(
           algorithmIndex: 1,
           guid: "seq ",
           name: "Step Sequencer",
-          numSpecifications: 0,
           specifications: []),
       AlgorithmInfo(
           algorithmIndex: 2,
           guid: "sine",
           name: "Sine Oscillator",
-          numSpecifications: 0,
           specifications: []),
     ];
 
@@ -787,7 +781,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestWake() async {
-    // No-op
+    // No-op in mock mode
   }
 
   @override
@@ -830,8 +824,32 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<FullPresetDetails?> requestCurrentPresetDetails() async {
-    return null;
+  Future<FullPresetDetails?> requestCurrentPresetDetails() =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<DirectoryListing?> requestDirectoryListing(String path) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<SdCardStatus?> requestFileDelete(String path) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<Uint8List?> requestFileDownload(String path) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<SdCardStatus?> requestFileRename(String fromPath, String toPath) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<SdCardStatus?> requestFileUpload(String path, Uint8List data) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<CpuUsage?> requestCpuUsage() async {
+    throw UnsupportedError("CPU Usage is not available in mock mode.");
   }
 }
 

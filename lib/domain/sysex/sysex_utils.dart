@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'dart:typed_data';
 
 List<int> buildHeader(int distingSysExId) {
   return [
@@ -56,25 +55,56 @@ List<int> encode32(int value) {
   final b3 = (v >> 21) & 0x7F; // bits 21..27
   final b4 = (v >> 28) & 0x0F; // bits 28..31
 
-  return [b0, b1, b2, b3, b4];
+  // The JS implementation sends MSB first.
+  return [b4, b3, b2, b1, b0];
 }
 
 int decode32(List<int> bytes, int offset) {
-  final b0 = bytes[offset + 0];
+  final b0 = bytes[offset + 0]; // LSB
   final b1 = bytes[offset + 1];
   final b2 = bytes[offset + 2];
   final b3 = bytes[offset + 3];
-  final b4 = bytes[offset + 4];
+  final b4 = bytes[offset + 4]; // MSB
 
-  // The & 0xFF is optional in Dart if you're sure each value is already 0..255,
-  // but including it ensures we're only using the lower 8 bits of each byte.
-  return (b0 & 0xFF) |
-      ((b1 & 0xFF) << 7) |
-      ((b2 & 0xFF) << 14) |
-      ((b3 & 0xFF) << 21) |
-      ((b4 & 0xFF) << 28);
+  return (b0 & 0x7F) |
+      ((b1 & 0x7F) << 7) |
+      ((b2 & 0x7F) << 14) |
+      ((b3 & 0x7F) << 21) |
+      ((b4 & 0x0F) << 28);
 }
 
 int decode8(Uint8List payload) {
   return payload[0].toInt();
-} 
+}
+
+/// Calculates the checksum for a given payload.
+/// The payload should start from the opcode/command byte.
+int calculateChecksum(List<int> payload) {
+  int sum = 0;
+  for (final byte in payload) {
+    sum += byte;
+  }
+  return (-sum) & 0x7F;
+}
+
+/// Encodes a list of bytes into their 4-bit nybble representation.
+List<int> bytesToNybbles(List<int> bytes) {
+  final nybbles = <int>[];
+  for (final byte in bytes) {
+    nybbles.add((byte >> 4) & 0x0F);
+    nybbles.add(byte & 0x0F);
+  }
+  return nybbles;
+}
+
+Uint8List nybblesToBytes(List<int> nybbles) {
+  final bytes = <int>[];
+  for (var i = 0; i < nybbles.length; i += 2) {
+    if (i + 1 < nybbles.length) {
+      final msb = nybbles[i] & 0x0F;
+      final lsb = nybbles[i + 1] & 0x0F;
+      bytes.add((msb << 4) | lsb);
+    }
+  }
+  return Uint8List.fromList(bytes);
+}

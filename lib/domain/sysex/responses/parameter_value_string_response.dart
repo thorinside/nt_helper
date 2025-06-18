@@ -1,11 +1,12 @@
-import 'package:flutter/foundation.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/ascii.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class ParameterValueStringResponse extends SysexResponse {
-  ParameterValueStringResponse(Uint8List data) : super(data);
+  late final ParameterValueString parameterValueString;
+
+  ParameterValueStringResponse(super.data);
 
   @override
   ParameterValueString parse() {

@@ -6,8 +6,7 @@ import 'package:nt_helper/models/parsed_preset_data.dart'; // Added import for P
 import 'package:nt_helper/ui/sd_card_scanner/bloc/sd_card_scanner_bloc.dart';
 import 'package:nt_helper/ui/sd_card_scanner/bloc/sd_card_scanner_event.dart'; // Added import for events
 import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_state.dart'; // For ScanStatus
-import 'package:nt_helper/util/file_system_utils.dart';
-import 'package:path/path.dart' as p; // For joining paths
+// For joining paths
 import 'package:nt_helper/ui/sd_card_scanner/widgets/sd_card_selection_card.dart';
 import 'package:nt_helper/ui/sd_card_scanner/widgets/scanning_progress_card.dart'; // Import progress card
 import 'package:nt_helper/ui/sd_card_scanner/widgets/scanned_card_management_item.dart'; // Import management item

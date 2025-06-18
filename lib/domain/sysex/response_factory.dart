@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:nt_helper/domain/sysex/responses/algorithm_info_response.dart';
 import 'package:nt_helper/domain/sysex/responses/algorithm_response.dart';
 import 'package:nt_helper/domain/sysex/responses/all_parameter_values_response.dart';
@@ -17,6 +18,10 @@ import 'package:nt_helper/domain/sysex/responses/routing_information_response.da
 import 'package:nt_helper/domain/sysex/responses/screenshot_response.dart';
 import 'package:nt_helper/domain/sysex/responses/strings_response.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
+import 'package:nt_helper/domain/sysex/responses/cpu_usage_response.dart';
+import 'package:nt_helper/domain/sysex/responses/directory_listing_response.dart';
+import 'package:nt_helper/domain/sysex/responses/file_chunk_response.dart';
+import 'package:nt_helper/domain/sysex/responses/sd_status_response.dart';
 
 class ResponseFactory {
   static SysexResponse? fromMessageType(
@@ -56,8 +61,16 @@ class ResponseFactory {
         return NumberOfAlgorithmsInPresetResponse(payload);
       case DistingNTRespMessageType.respRouting:
         return RoutingInformationResponse(payload);
+      case DistingNTRespMessageType.respCpuUsage:
+        return CpuUsageResponse(payload);
+      case DistingNTRespMessageType.respDirectoryListing:
+        return DirectoryListingResponse(payload);
+      case DistingNTRespMessageType.respFileChunk:
+        return FileChunkResponse(payload);
+      case DistingNTRespMessageType.respSdStatus:
+        return SdStatusResponse(payload);
       case DistingNTRespMessageType.unknown:
         return null;
     }
   }
-} 
+}

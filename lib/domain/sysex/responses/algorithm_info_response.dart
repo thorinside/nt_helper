@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 import 'package:nt_helper/domain/sysex/ascii.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class AlgorithmInfoResponse extends SysexResponse {
-  AlgorithmInfoResponse(Uint8List data) : super(data);
+  AlgorithmInfoResponse(super.data);
 
   @override
   AlgorithmInfo parse() {
@@ -78,9 +77,8 @@ class AlgorithmInfoResponse extends SysexResponse {
     return AlgorithmInfo(
       algorithmIndex: algorithmIndex,
       guid: guid,
-      numSpecifications: numSpecifications,
       specifications: updatedSpecs,
       name: algorithmName,
     );
   }
-} 
+}

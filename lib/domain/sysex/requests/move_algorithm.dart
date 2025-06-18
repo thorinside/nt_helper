@@ -1,6 +1,6 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -9,8 +9,7 @@ class MoveAlgorithmMessage extends SysexMessage {
   final int toIndex;
 
   MoveAlgorithmMessage(
-      {required int sysExId, required this.fromIndex, required this.toIndex})
-      : super(sysExId);
+      {required super.sysExId, required this.fromIndex, required this.toIndex});
 
   @override
   Uint8List encode() {

@@ -1,15 +1,19 @@
 import 'dart:math'; // Added for pow
+import 'dart:async';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:flutter/foundation.dart';
 import '../db/daos/presets_dao.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
 
 /// An implementation of [IDistingMidiManager] that interacts with the
 /// cached database instead of a physical MIDI device.
@@ -114,7 +118,6 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         algorithmIndex: algorithmIndex,
         guid: entry.guid,
         name: entry.name,
-        numSpecifications: entry.numSpecifications,
         specifications: specs
             .map((s) => Specification(
                   name: s.name,
@@ -762,9 +765,32 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<FullPresetDetails?> requestCurrentPresetDetails() {
-    // Simply call the existing helper method that builds the details object
-    // based on the current internal state (_loadedPresetId, _presetName, maps, etc.)
-    return _buildPresetDetailsForSave();
+  Future<FullPresetDetails?> requestCurrentPresetDetails() =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<DirectoryListing?> requestDirectoryListing(String path) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<SdCardStatus?> requestFileDelete(String path) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<Uint8List?> requestFileDownload(String path) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<SdCardStatus?> requestFileRename(String fromPath, String toPath) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<SdCardStatus?> requestFileUpload(String path, Uint8List data) {
+    throw UnsupportedError('SD Card write operations not supported offline.');
+  }
+
+  @override
+  Future<CpuUsage?> requestCpuUsage() async {
+    throw UnsupportedError("CPU Usage is not available in offline mode.");
   }
 }

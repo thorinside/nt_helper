@@ -1,12 +1,11 @@
 import 'dart:io'; // Required for Directory, FileSystemEntity, and Platform
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p; // For joining paths
 import 'package:flutter/foundation.dart'
     show kIsWeb; // To check for web platform and for debug prints
 import 'package:flutter/services.dart'; // Added for PlatformException
 import 'package:nt_helper/util/in_app_logger.dart'; // Added for InAppLogger
-import 'package:security_scoped_resource/security_scoped_resource.dart'; // Added for iOS scoped access
+// Added for iOS scoped access
 import 'package:nt_helper/services/ios_file_access_service.dart'; // Import the new service
 
 // Import for docman

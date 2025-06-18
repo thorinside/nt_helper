@@ -1,9 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 class NumberOfAlgorithmsResponse extends SysexResponse {
-  NumberOfAlgorithmsResponse(Uint8List data) : super(data);
+  NumberOfAlgorithmsResponse(super.data);
 
   @override
   int parse() {

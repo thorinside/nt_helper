@@ -4,7 +4,9 @@ import 'package:drift/drift.dart'; // Import drift for InsertMode
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart'; // Import the DAO type
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show AlgorithmInfo, ParameterInfo;
+
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 
@@ -256,8 +258,7 @@ class MetadataSyncService {
             reportProgress(
                 mainProgressMsg, "DB cleared for failed ${algoInfo.name}.");
           } catch (dbClearError) {
-            reportProgress(
-                mainProgressMsg, "DB cleanup failed: $dbClearError");
+            reportProgress(mainProgressMsg, "DB cleanup failed: $dbClearError");
           }
 
           // Attempt device cleanup
@@ -276,8 +277,7 @@ class MetadataSyncService {
 
       // Check cancellation one last time before final success message
       if (checkCancel()) {
-        reportProgress(
-            "Synchronization Cancelled", "Process stopped by user.");
+        reportProgress("Synchronization Cancelled", "Process stopped by user.");
       } else {
         reportProgress("Synchronization Complete", "Finished all algorithms.");
       }

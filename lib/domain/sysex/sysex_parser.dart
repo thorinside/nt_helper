@@ -1,6 +1,6 @@
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'dart:typed_data';
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 /// A generic function to parse an incoming SysEx message from the disting NT.
 /// Returns null if it's not a valid or recognized message.
@@ -29,11 +29,34 @@ DistingNTParsedMessage? decodeDistingNTSysEx(Uint8List data) {
 
   // 5) The next byte after that is the message type
   final messageTypeByte = data[6] & 0x7F;
-  final msgType = DistingNTRespMessageType.fromByte(messageTypeByte);
+  var msgType = DistingNTRespMessageType.fromByte(messageTypeByte);
+  var payload = data.sublist(7, data.length - 1);
+
+  // Remap SD card operations to virtual message types
+  if (msgType == DistingNTRespMessageType.unknown &&
+      messageTypeByte == DistingNTRequestMessageType.sdCardOperation.value) {
+    if (payload.isNotEmpty) {
+      final subCommand = payload[0];
+      switch (subCommand) {
+        case 1: // Directory Listing Response
+          msgType = DistingNTRespMessageType.respDirectoryListing;
+          break;
+        case 2: // File Download Chunk
+          msgType = DistingNTRespMessageType.respFileChunk;
+          break;
+        case 3: // Delete status
+        case 4: // Upload status
+        case 5: // Rename status
+          msgType = DistingNTRespMessageType.respSdStatus;
+          break;
+      }
+      // The actual payload for the response parser doesn't include the sub-command byte
+      payload = payload.sublist(1);
+    }
+  }
 
   // 6) The payload is everything between that byte and the final 0xF7,
   // but usually after the messageType we parse based on the command.
-  final payload = data.sublist(7, data.length - 1); // slice out the end
 
   return DistingNTParsedMessage(
     sysExId: distingSysExId,
@@ -62,4 +85,4 @@ class DistingNTParsedMessage {
     return 'DistingNTParsedMessage(sysExId: $sysExId, '
         'type: $messageType, payloadLen: ${payload.length}, raw: ${rawBytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(' ')})';
   }
-} 
+}

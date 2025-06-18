@@ -199,13 +199,6 @@ class McpServerService extends ChangeNotifier {
         return;
       }
 
-      if (transport == null) {
-        // Should not happen if logic above is correct
-        _sendJsonError(request, HttpStatus.internalServerError,
-            'Internal Server Error: Transport not resolved.');
-        return;
-      }
-
       await transport.handleRequest(request, body);
       debugPrint(
           '[MCP] POST request for session ${transport.sessionId} handled by transport.');
@@ -296,8 +289,9 @@ class McpServerService extends ChangeNotifier {
 
   void _sendHttpError(HttpRequest request, int statusCode, String message) {
     try {
-      if (request.response.connectionInfo == null)
+      if (request.response.connectionInfo == null) {
         return; // Already closed or headers sent
+      }
       request.response.statusCode = statusCode;
       request.response.headers.contentType = ContentType.text;
       request.response.write(message);
@@ -310,8 +304,9 @@ class McpServerService extends ChangeNotifier {
   void _sendJsonError(HttpRequest request, int statusCode, String message,
       {String? id}) {
     try {
-      if (request.response.connectionInfo == null)
+      if (request.response.connectionInfo == null) {
         return; // Already closed or headers sent
+      }
       request.response.statusCode = statusCode;
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/db/database.dart';
-import 'package:nt_helper/db/daos/sd_cards_dao.dart';
-import 'package:nt_helper/db/daos/indexed_preset_files_dao.dart';
-import 'package:nt_helper/db/tables.dart';
 import 'package:collection/collection.dart';
 
 class LoadPresetDialog extends StatefulWidget {
@@ -91,13 +88,6 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       _history = prefs.getStringList('presetHistory') ?? [];
       _history.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     });
-  }
-
-  /// Persists the updated history list back to SharedPreferences.
-  Future<void> _saveHistoryToPrefs() async {
-    final prefs = widget.preferences ?? await SharedPreferences.getInstance();
-    // Ensure we save the potentially re-ordered history
-    await prefs.setStringList('presetHistory', _history);
   }
 
   /// Adds a new name to the local history list (if not present) and saves it.

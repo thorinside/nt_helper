@@ -1,7 +1,7 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/ascii.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -10,8 +10,8 @@ class SetSlotNameMessage extends SysexMessage {
   final String name;
 
   SetSlotNameMessage(
-      {required int sysExId, required this.algorithmIndex, required this.name})
-      : super(sysExId);
+      {required super.sysExId, required this.algorithmIndex, required this.name})
+     ;
 
   @override
   Uint8List encode() {

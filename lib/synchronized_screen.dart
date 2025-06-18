@@ -9,7 +9,17 @@ import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show
+        AlgorithmInfo,
+        DisplayMode,
+        ParameterPages,
+        ParameterInfo,
+        ParameterValue,
+        ParameterEnumStrings,
+        Mapping,
+        ParameterValueString;
+
 import 'package:nt_helper/floating_screenshot_overlay.dart';
 import 'package:nt_helper/load_preset_dialog.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';

@@ -3,7 +3,9 @@ import 'dart:math'; // For min, pow functions
 import 'dart:typed_data'; // Added for Uint8List
 
 import 'package:image/image.dart' as img; // For image processing
-import 'package:nt_helper/domain/disting_nt_sysex.dart'; // Re-added for Algorithm, ParameterInfo etc.
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show Algorithm, ParameterInfo;
+// Re-added for Algorithm, ParameterInfo etc.
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/util/case_converter.dart';
@@ -292,14 +294,14 @@ class DistingTools {
           return jsonEncode(convertToSnakeCaseKeys({
             'success': false,
             'error':
-                'Parameter with name "${parameterNameParam}" not found in slot $slotIndex. Check `get_current_preset` for available parameters.'
+                'Parameter with name "$parameterNameParam" not found in slot $slotIndex. Check `get_current_preset` for available parameters.'
           }));
         }
         if (matchingParams.length > 1) {
           return jsonEncode(convertToSnakeCaseKeys({
             'success': false,
             'error':
-                'Parameter name "${parameterNameParam}" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.'
+                'Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.'
           }));
         }
         paramInfo = matchingParams.first;

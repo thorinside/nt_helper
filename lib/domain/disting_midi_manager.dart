@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
@@ -43,6 +42,14 @@ import 'package:nt_helper/domain/sysex/requests/take_screenshot.dart';
 import 'package:nt_helper/domain/sysex/requests/wake.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/domain/sysex/requests/request_directory_listing.dart';
+import 'package:nt_helper/domain/sysex/requests/request_file_download.dart';
+import 'package:nt_helper/domain/sysex/requests/request_file_delete.dart';
+import 'package:nt_helper/domain/sysex/requests/request_file_rename.dart';
+import 'package:nt_helper/domain/sysex/requests/request_file_upload.dart';
+import 'package:nt_helper/domain/sysex/requests/request_cpu_usage.dart';
+import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
 
 /// Abstract interface for Disting MIDI communication.
 
@@ -50,6 +57,7 @@ class DistingMidiManager implements IDistingMidiManager {
   // Implement interface
   final DistingMessageScheduler _scheduler;
   final int sysExId;
+  String? _firmwareVersion;
 
   DistingMidiManager({
     required MidiCommand midiCommand,
@@ -66,6 +74,25 @@ class DistingMidiManager implements IDistingMidiManager {
           defaultRetryDelay:
               Duration(milliseconds: SettingsService().interMessageDelay),
         );
+
+  Future<void> _checkSdCardSupport() async {
+    _firmwareVersion ??= await requestVersionString();
+
+    if (_firmwareVersion == null) {
+      throw Exception('Could not retrieve firmware version.');
+    }
+    final parts = _firmwareVersion!.split('.').map(int.parse).toList();
+    if (parts.length < 2) {
+      throw UnsupportedError(
+          'Invalid firmware version format: $_firmwareVersion');
+    }
+    final major = parts[0];
+    final minor = parts[1];
+    if (major < 1 || (major == 1 && minor < 10)) {
+      throw UnsupportedError(
+          'SD Card operations require firmware version 1.10 or higher. Found $_firmwareVersion');
+    }
+  }
 
   @override
   void dispose() {
@@ -403,8 +430,8 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestRemoveAlgorithm(int algorithmIndex) {
-    final message =
-        RemoveAlgorithmMessage(sysExId: sysExId, algorithmIndex: algorithmIndex);
+    final message = RemoveAlgorithmMessage(
+        sysExId: sysExId, algorithmIndex: algorithmIndex);
     final packet = message.encode();
     final key = RequestKey(
       sysExId: sysExId,
@@ -514,9 +541,6 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.required,
-      timeout: Duration(milliseconds: 500),
-      maxRetries: 5,
-      retryDelay: Duration(milliseconds: 50),
     );
   }
 
@@ -591,6 +615,21 @@ class DistingMidiManager implements IDistingMidiManager {
         responseExpectation: ResponseExpectation.none,
       ),
     ]);
+  }
+
+  Future<void> requestSetCVMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  }
+
+  Future<void> requestSetI2CMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  }
+
+  Future<void> requestSetMIDIMapping(
+      int algorithmIndex, int parameterNumber, PackedMappingData data) {
+    return requestSetMapping(algorithmIndex, parameterNumber, data);
   }
 
   @override
@@ -782,20 +821,105 @@ class DistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> requestSetCVMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) {
-    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  Future<DirectoryListing?> requestDirectoryListing(String path) async {
+    await _checkSdCardSupport();
+    final message =
+        RequestDirectoryListingMessage(sysExId: sysExId, path: path);
+    final packet = message.encode();
+    return _scheduler.sendRequest<DirectoryListing>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respDirectoryListing,
+      ),
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   @override
-  Future<void> requestSetI2CMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) {
-    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  Future<SdCardStatus?> requestFileDelete(String path) async {
+    await _checkSdCardSupport();
+    final message = RequestFileDeleteMessage(sysExId: sysExId, path: path);
+    final packet = message.encode();
+    return _scheduler.sendRequest<SdCardStatus>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respSdStatus,
+      ),
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 
   @override
-  Future<void> requestSetMIDIMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) {
-    return requestSetMapping(algorithmIndex, parameterNumber, data);
+  Future<Uint8List?> requestFileDownload(String path) async {
+    await _checkSdCardSupport();
+    final message = RequestFileDownloadMessage(sysExId: sysExId, path: path);
+    final packet = message.encode();
+    // TODO: This is a simplified implementation. A real implementation would
+    // need to listen for multiple FileChunk responses and assemble them.
+    // The scheduler might need a new method for multi-response requests.
+    final chunk = await _scheduler.sendRequest<FileChunk>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respFileChunk,
+      ),
+      responseExpectation: ResponseExpectation.required,
+    );
+    return chunk?.data;
+  }
+
+  @override
+  Future<SdCardStatus?> requestFileRename(
+      String fromPath, String toPath) async {
+    await _checkSdCardSupport();
+    final message = RequestFileRenameMessage(
+        sysExId: sysExId, oldPath: fromPath, newPath: toPath);
+    final packet = message.encode();
+    return _scheduler.sendRequest<SdCardStatus>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respSdStatus,
+      ),
+      responseExpectation: ResponseExpectation.required,
+    );
+  }
+
+  @override
+  Future<SdCardStatus?> requestFileUpload(String path, Uint8List data) async {
+    await _checkSdCardSupport();
+    final message = RequestFileUploadMessage(
+      sysExId: sysExId,
+      path: path,
+      fileSize: data.length,
+      data: data,
+    );
+    final packet = message.encode();
+    return _scheduler.sendRequest<SdCardStatus>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respSdStatus,
+      ),
+      responseExpectation: ResponseExpectation.required,
+    );
+  }
+
+  @override
+  Future<CpuUsage?> requestCpuUsage() async {
+    final message = RequestCpuUsage(sysExId: sysExId);
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respCpuUsage,
+    );
+
+    return await _scheduler.sendRequest<CpuUsage>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.required,
+    );
   }
 }

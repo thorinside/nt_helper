@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class AllParameterValuesResponse extends SysexResponse {
-  AllParameterValuesResponse(Uint8List data) : super(data);
+  AllParameterValuesResponse(super.data);
 
   @override
   AllParameterValues parse() {

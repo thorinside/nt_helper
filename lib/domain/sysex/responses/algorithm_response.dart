@@ -1,9 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 class AlgorithmResponse extends SysexResponse {
-  AlgorithmResponse(Uint8List data) : super(data);
+  AlgorithmResponse(super.data);
+
+  late final Algorithm algorithm;
 
   @override
   Algorithm parse() {

@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:collection/collection.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';

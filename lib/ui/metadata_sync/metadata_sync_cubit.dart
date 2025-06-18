@@ -4,7 +4,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show AlgorithmInfo, Specification;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/services/metadata_sync_service.dart';
@@ -175,7 +176,6 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           algorithmIndex: i, // Use the target slot index
           guid: algoDetails.algorithm.guid,
           name: algoDetails.algorithm.name, // Use the canonical name
-          numSpecifications: algoDetails.specifications.length,
           specifications: algoDetails.specifications
               .map((spec) => Specification(
                     name: spec.name,

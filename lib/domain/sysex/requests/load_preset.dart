@@ -1,7 +1,7 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/ascii.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -10,8 +10,7 @@ class LoadPresetMessage extends SysexMessage {
   final bool append;
 
   LoadPresetMessage(
-      {required int sysExId, required this.presetName, required this.append})
-      : super(sysExId);
+      {required super.sysExId, required this.presetName, required this.append});
 
   @override
   Uint8List encode() {

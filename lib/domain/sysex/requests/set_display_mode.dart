@@ -1,14 +1,14 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 class SetDisplayModeMessage extends SysexMessage {
   final DisplayMode displayMode;
 
-  SetDisplayModeMessage({required int sysExId, required this.displayMode})
-      : super(sysExId);
+  SetDisplayModeMessage({required super.sysExId, required this.displayMode})
+     ;
 
   @override
   Uint8List encode() {

@@ -1,4 +1,5 @@
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show DistingNTRespMessageType;
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
 
 class RequestKey {

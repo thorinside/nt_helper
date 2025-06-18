@@ -1,11 +1,11 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 class RequestVersionStringMessage extends SysexMessage {
-  RequestVersionStringMessage({required int sysExId}) : super(sysExId);
+  RequestVersionStringMessage({required super.sysExId});
 
   @override
   Uint8List encode() {

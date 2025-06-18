@@ -30,123 +30,6 @@ enum DisplayMode {
   const DisplayMode(this.value);
 }
 
-/// Enum of all known 'Sent SysEx messages' (requests)
-enum DistingNTRequestMessageType {
-  // Sent messages (going TO the disting)
-  takeScreenshot(0x01),
-  setRealTimeClock(0x04),
-  wake(0x07),
-  sclFile(0x11),
-  kbmFile(0x12),
-  setDisplayMode(0x20),
-  requestVersionString(0x22),
-  requestNumAlgorithms(0x30),
-  requestAlgorithmInfo(0x31),
-  addAlgorithm(0x32),
-  removeAlgorithm(0x33),
-  loadPreset(0x34),
-  newPreset(0x35),
-  savePreset(0x36),
-  moveAlgorithm(0x37),
-  requestAlgorithm(0x40),
-  requestPresetName(0x41),
-  requestNumParameters(0x42),
-  requestParameterInfo(0x43),
-  requestAllParameterValues(0x44),
-  requestParameterValue(0x45),
-  setParameterValue(0x46),
-  setPresetName(0x47),
-  requestUnitStrings(0x48),
-  requestEnumStrings(0x49),
-  setFocus(0x4A),
-  requestMappings(0x4B),
-  setMapping(0x4D),
-  setMidiMapping(0x4E),
-  setI2CMapping(0x4F),
-  requestParameterValueString(0x50),
-  setSlotName(0x51),
-  requestParameterPages(0x52),
-  requestNumAlgorithmsInPreset(0x60),
-  requestRouting(0x61),
-
-  // Unknown/unsupported
-  unknown(0xFF);
-
-  final int value;
-
-  const DistingNTRequestMessageType(this.value);
-
-  /// Retrieve the enum variant from a raw message byte, if known.
-  static DistingNTRequestMessageType fromByte(int b) {
-    for (final t in DistingNTRequestMessageType.values) {
-      if (t.value == b) return t;
-    }
-    return DistingNTRequestMessageType.unknown;
-  }
-}
-
-/// Enum of all known 'Received
-/// SysEx messages' (responses)
-enum DistingNTRespMessageType {
-  // Sent messages (coming FROM the disting)
-  // (Some are the same IDs, but used as a response.)
-  respNumAlgorithms(0x30),
-  respAlgorithmInfo(0x31),
-  respMessage(0x32),
-  respScreenshot(0x33),
-  respAlgorithm(0x40),
-  respPresetName(0x41),
-  respNumParameters(0x42),
-  respParameterInfo(0x43),
-  respAllParameterValues(0x44),
-  respParameterValue(0x45),
-  respUnitStrings(0x48),
-  respEnumStrings(0x49),
-  respMapping(0x4B),
-  respParameterValueString(0x50),
-  respParameterPages(0x52),
-  respNumAlgorithmsInPreset(0x60),
-  respRouting(0x61),
-
-  // Unknown/unsupported
-  unknown(0xFF);
-
-  final int value;
-
-  const DistingNTRespMessageType(this.value);
-
-  /// Retrieve the enum variant from a raw message byte, if known.
-  static DistingNTRespMessageType fromByte(int b) {
-    for (final t in DistingNTRespMessageType.values) {
-      if (t.value == b) return t;
-    }
-    return DistingNTRespMessageType.unknown;
-  }
-}
-
-class Algorithm implements HasAlgorithmIndex {
-  @override
-  final int algorithmIndex;
-  final String guid;
-  final String name;
-
-  Algorithm(
-      {required this.algorithmIndex, required this.guid, required this.name});
-
-  @override
-  String toString() {
-    return "Algorithm: index=$algorithmIndex guid=$guid name=$name";
-  }
-
-  Algorithm copyWith({int? algorithmIndex, String? guid, String? name}) {
-    return Algorithm(
-      algorithmIndex: algorithmIndex ?? this.algorithmIndex,
-      guid: guid ?? this.guid,
-      name: name ?? this.name,
-    );
-  }
-}
-
 class Specification {
   final String name;
   final int min;
@@ -165,6 +48,19 @@ class Specification {
   @override
   String toString() {
     return "Specification: min=$min, max=$max, defaultValue=$defaultValue, type=$type";
+  }
+}
+
+class NumParameters implements HasAlgorithmIndex {
+  @override
+  final int algorithmIndex;
+  final int numParameters;
+
+  NumParameters({required this.algorithmIndex, required this.numParameters});
+
+  @override
+  String toString() {
+    return "NumParameters: index=$algorithmIndex numParameters=$numParameters";
   }
 }
 
@@ -236,38 +132,6 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   }
 }
 
-class AllParameterValues implements HasAlgorithmIndex {
-  @override
-  final int algorithmIndex;
-  final List<ParameterValue> values;
-
-  AllParameterValues({required this.algorithmIndex, required this.values});
-}
-
-class ParameterPage {
-  final String name;
-  final List<int> parameters;
-
-  ParameterPage({required this.name, required this.parameters});
-}
-
-class ParameterPages implements HasAlgorithmIndex {
-  @override
-  final int algorithmIndex;
-  final List<ParameterPage> pages;
-
-  ParameterPages({required this.algorithmIndex, required this.pages});
-
-  factory ParameterPages.filler() {
-    return ParameterPages(algorithmIndex: -1, pages: []);
-  }
-
-  @override
-  String toString() {
-    return "ParameterPages(algorithmIndex=$algorithmIndex, pages=[$pages])";
-  }
-}
-
 class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
   @override
   final int algorithmIndex;
@@ -312,57 +176,6 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
   int get hashCode => Object.hash(algorithmIndex, parameterNumber, value);
 }
 
-class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
-  @override
-  final int algorithmIndex;
-  @override
-  final int parameterNumber;
-  final String value;
-
-  ParameterValueString({
-    required this.algorithmIndex,
-    required this.parameterNumber,
-    required this.value,
-  });
-
-  factory ParameterValueString.filler() {
-    return ParameterValueString(
-        algorithmIndex: -1, parameterNumber: -1, value: '');
-  }
-
-  // Write toString
-  @override
-  String toString() {
-    return "ParameterValueString(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, value: '$value')";
-  }
-}
-
-class Mapping implements HasAlgorithmIndex, HasParameterNumber {
-  @override
-  final int algorithmIndex;
-  @override
-  final int parameterNumber;
-  final PackedMappingData packedMappingData;
-
-  Mapping({
-    required this.algorithmIndex,
-    required this.parameterNumber,
-    required this.packedMappingData,
-  });
-
-  factory Mapping.filler() {
-    return Mapping(
-        algorithmIndex: -1,
-        parameterNumber: -1,
-        packedMappingData: PackedMappingData.filler());
-  }
-
-  @override
-  String toString() {
-    return "Mapping(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, packedMappingData: $packedMappingData)";
-  }
-}
-
 class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
   @override
   final int algorithmIndex;
@@ -387,50 +200,119 @@ class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
   }
 }
 
-class AlgorithmInfo implements HasAlgorithmIndex {
+class ParameterValueString implements HasAlgorithmIndex, HasParameterNumber {
   @override
   final int algorithmIndex;
-  final String guid;
-  final int numSpecifications;
-  final List<Specification> specifications;
-  final String name;
+  @override
+  final int parameterNumber;
+  final String value;
 
-  AlgorithmInfo({
+  ParameterValueString({
     required this.algorithmIndex,
-    required this.guid,
-    required this.numSpecifications,
-    required this.specifications,
-    required this.name,
+    required this.parameterNumber,
+    required this.value,
   });
 
-  factory AlgorithmInfo.filler() {
-    return AlgorithmInfo(
+  factory ParameterValueString.filler() {
+    return ParameterValueString(
       algorithmIndex: -1,
-      guid: "",
-      numSpecifications: 0,
-      specifications: List.empty(),
-      name: "name",
-    );
-  }
-
-  AlgorithmInfo copyWith(
-      {int? algorithmIndex,
-      String? guid,
-      String? name,
-      int? numSpecifications,
-      List<Specification>? specifications}) {
-    return AlgorithmInfo(
-      algorithmIndex: algorithmIndex ?? this.algorithmIndex,
-      guid: guid ?? this.guid,
-      name: name ?? this.name,
-      numSpecifications: numSpecifications ?? this.numSpecifications,
-      specifications: specifications ?? this.specifications,
+      parameterNumber: -1,
+      value: '',
     );
   }
 
   @override
   String toString() {
-    return "AlgorithmInfo: algorithmIndex=$algorithmIndex guid=$guid name=$name specificationName=$name specifications=$specifications";
+    return "ParameterValueString(algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, value: $value)";
+  }
+}
+
+class AllParameterValues implements HasAlgorithmIndex {
+  @override
+  final int algorithmIndex;
+  final List<ParameterValue> values;
+
+  AllParameterValues({required this.algorithmIndex, required this.values});
+
+  @override
+  String toString() {
+    return "AllParameterValues: index=$algorithmIndex values=$values";
+  }
+}
+
+class Mapping implements HasAlgorithmIndex, HasParameterNumber {
+  @override
+  final int algorithmIndex;
+  @override
+  final int parameterNumber;
+  final PackedMappingData packedMappingData;
+
+  const Mapping(
+      {required this.algorithmIndex,
+      required this.parameterNumber,
+      required this.packedMappingData});
+
+  factory Mapping.filler() {
+    return Mapping(
+        algorithmIndex: -1,
+        parameterNumber: -1,
+        packedMappingData: PackedMappingData.filler());
+  }
+}
+
+class ParameterPage {
+  final String name;
+  final List<int> parameters;
+
+  ParameterPage({required this.name, required this.parameters});
+}
+
+class ParameterPages implements HasAlgorithmIndex {
+  @override
+  final int algorithmIndex;
+  final List<ParameterPage> pages;
+
+  ParameterPages({required this.algorithmIndex, required this.pages});
+}
+
+class AlgorithmInfo {
+  final int algorithmIndex;
+  final String name;
+  final String guid;
+  final List<Specification> specifications;
+
+  AlgorithmInfo(
+      {required this.algorithmIndex,
+      required this.name,
+      required this.guid,
+      required this.specifications});
+
+  int get numSpecifications {
+    return specifications.length;
+  }
+
+  @override
+  String toString() {
+    return "AlgorithmInfo: name=$name, guid=$guid, specs=$specifications";
+  }
+}
+
+class Algorithm {
+  final int algorithmIndex;
+  final String guid;
+  final String name;
+
+  Algorithm({
+    required this.algorithmIndex,
+    required this.guid,
+    required this.name,
+  });
+
+  Algorithm copyWith({int? algorithmIndex}) {
+    return Algorithm(
+        algorithmIndex: algorithmIndex ?? this.algorithmIndex,
+        guid: guid,
+        name: name);
   }
 }
 
@@ -444,20 +326,109 @@ class RoutingInfo implements HasAlgorithmIndex {
   factory RoutingInfo.filler() {
     return RoutingInfo(
       algorithmIndex: -1,
-      routingInfo: List.empty(),
+      routingInfo: List.filled(6, 0),
     );
   }
 }
 
-class NumParameters implements HasAlgorithmIndex {
-  @override
-  final int algorithmIndex;
-  final int numParameters;
+/// Enum of all known 'Sent SysEx messages' (requests)
+enum DistingNTRequestMessageType {
+  // Sent messages (going TO the disting)
+  takeScreenshot(0x01),
+  setRealTimeClock(0x04),
+  wake(0x07),
+  sclFile(0x11),
+  kbmFile(0x12),
+  setDisplayMode(0x20),
+  requestVersionString(0x22),
+  requestNumAlgorithms(0x30),
+  requestAlgorithmInfo(0x31),
+  addAlgorithm(0x32),
+  removeAlgorithm(0x33),
+  loadPreset(0x34),
+  newPreset(0x35),
+  savePreset(0x36),
+  moveAlgorithm(0x37),
+  requestAlgorithm(0x40),
+  requestPresetName(0x41),
+  requestNumParameters(0x42),
+  requestParameterInfo(0x43),
+  requestAllParameterValues(0x44),
+  requestParameterValue(0x45),
+  setParameterValue(0x46),
+  setPresetName(0x47),
+  requestUnitStrings(0x48),
+  requestEnumStrings(0x49),
+  setFocus(0x4A),
+  requestMappings(0x4B),
+  setMapping(0x4D),
+  setMidiMapping(0x4E),
+  setI2CMapping(0x4F),
+  requestParameterValueString(0x50),
+  setSlotName(0x51),
+  requestParameterPages(0x52),
+  requestNumAlgorithmsInPreset(0x60),
+  requestRouting(0x61),
+  requestCpuUsage(0x62),
+  sdCardOperation(0x7A),
 
-  NumParameters({required this.algorithmIndex, required this.numParameters});
+  // Unknown/unsupported
+  unknown(0xFF);
 
-  @override
-  String toString() {
-    return "NumParameters: index=$algorithmIndex numParameters=$numParameters";
+  final int value;
+
+  const DistingNTRequestMessageType(this.value);
+
+  /// Retrieve the enum variant from a raw message byte, if known.
+  static DistingNTRequestMessageType fromByte(int b) {
+    for (final t in DistingNTRequestMessageType.values) {
+      if (t.value == b) return t;
+    }
+    return DistingNTRequestMessageType.unknown;
+  }
+}
+
+/// Enum of all known 'Received
+/// SysEx messages' (responses)
+enum DistingNTRespMessageType {
+  // Sent messages (coming FROM the disting)
+  // (Some are the same IDs, but used as a response.)
+  respNumAlgorithms(0x30),
+  respAlgorithmInfo(0x31),
+  respMessage(0x32),
+  respScreenshot(0x33),
+  respAlgorithm(0x40),
+  respPresetName(0x41),
+  respNumParameters(0x42),
+  respParameterInfo(0x43),
+  respAllParameterValues(0x44),
+  respParameterValue(0x45),
+  respUnitStrings(0x48),
+  respEnumStrings(0x49),
+  respMapping(0x4B),
+  respParameterValueString(0x50),
+  respParameterPages(0x52),
+  respNumAlgorithmsInPreset(0x60),
+  respRouting(0x61),
+  respCpuUsage(0x62),
+
+  // SD Card responses (virtual, mapped from 0x7A by the parser)
+  respDirectoryListing(0x70),
+  respFileChunk(0x71),
+  respSdStatus(0x72),
+
+  // Unknown/unsupported
+  unknown(0xFF);
+
+  final int value;
+
+  const DistingNTRespMessageType(this.value);
+
+  /// Retrieve the enum variant from a raw message byte, if known.
+  static DistingNTRespMessageType fromByte(int b) {
+    for (final t in DistingNTRespMessageType.values) {
+      if (t.value == b) return t;
+    }
+    return DistingNTRespMessageType.unknown;
   }
 }

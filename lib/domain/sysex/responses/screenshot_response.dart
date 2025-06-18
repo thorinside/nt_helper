@@ -5,7 +5,7 @@ import 'package:image/image.dart' as img;
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 
 class ScreenshotResponse extends SysexResponse {
-  ScreenshotResponse(Uint8List data) : super(data);
+  ScreenshotResponse(super.data);
 
   @override
   Uint8List parse() {

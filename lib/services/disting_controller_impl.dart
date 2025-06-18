@@ -2,8 +2,9 @@ import 'dart:typed_data'; // Added for Uint8List
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show Algorithm, ParameterInfo, ParameterValue;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 
 class DistingControllerImpl implements DistingController {

@@ -10,8 +10,7 @@ import 'package:nt_helper/db/daos/presets_dao.dart'; // Added
 import 'package:nt_helper/db/database.dart'; // Added
 import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
-import 'package:nt_helper/domain/i_disting_midi_manager.dart'
-    show IDistingMidiManager;
+import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -571,7 +570,6 @@ class DistingCubit extends Cubit<DistingState> {
         availableAlgorithmsInfo.add(AlgorithmInfo(
           guid: details.algorithm.guid,
           name: details.algorithm.name,
-          numSpecifications: details.algorithm.numSpecifications,
           algorithmIndex: -1,
           specifications: details.specifications
               .map((specEntry) => Specification(
@@ -1454,7 +1452,7 @@ class DistingCubit extends Cubit<DistingState> {
     } // else parameters remains empty
 
     var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
-        ParameterPages.filler();
+        ParameterPages(algorithmIndex: algorithmIndex, pages: []);
 
     var visibleParameters = parameterPages.pages.expand(
       (element) {

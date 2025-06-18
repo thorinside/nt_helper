@@ -1,6 +1,6 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -9,10 +9,10 @@ class SetFocusMessage extends SysexMessage {
   final int parameterNumber;
 
   SetFocusMessage(
-      {required int sysExId,
+      {required super.sysExId,
       required this.algorithmIndex,
       required this.parameterNumber})
-      : super(sysExId);
+     ;
 
   @override
   Uint8List encode() {

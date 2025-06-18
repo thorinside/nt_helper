@@ -1,6 +1,6 @@
-import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
 
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
@@ -8,8 +8,8 @@ class RequestAlgorithmGuidMessage extends SysexMessage {
   final int algorithmIndex;
 
   RequestAlgorithmGuidMessage(
-      {required int sysExId, required this.algorithmIndex})
-      : super(sysExId);
+      {required super.sysExId, required this.algorithmIndex})
+     ;
 
   @override
   Uint8List encode() {
