@@ -317,7 +317,12 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               _isManagingHistory
                   ? _buildManagementView()
                   : _buildPresetSelectionView(),
-              if (_isLoading) LinearProgressIndicator(),
+              SizedBox(height: 4), // 4px spacing before progress bar
+              // Fixed height container to prevent layout shift
+              SizedBox(
+                height: 8, // Height to accommodate the progress bar
+                child: _isLoading ? LinearProgressIndicator() : null,
+              ),
             ],
           ),
         ),
