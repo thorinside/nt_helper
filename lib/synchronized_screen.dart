@@ -500,7 +500,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   : () async {
                       final currentState = cubit.state;
                       if (currentState is DistingStateSynchronized) {
-                        showDialog(
+                        var presetInfo = await showDialog(
                           context: popupCtx,
                           builder: (context) => LoadPresetDialog(
                             initialName: "",
@@ -508,6 +508,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             distingCubit: cubit,
                           ),
                         );
+                        if (presetInfo != null && presetInfo is Map) {
+                          final sdCardPath = presetInfo['sdCardPath'];
+                          final append = presetInfo['append'];
+                          if (sdCardPath != null && sdCardPath.isNotEmpty) {
+                            cubit.loadPreset(sdCardPath, append);
+                          }
+                        }
                       }
                     },
               child: const Row(
