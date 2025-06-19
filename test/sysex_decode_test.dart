@@ -2,8 +2,13 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/sysex/responses/directory_listing_response.dart';
+import 'package:nt_helper/domain/sysex/responses/number_of_algorithms_response.dart';
+import 'package:nt_helper/domain/sysex/responses/lua_output_response.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
+import 'package:nt_helper/domain/sysex/requests/execute_lua.dart';
+import 'package:nt_helper/domain/sysex/requests/install_lua.dart';
+import 'package:nt_helper/domain/sysex/requests/set_parameter_string.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 
 void main() {
@@ -28,6 +33,129 @@ void main() {
       expect(directoryListing.entries.first.name, 'FMSYX/');
       expect(directoryListing.entries.first.isDirectory, isTrue);
     });
+
+    test('should decode number of algorithms response correctly', () {
+      // f0 00 21 27 6d 00 30 00 00 7f f7
+      // Header: f0 00 21 27 6d 00
+      // Command: 30 (CMD_NUM_ALGOS)
+      // Data: 7f
+      // Checksum: (implied by previous fix to be handled externally or ignored for this data)
+      // End: f7
+      final hexString = 'f0 00 21 27 6d 00 30 00 00 7f f7';
+      final bytes = Uint8List.fromList(
+          hexString.split(' ').map((s) => int.parse(s, radix: 16)).toList());
+
+      final parsedMessage = decodeDistingNTSysEx(bytes);
+      expect(parsedMessage, isNotNull);
+      expect(parsedMessage!.messageType,
+          DistingNTRespMessageType.respNumAlgorithms);
+
+      final response =
+          parsedMessage.messageType.createResponse(parsedMessage.payload);
+      expect(response, isNotNull);
+
+      final numAlgorithms = response!.parse();
+      expect(numAlgorithms, 127); // 0x7F in decimal
+    });
+  });
+
+  group('New Sysex Message Encoding', () {
+    test('should encode Execute Lua message correctly', () {
+      final message = ExecuteLuaMessage(
+        sysExId: 0,
+        luaScript: 'print("Hello World")',
+      );
+
+      final encoded = message.encode();
+
+      // Check header
+      expect(encoded[0], 0xF0); // SysEx start
+      expect(encoded[1], 0x00); // Manufacturer ID
+      expect(encoded[2], 0x21);
+      expect(encoded[3], 0x27);
+      expect(encoded[4], 0x6D); // Disting NT prefix
+      expect(encoded[5], 0x00); // SysEx ID
+      expect(encoded[6], 0x08); // Execute Lua command
+
+      // Check footer
+      expect(encoded.last, 0xF7); // SysEx end
+
+      // Check that script is included
+      final scriptStart = 7;
+      final scriptEnd = encoded.length - 1;
+      final scriptBytes = encoded.sublist(scriptStart, scriptEnd);
+      final decodedScript = String.fromCharCodes(scriptBytes);
+      expect(decodedScript, 'print("Hello World")');
+    });
+
+    test('should encode Install Lua message correctly', () {
+      final message = InstallLuaMessage(
+        sysExId: 0,
+        algorithmIndex: 5,
+        luaScript: 'output("test")',
+      );
+
+      final encoded = message.encode();
+
+      // Check header
+      expect(encoded[0], 0xF0); // SysEx start
+      expect(encoded[1], 0x00); // Manufacturer ID
+      expect(encoded[2], 0x21);
+      expect(encoded[3], 0x27);
+      expect(encoded[4], 0x6D); // Disting NT prefix
+      expect(encoded[5], 0x00); // SysEx ID
+      expect(encoded[6], 0x09); // Install Lua command
+      expect(encoded[7], 0x05); // Algorithm index (7-bit)
+
+      // Check footer
+      expect(encoded.last, 0xF7); // SysEx end
+
+      // Check that script is included
+      final scriptStart = 8;
+      final scriptEnd = encoded.length - 1;
+      final scriptBytes = encoded.sublist(scriptStart, scriptEnd);
+      final decodedScript = String.fromCharCodes(scriptBytes);
+      expect(decodedScript, 'output("test")');
+    });
+
+    test('should encode Set Parameter String message correctly', () {
+      final message = SetParameterStringMessage(
+        sysExId: 0,
+        algorithmIndex: 3,
+        parameterNumber: 1,
+        value: 'test_string',
+      );
+
+      final encoded = message.encode();
+
+      // Check header
+      expect(encoded[0], 0xF0); // SysEx start
+      expect(encoded[1], 0x00); // Manufacturer ID
+      expect(encoded[2], 0x21);
+      expect(encoded[3], 0x27);
+      expect(encoded[4], 0x6D); // Disting NT prefix
+      expect(encoded[5], 0x00); // SysEx ID
+      expect(encoded[6], 0x53); // Set Parameter String command
+      expect(encoded[7], 0x03); // Algorithm index (7-bit)
+
+      // Check 16-bit parameter number encoding (parameter 1 = 0x0001)
+      expect(encoded[8], 0x00); // MSB 2 bits
+      expect(encoded[9], 0x00); // Mid 7 bits
+      expect(encoded[10], 0x01); // LSB 7 bits
+
+      // Check that string value is included with null terminator
+      final stringStart = 11;
+      final stringEnd = encoded.length - 2; // Before null terminator and F7
+      final stringBytes = encoded.sublist(stringStart, stringEnd);
+      final decodedString = String.fromCharCodes(stringBytes);
+      expect(decodedString, 'test_string');
+
+      // Check null terminator
+      expect(encoded[encoded.length - 2], 0x00);
+
+      // Check footer
+      expect(encoded.last, 0xF7); // SysEx end
+    });
   });
 }
 
@@ -37,7 +165,10 @@ extension on DistingNTRespMessageType {
     switch (this) {
       case DistingNTRespMessageType.respDirectoryListing:
         return DirectoryListingResponse(payload);
-      // Add other response types here if needed for tests
+      case DistingNTRespMessageType.respNumAlgorithms:
+        return NumberOfAlgorithmsResponse(payload);
+      case DistingNTRespMessageType.respLuaOutput:
+        return LuaOutputResponse(payload);
       default:
         return null;
     }

@@ -43,6 +43,8 @@ abstract class IDistingMidiManager {
   Future<void> requestWake();
   Future<void> setParameterValue(
       int algorithmIndex, int parameterNumber, int value);
+  Future<void> setParameterString(
+      int algorithmIndex, int parameterNumber, String value);
   Future<void> requestAddAlgorithm(
       AlgorithmInfo algorithm, List<int> specifications);
   Future<void> requestRemoveAlgorithm(int algorithmIndex);
@@ -58,7 +60,10 @@ abstract class IDistingMidiManager {
   Future<void> requestSendSlotName(int algorithmIndex, String newName);
   Future<void> requestSetDisplayMode(DisplayMode displayMode);
   Future<FullPresetDetails?> requestCurrentPresetDetails();
-  // Add any other methods from DistingMidiManager used by the Cubit
+
+  // Lua Operations
+  Future<String?> executeLua(String luaScript);
+  Future<String?> installLua(int algorithmIndex, String luaScript);
 
   // SD Card Operations
   Future<DirectoryListing?> requestDirectoryListing(String path);

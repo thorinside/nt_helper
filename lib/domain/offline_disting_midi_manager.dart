@@ -431,6 +431,14 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<void> setParameterString(
+      int algorithmIndex, int parameterNumber, String value) async {
+    (_parameterStringValues[algorithmIndex] ??= {})[parameterNumber] = value;
+    debugPrint(
+        "[Offline] setParameterString: Algo $algorithmIndex, Param $parameterNumber = '$value'");
+  }
+
+  @override
   Future<void> requestSetMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) async {
     (_mappings[algorithmIndex] ??= {})[parameterNumber] = data;
@@ -560,6 +568,21 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     }
   }
 
+  @override
+  Future<String?> executeLua(String luaScript) async {
+    debugPrint("[Offline] executeLua: script='$luaScript'");
+    // Lua execution is not supported in offline mode
+    throw UnsupportedError('Lua execution is not available in offline mode');
+  }
+
+  @override
+  Future<String?> installLua(int algorithmIndex, String luaScript) async {
+    debugPrint(
+        "[Offline] installLua: algo=$algorithmIndex, script='$luaScript'");
+    // Lua installation is not supported in offline mode
+    throw UnsupportedError('Lua installation is not available in offline mode');
+  }
+
   // --- Communication/Device Specific Implementations (No-ops/Fillers) ---
 
   @override
@@ -576,13 +599,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<void> requestWake() async {}
 
-  @override
   Stream<MidiPacket> get midiDataStream => Stream.empty();
 
-  @override
   Future<MidiDevice?> get inputDevice async => null;
 
-  @override
   Future<MidiDevice?> get outputDevice async => null;
 
   // --- Helper Methods ---

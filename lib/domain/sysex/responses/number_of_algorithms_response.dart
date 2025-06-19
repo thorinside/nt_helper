@@ -6,12 +6,12 @@ class NumberOfAlgorithmsResponse extends SysexResponse {
 
   @override
   int parse() {
-    // Basic length check: encoded num algos (3)
+    // The number of algorithms is a 16-bit encoded value, requiring 3 bytes.
     if (data.length < 3) {
       throw ArgumentError(
           "Invalid data length for NumberOfAlgorithms: ${data.length}, expected at least 3.");
     }
-    // Correct slice: sublist(0, 3) gets 3 bytes (index 0, 1, 2)
+    // Decode the 16-bit value from the first 3 bytes of the payload.
     return decode16(data.sublist(0, 3), 0);
   }
-} 
+}

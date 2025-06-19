@@ -29,36 +29,7 @@ DistingNTParsedMessage? decodeDistingNTSysEx(Uint8List data) {
   // 5) The next byte after that is the message type
   final messageTypeByte = data[6] & 0x7F;
   var msgType = DistingNTRespMessageType.fromByte(messageTypeByte);
-  var payload = data.sublist(9, data.length - 1);
-
-  // Remap SD card operations to virtual message types
-  if (msgType == DistingNTRespMessageType.unknown &&
-      messageTypeByte == DistingNTRequestMessageType.sdCardOperation.value) {
-    if (payload.length > 1) {
-      final status = data[7];
-      final subCommand = data[8];
-
-      if (status == 0) {
-        // OK
-        switch (subCommand) {
-          case 1: // Directory Listing Response
-            msgType = DistingNTRespMessageType.respDirectoryListing;
-            break;
-          case 2: // File Download Chunk
-            msgType = DistingNTRespMessageType.respFileChunk;
-            break;
-          case 3: // Delete status
-          case 4: // Upload status
-          case 5: // Rename status
-            msgType = DistingNTRespMessageType.respSdStatus;
-            break;
-        }
-      } else {
-        // Error response, the payload is the error message string from index 8
-        payload = data.sublist(8, data.length - 1); // From error code
-      }
-    }
-  }
+  var payload = data.sublist(7, data.length - 1);
 
   // 6) The payload is everything between that byte and the final 0xF7,
   // but usually after the messageType we parse based on the command.

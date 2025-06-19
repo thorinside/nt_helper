@@ -338,6 +338,8 @@ enum DistingNTRequestMessageType {
   takeScreenshot(0x01),
   setRealTimeClock(0x04),
   wake(0x07),
+  executeLua(0x08),
+  installLua(0x09),
   sclFile(0x11),
   kbmFile(0x12),
   setDisplayMode(0x20),
@@ -368,6 +370,7 @@ enum DistingNTRequestMessageType {
   requestParameterValueString(0x50),
   setSlotName(0x51),
   requestParameterPages(0x52),
+  setParameterString(0x53),
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
   requestCpuUsage(0x62),
@@ -394,6 +397,7 @@ enum DistingNTRequestMessageType {
 enum DistingNTRespMessageType {
   // Sent messages (coming FROM the disting)
   // (Some are the same IDs, but used as a response.)
+  respLuaOutput(0x09),
   respNumAlgorithms(0x30),
   respAlgorithmInfo(0x31),
   respMessage(0x32),
@@ -414,7 +418,7 @@ enum DistingNTRespMessageType {
   respCpuUsage(0x62),
 
   // SD Card responses (virtual, mapped from 0x7A by the parser)
-  respDirectoryListing(0x7B),
+  respDirectoryListing(0x7A),
   respFileChunk(0x7C),
   respSdStatus(0x7D),
 

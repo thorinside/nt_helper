@@ -8,6 +8,8 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/domain/sysex/requests/add_algorithm.dart';
+import 'package:nt_helper/domain/sysex/requests/execute_lua.dart';
+import 'package:nt_helper/domain/sysex/requests/install_lua.dart';
 import 'package:nt_helper/domain/sysex/requests/load_preset.dart';
 import 'package:nt_helper/domain/sysex/requests/move_algorithm.dart';
 import 'package:nt_helper/domain/sysex/requests/new_preset.dart';
@@ -35,6 +37,7 @@ import 'package:nt_helper/domain/sysex/requests/set_focus.dart';
 import 'package:nt_helper/domain/sysex/requests/set_i2c_mapping.dart';
 import 'package:nt_helper/domain/sysex/requests/set_midi_mapping.dart';
 import 'package:nt_helper/domain/sysex/requests/set_parameter_value.dart';
+import 'package:nt_helper/domain/sysex/requests/set_parameter_string.dart';
 import 'package:nt_helper/domain/sysex/requests/set_preset_name.dart';
 import 'package:nt_helper/domain/sysex/requests/set_real_time_clock.dart';
 import 'package:nt_helper/domain/sysex/requests/set_slot_name.dart';
@@ -387,6 +390,59 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<void> setParameterString(
+      int algorithmIndex, int parameterNumber, String value) {
+    final message = SetParameterStringMessage(
+        sysExId: sysExId,
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        value: value);
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<String?> executeLua(String luaScript) async {
+    final message = ExecuteLuaMessage(sysExId: sysExId, luaScript: luaScript);
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respLuaOutput,
+    );
+
+    return await _scheduler.sendRequest<String>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.optional,
+    );
+  }
+
+  @override
+  Future<String?> installLua(int algorithmIndex, String luaScript) async {
+    final message = InstallLuaMessage(
+        sysExId: sysExId, algorithmIndex: algorithmIndex, luaScript: luaScript);
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+      messageType: DistingNTRespMessageType.respLuaOutput,
+    );
+
+    return await _scheduler.sendRequest<String>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.optional,
     );
   }
 
@@ -749,8 +805,7 @@ class DistingMidiManager implements IDistingMidiManager {
         algoGuidResult.name; // Device returns custom or default
 
     // Fetch number of parameters for this specific slot instance
-    final numParamsResult = await requestNumberOfParameters(slotIndex);
-    final numParameters = numParamsResult?.numParameters ?? 0;
+    await requestNumberOfParameters(slotIndex);
 
     // Fetch Parameter Values
     final paramValuesResult = await requestAllParameterValues(slotIndex);

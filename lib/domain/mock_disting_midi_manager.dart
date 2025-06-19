@@ -751,7 +751,6 @@ class MockDistingMidiManager implements IDistingMidiManager {
     // No-op
   }
 
-  @override
   Future<void> requestSetCVMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) async {
     // No-op
@@ -821,6 +820,61 @@ class MockDistingMidiManager implements IDistingMidiManager {
       debugPrint(
           "[Mock] setParameterValue: Invalid algorithmIndex $algorithmIndex");
     }
+  }
+
+  @override
+  Future<void> setParameterString(
+      int algorithmIndex, int parameterNumber, String value) async {
+    // Update the string value in the internal state if valid
+    if (algorithmIndex >= 0 && algorithmIndex < _state.presetSlots.length) {
+      if (parameterNumber >= 0 &&
+          parameterNumber <
+              _state.presetSlots[algorithmIndex].valueStrings.length) {
+        final currentSlot = _state.presetSlots[algorithmIndex];
+        final valueIndex = currentSlot.valueStrings
+            .indexWhere((pv) => pv.parameterNumber == parameterNumber);
+
+        if (valueIndex != -1) {
+          final currentParamValueString = currentSlot.valueStrings[valueIndex];
+          final updatedValueStrings =
+              List<ParameterValueString>.from(currentSlot.valueStrings);
+          updatedValueStrings[valueIndex] = ParameterValueString(
+              algorithmIndex: currentParamValueString.algorithmIndex,
+              parameterNumber: currentParamValueString.parameterNumber,
+              value: value // Use the new string value
+              );
+
+          final updatedSlot = currentSlot.copyWith(
+              valueStrings: updatedValueStrings); // Assuming Slot has copyWith
+          _state.presetSlots[algorithmIndex] = updatedSlot;
+          debugPrint(
+              "[Mock] setParameterString: Algo $algorithmIndex, Param $parameterNumber = '$value'");
+        } else {
+          debugPrint(
+              "[Mock] setParameterString: Error finding value string index for Param $parameterNumber");
+        }
+      } else {
+        debugPrint(
+            "[Mock] setParameterString: Invalid parameterNumber $parameterNumber");
+      }
+    } else {
+      debugPrint(
+          "[Mock] setParameterString: Invalid algorithmIndex $algorithmIndex");
+    }
+  }
+
+  @override
+  Future<String?> executeLua(String luaScript) async {
+    debugPrint("[Mock] executeLua: script='$luaScript'");
+    // Return a mock response
+    return "Mock Lua execution result for: ${luaScript.substring(0, luaScript.length > 20 ? 20 : luaScript.length)}...";
+  }
+
+  @override
+  Future<String?> installLua(int algorithmIndex, String luaScript) async {
+    debugPrint("[Mock] installLua: algo=$algorithmIndex, script='$luaScript'");
+    // Return a mock response
+    return "Mock Lua installed in slot $algorithmIndex";
   }
 
   @override

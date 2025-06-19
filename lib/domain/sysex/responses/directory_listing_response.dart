@@ -21,25 +21,48 @@ class DirectoryListingResponse extends SysexResponse {
 
   @override
   DirectoryListing parse() {
+    // Expected payload: status (1 byte), subcommand (1 byte), then directory data.
+    // In the raw SysEx, this corresponds to data[7], data[8], and then the rest.
+    if (data.length < 2) {
+      throw ArgumentError(
+          "Invalid payload length for DirectoryListingResponse: ${data.length}, expected at least 2 for status and subcommand.");
+    }
+
+    final status = data[0]; // Status byte within this payload
+    final subCommand = data[1]; // Subcommand byte within this payload
+
+    if (status != 0x00 || subCommand != 0x01) {
+      // If status is not OK (0x00) or subcommand is not Directory Listing (0x01),
+      // this is not a valid directory listing response as expected.
+      // For now, return an empty listing or throw an error.
+      // Based on the JS, errors are handled at a higher level, so an empty list is appropriate for invalid/non-success.
+      // Alternatively, we could map this to respError and handle in SysexParser, but per your guidance,
+      // parsing should happen here.
+      return DirectoryListing(entries: []);
+    }
+
+    final directoryData = data.sublist(
+        2); // Actual directory data starts from index 2 of *this* payload
+
     final entries = <DirectoryEntry>[];
     var i = 0;
-    while (i < data.length) {
-      final remaining = data.length - i;
+    while (i < directoryData.length) {
+      final remaining = directoryData.length - i;
       if (remaining < 18) {
         break;
       }
 
-      final attributes = data[i++];
-      final date = _extractShort(data.sublist(i, i + 3));
+      final attributes = directoryData[i++];
+      final date = _extractShort(directoryData.sublist(i, i + 3));
       i += 3;
-      final time = _extractShort(data.sublist(i, i + 3));
+      final time = _extractShort(directoryData.sublist(i, i + 3));
       i += 3;
-      final size = _extractInt(data.sublist(i, i + 10));
+      final size = _extractInt(directoryData.sublist(i, i + 10));
       i += 10;
 
       final nameBytes = <int>[];
-      while (i < data.length) {
-        final byte = data[i++];
+      while (i < directoryData.length) {
+        final byte = directoryData[i++];
         if (byte == 0) {
           break;
         }

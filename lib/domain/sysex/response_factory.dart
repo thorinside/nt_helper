@@ -22,11 +22,14 @@ import 'package:nt_helper/domain/sysex/responses/cpu_usage_response.dart';
 import 'package:nt_helper/domain/sysex/responses/directory_listing_response.dart';
 import 'package:nt_helper/domain/sysex/responses/file_chunk_response.dart';
 import 'package:nt_helper/domain/sysex/responses/sd_status_response.dart';
+import 'package:nt_helper/domain/sysex/responses/lua_output_response.dart';
 
 class ResponseFactory {
   static SysexResponse? fromMessageType(
       DistingNTRespMessageType type, Uint8List payload) {
     switch (type) {
+      case DistingNTRespMessageType.respLuaOutput:
+        return LuaOutputResponse(payload);
       case DistingNTRespMessageType.respNumAlgorithms:
         return NumberOfAlgorithmsResponse(payload);
       case DistingNTRespMessageType.respAlgorithmInfo:
