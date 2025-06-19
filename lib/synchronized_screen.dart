@@ -505,7 +505,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           builder: (context) => LoadPresetDialog(
                             initialName: "",
                             db: cubit.database,
-                            sdCardPresets: currentState.sdCardPresets,
+                            distingCubit: cubit,
                           ),
                         );
                       }

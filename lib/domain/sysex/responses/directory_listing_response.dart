@@ -5,27 +5,61 @@ import 'dart:convert'; // For ascii
 class DirectoryListingResponse extends SysexResponse {
   DirectoryListingResponse(super.payload);
 
+  int _extractShort(List<int> data) {
+    if (data.length < 3) return 0;
+    return (data[0] << 14) | (data[1] << 7) | (data[2]);
+  }
+
+  int _extractInt(List<int> data) {
+    if (data.length < 10) return 0;
+    int size = 0;
+    for (int j = 0; j < 10; ++j) {
+      size += (data[j] << ((9 - j) * 7));
+    }
+    return size;
+  }
+
   @override
   DirectoryListing parse() {
     final entries = <DirectoryEntry>[];
     var i = 0;
     while (i < data.length) {
-      if (i + 1 > data.length) break;
+      final remaining = data.length - i;
+      if (remaining < 18) {
+        break;
+      }
 
-      final isDirectory = data[i] == 1;
-      i++;
+      final attributes = data[i++];
+      final date = _extractShort(data.sublist(i, i + 3));
+      i += 3;
+      final time = _extractShort(data.sublist(i, i + 3));
+      i += 3;
+      final size = _extractInt(data.sublist(i, i + 10));
+      i += 10;
 
       final nameBytes = <int>[];
-      while (i < data.length && data[i] != 0) {
-        nameBytes.add(data[i]);
-        i++;
+      while (i < data.length) {
+        final byte = data[i++];
+        if (byte == 0) {
+          break;
+        }
+        nameBytes.add(byte);
       }
 
-      if (nameBytes.isNotEmpty) {
-        final name = ascii.decode(nameBytes);
-        entries.add(DirectoryEntry(name: name, isDirectory: isDirectory));
+      if (nameBytes.isEmpty) {
+        break;
       }
-      i++; // Move past null terminator
+
+      var name = ascii.decode(nameBytes);
+      if ((attributes & 0x10) != 0) {
+        name += '/';
+      }
+      entries.add(DirectoryEntry(
+          name: name,
+          attributes: attributes,
+          date: date,
+          time: time,
+          size: size));
     }
     return DirectoryListing(entries: entries);
   }

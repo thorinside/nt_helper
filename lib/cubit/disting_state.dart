@@ -51,12 +51,11 @@ sealed class DistingState with _$DistingState {
     required List<AlgorithmInfo> algorithms,
     required List<Slot> slots,
     required List<String> unitStrings,
-    MidiDevice? inputDevice,
-    MidiDevice? outputDevice,
-    Uint8List? screenshot,
+    @Default(null) MidiDevice? inputDevice,
+    @Default(null) MidiDevice? outputDevice,
     @Default(false) bool loading,
-    @Default(false) bool demo,
     @Default(false) bool offline,
-    List<String>? sdCardPresets,
+    @Default(null) Uint8List? screenshot,
+    @Default(false) bool demo,
   }) = DistingStateSynchronized;
 }

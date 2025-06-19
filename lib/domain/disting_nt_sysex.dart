@@ -1,4 +1,5 @@
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'dart:typed_data';
 
 /// The MIDI SysEx reference for Expert Sleepers.
 const List<int> kExpertSleepersManufacturerId = [0x00, 0x21, 0x27];
@@ -413,9 +414,9 @@ enum DistingNTRespMessageType {
   respCpuUsage(0x62),
 
   // SD Card responses (virtual, mapped from 0x7A by the parser)
-  respDirectoryListing(0x7A),
-  respFileChunk(0x71),
-  respSdStatus(0x72),
+  respDirectoryListing(0x7B),
+  respFileChunk(0x7C),
+  respSdStatus(0x7D),
 
   // Unknown/unsupported
   unknown(0xFF);
@@ -430,5 +431,34 @@ enum DistingNTRespMessageType {
       if (t.value == b) return t;
     }
     return DistingNTRespMessageType.unknown;
+  }
+}
+
+class DistingNTSysExMessage {
+  final DistingNTRespMessageType messageType;
+  final Uint8List payload;
+
+  const DistingNTSysExMessage({
+    required this.messageType,
+    required this.payload,
+  });
+
+  factory DistingNTSysExMessage.fromResponse(
+      DistingNTRespMessageType responseMessageType, Uint8List response) {
+    final messageType = responseMessageType;
+    // In the original, the payload started from index 6 (0x7A).
+    // Now, it should start from index 9 (after 0x7A, status, and command).
+    // And it should end before the checksum and the F7 byte.
+    // The Javascript `data.slice(9, -1)` means it goes from index 9 up to
+    // (but not including) the last element. The last element in the raw MIDI message is 0xF7.
+    // The element before 0xF7 is the checksum. So, -1 excludes F7, and the checksum is
+    // also excluded.
+    final payload =
+        Uint8List.fromList(response.sublist(9, response.length - 1));
+
+    return DistingNTSysExMessage(
+      messageType: messageType,
+      payload: payload,
+    );
   }
 }

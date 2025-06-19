@@ -268,13 +268,6 @@ class DistingCubit extends Cubit<DistingState> {
           await fetchSlots(numAlgorithmsInPreset, distingManager);
       debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
 
-      List<String>? sdCardPresets;
-      if (FirmwareVersion(distingVersion).hasSdCardSupport) {
-        sdCardPresets = await scanSdCardPresets();
-        debugPrint(
-            "[Cubit] _performSyncAndEmit: Fetched ${sdCardPresets.length} SD card presets.");
-      }
-
       // --- Emit final synchronized state --- (Ensure offline is false)
       emit(DistingState.synchronized(
         disting: distingManager,
@@ -287,7 +280,6 @@ class DistingCubit extends Cubit<DistingState> {
         outputDevice: outputDevice,
         loading: false,
         offline: false,
-        sdCardPresets: sdCardPresets,
       ));
     } catch (e, stackTrace) {
       debugPrint("Error during synchronization: $e");
@@ -1678,6 +1670,28 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     return presets;
+  }
+
+  /// Scans the SD card on the connected disting for .prst files.
+  /// Returns a sorted list of relative paths (e.g., "presets/my_preset.prst").
+  /// Only available if firmware has SD card support.
+  Future<List<String>> fetchSdCardPresets() async {
+    final disting = requireDisting();
+    final currentState = state;
+
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      debugPrint(
+          "[DistingCubit] Cannot fetch SD card presets: Not synchronized or offline.");
+      return [];
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      debugPrint(
+          "[DistingCubit] Firmware does not support SD card operations.");
+      return [];
+    }
+
+    return scanSdCardPresets(); // Reuse the existing private method
   }
 }
 

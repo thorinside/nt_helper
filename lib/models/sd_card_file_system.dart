@@ -2,9 +2,19 @@ import 'dart:typed_data';
 
 class DirectoryEntry {
   final String name;
-  final bool isDirectory;
+  final int attributes;
+  final int date;
+  final int time;
+  final int size;
 
-  DirectoryEntry({required this.name, required this.isDirectory});
+  DirectoryEntry(
+      {required this.name,
+      required this.attributes,
+      required this.date,
+      required this.time,
+      required this.size});
+
+  bool get isDirectory => (attributes & 0x10) != 0;
 }
 
 class DirectoryListing {

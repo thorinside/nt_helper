@@ -50,6 +50,7 @@ dependencies:
   haptic_feedback: ^0.5.1+1
   bitsdojo_window: ^0.1.6
   mcp_dart: ^0.5.1
+  collection: ^1.18.0
 
   # Drift dependencies
   drift: ^2.26.1
