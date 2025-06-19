@@ -15,6 +15,8 @@ import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
+import 'package:nt_helper/models/sd_card_file_system.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart'; // Add collection package import
@@ -266,6 +268,11 @@ class DistingCubit extends Cubit<DistingState> {
           await fetchSlots(numAlgorithmsInPreset, distingManager);
       debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
 
+      List<String>? sdCardPresets;
+      if (FirmwareVersion(distingVersion).hasSdCardSupport) {
+        sdCardPresets = await scanSdCardPresets();
+      }
+
       // --- Emit final synchronized state --- (Ensure offline is false)
       emit(DistingState.synchronized(
         disting: distingManager,
@@ -278,6 +285,7 @@ class DistingCubit extends Cubit<DistingState> {
         outputDevice: outputDevice,
         loading: false,
         offline: false,
+        sdCardPresets: sdCardPresets,
       ));
     } catch (e, stackTrace) {
       debugPrint("Error during synchronization: $e");
@@ -611,26 +619,19 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   IDistingMidiManager requireDisting() {
-    if (state is DistingStateConnected) {
-      return (state as DistingStateConnected).disting;
+    final d = disting();
+    if (d == null) {
+      throw Exception("Disting not connected");
     }
-    if (state is DistingStateSynchronized) {
-      // Return offline manager if offline, otherwise online manager
-      final syncState = (state as DistingStateSynchronized);
-      return syncState.offline ? _offlineManager! : syncState.disting;
-    }
-    throw Exception("Device is not connected or synchronized.");
+    return d;
   }
 
   IDistingMidiManager? disting() {
-    if (state is DistingStateConnected) {
-      return (state as DistingStateConnected).disting;
-    }
-    if (state is DistingStateSynchronized) {
-      final syncState = (state as DistingStateSynchronized);
-      return syncState.offline ? _offlineManager : syncState.disting;
-    }
-    return null;
+    return switch (state) {
+      DistingStateConnected(disting: final d) => d,
+      DistingStateSynchronized(disting: final d) => d,
+      _ => null,
+    };
   }
 
   List<T> replaceInList<T>(
@@ -1627,5 +1628,71 @@ class DistingCubit extends Cubit<DistingState> {
       // Optionally, clear the timestamp to allow immediate retry if fetch failed
       // _lastAnomalyRefreshAttempt.remove(algorithmIndex);
     }
+  }
+
+  Future<List<String>> scanSdCardPresets() async {
+    final presets = <String>{};
+    final disting = requireDisting();
+    await disting.requestWake();
+
+    try {
+      final rootListing = await disting.requestDirectoryListing('/');
+      if (rootListing != null) {
+        for (final entry in rootListing.entries) {
+          if (entry.isDirectory &&
+              entry.name.toLowerCase().contains('presets')) {
+            final presetPaths = await _scanDirectory('/${entry.name}');
+            presets.addAll(presetPaths);
+          }
+        }
+      }
+    } catch (e, stack) {
+      debugPrintStack(
+          label: "Error scanning SD card presets", stackTrace: stack);
+    }
+
+    return presets.toList()..sort();
+  }
+
+  Future<Set<String>> _scanDirectory(String path) async {
+    final presets = <String>{};
+    final disting = requireDisting();
+
+    try {
+      final listing = await disting.requestDirectoryListing(path);
+      if (listing != null) {
+        for (final entry in listing.entries) {
+          final newPath = '$path/${entry.name}';
+          if (entry.isDirectory) {
+            presets.addAll(await _scanDirectory(newPath));
+          } else if (entry.name.toLowerCase().endsWith('.prst')) {
+            presets.add(newPath);
+          }
+        }
+      }
+    } catch (e, stack) {
+      debugPrintStack(
+          label: "Error scanning directory $path", stackTrace: stack);
+    }
+
+    return presets;
+  }
+}
+
+extension DistingCubitGetters on DistingCubit {
+  IDistingMidiManager? disting() {
+    return switch (state) {
+      DistingStateConnected(disting: final d) => d,
+      DistingStateSynchronized(disting: final d) => d,
+      _ => null,
+    };
+  }
+
+  IDistingMidiManager requireDisting() {
+    final d = disting();
+    if (d == null) {
+      throw Exception("Disting not connected");
+    }
+    return d;
   }
 }

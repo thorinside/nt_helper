@@ -57,5 +57,6 @@ sealed class DistingState with _$DistingState {
     @Default(false) bool loading,
     @Default(false) bool demo,
     @Default(false) bool offline,
+    List<String>? sdCardPresets,
   }) = DistingStateSynchronized;
 }

@@ -7,12 +7,14 @@ class LoadPresetDialog extends StatefulWidget {
   final String initialName;
   final SharedPreferences? preferences;
   final AppDatabase db;
+  final List<String>? sdCardPresets;
 
   const LoadPresetDialog({
     super.key,
     required this.initialName,
     required this.db,
     this.preferences,
+    this.sdCardPresets,
   });
 
   @override
@@ -34,11 +36,15 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   String?
       _currentPresetSearchText; // To hold text from autocomplete for filtering
 
+  bool get _useLiveSdScan => widget.sdCardPresets != null;
+
   @override
   void initState() {
     super.initState();
     _controller.text = widget.initialName.trim();
-    _loadScannedCards();
+    if (!_useLiveSdScan) {
+      _loadScannedCards();
+    }
     _loadHistoryFromPrefs(); // Load history for autocomplete
   }
 
@@ -131,6 +137,20 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     final trimmed = _controller.text.trim();
     if (trimmed.isEmpty) return;
 
+    // If using live SD scan, the path is the result.
+    if (_useLiveSdScan) {
+      // The controller text should be a valid path from the live scan
+      if (widget.sdCardPresets!.contains(trimmed)) {
+        await _addNameToHistory(trimmed);
+        Navigator.of(context).pop({
+          "sdCardPath": trimmed,
+          "append": isAppending,
+          "displayName": trimmed.split('/').last
+        });
+        return;
+      }
+    }
+
     // Attempt 1: Match on Currently Selected SD Card
     if (_selectedSdCard != null) {
       final presetOnCurrentCard = _presetsForSelectedCard.firstWhereOrNull(
@@ -193,12 +213,12 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           .fileName; // Should not happen if relativePath includes filename
     }
     final segments = preset.relativePath.split('/');
-    if (segments.length > 1) {
+    if (segments.length > 2) {
       // Takes the last folder and the filename
       return "${segments[segments.length - 2]}/${segments.last}";
     } else {
       // It's just a filename, or in the root of 'presets'
-      return segments.last;
+      return preset.relativePath;
     }
   }
 
@@ -244,7 +264,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (_scannedCards.isNotEmpty)
+        if (!_useLiveSdScan && _scannedCards.isNotEmpty)
           DropdownButtonFormField<SdCardEntry>(
             decoration: InputDecoration(
               labelText: 'Select SD Card',
@@ -264,7 +284,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               _loadPresetsForCard(newValue);
             },
           ),
-        if (_scannedCards.isEmpty)
+        if (!_useLiveSdScan && _scannedCards.isEmpty)
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text('No SD cards scanned yet. Please scan a card first.'),
@@ -319,7 +339,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
                       if (option is IndexedPresetFileEntry) {
                         displayText = _getDisplayPath(option);
                       } else if (option is String) {
-                        displayText = "Recent: $option";
+                        displayText = _useLiveSdScan
+                            ? option.split('/').last
+                            : "Recent: $option";
                       } else {
                         displayText = "Unknown type";
                       }
@@ -344,7 +366,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
             if (selection is IndexedPresetFileEntry) {
               textToSet = _getDisplayPath(selection);
             } else if (selection is String) {
-              textToSet = selection;
+              textToSet = _useLiveSdScan ? selection : selection;
             } else {
               textToSet = '';
             }
@@ -356,6 +378,18 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           optionsBuilder: (TextEditingValue textEditingValue) {
             _currentPresetSearchText = textEditingValue.text;
             List<Object> combinedOptions = [];
+
+            if (_useLiveSdScan) {
+              if (textEditingValue.text.isEmpty) {
+                combinedOptions.addAll(widget.sdCardPresets!);
+              } else {
+                combinedOptions.addAll(widget.sdCardPresets!.where((path) =>
+                    path
+                        .toLowerCase()
+                        .contains(textEditingValue.text.toLowerCase())));
+              }
+              return combinedOptions;
+            }
 
             // 1. Add filtered history items (sorted alphabetically)
             List<String> filteredHistory = _history;
@@ -412,7 +446,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
             if (option is IndexedPresetFileEntry) {
               return _getDisplayPath(option);
             } else if (option is String) {
-              return option;
+              return _useLiveSdScan ? option.split('/').last : option;
             }
             return '';
           },
@@ -461,18 +495,18 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       ),
       ElevatedButton(
         key: ValueKey('load_preset_dialog_append_button'),
-        onPressed:
-            (_selectedSdCard != null && _controller.text.trim().isNotEmpty)
-                ? _onAppend
-                : null,
+        onPressed: (_useLiveSdScan ||
+                (_selectedSdCard != null && _controller.text.trim().isNotEmpty))
+            ? _onAppend
+            : null,
         child: const Text('APPEND'),
       ),
       ElevatedButton(
         key: ValueKey('load_preset_dialog_load_button'),
-        onPressed:
-            (_selectedSdCard != null && _controller.text.trim().isNotEmpty)
-                ? _onLoad
-                : null,
+        onPressed: (_useLiveSdScan ||
+                (_selectedSdCard != null && _controller.text.trim().isNotEmpty))
+            ? _onLoad
+            : null,
         child: const Text('LOAD'),
       ),
     ];

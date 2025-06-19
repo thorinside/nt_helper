@@ -914,10 +914,12 @@ class DistingStateSynchronized
       this.screenshot,
       this.loading = false,
       this.demo = false,
-      this.offline = false})
+      this.offline = false,
+      final List<String>? sdCardPresets})
       : _algorithms = algorithms,
         _slots = slots,
-        _unitStrings = unitStrings;
+        _unitStrings = unitStrings,
+        _sdCardPresets = sdCardPresets;
 
   final IDistingMidiManager disting;
   final String distingVersion;
@@ -952,6 +954,14 @@ class DistingStateSynchronized
   final bool demo;
   @JsonKey()
   final bool offline;
+  final List<String>? _sdCardPresets;
+  List<String>? get sdCardPresets {
+    final value = _sdCardPresets;
+    if (value == null) return null;
+    if (_sdCardPresets is EqualUnmodifiableListView) return _sdCardPresets;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -976,7 +986,8 @@ class DistingStateSynchronized
       ..add(DiagnosticsProperty('screenshot', screenshot))
       ..add(DiagnosticsProperty('loading', loading))
       ..add(DiagnosticsProperty('demo', demo))
-      ..add(DiagnosticsProperty('offline', offline));
+      ..add(DiagnosticsProperty('offline', offline))
+      ..add(DiagnosticsProperty('sdCardPresets', sdCardPresets));
   }
 
   @override
@@ -1002,7 +1013,9 @@ class DistingStateSynchronized
                 .equals(other.screenshot, screenshot) &&
             (identical(other.loading, loading) || other.loading == loading) &&
             (identical(other.demo, demo) || other.demo == demo) &&
-            (identical(other.offline, offline) || other.offline == offline));
+            (identical(other.offline, offline) || other.offline == offline) &&
+            const DeepCollectionEquality()
+                .equals(other._sdCardPresets, _sdCardPresets));
   }
 
   @override
@@ -1019,11 +1032,12 @@ class DistingStateSynchronized
       const DeepCollectionEquality().hash(screenshot),
       loading,
       demo,
-      offline);
+      offline,
+      const DeepCollectionEquality().hash(_sdCardPresets));
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline)';
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline, sdCardPresets: $sdCardPresets)';
   }
 }
 
@@ -1046,7 +1060,8 @@ abstract mixin class $DistingStateSynchronizedCopyWith<$Res>
       Uint8List? screenshot,
       bool loading,
       bool demo,
-      bool offline});
+      bool offline,
+      List<String>? sdCardPresets});
 }
 
 /// @nodoc
@@ -1073,6 +1088,7 @@ class _$DistingStateSynchronizedCopyWithImpl<$Res>
     Object? loading = null,
     Object? demo = null,
     Object? offline = null,
+    Object? sdCardPresets = freezed,
   }) {
     return _then(DistingStateSynchronized(
       disting: null == disting
@@ -1123,6 +1139,10 @@ class _$DistingStateSynchronizedCopyWithImpl<$Res>
           ? _self.offline
           : offline // ignore: cast_nullable_to_non_nullable
               as bool,
+      sdCardPresets: freezed == sdCardPresets
+          ? _self._sdCardPresets
+          : sdCardPresets // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }

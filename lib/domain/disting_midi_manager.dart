@@ -49,6 +49,7 @@ import 'package:nt_helper/domain/sysex/requests/request_file_rename.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_upload.dart';
 import 'package:nt_helper/domain/sysex/requests/request_cpu_usage.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
 
 /// Abstract interface for Disting MIDI communication.
@@ -77,18 +78,8 @@ class DistingMidiManager implements IDistingMidiManager {
 
   Future<void> _checkSdCardSupport() async {
     _firmwareVersion ??= await requestVersionString();
-
-    if (_firmwareVersion == null) {
-      throw Exception('Could not retrieve firmware version.');
-    }
-    final parts = _firmwareVersion!.split('.').map(int.parse).toList();
-    if (parts.length < 2) {
-      throw UnsupportedError(
-          'Invalid firmware version format: $_firmwareVersion');
-    }
-    final major = parts[0];
-    final minor = parts[1];
-    if (major < 1 || (major == 1 && minor < 10)) {
+    final version = FirmwareVersion(_firmwareVersion ?? '');
+    if (!version.hasSdCardSupport) {
       throw UnsupportedError(
           'SD Card operations require firmware version 1.10 or higher. Found $_firmwareVersion');
     }

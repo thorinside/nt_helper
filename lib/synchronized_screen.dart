@@ -41,6 +41,8 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:nt_helper/ui/common/log_display_page.dart';
+import 'package:nt_helper/models/firmware_version.dart';
 
 class SynchronizedScreen extends StatefulWidget {
   final List<Slot> slots;
@@ -505,7 +507,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       final result = await showDialog<Map<String, dynamic>>(
                         context: popupCtx,
                         builder: (dialogCtx) => LoadPresetDialog(
-                            initialName: "", db: cubit.database),
+                          initialName: "",
+                          db: cubit.database,
+                          sdCardPresets: cubit.state.sdCardPresets,
+                        ),
                       );
                       if (result == null) return;
 
@@ -1029,7 +1034,7 @@ class DistingVersion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNotSupported =
-        isVersionUnsupported(distingVersion, requiredVersion);
+        !FirmwareVersion(distingVersion).isSupported(requiredVersion);
     return Tooltip(
       message:
           isNotSupported ? "nt_helper requires at least $requiredVersion" : "",
