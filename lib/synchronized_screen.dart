@@ -38,7 +38,6 @@ import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
-import 'package:nt_helper/util/version_util.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:nt_helper/ui/common/log_display_page.dart';
@@ -367,9 +366,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   AppBar _buildAppBar(BuildContext context, bool isWideScreen) {
+    final cubit = context.read<DistingCubit>();
     return AppBar(
       title: const Text('NT Helper'),
-      actions: _buildAppBarActions(),
+      actions: _buildAppBarActions(cubit),
       elevation: 0,
       scrolledUnderElevation: 3,
       notificationPredicate: (ScrollNotification notification) =>
@@ -396,11 +396,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions() {
+  List<Widget> _buildAppBarActions(DistingCubit cubit) {
     return [
       // Refresh: Only disabled by loading OR offline
       Builder(builder: (ctx) {
-        final isOffline = switch (ctx.watch<DistingCubit>().state) {
+        final isOffline = switch (cubit.state) {
           DistingStateSynchronized(offline: final o) => o,
           _ => false,
         };
@@ -410,13 +410,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           onPressed: widget.loading || isOffline // <-- Updated condition
               ? null
               : () {
-                  ctx.read<DistingCubit>().refresh();
+                  cubit.refresh();
                 },
         );
       }),
       // Wake: Disabled by loading OR offline
       Builder(builder: (ctx) {
-        final isOffline = switch (ctx.watch<DistingCubit>().state) {
+        final isOffline = switch (cubit.state) {
           DistingStateSynchronized(offline: final o) => o,
           _ => false,
         };
@@ -426,7 +426,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           onPressed: widget.loading || isOffline
               ? null
               : () {
-                  ctx.read<DistingCubit>().requireDisting().requestWake();
+                  cubit.requireDisting().requestWake();
                 },
         );
       }),
@@ -438,9 +438,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           onPressed: widget.loading
               ? null
               : () async {
-                  final newIndex = await ctx
-                      .read<DistingCubit>()
-                      .moveAlgorithmUp(_selectedIndex);
+                  final newIndex = await cubit.moveAlgorithmUp(_selectedIndex);
                   setState(() {
                     _selectedIndex = newIndex;
                   });
@@ -456,7 +454,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           onPressed: widget.loading
               ? null
               : () async {
-                  final cubit = ctx.read<DistingCubit>();
                   final currentState = cubit.state;
                   int slotCount = 0;
                   if (currentState is DistingStateSynchronized) {
@@ -482,9 +479,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onPressed: widget.loading
                   ? null
                   : () async {
-                      ctx
-                          .read<DistingCubit>()
-                          .onRemoveAlgorithm(_selectedIndex);
+                      cubit.onRemoveAlgorithm(_selectedIndex);
                     });
         },
       ),
@@ -492,7 +487,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         icon: const Icon(Icons.more_vert),
         itemBuilder: (popupCtx) {
           // Get offline status here for menu items that need it
-          final isOffline = switch (popupCtx.watch<DistingCubit>().state) {
+          final isOffline = switch (cubit.state) {
             DistingStateSynchronized(offline: final o) => o,
             _ => false,
           };
@@ -503,29 +498,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading || isOffline
                   ? null
                   : () async {
-                      var cubit = popupCtx.read<DistingCubit>();
-                      final result = await showDialog<Map<String, dynamic>>(
-                        context: popupCtx,
-                        builder: (dialogCtx) => LoadPresetDialog(
-                          initialName: "",
-                          db: cubit.database,
-                          sdCardPresets: cubit.state.sdCardPresets,
-                        ),
-                      );
-                      if (result == null) return;
-
-                      if (result.containsKey('sdCardPath')) {
-                        final String pathFromDialog =
-                            result['sdCardPath'] as String;
-                        final bool append = result['append'] as bool? ?? false;
-
-                        debugPrint(
-                            "SynchronizedScreen: Path to load via cubit.loadPreset: '$pathFromDialog'");
-
-                        cubit.loadPreset(pathFromDialog, append);
-                      } else {
-                        debugPrint(
-                            "LoadPresetDialog returned an unexpected structure (expected 'sdCardPath'): $result");
+                      final currentState = cubit.state;
+                      if (currentState is DistingStateSynchronized) {
+                        showDialog(
+                          context: popupCtx,
+                          builder: (context) => LoadPresetDialog(
+                            initialName: "",
+                            db: cubit.database,
+                            sdCardPresets: currentState.sdCardPresets,
+                          ),
+                        );
                       }
                     },
               child: const Row(
@@ -541,7 +523,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading
                   ? null
                   : () async {
-                      final cubit = popupCtx.read<DistingCubit>();
                       final currentState = cubit.state;
                       bool hasAlgorithms = false;
 
@@ -611,10 +592,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading
                   ? null
                   : () {
-                      popupCtx
-                          .read<DistingCubit>()
-                          .requireDisting()
-                          .requestSavePreset();
+                      cubit.requireDisting().requestSavePreset();
                     },
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -630,7 +608,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading || isOffline
                   ? null
                   : () async {
-                      final cubit = popupCtx.read<DistingCubit>();
                       Navigator.push(
                         popupCtx,
                         MaterialPageRoute(
@@ -665,7 +642,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               onTap: widget.loading || isOffline
                   ? null
                   : () {
-                      final cubit = popupCtx.read<DistingCubit>();
                       final midiListener = popupCtx.read<MidiListenerCubit>();
                       Navigator.push(
                         popupCtx,

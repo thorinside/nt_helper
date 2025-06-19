@@ -1,12 +1,16 @@
-import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'dart:typed_data';
 
 import 'package:nt_helper/models/packed_mapping_data.dart';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
-class SetMidiMappingMessage extends SysexMessage {
+class SetMidiMappingMessage extends SysexMessage
+    implements HasAlgorithmIndex, HasParameterNumber {
+  @override
   final int algorithmIndex;
+  @override
   final int parameterNumber;
   final PackedMappingData data;
 
@@ -14,8 +18,7 @@ class SetMidiMappingMessage extends SysexMessage {
       {required super.sysExId,
       required this.algorithmIndex,
       required this.parameterNumber,
-      required this.data})
-     ;
+      required this.data});
 
   @override
   Uint8List encode() {
@@ -31,4 +34,4 @@ class SetMidiMappingMessage extends SysexMessage {
     ];
     return Uint8List.fromList(bytes);
   }
-} 
+}

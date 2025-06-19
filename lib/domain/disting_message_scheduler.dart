@@ -268,9 +268,11 @@ class DistingMessageScheduler {
         } else {
           // This case might occur if the message type is known but we don't have a parser,
           // or if the type is truly unknown.
-          debugPrint("No parser found for message type: ${parsedMessage.messageType}");
+          debugPrint(
+              "No parser found for message type: ${parsedMessage.messageType}");
           // For 'optional' requests, completing with null is acceptable.
-          if (_currentRequest!.responseExpectation == ResponseExpectation.optional) {
+          if (_currentRequest!.responseExpectation ==
+              ResponseExpectation.optional) {
             _currentRequest!.completer.complete(null);
           } else {
             // For 'required' requests, this is an unexpected situation.

@@ -413,7 +413,7 @@ enum DistingNTRespMessageType {
   respCpuUsage(0x62),
 
   // SD Card responses (virtual, mapped from 0x7A by the parser)
-  respDirectoryListing(0x70),
+  respDirectoryListing(0x7A),
   respFileChunk(0x71),
   respSdStatus(0x72),
 

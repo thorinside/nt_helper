@@ -7,10 +7,8 @@ class FirmwareVersion {
 
   FirmwareVersion(this.versionString) {
     try {
-      _parts = versionString
-          .split('.')
-          .map((part) => int.tryParse(part.replaceAll(RegExp(r'\\D'), '')) ?? 0)
-          .toList();
+      final matches = RegExp(r'\d+').allMatches(versionString);
+      _parts = matches.map((m) => int.tryParse(m.group(0)!) ?? 0).toList();
       major = _parts.isNotEmpty ? _parts[0] : 0;
       minor = _parts.length > 1 ? _parts[1] : 0;
       patch = _parts.length > 2 ? _parts[2] : 0;
@@ -45,5 +43,14 @@ class FirmwareVersion {
       }
     }
     return true; // Versions are equal, so supported
+  }
+
+  bool isGreaterThan(FirmwareVersion other) {
+    if (major > other.major) return true;
+    if (major < other.major) return false;
+    if (minor > other.minor) return true;
+    if (minor < other.minor) return false;
+    if (patch > other.patch) return true;
+    return false;
   }
 }

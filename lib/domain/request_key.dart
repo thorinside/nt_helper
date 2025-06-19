@@ -1,6 +1,7 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show DistingNTRespMessageType;
 import 'package:nt_helper/domain/sysex/sysex_parser.dart';
+import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 class RequestKey {
   final int sysExId;
@@ -20,31 +21,36 @@ class RequestKey {
     int? algorithmIndex;
     int? parameterNumber;
 
-    if (msg.payload.isNotEmpty &&
-        (msg.messageType == DistingNTRespMessageType.respAlgorithmInfo ||
-            msg.messageType == DistingNTRespMessageType.respNumParameters ||
-            msg.messageType == DistingNTRespMessageType.respParameterInfo ||
-            msg.messageType == DistingNTRespMessageType.respParameterValue ||
-            msg.messageType ==
-                DistingNTRespMessageType.respAllParameterValues ||
-            msg.messageType == DistingNTRespMessageType.respEnumStrings ||
-            msg.messageType == DistingNTRespMessageType.respMapping ||
-            msg.messageType ==
-                DistingNTRespMessageType.respParameterValueString ||
-            msg.messageType == DistingNTRespMessageType.respAlgorithm ||
-            msg.messageType == DistingNTRespMessageType.respParameterPages ||
-            msg.messageType == DistingNTRespMessageType.respRouting)) {
-      algorithmIndex = msg.payload[0];
-    }
+    switch (msg.messageType) {
+      // These messages have an algorithm index as the first payload byte.
+      case DistingNTRespMessageType.respNumParameters:
+      case DistingNTRespMessageType.respAllParameterValues:
+      case DistingNTRespMessageType.respAlgorithm:
+      case DistingNTRespMessageType.respParameterPages:
+      case DistingNTRespMessageType.respRouting:
+        if (msg.payload.isNotEmpty) {
+          algorithmIndex = msg.payload[0];
+        }
+        break;
 
-    if (msg.payload.length >= 2 &&
-        (msg.messageType == DistingNTRespMessageType.respParameterInfo ||
-            msg.messageType == DistingNTRespMessageType.respParameterValue ||
-            msg.messageType == DistingNTRespMessageType.respEnumStrings ||
-            msg.messageType == DistingNTRespMessageType.respMapping ||
-            msg.messageType ==
-                DistingNTRespMessageType.respParameterValueString)) {
-      parameterNumber = msg.payload[1];
+      // These messages have both algorithm and parameter indices.
+      case DistingNTRespMessageType.respParameterInfo:
+      case DistingNTRespMessageType.respParameterValue:
+      case DistingNTRespMessageType.respEnumStrings:
+      case DistingNTRespMessageType.respMapping:
+      case DistingNTRespMessageType.respParameterValueString:
+        if (msg.payload.isNotEmpty) {
+          algorithmIndex = msg.payload[0];
+        }
+        if (msg.payload.length >= 3) {
+          parameterNumber = decode16(msg.payload, 1);
+        }
+        break;
+
+      // Other messages don't have these indices.
+      case DistingNTRespMessageType.respAlgorithmInfo:
+      default:
+        break;
     }
 
     return RequestKey(
@@ -59,20 +65,17 @@ class RequestKey {
     if (sysExId != msg.sysExId) return false;
     if (messageType != msg.messageType) return false;
 
-    // If the key cares about algorithmIndex, check if the message has it.
-    if (algorithmIndex != null) {
-      final requestKeyFromMsg = RequestKey.fromDistingNTParsedMessage(msg);
-      if (algorithmIndex != requestKeyFromMsg.algorithmIndex) {
-        return false;
-      }
+    // Create a key from the message to easily access its embedded indices
+    final responseKey = RequestKey.fromDistingNTParsedMessage(msg);
+
+    if (algorithmIndex != null &&
+        algorithmIndex != responseKey.algorithmIndex) {
+      return false;
     }
 
-    // If the key cares about parameterNumber, check if the message has it.
-    if (parameterNumber != null) {
-      final requestKeyFromMsg = RequestKey.fromDistingNTParsedMessage(msg);
-      if (parameterNumber != requestKeyFromMsg.parameterNumber) {
-        return false;
-      }
+    if (parameterNumber != null &&
+        parameterNumber != responseKey.parameterNumber) {
+      return false;
     }
 
     return true;
@@ -84,20 +87,13 @@ class RequestKey {
       other is RequestKey &&
           runtimeType == other.runtimeType &&
           sysExId == other.sysExId &&
-          (algorithmIndex == other.algorithmIndex ||
-              algorithmIndex == null ||
-              other.algorithmIndex == null) &&
-          (parameterNumber == other.parameterNumber ||
-              parameterNumber == null ||
-              other.parameterNumber == null) &&
-          messageType == other.messageType;
+          messageType == other.messageType &&
+          algorithmIndex == other.algorithmIndex &&
+          parameterNumber == other.parameterNumber;
 
   @override
   int get hashCode =>
-      sysExId.hashCode ^
-      (algorithmIndex?.hashCode ?? 0) ^
-      (parameterNumber?.hashCode ?? 0) ^
-      messageType.hashCode;
+      Object.hash(sysExId, messageType, algorithmIndex, parameterNumber);
 
   @override
   String toString() =>

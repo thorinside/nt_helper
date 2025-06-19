@@ -1,7 +1,6 @@
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'dart:typed_data';
 
-
 /// A generic function to parse an incoming SysEx message from the disting NT.
 /// Returns null if it's not a valid or recognized message.
 /// Otherwise returns a structure describing the message type & payload.

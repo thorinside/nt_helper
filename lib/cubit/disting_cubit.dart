@@ -271,6 +271,8 @@ class DistingCubit extends Cubit<DistingState> {
       List<String>? sdCardPresets;
       if (FirmwareVersion(distingVersion).hasSdCardSupport) {
         sdCardPresets = await scanSdCardPresets();
+        debugPrint(
+            "[Cubit] _performSyncAndEmit: Fetched ${sdCardPresets.length} SD card presets.");
       }
 
       // --- Emit final synchronized state --- (Ensure offline is false)
