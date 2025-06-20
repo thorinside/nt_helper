@@ -25,6 +25,11 @@ class FirmwareVersion {
     return major > 1 || (major == 1 && minor >= 10);
   }
 
+  /// The disting firmware added setParameterString support in version 1.10.
+  bool get hasSetPropertyStringSupport {
+    return major > 1 || (major == 1 && minor >= 10);
+  }
+
   /// Checks if the current version is at least the minimum required for the app.
   bool isSupported(String minimumVersionString) {
     final minimum = FirmwareVersion(minimumVersionString);

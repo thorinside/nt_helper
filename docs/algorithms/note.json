@@ -39,6 +39,30 @@
       "description": "Fourth line of text.",
       "scope": "global",
       "type": "string"
+    },
+    {
+      "name": "Text Line 5",
+      "unit": null,
+      "defaultValue": "",
+      "description": "Fifth line of text.",
+      "scope": "global",
+      "type": "string"
+    },
+    {
+      "name": "Text Line 6",
+      "unit": null,
+      "defaultValue": "",
+      "description": "Sixth line of text.",
+      "scope": "global",
+      "type": "string"
+    },
+    {
+      "name": "Text Line 7",
+      "unit": null,
+      "defaultValue": "",
+      "description": "Seventh line of text.",
+      "scope": "global",
+      "type": "string"
     }
   ],
   "input_ports": [],

@@ -91,8 +91,7 @@ class _DistingAppState extends State<DistingApp> {
       // Follow system settings
       initialRoute: '/',
       routes: {
-        '/': (context) =>
-            BlocProvider(
+        '/': (context) => BlocProvider(
               create: (context) {
                 // Get the AppDatabase instance from the context
                 final database = context.read<AppDatabase>();
@@ -292,6 +291,7 @@ class _DistingPageState extends State<DistingPage> {
                 presetName: state.presetName,
                 screenshot: state.screenshot,
                 loading: state.loading,
+                firmwareVersion: state.firmwareVersion,
               );
             } else {
               return Center(child: Text("Unknown State"));

@@ -49,6 +49,7 @@ class SynchronizedScreen extends StatefulWidget {
   final List<String> units;
   final String presetName;
   final String distingVersion;
+  final FirmwareVersion firmwareVersion;
   final Uint8List? screenshot;
   final bool loading;
 
@@ -59,6 +60,7 @@ class SynchronizedScreen extends StatefulWidget {
     required this.units,
     required this.presetName,
     required this.distingVersion,
+    required this.firmwareVersion,
     required this.screenshot,
     required this.loading,
   });
@@ -208,6 +210,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       key: ValueKey("$index - ${slot.algorithm.guid}"),
                       slot: slot,
                       units: widget.units,
+                      firmwareVersion: widget.firmwareVersion,
                     );
                   }).toList(),
                 )
@@ -349,6 +352,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             key: ValueKey("$index - ${slot.algorithm.guid}"),
             slot: slot,
             units: widget.units,
+            firmwareVersion: widget.firmwareVersion,
           );
         }).toList(),
       );
@@ -1034,8 +1038,13 @@ class DistingVersion extends StatelessWidget {
 class SlotDetailView extends StatefulWidget {
   final Slot slot;
   final List<String> units;
+  final FirmwareVersion firmwareVersion;
 
-  const SlotDetailView({super.key, required this.slot, required this.units});
+  const SlotDetailView(
+      {super.key,
+      required this.slot,
+      required this.units,
+      required this.firmwareVersion});
 
   @override
   State<SlotDetailView> createState() => _SlotDetailViewState();
@@ -1051,7 +1060,8 @@ class _SlotDetailViewState extends State<SlotDetailView>
     super.build(context);
 
     // Provide a full replacement view
-    final view = AlgorithmViewRegistry.findViewFor(widget.slot);
+    final view =
+        AlgorithmViewRegistry.findViewFor(widget.slot, widget.firmwareVersion);
     if (view != null) return view;
 
     // Create a set of list sections for the parameters of the
@@ -1195,10 +1205,6 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     title: Text(page.name),
                     children: page.parameters.map(
                       (parameterNumber) {
-                        // Debug Print here
-                        debugPrint(
-                            "[UI Build] Slot: '${widget.slot.algorithm.name}', Page: '${page.name}', Param#: $parameterNumber, Mapping List Len: ${widget.slot.mappings.length}, Enums List Len: ${widget.slot.enums.length}, Values List Len: ${widget.slot.values.length}, ValueStrings Len: ${widget.slot.valueStrings.length}");
-
                         final value =
                             widget.slot.values.elementAt(parameterNumber);
                         final enumStrings =

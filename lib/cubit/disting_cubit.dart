@@ -142,6 +142,7 @@ class DistingCubit extends Cubit<DistingState> {
     emit(DistingState.synchronized(
       disting: mockManager, // Use the created mock manager instance
       distingVersion: distingVersion,
+      firmwareVersion: FirmwareVersion(distingVersion),
       presetName: presetName,
       algorithms: algorithms,
       slots: slots,
@@ -272,6 +273,7 @@ class DistingCubit extends Cubit<DistingState> {
       emit(DistingState.synchronized(
         disting: distingManager,
         distingVersion: distingVersion,
+        firmwareVersion: FirmwareVersion(distingVersion),
         presetName: presetName,
         algorithms: algorithms,
         slots: slots,
@@ -437,6 +439,7 @@ class DistingCubit extends Cubit<DistingState> {
       emit(DistingState.synchronized(
         disting: _offlineManager!, // Use offline manager
         distingVersion: version,
+        firmwareVersion: FirmwareVersion(version),
         presetName: presetName,
         algorithms: availableAlgorithmsInfo,
         slots: initialSlots,
@@ -540,6 +543,7 @@ class DistingCubit extends Cubit<DistingState> {
       emit(DistingState.synchronized(
         disting: _offlineManager!,
         distingVersion: version,
+        firmwareVersion: FirmwareVersion(version),
         presetName: presetName,
         algorithms: availableAlgorithmsInfo,
         slots: slots,
@@ -798,10 +802,27 @@ class DistingCubit extends Cubit<DistingState> {
           }
         }
 
+        // Send the add algorithm request
         await disting.requestAddAlgorithm(algorithm, specsToSend);
 
-        // Refresh state from manager
-        await _refreshStateFromManager(); // Use helper to refresh
+        // Optimistic update: fetch just the new slot that was added
+        try {
+          final newSlotIndex =
+              syncstate.slots.length; // New slot will be at the end
+          final newSlot = await fetchSlot(disting, newSlotIndex);
+
+          // Update state with the new slot appended
+          final updatedSlots = [...syncstate.slots, newSlot];
+          emit(syncstate.copyWith(slots: updatedSlots, loading: false));
+
+          debugPrint(
+              "[Cubit] Added algorithm '${algorithm.name}' to slot $newSlotIndex");
+        } catch (e, stackTrace) {
+          debugPrint("Error fetching new slot after adding algorithm: $e");
+          debugPrintStack(stackTrace: stackTrace);
+          // Fall back to full refresh on error
+          await _refreshStateFromManager();
+        }
         break;
     }
   }
@@ -813,11 +834,90 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateConnected():
         break;
       case DistingStateSynchronized syncstate:
-        final disting = requireDisting();
-        await disting.requestRemoveAlgorithm(algorithmIndex);
+        // Cancel any pending verification from a previous operation
+        _moveVerificationOperation?.cancel();
 
-        // Refresh state from manager
-        await _refreshStateFromManager(); // Use helper to refresh
+        // 1. Optimistic Update - Remove the slot and fix indices
+        List<Slot> optimisticSlots = List.from(syncstate.slots);
+        optimisticSlots.removeAt(algorithmIndex);
+
+        // Fix algorithm indices for all slots after the removed one
+        for (int i = algorithmIndex; i < optimisticSlots.length; i++) {
+          optimisticSlots[i] = _fixAlgorithmIndex(optimisticSlots[i], i);
+        }
+
+        // Emit optimistic state
+        emit(syncstate.copyWith(slots: optimisticSlots, loading: false));
+
+        // 2. Manager Request
+        final disting = requireDisting();
+        // Don't await here, let it run in the background
+        disting.requestRemoveAlgorithm(algorithmIndex).catchError((e, s) {
+          debugPrint("Error sending remove algorithm request: $e");
+          // Refresh immediately on error
+          _refreshStateFromManager(delay: Duration.zero);
+        });
+
+        // 3. Verification
+        _moveVerificationOperation = CancelableOperation.fromFuture(
+          Future.delayed(const Duration(seconds: 2), () async {
+            // Check if state is still synchronized before proceeding
+            if (state is! DistingStateSynchronized) return;
+            final verificationState = state as DistingStateSynchronized;
+
+            // Only verify if the current state still matches the optimistic one we emitted
+            final eq = const DeepCollectionEquality();
+            if (!eq.equals(verificationState.slots, optimisticSlots)) {
+              debugPrint(
+                  "[Cubit Remove Verify] State changed before verification completed. Skipping verification.");
+              return;
+            }
+
+            debugPrint(
+                "[Cubit Remove Verify] Verifying optimistic removal of algorithm at index $algorithmIndex...");
+            try {
+              // Check if the number of algorithms matches our optimistic state
+              final actualNumAlgorithms =
+                  await disting.requestNumAlgorithmsInPreset() ?? 0;
+              if (actualNumAlgorithms != optimisticSlots.length) {
+                debugPrint(
+                    "[Cubit Remove Verify] Algorithm count mismatch. Expected: ${optimisticSlots.length}, Actual: $actualNumAlgorithms");
+                await _refreshStateFromManager(delay: Duration.zero);
+                return;
+              }
+
+              // Verify GUIDs and Names for remaining slots
+              bool mismatchDetected = false;
+              for (int i = 0; i < optimisticSlots.length; i++) {
+                final actualAlgorithm = await disting.requestAlgorithmGuid(i);
+                final optimisticAlgorithm = optimisticSlots[i].algorithm;
+
+                if (actualAlgorithm == null ||
+                    actualAlgorithm.guid != optimisticAlgorithm.guid ||
+                    actualAlgorithm.name != optimisticAlgorithm.name) {
+                  mismatchDetected = true;
+                  debugPrint(
+                      "[Cubit Remove Verify] Mismatch detected at index $i. Expected: '${optimisticAlgorithm.name}' (GUID: ${optimisticAlgorithm.guid}), Actual: '${actualAlgorithm?.name ?? 'NULL'}' (GUID: ${actualAlgorithm?.guid ?? 'NULL'})");
+                  break;
+                }
+              }
+
+              if (mismatchDetected) {
+                debugPrint(
+                    "[Cubit Remove Verify] Optimistic state INCORRECT based on GUID/Name check. Reverting to actual state.");
+                await _refreshStateFromManager(delay: Duration.zero);
+              } else {
+                debugPrint("[Cubit Remove Verify] Optimistic state CORRECT.");
+              }
+            } catch (e, stackTrace) {
+              debugPrint("[Cubit Remove Verify] Error during verification: $e");
+              debugPrintStack(stackTrace: stackTrace);
+              await _refreshStateFromManager(delay: Duration.zero);
+            }
+          }),
+          onCancel: () =>
+              debugPrint("[Cubit Remove Verify] Verification cancelled."),
+        );
         break;
     }
   }
@@ -928,6 +1028,7 @@ class DistingCubit extends Cubit<DistingState> {
               disting:
                   verificationState.disting, // Keep manager and other state
               distingVersion: verificationState.distingVersion,
+              firmwareVersion: verificationState.firmwareVersion,
               presetName:
                   verificationState.presetName, // Use existing preset name
               algorithms: verificationState.algorithms,
@@ -1045,6 +1146,7 @@ class DistingCubit extends Cubit<DistingState> {
               disting:
                   verificationState.disting, // Keep manager and other state
               distingVersion: verificationState.distingVersion,
+              firmwareVersion: verificationState.firmwareVersion,
               presetName:
                   verificationState.presetName, // Use existing preset name
               algorithms: verificationState.algorithms,
@@ -1557,7 +1659,7 @@ class DistingCubit extends Cubit<DistingState> {
   /// Runs [worker] for every element in [items], but never more than
   /// [parallel] tasks are in-flight at once.
   ///
-  /// Uses a “batch” strategy: kick off up to [parallel] futures,
+  /// Uses a "batch" strategy: kick off up to [parallel] futures,
   /// `await Future.wait`, then move on to the next batch.  Simpler and
   /// avoids the need for isCompleted / whenComplete gymnastics.
   Future<void> _forEachLimited<T>(
@@ -1710,6 +1812,74 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     return scanSdCardPresets(); // Reuse the existing private method
+  }
+
+  /// Refreshes a single slot's data from the module
+  Future<void> refreshSlot(int algorithmIndex) async {
+    if (state is! DistingStateSynchronized) {
+      return;
+    }
+
+    try {
+      final disting = requireDisting();
+      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final currentState = state as DistingStateSynchronized;
+      final newSlots = List<Slot>.from(currentState.slots);
+      newSlots[algorithmIndex] = updatedSlot;
+      emit(currentState.copyWith(slots: newSlots));
+    } catch (e, stackTrace) {
+      debugPrint("[DistingCubit] Error refreshing slot $algorithmIndex: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<void> updateParameterString({
+    required int algorithmIndex,
+    required int parameterNumber,
+    required String value,
+  }) async {
+    switch (state) {
+      case DistingStateInitial():
+      case DistingStateSelectDevice():
+      case DistingStateConnected():
+        break;
+      case DistingStateSynchronized syncstate:
+        var disting = requireDisting();
+
+        await disting.setParameterString(
+          algorithmIndex,
+          parameterNumber,
+          value,
+        );
+
+        // Refresh the parameter value string to reflect the change
+        final newValueString = await disting.requestParameterValueString(
+          algorithmIndex,
+          parameterNumber,
+        );
+
+        if (newValueString != null) {
+          final state = (this.state as DistingStateSynchronized);
+
+          emit(state.copyWith(
+            slots: updateSlot(
+              algorithmIndex,
+              state.slots,
+              (slot) {
+                return slot.copyWith(
+                  valueStrings: replaceInList(
+                    slot.valueStrings,
+                    newValueString,
+                    index: parameterNumber,
+                  ),
+                );
+              },
+            ),
+          ));
+        }
+        break;
+    }
   }
 }
 

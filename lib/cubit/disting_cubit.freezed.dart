@@ -905,24 +905,24 @@ class DistingStateSynchronized
   const DistingStateSynchronized(
       {required this.disting,
       required this.distingVersion,
+      required this.firmwareVersion,
       required this.presetName,
       required final List<AlgorithmInfo> algorithms,
       required final List<Slot> slots,
       required final List<String> unitStrings,
-      this.inputDevice,
-      this.outputDevice,
-      this.screenshot,
+      this.inputDevice = null,
+      this.outputDevice = null,
       this.loading = false,
-      this.demo = false,
       this.offline = false,
-      final List<String>? sdCardPresets})
+      this.screenshot = null,
+      this.demo = false})
       : _algorithms = algorithms,
         _slots = slots,
-        _unitStrings = unitStrings,
-        _sdCardPresets = sdCardPresets;
+        _unitStrings = unitStrings;
 
   final IDistingMidiManager disting;
   final String distingVersion;
+  final FirmwareVersion firmwareVersion;
   final String presetName;
   final List<AlgorithmInfo> _algorithms;
   List<AlgorithmInfo> get algorithms {
@@ -945,23 +945,18 @@ class DistingStateSynchronized
     return EqualUnmodifiableListView(_unitStrings);
   }
 
+  @JsonKey()
   final MidiDevice? inputDevice;
+  @JsonKey()
   final MidiDevice? outputDevice;
-  final Uint8List? screenshot;
   @JsonKey()
   final bool loading;
   @JsonKey()
-  final bool demo;
-  @JsonKey()
   final bool offline;
-  final List<String>? _sdCardPresets;
-  List<String>? get sdCardPresets {
-    final value = _sdCardPresets;
-    if (value == null) return null;
-    if (_sdCardPresets is EqualUnmodifiableListView) return _sdCardPresets;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
+  @JsonKey()
+  final Uint8List? screenshot;
+  @JsonKey()
+  final bool demo;
 
   /// Create a copy of DistingState
   /// with the given fields replaced by the non-null parameter values.
@@ -977,17 +972,17 @@ class DistingStateSynchronized
       ..add(DiagnosticsProperty('type', 'DistingState.synchronized'))
       ..add(DiagnosticsProperty('disting', disting))
       ..add(DiagnosticsProperty('distingVersion', distingVersion))
+      ..add(DiagnosticsProperty('firmwareVersion', firmwareVersion))
       ..add(DiagnosticsProperty('presetName', presetName))
       ..add(DiagnosticsProperty('algorithms', algorithms))
       ..add(DiagnosticsProperty('slots', slots))
       ..add(DiagnosticsProperty('unitStrings', unitStrings))
       ..add(DiagnosticsProperty('inputDevice', inputDevice))
       ..add(DiagnosticsProperty('outputDevice', outputDevice))
-      ..add(DiagnosticsProperty('screenshot', screenshot))
       ..add(DiagnosticsProperty('loading', loading))
-      ..add(DiagnosticsProperty('demo', demo))
       ..add(DiagnosticsProperty('offline', offline))
-      ..add(DiagnosticsProperty('sdCardPresets', sdCardPresets));
+      ..add(DiagnosticsProperty('screenshot', screenshot))
+      ..add(DiagnosticsProperty('demo', demo));
   }
 
   @override
@@ -998,6 +993,8 @@ class DistingStateSynchronized
             (identical(other.disting, disting) || other.disting == disting) &&
             (identical(other.distingVersion, distingVersion) ||
                 other.distingVersion == distingVersion) &&
+            (identical(other.firmwareVersion, firmwareVersion) ||
+                other.firmwareVersion == firmwareVersion) &&
             (identical(other.presetName, presetName) ||
                 other.presetName == presetName) &&
             const DeepCollectionEquality()
@@ -1009,13 +1006,11 @@ class DistingStateSynchronized
                 other.inputDevice == inputDevice) &&
             (identical(other.outputDevice, outputDevice) ||
                 other.outputDevice == outputDevice) &&
-            const DeepCollectionEquality()
-                .equals(other.screenshot, screenshot) &&
             (identical(other.loading, loading) || other.loading == loading) &&
-            (identical(other.demo, demo) || other.demo == demo) &&
             (identical(other.offline, offline) || other.offline == offline) &&
             const DeepCollectionEquality()
-                .equals(other._sdCardPresets, _sdCardPresets));
+                .equals(other.screenshot, screenshot) &&
+            (identical(other.demo, demo) || other.demo == demo));
   }
 
   @override
@@ -1023,21 +1018,21 @@ class DistingStateSynchronized
       runtimeType,
       disting,
       distingVersion,
+      firmwareVersion,
       presetName,
       const DeepCollectionEquality().hash(_algorithms),
       const DeepCollectionEquality().hash(_slots),
       const DeepCollectionEquality().hash(_unitStrings),
       inputDevice,
       outputDevice,
-      const DeepCollectionEquality().hash(screenshot),
       loading,
-      demo,
       offline,
-      const DeepCollectionEquality().hash(_sdCardPresets));
+      const DeepCollectionEquality().hash(screenshot),
+      demo);
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, screenshot: $screenshot, loading: $loading, demo: $demo, offline: $offline, sdCardPresets: $sdCardPresets)';
+    return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, firmwareVersion: $firmwareVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, loading: $loading, offline: $offline, screenshot: $screenshot, demo: $demo)';
   }
 }
 
@@ -1051,17 +1046,17 @@ abstract mixin class $DistingStateSynchronizedCopyWith<$Res>
   $Res call(
       {IDistingMidiManager disting,
       String distingVersion,
+      FirmwareVersion firmwareVersion,
       String presetName,
       List<AlgorithmInfo> algorithms,
       List<Slot> slots,
       List<String> unitStrings,
       MidiDevice? inputDevice,
       MidiDevice? outputDevice,
-      Uint8List? screenshot,
       bool loading,
-      bool demo,
       bool offline,
-      List<String>? sdCardPresets});
+      Uint8List? screenshot,
+      bool demo});
 }
 
 /// @nodoc
@@ -1078,17 +1073,17 @@ class _$DistingStateSynchronizedCopyWithImpl<$Res>
   $Res call({
     Object? disting = null,
     Object? distingVersion = null,
+    Object? firmwareVersion = null,
     Object? presetName = null,
     Object? algorithms = null,
     Object? slots = null,
     Object? unitStrings = null,
     Object? inputDevice = freezed,
     Object? outputDevice = freezed,
-    Object? screenshot = freezed,
     Object? loading = null,
-    Object? demo = null,
     Object? offline = null,
-    Object? sdCardPresets = freezed,
+    Object? screenshot = freezed,
+    Object? demo = null,
   }) {
     return _then(DistingStateSynchronized(
       disting: null == disting
@@ -1099,6 +1094,10 @@ class _$DistingStateSynchronizedCopyWithImpl<$Res>
           ? _self.distingVersion
           : distingVersion // ignore: cast_nullable_to_non_nullable
               as String,
+      firmwareVersion: null == firmwareVersion
+          ? _self.firmwareVersion
+          : firmwareVersion // ignore: cast_nullable_to_non_nullable
+              as FirmwareVersion,
       presetName: null == presetName
           ? _self.presetName
           : presetName // ignore: cast_nullable_to_non_nullable
@@ -1123,26 +1122,22 @@ class _$DistingStateSynchronizedCopyWithImpl<$Res>
           ? _self.outputDevice
           : outputDevice // ignore: cast_nullable_to_non_nullable
               as MidiDevice?,
-      screenshot: freezed == screenshot
-          ? _self.screenshot
-          : screenshot // ignore: cast_nullable_to_non_nullable
-              as Uint8List?,
       loading: null == loading
           ? _self.loading
           : loading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      demo: null == demo
-          ? _self.demo
-          : demo // ignore: cast_nullable_to_non_nullable
               as bool,
       offline: null == offline
           ? _self.offline
           : offline // ignore: cast_nullable_to_non_nullable
               as bool,
-      sdCardPresets: freezed == sdCardPresets
-          ? _self._sdCardPresets
-          : sdCardPresets // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
+      screenshot: freezed == screenshot
+          ? _self.screenshot
+          : screenshot // ignore: cast_nullable_to_non_nullable
+              as Uint8List?,
+      demo: null == demo
+          ? _self.demo
+          : demo // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }

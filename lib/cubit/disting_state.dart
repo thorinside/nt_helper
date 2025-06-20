@@ -47,6 +47,7 @@ sealed class DistingState with _$DistingState {
   const factory DistingState.synchronized({
     required IDistingMidiManager disting,
     required String distingVersion,
+    required FirmwareVersion firmwareVersion,
     required String presetName,
     required List<AlgorithmInfo> algorithms,
     required List<Slot> slots,
