@@ -4,4 +4,4 @@ abstract class SysexMessage {
   final int sysExId;
   SysexMessage({required this.sysExId});
   Uint8List encode();
-} 
+}

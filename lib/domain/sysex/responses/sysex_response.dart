@@ -6,4 +6,4 @@ abstract class SysexResponse {
   SysexResponse(this.data);
 
   dynamic parse();
-} 
+}

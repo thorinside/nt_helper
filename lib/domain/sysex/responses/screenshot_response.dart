@@ -65,4 +65,4 @@ class ScreenshotResponse extends SysexResponse {
       return Uint8List(0); // Return empty on error
     }
   }
-} 
+}

@@ -1,4 +1,5 @@
-import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/ascii.dart';
 
@@ -23,4 +24,4 @@ class LoadPresetMessage extends SysexMessage {
     ];
     return Uint8List.fromList(bytes);
   }
-} 
+}

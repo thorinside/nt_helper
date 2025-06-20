@@ -1,6 +1,7 @@
 import 'package:nt_helper/domain/sysex/ascii.dart';
 import 'package:nt_helper/domain/sysex/responses/sysex_response.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
+
 class StringsResponse extends SysexResponse {
   StringsResponse(super.data);
 
@@ -14,4 +15,4 @@ class StringsResponse extends SysexResponse {
       return value.value;
     });
   }
-} 
+}

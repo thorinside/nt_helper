@@ -23,4 +23,4 @@ class NumParametersResponse extends SysexResponse {
       numParameters: numParameters,
     );
   }
-} 
+}

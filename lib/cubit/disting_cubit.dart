@@ -15,7 +15,6 @@ import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
-import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1583,10 +1582,10 @@ class DistingCubit extends Cubit<DistingState> {
     debugPrint('[fetchSlot] ParameterInfo ${sw.elapsedMilliseconds} ms');
 
     /* Pre-calculate which params are enumerated / mappable / string */
-    bool _isEnum(int i) => parameters[i].unit == 1;
-    bool _isString(int i) => const {13, 14, 17}.contains(parameters[i].unit);
-    bool _isMappable(int i) =>
-        !_isString(i) && parameters[i].unit != 0 && parameters[i].unit != -1;
+    bool isEnum(int i) => parameters[i].unit == 1;
+    bool isString(int i) => const {13, 14, 17}.contains(parameters[i].unit);
+    bool isMappable(int i) =>
+        !isString(i) && parameters[i].unit != 0 && parameters[i].unit != -1;
 
     /* ------------------------------------------------------------------ *
    * 4. Enums, Mappings, Value-Strings  (all throttled in parallel)     *
@@ -1601,7 +1600,7 @@ class DistingCubit extends Cubit<DistingState> {
       // Enums
       _forEachLimited(
         Iterable<int>.generate(numParams)
-            .where((i) => visible.contains(i) && _isEnum(i)),
+            .where((i) => visible.contains(i) && isEnum(i)),
         (param) async {
           enums[param] = await disting.requestParameterEnumStrings(
                   algorithmIndex, param) ??
@@ -1611,7 +1610,7 @@ class DistingCubit extends Cubit<DistingState> {
       // Mappings
       _forEachLimited(
         Iterable<int>.generate(numParams)
-            .where((i) => visible.contains(i) && _isMappable(i)),
+            .where((i) => visible.contains(i) && isMappable(i)),
         (param) async {
           mappings[param] =
               await disting.requestMappings(algorithmIndex, param) ??
@@ -1621,7 +1620,7 @@ class DistingCubit extends Cubit<DistingState> {
       // Value strings
       _forEachLimited(
         Iterable<int>.generate(numParams)
-            .where((i) => visible.contains(i) && _isString(i)),
+            .where((i) => visible.contains(i) && isString(i)),
         (param) async {
           valueStrings[param] = await disting.requestParameterValueString(
                   algorithmIndex, param) ??

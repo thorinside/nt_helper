@@ -16,4 +16,4 @@ class AlgorithmResponse extends SysexResponse {
       ).trim(),
     );
   }
-} 
+}

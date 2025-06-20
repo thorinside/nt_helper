@@ -1,5 +1,5 @@
-import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
-
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
@@ -9,7 +9,9 @@ class AddAlgorithmMessage extends SysexMessage {
   final List<int> specifications;
 
   AddAlgorithmMessage(
-      {required super.sysExId, required this.guid, required this.specifications});
+      {required super.sysExId,
+      required this.guid,
+      required this.specifications});
 
   @override
   Uint8List encode() {
@@ -23,4 +25,4 @@ class AddAlgorithmMessage extends SysexMessage {
     ];
     return Uint8List.fromList(bytes);
   }
-} 
+}

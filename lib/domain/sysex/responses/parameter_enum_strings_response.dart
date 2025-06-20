@@ -21,4 +21,4 @@ class ParameterEnumStringsResponse extends SysexResponse {
       }),
     );
   }
-} 
+}

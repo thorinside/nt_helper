@@ -17,4 +17,4 @@ class MappingResponse extends SysexResponse {
           decode8(data.sublist(4, 5)), data.sublist(5)),
     );
   }
-} 
+}

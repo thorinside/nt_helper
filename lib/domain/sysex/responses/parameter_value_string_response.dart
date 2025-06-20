@@ -16,4 +16,4 @@ class ParameterValueStringResponse extends SysexResponse {
       value: decodeNullTerminatedAscii(data, 4).value,
     );
   }
-} 
+}

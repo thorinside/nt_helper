@@ -28,4 +28,4 @@ class ParameterPagesResponse extends SysexResponse {
       ),
     );
   }
-} 
+}

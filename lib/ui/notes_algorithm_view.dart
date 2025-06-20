@@ -460,7 +460,7 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                         borderRadius: BorderRadius.circular(4),
                         color: Theme.of(context)
                             .colorScheme
-                            .surfaceVariant
+                            .surfaceContainerHighest
                             .withOpacity(0.3),
                       ),
                       child: Column(

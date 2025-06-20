@@ -8,4 +8,4 @@ class NumberOfAlgorithmsInPresetResponse extends SysexResponse {
   int parse() {
     return decode8(data);
   }
-} 
+}

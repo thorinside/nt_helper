@@ -19,4 +19,4 @@ class AllParameterValuesResponse extends SysexResponse {
       ],
     );
   }
-} 
+}

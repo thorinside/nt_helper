@@ -15,4 +15,4 @@ class ParameterValueResponse extends SysexResponse {
       value: decode16(data, 4),
     );
   }
-} 
+}

@@ -8,4 +8,4 @@ class MessageResponse extends SysexResponse {
   String parse() {
     return decodeNullTerminatedAscii(data, 0).value;
   }
-} 
+}

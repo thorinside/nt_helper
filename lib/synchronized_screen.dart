@@ -40,7 +40,6 @@ import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import 'package:nt_helper/ui/common/log_display_page.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 
 class SynchronizedScreen extends StatefulWidget {

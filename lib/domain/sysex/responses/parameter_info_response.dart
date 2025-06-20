@@ -21,4 +21,4 @@ class ParameterInfoResponse extends SysexResponse {
       powerOfTen: data.last,
     );
   }
-} 
+}

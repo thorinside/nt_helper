@@ -1,4 +1,5 @@
-import 'package:nt_helper/domain/disting_nt_sysex.dart';import 'dart:typed_data';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'dart:typed_data';
 
 import 'package:nt_helper/domain/sysex/sysex_message.dart';
 
@@ -35,4 +36,4 @@ class RequestFileRenameMessage extends SysexMessage {
       ...buildFooter(),
     ]);
   }
-} 
+}
