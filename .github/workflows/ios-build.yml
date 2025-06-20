@@ -104,6 +104,7 @@ jobs:
           set -x
           flutter clean
           flutter pub get
+          pod repo update
           flutter build ipa --export-options-plist=ios/ExportOptions.plist
 
       - name: Debug List final artifacts

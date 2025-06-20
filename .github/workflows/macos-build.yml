@@ -32,7 +32,10 @@ jobs:
           flutter-version: "3.32.2"
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
+          pod repo update
 
       # 1) Decode your .p12 certificate from secrets.APPLE_CERTIFICATE
       - name: Decode iOS certificate from Base64
