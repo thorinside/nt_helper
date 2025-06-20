@@ -193,8 +193,22 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
 
   Future<void> _backupPlugins() async {
     try {
-      // Let user choose backup directory
-      final directoryPath = await FilePicker.platform.getDirectoryPath();
+      // Show backup options dialog first
+      final backupChoice = await _showBackupOptionsDialog();
+
+      if (backupChoice == null) {
+        return; // User cancelled
+      }
+
+      String? directoryPath;
+
+      if (backupChoice == 'existing') {
+        // Let user choose existing directory
+        directoryPath = await FilePicker.platform.getDirectoryPath();
+      } else if (backupChoice == 'new') {
+        // Let user create a new directory
+        directoryPath = await _createNewBackupDirectory();
+      }
 
       if (directoryPath == null) {
         return; // User cancelled
@@ -206,7 +220,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           context: context,
           barrierDismissible: false,
           builder: (context) => _BackupProgressDialog(
-            directoryPath: directoryPath,
+            directoryPath: directoryPath!,
             distingCubit: widget.distingCubit,
           ),
         );
@@ -214,11 +228,149 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error selecting backup directory: $e'),
+          content: Text('Error setting up backup: $e'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
+  }
+
+  Future<String?> _showBackupOptionsDialog() async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Backup Location'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('How would you like to organize your backup?'),
+            SizedBox(height: 16),
+            Text(
+              'The backup will maintain the original directory structure:\n'
+              '• programs/lua/\n'
+              '• programs/three_pot/\n'
+              '• programs/plug-ins/',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).pop('existing'),
+            child: const Text('Choose Existing Folder'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop('new'),
+            child: const Text('Create New Folder'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _createNewBackupDirectory() async {
+    // First, let user choose parent directory
+    final parentPath = await FilePicker.platform.getDirectoryPath();
+    if (parentPath == null) return null;
+
+    // Then, let user specify new folder name
+    final folderName = await _showCreateFolderDialog();
+    if (folderName == null || folderName.trim().isEmpty) return null;
+
+    try {
+      // Create the new directory
+      final newDirPath = '$parentPath/$folderName';
+      final newDir = Directory(newDirPath);
+
+      if (await newDir.exists()) {
+        // Directory already exists, ask user if they want to use it
+        final useExisting = await _showDirectoryExistsDialog(folderName);
+        if (useExisting != true) return null;
+      } else {
+        // Create the directory
+        await newDir.create(recursive: true);
+      }
+
+      return newDirPath;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating directory: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
+  Future<String?> _showCreateFolderDialog() async {
+    final controller = TextEditingController();
+
+    // Generate a default name with current date
+    final now = DateTime.now();
+    final defaultName =
+        'Disting_NT_Backup_${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    controller.text = defaultName;
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Backup Folder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter a name for the new backup folder:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Folder Name',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showDirectoryExistsDialog(String folderName) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Directory Already Exists'),
+        content: Text(
+            'The folder "$folderName" already exists. Do you want to use it for the backup?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Use Existing'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _deletePlugin(PluginInfo plugin) async {
