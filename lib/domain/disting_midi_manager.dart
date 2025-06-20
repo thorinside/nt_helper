@@ -911,11 +911,12 @@ class DistingMidiManager implements IDistingMidiManager {
     final packet = message.encode();
 
     // File downloads return the entire file in a single response
+    // According to Python reference, file downloads respond with 0x7A (same as directory listing)
     final chunk = await _scheduler.sendRequest<FileChunk>(
       packet,
       RequestKey(
         sysExId: sysExId,
-        messageType: DistingNTRespMessageType.respFileChunk,
+        messageType: DistingNTRespMessageType.respDirectoryListing, // 0x7A
       ),
       responseExpectation: ResponseExpectation.required,
       timeout: const Duration(seconds: 10), // Longer timeout for large files

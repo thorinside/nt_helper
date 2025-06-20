@@ -67,6 +67,20 @@ class ResponseFactory {
       case DistingNTRespMessageType.respCpuUsage:
         return CpuUsageResponse(payload);
       case DistingNTRespMessageType.respDirectoryListing:
+        // SD card operations (0x7A) need to be differentiated by operation code
+        // Payload format: [status, operation, ...data]
+        if (payload.length >= 2) {
+          final operation = payload[1];
+          switch (operation) {
+            case 1: // Directory listing
+              return DirectoryListingResponse(payload);
+            case 2: // File download
+              return FileChunkResponse(payload);
+            default:
+              return DirectoryListingResponse(
+                  payload); // Default to directory listing
+          }
+        }
         return DirectoryListingResponse(payload);
       case DistingNTRespMessageType.respFileChunk:
         return FileChunkResponse(payload);
