@@ -810,6 +810,13 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<SdCardStatus?> requestFileUploadChunk(
+      String path, Uint8List data, int position,
+      {bool createAlways = false}) {
+    throw UnsupportedError('SD Card write operations not supported offline.');
+  }
+
+  @override
   Future<CpuUsage?> requestCpuUsage() async {
     throw UnsupportedError("CPU Usage is not available in offline mode.");
   }

@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 
@@ -68,6 +71,124 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _installPlugin() async {
+    try {
+      // Only show file picker on desktop platforms
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.windows ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.linux)) {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['lua', '3pot', 'o'],
+          allowMultiple: false,
+        );
+
+        if (result != null && result.files.isNotEmpty) {
+          final file = result.files.first;
+          final fileName = file.name;
+
+          // Try to get bytes directly first, then fall back to reading from path
+          Uint8List? fileBytes = file.bytes;
+
+          if (fileBytes == null && file.path != null) {
+            // On desktop platforms, we might need to read from the file path
+            try {
+              final fileData = await File(file.path!).readAsBytes();
+              fileBytes = Uint8List.fromList(fileData);
+            } catch (e) {
+              throw Exception('Failed to read file from path: $e');
+            }
+          }
+
+          if (fileBytes == null) {
+            throw Exception(
+                'Failed to read file data - no bytes or path available');
+          }
+
+          // Show progress dialog
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => _buildUploadProgressDialog(fileName),
+            );
+          }
+
+          try {
+            await widget.distingCubit.installPlugin(
+              fileName,
+              fileBytes,
+              onProgress: (progress) {
+                // Progress callback for future use
+              },
+            );
+
+            // Close progress dialog
+            if (mounted) {
+              Navigator.of(context).pop();
+
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Successfully installed "$fileName"'),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              );
+
+              // Refresh plugin list
+              await _loadInstalledPlugins();
+            }
+          } catch (e) {
+            // Close progress dialog
+            if (mounted) {
+              Navigator.of(context).pop();
+
+              // Show error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to install "$fileName": $e'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
+          }
+        }
+      } else {
+        // Show message for unsupported platforms
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'File installation is only available on desktop platforms'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting file: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Widget _buildUploadProgressDialog(String fileName) {
+    return AlertDialog(
+      title: const Text('Installing Plugin'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Installing "$fileName"...'),
+          const SizedBox(height: 16),
+          const LinearProgressIndicator(),
+          const SizedBox(height: 8),
+          const Text('This may take a few moments'),
+        ],
+      ),
+    );
   }
 
   Future<void> _deletePlugin(PluginInfo plugin) async {
@@ -182,6 +303,14 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       appBar: AppBar(
         title: const Text('Plugin Manager'),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+        actions: [
+          if (_selectedIndex == 0) // Only show install button on Installed tab
+            IconButton(
+              onPressed: _installPlugin,
+              icon: const Icon(Icons.add),
+              tooltip: 'Install Plugin from File',
+            ),
+        ],
       ),
       body: Row(
         children: [
@@ -285,17 +414,28 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     final allPlugins = [..._luaPlugins, ..._threePotPlugins, ..._cppPlugins];
 
     if (allPlugins.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.extension_off, size: 64),
-            SizedBox(height: 16),
-            Text('No plugins installed'),
-            SizedBox(height: 8),
+            const Icon(Icons.extension_off, size: 64),
+            const SizedBox(height: 16),
+            const Text('No plugins installed'),
+            const SizedBox(height: 8),
             Text(
-              'Install plugins to the SD card to see them here',
-              style: TextStyle(color: Colors.grey),
+              'Use the + button above to install plugin files (.lua, .3pot, .o)',
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _installPlugin,
+              icon: const Icon(Icons.add),
+              label: const Text('Install Plugin'),
             ),
           ],
         ),

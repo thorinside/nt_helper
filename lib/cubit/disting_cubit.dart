@@ -2142,6 +2142,104 @@ class DistingCubit extends Cubit<DistingState> {
 
     debugPrint("[DistingCubit] Delete command sent for plugin: ${plugin.name}");
   }
+
+  /// Uploads a plugin file to the appropriate directory on the SD card.
+  /// Files are uploaded in 512-byte chunks to stay within SysEx message limits.
+  /// Only works when connected to a physical device (not offline/demo mode).
+  Future<void> installPlugin(
+    String fileName,
+    Uint8List fileData, {
+    Function(double)? onProgress,
+  }) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      throw Exception("Cannot install plugin: Not synchronized or offline.");
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      throw Exception("Firmware does not support SD card operations.");
+    }
+
+    // Determine the target directory based on file extension
+    final extension = fileName.toLowerCase().split('.').last;
+    String targetDirectory;
+    switch (extension) {
+      case 'lua':
+        targetDirectory = '/programs/lua';
+        break;
+      case '3pot':
+        targetDirectory = '/programs/three_pot';
+        break;
+      case 'o':
+        targetDirectory = '/programs/plug-ins';
+        break;
+      default:
+        throw Exception("Unsupported plugin file type: .$extension");
+    }
+
+    final targetPath = '$targetDirectory/$fileName';
+    final disting = requireDisting();
+    await disting.requestWake();
+
+    debugPrint(
+        "[DistingCubit] Starting upload of ${fileName} (${fileData.length} bytes) to $targetPath");
+
+    // Upload in 512-byte chunks (matching JavaScript tool behavior)
+    const chunkSize = 512;
+    int uploadPos = 0;
+
+    while (uploadPos < fileData.length) {
+      final remainingBytes = fileData.length - uploadPos;
+      final currentChunkSize =
+          remainingBytes < chunkSize ? remainingBytes : chunkSize;
+      final chunk = fileData.sublist(uploadPos, uploadPos + currentChunkSize);
+
+      debugPrint(
+          "[DistingCubit] Uploading chunk at position $uploadPos, size $currentChunkSize");
+
+      try {
+        await _uploadChunk(targetPath, chunk, uploadPos);
+        uploadPos += currentChunkSize;
+
+        // Report progress
+        final progress = uploadPos / fileData.length;
+        onProgress?.call(progress);
+
+        // Small delay between chunks to avoid overwhelming the device
+        if (uploadPos < fileData.length) {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      } catch (e) {
+        debugPrint(
+            "[DistingCubit] Error uploading chunk at position $uploadPos: $e");
+        throw Exception("Upload failed at position $uploadPos: $e");
+      }
+    }
+
+    debugPrint(
+        "[DistingCubit] Successfully uploaded ${fileName} to $targetPath");
+  }
+
+  /// Uploads a single chunk of file data.
+  /// This mirrors the JavaScript tool's chunked upload implementation.
+  Future<void> _uploadChunk(
+      String targetPath, Uint8List chunkData, int position) async {
+    final disting = requireDisting();
+
+    // Use chunked upload with position (first chunk creates the file)
+    final createAlways = position == 0;
+    final result = await disting.requestFileUploadChunk(
+      targetPath,
+      chunkData,
+      position,
+      createAlways: createAlways,
+    );
+
+    if (result == null || !result.success) {
+      throw Exception(
+          "Chunk upload failed: ${result?.message ?? 'Unknown error'}");
+    }
+  }
 }
 
 extension DistingCubitGetters on DistingCubit {

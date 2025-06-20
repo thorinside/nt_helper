@@ -71,4 +71,7 @@ abstract class IDistingMidiManager {
   Future<SdCardStatus?> requestFileDelete(String path);
   Future<SdCardStatus?> requestFileRename(String fromPath, String toPath);
   Future<SdCardStatus?> requestFileUpload(String path, Uint8List data);
+  Future<SdCardStatus?> requestFileUploadChunk(
+      String path, Uint8List data, int position,
+      {bool createAlways = false});
 }

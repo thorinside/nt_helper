@@ -7,8 +7,8 @@ part 'plugin_info.g.dart';
 enum PluginType {
   lua('Lua Script', '/programs/lua', '.lua',
       'Lua scripts for custom algorithms'),
-  threePot(
-      '3pot', '/programs/3pot', '.3pot', '3-potentiometer control plugins'),
+  threePot('3pot', '/programs/three_pot', '.3pot',
+      '3-potentiometer control plugins'),
   cpp('C++ Plugin', '/programs/plug-ins', '.o', 'Compiled C++ plugin objects');
 
   const PluginType(
