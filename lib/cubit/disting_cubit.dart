@@ -2240,6 +2240,38 @@ class DistingCubit extends Cubit<DistingState> {
           "Chunk upload failed: ${result?.message ?? 'Unknown error'}");
     }
   }
+
+  /// Backs up all plugins from the Disting NT to a local directory.
+  /// Maintains the directory structure (/programs/lua, /programs/three_pot, /programs/plug-ins).
+  Future<void> backupPlugins(
+    String backupDirectory, {
+    void Function(double progress, String currentFile)? onProgress,
+  }) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      throw Exception("Cannot backup plugins: Not synchronized or offline.");
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      throw Exception("Firmware does not support SD card operations.");
+    }
+
+    final disting = requireDisting();
+    await disting.requestWake();
+
+    debugPrint("[DistingCubit] Starting plugin backup to $backupDirectory");
+
+    try {
+      await disting.backupPlugins(
+        backupDirectory,
+        onProgress: onProgress,
+      );
+      debugPrint("[DistingCubit] Plugin backup completed successfully");
+    } catch (e) {
+      debugPrint("[DistingCubit] Plugin backup failed: $e");
+      rethrow;
+    }
+  }
 }
 
 extension DistingCubitGetters on DistingCubit {

@@ -911,6 +911,23 @@ class MockDistingMidiManager implements IDistingMidiManager {
   Future<CpuUsage?> requestCpuUsage() async {
     throw UnsupportedError("CPU Usage is not available in mock mode.");
   }
+
+  @override
+  Future<void> backupPlugins(String backupDirectory,
+      {void Function(double progress, String currentFile)? onProgress}) async {
+    // Mock backup - simulate progress
+    final mockFiles = [
+      '/programs/lua/example.lua',
+      '/programs/three_pot/test.3pot',
+      '/programs/plug-ins/plugin.o',
+    ];
+
+    for (int i = 0; i < mockFiles.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      onProgress?.call(
+          (i + 1) / mockFiles.length, 'Downloaded ${mockFiles[i]}');
+    }
+  }
 }
 
 // --- Private State Class ---

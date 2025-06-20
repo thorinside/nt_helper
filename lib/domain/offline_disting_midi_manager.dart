@@ -820,4 +820,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<CpuUsage?> requestCpuUsage() async {
     throw UnsupportedError("CPU Usage is not available in offline mode.");
   }
+
+  @override
+  Future<void> backupPlugins(String backupDirectory,
+          {void Function(double progress, String currentFile)? onProgress}) =>
+      throw UnsupportedError('Backup not available in offline mode');
 }

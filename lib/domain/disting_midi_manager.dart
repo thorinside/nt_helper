@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/db/daos/presets_dao.dart';
@@ -908,9 +909,8 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestFileDownloadMessage(sysExId: sysExId, path: path);
     final packet = message.encode();
-    // TODO: This is a simplified implementation. A real implementation would
-    // need to listen for multiple FileChunk responses and assemble them.
-    // The scheduler might need a new method for multi-response requests.
+
+    // File downloads return the entire file in a single response
     final chunk = await _scheduler.sendRequest<FileChunk>(
       packet,
       RequestKey(
@@ -918,6 +918,7 @@ class DistingMidiManager implements IDistingMidiManager {
         messageType: DistingNTRespMessageType.respFileChunk,
       ),
       responseExpectation: ResponseExpectation.required,
+      timeout: const Duration(seconds: 10), // Longer timeout for large files
     );
     return chunk?.data;
   }
@@ -1004,5 +1005,81 @@ class DistingMidiManager implements IDistingMidiManager {
       key,
       responseExpectation: ResponseExpectation.required,
     );
+  }
+
+  @override
+  Future<void> backupPlugins(String backupDirectory,
+      {void Function(double progress, String currentFile)? onProgress}) async {
+    await _checkSdCardSupport();
+
+    // Plugin directories to backup
+    final pluginDirectories = [
+      '/programs/lua',
+      '/programs/three_pot',
+      '/programs/plug-ins',
+    ];
+
+    // Collect all files to backup
+    final List<String> allFiles = [];
+
+    for (final directory in pluginDirectories) {
+      try {
+        final listing = await requestDirectoryListing(directory);
+        if (listing != null) {
+          for (final entry in listing.entries) {
+            if (!entry.isDirectory) {
+              allFiles.add('$directory/${entry.name}');
+            }
+          }
+        }
+      } catch (e) {
+        // Directory might not exist, continue with others
+        debugPrint('Failed to list directory $directory: $e');
+      }
+    }
+
+    if (allFiles.isEmpty) {
+      onProgress?.call(1.0, 'No plugin files found to backup');
+      return;
+    }
+
+    int processedFiles = 0;
+
+    for (final filePath in allFiles) {
+      try {
+        onProgress?.call(
+            processedFiles / allFiles.length, 'Downloading $filePath');
+
+        // Download the file
+        final fileData = await requestFileDownload(filePath);
+        if (fileData != null && fileData.isNotEmpty) {
+          // Create local directory structure
+          final relativePath =
+              filePath.startsWith('/') ? filePath.substring(1) : filePath;
+          final localFilePath = '$backupDirectory/$relativePath';
+          final localFile = File(localFilePath);
+
+          // Ensure directory exists
+          await localFile.parent.create(recursive: true);
+
+          // Write file
+          await localFile.writeAsBytes(fileData);
+
+          debugPrint(
+              'Backed up $filePath to $localFilePath (${fileData.length} bytes)');
+        } else {
+          debugPrint('Failed to download $filePath - no data received');
+        }
+      } catch (e) {
+        debugPrint('Error backing up $filePath: $e');
+        // Continue with other files
+      }
+
+      processedFiles++;
+      onProgress?.call(
+          processedFiles / allFiles.length, 'Downloaded $filePath');
+    }
+
+    onProgress?.call(1.0, 'Backup completed - $processedFiles files backed up');
   }
 }

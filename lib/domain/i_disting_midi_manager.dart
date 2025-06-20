@@ -74,4 +74,8 @@ abstract class IDistingMidiManager {
   Future<SdCardStatus?> requestFileUploadChunk(
       String path, Uint8List data, int position,
       {bool createAlways = false});
+
+  // Backup Operations
+  Future<void> backupPlugins(String backupDirectory,
+      {void Function(double progress, String currentFile)? onProgress});
 }

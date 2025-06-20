@@ -191,6 +191,36 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     );
   }
 
+  Future<void> _backupPlugins() async {
+    try {
+      // Let user choose backup directory
+      final directoryPath = await FilePicker.platform.getDirectoryPath();
+
+      if (directoryPath == null) {
+        return; // User cancelled
+      }
+
+      // Show backup progress dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => _BackupProgressDialog(
+            directoryPath: directoryPath,
+            distingCubit: widget.distingCubit,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting backup directory: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
   Future<void> _deletePlugin(PluginInfo plugin) async {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -304,12 +334,21 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         title: const Text('Plugin Manager'),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         actions: [
-          if (_selectedIndex == 0) // Only show install button on Installed tab
+          if (_selectedIndex == 0) // Only show buttons on Installed tab
+            ...[
+            if (!kIsWeb &&
+                (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+              IconButton(
+                onPressed: _backupPlugins,
+                icon: const Icon(Icons.backup),
+                tooltip: 'Backup All Plugins',
+              ),
             IconButton(
               onPressed: _installPlugin,
               icon: const Icon(Icons.add),
               tooltip: 'Install Plugin from File',
             ),
+          ],
         ],
       ),
       body: Row(
@@ -432,10 +471,26 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _installPlugin,
-              icon: const Icon(Icons.add),
-              label: const Text('Install Plugin'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!kIsWeb &&
+                    (Platform.isWindows ||
+                        Platform.isMacOS ||
+                        Platform.isLinux)) ...[
+                  OutlinedButton.icon(
+                    onPressed: _backupPlugins,
+                    icon: const Icon(Icons.backup),
+                    label: const Text('Backup Plugins'),
+                  ),
+                  const SizedBox(width: 16),
+                ],
+                FilledButton.icon(
+                  onPressed: _installPlugin,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Install Plugin'),
+                ),
+              ],
             ),
           ],
         ),
@@ -710,6 +765,116 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A dialog that shows backup progress and handles the backup operation
+class _BackupProgressDialog extends StatefulWidget {
+  final String directoryPath;
+  final DistingCubit distingCubit;
+
+  const _BackupProgressDialog({
+    required this.directoryPath,
+    required this.distingCubit,
+  });
+
+  @override
+  State<_BackupProgressDialog> createState() => _BackupProgressDialogState();
+}
+
+class _BackupProgressDialogState extends State<_BackupProgressDialog> {
+  double _progress = 0.0;
+  String _currentFile = 'Preparing...';
+  bool _isComplete = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _startBackup();
+  }
+
+  Future<void> _startBackup() async {
+    try {
+      await widget.distingCubit.backupPlugins(
+        widget.directoryPath,
+        onProgress: (progress, currentFile) {
+          if (mounted) {
+            setState(() {
+              _progress = progress;
+              _currentFile = currentFile;
+              _isComplete = progress >= 1.0;
+            });
+          }
+        },
+      );
+
+      if (mounted && !_isComplete) {
+        setState(() {
+          _isComplete = true;
+          _currentFile = 'Backup completed successfully';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Backing Up Plugins'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Backup location: ${widget.directoryPath}'),
+          const SizedBox(height: 16),
+          LinearProgressIndicator(value: _progress),
+          const SizedBox(height: 8),
+          Text(
+            _currentFile,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Error: $_error',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        if (_isComplete || _error != null)
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+
+              // Show result message
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(_error != null
+                        ? 'Backup failed: $_error'
+                        : 'Successfully backed up plugins to ${widget.directoryPath}'),
+                    backgroundColor: _error != null
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                );
+              }
+            },
+            child: const Text('Close'),
+          ),
+      ],
     );
   }
 }
