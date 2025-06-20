@@ -1,0 +1,258 @@
+// dart format width=80
+// coverage:ignore-file
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'plugin_info.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$PluginInfo {
+  String get name;
+  String get path;
+  PluginType get type;
+  int get sizeBytes;
+  String? get description;
+  DateTime? get lastModified;
+
+  /// Create a copy of PluginInfo
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $PluginInfoCopyWith<PluginInfo> get copyWith =>
+      _$PluginInfoCopyWithImpl<PluginInfo>(this as PluginInfo, _$identity);
+
+  /// Serializes this PluginInfo to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is PluginInfo &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.path, path) || other.path == path) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.sizeBytes, sizeBytes) ||
+                other.sizeBytes == sizeBytes) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.lastModified, lastModified) ||
+                other.lastModified == lastModified));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, name, path, type, sizeBytes, description, lastModified);
+
+  @override
+  String toString() {
+    return 'PluginInfo(name: $name, path: $path, type: $type, sizeBytes: $sizeBytes, description: $description, lastModified: $lastModified)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $PluginInfoCopyWith<$Res> {
+  factory $PluginInfoCopyWith(
+          PluginInfo value, $Res Function(PluginInfo) _then) =
+      _$PluginInfoCopyWithImpl;
+  @useResult
+  $Res call(
+      {String name,
+      String path,
+      PluginType type,
+      int sizeBytes,
+      String? description,
+      DateTime? lastModified});
+}
+
+/// @nodoc
+class _$PluginInfoCopyWithImpl<$Res> implements $PluginInfoCopyWith<$Res> {
+  _$PluginInfoCopyWithImpl(this._self, this._then);
+
+  final PluginInfo _self;
+  final $Res Function(PluginInfo) _then;
+
+  /// Create a copy of PluginInfo
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? name = null,
+    Object? path = null,
+    Object? type = null,
+    Object? sizeBytes = null,
+    Object? description = freezed,
+    Object? lastModified = freezed,
+  }) {
+    return _then(_self.copyWith(
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      path: null == path
+          ? _self.path
+          : path // ignore: cast_nullable_to_non_nullable
+              as String,
+      type: null == type
+          ? _self.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as PluginType,
+      sizeBytes: null == sizeBytes
+          ? _self.sizeBytes
+          : sizeBytes // ignore: cast_nullable_to_non_nullable
+              as int,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastModified: freezed == lastModified
+          ? _self.lastModified
+          : lastModified // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _PluginInfo implements PluginInfo {
+  const _PluginInfo(
+      {required this.name,
+      required this.path,
+      required this.type,
+      required this.sizeBytes,
+      this.description,
+      this.lastModified});
+  factory _PluginInfo.fromJson(Map<String, dynamic> json) =>
+      _$PluginInfoFromJson(json);
+
+  @override
+  final String name;
+  @override
+  final String path;
+  @override
+  final PluginType type;
+  @override
+  final int sizeBytes;
+  @override
+  final String? description;
+  @override
+  final DateTime? lastModified;
+
+  /// Create a copy of PluginInfo
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$PluginInfoCopyWith<_PluginInfo> get copyWith =>
+      __$PluginInfoCopyWithImpl<_PluginInfo>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$PluginInfoToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _PluginInfo &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.path, path) || other.path == path) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.sizeBytes, sizeBytes) ||
+                other.sizeBytes == sizeBytes) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.lastModified, lastModified) ||
+                other.lastModified == lastModified));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, name, path, type, sizeBytes, description, lastModified);
+
+  @override
+  String toString() {
+    return 'PluginInfo(name: $name, path: $path, type: $type, sizeBytes: $sizeBytes, description: $description, lastModified: $lastModified)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$PluginInfoCopyWith<$Res>
+    implements $PluginInfoCopyWith<$Res> {
+  factory _$PluginInfoCopyWith(
+          _PluginInfo value, $Res Function(_PluginInfo) _then) =
+      __$PluginInfoCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String name,
+      String path,
+      PluginType type,
+      int sizeBytes,
+      String? description,
+      DateTime? lastModified});
+}
+
+/// @nodoc
+class __$PluginInfoCopyWithImpl<$Res> implements _$PluginInfoCopyWith<$Res> {
+  __$PluginInfoCopyWithImpl(this._self, this._then);
+
+  final _PluginInfo _self;
+  final $Res Function(_PluginInfo) _then;
+
+  /// Create a copy of PluginInfo
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? name = null,
+    Object? path = null,
+    Object? type = null,
+    Object? sizeBytes = null,
+    Object? description = freezed,
+    Object? lastModified = freezed,
+  }) {
+    return _then(_PluginInfo(
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      path: null == path
+          ? _self.path
+          : path // ignore: cast_nullable_to_non_nullable
+              as String,
+      type: null == type
+          ? _self.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as PluginType,
+      sizeBytes: null == sizeBytes
+          ? _self.sizeBytes
+          : sizeBytes // ignore: cast_nullable_to_non_nullable
+              as int,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastModified: freezed == lastModified
+          ? _self.lastModified
+          : lastModified // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+// dart format on

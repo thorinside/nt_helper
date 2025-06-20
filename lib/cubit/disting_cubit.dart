@@ -15,6 +15,7 @@ import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/util/extensions.dart';
@@ -1861,6 +1862,155 @@ class DistingCubit extends Cubit<DistingState> {
     return scanSdCardPresets(); // Reuse the existing private method
   }
 
+  /// Scans for Lua script plugins in the /programs/lua directory.
+  /// Returns a sorted list of .lua files found.
+  Future<List<PluginInfo>> fetchLuaPlugins() async {
+    final disting = requireDisting();
+    final currentState = state;
+
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      debugPrint(
+          "[DistingCubit] Cannot fetch Lua plugins: Not synchronized or offline.");
+      return [];
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      debugPrint(
+          "[DistingCubit] Firmware does not support SD card operations.");
+      return [];
+    }
+
+    return _scanPluginDirectory(PluginType.lua);
+  }
+
+  /// Scans for 3pot plugins in the /programs/3pot directory.
+  /// Returns a sorted list of .3pot files found.
+  Future<List<PluginInfo>> fetch3potPlugins() async {
+    final disting = requireDisting();
+    final currentState = state;
+
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      debugPrint(
+          "[DistingCubit] Cannot fetch 3pot plugins: Not synchronized or offline.");
+      return [];
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      debugPrint(
+          "[DistingCubit] Firmware does not support SD card operations.");
+      return [];
+    }
+
+    return _scanPluginDirectory(PluginType.threePot);
+  }
+
+  /// Scans for C++ plugins in the /programs/plug-ins directory.
+  /// Returns a sorted list of .o files found.
+  Future<List<PluginInfo>> fetchCppPlugins() async {
+    final disting = requireDisting();
+    final currentState = state;
+
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      debugPrint(
+          "[DistingCubit] Cannot fetch C++ plugins: Not synchronized or offline.");
+      return [];
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      debugPrint(
+          "[DistingCubit] Firmware does not support SD card operations.");
+      return [];
+    }
+
+    return _scanPluginDirectory(PluginType.cpp);
+  }
+
+  /// Helper method to scan a specific directory for files with a given extension.
+  Future<List<PluginInfo>> _scanPluginDirectory(PluginType pluginType) async {
+    final plugins = <PluginInfo>[];
+    final disting = requireDisting();
+    await disting.requestWake();
+
+    try {
+      debugPrint(
+          "[DistingCubit] Scanning for ${pluginType.displayName} plugins in ${pluginType.directory}");
+      final pluginInfos =
+          await _scanDirectoryForPlugins(pluginType.directory, pluginType);
+      plugins.addAll(pluginInfos);
+    } catch (e, stack) {
+      debugPrint(
+          "Error scanning ${pluginType.directory} for ${pluginType.extension} files: $e");
+      debugPrintStack(stackTrace: stack);
+    }
+
+    // Sort by name
+    plugins
+        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return plugins;
+  }
+
+  /// Recursively scans a directory for plugin files of a specific type.
+  Future<List<PluginInfo>> _scanDirectoryForPlugins(
+      String path, PluginType pluginType) async {
+    final plugins = <PluginInfo>[];
+    final disting = requireDisting();
+
+    try {
+      final listing = await disting.requestDirectoryListing(path);
+      if (listing != null) {
+        for (final entry in listing.entries) {
+          final newPath =
+              path.endsWith('/') ? '$path${entry.name}' : '$path/${entry.name}';
+          if (entry.isDirectory) {
+            // Recursively scan subdirectories
+            plugins.addAll(await _scanDirectoryForPlugins(newPath, pluginType));
+          } else if (entry.name
+              .toLowerCase()
+              .endsWith(pluginType.extension.toLowerCase())) {
+            // Convert DOS date/time to DateTime if available
+            DateTime? lastModified;
+            try {
+              if (entry.date != 0 && entry.time != 0) {
+                final year = 1980 + (entry.date >> 9);
+                final month = ((entry.date >> 5) & 0xF);
+                final day = entry.date & 0x1F;
+                final hour = entry.time >> 11;
+                final minute = (entry.time >> 5) & 0x3F;
+                final second = 2 * (entry.time & 0x1F);
+
+                if (year > 1980 &&
+                    month > 0 &&
+                    month <= 12 &&
+                    day > 0 &&
+                    day <= 31) {
+                  lastModified =
+                      DateTime(year, month, day, hour, minute, second);
+                }
+              }
+            } catch (e) {
+              // If date conversion fails, just use null
+              debugPrint("Failed to convert date/time for ${entry.name}: $e");
+            }
+
+            plugins.add(PluginInfo(
+              name: entry.name,
+              path: newPath,
+              type: pluginType,
+              sizeBytes: entry.size,
+              lastModified: lastModified,
+            ));
+          }
+        }
+      }
+    } catch (e, stack) {
+      debugPrint(
+          "Error scanning directory $path for ${pluginType.extension} files: $e");
+      debugPrintStack(stackTrace: stack);
+    }
+
+    return plugins;
+  }
+
   /// Refreshes a single slot's data from the module
   Future<void> refreshSlot(int algorithmIndex) async {
     if (state is! DistingStateSynchronized) {
@@ -1966,6 +2116,31 @@ class DistingCubit extends Cubit<DistingState> {
       debugPrintStack(stackTrace: stackTrace);
       // Don't add error to stream, just log it
     }
+  }
+
+  /// Sends a delete command for a plugin file on the SD card.
+  /// This is a fire-and-forget operation that assumes success.
+  /// Only works when connected to a physical device (not offline/demo mode).
+  Future<void> deletePlugin(PluginInfo plugin) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      throw Exception("Cannot delete plugin: Not synchronized or offline.");
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      throw Exception("Firmware does not support SD card operations.");
+    }
+
+    final disting = requireDisting();
+    await disting.requestWake();
+
+    debugPrint(
+        "[DistingCubit] Sending delete command for plugin: ${plugin.name} at ${plugin.path}");
+
+    // Send the delete command (fire-and-forget)
+    await disting.requestFileDelete(plugin.path);
+
+    debugPrint("[DistingCubit] Delete command sent for plugin: ${plugin.name}");
   }
 }
 

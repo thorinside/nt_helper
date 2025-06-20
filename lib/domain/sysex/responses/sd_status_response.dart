@@ -11,7 +11,8 @@ class SdStatusResponse extends SysexResponse {
       return SdCardStatus(success: false, message: 'Empty status response');
     }
 
-    final success = data[0] == 1;
+    final success =
+        data[0] == 0; // 0 = success, 1 = error (per JavaScript tool)
     String message = 'Unknown status';
 
     if (data.length > 1) {

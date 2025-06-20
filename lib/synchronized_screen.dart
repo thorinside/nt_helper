@@ -37,6 +37,7 @@ import 'package:nt_helper/ui/bpm_editor_widget.dart';
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/plugin_manager_screen.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -679,6 +680,30 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   children: [
                     Text('Perform'),
                     Icon(Icons.library_music),
+                  ]),
+            ),
+            // Plugin Manager: Always enabled
+            PopupMenuItem(
+              value: 'plugin_manager',
+              enabled: !widget.loading,
+              onTap: widget.loading
+                  ? null
+                  : () {
+                      final distingCubit = popupCtx.read<DistingCubit>();
+                      Navigator.push(
+                        popupCtx,
+                        MaterialPageRoute(
+                          builder: (_) => PluginManagerScreen(
+                            distingCubit: distingCubit,
+                          ),
+                        ),
+                      );
+                    },
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Plugin Manager'),
+                    Icon(Icons.extension_rounded),
                   ]),
             ),
             // Switch Devices: Only disabled by loading (Fix context usage)

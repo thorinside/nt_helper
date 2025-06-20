@@ -889,14 +889,17 @@ class DistingMidiManager implements IDistingMidiManager {
     await _checkSdCardSupport();
     final message = RequestFileDeleteMessage(sysExId: sysExId, path: path);
     final packet = message.encode();
-    return _scheduler.sendRequest<SdCardStatus>(
+    await _scheduler.sendRequest<SdCardStatus>(
       packet,
       RequestKey(
         sysExId: sysExId,
         messageType: DistingNTRespMessageType.respSdStatus,
       ),
-      responseExpectation: ResponseExpectation.required,
+      responseExpectation:
+          ResponseExpectation.none, // Delete is fire-and-forget
     );
+    // Assume success since delete doesn't send a response
+    return SdCardStatus(success: true, message: 'Delete command sent');
   }
 
   @override
