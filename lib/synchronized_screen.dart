@@ -34,6 +34,7 @@ import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
+import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/reset_outputs_dialog.dart';
@@ -251,6 +252,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   BottomAppBar _buildBottomAppBar() {
+    bool isWideScreen = MediaQuery.of(context).size.width > 900;
+
     return BottomAppBar(
       child: Row(
         children: [
@@ -337,6 +340,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           DistingVersion(
               distingVersion: widget.distingVersion,
               requiredVersion: Constants.requiredDistingVersion),
+          // CPU Monitor Widget - only in wide-screen mode
+          if (isWideScreen) ...[
+            const SizedBox(width: 16),
+            const CpuMonitorWidget(),
+          ],
         ],
       ),
     );

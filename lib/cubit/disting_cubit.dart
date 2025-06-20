@@ -13,6 +13,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
+import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
@@ -42,6 +43,12 @@ class DistingCubit extends Cubit<DistingState> {
         super(const DistingState.initial()) {
     _metadataDao =
         database.metadataDao; // Initialize DAO using public database field
+
+    // Initialize CPU usage stream
+    _cpuUsageController = StreamController<CpuUsage>.broadcast(
+      onListen: _startCpuUsagePolling,
+      onCancel: _checkStopCpuUsagePolling,
+    );
   }
 
   MidiCommand _midiCommand = MidiCommand();
@@ -51,6 +58,14 @@ class DistingCubit extends Cubit<DistingState> {
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
   final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
+
+  // CPU Usage Streaming
+  late final StreamController<CpuUsage> _cpuUsageController;
+  Timer? _cpuUsageTimer;
+  static const Duration _cpuUsagePollingInterval = Duration(seconds: 10);
+
+  /// Stream of CPU usage updates that polls every 10 seconds when listeners are active
+  Stream<CpuUsage> get cpuUsageStream => _cpuUsageController.stream;
 
   // Added: Store last known online connection details
   MidiDevice? _lastOnlineInputDevice;
@@ -62,6 +77,11 @@ class DistingCubit extends Cubit<DistingState> {
     disting()?.dispose();
     _offlineManager?.dispose(); // Dispose offline manager too
     _midiCommand.dispose();
+
+    // Dispose CPU usage streaming resources
+    _cpuUsageTimer?.cancel();
+    _cpuUsageController.close();
+
     return super.close();
   }
 
@@ -207,6 +227,34 @@ class DistingCubit extends Cubit<DistingState> {
         break;
       default:
       // Handle other cases or errors
+    }
+  }
+
+  /// Gets the current CPU usage information from the Disting device.
+  /// Returns null if the device is not connected or if the request fails.
+  /// Only works when connected to a physical device (not in offline or demo mode).
+  Future<CpuUsage?> getCpuUsage() async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) {
+      debugPrint("[Cubit] Cannot get CPU usage: Not in synchronized state.");
+      return null;
+    }
+
+    if (currentState.offline || currentState.demo) {
+      debugPrint(
+          "[Cubit] Cannot get CPU usage: Device is offline or in demo mode.");
+      return null;
+    }
+
+    try {
+      final disting = requireDisting();
+      await disting.requestWake();
+      final cpuUsage = await disting.requestCpuUsage();
+      return cpuUsage;
+    } catch (e, stackTrace) {
+      debugPrint("Error getting CPU usage: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      return null;
     }
   }
 
@@ -1734,7 +1782,7 @@ class DistingCubit extends Cubit<DistingState> {
       final currentState = state as DistingStateSynchronized;
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;
-      emit(currentState.copyWith(slots: newSlots, loading: false));
+      emit(currentState.copyWith(slots: newSlots));
     } catch (e, stackTrace) {
       debugPrint("[Anomaly Refresh] Error refreshing slot $algorithmIndex: $e");
       debugPrintStack(stackTrace: stackTrace);
@@ -1878,6 +1926,45 @@ class DistingCubit extends Cubit<DistingState> {
           ));
         }
         break;
+    }
+  }
+
+  // CPU Usage Streaming
+  void _startCpuUsagePolling() {
+    debugPrint("[Cubit] Starting CPU usage polling...");
+
+    // Cancel any existing timer
+    _cpuUsageTimer?.cancel();
+
+    // Start polling immediately, then every 10 seconds
+    _pollCpuUsageOnce();
+    _cpuUsageTimer = Timer.periodic(_cpuUsagePollingInterval, (_) {
+      _pollCpuUsageOnce();
+    });
+  }
+
+  void _checkStopCpuUsagePolling() {
+    // Use a small delay to check if there are still listeners
+    // This prevents stopping polling when one listener cancels but others remain
+    Timer(const Duration(milliseconds: 100), () {
+      if (!_cpuUsageController.hasListener) {
+        debugPrint("[Cubit] Stopping CPU usage polling - no listeners.");
+        _cpuUsageTimer?.cancel();
+        _cpuUsageTimer = null;
+      }
+    });
+  }
+
+  Future<void> _pollCpuUsageOnce() async {
+    try {
+      final cpuUsage = await getCpuUsage();
+      if (cpuUsage != null && !_cpuUsageController.isClosed) {
+        _cpuUsageController.add(cpuUsage);
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Error polling CPU usage: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      // Don't add error to stream, just log it
     }
   }
 }
