@@ -1415,8 +1415,10 @@ class DistingCubit extends Cubit<DistingState> {
 
   Future<List<Slot>> fetchSlots(
       int numAlgorithmsInPreset, IDistingMidiManager disting) async {
+    final stopwatch = Stopwatch()..start();
     debugPrint(
-        "[Cubit] fetchSlots: Requesting $numAlgorithmsInPreset slots...");
+        "[fetchSlots] Starting: Requesting $numAlgorithmsInPreset slots...");
+
     final slotsFutures =
         List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
       return await fetchSlot(disting, algorithmIndex);
@@ -1424,141 +1426,157 @@ class DistingCubit extends Cubit<DistingState> {
 
     // Finish off the requests
     final slots = await Future.wait(slotsFutures);
-    debugPrint("[Cubit] fetchSlots: Fetched ${slots.length} slots.");
+    final totalTime = stopwatch.elapsedMilliseconds;
+    debugPrint(
+        "[fetchSlots] COMPLETED: Fetched ${slots.length} slots in ${totalTime}ms (avg ${totalTime ~/ (numAlgorithmsInPreset > 0 ? numAlgorithmsInPreset : 1)}ms per slot)");
     return slots;
   }
 
+  /// Concurrency limit for per-parameter calls.
+  /// Tune this — 4-6 usually keeps the module happy without stalling.
+  static const int kParallel = 4;
+
   Future<Slot> fetchSlot(
-      IDistingMidiManager disting, int algorithmIndex) async {
-    // Safely get number of parameters, default to 0 if null
-    final numParamsResult =
-        await disting.requestNumberOfParameters(algorithmIndex);
-    final int numParametersInAlgorithm = numParamsResult?.numParameters ?? 0;
+    IDistingMidiManager disting,
+    int algorithmIndex,
+  ) async {
+    final sw = Stopwatch()..start();
+    debugPrint('[fetchSlot] start slot $algorithmIndex');
 
-    var parameters = <ParameterInfo>[];
-    if (numParametersInAlgorithm > 0) {
-      parameters = [
-        for (int parameterNumber = 0;
-            parameterNumber < numParametersInAlgorithm;
-            parameterNumber++)
-          await disting.requestParameterInfo(algorithmIndex, parameterNumber) ??
-              ParameterInfo.filler()
-      ];
-    } // else parameters remains empty
+    /* ------------------------------------------------------------------ *
+   * 1-2.  Pages  |  #Parameters  |  Algorithm GUID  |  All Values      *
+   * ------------------------------------------------------------------ */
+    final results = await Future.wait([
+      disting.requestParameterPages(algorithmIndex),
+      disting.requestNumberOfParameters(algorithmIndex),
+      disting.requestAlgorithmGuid(algorithmIndex),
+      disting.requestAllParameterValues(algorithmIndex),
+    ]);
 
-    var parameterPages = await disting.requestParameterPages(algorithmIndex) ??
+    final pages = (results[0] as ParameterPages?) ??
         ParameterPages(algorithmIndex: algorithmIndex, pages: []);
+    final numParams = (results[1] as NumParameters?)?.numParameters ?? 0;
+    final guid = results[2] as Algorithm?;
+    final allValues = (results[3] as AllParameterValues?)?.values ??
+        List<ParameterValue>.generate(
+            numParams, (_) => ParameterValue.filler());
 
-    var visibleParameters = parameterPages.pages.expand(
-      (element) {
-        return element.parameters;
+    debugPrint('[fetchSlot] meta finished in ${sw.elapsedMilliseconds} ms');
+
+    /* Visible-parameter set (built from pages) */
+    final visible = pages.pages.expand((p) => p.parameters).toSet();
+
+    /* ------------------------------------------------------------------ *
+   * 3. Parameter-info phase (throttled)                                *
+   * ------------------------------------------------------------------ */
+    final parameters =
+        List<ParameterInfo>.filled(numParams, ParameterInfo.filler());
+    await _forEachLimited(
+      Iterable<int>.generate(numParams).where((i) => visible.contains(i)),
+      (param) async {
+        final info = await disting.requestParameterInfo(algorithmIndex, param);
+        parameters[param] = info ?? ParameterInfo.filler();
       },
     );
+    debugPrint('[fetchSlot] ParameterInfo ${sw.elapsedMilliseconds} ms');
 
-    // Safely get parameter values, default to empty list if null or no params
-    final allValuesResult =
-        await disting.requestAllParameterValues(algorithmIndex);
-    final parameterValues = allValuesResult?.values ??
-        List<ParameterValue>.generate(
-            numParametersInAlgorithm,
-            // Use filler without arguments
-            (i) => ParameterValue.filler());
+    /* Pre-calculate which params are enumerated / mappable / string */
+    bool _isEnum(int i) => parameters[i].unit == 1;
+    bool _isString(int i) => const {13, 14, 17}.contains(parameters[i].unit);
+    bool _isMappable(int i) =>
+        !_isString(i) && parameters[i].unit != 0 && parameters[i].unit != -1;
 
-    var enums = <ParameterEnumStrings>[];
-    // Ensure loop condition respects potentially 0 parameters
-    for (int i = 0; i < numParametersInAlgorithm; i++) {
-      ParameterEnumStrings? fetchedEnums;
-      // Only fetch enums if visible on a page AND if the parameter unit is 1 (Enum)
-      final isVisible =
-          parameterPages.pages.any((page) => page.parameters.contains(i));
-      // Check parameters list bounds before accessing unit
-      final isEnum = (i < parameters.length) ? parameters[i].unit == 1 : false;
+    /* ------------------------------------------------------------------ *
+   * 4. Enums, Mappings, Value-Strings  (all throttled in parallel)     *
+   * ------------------------------------------------------------------ */
+    final enums = List<ParameterEnumStrings>.filled(
+        numParams, ParameterEnumStrings.filler());
+    final mappings = List<Mapping>.filled(numParams, Mapping.filler());
+    final valueStrings = List<ParameterValueString>.filled(
+        numParams, ParameterValueString.filler());
 
-      if (isVisible && isEnum) {
-        fetchedEnums =
-            await disting.requestParameterEnumStrings(algorithmIndex, i);
-      }
-      // Add the result from the manager (could be I/O, custom, or filler)
-      enums.add(fetchedEnums ?? ParameterEnumStrings.filler());
-    }
+    await Future.wait([
+      // Enums
+      _forEachLimited(
+        Iterable<int>.generate(numParams)
+            .where((i) => visible.contains(i) && _isEnum(i)),
+        (param) async {
+          enums[param] = await disting.requestParameterEnumStrings(
+                  algorithmIndex, param) ??
+              ParameterEnumStrings.filler();
+        },
+      ),
+      // Mappings
+      _forEachLimited(
+        Iterable<int>.generate(numParams)
+            .where((i) => visible.contains(i) && _isMappable(i)),
+        (param) async {
+          mappings[param] =
+              await disting.requestMappings(algorithmIndex, param) ??
+                  Mapping.filler();
+        },
+      ),
+      // Value strings
+      _forEachLimited(
+        Iterable<int>.generate(numParams)
+            .where((i) => visible.contains(i) && _isString(i)),
+        (param) async {
+          valueStrings[param] = await disting.requestParameterValueString(
+                  algorithmIndex, param) ??
+              ParameterValueString.filler();
+        },
+      ),
+    ]);
+    debugPrint('[fetchSlot] Detail fetches ${sw.elapsedMilliseconds} ms');
 
-    var mappings = <Mapping>[];
-    // Ensure loop condition respects potentially 0 parameters
-    for (int parameterNumber = 0;
-        parameterNumber < numParametersInAlgorithm;
-        parameterNumber++) {
-      mappings.add(visibleParameters.contains(parameterNumber)
-          ? await disting.requestMappings(algorithmIndex, parameterNumber) ??
-              Mapping.filler()
-          : Mapping.filler());
-    }
-
-    var routing = await disting.requestRoutingInformation(algorithmIndex) ??
-        RoutingInfo.filler();
-
-    var valueStrings = <ParameterValueString>[];
-    // Ensure loop condition respects potentially 0 parameters
-    for (int parameterNumber = 0;
-        parameterNumber < numParametersInAlgorithm;
-        parameterNumber++) {
-      // Check parameters list bounds before accessing unit
-      final paramInfo = (parameterNumber < parameters.length)
-          ? parameters[parameterNumber]
-          : null;
-      // Use -1 or another value that won't match if paramInfo is null or unit is missing
-      final unit = paramInfo?.unit ?? -1;
-
-      // Check if the parameter's unit indicates it might be a string (13, 14, 17)
-      // and if it's meant to be visible.
-      if ([13, 14, 17].contains(unit) &&
-          visibleParameters.contains(parameterNumber)) {
-        // --- Debug Logging: Log BEFORE requesting ---
-        // Log the details of the parameter for which we are about to request a string value.
-        debugPrint(
-            "[fetchSlot Debug] Requesting string for AlgoIndex: $algorithmIndex, ParamNum: $parameterNumber, Unit: $unit");
-        // --- End Debug Logging ---
-
-        // Request the actual string value from the manager (device or offline cache).
-        final stringResult = await disting.requestParameterValueString(
-            algorithmIndex, parameterNumber);
-
-        // --- Debug Logging: Log AFTER receiving ---
-        // Log the details again, including the string value that was actually received.
-        // This helps verify if the junk data is present in the received value.
-        debugPrint(
-            "[fetchSlot Debug] Received string for AlgoIndex: $algorithmIndex, ParamNum: $parameterNumber, Unit: $unit, Value: '${stringResult?.value ?? 'NULL'}'");
-        // --- End Debug Logging ---
-
-        // Add the received string (or a filler if the request failed) to the list.
-        valueStrings.add(stringResult ?? ParameterValueString.filler());
-      } else {
-        // If it's not a string unit or not visible, add a filler.
-        valueStrings.add(ParameterValueString.filler());
-      }
-    }
-
-    // Safely get algorithm GUID, default to filler if null
-    final algorithmGuid = await disting.requestAlgorithmGuid(algorithmIndex);
-
-    // Debug print before returning
-    debugPrint(
-        "[Cubit] fetchSlot($algorithmIndex): GUID=${algorithmGuid?.guid}, Name=${algorithmGuid?.name}, Params=${parameters.length}, Vals=${parameterValues.length}, Enums=${enums.length}, Maps=${mappings.length}, ValStrs=${valueStrings.length}");
+    /* ------------------------------------------------------------------ *
+   * 5. Assemble the Slot                                               *
+   * ------------------------------------------------------------------ */
+    debugPrint('[fetchSlot] done in ${sw.elapsedMilliseconds} ms');
 
     return Slot(
-      // Use a default constructed Algorithm if guid is null
-      algorithm: algorithmGuid ??
+      algorithm: guid ??
           Algorithm(
-              algorithmIndex: algorithmIndex,
-              guid: "ERROR",
-              name: "Error fetching Algorithm"),
-      pages: parameterPages,
-      parameters: parameters, // Already handled if numParams was 0
-      values: parameterValues, // Already handled if result was null
+            algorithmIndex: algorithmIndex,
+            guid: 'ERROR',
+            name: 'Error fetching Algorithm',
+          ),
+      pages: pages,
+      parameters: parameters,
+      values: allValues,
       enums: enums,
       mappings: mappings,
       valueStrings: valueStrings,
-      routing: routing,
+      routing: RoutingInfo.filler(), // unchanged – still skipped
     );
+  }
+
+/* ---------------------------------------------------------------------- *
+ * Helper – run tasks with a concurrency cap                              *
+ * ---------------------------------------------------------------------- */
+  /// Runs [worker] for every element in [items], but never more than
+  /// [parallel] tasks are in-flight at once.
+  ///
+  /// Uses a “batch” strategy: kick off up to [parallel] futures,
+  /// `await Future.wait`, then move on to the next batch.  Simpler and
+  /// avoids the need for isCompleted / whenComplete gymnastics.
+  Future<void> _forEachLimited<T>(
+    Iterable<T> items,
+    Future<void> Function(T) worker, {
+    int parallel = kParallel,
+  }) async {
+    final iterator = items.iterator;
+
+    while (true) {
+      // Collect up to [parallel] tasks for this batch.
+      final batch = <Future<void>>[];
+      for (var i = 0; i < parallel && iterator.moveNext(); i++) {
+        batch.add(worker(iterator.current));
+      }
+
+      if (batch.isEmpty) break; // no more work
+      await Future.wait(batch); // wait for the batch to finish
+    }
   }
 
   // Helper method to fetch and sort devices (Reinstated)

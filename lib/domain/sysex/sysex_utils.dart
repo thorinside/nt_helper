@@ -34,6 +34,13 @@ int decode16(List<int> data, int offset) {
   return v;
 }
 
+/// Parse 3 bytes of 7-bit data into an unsigned 16-bit integer (matches JavaScript extractShort).
+int decode16Unsigned(List<int> data, int offset) {
+  return (data[offset + 0] << 14) |
+      (data[offset + 1] << 7) |
+      (data[offset + 2]);
+}
+
 /// Similar approach for 32-bit if needed (e.g. set real-time clock).
 /// The doc says "32 bit number" but doesn't explicitly define
 /// 7-bit splitting. The existing tools do typically use 7-bit expansions.

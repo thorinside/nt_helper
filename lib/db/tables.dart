@@ -2,6 +2,7 @@ import 'dart:convert'; // For JSON encoding/decoding
 // For Uint8List in converter
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/models/packed_mapping_data.dart'; // Import needed for converter
 
 // --- Core Algorithm and Parameter Metadata ---
@@ -159,21 +160,33 @@ class PackedMappingDataConverter
 
   @override
   PackedMappingData fromSql(Uint8List fromDb) {
-    // TODO: Verify this is the correct way to reconstruct PackedMappingData
-    // This assumes the first byte is the version and the rest is data.
-    if (fromDb.isEmpty) return PackedMappingData.filler(); // Or throw error?
+    if (fromDb.isEmpty) {
+      debugPrint(
+          "PackedMappingDataConverter.fromSql: Empty data, returning filler");
+      return PackedMappingData.filler();
+    }
+
+    if (fromDb.length < 2) {
+      debugPrint(
+          "PackedMappingDataConverter.fromSql: Data too short (${fromDb.length} bytes), returning filler");
+      return PackedMappingData.filler();
+    }
+
     final version = fromDb[0];
     final data = fromDb.sublist(1);
+    debugPrint(
+        "PackedMappingDataConverter.fromSql: Version $version, data length ${data.length}");
+
     return PackedMappingData.fromBytes(version, data);
   }
 
   @override
   Uint8List toSql(PackedMappingData value) {
-    // TODO: Verify this is the correct way to serialize PackedMappingData
-    // This assumes a toBytes() method exists and includes the version.
-    // Prepending the version byte manually if toBytes() doesn't include it.
     final dataBytes = value.toBytes();
-    return Uint8List.fromList([value.version, ...dataBytes]);
+    final result = Uint8List.fromList([value.version, ...dataBytes]);
+    debugPrint(
+        "PackedMappingDataConverter.toSql: Version ${value.version}, data length ${dataBytes.length}, total length ${result.length}");
+    return result;
   }
 }
 

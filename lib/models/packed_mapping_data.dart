@@ -97,14 +97,14 @@ class PackedMappingData {
     int offset = 0;
     final dataLength = data.length;
 
-    // Helper function for safe decoding
-    int safeDecode16(int currentOffset) {
-      if (currentOffset + 2 >= dataLength) {
+    // Helper function for safe decoding (decode16 needs 3 bytes) - using unsigned version to match JavaScript
+    int safeDecode16Unsigned(int currentOffset) {
+      if (currentOffset + 3 > dataLength) {
         debugPrint(
             "Warning: PackedMappingData truncated during decode16 at offset $currentOffset (length $dataLength). Returning 0.");
-        return 0; // Or throw, or return a specific error indicator?
+        return 0;
       }
-      return decode16(data, currentOffset);
+      return decode16Unsigned(data, currentOffset);
     }
 
     // Helper function for safe byte read
@@ -117,48 +117,48 @@ class PackedMappingData {
       return data[currentOffset];
     }
 
-    // --- Decode CV Mapping ---
-    int cvSectionMinLength = (version >= 4) ? 7 : 6;
-    if (offset + cvSectionMinLength - 1 >= dataLength) {
-      // Check if enough bytes for the whole section
+    // Calculate expected total length based on version
+    int expectedLength = (version == 1)
+        ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
+        : (version == 2)
+            ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
+            : (version == 3)
+                ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
+                : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+
+    if (dataLength != expectedLength) {
       debugPrint(
-          "Warning: PackedMappingData truncated within CV section (offset $offset, length $dataLength, version $version). Returning filler.");
+          "Warning: PackedMappingData length mismatch. Expected exactly $expectedLength bytes for version $version, got $dataLength. Returning filler.");
       return PackedMappingData.filler();
     }
+
+    // --- Decode CV Mapping ---
     final source = (version >= 4) ? safeReadByte(offset++) : 0;
     final cvInput = safeReadByte(offset++);
     final cvFlags = safeReadByte(offset++);
     final isUnipolar = (cvFlags & 1) != 0;
     final isGate = (cvFlags & 2) != 0;
     final volts = safeReadByte(offset++);
-    final delta = safeDecode16(offset);
+    final delta = safeDecode16Unsigned(offset);
     offset += 3;
 
-    // --- Decode MIDI Mapping (8 or 9 bytes) ---
-    int midiSectionMinLength = offset + 7; // Base size (v1)
-    if (version >= 2) midiSectionMinLength++; // Add 1 for flags2
-    // Need enough bytes for midiCC, midiFlags, midiFlags2 (if v >= 2), midiMin (3), midiMax (3)
-    int requiredMidiBytes = 1 + 1 + (version >= 2 ? 1 : 0) + 3 + 3;
-    if (offset + requiredMidiBytes > dataLength) {
-      debugPrint(
-          "Warning: PackedMappingData truncated within MIDI section (offset $offset, required $requiredMidiBytes, length $dataLength, version $version). Returning filler.");
-      return PackedMappingData.filler();
-    }
+    // --- Decode MIDI Mapping ---
     var midiCC = safeReadByte(offset++);
     final midiFlags = safeReadByte(offset++);
     final midiFlags2 = version >= 2 ? safeReadByte(offset++) : 0;
+
+    // Handle aftertouch flag
     if (midiFlags & 4 != 0) {
-      // This flag indicates Aftertouch, not a specific CC adjustment in the JS
       midiCC = 128;
     }
+
     final midiChannel = (midiFlags >> 3) & 0xF;
     final isMidiEnabled = (midiFlags & 1) != 0;
     final isMidiSymmetric = (midiFlags & 2) != 0;
-    // Decode from midiFlags2
     final isMidiRelative = (midiFlags2 & 1) != 0;
-    final isNoteMapping = (midiFlags2 & 4) != 0; // Bit 2 indicates Note mapping
-    final isToggleNote =
-        (midiFlags2 & 2) != 0; // Bit 1 indicates Toggle for Notes
+    final isNoteMapping = (midiFlags2 & 4) != 0;
+    final isToggleNote = (midiFlags2 & 2) != 0;
+
     final MidiMappingType midiMappingType;
     if (isNoteMapping) {
       midiMappingType = isToggleNote
@@ -167,49 +167,30 @@ class PackedMappingData {
     } else {
       midiMappingType = MidiMappingType.cc;
     }
-    // ---
-    final midiMin = safeDecode16(offset);
+
+    final midiMin = safeDecode16Unsigned(offset);
     offset += 3;
-    final midiMax = safeDecode16(offset);
+    final midiMax = safeDecode16Unsigned(offset);
     offset += 3;
 
-    // --- Decode I2C Mapping (8 or 9 bytes) ---
-    int i2cSectionMinLength = offset + 7; // Base size (v1/v2)
-    if (version >= 3) i2cSectionMinLength++; // Add 1 for extra I2C CC byte
-    // Need enough bytes for i2cCC (1 or 2), i2cFlags (1), i2cMin (3), i2cMax (3)
-    int requiredI2cBytes = (version >= 3 ? 2 : 1) + 1 + 3 + 3;
-    if (offset + requiredI2cBytes > dataLength) {
-      debugPrint(
-          "Warning: PackedMappingData truncated within I2C section (offset $offset, required $requiredI2cBytes, length $dataLength, version $version). Returning filler.");
-      return PackedMappingData.filler();
-    }
+    // --- Decode I2C Mapping ---
     var i2cCC = safeReadByte(offset++);
     if (version >= 3) {
-      // Check if we have the extra byte before reading it - already checked above
       i2cCC |= (safeReadByte(offset++) & 1) << 7;
     }
     final i2cFlags = safeReadByte(offset++);
     final isI2cEnabled = (i2cFlags & 1) != 0;
     final isI2cSymmetric = (i2cFlags & 2) != 0;
-    final i2cMin = safeDecode16(offset);
+    final i2cMin = safeDecode16Unsigned(offset);
     offset += 3;
-    final i2cMax = safeDecode16(offset);
+    final i2cMax = safeDecode16Unsigned(offset);
+    offset += 3;
 
-    // Final check (optional): Ensure offset matches expected length based on version
-    int expectedLength = (version == 1)
-        ? 22
-        : (version == 2)
-            ? 23
-            : (version == 3)
-                ? 24
-                : 25;
-    // The final offset should be *equal* to the expected length after reading all bytes
+    // Final validation: offset should equal expected length
     if (offset != expectedLength) {
       debugPrint(
-          "Warning: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data might be corrupt or have extra bytes.");
-      // Decide whether to return filler or the potentially partially decoded data
-      // Consider returning filler if strict adherence is needed.
-      // return PackedMappingData.filler();
+          "Error: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data is corrupt. Returning filler.");
+      return PackedMappingData.filler();
     }
 
     return PackedMappingData(
@@ -318,7 +299,23 @@ class PackedMappingData {
       ...i2cBytes,
     ];
 
-    return Uint8List.fromList(allBytes);
+    final result = Uint8List.fromList(allBytes);
+
+    // Validate the output length matches expected length for this version
+    int expectedLength = (version == 1)
+        ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
+        : (version == 2)
+            ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
+            : (version == 3)
+                ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
+                : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+
+    if (result.length != expectedLength) {
+      debugPrint(
+          "Error: PackedMappingData.toBytes() produced ${result.length} bytes for version $version, expected $expectedLength. CV: ${cvBytes.length}, MIDI: ${midiBytes.length}, I2C: ${i2cBytes.length}");
+    }
+
+    return result;
   }
 
   @override

@@ -73,10 +73,13 @@ class DistingMidiManager implements IDistingMidiManager {
           inputDevice: inputDevice,
           outputDevice: outputDevice,
           sysExId: sysExId,
+          maxOutstanding: 1,
+          messageInterval:
+              Duration(milliseconds: SettingsService().interMessageDelay),
           defaultTimeout:
               Duration(milliseconds: SettingsService().requestTimeout),
           defaultRetryDelay:
-              Duration(milliseconds: SettingsService().interMessageDelay),
+              Duration(milliseconds: SettingsService().interMessageDelay) * 2,
         );
 
   Future<void> _checkSdCardSupport() async {
