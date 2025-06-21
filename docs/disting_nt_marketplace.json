@@ -456,6 +456,55 @@
         "ratingCount": 38
       },
       "screenshots": []
+    },
+    {
+      "id": "handpan_for_nt",
+      "name": "Handpan for NT",
+      "description": "A realistic Handpan algorithm for the Disting NT that simulates the gentle, resonant sounds of a handpan instrument.",
+      "longDescription": "Attempt to create a \"realistic\" Handpan algorithm for the Disting NT. This plugin simulates the behavior of a handpan instrument with realistic resonance and gentle playing characteristics. Features IN1 & IN2 for Gate inputs, IN3 & IN4 for Note CV inputs, OUT 1 & 2 for stereo output. CV controls include IN5 for base frequency, IN6 for decay, and IN7 for exciter. Designed to be played gently like a real handpan instrument, with smooth CV faders recommended for optimal performance.",
+      "author": "fabianmartinez83",
+      "category": "generators",
+      "type": "cpp",
+      "featured": false,
+      "verified": false,
+      "tags": [
+        "handpan",
+        "percussion",
+        "resonance",
+        "synthesis",
+        "instrument",
+        "stereo"
+      ],
+      "repository": {
+        "owner": "FabianMartinez83",
+        "name": "Handpan-for-NT",
+        "url": "https://github.com/FabianMartinez83/Handpan-for-NT",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v1.0.0",
+        "stable": "v1.0.0"
+      },
+      "installation": {
+        "targetPath": "programs/plug-ins",
+        "subdirectory": "fabianmartinez83",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.o$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.8.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/FabianMartinez83/Handpan-for-NT/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 0,
+        "rating": 0,
+        "ratingCount": 0
+      },
+      "screenshots": [],
+      "createdAt": "2025-06-21T00:00:00Z",
+      "updatedAt": "2025-06-21T00:00:00Z"
     }
   ]
 }

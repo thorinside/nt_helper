@@ -4564,6 +4564,858 @@ class MetadataCacheCompanion extends UpdateCompanion<MetadataCacheEntry> {
   }
 }
 
+class $PluginInstallationsTable extends PluginInstallations
+    with TableInfo<$PluginInstallationsTable, PluginInstallationEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PluginInstallationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _pluginIdMeta =
+      const VerificationMeta('pluginId');
+  @override
+  late final GeneratedColumn<String> pluginId = GeneratedColumn<String>(
+      'plugin_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _pluginNameMeta =
+      const VerificationMeta('pluginName');
+  @override
+  late final GeneratedColumn<String> pluginName = GeneratedColumn<String>(
+      'plugin_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _pluginVersionMeta =
+      const VerificationMeta('pluginVersion');
+  @override
+  late final GeneratedColumn<String> pluginVersion = GeneratedColumn<String>(
+      'plugin_version', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _pluginTypeMeta =
+      const VerificationMeta('pluginType');
+  @override
+  late final GeneratedColumn<String> pluginType = GeneratedColumn<String>(
+      'plugin_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _pluginAuthorMeta =
+      const VerificationMeta('pluginAuthor');
+  @override
+  late final GeneratedColumn<String> pluginAuthor = GeneratedColumn<String>(
+      'plugin_author', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _installedAtMeta =
+      const VerificationMeta('installedAt');
+  @override
+  late final GeneratedColumn<DateTime> installedAt = GeneratedColumn<DateTime>(
+      'installed_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _installationPathMeta =
+      const VerificationMeta('installationPath');
+  @override
+  late final GeneratedColumn<String> installationPath = GeneratedColumn<String>(
+      'installation_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _installationStatusMeta =
+      const VerificationMeta('installationStatus');
+  @override
+  late final GeneratedColumn<String> installationStatus =
+      GeneratedColumn<String>('installation_status', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant('completed'));
+  static const VerificationMeta _marketplaceMetadataMeta =
+      const VerificationMeta('marketplaceMetadata');
+  @override
+  late final GeneratedColumn<String> marketplaceMetadata =
+      GeneratedColumn<String>('marketplace_metadata', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _repositoryUrlMeta =
+      const VerificationMeta('repositoryUrl');
+  @override
+  late final GeneratedColumn<String> repositoryUrl = GeneratedColumn<String>(
+      'repository_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _repositoryOwnerMeta =
+      const VerificationMeta('repositoryOwner');
+  @override
+  late final GeneratedColumn<String> repositoryOwner = GeneratedColumn<String>(
+      'repository_owner', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _repositoryNameMeta =
+      const VerificationMeta('repositoryName');
+  @override
+  late final GeneratedColumn<String> repositoryName = GeneratedColumn<String>(
+      'repository_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fileCountMeta =
+      const VerificationMeta('fileCount');
+  @override
+  late final GeneratedColumn<int> fileCount = GeneratedColumn<int>(
+      'file_count', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _totalBytesMeta =
+      const VerificationMeta('totalBytes');
+  @override
+  late final GeneratedColumn<int> totalBytes = GeneratedColumn<int>(
+      'total_bytes', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _installationNotesMeta =
+      const VerificationMeta('installationNotes');
+  @override
+  late final GeneratedColumn<String> installationNotes =
+      GeneratedColumn<String>('installation_notes', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _errorMessageMeta =
+      const VerificationMeta('errorMessage');
+  @override
+  late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
+      'error_message', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        pluginId,
+        pluginName,
+        pluginVersion,
+        pluginType,
+        pluginAuthor,
+        installedAt,
+        installationPath,
+        installationStatus,
+        marketplaceMetadata,
+        repositoryUrl,
+        repositoryOwner,
+        repositoryName,
+        fileCount,
+        totalBytes,
+        installationNotes,
+        errorMessage
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'plugin_installations';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PluginInstallationEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('plugin_id')) {
+      context.handle(_pluginIdMeta,
+          pluginId.isAcceptableOrUnknown(data['plugin_id']!, _pluginIdMeta));
+    } else if (isInserting) {
+      context.missing(_pluginIdMeta);
+    }
+    if (data.containsKey('plugin_name')) {
+      context.handle(
+          _pluginNameMeta,
+          pluginName.isAcceptableOrUnknown(
+              data['plugin_name']!, _pluginNameMeta));
+    } else if (isInserting) {
+      context.missing(_pluginNameMeta);
+    }
+    if (data.containsKey('plugin_version')) {
+      context.handle(
+          _pluginVersionMeta,
+          pluginVersion.isAcceptableOrUnknown(
+              data['plugin_version']!, _pluginVersionMeta));
+    } else if (isInserting) {
+      context.missing(_pluginVersionMeta);
+    }
+    if (data.containsKey('plugin_type')) {
+      context.handle(
+          _pluginTypeMeta,
+          pluginType.isAcceptableOrUnknown(
+              data['plugin_type']!, _pluginTypeMeta));
+    } else if (isInserting) {
+      context.missing(_pluginTypeMeta);
+    }
+    if (data.containsKey('plugin_author')) {
+      context.handle(
+          _pluginAuthorMeta,
+          pluginAuthor.isAcceptableOrUnknown(
+              data['plugin_author']!, _pluginAuthorMeta));
+    } else if (isInserting) {
+      context.missing(_pluginAuthorMeta);
+    }
+    if (data.containsKey('installed_at')) {
+      context.handle(
+          _installedAtMeta,
+          installedAt.isAcceptableOrUnknown(
+              data['installed_at']!, _installedAtMeta));
+    }
+    if (data.containsKey('installation_path')) {
+      context.handle(
+          _installationPathMeta,
+          installationPath.isAcceptableOrUnknown(
+              data['installation_path']!, _installationPathMeta));
+    } else if (isInserting) {
+      context.missing(_installationPathMeta);
+    }
+    if (data.containsKey('installation_status')) {
+      context.handle(
+          _installationStatusMeta,
+          installationStatus.isAcceptableOrUnknown(
+              data['installation_status']!, _installationStatusMeta));
+    }
+    if (data.containsKey('marketplace_metadata')) {
+      context.handle(
+          _marketplaceMetadataMeta,
+          marketplaceMetadata.isAcceptableOrUnknown(
+              data['marketplace_metadata']!, _marketplaceMetadataMeta));
+    }
+    if (data.containsKey('repository_url')) {
+      context.handle(
+          _repositoryUrlMeta,
+          repositoryUrl.isAcceptableOrUnknown(
+              data['repository_url']!, _repositoryUrlMeta));
+    }
+    if (data.containsKey('repository_owner')) {
+      context.handle(
+          _repositoryOwnerMeta,
+          repositoryOwner.isAcceptableOrUnknown(
+              data['repository_owner']!, _repositoryOwnerMeta));
+    }
+    if (data.containsKey('repository_name')) {
+      context.handle(
+          _repositoryNameMeta,
+          repositoryName.isAcceptableOrUnknown(
+              data['repository_name']!, _repositoryNameMeta));
+    }
+    if (data.containsKey('file_count')) {
+      context.handle(_fileCountMeta,
+          fileCount.isAcceptableOrUnknown(data['file_count']!, _fileCountMeta));
+    }
+    if (data.containsKey('total_bytes')) {
+      context.handle(
+          _totalBytesMeta,
+          totalBytes.isAcceptableOrUnknown(
+              data['total_bytes']!, _totalBytesMeta));
+    }
+    if (data.containsKey('installation_notes')) {
+      context.handle(
+          _installationNotesMeta,
+          installationNotes.isAcceptableOrUnknown(
+              data['installation_notes']!, _installationNotesMeta));
+    }
+    if (data.containsKey('error_message')) {
+      context.handle(
+          _errorMessageMeta,
+          errorMessage.isAcceptableOrUnknown(
+              data['error_message']!, _errorMessageMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PluginInstallationEntry map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PluginInstallationEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      pluginId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plugin_id'])!,
+      pluginName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plugin_name'])!,
+      pluginVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plugin_version'])!,
+      pluginType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plugin_type'])!,
+      pluginAuthor: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plugin_author'])!,
+      installedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}installed_at'])!,
+      installationPath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}installation_path'])!,
+      installationStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}installation_status'])!,
+      marketplaceMetadata: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}marketplace_metadata']),
+      repositoryUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}repository_url']),
+      repositoryOwner: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}repository_owner']),
+      repositoryName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}repository_name']),
+      fileCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}file_count']),
+      totalBytes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total_bytes']),
+      installationNotes: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}installation_notes']),
+      errorMessage: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}error_message']),
+    );
+  }
+
+  @override
+  $PluginInstallationsTable createAlias(String alias) {
+    return $PluginInstallationsTable(attachedDatabase, alias);
+  }
+}
+
+class PluginInstallationEntry extends DataClass
+    implements Insertable<PluginInstallationEntry> {
+  final int id;
+  final String pluginId;
+  final String pluginName;
+  final String pluginVersion;
+  final String pluginType;
+  final String pluginAuthor;
+  final DateTime installedAt;
+  final String installationPath;
+  final String installationStatus;
+  final String? marketplaceMetadata;
+  final String? repositoryUrl;
+  final String? repositoryOwner;
+  final String? repositoryName;
+  final int? fileCount;
+  final int? totalBytes;
+  final String? installationNotes;
+  final String? errorMessage;
+  const PluginInstallationEntry(
+      {required this.id,
+      required this.pluginId,
+      required this.pluginName,
+      required this.pluginVersion,
+      required this.pluginType,
+      required this.pluginAuthor,
+      required this.installedAt,
+      required this.installationPath,
+      required this.installationStatus,
+      this.marketplaceMetadata,
+      this.repositoryUrl,
+      this.repositoryOwner,
+      this.repositoryName,
+      this.fileCount,
+      this.totalBytes,
+      this.installationNotes,
+      this.errorMessage});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['plugin_id'] = Variable<String>(pluginId);
+    map['plugin_name'] = Variable<String>(pluginName);
+    map['plugin_version'] = Variable<String>(pluginVersion);
+    map['plugin_type'] = Variable<String>(pluginType);
+    map['plugin_author'] = Variable<String>(pluginAuthor);
+    map['installed_at'] = Variable<DateTime>(installedAt);
+    map['installation_path'] = Variable<String>(installationPath);
+    map['installation_status'] = Variable<String>(installationStatus);
+    if (!nullToAbsent || marketplaceMetadata != null) {
+      map['marketplace_metadata'] = Variable<String>(marketplaceMetadata);
+    }
+    if (!nullToAbsent || repositoryUrl != null) {
+      map['repository_url'] = Variable<String>(repositoryUrl);
+    }
+    if (!nullToAbsent || repositoryOwner != null) {
+      map['repository_owner'] = Variable<String>(repositoryOwner);
+    }
+    if (!nullToAbsent || repositoryName != null) {
+      map['repository_name'] = Variable<String>(repositoryName);
+    }
+    if (!nullToAbsent || fileCount != null) {
+      map['file_count'] = Variable<int>(fileCount);
+    }
+    if (!nullToAbsent || totalBytes != null) {
+      map['total_bytes'] = Variable<int>(totalBytes);
+    }
+    if (!nullToAbsent || installationNotes != null) {
+      map['installation_notes'] = Variable<String>(installationNotes);
+    }
+    if (!nullToAbsent || errorMessage != null) {
+      map['error_message'] = Variable<String>(errorMessage);
+    }
+    return map;
+  }
+
+  PluginInstallationsCompanion toCompanion(bool nullToAbsent) {
+    return PluginInstallationsCompanion(
+      id: Value(id),
+      pluginId: Value(pluginId),
+      pluginName: Value(pluginName),
+      pluginVersion: Value(pluginVersion),
+      pluginType: Value(pluginType),
+      pluginAuthor: Value(pluginAuthor),
+      installedAt: Value(installedAt),
+      installationPath: Value(installationPath),
+      installationStatus: Value(installationStatus),
+      marketplaceMetadata: marketplaceMetadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marketplaceMetadata),
+      repositoryUrl: repositoryUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repositoryUrl),
+      repositoryOwner: repositoryOwner == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repositoryOwner),
+      repositoryName: repositoryName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repositoryName),
+      fileCount: fileCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileCount),
+      totalBytes: totalBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalBytes),
+      installationNotes: installationNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(installationNotes),
+      errorMessage: errorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorMessage),
+    );
+  }
+
+  factory PluginInstallationEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PluginInstallationEntry(
+      id: serializer.fromJson<int>(json['id']),
+      pluginId: serializer.fromJson<String>(json['pluginId']),
+      pluginName: serializer.fromJson<String>(json['pluginName']),
+      pluginVersion: serializer.fromJson<String>(json['pluginVersion']),
+      pluginType: serializer.fromJson<String>(json['pluginType']),
+      pluginAuthor: serializer.fromJson<String>(json['pluginAuthor']),
+      installedAt: serializer.fromJson<DateTime>(json['installedAt']),
+      installationPath: serializer.fromJson<String>(json['installationPath']),
+      installationStatus:
+          serializer.fromJson<String>(json['installationStatus']),
+      marketplaceMetadata:
+          serializer.fromJson<String?>(json['marketplaceMetadata']),
+      repositoryUrl: serializer.fromJson<String?>(json['repositoryUrl']),
+      repositoryOwner: serializer.fromJson<String?>(json['repositoryOwner']),
+      repositoryName: serializer.fromJson<String?>(json['repositoryName']),
+      fileCount: serializer.fromJson<int?>(json['fileCount']),
+      totalBytes: serializer.fromJson<int?>(json['totalBytes']),
+      installationNotes:
+          serializer.fromJson<String?>(json['installationNotes']),
+      errorMessage: serializer.fromJson<String?>(json['errorMessage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'pluginId': serializer.toJson<String>(pluginId),
+      'pluginName': serializer.toJson<String>(pluginName),
+      'pluginVersion': serializer.toJson<String>(pluginVersion),
+      'pluginType': serializer.toJson<String>(pluginType),
+      'pluginAuthor': serializer.toJson<String>(pluginAuthor),
+      'installedAt': serializer.toJson<DateTime>(installedAt),
+      'installationPath': serializer.toJson<String>(installationPath),
+      'installationStatus': serializer.toJson<String>(installationStatus),
+      'marketplaceMetadata': serializer.toJson<String?>(marketplaceMetadata),
+      'repositoryUrl': serializer.toJson<String?>(repositoryUrl),
+      'repositoryOwner': serializer.toJson<String?>(repositoryOwner),
+      'repositoryName': serializer.toJson<String?>(repositoryName),
+      'fileCount': serializer.toJson<int?>(fileCount),
+      'totalBytes': serializer.toJson<int?>(totalBytes),
+      'installationNotes': serializer.toJson<String?>(installationNotes),
+      'errorMessage': serializer.toJson<String?>(errorMessage),
+    };
+  }
+
+  PluginInstallationEntry copyWith(
+          {int? id,
+          String? pluginId,
+          String? pluginName,
+          String? pluginVersion,
+          String? pluginType,
+          String? pluginAuthor,
+          DateTime? installedAt,
+          String? installationPath,
+          String? installationStatus,
+          Value<String?> marketplaceMetadata = const Value.absent(),
+          Value<String?> repositoryUrl = const Value.absent(),
+          Value<String?> repositoryOwner = const Value.absent(),
+          Value<String?> repositoryName = const Value.absent(),
+          Value<int?> fileCount = const Value.absent(),
+          Value<int?> totalBytes = const Value.absent(),
+          Value<String?> installationNotes = const Value.absent(),
+          Value<String?> errorMessage = const Value.absent()}) =>
+      PluginInstallationEntry(
+        id: id ?? this.id,
+        pluginId: pluginId ?? this.pluginId,
+        pluginName: pluginName ?? this.pluginName,
+        pluginVersion: pluginVersion ?? this.pluginVersion,
+        pluginType: pluginType ?? this.pluginType,
+        pluginAuthor: pluginAuthor ?? this.pluginAuthor,
+        installedAt: installedAt ?? this.installedAt,
+        installationPath: installationPath ?? this.installationPath,
+        installationStatus: installationStatus ?? this.installationStatus,
+        marketplaceMetadata: marketplaceMetadata.present
+            ? marketplaceMetadata.value
+            : this.marketplaceMetadata,
+        repositoryUrl:
+            repositoryUrl.present ? repositoryUrl.value : this.repositoryUrl,
+        repositoryOwner: repositoryOwner.present
+            ? repositoryOwner.value
+            : this.repositoryOwner,
+        repositoryName:
+            repositoryName.present ? repositoryName.value : this.repositoryName,
+        fileCount: fileCount.present ? fileCount.value : this.fileCount,
+        totalBytes: totalBytes.present ? totalBytes.value : this.totalBytes,
+        installationNotes: installationNotes.present
+            ? installationNotes.value
+            : this.installationNotes,
+        errorMessage:
+            errorMessage.present ? errorMessage.value : this.errorMessage,
+      );
+  PluginInstallationEntry copyWithCompanion(PluginInstallationsCompanion data) {
+    return PluginInstallationEntry(
+      id: data.id.present ? data.id.value : this.id,
+      pluginId: data.pluginId.present ? data.pluginId.value : this.pluginId,
+      pluginName:
+          data.pluginName.present ? data.pluginName.value : this.pluginName,
+      pluginVersion: data.pluginVersion.present
+          ? data.pluginVersion.value
+          : this.pluginVersion,
+      pluginType:
+          data.pluginType.present ? data.pluginType.value : this.pluginType,
+      pluginAuthor: data.pluginAuthor.present
+          ? data.pluginAuthor.value
+          : this.pluginAuthor,
+      installedAt:
+          data.installedAt.present ? data.installedAt.value : this.installedAt,
+      installationPath: data.installationPath.present
+          ? data.installationPath.value
+          : this.installationPath,
+      installationStatus: data.installationStatus.present
+          ? data.installationStatus.value
+          : this.installationStatus,
+      marketplaceMetadata: data.marketplaceMetadata.present
+          ? data.marketplaceMetadata.value
+          : this.marketplaceMetadata,
+      repositoryUrl: data.repositoryUrl.present
+          ? data.repositoryUrl.value
+          : this.repositoryUrl,
+      repositoryOwner: data.repositoryOwner.present
+          ? data.repositoryOwner.value
+          : this.repositoryOwner,
+      repositoryName: data.repositoryName.present
+          ? data.repositoryName.value
+          : this.repositoryName,
+      fileCount: data.fileCount.present ? data.fileCount.value : this.fileCount,
+      totalBytes:
+          data.totalBytes.present ? data.totalBytes.value : this.totalBytes,
+      installationNotes: data.installationNotes.present
+          ? data.installationNotes.value
+          : this.installationNotes,
+      errorMessage: data.errorMessage.present
+          ? data.errorMessage.value
+          : this.errorMessage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PluginInstallationEntry(')
+          ..write('id: $id, ')
+          ..write('pluginId: $pluginId, ')
+          ..write('pluginName: $pluginName, ')
+          ..write('pluginVersion: $pluginVersion, ')
+          ..write('pluginType: $pluginType, ')
+          ..write('pluginAuthor: $pluginAuthor, ')
+          ..write('installedAt: $installedAt, ')
+          ..write('installationPath: $installationPath, ')
+          ..write('installationStatus: $installationStatus, ')
+          ..write('marketplaceMetadata: $marketplaceMetadata, ')
+          ..write('repositoryUrl: $repositoryUrl, ')
+          ..write('repositoryOwner: $repositoryOwner, ')
+          ..write('repositoryName: $repositoryName, ')
+          ..write('fileCount: $fileCount, ')
+          ..write('totalBytes: $totalBytes, ')
+          ..write('installationNotes: $installationNotes, ')
+          ..write('errorMessage: $errorMessage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      pluginId,
+      pluginName,
+      pluginVersion,
+      pluginType,
+      pluginAuthor,
+      installedAt,
+      installationPath,
+      installationStatus,
+      marketplaceMetadata,
+      repositoryUrl,
+      repositoryOwner,
+      repositoryName,
+      fileCount,
+      totalBytes,
+      installationNotes,
+      errorMessage);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PluginInstallationEntry &&
+          other.id == this.id &&
+          other.pluginId == this.pluginId &&
+          other.pluginName == this.pluginName &&
+          other.pluginVersion == this.pluginVersion &&
+          other.pluginType == this.pluginType &&
+          other.pluginAuthor == this.pluginAuthor &&
+          other.installedAt == this.installedAt &&
+          other.installationPath == this.installationPath &&
+          other.installationStatus == this.installationStatus &&
+          other.marketplaceMetadata == this.marketplaceMetadata &&
+          other.repositoryUrl == this.repositoryUrl &&
+          other.repositoryOwner == this.repositoryOwner &&
+          other.repositoryName == this.repositoryName &&
+          other.fileCount == this.fileCount &&
+          other.totalBytes == this.totalBytes &&
+          other.installationNotes == this.installationNotes &&
+          other.errorMessage == this.errorMessage);
+}
+
+class PluginInstallationsCompanion
+    extends UpdateCompanion<PluginInstallationEntry> {
+  final Value<int> id;
+  final Value<String> pluginId;
+  final Value<String> pluginName;
+  final Value<String> pluginVersion;
+  final Value<String> pluginType;
+  final Value<String> pluginAuthor;
+  final Value<DateTime> installedAt;
+  final Value<String> installationPath;
+  final Value<String> installationStatus;
+  final Value<String?> marketplaceMetadata;
+  final Value<String?> repositoryUrl;
+  final Value<String?> repositoryOwner;
+  final Value<String?> repositoryName;
+  final Value<int?> fileCount;
+  final Value<int?> totalBytes;
+  final Value<String?> installationNotes;
+  final Value<String?> errorMessage;
+  const PluginInstallationsCompanion({
+    this.id = const Value.absent(),
+    this.pluginId = const Value.absent(),
+    this.pluginName = const Value.absent(),
+    this.pluginVersion = const Value.absent(),
+    this.pluginType = const Value.absent(),
+    this.pluginAuthor = const Value.absent(),
+    this.installedAt = const Value.absent(),
+    this.installationPath = const Value.absent(),
+    this.installationStatus = const Value.absent(),
+    this.marketplaceMetadata = const Value.absent(),
+    this.repositoryUrl = const Value.absent(),
+    this.repositoryOwner = const Value.absent(),
+    this.repositoryName = const Value.absent(),
+    this.fileCount = const Value.absent(),
+    this.totalBytes = const Value.absent(),
+    this.installationNotes = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+  });
+  PluginInstallationsCompanion.insert({
+    this.id = const Value.absent(),
+    required String pluginId,
+    required String pluginName,
+    required String pluginVersion,
+    required String pluginType,
+    required String pluginAuthor,
+    this.installedAt = const Value.absent(),
+    required String installationPath,
+    this.installationStatus = const Value.absent(),
+    this.marketplaceMetadata = const Value.absent(),
+    this.repositoryUrl = const Value.absent(),
+    this.repositoryOwner = const Value.absent(),
+    this.repositoryName = const Value.absent(),
+    this.fileCount = const Value.absent(),
+    this.totalBytes = const Value.absent(),
+    this.installationNotes = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+  })  : pluginId = Value(pluginId),
+        pluginName = Value(pluginName),
+        pluginVersion = Value(pluginVersion),
+        pluginType = Value(pluginType),
+        pluginAuthor = Value(pluginAuthor),
+        installationPath = Value(installationPath);
+  static Insertable<PluginInstallationEntry> custom({
+    Expression<int>? id,
+    Expression<String>? pluginId,
+    Expression<String>? pluginName,
+    Expression<String>? pluginVersion,
+    Expression<String>? pluginType,
+    Expression<String>? pluginAuthor,
+    Expression<DateTime>? installedAt,
+    Expression<String>? installationPath,
+    Expression<String>? installationStatus,
+    Expression<String>? marketplaceMetadata,
+    Expression<String>? repositoryUrl,
+    Expression<String>? repositoryOwner,
+    Expression<String>? repositoryName,
+    Expression<int>? fileCount,
+    Expression<int>? totalBytes,
+    Expression<String>? installationNotes,
+    Expression<String>? errorMessage,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (pluginId != null) 'plugin_id': pluginId,
+      if (pluginName != null) 'plugin_name': pluginName,
+      if (pluginVersion != null) 'plugin_version': pluginVersion,
+      if (pluginType != null) 'plugin_type': pluginType,
+      if (pluginAuthor != null) 'plugin_author': pluginAuthor,
+      if (installedAt != null) 'installed_at': installedAt,
+      if (installationPath != null) 'installation_path': installationPath,
+      if (installationStatus != null) 'installation_status': installationStatus,
+      if (marketplaceMetadata != null)
+        'marketplace_metadata': marketplaceMetadata,
+      if (repositoryUrl != null) 'repository_url': repositoryUrl,
+      if (repositoryOwner != null) 'repository_owner': repositoryOwner,
+      if (repositoryName != null) 'repository_name': repositoryName,
+      if (fileCount != null) 'file_count': fileCount,
+      if (totalBytes != null) 'total_bytes': totalBytes,
+      if (installationNotes != null) 'installation_notes': installationNotes,
+      if (errorMessage != null) 'error_message': errorMessage,
+    });
+  }
+
+  PluginInstallationsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? pluginId,
+      Value<String>? pluginName,
+      Value<String>? pluginVersion,
+      Value<String>? pluginType,
+      Value<String>? pluginAuthor,
+      Value<DateTime>? installedAt,
+      Value<String>? installationPath,
+      Value<String>? installationStatus,
+      Value<String?>? marketplaceMetadata,
+      Value<String?>? repositoryUrl,
+      Value<String?>? repositoryOwner,
+      Value<String?>? repositoryName,
+      Value<int?>? fileCount,
+      Value<int?>? totalBytes,
+      Value<String?>? installationNotes,
+      Value<String?>? errorMessage}) {
+    return PluginInstallationsCompanion(
+      id: id ?? this.id,
+      pluginId: pluginId ?? this.pluginId,
+      pluginName: pluginName ?? this.pluginName,
+      pluginVersion: pluginVersion ?? this.pluginVersion,
+      pluginType: pluginType ?? this.pluginType,
+      pluginAuthor: pluginAuthor ?? this.pluginAuthor,
+      installedAt: installedAt ?? this.installedAt,
+      installationPath: installationPath ?? this.installationPath,
+      installationStatus: installationStatus ?? this.installationStatus,
+      marketplaceMetadata: marketplaceMetadata ?? this.marketplaceMetadata,
+      repositoryUrl: repositoryUrl ?? this.repositoryUrl,
+      repositoryOwner: repositoryOwner ?? this.repositoryOwner,
+      repositoryName: repositoryName ?? this.repositoryName,
+      fileCount: fileCount ?? this.fileCount,
+      totalBytes: totalBytes ?? this.totalBytes,
+      installationNotes: installationNotes ?? this.installationNotes,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (pluginId.present) {
+      map['plugin_id'] = Variable<String>(pluginId.value);
+    }
+    if (pluginName.present) {
+      map['plugin_name'] = Variable<String>(pluginName.value);
+    }
+    if (pluginVersion.present) {
+      map['plugin_version'] = Variable<String>(pluginVersion.value);
+    }
+    if (pluginType.present) {
+      map['plugin_type'] = Variable<String>(pluginType.value);
+    }
+    if (pluginAuthor.present) {
+      map['plugin_author'] = Variable<String>(pluginAuthor.value);
+    }
+    if (installedAt.present) {
+      map['installed_at'] = Variable<DateTime>(installedAt.value);
+    }
+    if (installationPath.present) {
+      map['installation_path'] = Variable<String>(installationPath.value);
+    }
+    if (installationStatus.present) {
+      map['installation_status'] = Variable<String>(installationStatus.value);
+    }
+    if (marketplaceMetadata.present) {
+      map['marketplace_metadata'] = Variable<String>(marketplaceMetadata.value);
+    }
+    if (repositoryUrl.present) {
+      map['repository_url'] = Variable<String>(repositoryUrl.value);
+    }
+    if (repositoryOwner.present) {
+      map['repository_owner'] = Variable<String>(repositoryOwner.value);
+    }
+    if (repositoryName.present) {
+      map['repository_name'] = Variable<String>(repositoryName.value);
+    }
+    if (fileCount.present) {
+      map['file_count'] = Variable<int>(fileCount.value);
+    }
+    if (totalBytes.present) {
+      map['total_bytes'] = Variable<int>(totalBytes.value);
+    }
+    if (installationNotes.present) {
+      map['installation_notes'] = Variable<String>(installationNotes.value);
+    }
+    if (errorMessage.present) {
+      map['error_message'] = Variable<String>(errorMessage.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PluginInstallationsCompanion(')
+          ..write('id: $id, ')
+          ..write('pluginId: $pluginId, ')
+          ..write('pluginName: $pluginName, ')
+          ..write('pluginVersion: $pluginVersion, ')
+          ..write('pluginType: $pluginType, ')
+          ..write('pluginAuthor: $pluginAuthor, ')
+          ..write('installedAt: $installedAt, ')
+          ..write('installationPath: $installationPath, ')
+          ..write('installationStatus: $installationStatus, ')
+          ..write('marketplaceMetadata: $marketplaceMetadata, ')
+          ..write('repositoryUrl: $repositoryUrl, ')
+          ..write('repositoryOwner: $repositoryOwner, ')
+          ..write('repositoryName: $repositoryName, ')
+          ..write('fileCount: $fileCount, ')
+          ..write('totalBytes: $totalBytes, ')
+          ..write('installationNotes: $installationNotes, ')
+          ..write('errorMessage: $errorMessage')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4587,11 +5439,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IndexedPresetFilesTable indexedPresetFiles =
       $IndexedPresetFilesTable(this);
   late final $MetadataCacheTable metadataCache = $MetadataCacheTable(this);
+  late final $PluginInstallationsTable pluginInstallations =
+      $PluginInstallationsTable(this);
   late final MetadataDao metadataDao = MetadataDao(this as AppDatabase);
   late final PresetsDao presetsDao = PresetsDao(this as AppDatabase);
   late final SdCardsDao sdCardsDao = SdCardsDao(this as AppDatabase);
   late final IndexedPresetFilesDao indexedPresetFilesDao =
       IndexedPresetFilesDao(this as AppDatabase);
+  late final PluginInstallationsDao pluginInstallationsDao =
+      PluginInstallationsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4612,7 +5468,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         presetRoutings,
         sdCards,
         indexedPresetFiles,
-        metadataCache
+        metadataCache,
+        pluginInstallations
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -9160,6 +10017,374 @@ typedef $$MetadataCacheTableProcessedTableManager = ProcessedTableManager<
     ),
     MetadataCacheEntry,
     PrefetchHooks Function()>;
+typedef $$PluginInstallationsTableCreateCompanionBuilder
+    = PluginInstallationsCompanion Function({
+  Value<int> id,
+  required String pluginId,
+  required String pluginName,
+  required String pluginVersion,
+  required String pluginType,
+  required String pluginAuthor,
+  Value<DateTime> installedAt,
+  required String installationPath,
+  Value<String> installationStatus,
+  Value<String?> marketplaceMetadata,
+  Value<String?> repositoryUrl,
+  Value<String?> repositoryOwner,
+  Value<String?> repositoryName,
+  Value<int?> fileCount,
+  Value<int?> totalBytes,
+  Value<String?> installationNotes,
+  Value<String?> errorMessage,
+});
+typedef $$PluginInstallationsTableUpdateCompanionBuilder
+    = PluginInstallationsCompanion Function({
+  Value<int> id,
+  Value<String> pluginId,
+  Value<String> pluginName,
+  Value<String> pluginVersion,
+  Value<String> pluginType,
+  Value<String> pluginAuthor,
+  Value<DateTime> installedAt,
+  Value<String> installationPath,
+  Value<String> installationStatus,
+  Value<String?> marketplaceMetadata,
+  Value<String?> repositoryUrl,
+  Value<String?> repositoryOwner,
+  Value<String?> repositoryName,
+  Value<int?> fileCount,
+  Value<int?> totalBytes,
+  Value<String?> installationNotes,
+  Value<String?> errorMessage,
+});
+
+class $$PluginInstallationsTableFilterComposer
+    extends Composer<_$AppDatabase, $PluginInstallationsTable> {
+  $$PluginInstallationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pluginId => $composableBuilder(
+      column: $table.pluginId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pluginName => $composableBuilder(
+      column: $table.pluginName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pluginVersion => $composableBuilder(
+      column: $table.pluginVersion, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pluginType => $composableBuilder(
+      column: $table.pluginType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pluginAuthor => $composableBuilder(
+      column: $table.pluginAuthor, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get installedAt => $composableBuilder(
+      column: $table.installedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get installationPath => $composableBuilder(
+      column: $table.installationPath,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get installationStatus => $composableBuilder(
+      column: $table.installationStatus,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get marketplaceMetadata => $composableBuilder(
+      column: $table.marketplaceMetadata,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get repositoryUrl => $composableBuilder(
+      column: $table.repositoryUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get repositoryOwner => $composableBuilder(
+      column: $table.repositoryOwner,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get repositoryName => $composableBuilder(
+      column: $table.repositoryName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get fileCount => $composableBuilder(
+      column: $table.fileCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get totalBytes => $composableBuilder(
+      column: $table.totalBytes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get installationNotes => $composableBuilder(
+      column: $table.installationNotes,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get errorMessage => $composableBuilder(
+      column: $table.errorMessage, builder: (column) => ColumnFilters(column));
+}
+
+class $$PluginInstallationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PluginInstallationsTable> {
+  $$PluginInstallationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pluginId => $composableBuilder(
+      column: $table.pluginId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pluginName => $composableBuilder(
+      column: $table.pluginName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pluginVersion => $composableBuilder(
+      column: $table.pluginVersion,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pluginType => $composableBuilder(
+      column: $table.pluginType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pluginAuthor => $composableBuilder(
+      column: $table.pluginAuthor,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get installedAt => $composableBuilder(
+      column: $table.installedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get installationPath => $composableBuilder(
+      column: $table.installationPath,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get installationStatus => $composableBuilder(
+      column: $table.installationStatus,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get marketplaceMetadata => $composableBuilder(
+      column: $table.marketplaceMetadata,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get repositoryUrl => $composableBuilder(
+      column: $table.repositoryUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get repositoryOwner => $composableBuilder(
+      column: $table.repositoryOwner,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get repositoryName => $composableBuilder(
+      column: $table.repositoryName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get fileCount => $composableBuilder(
+      column: $table.fileCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get totalBytes => $composableBuilder(
+      column: $table.totalBytes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get installationNotes => $composableBuilder(
+      column: $table.installationNotes,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get errorMessage => $composableBuilder(
+      column: $table.errorMessage,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$PluginInstallationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PluginInstallationsTable> {
+  $$PluginInstallationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get pluginId =>
+      $composableBuilder(column: $table.pluginId, builder: (column) => column);
+
+  GeneratedColumn<String> get pluginName => $composableBuilder(
+      column: $table.pluginName, builder: (column) => column);
+
+  GeneratedColumn<String> get pluginVersion => $composableBuilder(
+      column: $table.pluginVersion, builder: (column) => column);
+
+  GeneratedColumn<String> get pluginType => $composableBuilder(
+      column: $table.pluginType, builder: (column) => column);
+
+  GeneratedColumn<String> get pluginAuthor => $composableBuilder(
+      column: $table.pluginAuthor, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get installedAt => $composableBuilder(
+      column: $table.installedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get installationPath => $composableBuilder(
+      column: $table.installationPath, builder: (column) => column);
+
+  GeneratedColumn<String> get installationStatus => $composableBuilder(
+      column: $table.installationStatus, builder: (column) => column);
+
+  GeneratedColumn<String> get marketplaceMetadata => $composableBuilder(
+      column: $table.marketplaceMetadata, builder: (column) => column);
+
+  GeneratedColumn<String> get repositoryUrl => $composableBuilder(
+      column: $table.repositoryUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get repositoryOwner => $composableBuilder(
+      column: $table.repositoryOwner, builder: (column) => column);
+
+  GeneratedColumn<String> get repositoryName => $composableBuilder(
+      column: $table.repositoryName, builder: (column) => column);
+
+  GeneratedColumn<int> get fileCount =>
+      $composableBuilder(column: $table.fileCount, builder: (column) => column);
+
+  GeneratedColumn<int> get totalBytes => $composableBuilder(
+      column: $table.totalBytes, builder: (column) => column);
+
+  GeneratedColumn<String> get installationNotes => $composableBuilder(
+      column: $table.installationNotes, builder: (column) => column);
+
+  GeneratedColumn<String> get errorMessage => $composableBuilder(
+      column: $table.errorMessage, builder: (column) => column);
+}
+
+class $$PluginInstallationsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PluginInstallationsTable,
+    PluginInstallationEntry,
+    $$PluginInstallationsTableFilterComposer,
+    $$PluginInstallationsTableOrderingComposer,
+    $$PluginInstallationsTableAnnotationComposer,
+    $$PluginInstallationsTableCreateCompanionBuilder,
+    $$PluginInstallationsTableUpdateCompanionBuilder,
+    (
+      PluginInstallationEntry,
+      BaseReferences<_$AppDatabase, $PluginInstallationsTable,
+          PluginInstallationEntry>
+    ),
+    PluginInstallationEntry,
+    PrefetchHooks Function()> {
+  $$PluginInstallationsTableTableManager(
+      _$AppDatabase db, $PluginInstallationsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PluginInstallationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PluginInstallationsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PluginInstallationsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> pluginId = const Value.absent(),
+            Value<String> pluginName = const Value.absent(),
+            Value<String> pluginVersion = const Value.absent(),
+            Value<String> pluginType = const Value.absent(),
+            Value<String> pluginAuthor = const Value.absent(),
+            Value<DateTime> installedAt = const Value.absent(),
+            Value<String> installationPath = const Value.absent(),
+            Value<String> installationStatus = const Value.absent(),
+            Value<String?> marketplaceMetadata = const Value.absent(),
+            Value<String?> repositoryUrl = const Value.absent(),
+            Value<String?> repositoryOwner = const Value.absent(),
+            Value<String?> repositoryName = const Value.absent(),
+            Value<int?> fileCount = const Value.absent(),
+            Value<int?> totalBytes = const Value.absent(),
+            Value<String?> installationNotes = const Value.absent(),
+            Value<String?> errorMessage = const Value.absent(),
+          }) =>
+              PluginInstallationsCompanion(
+            id: id,
+            pluginId: pluginId,
+            pluginName: pluginName,
+            pluginVersion: pluginVersion,
+            pluginType: pluginType,
+            pluginAuthor: pluginAuthor,
+            installedAt: installedAt,
+            installationPath: installationPath,
+            installationStatus: installationStatus,
+            marketplaceMetadata: marketplaceMetadata,
+            repositoryUrl: repositoryUrl,
+            repositoryOwner: repositoryOwner,
+            repositoryName: repositoryName,
+            fileCount: fileCount,
+            totalBytes: totalBytes,
+            installationNotes: installationNotes,
+            errorMessage: errorMessage,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String pluginId,
+            required String pluginName,
+            required String pluginVersion,
+            required String pluginType,
+            required String pluginAuthor,
+            Value<DateTime> installedAt = const Value.absent(),
+            required String installationPath,
+            Value<String> installationStatus = const Value.absent(),
+            Value<String?> marketplaceMetadata = const Value.absent(),
+            Value<String?> repositoryUrl = const Value.absent(),
+            Value<String?> repositoryOwner = const Value.absent(),
+            Value<String?> repositoryName = const Value.absent(),
+            Value<int?> fileCount = const Value.absent(),
+            Value<int?> totalBytes = const Value.absent(),
+            Value<String?> installationNotes = const Value.absent(),
+            Value<String?> errorMessage = const Value.absent(),
+          }) =>
+              PluginInstallationsCompanion.insert(
+            id: id,
+            pluginId: pluginId,
+            pluginName: pluginName,
+            pluginVersion: pluginVersion,
+            pluginType: pluginType,
+            pluginAuthor: pluginAuthor,
+            installedAt: installedAt,
+            installationPath: installationPath,
+            installationStatus: installationStatus,
+            marketplaceMetadata: marketplaceMetadata,
+            repositoryUrl: repositoryUrl,
+            repositoryOwner: repositoryOwner,
+            repositoryName: repositoryName,
+            fileCount: fileCount,
+            totalBytes: totalBytes,
+            installationNotes: installationNotes,
+            errorMessage: errorMessage,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PluginInstallationsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PluginInstallationsTable,
+    PluginInstallationEntry,
+    $$PluginInstallationsTableFilterComposer,
+    $$PluginInstallationsTableOrderingComposer,
+    $$PluginInstallationsTableAnnotationComposer,
+    $$PluginInstallationsTableCreateCompanionBuilder,
+    $$PluginInstallationsTableUpdateCompanionBuilder,
+    (
+      PluginInstallationEntry,
+      BaseReferences<_$AppDatabase, $PluginInstallationsTable,
+          PluginInstallationEntry>
+    ),
+    PluginInstallationEntry,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9198,4 +10423,6 @@ class $AppDatabaseManager {
       $$IndexedPresetFilesTableTableManager(_db, _db.indexedPresetFiles);
   $$MetadataCacheTableTableManager get metadataCache =>
       $$MetadataCacheTableTableManager(_db, _db.metadataCache);
+  $$PluginInstallationsTableTableManager get pluginInstallations =>
+      $$PluginInstallationsTableTableManager(_db, _db.pluginInstallations);
 }

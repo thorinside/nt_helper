@@ -266,3 +266,50 @@ class MetadataCache extends Table {
   @override
   Set<Column> get primaryKey => {cacheKey};
 }
+
+// --- Plugin Installation Tracking ---
+
+@DataClassName('PluginInstallationEntry')
+class PluginInstallations extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  // Plugin identification from marketplace
+  TextColumn get pluginId => text()(); // Marketplace plugin ID
+  TextColumn get pluginName => text()();
+  TextColumn get pluginVersion => text()(); // The version that was installed
+  TextColumn get pluginType => text()(); // 'lua', 'threepot', 'cpp'
+  TextColumn get pluginAuthor => text()();
+
+  // Installation details
+  DateTimeColumn get installedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  TextColumn get installationPath =>
+      text()(); // Where it was installed on the device
+  TextColumn get installationStatus => text().withDefault(
+      const Constant('completed'))(); // 'completed', 'failed', 'partial'
+
+  // Marketplace metadata (stored as JSON for flexibility)
+  TextColumn get marketplaceMetadata =>
+      text().nullable()(); // JSON string of plugin metadata
+
+  // Repository information for updates/reinstalls
+  TextColumn get repositoryUrl => text().nullable()();
+  TextColumn get repositoryOwner => text().nullable()();
+  TextColumn get repositoryName => text().nullable()();
+
+  // Installation tracking
+  IntColumn get fileCount =>
+      integer().nullable()(); // Number of files installed
+  IntColumn get totalBytes =>
+      integer().nullable()(); // Total size of installed files
+
+  // Notes and error information
+  TextColumn get installationNotes =>
+      text().nullable()(); // Any notes about the installation
+  TextColumn get errorMessage =>
+      text().nullable()(); // Error message if installation failed
+
+  // Unique constraint to prevent duplicate installations of the same plugin version
+  @override
+  List<String> get customConstraints => ['UNIQUE (plugin_id, plugin_version)'];
+}

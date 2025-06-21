@@ -560,10 +560,10 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: _getCrossAxisCount(),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 4 / 3, // 4:3 aspect ratio (slightly wider than tall)
+        crossAxisCount: _getOptimalColumnCount(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 320 / 280, // Fixed ratio: 320px wide × 280px tall
       ),
       itemCount: filteredPlugins.length,
       itemBuilder: (context, index) {
@@ -572,12 +572,19 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     );
   }
 
-  int _getCrossAxisCount() {
+  int _getOptimalColumnCount() {
     final width = MediaQuery.of(context).size.width;
-    if (width > 1200) return 4;
-    if (width > 800) return 3;
-    if (width > 600) return 2;
-    return 1;
+    const cardWidth = 320.0;
+    const spacing = 12.0;
+    const padding = 32.0; // 16px on each side
+
+    // Calculate how many cards can fit
+    final availableWidth = width - padding;
+    final columns =
+        ((availableWidth + spacing) / (cardWidth + spacing)).floor();
+
+    // Ensure at least 1 column
+    return columns.clamp(1, 4);
   }
 
   Widget _buildPluginCard(MarketplacePlugin plugin, MarketplaceState state) {
@@ -586,64 +593,166 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     final author = plugin.getAuthor(state.marketplace);
     final category = plugin.getCategory(state.marketplace);
 
-    return Card(
-      elevation: 2,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showPluginDetails(plugin),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with badges
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.05),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outline
-                        .withValues(alpha: 0.1),
-                    width: 1,
+    return SizedBox(
+      width: 320,
+      height: 280,
+      child: Card(
+        elevation: 2,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _showPluginDetails(plugin),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with badges
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.05),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.1),
+                      width: 1,
+                    ),
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (plugin.featured)
-                              Icon(
-                                Icons.star,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            if (plugin.verified) ...[
-                              if (plugin.featured) const SizedBox(width: 4),
-                              Icon(
-                                Icons.verified,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.primary,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (plugin.featured)
+                                Icon(
+                                  Icons.star,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              if (plugin.verified) ...[
+                                if (plugin.featured) const SizedBox(width: 4),
+                                Icon(
+                                  Icons.verified,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ],
+                              if (plugin.featured || plugin.verified)
+                                const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  plugin.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
-                            if (plugin.featured || plugin.verified)
-                              const SizedBox(width: 8),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  plugin.type.displayName,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSecondary,
+                                      ),
+                                ),
+                              ),
+                              if (category != null) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline
+                                        .withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    category.name,
+                                    style:
+                                        Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plugin.description,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      if (author != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                plugin.name,
+                                author.name,
                                 style: Theme.of(context)
                                     .textTheme
-                                    .titleMedium
+                                    .bodySmall
                                     ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
                                     ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -652,77 +761,11 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.secondary,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                plugin.type.displayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSecondary,
-                                    ),
-                              ),
-                            ),
-                            if (category != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outline
-                                      .withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  category.name,
-                                  style: Theme.of(context).textTheme.labelSmall,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
                       ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      plugin.description,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    if (author != null) ...[
                       Row(
                         children: [
                           Icon(
-                            Icons.person,
+                            Icons.download,
                             size: 14,
                             color: Theme.of(context)
                                 .colorScheme
@@ -730,102 +773,73 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                                 .withValues(alpha: 0.6),
                           ),
                           const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              author.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          Text(
+                            plugin.formattedDownloads,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            plugin.formattedRating,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                    ],
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.download,
-                          size: 14,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          plugin.formattedDownloads,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          plugin.formattedRating,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
+                      const SizedBox(height: 24),
 
-                    // Action button
-                    SizedBox(
-                      width: double.infinity,
-                      child: BlocBuilder<MarketplaceCubit, MarketplaceState>(
-                        builder: (context, state) {
-                          final queue = state is MarketplaceLoaded
-                              ? state.queue
-                              : <QueuedPlugin>[];
-                          final isInQueue =
-                              queue.any((q) => q.plugin.id == plugin.id);
+                      // Action button
+                      SizedBox(
+                        width: double.infinity,
+                        child: BlocBuilder<MarketplaceCubit, MarketplaceState>(
+                          builder: (context, state) {
+                            final queue = state is MarketplaceLoaded
+                                ? state.queue
+                                : <QueuedPlugin>[];
+                            final isInQueue =
+                                queue.any((q) => q.plugin.id == plugin.id);
 
-                          return ElevatedButton.icon(
-                            onPressed: isInQueue
-                                ? () => context
-                                    .read<MarketplaceCubit>()
-                                    .removeFromQueue(plugin.id)
-                                : () => context
-                                    .read<MarketplaceCubit>()
-                                    .addToQueue(plugin),
-                            icon: Icon(isInQueue
-                                ? Icons.remove_shopping_cart
-                                : Icons.add_shopping_cart),
-                            label: Text(isInQueue ? 'Remove' : 'Add to Queue'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isInQueue
-                                  ? Theme.of(context).colorScheme.error
-                                  : Theme.of(context).colorScheme.primary,
-                              foregroundColor: isInQueue
-                                  ? Theme.of(context).colorScheme.onError
-                                  : Theme.of(context).colorScheme.onPrimary,
-                            ),
-                          );
-                        },
+                            return ElevatedButton.icon(
+                              onPressed: isInQueue
+                                  ? () => context
+                                      .read<MarketplaceCubit>()
+                                      .removeFromQueue(plugin.id)
+                                  : () => context
+                                      .read<MarketplaceCubit>()
+                                      .addToQueue(plugin),
+                              icon: Icon(isInQueue
+                                  ? Icons.remove_shopping_cart
+                                  : Icons.add_shopping_cart),
+                              label:
+                                  Text(isInQueue ? 'Remove' : 'Add to Queue'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isInQueue
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context).colorScheme.primary,
+                                foregroundColor: isInQueue
+                                    ? Theme.of(context).colorScheme.onError
+                                    : Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

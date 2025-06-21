@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/models/marketplace_models.dart';
@@ -108,13 +110,17 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
     // State will be updated automatically via the stream listener
   }
 
-  Future<void> installQueue({required String sdCardPath}) async {
+  Future<void> installQueue({
+    required Function(String fileName, Uint8List fileData,
+            {Function(double)? onProgress})
+        distingInstallPlugin,
+  }) async {
     final currentState = state;
     if (currentState is! MarketplaceLoaded) return;
 
     try {
       await _marketplaceService.installQueuedPlugins(
-        sdCardPath: sdCardPath,
+        distingInstallPlugin: distingInstallPlugin,
       );
       // Queue will be cleared automatically and state updated via stream
     } catch (e) {

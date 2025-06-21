@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/marketplace_models.dart';
+import 'package:nt_helper/db/database.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
 
@@ -13,6 +13,7 @@ class MarketplaceService {
   static const String _defaultMarketplaceUrl =
       'https://drive.google.com/uc?export=download&id=1UhL3zdGGBG0eJmUGa_758v7XGiG1u7zF';
 
+  final AppDatabase? _database;
   String _marketplaceUrl = _defaultMarketplaceUrl;
   Marketplace? _cachedMarketplace;
   DateTime? _lastFetch;
@@ -21,6 +22,9 @@ class MarketplaceService {
   final List<QueuedPlugin> _installQueue = [];
   final StreamController<List<QueuedPlugin>> _queueController =
       StreamController<List<QueuedPlugin>>.broadcast();
+
+  /// Constructor with optional database for installation tracking
+  MarketplaceService({AppDatabase? database}) : _database = database;
 
   /// Stream of install queue updates
   Stream<List<QueuedPlugin>> get queueStream => _queueController.stream;
@@ -214,15 +218,44 @@ class MarketplaceService {
     for (final queuedPlugin in pluginsToInstall) {
       try {
         onPluginStart?.call(queuedPlugin);
+
+        // Track installation details for database recording
+        int fileCount = 0;
+        int totalBytes = 0;
+
         await _installSinglePluginViaDisting(
           queuedPlugin,
           distingInstallPlugin,
           onProgress: onProgress,
+          onInstallationDetails: (files, bytes) {
+            fileCount = files;
+            totalBytes = bytes;
+          },
         );
 
         _updateQueuedPlugin(queuedPlugin.plugin.id,
             status: QueuedPluginStatus.completed);
         onPluginComplete?.call(queuedPlugin);
+
+        // Record successful installation in database
+        if (_database != null) {
+          try {
+            final installationPath = _getInstallationPath(queuedPlugin.plugin);
+            await _database!.pluginInstallationsDao.recordPluginInstallation(
+              plugin: queuedPlugin.plugin,
+              installedVersion: queuedPlugin.selectedVersion,
+              installationPath: installationPath,
+              fileCount: fileCount,
+              totalBytes: totalBytes,
+              installationNotes: 'Installed via marketplace',
+            );
+            print(
+                'Recorded successful installation of ${queuedPlugin.plugin.name} in database');
+          } catch (dbError) {
+            print('Failed to record installation in database: $dbError');
+            // Don't fail the installation if database recording fails
+          }
+        }
 
         // Remove successfully completed plugin from queue
         removeFromQueue(queuedPlugin.plugin.id);
@@ -231,6 +264,25 @@ class MarketplaceService {
         _updateQueuedPlugin(queuedPlugin.plugin.id,
             status: QueuedPluginStatus.failed, errorMessage: errorMessage);
         onPluginError?.call(queuedPlugin, errorMessage);
+
+        // Record failed installation in database
+        if (_database != null) {
+          try {
+            final installationPath = _getInstallationPath(queuedPlugin.plugin);
+            await _database!.pluginInstallationsDao
+                .recordPluginInstallationFailure(
+              plugin: queuedPlugin.plugin,
+              attemptedVersion: queuedPlugin.selectedVersion,
+              installationPath: installationPath,
+              errorMessage: errorMessage,
+            );
+            print(
+                'Recorded failed installation of ${queuedPlugin.plugin.name} in database');
+          } catch (dbError) {
+            print(
+                'Failed to record installation failure in database: $dbError');
+          }
+        }
 
         // Keep failed plugin in queue so user can see the error message
         // They can manually remove it if desired
@@ -245,6 +297,7 @@ class MarketplaceService {
             {Function(double)? onProgress})
         distingInstallPlugin, {
     Function(QueuedPlugin, double)? onProgress,
+    Function(int, int)? onInstallationDetails,
   }) async {
     final plugin = queuedPlugin.plugin;
     final version = plugin.getVersionTag(queuedPlugin.selectedVersion);
@@ -285,6 +338,12 @@ class MarketplaceService {
 
     // Update progress to complete
     _updateQueuedPlugin(plugin.id, progress: 1.0);
+
+    // Notify installation details
+    if (onInstallationDetails != null) {
+      final totalBytes = archiveBytes.length;
+      onInstallationDetails(extractedFiles.length, totalBytes);
+    }
   }
 
   /// Get download URL for a GitHub release or commit
@@ -503,6 +562,19 @@ class MarketplaceService {
   /// Dispose of resources
   void dispose() {
     _queueController.close();
+  }
+
+  /// Get the installation path for a plugin based on its configuration
+  String _getInstallationPath(MarketplacePlugin plugin) {
+    final installation = plugin.installation;
+    String basePath = 'programs/${installation.targetPath}';
+
+    if (installation.subdirectory != null &&
+        installation.subdirectory!.isNotEmpty) {
+      basePath = '$basePath/${installation.subdirectory}';
+    }
+
+    return basePath;
   }
 }
 

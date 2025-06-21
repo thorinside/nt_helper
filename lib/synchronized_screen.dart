@@ -695,6 +695,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         MaterialPageRoute(
                           builder: (_) => PluginManagerScreen(
                             distingCubit: distingCubit,
+                            database: distingCubit.database,
                           ),
                         ),
                       );

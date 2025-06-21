@@ -6,15 +6,18 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/services/marketplace_service.dart';
 import 'package:nt_helper/ui/marketplace_screen.dart';
+import 'package:nt_helper/db/database.dart';
 
 /// A screen for managing plugins and extensions for the NT Helper app.
 /// This provides a centralized location for plugin installation, configuration, and management.
 class PluginManagerScreen extends StatefulWidget {
   final DistingCubit distingCubit;
+  final AppDatabase database;
 
   const PluginManagerScreen({
     super.key,
     required this.distingCubit,
+    required this.database,
   });
 
   @override
@@ -48,7 +51,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   @override
   void initState() {
     super.initState();
-    _marketplaceService = MarketplaceService();
+    _marketplaceService = MarketplaceService(database: widget.database);
     _loadInstalledPlugins();
   }
 
