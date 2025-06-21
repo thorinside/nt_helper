@@ -247,8 +247,8 @@
         "branch": "main"
       },
       "releases": {
-        "latest": "v1.0.0",
-        "stable": "v1.0.0"
+        "latest": "main",
+        "stable": "main"
       },
       "installation": {
         "targetPath": "programs/plug-ins",
@@ -293,8 +293,8 @@
         "branch": "main"
       },
       "releases": {
-        "latest": "v1.0.0",
-        "stable": "v1.0.0"
+        "latest": "main",
+        "stable": "main"
       },
       "installation": {
         "targetPath": "programs/plug-ins",
@@ -340,8 +340,8 @@
         "branch": "main"
       },
       "releases": {
-        "latest": "v1.0.0",
-        "stable": "v1.0.0"
+        "latest": "main",
+        "stable": "main"
       },
       "installation": {
         "targetPath": "programs/plug-ins",
