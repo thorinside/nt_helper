@@ -208,7 +208,7 @@
         "sourceDirectoryPath": "lua",
         "preserveDirectoryStructure": true,
         "assetPattern": ".*\\.zip$",
-        "extractPattern": ".*"
+        "extractPattern": ".*\\.lua$"
       },
       "compatibility": {
         "minFirmwareVersion": "1.0.0"
@@ -442,7 +442,7 @@
         "sourceDirectoryPath": "lua",
         "preserveDirectoryStructure": true,
         "assetPattern": ".*\\.zip$",
-        "extractPattern": ".*"
+        "extractPattern": ".*\\.lua$"
       },
       "compatibility": {
         "minFirmwareVersion": "1.0.0"
