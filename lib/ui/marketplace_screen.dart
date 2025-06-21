@@ -18,9 +18,14 @@ class MarketplaceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          MarketplaceCubit(marketplaceService)..loadMarketplace(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: distingCubit),
+        BlocProvider(
+          create: (context) =>
+              MarketplaceCubit(marketplaceService)..loadMarketplace(),
+        ),
+      ],
       child: _MarketplaceView(
         distingCubit: distingCubit,
         marketplaceService: marketplaceService,
@@ -558,7 +563,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
         crossAxisCount: _getCrossAxisCount(),
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 0.67, // Makes cards 1.5x taller than wide
+        childAspectRatio: 4 / 3, // 4:3 aspect ratio (slightly wider than tall)
       ),
       itemCount: filteredPlugins.length,
       itemBuilder: (context, index) {
