@@ -998,12 +998,16 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 ],
               ],
             ),
-            trailing: queuedPlugin.status == QueuedPluginStatus.queued
+            trailing: (queuedPlugin.status == QueuedPluginStatus.queued ||
+                    queuedPlugin.status == QueuedPluginStatus.failed)
                 ? IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => context
                         .read<MarketplaceCubit>()
                         .removeFromQueue(plugin.id),
+                    tooltip: queuedPlugin.status == QueuedPluginStatus.failed
+                        ? 'Dismiss error'
+                        : 'Remove from queue',
                   )
                 : null,
           ),

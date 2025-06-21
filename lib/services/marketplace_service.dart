@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/marketplace_models.dart';
@@ -196,9 +197,11 @@ class MarketplaceService {
     }
   }
 
-  /// Install all plugins in the queue
+  /// Install all plugins in the queue using Disting upload functionality
   Future<void> installQueuedPlugins({
-    required String sdCardPath,
+    required Function(String fileName, Uint8List fileData,
+            {Function(double)? onProgress})
+        distingInstallPlugin,
     Function(QueuedPlugin)? onPluginStart,
     Function(QueuedPlugin, double)? onProgress,
     Function(QueuedPlugin)? onPluginComplete,
@@ -211,28 +214,36 @@ class MarketplaceService {
     for (final queuedPlugin in pluginsToInstall) {
       try {
         onPluginStart?.call(queuedPlugin);
-        await _installSinglePlugin(
+        await _installSinglePluginViaDisting(
           queuedPlugin,
-          sdCardPath,
+          distingInstallPlugin,
           onProgress: onProgress,
         );
 
         _updateQueuedPlugin(queuedPlugin.plugin.id,
             status: QueuedPluginStatus.completed);
         onPluginComplete?.call(queuedPlugin);
+
+        // Remove successfully completed plugin from queue
+        removeFromQueue(queuedPlugin.plugin.id);
       } catch (e) {
         final errorMessage = e.toString();
         _updateQueuedPlugin(queuedPlugin.plugin.id,
             status: QueuedPluginStatus.failed, errorMessage: errorMessage);
         onPluginError?.call(queuedPlugin, errorMessage);
+
+        // Keep failed plugin in queue so user can see the error message
+        // They can manually remove it if desired
       }
     }
   }
 
-  /// Install a single plugin
-  Future<void> _installSinglePlugin(
+  /// Install a single plugin using Disting upload functionality
+  Future<void> _installSinglePluginViaDisting(
     QueuedPlugin queuedPlugin,
-    String sdCardPath, {
+    Function(String fileName, Uint8List fileData,
+            {Function(double)? onProgress})
+        distingInstallPlugin, {
     Function(QueuedPlugin, double)? onProgress,
   }) async {
     final plugin = queuedPlugin.plugin;
@@ -248,24 +259,29 @@ class MarketplaceService {
       downloadUrl,
       (progress) {
         _updateQueuedPlugin(plugin.id,
-            progress: progress * 0.7); // 70% for download
-        onProgress?.call(queuedPlugin, progress * 0.7);
+            progress: progress * 0.6); // 60% for download
+        onProgress?.call(queuedPlugin, progress * 0.6);
       },
     );
 
     // Update status to extracting
     _updateQueuedPlugin(plugin.id,
-        status: QueuedPluginStatus.extracting, progress: 0.7);
+        status: QueuedPluginStatus.extracting, progress: 0.6);
 
     // Extract the archive
     final extractedFiles = await _extractArchive(archiveBytes, plugin);
 
     // Update status to installing
     _updateQueuedPlugin(plugin.id,
-        status: QueuedPluginStatus.installing, progress: 0.9);
+        status: QueuedPluginStatus.installing, progress: 0.8);
 
-    // Install files to SD card
-    await _installFiles(extractedFiles, plugin, sdCardPath);
+    // Install files using Disting upload functionality
+    await _installFilesViaDisting(extractedFiles, plugin, distingInstallPlugin,
+        (uploadProgress) {
+      final totalProgress = 0.8 + (uploadProgress * 0.2); // 20% for upload
+      _updateQueuedPlugin(plugin.id, progress: totalProgress);
+      onProgress?.call(queuedPlugin, totalProgress);
+    });
 
     // Update progress to complete
     _updateQueuedPlugin(plugin.id, progress: 1.0);
@@ -281,30 +297,43 @@ class MarketplaceService {
       return 'https://github.com/${repo.owner}/${repo.name}/archive/$version.zip';
     }
 
-    // Traditional release tag - query releases API
+    // Check if version is "main" or similar branch name
+    if (version == 'main' || version == 'master' || version == 'develop') {
+      // Use branch archive download
+      return 'https://github.com/${repo.owner}/${repo.name}/archive/refs/heads/$version.zip';
+    }
+
+    // Try to get release with assets first
     final apiUrl =
         'https://api.github.com/repos/${repo.owner}/${repo.name}/releases/tags/$version';
 
-    final response = await http.get(
-      Uri.parse(apiUrl),
-      headers: {'Accept': 'application/vnd.github.v3+json'},
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      );
 
-    if (response.statusCode == 200) {
-      final releaseData = json.decode(response.body) as Map<String, dynamic>;
-      final assets = releaseData['assets'] as List;
+      if (response.statusCode == 200) {
+        final releaseData = json.decode(response.body) as Map<String, dynamic>;
+        final assets = releaseData['assets'] as List;
 
-      if (assets.isEmpty) {
-        throw MarketplaceException('No assets found for release $version');
+        if (assets.isNotEmpty) {
+          // Find the first asset that matches the pattern (usually a .zip file)
+          final asset = assets.first as Map<String, dynamic>;
+          return asset['browser_download_url'] as String;
+        }
+        // If release exists but has no assets, fall through to source archive
       }
-
-      // Find the first asset that matches the pattern (usually a .zip file)
-      final asset = assets.first as Map<String, dynamic>;
-      return asset['browser_download_url'] as String;
-    } else {
-      throw MarketplaceException(
-          'Failed to get release info: HTTP ${response.statusCode}');
+      // If release doesn't exist (404), fall through to source archive
+    } catch (e) {
+      // If API call fails, fall through to source archive
+      print('Release API failed for $version, trying source archive: $e');
     }
+
+    // Fallback: use source archive for the tag/version
+    print(
+        'Using source archive for ${repo.owner}/${repo.name} version $version');
+    return 'https://github.com/${repo.owner}/${repo.name}/archive/refs/tags/$version.zip';
   }
 
   /// Download file with progress tracking
@@ -343,77 +372,103 @@ class MarketplaceService {
     final installation = plugin.installation;
     final extractPattern = RegExp(installation.extractPattern);
 
+    print(
+        'Extracting archive for ${plugin.name}, looking for pattern: ${installation.extractPattern}');
+
     for (final file in archive) {
       if (!file.isFile) continue;
 
-      String filePath = file.name;
+      String originalPath = file.name;
+      String processedPath = originalPath;
+
+      // Handle GitHub archive structure (removes top-level directory)
+      // GitHub archives come as "repo-name-version/..." so we need to strip that
+      final pathParts = originalPath.split('/');
+      if (pathParts.length > 1 && pathParts[0].contains('-')) {
+        // Remove the top-level directory that GitHub adds
+        processedPath = pathParts.skip(1).join('/');
+      }
 
       // For directory-based installations, filter by source directory
-      if (installation.sourceDirectoryPath != null) {
-        // Check if file is within the source directory
+      if (installation.sourceDirectoryPath != null &&
+          installation.sourceDirectoryPath!.isNotEmpty) {
         final sourceDir = installation.sourceDirectoryPath!;
-        if (!filePath.startsWith('$sourceDir/') && filePath != sourceDir) {
+
+        // Check if file is within the source directory
+        if (!processedPath.startsWith('$sourceDir/') &&
+            processedPath != sourceDir) {
           continue;
         }
 
         // Remove the source directory prefix for installation
-        if (filePath.startsWith('$sourceDir/')) {
-          filePath = filePath.substring(sourceDir.length + 1);
-        } else if (filePath == sourceDir) {
+        if (processedPath.startsWith('$sourceDir/')) {
+          processedPath = processedPath.substring(sourceDir.length + 1);
+        } else if (processedPath == sourceDir) {
           continue; // Skip the directory itself
         }
       }
 
-      // Apply extract pattern filter
-      if (extractPattern.hasMatch(file.name)) {
-        extractedFiles.add(MapEntry(filePath, file.content as List<int>));
+      // Apply extract pattern filter to the original file name for compatibility
+      if (extractPattern.hasMatch(originalPath) ||
+          extractPattern.hasMatch(processedPath)) {
+        print('Including file: $originalPath -> $processedPath');
+        extractedFiles.add(MapEntry(processedPath, file.content as List<int>));
       }
     }
 
+    print('Extracted ${extractedFiles.length} files for ${plugin.name}');
+
     if (extractedFiles.isEmpty) {
-      throw MarketplaceException('No plugin files found in archive');
+      throw MarketplaceException(
+          'No plugin files found in archive matching pattern: ${installation.extractPattern}');
     }
 
     return extractedFiles;
   }
 
-  /// Install extracted files to SD card
-  Future<void> _installFiles(
+  /// Install extracted files using Disting upload functionality
+  Future<void> _installFilesViaDisting(
     List<MapEntry<String, List<int>>> files,
     MarketplacePlugin plugin,
-    String sdCardPath,
+    Function(String fileName, Uint8List fileData,
+            {Function(double)? onProgress})
+        distingInstallPlugin,
+    Function(double)? onProgress,
   ) async {
-    final installation = plugin.installation;
-    final targetDir = path.join(sdCardPath, installation.targetPath);
+    print(
+        'Installing ${files.length} files for ${plugin.name} via Disting upload');
 
-    // Create subdirectory if specified
-    final finalTargetDir = installation.subdirectory != null
-        ? path.join(targetDir, installation.subdirectory!)
-        : targetDir;
+    int filesProcessed = 0;
 
-    // Copy files, preserving directory structure if needed
     for (final fileEntry in files) {
-      final String targetFilePath;
+      final fileName = path.basename(fileEntry.key);
+      final fileData = Uint8List.fromList(fileEntry.value);
 
-      if (installation.preserveDirectoryStructure == true) {
-        // Preserve the full directory structure
-        targetFilePath = path.join(finalTargetDir, fileEntry.key);
-      } else {
-        // Flatten to just the filename
-        final fileName = path.basename(fileEntry.key);
-        targetFilePath = path.join(finalTargetDir, fileName);
+      print('Uploading file: $fileName (${fileData.length} bytes)');
+
+      try {
+        await distingInstallPlugin(
+          fileName,
+          fileData,
+          onProgress: (fileProgress) {
+            // Calculate overall progress
+            final overallProgress =
+                (filesProcessed + fileProgress) / files.length;
+            onProgress?.call(overallProgress);
+          },
+        );
+
+        filesProcessed++;
+        print('Successfully uploaded: $fileName');
+
+        // Update overall progress after file completion
+        onProgress?.call(filesProcessed / files.length);
+      } catch (e) {
+        throw MarketplaceException('Failed to upload ${fileName}: $e');
       }
-
-      // Ensure the target directory exists
-      final targetFile = File(targetFilePath);
-      final targetFileDir = targetFile.parent;
-      if (!await targetFileDir.exists()) {
-        await targetFileDir.create(recursive: true);
-      }
-
-      // Write the file
-      await targetFile.writeAsBytes(fileEntry.value);
     }
+
+    print('Successfully uploaded ${files.length} files for ${plugin.name}');
   }
 
   /// Update a queued plugin's status
