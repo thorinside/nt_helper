@@ -558,7 +558,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
         crossAxisCount: _getCrossAxisCount(),
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.67, // Makes cards 1.5x taller than wide
       ),
       itemCount: filteredPlugins.length,
       itemBuilder: (context, index) {
@@ -591,7 +591,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
           children: [
             // Header with badges
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Theme.of(context)
                     .colorScheme
@@ -646,7 +646,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Row(
                           children: [
                             Container(
@@ -702,7 +702,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
             // Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -712,7 +712,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     if (author != null) ...[
                       Row(
                         children: [
@@ -743,7 +743,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                     ],
                     Row(
                       children: [
@@ -1101,13 +1101,16 @@ class _MarketplaceViewState extends State<_MarketplaceView>
   }
 
   Future<void> _installQueue() async {
-    // TODO: Get SD card path from settings/state
-    const sdCardPath =
-        '/path/to/sd/card'; // This should come from your app's state
-
     try {
       await widget.marketplaceService.installQueuedPlugins(
-        sdCardPath: sdCardPath,
+        distingInstallPlugin: (fileName, fileData, {onProgress}) async {
+          // Use the DistingCubit's installPlugin method
+          await context.read<DistingCubit>().installPlugin(
+                fileName,
+                fileData,
+                onProgress: onProgress,
+              );
+        },
         onPluginStart: (plugin) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1117,7 +1120,12 @@ class _MarketplaceViewState extends State<_MarketplaceView>
           );
         },
         onPluginComplete: (plugin) {
-          // Handle completion
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully installed ${plugin.plugin.name}'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
         },
         onPluginError: (plugin, error) {
           ScaffoldMessenger.of(context).showSnackBar(
