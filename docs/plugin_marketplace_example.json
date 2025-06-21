@@ -1,0 +1,327 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-15T10:30:00Z",
+  "metadata": {
+    "name": "Disting NT Community Marketplace",
+    "description": "Official community marketplace for Disting NT plugins, algorithms, and extensions",
+    "maintainer": {
+      "name": "Expert Sleepers",
+      "email": "support@expert-sleepers.co.uk",
+      "url": "https://www.expert-sleepers.co.uk"
+    }
+  },
+  "categories": [
+    {
+      "id": "sequencers",
+      "name": "Sequencers",
+      "description": "Drum machines, pattern generators, and sequencing tools",
+      "icon": "grid_3x3"
+    },
+    {
+      "id": "effects",
+      "name": "Effects",
+      "description": "Audio processing and effects plugins",
+      "icon": "tune"
+    },
+    {
+      "id": "generators",
+      "name": "Generators",
+      "description": "Oscillators, noise sources, and sound generators",
+      "icon": "graphic_eq"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "description": "Utility modules and helper tools",
+      "icon": "build"
+    },
+    {
+      "id": "creative",
+      "name": "Creative",
+      "description": "Experimental and creative sound design tools",
+      "icon": "palette"
+    },
+    {
+      "id": "sdk",
+      "name": "SDK & Tools",
+      "description": "Development tools and frameworks",
+      "icon": "code"
+    }
+  ],
+  "authors": {
+    "expertsleepers": {
+      "name": "Expert Sleepers",
+      "bio": "Creators of the Disting NT and innovative Eurorack modules",
+      "website": "https://www.expert-sleepers.co.uk",
+      "avatar": "https://avatars.githubusercontent.com/u/expertsleepers",
+      "verified": true,
+      "socialLinks": {
+        "github": "expertsleepers"
+      }
+    },
+    "community-dev": {
+      "name": "Community Developer",
+      "bio": "Active community contributor with multiple popular plugins",
+      "website": "https://example.com",
+      "avatar": "https://avatars.githubusercontent.com/u/community-dev",
+      "verified": false,
+      "socialLinks": {
+        "github": "community-dev",
+        "twitter": "communitydev"
+      }
+    },
+    "synthwizard": {
+      "name": "Synth Wizard",
+      "bio": "Synthesis expert and algorithm designer",
+      "verified": true,
+      "socialLinks": {
+        "github": "synthwizard",
+        "discord": "synthwizard#1234"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "id": "granular-delay",
+      "name": "Granular Delay",
+      "description": "Advanced granular delay with pitch shifting and texture controls",
+      "longDescription": "A sophisticated granular delay algorithm that breaks incoming audio into small grains and processes them independently. Features include:\n\n- Variable grain size and density\n- Pitch shifting per grain\n- Texture and randomization controls\n- Feedback with filtering\n- Stereo spread and positioning\n\nPerfect for creating evolving textures and atmospheric effects.",
+      "type": "lua",
+      "category": "effects",
+      "tags": [
+        "delay",
+        "granular",
+        "texture",
+        "ambient"
+      ],
+      "author": "synthwizard",
+      "repository": {
+        "owner": "synthwizard",
+        "name": "disting-granular-delay",
+        "url": "https://github.com/synthwizard/disting-granular-delay",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v2.1.0",
+        "stable": "v2.0.3",
+        "beta": "v2.2.0-beta.1"
+      },
+      "installation": {
+        "targetPath": "programs/lua",
+        "subdirectory": "synthwizard",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.lua$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.20",
+        "requiredFeatures": [
+          "stereo_processing",
+          "memory_extended"
+        ]
+      },
+      "screenshots": [
+        {
+          "url": "https://raw.githubusercontent.com/synthwizard/disting-granular-delay/main/screenshots/main.png",
+          "caption": "Main algorithm interface",
+          "thumbnail": "https://raw.githubusercontent.com/synthwizard/disting-granular-delay/main/screenshots/main_thumb.png"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/synthwizard/disting-granular-delay/main/screenshots/params.png",
+          "caption": "Parameter overview"
+        }
+      ],
+      "documentation": {
+        "readme": "https://raw.githubusercontent.com/synthwizard/disting-granular-delay/main/README.md",
+        "manual": "https://synthwizard.github.io/disting-granular-delay/manual.html"
+      },
+      "metrics": {
+        "downloads": 1247,
+        "rating": 4.8,
+        "ratingCount": 23
+      },
+      "featured": true,
+      "verified": true,
+      "createdAt": "2023-08-15T14:22:00Z",
+      "updatedAt": "2024-01-10T09:15:00Z"
+    },
+    {
+      "id": "chord-generator",
+      "name": "Intelligent Chord Generator",
+      "description": "Generate complex chords and progressions with CV control",
+      "longDescription": "An advanced chord generation algorithm that creates musical chords and progressions based on music theory principles. Features multiple scales, chord types, and intelligent voice leading.",
+      "type": "threepot",
+      "category": "generators",
+      "tags": [
+        "chords",
+        "harmony",
+        "cv",
+        "music-theory"
+      ],
+      "author": "community-dev",
+      "repository": {
+        "owner": "community-dev",
+        "name": "disting-chord-gen",
+        "url": "https://github.com/community-dev/disting-chord-gen"
+      },
+      "releases": {
+        "latest": "v1.3.2",
+        "stable": "v1.3.2"
+      },
+      "installation": {
+        "targetPath": "programs/three_pot",
+        "subdirectory": "community-dev",
+        "assetPattern": "chord-gen-.*\\.zip$",
+        "extractPattern": ".*\\.3pot$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.15"
+      },
+      "documentation": {
+        "readme": "https://raw.githubusercontent.com/community-dev/disting-chord-gen/main/README.md"
+      },
+      "metrics": {
+        "downloads": 892,
+        "rating": 4.5,
+        "ratingCount": 18
+      },
+      "featured": false,
+      "verified": false,
+      "createdAt": "2023-11-20T16:45:00Z",
+      "updatedAt": "2024-01-05T11:30:00Z"
+    },
+    {
+      "id": "expert-sleepers-official-pack",
+      "name": "Official Algorithm Pack v2",
+      "description": "Latest official algorithms from Expert Sleepers",
+      "longDescription": "The official collection of new algorithms for Disting NT, including enhanced versions of classic algorithms and completely new processing options.",
+      "type": "cpp",
+      "category": "utilities",
+      "tags": [
+        "official",
+        "algorithms",
+        "pack"
+      ],
+      "author": "expertsleepers",
+      "repository": {
+        "owner": "expertsleepers",
+        "name": "disting-nt-official-algorithms",
+        "url": "https://github.com/expertsleepers/disting-nt-official-algorithms"
+      },
+      "releases": {
+        "latest": "v2.0.1",
+        "stable": "v2.0.1"
+      },
+      "installation": {
+        "targetPath": "programs/plug-ins",
+        "assetPattern": "official-pack-.*\\.zip$",
+        "extractPattern": ".*\\.o$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.25"
+      },
+      "documentation": {
+        "readme": "https://raw.githubusercontent.com/expertsleepers/disting-nt-official-algorithms/main/README.md",
+        "manual": "https://www.expert-sleepers.co.uk/distingNTmanual.html"
+      },
+      "metrics": {
+        "downloads": 3421,
+        "rating": 4.9,
+        "ratingCount": 67
+      },
+      "featured": true,
+      "verified": true,
+      "createdAt": "2023-06-01T10:00:00Z",
+      "updatedAt": "2024-01-12T15:20:00Z"
+    },
+    {
+      "id": "euclidean-sequencer",
+      "name": "Euclidean Pattern Generator",
+      "description": "Generate complex rhythmic patterns using Euclidean algorithms",
+      "longDescription": "Create intricate rhythmic patterns using Euclidean distribution algorithms. Perfect for generating polyrhythmic sequences and complex timing patterns.",
+      "type": "lua",
+      "category": "sequencers",
+      "tags": [
+        "euclidean",
+        "rhythm",
+        "patterns",
+        "sequencer"
+      ],
+      "author": "community-dev",
+      "repository": {
+        "owner": "community-dev",
+        "name": "euclidean-patterns",
+        "url": "https://github.com/community-dev/euclidean-patterns"
+      },
+      "releases": {
+        "latest": "v1.1.0",
+        "stable": "v1.1.0"
+      },
+      "installation": {
+        "targetPath": "programs/lua",
+        "subdirectory": "community-dev",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.lua$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.18"
+      },
+      "metrics": {
+        "downloads": 567,
+        "rating": 4.3,
+        "ratingCount": 12
+      },
+      "featured": false,
+      "verified": false,
+      "createdAt": "2023-12-01T12:00:00Z",
+      "updatedAt": "2023-12-15T14:30:00Z"
+    },
+    {
+      "id": "official-lua-collection",
+      "name": "Official Lua Scripts Collection",
+      "description": "Complete collection of official Lua scripts with full dependency support",
+      "longDescription": "The official collection of Lua scripts for the Disting NT platform. This includes all supporting files and maintains directory structure for proper require() functionality between scripts. Features examples, utilities, and advanced algorithms all with complete documentation.",
+      "type": "lua",
+      "category": "sdk",
+      "tags": [
+        "lua",
+        "official",
+        "collection",
+        "dependencies",
+        "examples"
+      ],
+      "author": "expertsleepers",
+      "repository": {
+        "owner": "expertsleepersltd",
+        "name": "distingNT",
+        "url": "https://github.com/expertsleepersltd/distingNT",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "3882d068a101aa1263b32f8eb15385321964cb3b",
+        "stable": "3882d068a101aa1263b32f8eb15385321964cb3b"
+      },
+      "installation": {
+        "targetPath": "programs/lua",
+        "sourceDirectoryPath": "lua",
+        "preserveDirectoryStructure": true,
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.0.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/expertsleepersltd/distingNT/blob/main/lua/README.md"
+      },
+      "metrics": {
+        "downloads": 2847,
+        "rating": 4.9,
+        "ratingCount": 52
+      },
+      "featured": true,
+      "verified": true,
+      "createdAt": "2023-05-01T08:00:00Z",
+      "updatedAt": "2024-01-14T12:00:00Z"
+    }
+  ]
+}

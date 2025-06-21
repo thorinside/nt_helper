@@ -1,0 +1,461 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-14T12:00:00Z",
+  "metadata": {
+    "name": "Disting NT Community Marketplace",
+    "description": "Community-driven marketplace for Disting NT plugins, tools, and resources",
+    "maintainer": {
+      "name": "Disting NT Community",
+      "email": "community@distingnt.dev",
+      "url": "https://github.com/expertsleepersltd/distingNT"
+    }
+  },
+  "categories": [
+    {
+      "id": "sequencers",
+      "name": "Sequencers",
+      "description": "Drum machines, pattern generators, and sequencing tools",
+      "icon": "queue_music"
+    },
+    {
+      "id": "effects",
+      "name": "Effects",
+      "description": "Audio processing and effects plugins",
+      "icon": "tune"
+    },
+    {
+      "id": "generators",
+      "name": "Generators",
+      "description": "Oscillators, noise sources, and sound generators",
+      "icon": "graphic_eq"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "description": "Utility modules and helper tools",
+      "icon": "extension"
+    },
+    {
+      "id": "creative",
+      "name": "Creative",
+      "description": "Experimental and creative sound design tools",
+      "icon": "auto_fix_high"
+    },
+    {
+      "id": "sdk",
+      "name": "SDK & Tools",
+      "description": "Development tools and frameworks",
+      "icon": "code"
+    }
+  ],
+  "authors": {
+    "thorinside": {
+      "name": "Neal Sanche",
+      "verified": true,
+      "bio": "Developer and contributor to the Disting NT ecosystem. Creator of NT Grids port.",
+      "website": "https://github.com/thorinside",
+      "socialLinks": {
+        "github": "https://github.com/thorinside"
+      }
+    },
+    "expertsleepers": {
+      "name": "Expert Sleepers Ltd",
+      "verified": true,
+      "bio": "Official Disting NT manufacturer and primary developer. Creator of the Disting NT platform.",
+      "website": "http://expert-sleepers.co.uk",
+      "socialLinks": {
+        "github": "https://github.com/expertsleepersltd"
+      }
+    },
+    "fabianmartinez83": {
+      "name": "Fabian Martinez",
+      "verified": false,
+      "bio": "Creative developer working on experimental Disting NT plugins and musical tools.",
+      "socialLinks": {
+        "github": "https://github.com/FabianMartinez83"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "id": "nt_grids",
+      "name": "NT Grids",
+      "description": "A port of Emilie Gillet's renowned Mutable Instruments Grids topographic drum sequencer for the Expert Sleepers Disting NT platform.",
+      "longDescription": "This project brings the unique algorithmic drum pattern generation of the original Mutable Instruments Grids module to the Disting NT. Grids generates a variety of drum patterns based on continuous interpolation through a 'map' of patterns (Drum Mode) or using Euclidean algorithms (Euclidean Mode). Features two modes, three trigger outputs, accent output, clock input, reset input, and chaos control.",
+      "author": "thorinside",
+      "category": "sequencers",
+      "type": "cpp",
+      "featured": true,
+      "verified": true,
+      "tags": [
+        "drums",
+        "sequencer",
+        "grids",
+        "mutable-instruments",
+        "euclidean",
+        "patterns"
+      ],
+      "repository": {
+        "owner": "thorinside",
+        "name": "nt_grids",
+        "url": "https://github.com/thorinside/nt_grids",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v0.5.6",
+        "stable": "v0.5.6"
+      },
+      "installation": {
+        "targetPath": "programs/plug-ins",
+        "subdirectory": "thorinside",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.o$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.9.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/thorinside/nt_grids/blob/main/README.md",
+        "manual": "https://github.com/thorinside/nt_grids/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 1200,
+        "rating": 4.8,
+        "ratingCount": 23
+      },
+      "screenshots": [],
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-12-01T14:30:00Z"
+    },
+    {
+      "id": "distingnt_api",
+      "name": "Disting NT API",
+      "description": "C++ API for the disting NT Eurorack module - essential development framework for creating custom plugins.",
+      "longDescription": "The official C++ API and development framework for creating custom plugins for the Disting NT. This is a required dependency for building most Disting NT plugins and provides the core interfaces and utilities needed for plugin development.",
+      "author": "expertsleepers",
+      "category": "sdk",
+      "type": "cpp",
+      "featured": true,
+      "verified": true,
+      "tags": [
+        "api",
+        "sdk",
+        "development",
+        "c++",
+        "framework"
+      ],
+      "repository": {
+        "owner": "expertsleepersltd",
+        "name": "distingNT_API",
+        "url": "https://github.com/expertsleepersltd/distingNT_API",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "main",
+        "stable": "main"
+      },
+      "installation": {
+        "targetPath": "development",
+        "subdirectory": "distingNT_API",
+        "sourceDirectoryPath": "",
+        "preserveDirectoryStructure": true,
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.(h|hpp|cpp|c|md|txt)$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.0.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/expertsleepersltd/distingNT_API/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 800,
+        "rating": 4.9,
+        "ratingCount": 12
+      },
+      "screenshots": []
+    },
+    {
+      "id": "distingnt_tools",
+      "name": "Disting NT Official Tools",
+      "description": "Official tools and resources for the disting NT module including Lua scripts, 3pot tools, samples, and presets.",
+      "longDescription": "The official collection of tools, scripts, samples, and presets for the Disting NT. Includes Lua scripts for custom algorithms, 3pot tools, sample libraries, preset collections, and various utilities for working with the Disting NT platform.",
+      "author": "expertsleepers",
+      "category": "utilities",
+      "type": "lua",
+      "featured": true,
+      "verified": true,
+      "tags": [
+        "lua",
+        "3pot",
+        "samples",
+        "presets",
+        "tools",
+        "official"
+      ],
+      "repository": {
+        "owner": "expertsleepersltd",
+        "name": "distingNT",
+        "url": "https://github.com/expertsleepersltd/distingNT",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v1.9.0",
+        "stable": "v1.9.0"
+      },
+      "installation": {
+        "targetPath": "programs/lua",
+        "sourceDirectoryPath": "lua",
+        "preserveDirectoryStructure": true,
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.0.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/expertsleepersltd/distingNT/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 2500,
+        "rating": 4.7,
+        "ratingCount": 45
+      },
+      "screenshots": []
+    },
+    {
+      "id": "copier_maschine_clone",
+      "name": "Copier Maschine Clone",
+      "description": "A creative sampling and manipulation tool inspired by classic copy machines, bringing unique sonic textures to the Disting NT.",
+      "longDescription": "An experimental plugin that emulates the sonic characteristics of copy machines and document scanners, creating unique textures and rhythmic patterns from input audio. Features multiple copy modes, degradation controls, and rhythmic scanning patterns.",
+      "author": "fabianmartinez83",
+      "category": "creative",
+      "type": "cpp",
+      "featured": false,
+      "verified": false,
+      "tags": [
+        "sampling",
+        "experimental",
+        "texture",
+        "creative",
+        "copy-machine"
+      ],
+      "repository": {
+        "owner": "FabianMartinez83",
+        "name": "CopierMaschine_clone",
+        "url": "https://github.com/FabianMartinez83/CopierMaschine_clone",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v1.0.0",
+        "stable": "v1.0.0"
+      },
+      "installation": {
+        "targetPath": "programs/plug-ins",
+        "subdirectory": "fabianmartinez83",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.o$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.8.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/FabianMartinez83/CopierMaschine_clone/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 150,
+        "rating": 4.2,
+        "ratingCount": 8
+      },
+      "screenshots": []
+    },
+    {
+      "id": "strummer",
+      "name": "Strummer",
+      "description": "A guitar-like string synthesis and strumming pattern generator for creating realistic and expressive string instrument sounds.",
+      "longDescription": "Strummer simulates the behavior of stringed instruments with realistic string physics, strumming patterns, and chord progressions. Features multiple string models, customizable strumming patterns, chord voicings, and expression controls for creating authentic guitar-like performances.",
+      "author": "fabianmartinez83",
+      "category": "generators",
+      "type": "cpp",
+      "featured": false,
+      "verified": false,
+      "tags": [
+        "strings",
+        "guitar",
+        "synthesis",
+        "strumming",
+        "chords"
+      ],
+      "repository": {
+        "owner": "FabianMartinez83",
+        "name": "Strummer",
+        "url": "https://github.com/FabianMartinez83/Strummer",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v1.0.0",
+        "stable": "v1.0.0"
+      },
+      "installation": {
+        "targetPath": "programs/plug-ins",
+        "subdirectory": "fabianmartinez83",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.o$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.8.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/FabianMartinez83/Strummer/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 95,
+        "rating": 4.1,
+        "ratingCount": 5
+      },
+      "screenshots": []
+    },
+    {
+      "id": "i_ching_rnd",
+      "name": "I-Ching RND",
+      "description": "A mystical random number generator based on the ancient Chinese I-Ching oracle system for creating evolving musical patterns.",
+      "longDescription": "I-Ching RND uses the principles of the ancient Chinese I-Ching (Book of Changes) to generate random numbers and musical patterns. The algorithm creates evolving sequences based on hexagram transformations, providing a unique approach to generative music that balances randomness with philosophical structure.",
+      "author": "fabianmartinez83",
+      "category": "generators",
+      "type": "cpp",
+      "featured": false,
+      "verified": false,
+      "tags": [
+        "random",
+        "i-ching",
+        "generative",
+        "oracle",
+        "patterns",
+        "philosophy"
+      ],
+      "repository": {
+        "owner": "FabianMartinez83",
+        "name": "I-Ching-RND",
+        "url": "https://github.com/FabianMartinez83/I-Ching-RND",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v1.0.0",
+        "stable": "v1.0.0"
+      },
+      "installation": {
+        "targetPath": "programs/plug-ins",
+        "subdirectory": "fabianmartinez83",
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.o$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.8.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/FabianMartinez83/I-Ching-RND/blob/main/README.md"
+      },
+      "metrics": {
+        "downloads": 75,
+        "rating": 4.3,
+        "ratingCount": 4
+      },
+      "screenshots": []
+    },
+    {
+      "id": "threepot_collection",
+      "name": "3pot Tools Collection",
+      "description": "Official collection of 3pot tools for the Disting NT - three-parameter control plugins for various utilities and effects.",
+      "longDescription": "The official collection of 3pot (three-parameter) tools for the Disting NT. These lightweight plugins provide simple but powerful control over various parameters and can be used for modulation, utilities, and effects processing with just three knobs.",
+      "author": "expertsleepers",
+      "category": "utilities",
+      "type": "threepot",
+      "featured": true,
+      "verified": true,
+      "tags": [
+        "3pot",
+        "utilities",
+        "modulation",
+        "three-parameter",
+        "tools"
+      ],
+      "repository": {
+        "owner": "expertsleepersltd",
+        "name": "distingNT",
+        "url": "https://github.com/expertsleepersltd/distingNT/tree/main/tools/three_pot/3pot",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "v1.9.0",
+        "stable": "v1.9.0"
+      },
+      "installation": {
+        "targetPath": "programs/three_pot",
+        "sourceDirectoryPath": "tools/three_pot/3pot",
+        "preserveDirectoryStructure": false,
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*\\.3pot$"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.0.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/expertsleepersltd/distingNT/blob/main/tools/three_pot/README.md"
+      },
+      "metrics": {
+        "downloads": 1800,
+        "rating": 4.6,
+        "ratingCount": 32
+      },
+      "screenshots": []
+    },
+    {
+      "id": "lua_scripts_collection",
+      "name": "Lua Scripts Collection",
+      "description": "Official collection of Lua scripts for the Disting NT - programmable algorithms and utilities with full dependency support.",
+      "longDescription": "The official collection of Lua scripts for the Disting NT platform. These scripts provide examples and utilities for creating custom algorithms, effects, and generators using the built-in Lua scripting system. Includes all supporting files and maintains directory structure for proper require() functionality.",
+      "author": "expertsleepers",
+      "category": "utilities",
+      "type": "lua",
+      "featured": true,
+      "verified": true,
+      "tags": [
+        "lua",
+        "scripts",
+        "programmable",
+        "algorithms",
+        "examples",
+        "dependencies"
+      ],
+      "repository": {
+        "owner": "expertsleepersltd",
+        "name": "distingNT",
+        "url": "https://github.com/expertsleepersltd/distingNT",
+        "branch": "main"
+      },
+      "releases": {
+        "latest": "3882d068a101aa1263b32f8eb15385321964cb3b",
+        "stable": "3882d068a101aa1263b32f8eb15385321964cb3b"
+      },
+      "installation": {
+        "targetPath": "programs/lua",
+        "sourceDirectoryPath": "lua",
+        "preserveDirectoryStructure": true,
+        "assetPattern": ".*\\.zip$",
+        "extractPattern": ".*"
+      },
+      "compatibility": {
+        "minFirmwareVersion": "1.0.0"
+      },
+      "documentation": {
+        "readme": "https://github.com/expertsleepersltd/distingNT/blob/main/lua/README.md"
+      },
+      "metrics": {
+        "downloads": 2200,
+        "rating": 4.8,
+        "ratingCount": 38
+      },
+      "screenshots": []
+    }
+  ]
+}

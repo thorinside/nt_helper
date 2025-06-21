@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/plugin_info.dart';
+import 'package:nt_helper/services/marketplace_service.dart';
+import 'package:nt_helper/ui/marketplace_screen.dart';
 
 /// A screen for managing plugins and extensions for the NT Helper app.
 /// This provides a centralized location for plugin installation, configuration, and management.
@@ -24,6 +26,9 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   bool _isLoading = false;
   String? _error;
 
+  // Marketplace service
+  late MarketplaceService _marketplaceService;
+
   final List<String> _sections = [
     'Installed',
     'Available',
@@ -43,7 +48,101 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   @override
   void initState() {
     super.initState();
+    _marketplaceService = MarketplaceService();
     _loadInstalledPlugins();
+  }
+
+  @override
+  void dispose() {
+    _marketplaceService.dispose();
+    super.dispose();
+  }
+
+  void _showMarketplaceUrlDialog() {
+    final controller = TextEditingController(
+      text: _marketplaceService.marketplaceUrl,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Marketplace URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Marketplace JSON URL',
+                hintText: 'Enter the URL to the marketplace JSON file',
+                helperText:
+                    'This URL should point to a valid marketplace JSON file',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _marketplaceService.setMarketplaceUrl(controller.text.trim());
+              Navigator.of(context).pop();
+              setState(() {}); // Refresh the settings view
+
+              // Show snackbar to confirm change
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Marketplace URL updated'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ).then((_) => controller.dispose());
+  }
+
+  void _resetMarketplaceUrl() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Marketplace URL'),
+        content: const Text(
+          'This will reset the marketplace URL to the default value. Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Reset to default URL (the Google Drive URL)
+              const defaultUrl =
+                  'https://drive.google.com/uc?export=download&id=1mJBpvLVRGJKM5nkUxeOlDIvJRCZWR1pG';
+              _marketplaceService.setMarketplaceUrl(defaultUrl);
+              Navigator.of(context).pop();
+              setState(() {}); // Refresh the settings view
+
+              // Show snackbar to confirm reset
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Marketplace URL reset to default'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadInstalledPlugins() async {
@@ -885,35 +984,136 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Widget _buildAvailablePluginsView() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.download, size: 64),
-          SizedBox(height: 16),
-          Text('Available Plugins'),
-          SizedBox(height: 8),
-          Text(
-            'Plugin marketplace coming soon',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
+    return MarketplaceScreen(
+      distingCubit: widget.distingCubit,
+      marketplaceService: _marketplaceService,
     );
   }
 
   Widget _buildSettingsView() {
-    return const Center(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.settings, size: 64),
-          SizedBox(height: 16),
-          Text('Plugin Settings'),
-          SizedBox(height: 8),
           Text(
-            'Configuration options coming soon',
-            style: TextStyle(color: Colors.grey),
+            'Plugin Settings',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 24),
+
+          // Marketplace Settings Section
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.store,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Marketplace',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Marketplace URL',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _marketplaceService.marketplaceUrl,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                  ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              onPressed: _showMarketplaceUrlDialog,
+                              icon: const Icon(Icons.edit, size: 16),
+                              label: const Text('Change URL'),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: _resetMarketplaceUrl,
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Reset to Default'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Additional Settings Section (Future)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.tune,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'General',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Additional configuration options will be available in future updates.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
