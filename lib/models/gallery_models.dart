@@ -1,32 +1,32 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'marketplace_models.freezed.dart';
-part 'marketplace_models.g.dart';
+part 'gallery_models.freezed.dart';
+part 'gallery_models.g.dart';
 
-/// Marketplace metadata and configuration
+/// Gallery metadata and configuration
 @freezed
-sealed class MarketplaceMetadata with _$MarketplaceMetadata {
-  const factory MarketplaceMetadata({
+sealed class GalleryMetadata with _$GalleryMetadata {
+  const factory GalleryMetadata({
     required String name,
     required String description,
-    required MarketplaceMaintainer maintainer,
-  }) = _MarketplaceMetadata;
+    required GalleryMaintainer maintainer,
+  }) = _GalleryMetadata;
 
-  factory MarketplaceMetadata.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceMetadataFromJson(json);
+  factory GalleryMetadata.fromJson(Map<String, dynamic> json) =>
+      _$GalleryMetadataFromJson(json);
 }
 
-/// Marketplace maintainer information
+/// Gallery maintainer information
 @freezed
-sealed class MarketplaceMaintainer with _$MarketplaceMaintainer {
-  const factory MarketplaceMaintainer({
+sealed class GalleryMaintainer with _$GalleryMaintainer {
+  const factory GalleryMaintainer({
     required String name,
     String? email,
     String? url,
-  }) = _MarketplaceMaintainer;
+  }) = _GalleryMaintainer;
 
-  factory MarketplaceMaintainer.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceMaintainerFromJson(json);
+  factory GalleryMaintainer.fromJson(Map<String, dynamic> json) =>
+      _$GalleryMaintainerFromJson(json);
 }
 
 /// Plugin category for organization
@@ -72,14 +72,14 @@ sealed class PluginAuthorSocialLinks with _$PluginAuthorSocialLinks {
       _$PluginAuthorSocialLinksFromJson(json);
 }
 
-/// Repository information for a marketplace plugin
+/// Repository information for a gallery plugin
 @freezed
 sealed class PluginRepository with _$PluginRepository {
   const factory PluginRepository({
     required String owner,
     required String name,
     required String url,
-    @Default('main') String branch,
+    String? branch,
   }) = _PluginRepository;
 
   factory PluginRepository.fromJson(Map<String, dynamic> json) =>
@@ -105,8 +105,8 @@ sealed class PluginInstallation with _$PluginInstallation {
   const factory PluginInstallation({
     required String targetPath,
     String? subdirectory,
-    @Default(r'.*\.(zip|tar\.gz)$') String assetPattern,
-    @Default(r'.*\.(lua|3pot|o)$') String extractPattern,
+    String? assetPattern,
+    String? extractPattern,
     // For directory-based installations
     @Default(false) bool preserveDirectoryStructure,
     String? sourceDirectoryPath,
@@ -168,8 +168,8 @@ sealed class PluginMetrics with _$PluginMetrics {
       _$PluginMetricsFromJson(json);
 }
 
-/// Plugin type enum for marketplace plugins
-enum MarketplacePluginType {
+/// Plugin type enum for gallery plugins
+enum GalleryPluginType {
   @JsonValue('lua')
   lua,
   @JsonValue('threepot')
@@ -179,36 +179,36 @@ enum MarketplacePluginType {
 
   String get displayName {
     switch (this) {
-      case MarketplacePluginType.lua:
+      case GalleryPluginType.lua:
         return 'Lua Script';
-      case MarketplacePluginType.threepot:
+      case GalleryPluginType.threepot:
         return '3pot Plugin';
-      case MarketplacePluginType.cpp:
+      case GalleryPluginType.cpp:
         return 'C++ Plugin';
     }
   }
 
   String get description {
     switch (this) {
-      case MarketplacePluginType.lua:
+      case GalleryPluginType.lua:
         return 'User-programmable algorithms in Lua';
-      case MarketplacePluginType.threepot:
+      case GalleryPluginType.threepot:
         return 'Three-parameter control plugins';
-      case MarketplacePluginType.cpp:
+      case GalleryPluginType.cpp:
         return 'Compiled native algorithms';
     }
   }
 }
 
-/// A marketplace plugin with all metadata
+/// A gallery plugin with all metadata
 @freezed
-sealed class MarketplacePlugin with _$MarketplacePlugin {
-  const factory MarketplacePlugin({
+sealed class GalleryPlugin with _$GalleryPlugin {
+  const factory GalleryPlugin({
     required String id,
     required String name,
     required String description,
     String? longDescription,
-    required MarketplacePluginType type,
+    required GalleryPluginType type,
     String? category,
     @Default([]) List<String> tags,
     required String author,
@@ -223,33 +223,33 @@ sealed class MarketplacePlugin with _$MarketplacePlugin {
     @Default(false) bool verified,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) = _MarketplacePlugin;
+  }) = _GalleryPlugin;
 
-  factory MarketplacePlugin.fromJson(Map<String, dynamic> json) =>
-      _$MarketplacePluginFromJson(json);
+  factory GalleryPlugin.fromJson(Map<String, dynamic> json) =>
+      _$GalleryPluginFromJson(json);
 }
 
-/// Complete marketplace data structure
+/// Complete gallery data structure
 @freezed
-sealed class Marketplace with _$Marketplace {
-  const factory Marketplace({
+sealed class Gallery with _$Gallery {
+  const factory Gallery({
     required String version,
     required DateTime lastUpdated,
-    required MarketplaceMetadata metadata,
+    required GalleryMetadata metadata,
     @Default([]) List<PluginCategory> categories,
     @Default({}) Map<String, PluginAuthor> authors,
-    @Default([]) List<MarketplacePlugin> plugins,
-  }) = _Marketplace;
+    @Default([]) List<GalleryPlugin> plugins,
+  }) = _Gallery;
 
-  factory Marketplace.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceFromJson(json);
+  factory Gallery.fromJson(Map<String, dynamic> json) =>
+      _$GalleryFromJson(json);
 }
 
 /// Plugin in the user's install queue
 @freezed
 sealed class QueuedPlugin with _$QueuedPlugin {
   const factory QueuedPlugin({
-    required MarketplacePlugin plugin,
+    required GalleryPlugin plugin,
     required String selectedVersion, // 'latest', 'stable', or 'beta'
     @Default(QueuedPluginStatus.queued) QueuedPluginStatus status,
     String? errorMessage,
@@ -270,18 +270,16 @@ enum QueuedPluginStatus {
   failed,
 }
 
-/// Extension methods for marketplace plugins
-extension MarketplacePluginExtension on MarketplacePlugin {
-  /// Get the author information from the marketplace
-  PluginAuthor? getAuthor(Marketplace marketplace) {
-    return marketplace.authors[author];
+/// Extension methods for gallery plugins
+extension GalleryPluginExtension on GalleryPlugin {
+  /// Get the author information from the gallery
+  PluginAuthor? getAuthor(Gallery gallery) {
+    return gallery.authors[author];
   }
 
-  /// Get the category information from the marketplace
-  PluginCategory? getCategory(Marketplace marketplace) {
-    return marketplace.categories
-        .where((cat) => cat.id == category)
-        .firstOrNull;
+  /// Get the category information from the gallery
+  PluginCategory? getCategory(Gallery gallery) {
+    return gallery.categories.where((cat) => cat.id == category).firstOrNull;
   }
 
   /// Get the selected version tag

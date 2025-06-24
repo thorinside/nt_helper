@@ -4,7 +4,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'marketplace_models.dart';
+part of 'gallery_models.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -14,27 +14,27 @@ part of 'marketplace_models.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
-mixin _$MarketplaceMetadata {
+mixin _$GalleryMetadata {
   String get name;
   String get description;
-  MarketplaceMaintainer get maintainer;
+  GalleryMaintainer get maintainer;
 
-  /// Create a copy of MarketplaceMetadata
+  /// Create a copy of GalleryMetadata
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  $MarketplaceMetadataCopyWith<MarketplaceMetadata> get copyWith =>
-      _$MarketplaceMetadataCopyWithImpl<MarketplaceMetadata>(
-          this as MarketplaceMetadata, _$identity);
+  $GalleryMetadataCopyWith<GalleryMetadata> get copyWith =>
+      _$GalleryMetadataCopyWithImpl<GalleryMetadata>(
+          this as GalleryMetadata, _$identity);
 
-  /// Serializes this MarketplaceMetadata to a JSON map.
+  /// Serializes this GalleryMetadata to a JSON map.
   Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is MarketplaceMetadata &&
+            other is GalleryMetadata &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
                 other.description == description) &&
@@ -48,31 +48,30 @@ mixin _$MarketplaceMetadata {
 
   @override
   String toString() {
-    return 'MarketplaceMetadata(name: $name, description: $description, maintainer: $maintainer)';
+    return 'GalleryMetadata(name: $name, description: $description, maintainer: $maintainer)';
   }
 }
 
 /// @nodoc
-abstract mixin class $MarketplaceMetadataCopyWith<$Res> {
-  factory $MarketplaceMetadataCopyWith(
-          MarketplaceMetadata value, $Res Function(MarketplaceMetadata) _then) =
-      _$MarketplaceMetadataCopyWithImpl;
+abstract mixin class $GalleryMetadataCopyWith<$Res> {
+  factory $GalleryMetadataCopyWith(
+          GalleryMetadata value, $Res Function(GalleryMetadata) _then) =
+      _$GalleryMetadataCopyWithImpl;
   @useResult
-  $Res call(
-      {String name, String description, MarketplaceMaintainer maintainer});
+  $Res call({String name, String description, GalleryMaintainer maintainer});
 
-  $MarketplaceMaintainerCopyWith<$Res> get maintainer;
+  $GalleryMaintainerCopyWith<$Res> get maintainer;
 }
 
 /// @nodoc
-class _$MarketplaceMetadataCopyWithImpl<$Res>
-    implements $MarketplaceMetadataCopyWith<$Res> {
-  _$MarketplaceMetadataCopyWithImpl(this._self, this._then);
+class _$GalleryMetadataCopyWithImpl<$Res>
+    implements $GalleryMetadataCopyWith<$Res> {
+  _$GalleryMetadataCopyWithImpl(this._self, this._then);
 
-  final MarketplaceMetadata _self;
-  final $Res Function(MarketplaceMetadata) _then;
+  final GalleryMetadata _self;
+  final $Res Function(GalleryMetadata) _then;
 
-  /// Create a copy of MarketplaceMetadata
+  /// Create a copy of GalleryMetadata
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -93,16 +92,16 @@ class _$MarketplaceMetadataCopyWithImpl<$Res>
       maintainer: null == maintainer
           ? _self.maintainer
           : maintainer // ignore: cast_nullable_to_non_nullable
-              as MarketplaceMaintainer,
+              as GalleryMaintainer,
     ));
   }
 
-  /// Create a copy of MarketplaceMetadata
+  /// Create a copy of GalleryMetadata
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplaceMaintainerCopyWith<$Res> get maintainer {
-    return $MarketplaceMaintainerCopyWith<$Res>(_self.maintainer, (value) {
+  $GalleryMaintainerCopyWith<$Res> get maintainer {
+    return $GalleryMaintainerCopyWith<$Res>(_self.maintainer, (value) {
       return _then(_self.copyWith(maintainer: value));
     });
   }
@@ -110,33 +109,32 @@ class _$MarketplaceMetadataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _MarketplaceMetadata implements MarketplaceMetadata {
-  const _MarketplaceMetadata(
+class _GalleryMetadata implements GalleryMetadata {
+  const _GalleryMetadata(
       {required this.name,
       required this.description,
       required this.maintainer});
-  factory _MarketplaceMetadata.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceMetadataFromJson(json);
+  factory _GalleryMetadata.fromJson(Map<String, dynamic> json) =>
+      _$GalleryMetadataFromJson(json);
 
   @override
   final String name;
   @override
   final String description;
   @override
-  final MarketplaceMaintainer maintainer;
+  final GalleryMaintainer maintainer;
 
-  /// Create a copy of MarketplaceMetadata
+  /// Create a copy of GalleryMetadata
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  _$MarketplaceMetadataCopyWith<_MarketplaceMetadata> get copyWith =>
-      __$MarketplaceMetadataCopyWithImpl<_MarketplaceMetadata>(
-          this, _$identity);
+  _$GalleryMetadataCopyWith<_GalleryMetadata> get copyWith =>
+      __$GalleryMetadataCopyWithImpl<_GalleryMetadata>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$MarketplaceMetadataToJson(
+    return _$GalleryMetadataToJson(
       this,
     );
   }
@@ -145,7 +143,7 @@ class _MarketplaceMetadata implements MarketplaceMetadata {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _MarketplaceMetadata &&
+            other is _GalleryMetadata &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
                 other.description == description) &&
@@ -159,34 +157,33 @@ class _MarketplaceMetadata implements MarketplaceMetadata {
 
   @override
   String toString() {
-    return 'MarketplaceMetadata(name: $name, description: $description, maintainer: $maintainer)';
+    return 'GalleryMetadata(name: $name, description: $description, maintainer: $maintainer)';
   }
 }
 
 /// @nodoc
-abstract mixin class _$MarketplaceMetadataCopyWith<$Res>
-    implements $MarketplaceMetadataCopyWith<$Res> {
-  factory _$MarketplaceMetadataCopyWith(_MarketplaceMetadata value,
-          $Res Function(_MarketplaceMetadata) _then) =
-      __$MarketplaceMetadataCopyWithImpl;
+abstract mixin class _$GalleryMetadataCopyWith<$Res>
+    implements $GalleryMetadataCopyWith<$Res> {
+  factory _$GalleryMetadataCopyWith(
+          _GalleryMetadata value, $Res Function(_GalleryMetadata) _then) =
+      __$GalleryMetadataCopyWithImpl;
   @override
   @useResult
-  $Res call(
-      {String name, String description, MarketplaceMaintainer maintainer});
+  $Res call({String name, String description, GalleryMaintainer maintainer});
 
   @override
-  $MarketplaceMaintainerCopyWith<$Res> get maintainer;
+  $GalleryMaintainerCopyWith<$Res> get maintainer;
 }
 
 /// @nodoc
-class __$MarketplaceMetadataCopyWithImpl<$Res>
-    implements _$MarketplaceMetadataCopyWith<$Res> {
-  __$MarketplaceMetadataCopyWithImpl(this._self, this._then);
+class __$GalleryMetadataCopyWithImpl<$Res>
+    implements _$GalleryMetadataCopyWith<$Res> {
+  __$GalleryMetadataCopyWithImpl(this._self, this._then);
 
-  final _MarketplaceMetadata _self;
-  final $Res Function(_MarketplaceMetadata) _then;
+  final _GalleryMetadata _self;
+  final $Res Function(_GalleryMetadata) _then;
 
-  /// Create a copy of MarketplaceMetadata
+  /// Create a copy of GalleryMetadata
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -195,7 +192,7 @@ class __$MarketplaceMetadataCopyWithImpl<$Res>
     Object? description = null,
     Object? maintainer = null,
   }) {
-    return _then(_MarketplaceMetadata(
+    return _then(_GalleryMetadata(
       name: null == name
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -207,43 +204,43 @@ class __$MarketplaceMetadataCopyWithImpl<$Res>
       maintainer: null == maintainer
           ? _self.maintainer
           : maintainer // ignore: cast_nullable_to_non_nullable
-              as MarketplaceMaintainer,
+              as GalleryMaintainer,
     ));
   }
 
-  /// Create a copy of MarketplaceMetadata
+  /// Create a copy of GalleryMetadata
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplaceMaintainerCopyWith<$Res> get maintainer {
-    return $MarketplaceMaintainerCopyWith<$Res>(_self.maintainer, (value) {
+  $GalleryMaintainerCopyWith<$Res> get maintainer {
+    return $GalleryMaintainerCopyWith<$Res>(_self.maintainer, (value) {
       return _then(_self.copyWith(maintainer: value));
     });
   }
 }
 
 /// @nodoc
-mixin _$MarketplaceMaintainer {
+mixin _$GalleryMaintainer {
   String get name;
   String? get email;
   String? get url;
 
-  /// Create a copy of MarketplaceMaintainer
+  /// Create a copy of GalleryMaintainer
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  $MarketplaceMaintainerCopyWith<MarketplaceMaintainer> get copyWith =>
-      _$MarketplaceMaintainerCopyWithImpl<MarketplaceMaintainer>(
-          this as MarketplaceMaintainer, _$identity);
+  $GalleryMaintainerCopyWith<GalleryMaintainer> get copyWith =>
+      _$GalleryMaintainerCopyWithImpl<GalleryMaintainer>(
+          this as GalleryMaintainer, _$identity);
 
-  /// Serializes this MarketplaceMaintainer to a JSON map.
+  /// Serializes this GalleryMaintainer to a JSON map.
   Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is MarketplaceMaintainer &&
+            other is GalleryMaintainer &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.url, url) || other.url == url));
@@ -255,28 +252,28 @@ mixin _$MarketplaceMaintainer {
 
   @override
   String toString() {
-    return 'MarketplaceMaintainer(name: $name, email: $email, url: $url)';
+    return 'GalleryMaintainer(name: $name, email: $email, url: $url)';
   }
 }
 
 /// @nodoc
-abstract mixin class $MarketplaceMaintainerCopyWith<$Res> {
-  factory $MarketplaceMaintainerCopyWith(MarketplaceMaintainer value,
-          $Res Function(MarketplaceMaintainer) _then) =
-      _$MarketplaceMaintainerCopyWithImpl;
+abstract mixin class $GalleryMaintainerCopyWith<$Res> {
+  factory $GalleryMaintainerCopyWith(
+          GalleryMaintainer value, $Res Function(GalleryMaintainer) _then) =
+      _$GalleryMaintainerCopyWithImpl;
   @useResult
   $Res call({String name, String? email, String? url});
 }
 
 /// @nodoc
-class _$MarketplaceMaintainerCopyWithImpl<$Res>
-    implements $MarketplaceMaintainerCopyWith<$Res> {
-  _$MarketplaceMaintainerCopyWithImpl(this._self, this._then);
+class _$GalleryMaintainerCopyWithImpl<$Res>
+    implements $GalleryMaintainerCopyWith<$Res> {
+  _$GalleryMaintainerCopyWithImpl(this._self, this._then);
 
-  final MarketplaceMaintainer _self;
-  final $Res Function(MarketplaceMaintainer) _then;
+  final GalleryMaintainer _self;
+  final $Res Function(GalleryMaintainer) _then;
 
-  /// Create a copy of MarketplaceMaintainer
+  /// Create a copy of GalleryMaintainer
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -304,10 +301,10 @@ class _$MarketplaceMaintainerCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _MarketplaceMaintainer implements MarketplaceMaintainer {
-  const _MarketplaceMaintainer({required this.name, this.email, this.url});
-  factory _MarketplaceMaintainer.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceMaintainerFromJson(json);
+class _GalleryMaintainer implements GalleryMaintainer {
+  const _GalleryMaintainer({required this.name, this.email, this.url});
+  factory _GalleryMaintainer.fromJson(Map<String, dynamic> json) =>
+      _$GalleryMaintainerFromJson(json);
 
   @override
   final String name;
@@ -316,18 +313,17 @@ class _MarketplaceMaintainer implements MarketplaceMaintainer {
   @override
   final String? url;
 
-  /// Create a copy of MarketplaceMaintainer
+  /// Create a copy of GalleryMaintainer
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  _$MarketplaceMaintainerCopyWith<_MarketplaceMaintainer> get copyWith =>
-      __$MarketplaceMaintainerCopyWithImpl<_MarketplaceMaintainer>(
-          this, _$identity);
+  _$GalleryMaintainerCopyWith<_GalleryMaintainer> get copyWith =>
+      __$GalleryMaintainerCopyWithImpl<_GalleryMaintainer>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$MarketplaceMaintainerToJson(
+    return _$GalleryMaintainerToJson(
       this,
     );
   }
@@ -336,7 +332,7 @@ class _MarketplaceMaintainer implements MarketplaceMaintainer {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _MarketplaceMaintainer &&
+            other is _GalleryMaintainer &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.url, url) || other.url == url));
@@ -348,30 +344,30 @@ class _MarketplaceMaintainer implements MarketplaceMaintainer {
 
   @override
   String toString() {
-    return 'MarketplaceMaintainer(name: $name, email: $email, url: $url)';
+    return 'GalleryMaintainer(name: $name, email: $email, url: $url)';
   }
 }
 
 /// @nodoc
-abstract mixin class _$MarketplaceMaintainerCopyWith<$Res>
-    implements $MarketplaceMaintainerCopyWith<$Res> {
-  factory _$MarketplaceMaintainerCopyWith(_MarketplaceMaintainer value,
-          $Res Function(_MarketplaceMaintainer) _then) =
-      __$MarketplaceMaintainerCopyWithImpl;
+abstract mixin class _$GalleryMaintainerCopyWith<$Res>
+    implements $GalleryMaintainerCopyWith<$Res> {
+  factory _$GalleryMaintainerCopyWith(
+          _GalleryMaintainer value, $Res Function(_GalleryMaintainer) _then) =
+      __$GalleryMaintainerCopyWithImpl;
   @override
   @useResult
   $Res call({String name, String? email, String? url});
 }
 
 /// @nodoc
-class __$MarketplaceMaintainerCopyWithImpl<$Res>
-    implements _$MarketplaceMaintainerCopyWith<$Res> {
-  __$MarketplaceMaintainerCopyWithImpl(this._self, this._then);
+class __$GalleryMaintainerCopyWithImpl<$Res>
+    implements _$GalleryMaintainerCopyWith<$Res> {
+  __$GalleryMaintainerCopyWithImpl(this._self, this._then);
 
-  final _MarketplaceMaintainer _self;
-  final $Res Function(_MarketplaceMaintainer) _then;
+  final _GalleryMaintainer _self;
+  final $Res Function(_GalleryMaintainer) _then;
 
-  /// Create a copy of MarketplaceMaintainer
+  /// Create a copy of GalleryMaintainer
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -380,7 +376,7 @@ class __$MarketplaceMaintainerCopyWithImpl<$Res>
     Object? email = freezed,
     Object? url = freezed,
   }) {
-    return _then(_MarketplaceMaintainer(
+    return _then(_GalleryMaintainer(
       name: null == name
           ? _self.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -1045,7 +1041,7 @@ mixin _$PluginRepository {
   String get owner;
   String get name;
   String get url;
-  String get branch;
+  String? get branch;
 
   /// Create a copy of PluginRepository
   /// with the given fields replaced by the non-null parameter values.
@@ -1085,7 +1081,7 @@ abstract mixin class $PluginRepositoryCopyWith<$Res> {
           PluginRepository value, $Res Function(PluginRepository) _then) =
       _$PluginRepositoryCopyWithImpl;
   @useResult
-  $Res call({String owner, String name, String url, String branch});
+  $Res call({String owner, String name, String url, String? branch});
 }
 
 /// @nodoc
@@ -1104,7 +1100,7 @@ class _$PluginRepositoryCopyWithImpl<$Res>
     Object? owner = null,
     Object? name = null,
     Object? url = null,
-    Object? branch = null,
+    Object? branch = freezed,
   }) {
     return _then(_self.copyWith(
       owner: null == owner
@@ -1119,10 +1115,10 @@ class _$PluginRepositoryCopyWithImpl<$Res>
           ? _self.url
           : url // ignore: cast_nullable_to_non_nullable
               as String,
-      branch: null == branch
+      branch: freezed == branch
           ? _self.branch
           : branch // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
     ));
   }
 }
@@ -1134,7 +1130,7 @@ class _PluginRepository implements PluginRepository {
       {required this.owner,
       required this.name,
       required this.url,
-      this.branch = 'main'});
+      this.branch});
   factory _PluginRepository.fromJson(Map<String, dynamic> json) =>
       _$PluginRepositoryFromJson(json);
 
@@ -1145,8 +1141,7 @@ class _PluginRepository implements PluginRepository {
   @override
   final String url;
   @override
-  @JsonKey()
-  final String branch;
+  final String? branch;
 
   /// Create a copy of PluginRepository
   /// with the given fields replaced by the non-null parameter values.
@@ -1192,7 +1187,7 @@ abstract mixin class _$PluginRepositoryCopyWith<$Res>
       __$PluginRepositoryCopyWithImpl;
   @override
   @useResult
-  $Res call({String owner, String name, String url, String branch});
+  $Res call({String owner, String name, String url, String? branch});
 }
 
 /// @nodoc
@@ -1211,7 +1206,7 @@ class __$PluginRepositoryCopyWithImpl<$Res>
     Object? owner = null,
     Object? name = null,
     Object? url = null,
-    Object? branch = null,
+    Object? branch = freezed,
   }) {
     return _then(_PluginRepository(
       owner: null == owner
@@ -1226,10 +1221,10 @@ class __$PluginRepositoryCopyWithImpl<$Res>
           ? _self.url
           : url // ignore: cast_nullable_to_non_nullable
               as String,
-      branch: null == branch
+      branch: freezed == branch
           ? _self.branch
           : branch // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
     ));
   }
 }
@@ -1412,8 +1407,8 @@ class __$PluginReleasesCopyWithImpl<$Res>
 mixin _$PluginInstallation {
   String get targetPath;
   String? get subdirectory;
-  String get assetPattern;
-  String get extractPattern; // For directory-based installations
+  String? get assetPattern;
+  String? get extractPattern; // For directory-based installations
   bool get preserveDirectoryStructure;
   String? get sourceDirectoryPath;
 
@@ -1475,8 +1470,8 @@ abstract mixin class $PluginInstallationCopyWith<$Res> {
   $Res call(
       {String targetPath,
       String? subdirectory,
-      String assetPattern,
-      String extractPattern,
+      String? assetPattern,
+      String? extractPattern,
       bool preserveDirectoryStructure,
       String? sourceDirectoryPath});
 }
@@ -1496,8 +1491,8 @@ class _$PluginInstallationCopyWithImpl<$Res>
   $Res call({
     Object? targetPath = null,
     Object? subdirectory = freezed,
-    Object? assetPattern = null,
-    Object? extractPattern = null,
+    Object? assetPattern = freezed,
+    Object? extractPattern = freezed,
     Object? preserveDirectoryStructure = null,
     Object? sourceDirectoryPath = freezed,
   }) {
@@ -1510,14 +1505,14 @@ class _$PluginInstallationCopyWithImpl<$Res>
           ? _self.subdirectory
           : subdirectory // ignore: cast_nullable_to_non_nullable
               as String?,
-      assetPattern: null == assetPattern
+      assetPattern: freezed == assetPattern
           ? _self.assetPattern
           : assetPattern // ignore: cast_nullable_to_non_nullable
-              as String,
-      extractPattern: null == extractPattern
+              as String?,
+      extractPattern: freezed == extractPattern
           ? _self.extractPattern
           : extractPattern // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       preserveDirectoryStructure: null == preserveDirectoryStructure
           ? _self.preserveDirectoryStructure
           : preserveDirectoryStructure // ignore: cast_nullable_to_non_nullable
@@ -1536,8 +1531,8 @@ class _PluginInstallation implements PluginInstallation {
   const _PluginInstallation(
       {required this.targetPath,
       this.subdirectory,
-      this.assetPattern = r'.*\.(zip|tar\.gz)$',
-      this.extractPattern = r'.*\.(lua|3pot|o)$',
+      this.assetPattern,
+      this.extractPattern,
       this.preserveDirectoryStructure = false,
       this.sourceDirectoryPath});
   factory _PluginInstallation.fromJson(Map<String, dynamic> json) =>
@@ -1548,11 +1543,9 @@ class _PluginInstallation implements PluginInstallation {
   @override
   final String? subdirectory;
   @override
-  @JsonKey()
-  final String assetPattern;
+  final String? assetPattern;
   @override
-  @JsonKey()
-  final String extractPattern;
+  final String? extractPattern;
 // For directory-based installations
   @override
   @JsonKey()
@@ -1624,8 +1617,8 @@ abstract mixin class _$PluginInstallationCopyWith<$Res>
   $Res call(
       {String targetPath,
       String? subdirectory,
-      String assetPattern,
-      String extractPattern,
+      String? assetPattern,
+      String? extractPattern,
       bool preserveDirectoryStructure,
       String? sourceDirectoryPath});
 }
@@ -1645,8 +1638,8 @@ class __$PluginInstallationCopyWithImpl<$Res>
   $Res call({
     Object? targetPath = null,
     Object? subdirectory = freezed,
-    Object? assetPattern = null,
-    Object? extractPattern = null,
+    Object? assetPattern = freezed,
+    Object? extractPattern = freezed,
     Object? preserveDirectoryStructure = null,
     Object? sourceDirectoryPath = freezed,
   }) {
@@ -1659,14 +1652,14 @@ class __$PluginInstallationCopyWithImpl<$Res>
           ? _self.subdirectory
           : subdirectory // ignore: cast_nullable_to_non_nullable
               as String?,
-      assetPattern: null == assetPattern
+      assetPattern: freezed == assetPattern
           ? _self.assetPattern
           : assetPattern // ignore: cast_nullable_to_non_nullable
-              as String,
-      extractPattern: null == extractPattern
+              as String?,
+      extractPattern: freezed == extractPattern
           ? _self.extractPattern
           : extractPattern // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       preserveDirectoryStructure: null == preserveDirectoryStructure
           ? _self.preserveDirectoryStructure
           : preserveDirectoryStructure // ignore: cast_nullable_to_non_nullable
@@ -2419,12 +2412,12 @@ class __$PluginMetricsCopyWithImpl<$Res>
 }
 
 /// @nodoc
-mixin _$MarketplacePlugin {
+mixin _$GalleryPlugin {
   String get id;
   String get name;
   String get description;
   String? get longDescription;
-  MarketplacePluginType get type;
+  GalleryPluginType get type;
   String? get category;
   List<String> get tags;
   String get author;
@@ -2440,22 +2433,22 @@ mixin _$MarketplacePlugin {
   DateTime? get createdAt;
   DateTime? get updatedAt;
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  $MarketplacePluginCopyWith<MarketplacePlugin> get copyWith =>
-      _$MarketplacePluginCopyWithImpl<MarketplacePlugin>(
-          this as MarketplacePlugin, _$identity);
+  $GalleryPluginCopyWith<GalleryPlugin> get copyWith =>
+      _$GalleryPluginCopyWithImpl<GalleryPlugin>(
+          this as GalleryPlugin, _$identity);
 
-  /// Serializes this MarketplacePlugin to a JSON map.
+  /// Serializes this GalleryPlugin to a JSON map.
   Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is MarketplacePlugin &&
+            other is GalleryPlugin &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
@@ -2517,22 +2510,22 @@ mixin _$MarketplacePlugin {
 
   @override
   String toString() {
-    return 'MarketplacePlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'GalleryPlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
 /// @nodoc
-abstract mixin class $MarketplacePluginCopyWith<$Res> {
-  factory $MarketplacePluginCopyWith(
-          MarketplacePlugin value, $Res Function(MarketplacePlugin) _then) =
-      _$MarketplacePluginCopyWithImpl;
+abstract mixin class $GalleryPluginCopyWith<$Res> {
+  factory $GalleryPluginCopyWith(
+          GalleryPlugin value, $Res Function(GalleryPlugin) _then) =
+      _$GalleryPluginCopyWithImpl;
   @useResult
   $Res call(
       {String id,
       String name,
       String description,
       String? longDescription,
-      MarketplacePluginType type,
+      GalleryPluginType type,
       String? category,
       List<String> tags,
       String author,
@@ -2557,14 +2550,14 @@ abstract mixin class $MarketplacePluginCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$MarketplacePluginCopyWithImpl<$Res>
-    implements $MarketplacePluginCopyWith<$Res> {
-  _$MarketplacePluginCopyWithImpl(this._self, this._then);
+class _$GalleryPluginCopyWithImpl<$Res>
+    implements $GalleryPluginCopyWith<$Res> {
+  _$GalleryPluginCopyWithImpl(this._self, this._then);
 
-  final MarketplacePlugin _self;
-  final $Res Function(MarketplacePlugin) _then;
+  final GalleryPlugin _self;
+  final $Res Function(GalleryPlugin) _then;
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -2609,7 +2602,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
-              as MarketplacePluginType,
+              as GalleryPluginType,
       category: freezed == category
           ? _self.category
           : category // ignore: cast_nullable_to_non_nullable
@@ -2669,7 +2662,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
     ));
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2679,7 +2672,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2689,7 +2682,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2699,7 +2692,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2713,7 +2706,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2727,7 +2720,7 @@ class _$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2744,8 +2737,8 @@ class _$MarketplacePluginCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _MarketplacePlugin implements MarketplacePlugin {
-  const _MarketplacePlugin(
+class _GalleryPlugin implements GalleryPlugin {
+  const _GalleryPlugin(
       {required this.id,
       required this.name,
       required this.description,
@@ -2767,8 +2760,8 @@ class _MarketplacePlugin implements MarketplacePlugin {
       this.updatedAt})
       : _tags = tags,
         _screenshots = screenshots;
-  factory _MarketplacePlugin.fromJson(Map<String, dynamic> json) =>
-      _$MarketplacePluginFromJson(json);
+  factory _GalleryPlugin.fromJson(Map<String, dynamic> json) =>
+      _$GalleryPluginFromJson(json);
 
   @override
   final String id;
@@ -2779,7 +2772,7 @@ class _MarketplacePlugin implements MarketplacePlugin {
   @override
   final String? longDescription;
   @override
-  final MarketplacePluginType type;
+  final GalleryPluginType type;
   @override
   final String? category;
   final List<String> _tags;
@@ -2825,17 +2818,17 @@ class _MarketplacePlugin implements MarketplacePlugin {
   @override
   final DateTime? updatedAt;
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  _$MarketplacePluginCopyWith<_MarketplacePlugin> get copyWith =>
-      __$MarketplacePluginCopyWithImpl<_MarketplacePlugin>(this, _$identity);
+  _$GalleryPluginCopyWith<_GalleryPlugin> get copyWith =>
+      __$GalleryPluginCopyWithImpl<_GalleryPlugin>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$MarketplacePluginToJson(
+    return _$GalleryPluginToJson(
       this,
     );
   }
@@ -2844,7 +2837,7 @@ class _MarketplacePlugin implements MarketplacePlugin {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _MarketplacePlugin &&
+            other is _GalleryPlugin &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.description, description) ||
@@ -2906,16 +2899,16 @@ class _MarketplacePlugin implements MarketplacePlugin {
 
   @override
   String toString() {
-    return 'MarketplacePlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'GalleryPlugin(id: $id, name: $name, description: $description, longDescription: $longDescription, type: $type, category: $category, tags: $tags, author: $author, repository: $repository, releases: $releases, installation: $installation, compatibility: $compatibility, screenshots: $screenshots, documentation: $documentation, metrics: $metrics, featured: $featured, verified: $verified, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 }
 
 /// @nodoc
-abstract mixin class _$MarketplacePluginCopyWith<$Res>
-    implements $MarketplacePluginCopyWith<$Res> {
-  factory _$MarketplacePluginCopyWith(
-          _MarketplacePlugin value, $Res Function(_MarketplacePlugin) _then) =
-      __$MarketplacePluginCopyWithImpl;
+abstract mixin class _$GalleryPluginCopyWith<$Res>
+    implements $GalleryPluginCopyWith<$Res> {
+  factory _$GalleryPluginCopyWith(
+          _GalleryPlugin value, $Res Function(_GalleryPlugin) _then) =
+      __$GalleryPluginCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -2923,7 +2916,7 @@ abstract mixin class _$MarketplacePluginCopyWith<$Res>
       String name,
       String description,
       String? longDescription,
-      MarketplacePluginType type,
+      GalleryPluginType type,
       String? category,
       List<String> tags,
       String author,
@@ -2954,14 +2947,14 @@ abstract mixin class _$MarketplacePluginCopyWith<$Res>
 }
 
 /// @nodoc
-class __$MarketplacePluginCopyWithImpl<$Res>
-    implements _$MarketplacePluginCopyWith<$Res> {
-  __$MarketplacePluginCopyWithImpl(this._self, this._then);
+class __$GalleryPluginCopyWithImpl<$Res>
+    implements _$GalleryPluginCopyWith<$Res> {
+  __$GalleryPluginCopyWithImpl(this._self, this._then);
 
-  final _MarketplacePlugin _self;
-  final $Res Function(_MarketplacePlugin) _then;
+  final _GalleryPlugin _self;
+  final $Res Function(_GalleryPlugin) _then;
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -2986,7 +2979,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
-    return _then(_MarketplacePlugin(
+    return _then(_GalleryPlugin(
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -3006,7 +2999,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
       type: null == type
           ? _self.type
           : type // ignore: cast_nullable_to_non_nullable
-              as MarketplacePluginType,
+              as GalleryPluginType,
       category: freezed == category
           ? _self.category
           : category // ignore: cast_nullable_to_non_nullable
@@ -3066,7 +3059,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     ));
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3076,7 +3069,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3086,7 +3079,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3096,7 +3089,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3110,7 +3103,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3124,7 +3117,7 @@ class __$MarketplacePluginCopyWithImpl<$Res>
     });
   }
 
-  /// Create a copy of MarketplacePlugin
+  /// Create a copy of GalleryPlugin
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3140,29 +3133,29 @@ class __$MarketplacePluginCopyWithImpl<$Res>
 }
 
 /// @nodoc
-mixin _$Marketplace {
+mixin _$Gallery {
   String get version;
   DateTime get lastUpdated;
-  MarketplaceMetadata get metadata;
+  GalleryMetadata get metadata;
   List<PluginCategory> get categories;
   Map<String, PluginAuthor> get authors;
-  List<MarketplacePlugin> get plugins;
+  List<GalleryPlugin> get plugins;
 
-  /// Create a copy of Marketplace
+  /// Create a copy of Gallery
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  $MarketplaceCopyWith<Marketplace> get copyWith =>
-      _$MarketplaceCopyWithImpl<Marketplace>(this as Marketplace, _$identity);
+  $GalleryCopyWith<Gallery> get copyWith =>
+      _$GalleryCopyWithImpl<Gallery>(this as Gallery, _$identity);
 
-  /// Serializes this Marketplace to a JSON map.
+  /// Serializes this Gallery to a JSON map.
   Map<String, dynamic> toJson();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is Marketplace &&
+            other is Gallery &&
             (identical(other.version, version) || other.version == version) &&
             (identical(other.lastUpdated, lastUpdated) ||
                 other.lastUpdated == lastUpdated) &&
@@ -3187,35 +3180,34 @@ mixin _$Marketplace {
 
   @override
   String toString() {
-    return 'Marketplace(version: $version, lastUpdated: $lastUpdated, metadata: $metadata, categories: $categories, authors: $authors, plugins: $plugins)';
+    return 'Gallery(version: $version, lastUpdated: $lastUpdated, metadata: $metadata, categories: $categories, authors: $authors, plugins: $plugins)';
   }
 }
 
 /// @nodoc
-abstract mixin class $MarketplaceCopyWith<$Res> {
-  factory $MarketplaceCopyWith(
-          Marketplace value, $Res Function(Marketplace) _then) =
-      _$MarketplaceCopyWithImpl;
+abstract mixin class $GalleryCopyWith<$Res> {
+  factory $GalleryCopyWith(Gallery value, $Res Function(Gallery) _then) =
+      _$GalleryCopyWithImpl;
   @useResult
   $Res call(
       {String version,
       DateTime lastUpdated,
-      MarketplaceMetadata metadata,
+      GalleryMetadata metadata,
       List<PluginCategory> categories,
       Map<String, PluginAuthor> authors,
-      List<MarketplacePlugin> plugins});
+      List<GalleryPlugin> plugins});
 
-  $MarketplaceMetadataCopyWith<$Res> get metadata;
+  $GalleryMetadataCopyWith<$Res> get metadata;
 }
 
 /// @nodoc
-class _$MarketplaceCopyWithImpl<$Res> implements $MarketplaceCopyWith<$Res> {
-  _$MarketplaceCopyWithImpl(this._self, this._then);
+class _$GalleryCopyWithImpl<$Res> implements $GalleryCopyWith<$Res> {
+  _$GalleryCopyWithImpl(this._self, this._then);
 
-  final Marketplace _self;
-  final $Res Function(Marketplace) _then;
+  final Gallery _self;
+  final $Res Function(Gallery) _then;
 
-  /// Create a copy of Marketplace
+  /// Create a copy of Gallery
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -3239,7 +3231,7 @@ class _$MarketplaceCopyWithImpl<$Res> implements $MarketplaceCopyWith<$Res> {
       metadata: null == metadata
           ? _self.metadata
           : metadata // ignore: cast_nullable_to_non_nullable
-              as MarketplaceMetadata,
+              as GalleryMetadata,
       categories: null == categories
           ? _self.categories
           : categories // ignore: cast_nullable_to_non_nullable
@@ -3251,16 +3243,16 @@ class _$MarketplaceCopyWithImpl<$Res> implements $MarketplaceCopyWith<$Res> {
       plugins: null == plugins
           ? _self.plugins
           : plugins // ignore: cast_nullable_to_non_nullable
-              as List<MarketplacePlugin>,
+              as List<GalleryPlugin>,
     ));
   }
 
-  /// Create a copy of Marketplace
+  /// Create a copy of Gallery
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplaceMetadataCopyWith<$Res> get metadata {
-    return $MarketplaceMetadataCopyWith<$Res>(_self.metadata, (value) {
+  $GalleryMetadataCopyWith<$Res> get metadata {
+    return $GalleryMetadataCopyWith<$Res>(_self.metadata, (value) {
       return _then(_self.copyWith(metadata: value));
     });
   }
@@ -3268,26 +3260,26 @@ class _$MarketplaceCopyWithImpl<$Res> implements $MarketplaceCopyWith<$Res> {
 
 /// @nodoc
 @JsonSerializable()
-class _Marketplace implements Marketplace {
-  const _Marketplace(
+class _Gallery implements Gallery {
+  const _Gallery(
       {required this.version,
       required this.lastUpdated,
       required this.metadata,
       final List<PluginCategory> categories = const [],
       final Map<String, PluginAuthor> authors = const {},
-      final List<MarketplacePlugin> plugins = const []})
+      final List<GalleryPlugin> plugins = const []})
       : _categories = categories,
         _authors = authors,
         _plugins = plugins;
-  factory _Marketplace.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceFromJson(json);
+  factory _Gallery.fromJson(Map<String, dynamic> json) =>
+      _$GalleryFromJson(json);
 
   @override
   final String version;
   @override
   final DateTime lastUpdated;
   @override
-  final MarketplaceMetadata metadata;
+  final GalleryMetadata metadata;
   final List<PluginCategory> _categories;
   @override
   @JsonKey()
@@ -3306,26 +3298,26 @@ class _Marketplace implements Marketplace {
     return EqualUnmodifiableMapView(_authors);
   }
 
-  final List<MarketplacePlugin> _plugins;
+  final List<GalleryPlugin> _plugins;
   @override
   @JsonKey()
-  List<MarketplacePlugin> get plugins {
+  List<GalleryPlugin> get plugins {
     if (_plugins is EqualUnmodifiableListView) return _plugins;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_plugins);
   }
 
-  /// Create a copy of Marketplace
+  /// Create a copy of Gallery
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  _$MarketplaceCopyWith<_Marketplace> get copyWith =>
-      __$MarketplaceCopyWithImpl<_Marketplace>(this, _$identity);
+  _$GalleryCopyWith<_Gallery> get copyWith =>
+      __$GalleryCopyWithImpl<_Gallery>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$MarketplaceToJson(
+    return _$GalleryToJson(
       this,
     );
   }
@@ -3334,7 +3326,7 @@ class _Marketplace implements Marketplace {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _Marketplace &&
+            other is _Gallery &&
             (identical(other.version, version) || other.version == version) &&
             (identical(other.lastUpdated, lastUpdated) ||
                 other.lastUpdated == lastUpdated) &&
@@ -3359,38 +3351,36 @@ class _Marketplace implements Marketplace {
 
   @override
   String toString() {
-    return 'Marketplace(version: $version, lastUpdated: $lastUpdated, metadata: $metadata, categories: $categories, authors: $authors, plugins: $plugins)';
+    return 'Gallery(version: $version, lastUpdated: $lastUpdated, metadata: $metadata, categories: $categories, authors: $authors, plugins: $plugins)';
   }
 }
 
 /// @nodoc
-abstract mixin class _$MarketplaceCopyWith<$Res>
-    implements $MarketplaceCopyWith<$Res> {
-  factory _$MarketplaceCopyWith(
-          _Marketplace value, $Res Function(_Marketplace) _then) =
-      __$MarketplaceCopyWithImpl;
+abstract mixin class _$GalleryCopyWith<$Res> implements $GalleryCopyWith<$Res> {
+  factory _$GalleryCopyWith(_Gallery value, $Res Function(_Gallery) _then) =
+      __$GalleryCopyWithImpl;
   @override
   @useResult
   $Res call(
       {String version,
       DateTime lastUpdated,
-      MarketplaceMetadata metadata,
+      GalleryMetadata metadata,
       List<PluginCategory> categories,
       Map<String, PluginAuthor> authors,
-      List<MarketplacePlugin> plugins});
+      List<GalleryPlugin> plugins});
 
   @override
-  $MarketplaceMetadataCopyWith<$Res> get metadata;
+  $GalleryMetadataCopyWith<$Res> get metadata;
 }
 
 /// @nodoc
-class __$MarketplaceCopyWithImpl<$Res> implements _$MarketplaceCopyWith<$Res> {
-  __$MarketplaceCopyWithImpl(this._self, this._then);
+class __$GalleryCopyWithImpl<$Res> implements _$GalleryCopyWith<$Res> {
+  __$GalleryCopyWithImpl(this._self, this._then);
 
-  final _Marketplace _self;
-  final $Res Function(_Marketplace) _then;
+  final _Gallery _self;
+  final $Res Function(_Gallery) _then;
 
-  /// Create a copy of Marketplace
+  /// Create a copy of Gallery
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
@@ -3402,7 +3392,7 @@ class __$MarketplaceCopyWithImpl<$Res> implements _$MarketplaceCopyWith<$Res> {
     Object? authors = null,
     Object? plugins = null,
   }) {
-    return _then(_Marketplace(
+    return _then(_Gallery(
       version: null == version
           ? _self.version
           : version // ignore: cast_nullable_to_non_nullable
@@ -3414,7 +3404,7 @@ class __$MarketplaceCopyWithImpl<$Res> implements _$MarketplaceCopyWith<$Res> {
       metadata: null == metadata
           ? _self.metadata
           : metadata // ignore: cast_nullable_to_non_nullable
-              as MarketplaceMetadata,
+              as GalleryMetadata,
       categories: null == categories
           ? _self._categories
           : categories // ignore: cast_nullable_to_non_nullable
@@ -3426,16 +3416,16 @@ class __$MarketplaceCopyWithImpl<$Res> implements _$MarketplaceCopyWith<$Res> {
       plugins: null == plugins
           ? _self._plugins
           : plugins // ignore: cast_nullable_to_non_nullable
-              as List<MarketplacePlugin>,
+              as List<GalleryPlugin>,
     ));
   }
 
-  /// Create a copy of Marketplace
+  /// Create a copy of Gallery
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplaceMetadataCopyWith<$Res> get metadata {
-    return $MarketplaceMetadataCopyWith<$Res>(_self.metadata, (value) {
+  $GalleryMetadataCopyWith<$Res> get metadata {
+    return $GalleryMetadataCopyWith<$Res>(_self.metadata, (value) {
       return _then(_self.copyWith(metadata: value));
     });
   }
@@ -3443,7 +3433,7 @@ class __$MarketplaceCopyWithImpl<$Res> implements _$MarketplaceCopyWith<$Res> {
 
 /// @nodoc
 mixin _$QueuedPlugin {
-  MarketplacePlugin get plugin;
+  GalleryPlugin get plugin;
   String get selectedVersion; // 'latest', 'stable', or 'beta'
   QueuedPluginStatus get status;
   String? get errorMessage;
@@ -3493,13 +3483,13 @@ abstract mixin class $QueuedPluginCopyWith<$Res> {
       _$QueuedPluginCopyWithImpl;
   @useResult
   $Res call(
-      {MarketplacePlugin plugin,
+      {GalleryPlugin plugin,
       String selectedVersion,
       QueuedPluginStatus status,
       String? errorMessage,
       double? progress});
 
-  $MarketplacePluginCopyWith<$Res> get plugin;
+  $GalleryPluginCopyWith<$Res> get plugin;
 }
 
 /// @nodoc
@@ -3524,7 +3514,7 @@ class _$QueuedPluginCopyWithImpl<$Res> implements $QueuedPluginCopyWith<$Res> {
       plugin: null == plugin
           ? _self.plugin
           : plugin // ignore: cast_nullable_to_non_nullable
-              as MarketplacePlugin,
+              as GalleryPlugin,
       selectedVersion: null == selectedVersion
           ? _self.selectedVersion
           : selectedVersion // ignore: cast_nullable_to_non_nullable
@@ -3548,8 +3538,8 @@ class _$QueuedPluginCopyWithImpl<$Res> implements $QueuedPluginCopyWith<$Res> {
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplacePluginCopyWith<$Res> get plugin {
-    return $MarketplacePluginCopyWith<$Res>(_self.plugin, (value) {
+  $GalleryPluginCopyWith<$Res> get plugin {
+    return $GalleryPluginCopyWith<$Res>(_self.plugin, (value) {
       return _then(_self.copyWith(plugin: value));
     });
   }
@@ -3568,7 +3558,7 @@ class _QueuedPlugin implements QueuedPlugin {
       _$QueuedPluginFromJson(json);
 
   @override
-  final MarketplacePlugin plugin;
+  final GalleryPlugin plugin;
   @override
   final String selectedVersion;
 // 'latest', 'stable', or 'beta'
@@ -3630,14 +3620,14 @@ abstract mixin class _$QueuedPluginCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {MarketplacePlugin plugin,
+      {GalleryPlugin plugin,
       String selectedVersion,
       QueuedPluginStatus status,
       String? errorMessage,
       double? progress});
 
   @override
-  $MarketplacePluginCopyWith<$Res> get plugin;
+  $GalleryPluginCopyWith<$Res> get plugin;
 }
 
 /// @nodoc
@@ -3663,7 +3653,7 @@ class __$QueuedPluginCopyWithImpl<$Res>
       plugin: null == plugin
           ? _self.plugin
           : plugin // ignore: cast_nullable_to_non_nullable
-              as MarketplacePlugin,
+              as GalleryPlugin,
       selectedVersion: null == selectedVersion
           ? _self.selectedVersion
           : selectedVersion // ignore: cast_nullable_to_non_nullable
@@ -3687,8 +3677,8 @@ class __$QueuedPluginCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplacePluginCopyWith<$Res> get plugin {
-    return $MarketplacePluginCopyWith<$Res>(_self.plugin, (value) {
+  $GalleryPluginCopyWith<$Res> get plugin {
+    return $GalleryPluginCopyWith<$Res>(_self.plugin, (value) {
       return _then(_self.copyWith(plugin: value));
     });
   }

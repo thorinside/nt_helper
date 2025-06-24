@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:nt_helper/models/marketplace_models.dart';
-import 'package:nt_helper/services/marketplace_service.dart';
+import 'package:nt_helper/models/gallery_models.dart';
+import 'package:nt_helper/services/gallery_service.dart';
+import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/ui/marketplace/marketplace_cubit.dart';
+import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 
-/// A beautiful marketplace screen for discovering and installing plugins
-class MarketplaceScreen extends StatelessWidget {
+/// A beautiful gallery screen for discovering and installing plugins
+class GalleryScreen extends StatelessWidget {
   final DistingCubit distingCubit;
-  final MarketplaceService marketplaceService;
+  final GalleryService galleryService;
 
-  const MarketplaceScreen({
+  const GalleryScreen({
     super.key,
     required this.distingCubit,
-    required this.marketplaceService,
+    required this.galleryService,
   });
 
   @override
@@ -23,31 +24,31 @@ class MarketplaceScreen extends StatelessWidget {
         BlocProvider.value(value: distingCubit),
         BlocProvider(
           create: (context) =>
-              MarketplaceCubit(marketplaceService)..loadMarketplace(),
+              GalleryCubit(galleryService)..loadGallery(),
         ),
       ],
-      child: _MarketplaceView(
+      child: _GalleryView(
         distingCubit: distingCubit,
-        marketplaceService: marketplaceService,
+        galleryService: galleryService,
       ),
     );
   }
 }
 
-class _MarketplaceView extends StatefulWidget {
+class _GalleryView extends StatefulWidget {
   final DistingCubit distingCubit;
-  final MarketplaceService marketplaceService;
+  final GalleryService galleryService;
 
-  const _MarketplaceView({
+  const _GalleryView({
     required this.distingCubit,
-    required this.marketplaceService,
+    required this.galleryService,
   });
 
   @override
-  State<_MarketplaceView> createState() => _MarketplaceViewState();
+  State<_GalleryView> createState() => _GalleryViewState();
 }
 
-class _MarketplaceViewState extends State<_MarketplaceView>
+class _GalleryViewState extends State<_GalleryView>
     with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
 
@@ -61,7 +62,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
 
     // Listen to search changes
     _searchController.addListener(() {
-      context.read<MarketplaceCubit>().applyFilters(
+      context.read<GalleryCubit>().applyFilters(
             searchQuery: _searchController.text,
           );
     });
@@ -76,7 +77,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MarketplaceCubit, MarketplaceState>(
+    return BlocBuilder<GalleryCubit, GalleryState>(
       builder: (context, state) {
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
@@ -88,7 +89,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildMarketplaceTab(state),
+                    _buildGalleryTab(state),
                     _buildQueueTab(),
                   ],
                 ),
@@ -100,7 +101,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     );
   }
 
-  Widget _buildHeader(MarketplaceState state) {
+  Widget _buildHeader(GalleryState state) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -133,10 +134,10 @@ class _MarketplaceViewState extends State<_MarketplaceView>
               _buildHeaderActions(state),
             ],
           ),
-          if (state is MarketplaceLoaded) ...[
+          if (state is GalleryLoaded) ...[
             const SizedBox(height: 8),
             Text(
-              state.marketplace.metadata.description,
+              state.gallery.metadata.description,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context)
                         .colorScheme
@@ -150,8 +151,8 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     );
   }
 
-  Widget _buildHeaderActions(MarketplaceState state) {
-    final queueCount = state is MarketplaceLoaded ? state.queue.length : 0;
+  Widget _buildHeaderActions(GalleryState state) {
+    final queueCount = state is GalleryLoaded ? state.queue.length : 0;
 
     return Row(
       children: [
@@ -159,7 +160,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
           isLabelVisible: queueCount > 0,
           label: Text('$queueCount'),
           child: IconButton(
-            icon: const Icon(Icons.shopping_cart),
+            icon: const Icon(Icons.download_for_offline),
             onPressed: () {
               _tabController.animateTo(1);
             },
@@ -169,13 +170,13 @@ class _MarketplaceViewState extends State<_MarketplaceView>
         IconButton(
           icon: const Icon(Icons.refresh),
           onPressed: () => context
-              .read<MarketplaceCubit>()
-              .loadMarketplace(forceRefresh: true),
+              .read<GalleryCubit>()
+              .loadGallery(forceRefresh: true),
           tooltip: 'Refresh',
         ),
         IconButton(
           icon: const Icon(Icons.settings),
-          onPressed: _showSettingsDialog,
+          onPressed: () => context.showSettingsDialog(),
           tooltip: 'Settings',
         ),
       ],
@@ -193,10 +194,10 @@ class _MarketplaceViewState extends State<_MarketplaceView>
             text: 'Explore',
           ),
           Tab(
-            icon: BlocBuilder<MarketplaceCubit, MarketplaceState>(
+            icon: BlocBuilder<GalleryCubit, GalleryState>(
               builder: (context, state) {
                 final queueCount =
-                    state is MarketplaceLoaded ? state.queue.length : 0;
+                    state is GalleryLoaded ? state.queue.length : 0;
                 return Badge(
                   isLabelVisible: queueCount > 0,
                   label: Text('$queueCount'),
@@ -211,21 +212,21 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     );
   }
 
-  Widget _buildMarketplaceTab(MarketplaceState state) {
-    if (state is MarketplaceInitial) {
+  Widget _buildGalleryTab(GalleryState state) {
+    if (state is GalleryInitial) {
       return const Center(child: CircularProgressIndicator());
-    } else if (state is MarketplaceLoading) {
+    } else if (state is GalleryLoading) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Loading marketplace...'),
+            Text('Loading gallery...'),
           ],
         ),
       );
-    } else if (state is MarketplaceLoaded) {
+    } else if (state is GalleryLoaded) {
       return Column(
         children: [
           _buildSearchAndFilters(state),
@@ -234,7 +235,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
           ),
         ],
       );
-    } else if (state is MarketplaceError) {
+    } else if (state is GalleryError) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -246,7 +247,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load marketplace',
+              'Failed to load gallery',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -260,8 +261,8 @@ class _MarketplaceViewState extends State<_MarketplaceView>
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => context
-                  .read<MarketplaceCubit>()
-                  .loadMarketplace(forceRefresh: true),
+                  .read<GalleryCubit>()
+                  .loadGallery(forceRefresh: true),
               child: const Text('Retry'),
             ),
           ],
@@ -272,7 +273,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     return const SizedBox.shrink();
   }
 
-  Widget _buildSearchAndFilters(MarketplaceState state) {
+  Widget _buildSearchAndFilters(GalleryState state) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -296,7 +297,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _searchController.clear();
-                        context.read<MarketplaceCubit>().clearFilters();
+                        context.read<GalleryCubit>().clearFilters();
                       },
                     )
                   : null,
@@ -313,8 +314,8 @@ class _MarketplaceViewState extends State<_MarketplaceView>
             runSpacing: 8,
             children: [
               // Category filter
-              if (state is MarketplaceLoaded &&
-                  state.marketplace.categories.isNotEmpty)
+              if (state is GalleryLoaded &&
+                  state.gallery.categories.isNotEmpty)
                 PopupMenuButton<String?>(
                   child: Chip(
                     avatar: Icon(
@@ -337,7 +338,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                     onDeleted: () {},
                   ),
                   onSelected: (value) {
-                    context.read<MarketplaceCubit>().applyFilters(
+                    context.read<GalleryCubit>().applyFilters(
                           category: value,
                         );
                   },
@@ -346,8 +347,8 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                       value: null,
                       child: Text('All Categories'),
                     ),
-                    ...(state is MarketplaceLoaded
-                            ? state.marketplace.categories
+                    ...(state is GalleryLoaded
+                            ? state.gallery.categories
                             : [])
                         .map(
                       (cat) => PopupMenuItem<String>(
@@ -367,7 +368,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 ),
 
               // Type filter
-              PopupMenuButton<MarketplacePluginType?>(
+              PopupMenuButton<GalleryPluginType?>(
                 child: Chip(
                   avatar: Icon(
                     Icons.extension,
@@ -377,7 +378,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                         .onSurface
                         .withValues(alpha: 0.7),
                   ),
-                  label: Text(state is MarketplaceLoaded
+                  label: Text(state is GalleryLoaded
                       ? (state.selectedType?.displayName ?? 'All Types')
                       : 'All Types'),
                   deleteIcon: Icon(
@@ -391,17 +392,17 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                   onDeleted: () {},
                 ),
                 onSelected: (value) {
-                  context.read<MarketplaceCubit>().applyFilters(
+                  context.read<GalleryCubit>().applyFilters(
                         type: value,
                       );
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem<MarketplacePluginType?>(
+                  const PopupMenuItem<GalleryPluginType?>(
                     value: null,
                     child: Text('All Types'),
                   ),
-                  ...MarketplacePluginType.values.map(
-                    (type) => PopupMenuItem<MarketplacePluginType>(
+                  ...GalleryPluginType.values.map(
+                    (type) => PopupMenuItem<GalleryPluginType>(
                       value: type,
                       child: Text(type.displayName),
                     ),
@@ -414,7 +415,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 avatar: Icon(
                   Icons.star,
                   size: 18,
-                  color: (state is MarketplaceLoaded && state.showFeaturedOnly)
+                  color: (state is GalleryLoaded && state.showFeaturedOnly)
                       ? Theme.of(context).colorScheme.onPrimary
                       : Theme.of(context)
                           .colorScheme
@@ -423,16 +424,16 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 ),
                 label: const Text('Featured'),
                 selected:
-                    state is MarketplaceLoaded ? state.showFeaturedOnly : false,
+                    state is GalleryLoaded ? state.showFeaturedOnly : false,
                 selectedColor: Theme.of(context).colorScheme.primary,
                 showCheckmark: false,
                 labelStyle: TextStyle(
-                  color: (state is MarketplaceLoaded && state.showFeaturedOnly)
+                  color: (state is GalleryLoaded && state.showFeaturedOnly)
                       ? Theme.of(context).colorScheme.onPrimary
                       : null,
                 ),
                 onSelected: (selected) {
-                  context.read<MarketplaceCubit>().applyFilters(
+                  context.read<GalleryCubit>().applyFilters(
                         featured: selected,
                       );
                 },
@@ -443,7 +444,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 avatar: Icon(
                   Icons.verified,
                   size: 18,
-                  color: (state is MarketplaceLoaded && state.showVerifiedOnly)
+                  color: (state is GalleryLoaded && state.showVerifiedOnly)
                       ? Theme.of(context).colorScheme.onPrimary
                       : Theme.of(context)
                           .colorScheme
@@ -452,23 +453,23 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 ),
                 label: const Text('Verified'),
                 selected:
-                    state is MarketplaceLoaded ? state.showVerifiedOnly : false,
+                    state is GalleryLoaded ? state.showVerifiedOnly : false,
                 selectedColor: Theme.of(context).colorScheme.primary,
                 showCheckmark: false,
                 labelStyle: TextStyle(
-                  color: (state is MarketplaceLoaded && state.showVerifiedOnly)
+                  color: (state is GalleryLoaded && state.showVerifiedOnly)
                       ? Theme.of(context).colorScheme.onPrimary
                       : null,
                 ),
                 onSelected: (selected) {
-                  context.read<MarketplaceCubit>().applyFilters(
+                  context.read<GalleryCubit>().applyFilters(
                         verified: selected,
                       );
                 },
               ),
 
               // Clear filters
-              if (state is MarketplaceLoaded &&
+              if (state is GalleryLoaded &&
                   (state.selectedCategory != null ||
                       state.selectedType != null ||
                       state.showFeaturedOnly ||
@@ -486,7 +487,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                   label: const Text('Clear'),
                   onPressed: () {
                     _searchController.clear();
-                    context.read<MarketplaceCubit>().clearFilters();
+                    context.read<GalleryCubit>().clearFilters();
                   },
                 ),
             ],
@@ -497,7 +498,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
           Row(
             children: [
               Text(
-                state is MarketplaceLoaded
+                state is GalleryLoaded
                     ? '${state.filteredPlugins.length} plugin${state.filteredPlugins.length == 1 ? '' : 's'}'
                     : '0 plugins',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -514,10 +515,10 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     );
   }
 
-  Widget _buildPluginGrid(MarketplaceState state) {
-    final filteredPlugins = state is MarketplaceLoaded
+  Widget _buildPluginGrid(GalleryState state) {
+    final filteredPlugins = state is GalleryLoaded
         ? state.filteredPlugins
-        : <MarketplacePlugin>[];
+        : <GalleryPlugin>[];
 
     if (filteredPlugins.isEmpty) {
       return Center(
@@ -557,51 +558,36 @@ class _MarketplaceViewState extends State<_MarketplaceView>
       );
     }
 
-    return GridView.builder(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: _getOptimalColumnCount(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 320 / 280, // Fixed ratio: 320px wide × 280px tall
+      child: Wrap(
+        alignment: WrapAlignment.start, // Left-justify the cards
+        spacing: 12, // Horizontal spacing between cards
+        runSpacing: 12, // Vertical spacing between rows
+        children: filteredPlugins.map((plugin) {
+          return _buildPluginCard(plugin, state, context);
+        }).toList(),
       ),
-      itemCount: filteredPlugins.length,
-      itemBuilder: (context, index) {
-        return _buildPluginCard(filteredPlugins[index], state);
-      },
     );
   }
 
-  int _getOptimalColumnCount() {
+
+  Widget _buildPluginCard(GalleryPlugin plugin, GalleryState state, BuildContext parentContext) {
+    if (state is! GalleryLoaded) return const SizedBox.shrink();
+
+    final author = plugin.getAuthor(state.gallery);
+    final category = plugin.getCategory(state.gallery);
+
     final width = MediaQuery.of(context).size.width;
-    const cardWidth = 320.0;
-    const spacing = 12.0;
-    const padding = 32.0; // 16px on each side
-
-    // Calculate how many cards can fit
-    final availableWidth = width - padding;
-    final columns =
-        ((availableWidth + spacing) / (cardWidth + spacing)).floor();
-
-    // Ensure at least 1 column
-    return columns.clamp(1, 4);
-  }
-
-  Widget _buildPluginCard(MarketplacePlugin plugin, MarketplaceState state) {
-    if (state is! MarketplaceLoaded) return const SizedBox.shrink();
-
-    final author = plugin.getAuthor(state.marketplace);
-    final category = plugin.getCategory(state.marketplace);
-
+    final isNarrowScreen = width < 375;
+    
     return SizedBox(
       width: 320,
-      height: 280,
+      height: isNarrowScreen ? null : 305, // Flexible height for narrow screens
       child: Card(
         elevation: 2,
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => _showPluginDetails(plugin),
-          child: Column(
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header with badges
@@ -630,30 +616,22 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                         children: [
                           Row(
                             children: [
-                              if (plugin.featured)
+                              if (plugin.featured) ...[
                                 Icon(
                                   Icons.star,
                                   size: 16,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
-                              if (plugin.verified) ...[
-                                if (plugin.featured) const SizedBox(width: 4),
-                                Icon(
-                                  Icons.verified,
-                                  size: 16,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ],
-                              if (plugin.featured || plugin.verified)
                                 const SizedBox(width: 8),
+                              ],
                               Expanded(
                                 child: Text(
                                   plugin.name,
                                   style: Theme.of(context)
                                       .textTheme
-                                      .titleMedium
+                                      .titleLarge
                                       ?.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -661,7 +639,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               Container(
@@ -716,140 +694,129 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 ),
               ),
 
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+              // Content with fixed layout sections
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 12), // 12px bottom margin
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min, // Shrink to fit content
+                  children: [
+                    // Fixed description area (5 lines) with padding
+                    Container(
+                      height: 116, // Fixed height for 5 lines + padding (100 + 16)
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
                         plugin.description,
                         style: Theme.of(context).textTheme.bodyMedium,
-                        maxLines: 3,
+                        maxLines: 5,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      if (author != null) ...[
+                    ),
+                    
+                    const SizedBox(height: 16), // Space after description
+                    
+                    // Metadata section (author, downloads, ratings)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.person,
-                              size: 14,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                author.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            if (author != null) ...[
+                              Icon(
+                                Icons.person,
+                                size: 14,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
                               ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  author.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ] else
+                              const Spacer(),
+                            Text(
+                              plugin.formattedRating,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
                       ],
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.download,
-                            size: 14,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            plugin.formattedDownloads,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            plugin.formattedRating,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+                    ),
+                    
+                    const SizedBox(height: 8), // Reduced spacing above button
 
-                      // Action button
-                      SizedBox(
-                        width: double.infinity,
-                        child: BlocBuilder<MarketplaceCubit, MarketplaceState>(
-                          builder: (context, state) {
-                            final queue = state is MarketplaceLoaded
-                                ? state.queue
-                                : <QueuedPlugin>[];
-                            final isInQueue =
-                                queue.any((q) => q.plugin.id == plugin.id);
+                    // Action button at bottom
+                    SizedBox(
+                      width: double.infinity,
+                      child: () {
+                        final queue = state is GalleryLoaded
+                            ? state.queue
+                            : <QueuedPlugin>[];
+                        final isInQueue =
+                            queue.any((q) => q.plugin.id == plugin.id);
 
-                            return ElevatedButton.icon(
-                              onPressed: isInQueue
-                                  ? () => context
-                                      .read<MarketplaceCubit>()
-                                      .removeFromQueue(plugin.id)
-                                  : () => context
-                                      .read<MarketplaceCubit>()
-                                      .addToQueue(plugin),
-                              icon: Icon(isInQueue
-                                  ? Icons.remove_shopping_cart
-                                  : Icons.add_shopping_cart),
-                              label:
-                                  Text(isInQueue ? 'Remove' : 'Add to Queue'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isInQueue
-                                    ? Theme.of(context).colorScheme.error
-                                    : Theme.of(context).colorScheme.primary,
-                                foregroundColor: isInQueue
-                                    ? Theme.of(context).colorScheme.onError
-                                    : Theme.of(context).colorScheme.onPrimary,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                        return ElevatedButton.icon(
+                          onPressed: isInQueue
+                              ? () => parentContext
+                                  .read<GalleryCubit>()
+                                  .removeFromQueue(plugin.id)
+                              : () => parentContext
+                                  .read<GalleryCubit>()
+                                  .addToQueue(plugin),
+                          icon: Icon(isInQueue
+                              ? Icons.remove_from_queue
+                              : Icons.add_to_queue),
+                          label:
+                              Text(isInQueue ? 'Remove' : 'Add to Queue'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isInQueue
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).colorScheme.primary,
+                            foregroundColor: isInQueue
+                                ? Theme.of(context).colorScheme.onError
+                                : Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        );
+                      }(),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
       ),
     );
   }
 
   Widget _buildQueueTab() {
-    return BlocBuilder<MarketplaceCubit, MarketplaceState>(
+    return BlocBuilder<GalleryCubit, GalleryState>(
       builder: (context, state) {
         final queue =
-            state is MarketplaceLoaded ? state.queue : <QueuedPlugin>[];
+            state is GalleryLoaded ? state.queue : <QueuedPlugin>[];
 
         if (queue.isEmpty) {
           return Center(
@@ -857,7 +824,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.shopping_cart_outlined,
+                  Icons.download_for_offline_outlined,
                   size: 64,
                   color: Theme.of(context)
                       .colorScheme
@@ -920,7 +887,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                   TextButton(
                     onPressed: queue
                             .any((q) => q.status == QueuedPluginStatus.queued)
-                        ? () => context.read<MarketplaceCubit>().clearQueue()
+                        ? () => context.read<GalleryCubit>().clearQueue()
                         : null,
                     child: const Text('Clear All'),
                   ),
@@ -955,11 +922,11 @@ class _MarketplaceViewState extends State<_MarketplaceView>
 
   Widget _buildQueueItem(QueuedPlugin queuedPlugin) {
     final plugin = queuedPlugin.plugin;
-    return BlocBuilder<MarketplaceCubit, MarketplaceState>(
+    return BlocBuilder<GalleryCubit, GalleryState>(
       builder: (context, state) {
-        if (state is! MarketplaceLoaded) return const SizedBox.shrink();
+        if (state is! GalleryLoaded) return const SizedBox.shrink();
 
-        final author = plugin.getAuthor(state.marketplace);
+        final author = plugin.getAuthor(state.gallery);
 
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
@@ -1017,7 +984,7 @@ class _MarketplaceViewState extends State<_MarketplaceView>
                 ? IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => context
-                        .read<MarketplaceCubit>()
+                        .read<GalleryCubit>()
                         .removeFromQueue(plugin.id),
                     tooltip: queuedPlugin.status == QueuedPluginStatus.failed
                         ? 'Dismiss error'
@@ -1066,13 +1033,13 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     }
   }
 
-  IconData _getPluginIcon(MarketplacePluginType type) {
+  IconData _getPluginIcon(GalleryPluginType type) {
     switch (type) {
-      case MarketplacePluginType.lua:
+      case GalleryPluginType.lua:
         return Icons.code;
-      case MarketplacePluginType.threepot:
+      case GalleryPluginType.threepot:
         return Icons.tune;
-      case MarketplacePluginType.cpp:
+      case GalleryPluginType.cpp:
         return Icons.memory;
     }
   }
@@ -1097,35 +1064,27 @@ class _MarketplaceViewState extends State<_MarketplaceView>
     }
   }
 
-  void _showPluginDetails(MarketplacePlugin plugin) {
+  void _showPluginDetails(GalleryPlugin plugin) {
     showDialog(
       context: context,
-      builder: (context) => BlocBuilder<MarketplaceCubit, MarketplaceState>(
+      builder: (context) => BlocBuilder<GalleryCubit, GalleryState>(
         builder: (context, state) {
-          if (state is! MarketplaceLoaded) return const SizedBox.shrink();
+          if (state is! GalleryLoaded) return const SizedBox.shrink();
 
           return _PluginDetailsDialog(
             plugin: plugin,
-            marketplace: state.marketplace,
-            marketplaceService: widget.marketplaceService,
+            gallery: state.gallery,
+            galleryService: widget.galleryService,
           );
         },
       ),
     );
   }
 
-  void _showSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _MarketplaceSettingsDialog(
-        marketplaceService: widget.marketplaceService,
-      ),
-    );
-  }
 
   Future<void> _installQueue() async {
     try {
-      await widget.marketplaceService.installQueuedPlugins(
+      await widget.galleryService.installQueuedPlugins(
         distingInstallPlugin: (fileName, fileData, {onProgress}) async {
           // Use the DistingCubit's installPlugin method
           await context.read<DistingCubit>().installPlugin(
@@ -1172,20 +1131,20 @@ class _MarketplaceViewState extends State<_MarketplaceView>
 
 // Plugin details dialog
 class _PluginDetailsDialog extends StatelessWidget {
-  final MarketplacePlugin plugin;
-  final Marketplace marketplace;
-  final MarketplaceService marketplaceService;
+  final GalleryPlugin plugin;
+  final Gallery gallery;
+  final GalleryService galleryService;
 
   const _PluginDetailsDialog({
     required this.plugin,
-    required this.marketplace,
-    required this.marketplaceService,
+    required this.gallery,
+    required this.galleryService,
   });
 
   @override
   Widget build(BuildContext context) {
-    final author = plugin.getAuthor(marketplace);
-    final category = plugin.getCategory(marketplace);
+    final author = plugin.getAuthor(gallery);
+    final category = plugin.getCategory(gallery);
 
     return Dialog(
       child: Container(
@@ -1204,22 +1163,14 @@ class _PluginDetailsDialog extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          if (plugin.featured)
+                          if (plugin.featured) ...[
                             Icon(
                               Icons.star,
                               size: 20,
                               color: Theme.of(context).colorScheme.primary,
                             ),
-                          if (plugin.verified) ...[
-                            if (plugin.featured) const SizedBox(width: 4),
-                            Icon(
-                              Icons.verified,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ],
-                          if (plugin.featured || plugin.verified)
                             const SizedBox(width: 8),
+                          ],
                           Expanded(
                             child: Text(
                               plugin.name,
@@ -1353,9 +1304,9 @@ class _PluginDetailsDialog extends StatelessWidget {
                     label: const Text('View Source'),
                   ),
                 const Spacer(),
-                BlocBuilder<MarketplaceCubit, MarketplaceState>(
+                BlocBuilder<GalleryCubit, GalleryState>(
                   builder: (context, state) {
-                    final queue = state is MarketplaceLoaded
+                    final queue = state is GalleryLoaded
                         ? state.queue
                         : <QueuedPlugin>[];
                     final isInQueue =
@@ -1364,14 +1315,14 @@ class _PluginDetailsDialog extends StatelessWidget {
                     return ElevatedButton.icon(
                       onPressed: isInQueue
                           ? () => context
-                              .read<MarketplaceCubit>()
+                              .read<GalleryCubit>()
                               .removeFromQueue(plugin.id)
                           : () => context
-                              .read<MarketplaceCubit>()
+                              .read<GalleryCubit>()
                               .addToQueue(plugin),
                       icon: Icon(isInQueue
-                          ? Icons.remove_shopping_cart
-                          : Icons.add_shopping_cart),
+                          ? Icons.remove_from_queue
+                          : Icons.add_to_queue),
                       label: Text(
                           isInQueue ? 'Remove from Queue' : 'Add to Queue'),
                       style: ElevatedButton.styleFrom(
@@ -1394,67 +1345,3 @@ class _PluginDetailsDialog extends StatelessWidget {
   }
 }
 
-// Marketplace settings dialog
-class _MarketplaceSettingsDialog extends StatefulWidget {
-  final MarketplaceService marketplaceService;
-
-  const _MarketplaceSettingsDialog({
-    required this.marketplaceService,
-  });
-
-  @override
-  State<_MarketplaceSettingsDialog> createState() =>
-      _MarketplaceSettingsDialogState();
-}
-
-class _MarketplaceSettingsDialogState
-    extends State<_MarketplaceSettingsDialog> {
-  late TextEditingController _urlController;
-
-  @override
-  void initState() {
-    super.initState();
-    _urlController = TextEditingController(
-      text: widget.marketplaceService.marketplaceUrl,
-    );
-  }
-
-  @override
-  void dispose() {
-    _urlController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Marketplace Settings'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: 'Marketplace URL',
-              hintText: 'Enter the URL to the marketplace JSON file',
-            ),
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            widget.marketplaceService.setMarketplaceUrl(_urlController.text);
-            Navigator.of(context).pop();
-          },
-          child: const Text('Save'),
-        ),
-      ],
-    );
-  }
-}

@@ -4,7 +4,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'marketplace_cubit.dart';
+part of 'gallery_cubit.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -14,11 +14,11 @@ part of 'marketplace_cubit.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
-mixin _$MarketplaceState {
+mixin _$GalleryState {
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is MarketplaceState);
+        (other.runtimeType == runtimeType && other is GalleryState);
   }
 
   @override
@@ -26,25 +26,24 @@ mixin _$MarketplaceState {
 
   @override
   String toString() {
-    return 'MarketplaceState()';
+    return 'GalleryState()';
   }
 }
 
 /// @nodoc
-class $MarketplaceStateCopyWith<$Res> {
-  $MarketplaceStateCopyWith(
-      MarketplaceState _, $Res Function(MarketplaceState) __);
+class $GalleryStateCopyWith<$Res> {
+  $GalleryStateCopyWith(GalleryState _, $Res Function(GalleryState) __);
 }
 
 /// @nodoc
 
-class MarketplaceInitial implements MarketplaceState {
-  const MarketplaceInitial();
+class GalleryInitial implements GalleryState {
+  const GalleryInitial();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is MarketplaceInitial);
+        (other.runtimeType == runtimeType && other is GalleryInitial);
   }
 
   @override
@@ -52,19 +51,19 @@ class MarketplaceInitial implements MarketplaceState {
 
   @override
   String toString() {
-    return 'MarketplaceState.initial()';
+    return 'GalleryState.initial()';
   }
 }
 
 /// @nodoc
 
-class MarketplaceLoading implements MarketplaceState {
-  const MarketplaceLoading();
+class GalleryLoading implements GalleryState {
+  const GalleryLoading();
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is MarketplaceLoading);
+        (other.runtimeType == runtimeType && other is GalleryLoading);
   }
 
   @override
@@ -72,16 +71,16 @@ class MarketplaceLoading implements MarketplaceState {
 
   @override
   String toString() {
-    return 'MarketplaceState.loading()';
+    return 'GalleryState.loading()';
   }
 }
 
 /// @nodoc
 
-class MarketplaceLoaded implements MarketplaceState {
-  const MarketplaceLoaded(
-      {required this.marketplace,
-      required final List<MarketplacePlugin> filteredPlugins,
+class GalleryLoaded implements GalleryState {
+  const GalleryLoaded(
+      {required this.gallery,
+      required final List<GalleryPlugin> filteredPlugins,
       required final List<QueuedPlugin> queue,
       required this.searchQuery,
       this.selectedCategory,
@@ -91,9 +90,9 @@ class MarketplaceLoaded implements MarketplaceState {
       : _filteredPlugins = filteredPlugins,
         _queue = queue;
 
-  final Marketplace marketplace;
-  final List<MarketplacePlugin> _filteredPlugins;
-  List<MarketplacePlugin> get filteredPlugins {
+  final Gallery gallery;
+  final List<GalleryPlugin> _filteredPlugins;
+  List<GalleryPlugin> get filteredPlugins {
     if (_filteredPlugins is EqualUnmodifiableListView) return _filteredPlugins;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_filteredPlugins);
@@ -108,24 +107,23 @@ class MarketplaceLoaded implements MarketplaceState {
 
   final String searchQuery;
   final String? selectedCategory;
-  final MarketplacePluginType? selectedType;
+  final GalleryPluginType? selectedType;
   final bool showFeaturedOnly;
   final bool showVerifiedOnly;
 
-  /// Create a copy of MarketplaceState
+  /// Create a copy of GalleryState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  $MarketplaceLoadedCopyWith<MarketplaceLoaded> get copyWith =>
-      _$MarketplaceLoadedCopyWithImpl<MarketplaceLoaded>(this, _$identity);
+  $GalleryLoadedCopyWith<GalleryLoaded> get copyWith =>
+      _$GalleryLoadedCopyWithImpl<GalleryLoaded>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is MarketplaceLoaded &&
-            (identical(other.marketplace, marketplace) ||
-                other.marketplace == marketplace) &&
+            other is GalleryLoaded &&
+            (identical(other.gallery, gallery) || other.gallery == gallery) &&
             const DeepCollectionEquality()
                 .equals(other._filteredPlugins, _filteredPlugins) &&
             const DeepCollectionEquality().equals(other._queue, _queue) &&
@@ -144,7 +142,7 @@ class MarketplaceLoaded implements MarketplaceState {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      marketplace,
+      gallery,
       const DeepCollectionEquality().hash(_filteredPlugins),
       const DeepCollectionEquality().hash(_queue),
       searchQuery,
@@ -155,43 +153,43 @@ class MarketplaceLoaded implements MarketplaceState {
 
   @override
   String toString() {
-    return 'MarketplaceState.loaded(marketplace: $marketplace, filteredPlugins: $filteredPlugins, queue: $queue, searchQuery: $searchQuery, selectedCategory: $selectedCategory, selectedType: $selectedType, showFeaturedOnly: $showFeaturedOnly, showVerifiedOnly: $showVerifiedOnly)';
+    return 'GalleryState.loaded(gallery: $gallery, filteredPlugins: $filteredPlugins, queue: $queue, searchQuery: $searchQuery, selectedCategory: $selectedCategory, selectedType: $selectedType, showFeaturedOnly: $showFeaturedOnly, showVerifiedOnly: $showVerifiedOnly)';
   }
 }
 
 /// @nodoc
-abstract mixin class $MarketplaceLoadedCopyWith<$Res>
-    implements $MarketplaceStateCopyWith<$Res> {
-  factory $MarketplaceLoadedCopyWith(
-          MarketplaceLoaded value, $Res Function(MarketplaceLoaded) _then) =
-      _$MarketplaceLoadedCopyWithImpl;
+abstract mixin class $GalleryLoadedCopyWith<$Res>
+    implements $GalleryStateCopyWith<$Res> {
+  factory $GalleryLoadedCopyWith(
+          GalleryLoaded value, $Res Function(GalleryLoaded) _then) =
+      _$GalleryLoadedCopyWithImpl;
   @useResult
   $Res call(
-      {Marketplace marketplace,
-      List<MarketplacePlugin> filteredPlugins,
+      {Gallery gallery,
+      List<GalleryPlugin> filteredPlugins,
       List<QueuedPlugin> queue,
       String searchQuery,
       String? selectedCategory,
-      MarketplacePluginType? selectedType,
+      GalleryPluginType? selectedType,
       bool showFeaturedOnly,
       bool showVerifiedOnly});
 
-  $MarketplaceCopyWith<$Res> get marketplace;
+  $GalleryCopyWith<$Res> get gallery;
 }
 
 /// @nodoc
-class _$MarketplaceLoadedCopyWithImpl<$Res>
-    implements $MarketplaceLoadedCopyWith<$Res> {
-  _$MarketplaceLoadedCopyWithImpl(this._self, this._then);
+class _$GalleryLoadedCopyWithImpl<$Res>
+    implements $GalleryLoadedCopyWith<$Res> {
+  _$GalleryLoadedCopyWithImpl(this._self, this._then);
 
-  final MarketplaceLoaded _self;
-  final $Res Function(MarketplaceLoaded) _then;
+  final GalleryLoaded _self;
+  final $Res Function(GalleryLoaded) _then;
 
-  /// Create a copy of MarketplaceState
+  /// Create a copy of GalleryState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   $Res call({
-    Object? marketplace = null,
+    Object? gallery = null,
     Object? filteredPlugins = null,
     Object? queue = null,
     Object? searchQuery = null,
@@ -200,15 +198,15 @@ class _$MarketplaceLoadedCopyWithImpl<$Res>
     Object? showFeaturedOnly = null,
     Object? showVerifiedOnly = null,
   }) {
-    return _then(MarketplaceLoaded(
-      marketplace: null == marketplace
-          ? _self.marketplace
-          : marketplace // ignore: cast_nullable_to_non_nullable
-              as Marketplace,
+    return _then(GalleryLoaded(
+      gallery: null == gallery
+          ? _self.gallery
+          : gallery // ignore: cast_nullable_to_non_nullable
+              as Gallery,
       filteredPlugins: null == filteredPlugins
           ? _self._filteredPlugins
           : filteredPlugins // ignore: cast_nullable_to_non_nullable
-              as List<MarketplacePlugin>,
+              as List<GalleryPlugin>,
       queue: null == queue
           ? _self._queue
           : queue // ignore: cast_nullable_to_non_nullable
@@ -224,7 +222,7 @@ class _$MarketplaceLoadedCopyWithImpl<$Res>
       selectedType: freezed == selectedType
           ? _self.selectedType
           : selectedType // ignore: cast_nullable_to_non_nullable
-              as MarketplacePluginType?,
+              as GalleryPluginType?,
       showFeaturedOnly: null == showFeaturedOnly
           ? _self.showFeaturedOnly
           : showFeaturedOnly // ignore: cast_nullable_to_non_nullable
@@ -236,36 +234,36 @@ class _$MarketplaceLoadedCopyWithImpl<$Res>
     ));
   }
 
-  /// Create a copy of MarketplaceState
+  /// Create a copy of GalleryState
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $MarketplaceCopyWith<$Res> get marketplace {
-    return $MarketplaceCopyWith<$Res>(_self.marketplace, (value) {
-      return _then(_self.copyWith(marketplace: value));
+  $GalleryCopyWith<$Res> get gallery {
+    return $GalleryCopyWith<$Res>(_self.gallery, (value) {
+      return _then(_self.copyWith(gallery: value));
     });
   }
 }
 
 /// @nodoc
 
-class MarketplaceError implements MarketplaceState {
-  const MarketplaceError(this.message);
+class GalleryError implements GalleryState {
+  const GalleryError(this.message);
 
   final String message;
 
-  /// Create a copy of MarketplaceState
+  /// Create a copy of GalleryState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  $MarketplaceErrorCopyWith<MarketplaceError> get copyWith =>
-      _$MarketplaceErrorCopyWithImpl<MarketplaceError>(this, _$identity);
+  $GalleryErrorCopyWith<GalleryError> get copyWith =>
+      _$GalleryErrorCopyWithImpl<GalleryError>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is MarketplaceError &&
+            other is GalleryError &&
             (identical(other.message, message) || other.message == message));
   }
 
@@ -274,35 +272,34 @@ class MarketplaceError implements MarketplaceState {
 
   @override
   String toString() {
-    return 'MarketplaceState.error(message: $message)';
+    return 'GalleryState.error(message: $message)';
   }
 }
 
 /// @nodoc
-abstract mixin class $MarketplaceErrorCopyWith<$Res>
-    implements $MarketplaceStateCopyWith<$Res> {
-  factory $MarketplaceErrorCopyWith(
-          MarketplaceError value, $Res Function(MarketplaceError) _then) =
-      _$MarketplaceErrorCopyWithImpl;
+abstract mixin class $GalleryErrorCopyWith<$Res>
+    implements $GalleryStateCopyWith<$Res> {
+  factory $GalleryErrorCopyWith(
+          GalleryError value, $Res Function(GalleryError) _then) =
+      _$GalleryErrorCopyWithImpl;
   @useResult
   $Res call({String message});
 }
 
 /// @nodoc
-class _$MarketplaceErrorCopyWithImpl<$Res>
-    implements $MarketplaceErrorCopyWith<$Res> {
-  _$MarketplaceErrorCopyWithImpl(this._self, this._then);
+class _$GalleryErrorCopyWithImpl<$Res> implements $GalleryErrorCopyWith<$Res> {
+  _$GalleryErrorCopyWithImpl(this._self, this._then);
 
-  final MarketplaceError _self;
-  final $Res Function(MarketplaceError) _then;
+  final GalleryError _self;
+  final $Res Function(GalleryError) _then;
 
-  /// Create a copy of MarketplaceState
+  /// Create a copy of GalleryState
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   $Res call({
     Object? message = null,
   }) {
-    return _then(MarketplaceError(
+    return _then(GalleryError(
       null == message
           ? _self.message
           : message // ignore: cast_nullable_to_non_nullable

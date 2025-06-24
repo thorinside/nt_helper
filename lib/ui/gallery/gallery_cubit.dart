@@ -2,38 +2,38 @@ import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:nt_helper/models/marketplace_models.dart';
-import 'package:nt_helper/services/marketplace_service.dart';
+import 'package:nt_helper/models/gallery_models.dart';
+import 'package:nt_helper/services/gallery_service.dart';
 
-part 'marketplace_cubit.freezed.dart';
-part 'marketplace_state.dart';
+part 'gallery_cubit.freezed.dart';
+part 'gallery_state.dart';
 
-class MarketplaceCubit extends Cubit<MarketplaceState> {
-  final MarketplaceService _marketplaceService;
+class GalleryCubit extends Cubit<GalleryState> {
+  final GalleryService _galleryService;
 
-  MarketplaceCubit(this._marketplaceService)
-      : super(const MarketplaceState.initial()) {
+  GalleryCubit(this._galleryService)
+      : super(const GalleryState.initial()) {
     // Listen to queue changes from the service
-    _marketplaceService.queueStream.listen((queue) {
-      if (state is MarketplaceLoaded) {
-        emit((state as MarketplaceLoaded).copyWith(queue: queue));
+    _galleryService.queueStream.listen((queue) {
+      if (state is GalleryLoaded) {
+        emit((state as GalleryLoaded).copyWith(queue: queue));
       }
     });
   }
 
-  Future<void> loadMarketplace({bool forceRefresh = false}) async {
-    emit(const MarketplaceState.loading());
+  Future<void> loadGallery({bool forceRefresh = false}) async {
+    emit(const GalleryState.loading());
 
     try {
-      final marketplace = await _marketplaceService.fetchMarketplace(
+      final gallery = await _galleryService.fetchGallery(
         forceRefresh: forceRefresh,
       );
 
-      final queue = _marketplaceService.installQueue;
+      final queue = _galleryService.installQueue;
 
-      emit(MarketplaceState.loaded(
-        marketplace: marketplace,
-        filteredPlugins: marketplace.plugins,
+      emit(GalleryState.loaded(
+        gallery: gallery,
+        filteredPlugins: gallery.plugins,
         queue: queue,
         selectedCategory: null,
         selectedType: null,
@@ -42,19 +42,19 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
         searchQuery: '',
       ));
     } catch (e) {
-      emit(MarketplaceState.error(e.toString()));
+      emit(GalleryState.error(e.toString()));
     }
   }
 
   void applyFilters({
     String? searchQuery,
     String? category,
-    MarketplacePluginType? type,
+    GalleryPluginType? type,
     bool? featured,
     bool? verified,
   }) {
     final currentState = state;
-    if (currentState is! MarketplaceLoaded) return;
+    if (currentState is! GalleryLoaded) return;
 
     final newSearchQuery = searchQuery ?? currentState.searchQuery;
     final newCategory = category ?? currentState.selectedCategory;
@@ -62,8 +62,8 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
     final newFeatured = featured ?? currentState.showFeaturedOnly;
     final newVerified = verified ?? currentState.showVerifiedOnly;
 
-    final filteredPlugins = _marketplaceService.searchPlugins(
-      currentState.marketplace,
+    final filteredPlugins = _galleryService.searchPlugins(
+      currentState.gallery,
       query: newSearchQuery,
       category: newCategory,
       type: newType,
@@ -83,10 +83,10 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
 
   void clearFilters() {
     final currentState = state;
-    if (currentState is! MarketplaceLoaded) return;
+    if (currentState is! GalleryLoaded) return;
 
     emit(currentState.copyWith(
-      filteredPlugins: currentState.marketplace.plugins,
+      filteredPlugins: currentState.gallery.plugins,
       searchQuery: '',
       selectedCategory: null,
       selectedType: null,
@@ -95,18 +95,18 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
     ));
   }
 
-  void addToQueue(MarketplacePlugin plugin) {
-    _marketplaceService.addToQueue(plugin);
+  void addToQueue(GalleryPlugin plugin) {
+    _galleryService.addToQueue(plugin);
     // State will be updated automatically via the stream listener
   }
 
   void removeFromQueue(String pluginId) {
-    _marketplaceService.removeFromQueue(pluginId);
+    _galleryService.removeFromQueue(pluginId);
     // State will be updated automatically via the stream listener
   }
 
   void clearQueue() {
-    _marketplaceService.clearQueue();
+    _galleryService.clearQueue();
     // State will be updated automatically via the stream listener
   }
 
@@ -116,10 +116,10 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
         distingInstallPlugin,
   }) async {
     final currentState = state;
-    if (currentState is! MarketplaceLoaded) return;
+    if (currentState is! GalleryLoaded) return;
 
     try {
-      await _marketplaceService.installQueuedPlugins(
+      await _galleryService.installQueuedPlugins(
         distingInstallPlugin: distingInstallPlugin,
       );
       // Queue will be cleared automatically and state updated via stream
@@ -131,7 +131,7 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
 
   bool isInQueue(String pluginId) {
     final currentState = state;
-    if (currentState is! MarketplaceLoaded) return false;
+    if (currentState is! GalleryLoaded) return false;
 
     return currentState.queue.any((q) => q.plugin.id == pluginId);
   }

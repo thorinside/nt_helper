@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/tables.dart';
-import 'package:nt_helper/models/marketplace_models.dart';
+import 'package:nt_helper/models/gallery_models.dart';
 
 part 'plugin_installations_dao.g.dart';
 
@@ -66,7 +66,7 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
 
   /// Record a successful plugin installation
   Future<int> recordPluginInstallation({
-    required MarketplacePlugin plugin,
+    required GalleryPlugin plugin,
     required String installedVersion,
     required String installationPath,
     int? fileCount,
@@ -100,7 +100,7 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
 
   /// Record a failed plugin installation
   Future<int> recordPluginInstallationFailure({
-    required MarketplacePlugin plugin,
+    required GalleryPlugin plugin,
     required String attemptedVersion,
     required String installationPath,
     required String errorMessage,

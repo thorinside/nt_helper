@@ -26,6 +26,7 @@ class SettingsService {
   static const String _hapticsEnabledKey = 'haptics_enabled';
   static const String _mcpEnabledKey = 'mcp_enabled';
   static const String _startPagesCollapsedKey = 'start_pages_collapsed';
+  static const String _galleryUrlKey = 'gallery_url';
 
   // Default values
   static const int defaultRequestTimeout = 300;
@@ -33,6 +34,7 @@ class SettingsService {
   static const bool defaultHapticsEnabled = true;
   static const bool defaultMcpEnabled = false;
   static const bool defaultStartPagesCollapsed = false;
+  static const String defaultGalleryUrl = 'https://nt-gallery-frontend.fly.dev/api/gallery.json';
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -83,6 +85,15 @@ class SettingsService {
     return await _prefs?.setBool(_startPagesCollapsedKey, value) ?? false;
   }
 
+  /// Get the gallery URL
+  String get galleryUrl =>
+      _prefs?.getString(_galleryUrlKey) ?? defaultGalleryUrl;
+
+  /// Set the gallery URL
+  Future<bool> setGalleryUrl(String value) async {
+    return await _prefs?.setString(_galleryUrlKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -90,6 +101,7 @@ class SettingsService {
     await setHapticsEnabled(defaultHapticsEnabled);
     await setMcpEnabled(defaultMcpEnabled);
     await setStartPagesCollapsed(defaultStartPagesCollapsed);
+    await setGalleryUrl(defaultGalleryUrl);
   }
 }
 
@@ -105,6 +117,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   final _formKey = GlobalKey<FormState>();
   final _requestTimeoutController = TextEditingController();
   final _interMessageDelayController = TextEditingController();
+  final _galleryUrlController = TextEditingController();
   late bool _hapticsEnabled;
   late bool _mcpEnabled;
   late bool _startPagesCollapsed;
@@ -119,6 +132,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     final settings = SettingsService();
     _requestTimeoutController.text = settings.requestTimeout.toString();
     _interMessageDelayController.text = settings.interMessageDelay.toString();
+    _galleryUrlController.text = settings.galleryUrl;
     setState(() {
       _hapticsEnabled = settings.hapticsEnabled;
       _mcpEnabled = settings.mcpEnabled;
@@ -133,6 +147,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
           .setRequestTimeout(int.parse(_requestTimeoutController.text));
       await settings
           .setInterMessageDelay(int.parse(_interMessageDelayController.text));
+      await settings.setGalleryUrl(_galleryUrlController.text.trim());
       await settings.setHapticsEnabled(_hapticsEnabled);
       await settings.setMcpEnabled(_mcpEnabled);
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
@@ -148,6 +163,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   void dispose() {
     _requestTimeoutController.dispose();
     _interMessageDelayController.dispose();
+    _galleryUrlController.dispose();
     super.dispose();
   }
 
@@ -262,6 +278,34 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         });
                       },
                       contentPadding: EdgeInsets.zero,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Gallery URL setting
+                    _SettingSection(
+                      title: 'Gallery URL',
+                      subtitle: 'URL for the plugin gallery JSON feed',
+                      child: TextFormField(
+                        controller: _galleryUrlController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          hintText: 'https://...',
+                        ),
+                        keyboardType: TextInputType.url,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a URL';
+                          }
+                          final uri = Uri.tryParse(value.trim());
+                          if (uri == null || !uri.hasScheme) {
+                            return 'Please enter a valid URL';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
 
                     // MCP enabled setting (desktop only)

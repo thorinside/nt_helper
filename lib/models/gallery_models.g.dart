@@ -1,37 +1,34 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'marketplace_models.dart';
+part of 'gallery_models.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-_MarketplaceMetadata _$MarketplaceMetadataFromJson(Map<String, dynamic> json) =>
-    _MarketplaceMetadata(
+_GalleryMetadata _$GalleryMetadataFromJson(Map<String, dynamic> json) =>
+    _GalleryMetadata(
       name: json['name'] as String,
       description: json['description'] as String,
-      maintainer: MarketplaceMaintainer.fromJson(
+      maintainer: GalleryMaintainer.fromJson(
           json['maintainer'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$MarketplaceMetadataToJson(
-        _MarketplaceMetadata instance) =>
+Map<String, dynamic> _$GalleryMetadataToJson(_GalleryMetadata instance) =>
     <String, dynamic>{
       'name': instance.name,
       'description': instance.description,
       'maintainer': instance.maintainer,
     };
 
-_MarketplaceMaintainer _$MarketplaceMaintainerFromJson(
-        Map<String, dynamic> json) =>
-    _MarketplaceMaintainer(
+_GalleryMaintainer _$GalleryMaintainerFromJson(Map<String, dynamic> json) =>
+    _GalleryMaintainer(
       name: json['name'] as String,
       email: json['email'] as String?,
       url: json['url'] as String?,
     );
 
-Map<String, dynamic> _$MarketplaceMaintainerToJson(
-        _MarketplaceMaintainer instance) =>
+Map<String, dynamic> _$GalleryMaintainerToJson(_GalleryMaintainer instance) =>
     <String, dynamic>{
       'name': instance.name,
       'email': instance.email,
@@ -98,7 +95,7 @@ _PluginRepository _$PluginRepositoryFromJson(Map<String, dynamic> json) =>
       owner: json['owner'] as String,
       name: json['name'] as String,
       url: json['url'] as String,
-      branch: json['branch'] as String? ?? 'main',
+      branch: json['branch'] as String?,
     );
 
 Map<String, dynamic> _$PluginRepositoryToJson(_PluginRepository instance) =>
@@ -127,8 +124,8 @@ _PluginInstallation _$PluginInstallationFromJson(Map<String, dynamic> json) =>
     _PluginInstallation(
       targetPath: json['targetPath'] as String,
       subdirectory: json['subdirectory'] as String?,
-      assetPattern: json['assetPattern'] as String? ?? r'.*\.(zip|tar\.gz)$',
-      extractPattern: json['extractPattern'] as String? ?? r'.*\.(lua|3pot|o)$',
+      assetPattern: json['assetPattern'] as String?,
+      extractPattern: json['extractPattern'] as String?,
       preserveDirectoryStructure:
           json['preserveDirectoryStructure'] as bool? ?? false,
       sourceDirectoryPath: json['sourceDirectoryPath'] as String?,
@@ -205,13 +202,13 @@ Map<String, dynamic> _$PluginMetricsToJson(_PluginMetrics instance) =>
       'ratingCount': instance.ratingCount,
     };
 
-_MarketplacePlugin _$MarketplacePluginFromJson(Map<String, dynamic> json) =>
-    _MarketplacePlugin(
+_GalleryPlugin _$GalleryPluginFromJson(Map<String, dynamic> json) =>
+    _GalleryPlugin(
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String,
       longDescription: json['longDescription'] as String?,
-      type: $enumDecode(_$MarketplacePluginTypeEnumMap, json['type']),
+      type: $enumDecode(_$GalleryPluginTypeEnumMap, json['type']),
       category: json['category'] as String?,
       tags:
           (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
@@ -248,13 +245,13 @@ _MarketplacePlugin _$MarketplacePluginFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['updatedAt'] as String),
     );
 
-Map<String, dynamic> _$MarketplacePluginToJson(_MarketplacePlugin instance) =>
+Map<String, dynamic> _$GalleryPluginToJson(_GalleryPlugin instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'description': instance.description,
       'longDescription': instance.longDescription,
-      'type': _$MarketplacePluginTypeEnumMap[instance.type]!,
+      'type': _$GalleryPluginTypeEnumMap[instance.type]!,
       'category': instance.category,
       'tags': instance.tags,
       'author': instance.author,
@@ -271,17 +268,17 @@ Map<String, dynamic> _$MarketplacePluginToJson(_MarketplacePlugin instance) =>
       'updatedAt': instance.updatedAt?.toIso8601String(),
     };
 
-const _$MarketplacePluginTypeEnumMap = {
-  MarketplacePluginType.lua: 'lua',
-  MarketplacePluginType.threepot: 'threepot',
-  MarketplacePluginType.cpp: 'cpp',
+const _$GalleryPluginTypeEnumMap = {
+  GalleryPluginType.lua: 'lua',
+  GalleryPluginType.threepot: 'threepot',
+  GalleryPluginType.cpp: 'cpp',
 };
 
-_Marketplace _$MarketplaceFromJson(Map<String, dynamic> json) => _Marketplace(
+_Gallery _$GalleryFromJson(Map<String, dynamic> json) => _Gallery(
       version: json['version'] as String,
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-      metadata: MarketplaceMetadata.fromJson(
-          json['metadata'] as Map<String, dynamic>),
+      metadata:
+          GalleryMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
       categories: (json['categories'] as List<dynamic>?)
               ?.map((e) => PluginCategory.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -292,14 +289,12 @@ _Marketplace _$MarketplaceFromJson(Map<String, dynamic> json) => _Marketplace(
           ) ??
           const {},
       plugins: (json['plugins'] as List<dynamic>?)
-              ?.map(
-                  (e) => MarketplacePlugin.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => GalleryPlugin.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
     );
 
-Map<String, dynamic> _$MarketplaceToJson(_Marketplace instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$GalleryToJson(_Gallery instance) => <String, dynamic>{
       'version': instance.version,
       'lastUpdated': instance.lastUpdated.toIso8601String(),
       'metadata': instance.metadata,
@@ -310,8 +305,7 @@ Map<String, dynamic> _$MarketplaceToJson(_Marketplace instance) =>
 
 _QueuedPlugin _$QueuedPluginFromJson(Map<String, dynamic> json) =>
     _QueuedPlugin(
-      plugin:
-          MarketplacePlugin.fromJson(json['plugin'] as Map<String, dynamic>),
+      plugin: GalleryPlugin.fromJson(json['plugin'] as Map<String, dynamic>),
       selectedVersion: json['selectedVersion'] as String,
       status:
           $enumDecodeNullable(_$QueuedPluginStatusEnumMap, json['status']) ??
