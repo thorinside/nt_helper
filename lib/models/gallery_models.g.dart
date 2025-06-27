@@ -126,6 +126,7 @@ _PluginInstallation _$PluginInstallationFromJson(Map<String, dynamic> json) =>
       subdirectory: json['subdirectory'] as String?,
       assetPattern: json['assetPattern'] as String?,
       extractPattern: json['extractPattern'] as String?,
+      downloadUrl: json['downloadUrl'] as String?,
       preserveDirectoryStructure:
           json['preserveDirectoryStructure'] as bool? ?? false,
       sourceDirectoryPath: json['sourceDirectoryPath'] as String?,
@@ -137,6 +138,7 @@ Map<String, dynamic> _$PluginInstallationToJson(_PluginInstallation instance) =>
       'subdirectory': instance.subdirectory,
       'assetPattern': instance.assetPattern,
       'extractPattern': instance.extractPattern,
+      'downloadUrl': instance.downloadUrl,
       'preserveDirectoryStructure': instance.preserveDirectoryStructure,
       'sourceDirectoryPath': instance.sourceDirectoryPath,
     };

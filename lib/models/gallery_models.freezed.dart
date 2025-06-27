@@ -1408,7 +1408,8 @@ mixin _$PluginInstallation {
   String get targetPath;
   String? get subdirectory;
   String? get assetPattern;
-  String? get extractPattern; // For directory-based installations
+  String? get extractPattern;
+  String? get downloadUrl; // For directory-based installations
   bool get preserveDirectoryStructure;
   String? get sourceDirectoryPath;
 
@@ -1436,6 +1437,8 @@ mixin _$PluginInstallation {
                 other.assetPattern == assetPattern) &&
             (identical(other.extractPattern, extractPattern) ||
                 other.extractPattern == extractPattern) &&
+            (identical(other.downloadUrl, downloadUrl) ||
+                other.downloadUrl == downloadUrl) &&
             (identical(other.preserveDirectoryStructure,
                     preserveDirectoryStructure) ||
                 other.preserveDirectoryStructure ==
@@ -1452,12 +1455,13 @@ mixin _$PluginInstallation {
       subdirectory,
       assetPattern,
       extractPattern,
+      downloadUrl,
       preserveDirectoryStructure,
       sourceDirectoryPath);
 
   @override
   String toString() {
-    return 'PluginInstallation(targetPath: $targetPath, subdirectory: $subdirectory, assetPattern: $assetPattern, extractPattern: $extractPattern, preserveDirectoryStructure: $preserveDirectoryStructure, sourceDirectoryPath: $sourceDirectoryPath)';
+    return 'PluginInstallation(targetPath: $targetPath, subdirectory: $subdirectory, assetPattern: $assetPattern, extractPattern: $extractPattern, downloadUrl: $downloadUrl, preserveDirectoryStructure: $preserveDirectoryStructure, sourceDirectoryPath: $sourceDirectoryPath)';
   }
 }
 
@@ -1472,6 +1476,7 @@ abstract mixin class $PluginInstallationCopyWith<$Res> {
       String? subdirectory,
       String? assetPattern,
       String? extractPattern,
+      String? downloadUrl,
       bool preserveDirectoryStructure,
       String? sourceDirectoryPath});
 }
@@ -1493,6 +1498,7 @@ class _$PluginInstallationCopyWithImpl<$Res>
     Object? subdirectory = freezed,
     Object? assetPattern = freezed,
     Object? extractPattern = freezed,
+    Object? downloadUrl = freezed,
     Object? preserveDirectoryStructure = null,
     Object? sourceDirectoryPath = freezed,
   }) {
@@ -1512,6 +1518,10 @@ class _$PluginInstallationCopyWithImpl<$Res>
       extractPattern: freezed == extractPattern
           ? _self.extractPattern
           : extractPattern // ignore: cast_nullable_to_non_nullable
+              as String?,
+      downloadUrl: freezed == downloadUrl
+          ? _self.downloadUrl
+          : downloadUrl // ignore: cast_nullable_to_non_nullable
               as String?,
       preserveDirectoryStructure: null == preserveDirectoryStructure
           ? _self.preserveDirectoryStructure
@@ -1533,6 +1543,7 @@ class _PluginInstallation implements PluginInstallation {
       this.subdirectory,
       this.assetPattern,
       this.extractPattern,
+      this.downloadUrl,
       this.preserveDirectoryStructure = false,
       this.sourceDirectoryPath});
   factory _PluginInstallation.fromJson(Map<String, dynamic> json) =>
@@ -1546,6 +1557,8 @@ class _PluginInstallation implements PluginInstallation {
   final String? assetPattern;
   @override
   final String? extractPattern;
+  @override
+  final String? downloadUrl;
 // For directory-based installations
   @override
   @JsonKey()
@@ -1581,6 +1594,8 @@ class _PluginInstallation implements PluginInstallation {
                 other.assetPattern == assetPattern) &&
             (identical(other.extractPattern, extractPattern) ||
                 other.extractPattern == extractPattern) &&
+            (identical(other.downloadUrl, downloadUrl) ||
+                other.downloadUrl == downloadUrl) &&
             (identical(other.preserveDirectoryStructure,
                     preserveDirectoryStructure) ||
                 other.preserveDirectoryStructure ==
@@ -1597,12 +1612,13 @@ class _PluginInstallation implements PluginInstallation {
       subdirectory,
       assetPattern,
       extractPattern,
+      downloadUrl,
       preserveDirectoryStructure,
       sourceDirectoryPath);
 
   @override
   String toString() {
-    return 'PluginInstallation(targetPath: $targetPath, subdirectory: $subdirectory, assetPattern: $assetPattern, extractPattern: $extractPattern, preserveDirectoryStructure: $preserveDirectoryStructure, sourceDirectoryPath: $sourceDirectoryPath)';
+    return 'PluginInstallation(targetPath: $targetPath, subdirectory: $subdirectory, assetPattern: $assetPattern, extractPattern: $extractPattern, downloadUrl: $downloadUrl, preserveDirectoryStructure: $preserveDirectoryStructure, sourceDirectoryPath: $sourceDirectoryPath)';
   }
 }
 
@@ -1619,6 +1635,7 @@ abstract mixin class _$PluginInstallationCopyWith<$Res>
       String? subdirectory,
       String? assetPattern,
       String? extractPattern,
+      String? downloadUrl,
       bool preserveDirectoryStructure,
       String? sourceDirectoryPath});
 }
@@ -1640,6 +1657,7 @@ class __$PluginInstallationCopyWithImpl<$Res>
     Object? subdirectory = freezed,
     Object? assetPattern = freezed,
     Object? extractPattern = freezed,
+    Object? downloadUrl = freezed,
     Object? preserveDirectoryStructure = null,
     Object? sourceDirectoryPath = freezed,
   }) {
@@ -1659,6 +1677,10 @@ class __$PluginInstallationCopyWithImpl<$Res>
       extractPattern: freezed == extractPattern
           ? _self.extractPattern
           : extractPattern // ignore: cast_nullable_to_non_nullable
+              as String?,
+      downloadUrl: freezed == downloadUrl
+          ? _self.downloadUrl
+          : downloadUrl // ignore: cast_nullable_to_non_nullable
               as String?,
       preserveDirectoryStructure: null == preserveDirectoryStructure
           ? _self.preserveDirectoryStructure

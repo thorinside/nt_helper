@@ -107,6 +107,7 @@ sealed class PluginInstallation with _$PluginInstallation {
     String? subdirectory,
     String? assetPattern,
     String? extractPattern,
+    String? downloadUrl,
     // For directory-based installations
     @Default(false) bool preserveDirectoryStructure,
     String? sourceDirectoryPath,

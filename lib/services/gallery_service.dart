@@ -26,8 +26,7 @@ class GalleryService {
   GalleryService({
     AppDatabase? database,
     required SettingsService settingsService,
-  })
-      : _database = database,
+  })  : _database = database,
         _settingsService = settingsService;
 
   /// Stream of install queue updates
@@ -525,26 +524,15 @@ class GalleryService {
     final version = plugin.getVersionTag(queuedPlugin.selectedVersion);
 
     debugPrint(
-        '🚀 _installSinglePluginViaDisting: Starting installation of ${plugin.name}');
-    debugPrint('🚀 Plugin ID: ${plugin.id}');
-    debugPrint('🚀 Selected version: ${queuedPlugin.selectedVersion}');
-    debugPrint('🚀 Resolved version tag: $version');
-    debugPrint(
-        '🚀 Repository: ${plugin.repository.owner}/${plugin.repository.name}');
-    debugPrint('🚀 Installation config: ${plugin.installation.toJson()}');
+        'Installing ${plugin.name} v$version from ${plugin.repository.owner}/${plugin.repository.name}');
 
     // Update status to downloading
     _updateQueuedPlugin(plugin.id,
         status: QueuedPluginStatus.downloading, progress: 0.0);
 
-    // Download the release archive
-    debugPrint('🚀 _installSinglePluginViaDisting: Getting download URL...');
-    final downloadUrl = await _getDownloadUrl(plugin.repository, version);
-    debugPrint(
-        '🚀 _installSinglePluginViaDisting: Final download URL: $downloadUrl');
-
-    debugPrint('🚀 _installSinglePluginViaDisting: Starting download...');
-    final archiveBytes = await _downloadWithProgress(
+    // Download the release file
+    final downloadUrl = await _getDownloadUrl(plugin, version);
+    final fileBytes = await _downloadWithProgress(
       downloadUrl,
       (progress) {
         _updateQueuedPlugin(plugin.id,
@@ -553,19 +541,39 @@ class GalleryService {
       },
     );
 
-    // Update status to extracting
-    _updateQueuedPlugin(plugin.id,
-        status: QueuedPluginStatus.extracting, progress: 0.6);
+    // Determine file type from download URL
+    final downloadUri = Uri.parse(downloadUrl);
+    final fileName = path.basename(downloadUri.path);
+    final fileExtension = path.extension(fileName).toLowerCase();
 
-    // Extract the archive
-    final extractedFiles = await _extractArchive(archiveBytes, plugin);
+    debugPrint('Downloaded file: $fileName with extension: $fileExtension');
+
+    List<MapEntry<String, List<int>>> filesToInstall;
+
+    if (fileExtension == '.zip') {
+      // Update status to extracting for zip files
+      _updateQueuedPlugin(plugin.id,
+          status: QueuedPluginStatus.extracting, progress: 0.6);
+
+      // Extract the zip archive
+      filesToInstall = await _extractArchive(fileBytes, plugin);
+    } else if (_isRawPluginFile(fileExtension)) {
+      // Handle raw plugin files (.o, .lua, .3pot)
+      debugPrint('Processing raw plugin file: $fileName');
+
+      // Create a single file entry for installation
+      filesToInstall = [MapEntry(fileName, fileBytes)];
+    } else {
+      throw GalleryException(
+          'Unsupported file type: $fileExtension. Supported types are: .zip, .o, .lua, .3pot');
+    }
 
     // Update status to installing
     _updateQueuedPlugin(plugin.id,
         status: QueuedPluginStatus.installing, progress: 0.8);
 
     // Install files using Disting upload functionality
-    await _installFilesViaDisting(extractedFiles, plugin, distingInstallPlugin,
+    await _installFilesViaDisting(filesToInstall, plugin, distingInstallPlugin,
         (uploadProgress) {
       final totalProgress = 0.8 + (uploadProgress * 0.2); // 20% for upload
       _updateQueuedPlugin(plugin.id, progress: totalProgress);
@@ -577,39 +585,30 @@ class GalleryService {
 
     // Notify installation details
     if (onInstallationDetails != null) {
-      final totalBytes = archiveBytes.length;
-      onInstallationDetails(extractedFiles.length, totalBytes);
+      final totalBytes = fileBytes.length;
+      onInstallationDetails(filesToInstall.length, totalBytes);
     }
   }
 
-  /// Get download URL for a GitHub release or commit
-  Future<String> _getDownloadUrl(PluginRepository repo, String version) async {
+  /// Get download URL for a plugin - prioritizes downloadUrl from installation config
+  Future<String> _getDownloadUrl(GalleryPlugin plugin, String version) async {
+    final repo = plugin.repository;
+    
     debugPrint(
-        '🔍 _getDownloadUrl: Starting URL resolution for ${repo.owner}/${repo.name} version $version');
+        '🔍 _getDownloadUrl: Getting download URL for ${plugin.name} v$version');
 
-    // Check if version looks like a commit hash (40 hex characters)
-    final commitHashPattern = RegExp(r'^[a-f0-9]{40}$');
-
-    if (commitHashPattern.hasMatch(version)) {
-      // Direct commit hash - use archive download
-      final url =
-          'https://github.com/${repo.owner}/${repo.name}/archive/$version.zip';
-      debugPrint(
-          '🔍 _getDownloadUrl: Detected commit hash, using direct archive URL: $url');
-      return url;
+    // Priority 1: Use direct download URL from installation config if available
+    if (plugin.installation.downloadUrl != null && 
+        plugin.installation.downloadUrl!.isNotEmpty) {
+      debugPrint('🔍 _getDownloadUrl: Using direct downloadUrl: ${plugin.installation.downloadUrl}');
+      return plugin.installation.downloadUrl!;
     }
 
-    // Check if version is "main" or similar branch name
-    if (version == 'main' || version == 'master' || version == 'develop') {
-      // Use branch archive download
-      final url =
-          'https://github.com/${repo.owner}/${repo.name}/archive/refs/heads/$version.zip';
-      debugPrint(
-          '🔍 _getDownloadUrl: Detected branch name, using branch archive URL: $url');
-      return url;
-    }
+    // Priority 2: Fall back to GitHub API release asset discovery
+    debugPrint(
+        '🔍 _getDownloadUrl: No downloadUrl found, falling back to GitHub API for ${repo.owner}/${repo.name} version $version');
 
-    // Try to get release with assets first
+    // Get release with assets
     final apiUrl =
         'https://api.github.com/repos/${repo.owner}/${repo.name}/releases/tags/$version';
     debugPrint(
@@ -632,35 +631,55 @@ class GalleryService {
             '🔍 _getDownloadUrl: Found release with ${assets.length} assets');
 
         if (assets.isNotEmpty) {
-          // Find the first asset that matches the pattern (usually a .zip file)
-          final asset = assets.first as Map<String, dynamic>;
-          final assetUrl = asset['browser_download_url'] as String;
-          debugPrint('🔍 _getDownloadUrl: Using release asset URL: $assetUrl');
-          return assetUrl;
+          // Filter out GitHub's automatic source code assets
+          final pluginAssets = assets.where((asset) {
+            final name = asset['name'] as String;
+            final lowerName = name.toLowerCase();
+
+            // Skip GitHub's automatic source code assets
+            if (lowerName == 'source code (zip)' ||
+                lowerName == 'source code (tar.gz)' ||
+                name == 'Source code (zip)' ||
+                name == 'Source code (tar.gz)') {
+              return false;
+            }
+
+            // Accept plugin assets (.o, .lua, .3pot, .zip but not source.zip)
+            return lowerName.endsWith('.o') ||
+                lowerName.endsWith('.lua') ||
+                lowerName.endsWith('.3pot') ||
+                (lowerName.endsWith('.zip') && !lowerName.contains('source'));
+          }).toList();
+
+          if (pluginAssets.isNotEmpty) {
+            final asset = pluginAssets.first as Map<String, dynamic>;
+            final assetUrl = asset['browser_download_url'] as String;
+            final assetName = asset['name'] as String;
+            debugPrint('🔍 _getDownloadUrl: Using plugin asset: $assetName');
+            debugPrint('🔍 _getDownloadUrl: Asset URL: $assetUrl');
+            return assetUrl;
+          } else {
+            debugPrint(
+                '🔍 _getDownloadUrl: No plugin assets found (only source code assets)');
+            throw GalleryException(
+                'Release has no plugin assets - only source code found');
+          }
         } else {
-          debugPrint(
-              '🔍 _getDownloadUrl: Release exists but has no assets, falling back to source archive');
+          debugPrint('🔍 _getDownloadUrl: Release exists but has no assets');
+          throw GalleryException('Release has no assets');
         }
-        // If release exists but has no assets, fall through to source archive
       } else {
         debugPrint(
-            '🔍 _getDownloadUrl: Release not found (${response.statusCode}), falling back to source archive');
+            '🔍 _getDownloadUrl: Release not found (${response.statusCode})');
+        throw GalleryException(
+            'Release $version not found for ${repo.owner}/${repo.name}');
       }
-      // If release doesn't exist (404), fall through to source archive
     } catch (e) {
-      // If API call fails, fall through to source archive
-      debugPrint(
-          '🔍 _getDownloadUrl: Release API failed for $version, trying source archive: $e');
+      if (e is GalleryException) rethrow;
+      debugPrint('🔍 _getDownloadUrl: GitHub API error: $e');
+      throw GalleryException(
+          'Failed to fetch release $version for ${repo.owner}/${repo.name}: $e');
     }
-
-    // Fallback: use source archive for the tag/version
-    final fallbackUrl =
-        'https://github.com/${repo.owner}/${repo.name}/archive/refs/tags/$version.zip';
-    debugPrint(
-        '🔍 _getDownloadUrl: Using fallback source archive URL: $fallbackUrl');
-    debugPrint(
-        'Using source archive for ${repo.owner}/${repo.name} version $version');
-    return fallbackUrl;
   }
 
   /// Download file with progress tracking
@@ -668,38 +687,12 @@ class GalleryService {
     String url,
     Function(double) onProgress,
   ) async {
-    debugPrint('📥 _downloadWithProgress: Starting download from: $url');
+    debugPrint('Downloading from: $url');
 
     final request = http.Request('GET', Uri.parse(url));
-    debugPrint('📥 _downloadWithProgress: Sending HTTP GET request...');
-
     final response = await http.Client().send(request);
 
-    debugPrint(
-        '📥 _downloadWithProgress: Response received - Status: ${response.statusCode}');
-    debugPrint(
-        '📥 _downloadWithProgress: Response headers: ${response.headers}');
-    debugPrint(
-        '📥 _downloadWithProgress: Content-Length: ${response.contentLength}');
-
     if (response.statusCode != 200) {
-      debugPrint(
-          '📥 _downloadWithProgress: Download failed with status ${response.statusCode}');
-
-      // Try to read error response body for more details
-      try {
-        final errorBytes = <int>[];
-        await for (final chunk in response.stream) {
-          errorBytes.addAll(chunk);
-          if (errorBytes.length > 1000) break; // Limit error response size
-        }
-        final errorBody = String.fromCharCodes(errorBytes);
-        debugPrint('📥 _downloadWithProgress: Error response body: $errorBody');
-      } catch (e) {
-        debugPrint(
-            '📥 _downloadWithProgress: Could not read error response: $e');
-      }
-
       throw GalleryException(
           'Download failed: HTTP ${response.statusCode} for URL: $url');
     }
@@ -707,23 +700,15 @@ class GalleryService {
     final contentLength = response.contentLength;
     final bytes = <int>[];
 
-    debugPrint('📥 _downloadWithProgress: Starting to read response stream...');
-
     await for (final chunk in response.stream) {
       bytes.addAll(chunk);
       if (contentLength != null && contentLength > 0) {
         final progress = bytes.length / contentLength;
         onProgress(progress);
-        if (bytes.length % 50000 == 0) {
-          // Log every ~50KB
-          debugPrint(
-              '📥 _downloadWithProgress: Downloaded ${bytes.length}/${contentLength} bytes (${(progress * 100).toStringAsFixed(1)}%)');
-        }
       }
     }
 
-    debugPrint(
-        '📥 _downloadWithProgress: Download completed - Total bytes: ${bytes.length}');
+    debugPrint('Downloaded ${bytes.length} bytes');
     return bytes;
   }
 
@@ -735,25 +720,26 @@ class GalleryService {
     final archive = ZipDecoder().decodeBytes(archiveBytes);
     final extractedFiles = <MapEntry<String, List<int>>>[];
     final installation = plugin.installation;
-    final extractPattern =
-        RegExp(installation.extractPattern ?? r'.*\.(lua|3pot|o)$');
 
-    debugPrint(
-        'Extracting archive for ${plugin.name}, looking for pattern: ${installation.extractPattern ?? r'.*\.(lua|3pot|o)$'}');
+    debugPrint('Extracting archive for ${plugin.name}');
+    
+    // Compile regex pattern for file filtering if extractPattern is provided
+    RegExp? extractRegex;
+    if (installation.extractPattern != null && installation.extractPattern!.isNotEmpty) {
+      try {
+        extractRegex = RegExp(installation.extractPattern!);
+        debugPrint('Using extract pattern: ${installation.extractPattern}');
+      } catch (e) {
+        debugPrint('Invalid extract pattern ${installation.extractPattern}: $e');
+        // Continue without pattern filtering if regex is invalid
+      }
+    }
 
     for (final file in archive) {
       if (!file.isFile) continue;
 
-      String originalPath = file.name;
-      String processedPath = originalPath;
-
-      // Handle GitHub archive structure (removes top-level directory)
-      // GitHub archives come as "repo-name-version/..." so we need to strip that
-      final pathParts = originalPath.split('/');
-      if (pathParts.length > 1 && pathParts[0].contains('-')) {
-        // Remove the top-level directory that GitHub adds
-        processedPath = pathParts.skip(1).join('/');
-      }
+      String filePath = file.name;
+      final originalFilePath = filePath;
 
       // For directory-based installations, filter by source directory
       if (installation.sourceDirectoryPath != null &&
@@ -761,32 +747,45 @@ class GalleryService {
         final sourceDir = installation.sourceDirectoryPath!;
 
         // Check if file is within the source directory
-        if (!processedPath.startsWith('$sourceDir/') &&
-            processedPath != sourceDir) {
+        if (!filePath.startsWith('$sourceDir/') && filePath != sourceDir) {
           continue;
         }
 
         // Remove the source directory prefix for installation
-        if (processedPath.startsWith('$sourceDir/')) {
-          processedPath = processedPath.substring(sourceDir.length + 1);
-        } else if (processedPath == sourceDir) {
+        if (filePath.startsWith('$sourceDir/')) {
+          filePath = filePath.substring(sourceDir.length + 1);
+        } else if (filePath == sourceDir) {
           continue; // Skip the directory itself
         }
       }
 
-      // Apply extract pattern filter to the original file name for compatibility
-      if (extractPattern.hasMatch(originalPath) ||
-          extractPattern.hasMatch(processedPath)) {
-        debugPrint('Including file: $originalPath -> $processedPath');
-        extractedFiles.add(MapEntry(processedPath, file.content as List<int>));
+      // Skip empty paths
+      if (filePath.isEmpty) continue;
+
+      // Apply extract pattern filtering if specified
+      if (extractRegex != null) {
+        // Check both the processed filePath and original file.name against the pattern
+        final fileNameOnly = path.basename(filePath);
+        final originalFileNameOnly = path.basename(originalFilePath);
+        
+        if (!extractRegex.hasMatch(filePath) && 
+            !extractRegex.hasMatch(fileNameOnly) && 
+            !extractRegex.hasMatch(originalFilePath) &&
+            !extractRegex.hasMatch(originalFileNameOnly)) {
+          debugPrint('Skipping file (does not match extract pattern): ${file.name}');
+          continue;
+        }
       }
+
+      debugPrint('Including file: ${file.name} -> $filePath');
+      extractedFiles.add(MapEntry(filePath, file.content as List<int>));
     }
 
     debugPrint('Extracted ${extractedFiles.length} files for ${plugin.name}');
 
     if (extractedFiles.isEmpty) {
       throw GalleryException(
-          'No plugin files found in archive matching pattern: ${installation.extractPattern ?? r'.*\.(lua|3pot|o)$'}');
+          'No plugin files found in archive for ${plugin.name}. Extract pattern: ${installation.extractPattern ?? "none"}');
     }
 
     return extractedFiles;
@@ -807,17 +806,43 @@ class GalleryService {
     int filesProcessed = 0;
 
     for (final fileEntry in files) {
-      final fileName = path.basename(fileEntry.key);
+      final relativePath = fileEntry.key;
       final fileData = Uint8List.fromList(fileEntry.value);
+      final fileName = path.basename(relativePath);
 
-      debugPrint('Uploading file: $fileName (${fileData.length} bytes)');
+      debugPrint('Processing file: $relativePath (${fileData.length} bytes)');
 
       try {
+        // Try to upload with directory structure first (if path contains directories)
+        if (relativePath.contains('/') && relativePath != fileName) {
+          debugPrint(
+              'Attempting upload with directory structure: $relativePath');
+          try {
+            await distingInstallPlugin(
+              relativePath,
+              fileData,
+              onProgress: (fileProgress) {
+                final overallProgress =
+                    (filesProcessed + fileProgress) / files.length;
+                onProgress?.call(overallProgress);
+              },
+            );
+
+            filesProcessed++;
+            debugPrint('Successfully uploaded with path: $relativePath');
+            onProgress?.call(filesProcessed / files.length);
+            continue; // Success, move to next file
+          } catch (pathError) {
+            debugPrint('Upload with path failed: $pathError');
+            debugPrint('Falling back to filename only: $fileName');
+          }
+        }
+
+        // Fallback: upload to plugin root directory with just filename
         await distingInstallPlugin(
           fileName,
           fileData,
           onProgress: (fileProgress) {
-            // Calculate overall progress
             final overallProgress =
                 (filesProcessed + fileProgress) / files.length;
             onProgress?.call(overallProgress);
@@ -825,9 +850,7 @@ class GalleryService {
         );
 
         filesProcessed++;
-        debugPrint('Successfully uploaded: $fileName');
-
-        // Update overall progress after file completion
+        debugPrint('Successfully uploaded to root: $fileName');
         onProgress?.call(filesProcessed / files.length);
       } catch (e) {
         throw GalleryException('Failed to upload ${fileName}: $e');
@@ -870,6 +893,12 @@ class GalleryService {
   /// Dispose of resources
   void dispose() {
     _queueController.close();
+  }
+
+  /// Check if a file extension corresponds to a raw plugin file
+  bool _isRawPluginFile(String extension) {
+    const rawPluginExtensions = {'.o', '.lua', '.3pot'};
+    return rawPluginExtensions.contains(extension);
   }
 
   /// Get the installation path for a plugin based on its configuration

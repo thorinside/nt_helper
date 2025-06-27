@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -54,6 +57,10 @@ class _GalleryViewState extends State<_GalleryView>
 
   // UI state
   late TabController _tabController;
+  
+  // Drag and drop state
+  bool _isDragOver = false;
+  bool _isInstalling = false;
 
   @override
   void initState() {
@@ -79,7 +86,7 @@ class _GalleryViewState extends State<_GalleryView>
   Widget build(BuildContext context) {
     return BlocBuilder<GalleryCubit, GalleryState>(
       builder: (context, state) {
-        return Scaffold(
+        Widget content = Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
           body: Column(
             children: [
@@ -97,6 +104,27 @@ class _GalleryViewState extends State<_GalleryView>
             ],
           ),
         );
+
+        // Only add drag and drop on desktop platforms
+        if (!kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.windows ||
+                defaultTargetPlatform == TargetPlatform.macOS ||
+                defaultTargetPlatform == TargetPlatform.linux)) {
+          return DropTarget(
+            onDragDone: _handleDragDone,
+            onDragEntered: _handleDragEntered,
+            onDragExited: _handleDragExited,
+            child: Stack(
+              children: [
+                content,
+                if (_isDragOver) _buildDragOverlay(),
+                if (_isInstalling) _buildInstallOverlay(),
+              ],
+            ),
+          );
+        }
+
+        return content;
       },
     );
   }
@@ -1126,6 +1154,194 @@ class _GalleryViewState extends State<_GalleryView>
         ),
       );
     }
+  }
+
+  // Drag and drop handlers
+  void _handleDragEntered(DropEventDetails details) {
+    setState(() {
+      _isDragOver = true;
+    });
+  }
+
+  void _handleDragExited(DropEventDetails details) {
+    setState(() {
+      _isDragOver = false;
+    });
+  }
+
+  void _handleDragDone(DropDoneDetails details) {
+    setState(() {
+      _isDragOver = false;
+    });
+
+    // Filter files by extension
+    final allowedExtensions = {'.lua', '.3pot', '.o'};
+    final validFiles = details.files.where((file) {
+      final extension = file.path.toLowerCase().split('.').last;
+      return allowedExtensions.contains('.$extension');
+    }).toList();
+
+    if (validFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please drop valid plugin files (.lua, .3pot, or .o)'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (validFiles.length > 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please drop only one file at a time'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Install the single file
+    _installDroppedFile(validFiles.first);
+  }
+
+  Future<void> _installDroppedFile(XFile file) async {
+    setState(() {
+      _isInstalling = true;
+    });
+
+    try {
+      // Read file data
+      final fileBytes = await file.readAsBytes();
+      final fileName = file.name;
+
+      // Install using the Disting cubit
+      await context.read<DistingCubit>().installPlugin(
+        fileName,
+        fileBytes,
+        onProgress: (progress) {
+          // Progress callback for future use
+        },
+      );
+
+      setState(() {
+        _isInstalling = false;
+      });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully installed "$fileName"'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isInstalling = false;
+      });
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to install "${file.name}": $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Widget _buildDragOverlay() {
+    return Container(
+      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_upload_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Drop plugin files here to install',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Supports .lua, .3pot, and .o files',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstallOverlay() {
+    return Container(
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Installing plugin...',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This may take a few moments',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
