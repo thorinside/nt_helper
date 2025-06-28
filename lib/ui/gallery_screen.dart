@@ -314,36 +314,39 @@ class _GalleryViewState extends State<_GalleryView>
       ),
       child: Column(
         children: [
-          // Search bar
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search plugins...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        context.read<GalleryCubit>().clearFilters();
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Filter chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          // Single row with search and filters
+          Row(
             children: [
-              // Category filter
-              if (state is GalleryLoaded &&
-                  state.gallery.categories.isNotEmpty)
+              // Search field - takes available space
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search plugins...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              context.read<GalleryCubit>().clearFilters();
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              
+              // Filter chips in a row
+              if (state is GalleryLoaded && state.gallery.categories.isNotEmpty)
                 PopupMenuButton<String?>(
                   child: Chip(
                     avatar: Icon(
@@ -354,7 +357,7 @@ class _GalleryViewState extends State<_GalleryView>
                           .onSurface
                           .withValues(alpha: 0.7),
                     ),
-                    label: Text(state.selectedCategory ?? 'All Categories'),
+                    label: Text(state.selectedCategory ?? 'Category'),
                     deleteIcon: Icon(
                       Icons.arrow_drop_down,
                       size: 18,
@@ -394,6 +397,7 @@ class _GalleryViewState extends State<_GalleryView>
                     ),
                   ],
                 ),
+              const SizedBox(width: 8),
 
               // Type filter
               PopupMenuButton<GalleryPluginType?>(
@@ -407,8 +411,8 @@ class _GalleryViewState extends State<_GalleryView>
                         .withValues(alpha: 0.7),
                   ),
                   label: Text(state is GalleryLoaded
-                      ? (state.selectedType?.displayName ?? 'All Types')
-                      : 'All Types'),
+                      ? (state.selectedType?.displayName ?? 'Type')
+                      : 'Type'),
                   deleteIcon: Icon(
                     Icons.arrow_drop_down,
                     size: 18,
@@ -437,6 +441,7 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
                 ],
               ),
+              const SizedBox(width: 8),
 
               // Featured filter
               FilterChip(
@@ -466,42 +471,13 @@ class _GalleryViewState extends State<_GalleryView>
                       );
                 },
               ),
-
-              // Verified filter
-              FilterChip(
-                avatar: Icon(
-                  Icons.verified,
-                  size: 18,
-                  color: (state is GalleryLoaded && state.showVerifiedOnly)
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                ),
-                label: const Text('Verified'),
-                selected:
-                    state is GalleryLoaded ? state.showVerifiedOnly : false,
-                selectedColor: Theme.of(context).colorScheme.primary,
-                showCheckmark: false,
-                labelStyle: TextStyle(
-                  color: (state is GalleryLoaded && state.showVerifiedOnly)
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : null,
-                ),
-                onSelected: (selected) {
-                  context.read<GalleryCubit>().applyFilters(
-                        verified: selected,
-                      );
-                },
-              ),
+              const SizedBox(width: 8),
 
               // Clear filters
               if (state is GalleryLoaded &&
                   (state.selectedCategory != null ||
                       state.selectedType != null ||
                       state.showFeaturedOnly ||
-                      state.showVerifiedOnly ||
                       _searchController.text.isNotEmpty))
                 ActionChip(
                   avatar: Icon(
@@ -522,7 +498,7 @@ class _GalleryViewState extends State<_GalleryView>
           ),
 
           // Results count
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             children: [
               Text(
