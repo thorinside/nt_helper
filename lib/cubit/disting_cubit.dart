@@ -13,6 +13,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/domain/mock_disting_midi_manager.dart';
 import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
+import 'package:nt_helper/domain/parameter_update_queue.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/models/plugin_info.dart';
@@ -59,6 +60,9 @@ class DistingCubit extends Cubit<DistingState> {
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
   final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
+  
+  // Parameter update queue for consolidated parameter changes
+  ParameterUpdateQueue? _parameterQueue;
 
   // CPU Usage Streaming
   late final StreamController<CpuUsage> _cpuUsageController;
@@ -77,6 +81,7 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> close() {
     disting()?.dispose();
     _offlineManager?.dispose(); // Dispose offline manager too
+    _parameterQueue?.dispose(); // Dispose parameter queue
     _midiCommand.dispose();
 
     // Dispose CPU usage streaming resources
@@ -169,6 +174,9 @@ class DistingCubit extends Cubit<DistingState> {
       unitStrings: unitStrings,
       demo: true,
     ));
+
+    // Create parameter queue for demo manager
+    _createParameterQueue();
   }
 
   // Helper to fetch AlgorithmInfo list from mock/offline manager
@@ -396,11 +404,24 @@ class DistingCubit extends Cubit<DistingState> {
         offline: false,
       ));
 
+      // Create parameter queue for the new manager
+      _createParameterQueue();
+
       // Store these details as the last successful ONLINE connection
       // BEFORE starting the full sync.
       _lastOnlineInputDevice = inputDevice;
       _lastOnlineOutputDevice = outputDevice;
       _lastOnlineSysExId = sysExId; // Use the parameter passed to this method
+
+      // Synchronize device clock with system time
+      try {
+        final currentUnixTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        await newDistingManager.requestSetRealTimeClock(currentUnixTime);
+        debugPrint("[DistingCubit] Device clock synchronized to $currentUnixTime");
+      } catch (e) {
+        debugPrint("[DistingCubit] Failed to synchronize device clock: $e");
+        // Continue with connection even if clock sync fails
+      }
 
       await _performSyncAndEmit(); // Sync with the new connection
     } catch (e, stackTrace) {
@@ -497,6 +518,9 @@ class DistingCubit extends Cubit<DistingState> {
         offline: true,
         loading: false,
       ));
+
+      // Create parameter queue for offline manager
+      _createParameterQueue();
     } catch (e, stackTrace) {
       debugPrint("Error initializing offline mode: $e");
       debugPrintStack(stackTrace: stackTrace);
@@ -664,6 +688,51 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  // Helper to create parameter queue for current manager
+  void _createParameterQueue() {
+    final manager = disting();
+    if (manager != null) {
+      _parameterQueue?.dispose();
+      _parameterQueue = ParameterUpdateQueue(
+        midiManager: manager,
+        onParameterStringUpdated: _onParameterStringUpdated,
+      );
+      debugPrint('[DistingCubit] Created parameter update queue');
+    }
+  }
+
+  // Handle parameter string updates from the queue
+  void _onParameterStringUpdated(int algorithmIndex, int parameterNumber, String value) {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+    
+    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) return;
+    
+    final currentSlot = currentState.slots[algorithmIndex];
+    if (parameterNumber < 0 || parameterNumber >= currentSlot.valueStrings.length) return;
+    
+    try {
+      // Update the parameter string in the UI
+      final updatedValueStrings = List<ParameterValueString>.from(currentSlot.valueStrings);
+      updatedValueStrings[parameterNumber] = ParameterValueString(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        value: value,
+      );
+      
+      final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
+      final updatedSlots = List<Slot>.from(currentState.slots);
+      updatedSlots[algorithmIndex] = updatedSlot;
+      
+      emit(currentState.copyWith(slots: updatedSlots));
+      
+      debugPrint('[DistingCubit] Updated parameter string UI for $algorithmIndex:$parameterNumber = "$value"');
+    } catch (e, stackTrace) {
+      debugPrint('[DistingCubit] Error updating parameter string UI: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
   IDistingMidiManager requireDisting() {
     final d = disting();
     if (d == null) {
@@ -705,6 +774,7 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
+
   Future<void> updateParameterValue({
     required int algorithmIndex,
     required int parameterNumber,
@@ -721,13 +791,44 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateSynchronized syncstate:
         var disting = requireDisting();
 
-        disting.setParameterValue(
-          algorithmIndex,
-          parameterNumber,
-          value,
+        // Always queue the parameter update for sending to device
+        final currentSlot = syncstate.slots[algorithmIndex];
+        final needsStringUpdate = parameterNumber < currentSlot.parameters.length &&
+            [13, 14, 17].contains(currentSlot.parameters[parameterNumber].unit);
+
+        _parameterQueue?.updateParameter(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: parameterNumber,
+          value: value,
+          needsStringUpdate: needsStringUpdate,
         );
 
-        if (!userIsChangingTheValue) {
+        if (userIsChangingTheValue) {
+          // Optimistic update during slider movement - just update the UI
+          final newValue = ParameterValue(
+            algorithmIndex: algorithmIndex,
+            parameterNumber: parameterNumber,
+            value: value,
+          );
+
+          emit(syncstate.copyWith(
+            slots: updateSlot(
+              algorithmIndex,
+              syncstate.slots,
+              (slot) {
+                return slot.copyWith(
+                  values: replaceInList(
+                    slot.values,
+                    newValue,
+                    index: parameterNumber,
+                  ),
+                );
+              },
+            ),
+          ));
+        } else {
+          // When user releases slider - do minimal additional processing
+          
           // Special case for switching programs
           if (_isProgramParameter(syncstate, algorithmIndex, parameterNumber)) {
             _programSlotUpdate?.cancel();
@@ -750,72 +851,44 @@ class DistingCubit extends Cubit<DistingState> {
             ));
           }
 
-          final newValue = await disting.requestParameterValue(
-            algorithmIndex,
-            parameterNumber,
-          );
-
-          // Anomaly Check
-          if (this.state is DistingStateSynchronized) {
-            final syncState = this.state as DistingStateSynchronized;
-            if (algorithmIndex < syncState.slots.length &&
-                parameterNumber <
-                    syncState.slots[algorithmIndex].parameters.length) {
-              final parameterInfo = syncState.slots[algorithmIndex].parameters
-                  .elementAt(parameterNumber);
-              if (newValue != null &&
-                  (newValue.value < parameterInfo.min ||
-                      newValue.value > parameterInfo.max)) {
-                debugPrint(
-                    "Out-of-bounds data from device: algo $algorithmIndex, param $parameterNumber, value ${newValue.value}, expected ${parameterInfo.min}-${parameterInfo.max}");
-                _refreshSlotAfterAnomaly(algorithmIndex);
-                return; // Return early as the slot will be refreshed
-              }
+          // Anomaly Check - using the value we're setting
+          if (parameterNumber < currentSlot.parameters.length) {
+            final parameterInfo = currentSlot.parameters.elementAt(parameterNumber);
+            if (value < parameterInfo.min || value > parameterInfo.max) {
+              debugPrint(
+                  "Out-of-bounds data for device: algo $algorithmIndex, param $parameterNumber, value $value, expected ${parameterInfo.min}-${parameterInfo.max}");
+              _refreshSlotAfterAnomaly(algorithmIndex);
+              return; // Return early as the slot will be refreshed
             }
           }
-          // End Anomaly Check
 
-          final state = (this.state as DistingStateSynchronized);
+          // Update UI with the final value immediately (optimistic)
+          final newValue = ParameterValue(
+            algorithmIndex: algorithmIndex,
+            parameterNumber: parameterNumber,
+            value: value,
+          );
 
-          var valueStrings = [
-            for (int parameterNumber = 0;
-                parameterNumber <
-                    state.slots[algorithmIndex].valueStrings.length;
-                parameterNumber++)
-              if ([13, 14, 17].contains(
-                  state.slots[algorithmIndex].parameters[parameterNumber].unit))
-                await disting.requestParameterValueString(
-                        algorithmIndex, parameterNumber) ??
-                    ParameterValueString.filler()
-              else
-                ParameterValueString.filler()
-          ];
-
-          final routings = !([
-            13,
-            14,
-            17,
-          ].contains(
-                  state.slots[algorithmIndex].parameters[parameterNumber].unit))
-              ? await disting.requestRoutingInformation(algorithmIndex)
-              : state.slots[algorithmIndex].routing;
-
-          emit(state.copyWith(
+          emit(syncstate.copyWith(
             slots: updateSlot(
               algorithmIndex,
-              state.slots,
+              syncstate.slots,
               (slot) {
                 return slot.copyWith(
-                    values: replaceInList(
-                      slot.values,
-                      newValue!,
-                      index: parameterNumber,
-                    ),
-                    routing: routings ?? state.slots[algorithmIndex].routing,
-                    valueStrings: valueStrings);
+                  values: replaceInList(
+                    slot.values,
+                    newValue,
+                    index: parameterNumber,
+                  ),
+                );
               },
             ),
           ));
+
+          // The parameter queue will handle:
+          // 1. Sending the parameter value to device
+          // 2. Querying parameter string if needed
+          // 3. Rate limiting and consolidation
         }
     }
   }
@@ -2009,6 +2082,53 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     return plugins;
+  }
+
+  /// Refreshes parameter strings for a specific slot only
+  Future<void> refreshSlotParameterStrings(int algorithmIndex) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) {
+      debugPrint("[Cubit] Cannot refresh slot parameter strings: Not in synchronized state.");
+      return;
+    }
+
+    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
+      debugPrint("[Cubit] Cannot refresh slot parameter strings: Invalid algorithm index $algorithmIndex");
+      return;
+    }
+
+    final disting = requireDisting();
+    final currentSlot = currentState.slots[algorithmIndex];
+
+    try {
+      // Only update parameter strings for string-type parameters (units 13, 14, 17)
+      var updatedValueStrings = List<ParameterValueString>.from(currentSlot.valueStrings);
+      
+      for (int parameterNumber = 0; parameterNumber < currentSlot.parameters.length; parameterNumber++) {
+        final parameter = currentSlot.parameters[parameterNumber];
+        if ([13, 14, 17].contains(parameter.unit)) {
+          final newValueString = await disting.requestParameterValueString(
+            algorithmIndex, 
+            parameterNumber
+          );
+          if (newValueString != null) {
+            updatedValueStrings[parameterNumber] = newValueString;
+          }
+        }
+      }
+
+      // Update the slot with new parameter strings
+      final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
+      final updatedSlots = List<Slot>.from(currentState.slots);
+      updatedSlots[algorithmIndex] = updatedSlot;
+
+      emit(currentState.copyWith(slots: updatedSlots));
+      
+      debugPrint("[Cubit] Refreshed parameter strings for slot $algorithmIndex");
+    } catch (e, stackTrace) {
+      debugPrint("[Cubit] Error refreshing parameter strings for slot $algorithmIndex: $e");
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   /// Refreshes a single slot's data from the module

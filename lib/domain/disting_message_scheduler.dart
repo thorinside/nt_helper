@@ -1,44 +1,46 @@
-// disting_message_scheduler_v2.dart – drop‑in replacement with device + sysExId
+// disting_message_scheduler.dart - Simple Sequential Scheduler
 // -----------------------------------------------------------------------------
-//  • SAME import list, enum, and external types as the legacy scheduler.
-//  • Adds **inputDevice**, **outputDevice**, and **sysExId** constructor
-//    parameters so Windows (separate MIDI in/out) is supported and incoming
-//    messages can be filtered by sysExId.
-//  • Supports multi‑in‑flight requests and per‑request overrides for timeout &
-//    retryDelay; also global defaults.
-//  • **UPDATED**: now relies on `decodeDistingNTSysEx` from
-//    `disting_nt_sysex.dart` and the `RequestKey.matches()` helper, so the
-//    scheduler ignores messages from other devices *and* other SysEx IDs.
+// Redesigned for reliability and performance:
+// • Simple state machine: idle → sending → waiting → idle
+// • Sequential processing: one request at a time
+// • Single timer approach: no complex timer chains
+// • Immediate processing when idle
+// • Retains device filtering and sysEx ID support
 // -----------------------------------------------------------------------------
 
-/*
- * Imports – kept in the exact order of the original file.
- */
 import 'dart:async';
 import 'dart:collection';
-import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 
-// Domain classes -------------------------------------------------------------
+// Domain classes
 import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/domain/sysex/response_factory.dart';
-import 'package:nt_helper/domain/sysex/sysex_parser.dart'; // kept for API‑compat
+import 'package:nt_helper/domain/sysex/sysex_parser.dart';
 
 // -----------------------------------------------------------------------------
-// Response expectation enum (unchanged)
+// Response expectation enum
 // -----------------------------------------------------------------------------
 
 enum ResponseExpectation {
   required, // Must get a response or throw TimeoutException
   optional, // OK to get null (no response)
-  none, // Fire‑and‑forget
+  none, // Fire-and-forget
 }
 
 // -----------------------------------------------------------------------------
-// Internal helper – one outstanding request
+// Scheduler state
+// -----------------------------------------------------------------------------
+
+enum _SchedulerState {
+  idle,
+  sending,
+  waitingForResponse,
+}
+
+// -----------------------------------------------------------------------------
+// Internal request representation
 // -----------------------------------------------------------------------------
 
 class _ScheduledRequest {
@@ -55,26 +57,26 @@ class _ScheduledRequest {
   final Uint8List packet;
   final RequestKey key;
   final ResponseExpectation expectation;
-  final Completer<dynamic> completer; // dynamic → cast when completing
+  final Completer<dynamic> completer;
   final Duration timeout;
   final int maxRetries;
   final Duration retryDelay;
 
-  int _attempt = 0;
-  Timer? _timeoutTimer;
+  int attemptCount = 0;
+  Timer? timeoutTimer;
 
-  void resetTimer(void Function() onTimeout) {
-    _timeoutTimer?.cancel();
+  void startTimeout(void Function() onTimeout) {
+    timeoutTimer?.cancel();
     if (expectation != ResponseExpectation.none) {
-      _timeoutTimer = Timer(timeout, onTimeout);
+      timeoutTimer = Timer(timeout, onTimeout);
     }
   }
 
-  void dispose() => _timeoutTimer?.cancel();
+  void dispose() => timeoutTimer?.cancel();
 }
 
 // -----------------------------------------------------------------------------
-//  DistingMessageScheduler – multi in‑flight capable + device/sysEx filtering
+// Simple Sequential Message Scheduler
 // -----------------------------------------------------------------------------
 
 class DistingMessageScheduler {
@@ -83,43 +85,35 @@ class DistingMessageScheduler {
     required MidiDevice inputDevice,
     required MidiDevice outputDevice,
     required int sysExId,
-    this.maxOutstanding = 1,
     this.messageInterval = const Duration(milliseconds: 50),
-    defaultTimeout = const Duration(milliseconds: 300),
+    this.defaultTimeout = const Duration(milliseconds: 300),
+    this.defaultMaxRetries = 4,
     this.defaultRetryDelay = Duration.zero,
-  })  : effectiveTimeout = Duration(
-            milliseconds: max(200, defaultTimeout.inMilliseconds as int) *
-                maxOutstanding),
-        _midi = midiCommand,
+  })  : _midi = midiCommand,
         _inputDevice = inputDevice,
         _outputDevice = outputDevice,
         _sysExId = sysExId {
     _subscription = _midi.onMidiDataReceived?.listen(_handleIncomingPacket);
   }
 
-  // MIDI driver & device handles ------------------------------------------------
+  // MIDI and device configuration
   final MidiCommand _midi;
   final MidiDevice _inputDevice;
   final MidiDevice _outputDevice;
-
-  // Distinguish multiple NTs on the same bus -----------------------------------
   final int _sysExId;
 
-  // Concurrency / pacing configuration -----------------------------------------
-  final int maxOutstanding; // raise to enable concurrency
+  // Timing configuration
   final Duration messageInterval;
-  final Duration effectiveTimeout;
+  final Duration defaultTimeout;
+  final int defaultMaxRetries;
   final Duration defaultRetryDelay;
 
-  // Incoming MIDI stream sub ----------------------------------------------------
-  StreamSubscription? _subscription;
-
-  // Outbound queue & in‑flight map ---------------------------------------------
+  // State management
+  _SchedulerState _state = _SchedulerState.idle;
   final Queue<_ScheduledRequest> _queue = Queue();
-  final Map<RequestKey, _ScheduledRequest> _inFlight = {};
-
-  // Debounce token for queue pumping -------------------------------------------
-  Timer? _pumpToken;
+  _ScheduledRequest? _currentRequest;
+  Timer? _nextProcessTimer;
+  StreamSubscription? _subscription;
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -129,115 +123,127 @@ class DistingMessageScheduler {
     Uint8List packet,
     RequestKey key, {
     ResponseExpectation responseExpectation = ResponseExpectation.required,
-    int maxRetries = 4,
+    int? maxRetries,
     Duration? timeout,
     Duration? retryDelay,
   }) {
     final completer = Completer<T?>();
-    final req = _ScheduledRequest(
+    final request = _ScheduledRequest(
       packet: packet,
       key: key,
       expectation: responseExpectation,
       completer: completer,
-      timeout: timeout ?? effectiveTimeout,
-      maxRetries: maxRetries,
+      timeout: timeout ?? defaultTimeout,
+      maxRetries: maxRetries ?? defaultMaxRetries,
       retryDelay: retryDelay ?? defaultRetryDelay,
     );
 
-    _queue.add(req);
-    _pump();
+    _queue.add(request);
+    
+    // Process immediately if idle
+    if (_state == _SchedulerState.idle) {
+      _processNext();
+    }
+
     return completer.future;
   }
 
   void dispose() {
     _subscription?.cancel();
-    _pumpToken?.cancel();
+    _nextProcessTimer?.cancel();
+    _currentRequest?.dispose();
 
-    // Fail everything still pending -------------------------------------------
-    for (final r in _queue) {
-      if (!r.completer.isCompleted) {
-        r.completer.completeError(StateError('Scheduler disposed'));
+    // Fail all pending requests
+    for (final request in _queue) {
+      if (!request.completer.isCompleted) {
+        request.completer.completeError(StateError('Scheduler disposed'));
       }
-    }
-    for (final r in _inFlight.values) {
-      if (!r.completer.isCompleted) {
-        r.completer.completeError(StateError('Scheduler disposed'));
-      }
-      r.dispose();
     }
     _queue.clear();
-    _inFlight.clear();
   }
 
   // ---------------------------------------------------------------------------
-  // Queue helpers
+  // Core processing logic
   // ---------------------------------------------------------------------------
 
-  void _pump() {
-    // Debounce to next micro‑task ------------------------------------------------
-    _pumpToken ??= Timer(Duration.zero, () {
-      _pumpToken = null;
-      _drain();
-    });
-  }
+  void _processNext() {
+    // Cancel any pending timer
+    _nextProcessTimer?.cancel();
+    _nextProcessTimer = null;
 
-  void _drain() {
-    while (_inFlight.length < maxOutstanding && _queue.isNotEmpty) {
-      final req = _queue.removeFirst();
-      _sendInitial(req);
-    }
-  }
-
-  void _sendInitial(_ScheduledRequest req) {
-    // On Windows we have separate out device; supply deviceId when sending.
-    _midi.sendData(req.packet, deviceId: _outputDevice.id);
-
-    if (req.expectation != ResponseExpectation.none) {
-      _inFlight[req.key] = req;
-      req.resetTimer(() => _onTimeout(req));
-    } else {
-      if (!req.completer.isCompleted) req.completer.complete(null);
-    }
-
-    // respect messageInterval between sends -------------------------------------
-    Timer(messageInterval, _pump);
-  }
-
-  void _retrySend(_ScheduledRequest req) {
-    _midi.sendData(req.packet, deviceId: _outputDevice.id);
-    req.resetTimer(() => _onTimeout(req));
-    Timer(messageInterval, _pump);
-  }
-
-  void _onTimeout(_ScheduledRequest req) {
-    req._attempt++;
-    if (req._attempt > req.maxRetries) {
-      _inFlight.remove(req.key);
-      if (req.expectation == ResponseExpectation.required) {
-        req.completer
-            .completeError(TimeoutException('No response', req.timeout));
-      } else {
-        req.completer.complete(null);
-      }
-      req.dispose();
-      _pump();
+    if (_state != _SchedulerState.idle || _queue.isEmpty) {
       return;
     }
 
-    // Retry after the specified delay ------------------------------------------
-    if (req.retryDelay == Duration.zero) {
-      _retrySend(req);
+    _currentRequest = _queue.removeFirst();
+    _state = _SchedulerState.sending;
+    
+    _sendCurrentRequest();
+  }
+
+  void _sendCurrentRequest() {
+    final request = _currentRequest!;
+    request.attemptCount++;
+
+    debugPrint('Sending SysEx (attempt ${request.attemptCount}): '
+        '${request.packet.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')} ${request.key}');
+
+    // Send the message
+    _midi.sendData(request.packet, deviceId: _outputDevice.id);
+
+    if (request.expectation == ResponseExpectation.none) {
+      // Fire-and-forget: complete immediately and schedule next
+      request.completer.complete(null);
+      _finishCurrentRequest();
     } else {
-      Timer(req.retryDelay, () => _retrySend(req));
+      // Wait for response
+      _state = _SchedulerState.waitingForResponse;
+      request.startTimeout(() => _onTimeout());
+    }
+  }
+
+  void _onTimeout() {
+    final request = _currentRequest!;
+    
+    if (request.attemptCount >= request.maxRetries) {
+      // Out of retries
+      if (request.expectation == ResponseExpectation.required) {
+        request.completer.completeError(
+          TimeoutException('No response after ${request.attemptCount} attempts', request.timeout)
+        );
+      } else {
+        request.completer.complete(null);
+      }
+      _finishCurrentRequest();
+    } else {
+      // Retry after delay
+      debugPrint('Timeout, retrying (attempt ${request.attemptCount + 1})...');
+      _state = _SchedulerState.sending;
+      
+      if (request.retryDelay == Duration.zero) {
+        _sendCurrentRequest();
+      } else {
+        Timer(request.retryDelay, _sendCurrentRequest);
+      }
+    }
+  }
+
+  void _finishCurrentRequest() {
+    _currentRequest?.dispose();
+    _currentRequest = null;
+    _state = _SchedulerState.idle;
+    
+    // Schedule next request after message interval
+    if (_queue.isNotEmpty) {
+      _nextProcessTimer = Timer(messageInterval, _processNext);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Incoming MIDI handling (Parser swapped to `decodeDistingNTSysEx`)
+  // Incoming message handling
   // ---------------------------------------------------------------------------
 
   void _handleIncomingPacket(dynamic packet) {
-    // Filter by device (Windows has separate in/out IDs) -----------------------
     if (packet is MidiPacket) {
       if (packet.device.id != _inputDevice.id) return;
       _handleIncoming(packet.data);
@@ -249,43 +255,44 @@ class DistingMessageScheduler {
   void _handleIncoming(Uint8List raw) {
     final parsed = decodeDistingNTSysEx(raw);
     if (parsed == null) return;
-    if (parsed.sysExId != _sysExId) return; // other NT on the bus
+    if (parsed.sysExId != _sysExId) return;
 
-    // Locate owning request -----------------------------------------------------
-    RequestKey? matchedKey;
-    _ScheduledRequest? matchedReq;
-    for (final entry in _inFlight.entries) {
-      if (entry.key.matches(parsed)) {
-        matchedKey = entry.key;
-        matchedReq = entry.value;
-        break;
-      }
+    final request = _currentRequest;
+    if (request == null || 
+        _state != _SchedulerState.waitingForResponse || 
+        request.completer.isCompleted) {
+      debugPrint("Received SysEx but no matching request pending");
+      return;
     }
-    if (matchedReq == null) return; // unsolicited or timed‑out
 
-    _inFlight.remove(matchedKey);
-    matchedReq.dispose();
+    if (!request.key.matches(parsed)) {
+      debugPrint("Received SysEx doesn't match pending request");
+      debugPrint("  Expected: ${request.key}");  
+      debugPrint("  Received: ${parsed.messageType}");
+      return;
+    }
 
-    final response =
-        ResponseFactory.fromMessageType(parsed.messageType, parsed.payload);
+    debugPrint('Received matching SysEx: ${parsed.rawBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
 
+    // Parse and complete the response
+    final response = ResponseFactory.fromMessageType(parsed.messageType, parsed.payload);
+    
     if (response != null) {
       try {
-        matchedReq.completer.complete(response.parse());
+        request.completer.complete(response.parse());
       } catch (_) {
-        // Fallback to the raw response object if `.parse()` throws.
-        matchedReq.completer.complete(response);
+        // Fallback to raw response if parsing fails
+        request.completer.complete(response);
       }
     } else {
-      // No parser – treat according to expectation.
-      if (matchedReq.expectation == ResponseExpectation.optional) {
-        matchedReq.completer.complete(null);
+      // No parser available
+      if (request.expectation == ResponseExpectation.optional) {
+        request.completer.complete(null);
       } else {
-        matchedReq.completer
-            .completeError(StateError('Unhandled response type'));
+        request.completer.completeError(StateError('Unhandled response type: ${parsed.messageType}'));
       }
     }
 
-    _pump(); // free slot for next request
+    _finishCurrentRequest();
   }
 }
