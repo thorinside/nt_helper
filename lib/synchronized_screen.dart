@@ -934,6 +934,19 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   final displayName = slot.algorithm.name;
 
                   return GestureDetector(
+                    onDoubleTap: () async {
+                      var cubit = context.read<DistingCubit>();
+                      cubit.disting()?.let(
+                        (manager) {
+                          manager.requestSetFocus(index, 0);
+                          manager
+                              .requestSetDisplayMode(DisplayMode.algorithmUI);
+                        },
+                      );
+                      if (SettingsService().hapticsEnabled) {
+                        Haptics.vibrate(HapticsType.medium);
+                      }
+                    },
                     onLongPress: () async {
                       var cubit = context.read<DistingCubit>();
                       // Use the current displayName for the dialog initial value
@@ -1465,6 +1478,21 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
           Expanded(
             flex: widescreen ? 2 : 3,
             child: GestureDetector(
+              onDoubleTap: () async {
+                var cubit = context.read<DistingCubit>();
+                cubit.disting()?.let(
+                  (manager) {
+                    manager.requestSetFocus(
+                      widget.algorithmIndex,
+                      widget.parameterNumber,
+                    );
+                    manager.requestSetDisplayMode(DisplayMode.parameters);
+                    if (SettingsService().hapticsEnabled) {
+                      Haptics.vibrate(HapticsType.medium);
+                    }
+                  },
+                );
+              },
               onLongPress: () {
                 // Get the manager from the cubit
                 final manager = context.read<DistingCubit>().requireDisting();
