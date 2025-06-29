@@ -75,7 +75,6 @@ class DistingMidiManager implements IDistingMidiManager {
           inputDevice: inputDevice,
           outputDevice: outputDevice,
           sysExId: sysExId,
-          maxOutstanding: 1,
           messageInterval:
               Duration(milliseconds: SettingsService().interMessageDelay),
           defaultTimeout:
@@ -726,6 +725,24 @@ class DistingMidiManager implements IDistingMidiManager {
   Future<void> requestSetDisplayMode(DisplayMode displayMode) async {
     final message =
         SetDisplayModeMessage(sysExId: sysExId, displayMode: displayMode);
+    final packet = message.encode();
+
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+    return _scheduler.sendRequest<void>(
+      maxRetries: 1,
+      retryDelay: Duration(milliseconds: 250),
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<void> requestSetRealTimeClock(int unixTimeSeconds) async {
+    final message =
+        SetRealTimeClockMessage(sysExId: sysExId, unixTimeSeconds: unixTimeSeconds);
     final packet = message.encode();
 
     final key = RequestKey(

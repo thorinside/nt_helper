@@ -59,6 +59,7 @@ abstract class IDistingMidiManager {
       int algorithmIndex, int parameterNumber, PackedMappingData data);
   Future<void> requestSendSlotName(int algorithmIndex, String newName);
   Future<void> requestSetDisplayMode(DisplayMode displayMode);
+  Future<void> requestSetRealTimeClock(int unixTimeSeconds);
   Future<FullPresetDetails?> requestCurrentPresetDetails();
 
   // Lua Operations

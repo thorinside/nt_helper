@@ -597,6 +597,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<void> requestSetDisplayMode(DisplayMode displayMode) async {}
 
   @override
+  Future<void> requestSetRealTimeClock(int unixTimeSeconds) async {}
+
+  @override
   Future<void> requestWake() async {}
 
   Stream<MidiPacket> get midiDataStream => Stream.empty();

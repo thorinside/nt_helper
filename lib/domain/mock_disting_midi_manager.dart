@@ -762,6 +762,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<void> requestSetRealTimeClock(int unixTimeSeconds) async {
+    // No-op
+  }
+
+  @override
   Future<void> requestSetFocus(int algorithmIndex, int parameterNumber) async {
     // No-op
   }
