@@ -60,7 +60,7 @@ class DistingCubit extends Cubit<DistingState> {
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
   final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
-  
+
   // Parameter update queue for consolidated parameter changes
   ParameterUpdateQueue? _parameterQueue;
 
@@ -77,6 +77,202 @@ class DistingCubit extends Cubit<DistingState> {
   MidiDevice? _lastOnlineOutputDevice;
   int? _lastOnlineSysExId;
 
+  // === LAZY LOADING CACHES ===
+  final Map<String, ParameterEnumStrings> _enumCache = {};
+  final Map<String, Mapping> _mappingCache = {};
+  final Map<String, ParameterValueString> _valueStringCache = {};
+  final Set<String> _loadingKeys = {}; // Track what's currently loading
+
+  /// Generate cache key for parameter-specific data
+  String _getCacheKey(int algorithmIndex, int parameterNumber) {
+    return '$algorithmIndex:$parameterNumber';
+  }
+
+  /// Get enum strings for a parameter, loading if not cached
+  Future<ParameterEnumStrings?> getParameterEnums(
+      int algorithmIndex, int parameterNumber) async {
+    final key = _getCacheKey(algorithmIndex, parameterNumber);
+
+    // Return cached if available
+    if (_enumCache.containsKey(key)) {
+      return _enumCache[key];
+    }
+
+    // Prevent duplicate loading
+    if (_loadingKeys.contains('enum:$key')) {
+      // Wait a bit and try again
+      await Future.delayed(const Duration(milliseconds: 100));
+      return _enumCache[key];
+    }
+
+    try {
+      _loadingKeys.add('enum:$key');
+      final disting = this.disting();
+      if (disting == null) return null;
+
+      final enums = await disting.requestParameterEnumStrings(
+          algorithmIndex, parameterNumber);
+      if (enums != null) {
+        _enumCache[key] = enums;
+
+        // Update the current state with the new enum data
+        _updateSlotEnums(algorithmIndex, parameterNumber, enums);
+      }
+
+      return enums;
+    } catch (e) {
+      debugPrint(
+          'Error loading enums for $algorithmIndex:$parameterNumber: $e');
+      return null;
+    } finally {
+      _loadingKeys.remove('enum:$key');
+    }
+  }
+
+  /// Get mapping for a parameter, loading if not cached
+  Future<Mapping?> getParameterMapping(
+      int algorithmIndex, int parameterNumber) async {
+    final key = _getCacheKey(algorithmIndex, parameterNumber);
+
+    if (_mappingCache.containsKey(key)) {
+      return _mappingCache[key];
+    }
+
+    if (_loadingKeys.contains('mapping:$key')) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return _mappingCache[key];
+    }
+
+    try {
+      _loadingKeys.add('mapping:$key');
+      final disting = this.disting();
+      if (disting == null) return null;
+
+      final mapping =
+          await disting.requestMappings(algorithmIndex, parameterNumber);
+      if (mapping != null) {
+        _mappingCache[key] = mapping;
+        _updateSlotMapping(algorithmIndex, parameterNumber, mapping);
+      }
+
+      return mapping;
+    } catch (e) {
+      debugPrint(
+          'Error loading mapping for $algorithmIndex:$parameterNumber: $e');
+      return null;
+    } finally {
+      _loadingKeys.remove('mapping:$key');
+    }
+  }
+
+  /// Get value string for a parameter, loading if not cached
+  Future<ParameterValueString?> getParameterValueString(
+      int algorithmIndex, int parameterNumber) async {
+    final key = _getCacheKey(algorithmIndex, parameterNumber);
+
+    if (_valueStringCache.containsKey(key)) {
+      return _valueStringCache[key];
+    }
+
+    if (_loadingKeys.contains('valueString:$key')) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return _valueStringCache[key];
+    }
+
+    try {
+      _loadingKeys.add('valueString:$key');
+      final disting = this.disting();
+      if (disting == null) return null;
+
+      final valueString = await disting.requestParameterValueString(
+          algorithmIndex, parameterNumber);
+      if (valueString != null) {
+        _valueStringCache[key] = valueString;
+        _updateSlotValueString(algorithmIndex, parameterNumber, valueString);
+      }
+
+      return valueString;
+    } catch (e) {
+      debugPrint(
+          'Error loading value string for $algorithmIndex:$parameterNumber: $e');
+      return null;
+    } finally {
+      _loadingKeys.remove('valueString:$key');
+    }
+  }
+
+  /// Update a specific enum in the current state
+  void _updateSlotEnums(
+      int algorithmIndex, int parameterNumber, ParameterEnumStrings enums) {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    if (algorithmIndex >= currentState.slots.length) return;
+
+    final currentSlot = currentState.slots[algorithmIndex];
+    if (parameterNumber >= currentSlot.enums.length) return;
+
+    final updatedEnums = List<ParameterEnumStrings>.from(currentSlot.enums);
+    updatedEnums[parameterNumber] = enums;
+
+    final updatedSlot = currentSlot.copyWith(enums: updatedEnums);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[algorithmIndex] = updatedSlot;
+
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  /// Update a specific mapping in the current state
+  void _updateSlotMapping(
+      int algorithmIndex, int parameterNumber, Mapping mapping) {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    if (algorithmIndex >= currentState.slots.length) return;
+
+    final currentSlot = currentState.slots[algorithmIndex];
+    if (parameterNumber >= currentSlot.mappings.length) return;
+
+    final updatedMappings = List<Mapping>.from(currentSlot.mappings);
+    updatedMappings[parameterNumber] = mapping;
+
+    final updatedSlot = currentSlot.copyWith(mappings: updatedMappings);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[algorithmIndex] = updatedSlot;
+
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  /// Update a specific value string in the current state
+  void _updateSlotValueString(int algorithmIndex, int parameterNumber,
+      ParameterValueString valueString) {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    if (algorithmIndex >= currentState.slots.length) return;
+
+    final currentSlot = currentState.slots[algorithmIndex];
+    if (parameterNumber >= currentSlot.valueStrings.length) return;
+
+    final updatedValueStrings =
+        List<ParameterValueString>.from(currentSlot.valueStrings);
+    updatedValueStrings[parameterNumber] = valueString;
+
+    final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[algorithmIndex] = updatedSlot;
+
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  /// Clear all lazy loading caches
+  void _clearLazyLoadingCaches() {
+    _enumCache.clear();
+    _mappingCache.clear();
+    _valueStringCache.clear();
+    _loadingKeys.clear();
+  }
+
   @override
   Future<void> close() {
     disting()?.dispose();
@@ -87,6 +283,9 @@ class DistingCubit extends Cubit<DistingState> {
     // Dispose CPU usage streaming resources
     _cpuUsageTimer?.cancel();
     _cpuUsageController.close();
+
+    // Clear lazy loading caches
+    _clearLazyLoadingCaches();
 
     return super.close();
   }
@@ -305,6 +504,9 @@ class DistingCubit extends Cubit<DistingState> {
     final IDistingMidiManager distingManager = requireDisting();
 
     try {
+      // Clear any cached lazy loading data for fresh connection
+      _clearLazyLoadingCaches();
+
       // --- Fetch ALL data from device REGARDLESS ---
       debugPrint("[Cubit] _performSyncAndEmit: Fetching full device state...");
 
@@ -321,9 +523,12 @@ class DistingCubit extends Cubit<DistingState> {
       final distingVersion = await distingManager.requestVersionString() ?? "";
       final presetName = await distingManager.requestPresetName() ?? "Default";
       var unitStrings = await distingManager.requestUnitStrings() ?? [];
-      List<Slot> slots =
-          await fetchSlots(numAlgorithmsInPreset, distingManager);
-      debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
+
+      // Use fast sync for initial connection (loads essential data first, then background loads optional data)
+      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, distingManager,
+          fastSync: true);
+      debugPrint(
+          "[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots with fast sync.");
 
       // --- Emit final synchronized state --- (Ensure offline is false)
       emit(DistingState.synchronized(
@@ -417,7 +622,8 @@ class DistingCubit extends Cubit<DistingState> {
       try {
         final currentUnixTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         await newDistingManager.requestSetRealTimeClock(currentUnixTime);
-        debugPrint("[DistingCubit] Device clock synchronized to $currentUnixTime");
+        debugPrint(
+            "[DistingCubit] Device clock synchronized to $currentUnixTime");
       } catch (e) {
         debugPrint("[DistingCubit] Failed to synchronize device clock: $e");
         // Continue with connection even if clock sync fails
@@ -500,8 +706,9 @@ class DistingCubit extends Cubit<DistingState> {
           await _offlineManager!.requestPresetName() ?? "Offline Preset";
       final numAlgorithmsInPreset =
           await _offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
-      final List<Slot> initialSlots =
-          await fetchSlots(numAlgorithmsInPreset, _offlineManager!);
+      final List<Slot> initialSlots = await fetchSlots(
+          numAlgorithmsInPreset, _offlineManager!,
+          fastSync: false); // Offline mode uses full sync
 
       debugPrint("[DistingCubit] Emitting offline synchronized state.");
       // Emit state WITHOUT devices or custom names map
@@ -601,7 +808,8 @@ class DistingCubit extends Cubit<DistingState> {
       final presetName = await _offlineManager!.requestPresetName() ?? "Error";
       final numAlgorithmsInPreset =
           await _offlineManager!.requestNumAlgorithmsInPreset() ?? 0;
-      final slots = await fetchSlots(numAlgorithmsInPreset, _offlineManager!);
+      final slots = await fetchSlots(numAlgorithmsInPreset, _offlineManager!,
+          fastSync: false); // Offline mode uses full sync
 
       // 3. Re-fetch metadata (algorithms and units don't change)
       final availableAlgorithmsInfo = await _fetchOfflineAlgorithms();
@@ -702,31 +910,39 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   // Handle parameter string updates from the queue
-  void _onParameterStringUpdated(int algorithmIndex, int parameterNumber, String value) {
+  void _onParameterStringUpdated(
+      int algorithmIndex, int parameterNumber, String value) {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return;
-    
-    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) return;
-    
+
+    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length)
+      return;
+
     final currentSlot = currentState.slots[algorithmIndex];
-    if (parameterNumber < 0 || parameterNumber >= currentSlot.valueStrings.length) return;
-    
+    if (parameterNumber < 0 ||
+        parameterNumber >= currentSlot.valueStrings.length) return;
+
     try {
-      // Update the parameter string in the UI
-      final updatedValueStrings = List<ParameterValueString>.from(currentSlot.valueStrings);
-      updatedValueStrings[parameterNumber] = ParameterValueString(
+      // Update the lazy loading cache
+      final key = _getCacheKey(algorithmIndex, parameterNumber);
+      _valueStringCache[key] = ParameterValueString(
         algorithmIndex: algorithmIndex,
         parameterNumber: parameterNumber,
         value: value,
       );
-      
-      final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
-      final updatedSlots = List<Slot>.from(currentState.slots);
-      updatedSlots[algorithmIndex] = updatedSlot;
-      
-      emit(currentState.copyWith(slots: updatedSlots));
-      
-      debugPrint('[DistingCubit] Updated parameter string UI for $algorithmIndex:$parameterNumber = "$value"');
+
+      // Update the parameter string in the UI
+      _updateSlotValueString(
+          algorithmIndex,
+          parameterNumber,
+          ParameterValueString(
+            algorithmIndex: algorithmIndex,
+            parameterNumber: parameterNumber,
+            value: value,
+          ));
+
+      debugPrint(
+          '[DistingCubit] Updated parameter string UI for $algorithmIndex:$parameterNumber = "$value"');
     } catch (e, stackTrace) {
       debugPrint('[DistingCubit] Error updating parameter string UI: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -774,7 +990,6 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
-
   Future<void> updateParameterValue({
     required int algorithmIndex,
     required int parameterNumber,
@@ -793,7 +1008,8 @@ class DistingCubit extends Cubit<DistingState> {
 
         // Always queue the parameter update for sending to device
         final currentSlot = syncstate.slots[algorithmIndex];
-        final needsStringUpdate = parameterNumber < currentSlot.parameters.length &&
+        final needsStringUpdate = parameterNumber <
+                currentSlot.parameters.length &&
             [13, 14, 17].contains(currentSlot.parameters[parameterNumber].unit);
 
         _parameterQueue?.updateParameter(
@@ -828,7 +1044,7 @@ class DistingCubit extends Cubit<DistingState> {
           ));
         } else {
           // When user releases slider - do minimal additional processing
-          
+
           // Special case for switching programs
           if (_isProgramParameter(syncstate, algorithmIndex, parameterNumber)) {
             _programSlotUpdate?.cancel();
@@ -836,7 +1052,8 @@ class DistingCubit extends Cubit<DistingState> {
             _programSlotUpdate = CancelableOperation.fromFuture(Future.delayed(
               Duration(seconds: 2),
               () async {
-                final updatedSlot = await fetchSlot(disting, algorithmIndex);
+                final updatedSlot = await fetchSlot(disting, algorithmIndex,
+                    fastSync: false); // Program change needs full data
 
                 emit(syncstate.copyWith(
                   slots: updateSlot(
@@ -853,7 +1070,8 @@ class DistingCubit extends Cubit<DistingState> {
 
           // Anomaly Check - using the value we're setting
           if (parameterNumber < currentSlot.parameters.length) {
-            final parameterInfo = currentSlot.parameters.elementAt(parameterNumber);
+            final parameterInfo =
+                currentSlot.parameters.elementAt(parameterNumber);
             if (value < parameterInfo.min || value > parameterInfo.max) {
               debugPrint(
                   "Out-of-bounds data for device: algo $algorithmIndex, param $parameterNumber, value $value, expected ${parameterInfo.min}-${parameterInfo.max}");
@@ -884,6 +1102,16 @@ class DistingCubit extends Cubit<DistingState> {
               },
             ),
           ));
+
+          // Refresh parameter strings after parameter change
+          // 1. Immediately refresh the changed parameter's string (if it's a string parameter)
+          await refreshParameterString(algorithmIndex, parameterNumber);
+
+          // 2. Schedule refresh of all parameter strings in the slot after a delay
+          //    This ensures any related parameter changes are captured
+          Future.delayed(const Duration(milliseconds: 300), () async {
+            await refreshSlotParameterStrings(algorithmIndex);
+          });
 
           // The parameter queue will handle:
           // 1. Sending the parameter value to device
@@ -930,7 +1158,8 @@ class DistingCubit extends Cubit<DistingState> {
         try {
           final newSlotIndex =
               syncstate.slots.length; // New slot will be at the end
-          final newSlot = await fetchSlot(disting, newSlotIndex);
+          final newSlot = await fetchSlot(disting, newSlotIndex,
+              fastSync: false); // Need full data for new algorithm
 
           // Update state with the new slot appended
           final updatedSlots = [...syncstate.slots, newSlot];
@@ -1358,6 +1587,7 @@ class DistingCubit extends Cubit<DistingState> {
   // Helper to refresh state from the current manager (online or offline)
   Future<void> _refreshStateFromManager({
     Duration delay = const Duration(milliseconds: 50), // Shorter default delay
+    bool fastSync = false, // Refreshes default to traditional sync for accuracy
   }) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
@@ -1374,7 +1604,8 @@ class DistingCubit extends Cubit<DistingState> {
       final numAlgorithmsInPreset =
           (await disting.requestNumAlgorithmsInPreset()) ?? 0;
       final presetName = await disting.requestPresetName() ?? "Error";
-      List<Slot> slots = await fetchSlots(numAlgorithmsInPreset, disting);
+      List<Slot> slots =
+          await fetchSlots(numAlgorithmsInPreset, disting, fastSync: fastSync);
 
       emit(currentState.copyWith(
         loading: false,
@@ -1637,14 +1868,17 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   Future<List<Slot>> fetchSlots(
-      int numAlgorithmsInPreset, IDistingMidiManager disting) async {
+    int numAlgorithmsInPreset,
+    IDistingMidiManager disting, {
+    bool fastSync = true, // Default to fast sync for initial sync
+  }) async {
     final stopwatch = Stopwatch()..start();
     debugPrint(
-        "[fetchSlots] Starting: Requesting $numAlgorithmsInPreset slots...");
+        "[fetchSlots] Starting: Requesting $numAlgorithmsInPreset slots (fastSync: $fastSync)...");
 
     final slotsFutures =
         List.generate(numAlgorithmsInPreset, (algorithmIndex) async {
-      return await fetchSlot(disting, algorithmIndex);
+      return await fetchSlot(disting, algorithmIndex, fastSync: fastSync);
     });
 
     // Finish off the requests
@@ -1661,13 +1895,14 @@ class DistingCubit extends Cubit<DistingState> {
 
   Future<Slot> fetchSlot(
     IDistingMidiManager disting,
-    int algorithmIndex,
-  ) async {
+    int algorithmIndex, {
+    bool fastSync = false,
+  }) async {
     final sw = Stopwatch()..start();
-    debugPrint('[fetchSlot] start slot $algorithmIndex');
+    debugPrint('[fetchSlot] start slot $algorithmIndex (fastSync: $fastSync)');
 
     /* ------------------------------------------------------------------ *
-   * 1-2.  Pages  |  #Parameters  |  Algorithm GUID  |  All Values      *
+   * PHASE 1: Essential Data (Always Loaded)                             *
    * ------------------------------------------------------------------ */
     final results = await Future.wait([
       disting.requestParameterPages(algorithmIndex),
@@ -1684,13 +1919,14 @@ class DistingCubit extends Cubit<DistingState> {
         List<ParameterValue>.generate(
             numParams, (_) => ParameterValue.filler());
 
-    debugPrint('[fetchSlot] meta finished in ${sw.elapsedMilliseconds} ms');
+    debugPrint(
+        '[fetchSlot] essential data finished in ${sw.elapsedMilliseconds} ms');
 
     /* Visible-parameter set (built from pages) */
     final visible = pages.pages.expand((p) => p.parameters).toSet();
 
     /* ------------------------------------------------------------------ *
-   * 3. Parameter-info phase (throttled)                                *
+   * PHASE 2: Parameter Info (Required for UI Controls)                  *
    * ------------------------------------------------------------------ */
     final parameters =
         List<ParameterInfo>.filled(numParams, ParameterInfo.filler());
@@ -1701,7 +1937,8 @@ class DistingCubit extends Cubit<DistingState> {
         parameters[param] = info ?? ParameterInfo.filler();
       },
     );
-    debugPrint('[fetchSlot] ParameterInfo ${sw.elapsedMilliseconds} ms');
+    debugPrint(
+        '[fetchSlot] parameter info finished in ${sw.elapsedMilliseconds} ms');
 
     /* Pre-calculate which params are enumerated / mappable / string */
     bool isEnum(int i) => parameters[i].unit == 1;
@@ -1710,7 +1947,7 @@ class DistingCubit extends Cubit<DistingState> {
         !isString(i) && parameters[i].unit != 0 && parameters[i].unit != -1;
 
     /* ------------------------------------------------------------------ *
-   * 4. Enums, Mappings, Value-Strings  (all throttled in parallel)     *
+   * PHASE 3: Optional Data (Lazy Loading)                               *
    * ------------------------------------------------------------------ */
     final enums = List<ParameterEnumStrings>.filled(
         numParams, ParameterEnumStrings.filler());
@@ -1718,42 +1955,52 @@ class DistingCubit extends Cubit<DistingState> {
     final valueStrings = List<ParameterValueString>.filled(
         numParams, ParameterValueString.filler());
 
-    await Future.wait([
-      // Enums
-      _forEachLimited(
-        Iterable<int>.generate(numParams)
-            .where((i) => visible.contains(i) && isEnum(i)),
-        (param) async {
-          enums[param] = await disting.requestParameterEnumStrings(
-                  algorithmIndex, param) ??
-              ParameterEnumStrings.filler();
-        },
-      ),
-      // Mappings
-      _forEachLimited(
-        Iterable<int>.generate(numParams)
-            .where((i) => visible.contains(i) && isMappable(i)),
-        (param) async {
-          mappings[param] =
-              await disting.requestMappings(algorithmIndex, param) ??
-                  Mapping.filler();
-        },
-      ),
-      // Value strings
-      _forEachLimited(
-        Iterable<int>.generate(numParams)
-            .where((i) => visible.contains(i) && isString(i)),
-        (param) async {
-          valueStrings[param] = await disting.requestParameterValueString(
-                  algorithmIndex, param) ??
-              ParameterValueString.filler();
-        },
-      ),
-    ]);
-    debugPrint('[fetchSlot] Detail fetches ${sw.elapsedMilliseconds} ms');
+    if (!fastSync) {
+      // Traditional sync - load everything now
+      await Future.wait([
+        // Enums
+        _forEachLimited(
+          Iterable<int>.generate(numParams)
+              .where((i) => visible.contains(i) && isEnum(i)),
+          (param) async {
+            enums[param] = await disting.requestParameterEnumStrings(
+                    algorithmIndex, param) ??
+                ParameterEnumStrings.filler();
+          },
+        ),
+        // Mappings
+        _forEachLimited(
+          Iterable<int>.generate(numParams)
+              .where((i) => visible.contains(i) && isMappable(i)),
+          (param) async {
+            mappings[param] =
+                await disting.requestMappings(algorithmIndex, param) ??
+                    Mapping.filler();
+          },
+        ),
+        // Value strings
+        _forEachLimited(
+          Iterable<int>.generate(numParams)
+              .where((i) => visible.contains(i) && isString(i)),
+          (param) async {
+            valueStrings[param] = await disting.requestParameterValueString(
+                    algorithmIndex, param) ??
+                ParameterValueString.filler();
+          },
+        ),
+      ]);
+      debugPrint(
+          '[fetchSlot] optional data finished in ${sw.elapsedMilliseconds} ms');
+    } else {
+      // Fast sync - schedule background loading
+      _scheduleBackgroundOptionalDataLoad(
+          algorithmIndex, numParams, visible, isEnum, isMappable, isString);
+      debugPrint(
+          '[fetchSlot] fast sync - optional data scheduled for background');
+    }
 
     /* ------------------------------------------------------------------ *
-   * 5. Assemble the Slot                                               *
+   * PHASE 4: Assemble the Slot                                         *
    * ------------------------------------------------------------------ */
     debugPrint('[fetchSlot] done in ${sw.elapsedMilliseconds} ms');
 
@@ -1772,6 +2019,91 @@ class DistingCubit extends Cubit<DistingState> {
       valueStrings: valueStrings,
       routing: RoutingInfo.filler(), // unchanged – still skipped
     );
+  }
+
+  /// Schedule background loading of optional data (enums, mappings, value strings)
+  void _scheduleBackgroundOptionalDataLoad(
+    int algorithmIndex,
+    int numParams,
+    Set<int> visible,
+    bool Function(int) isEnum,
+    bool Function(int) isMappable,
+    bool Function(int) isString,
+  ) {
+    // Delay to allow UI to show up first
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      final disting = this.disting();
+      if (disting == null) return;
+
+      try {
+        // Load enums, mappings, and value strings in background
+        await Future.wait([
+          // Enums
+          _forEachLimited(
+            Iterable<int>.generate(numParams)
+                .where((i) => visible.contains(i) && isEnum(i)),
+            (param) async {
+              try {
+                final enums = await disting.requestParameterEnumStrings(
+                    algorithmIndex, param);
+                if (enums != null) {
+                  final key = _getCacheKey(algorithmIndex, param);
+                  _enumCache[key] = enums;
+                  _updateSlotEnums(algorithmIndex, param, enums);
+                }
+              } catch (e) {
+                debugPrint(
+                    'Background enum load failed for $algorithmIndex:$param: $e');
+              }
+            },
+          ),
+          // Mappings
+          _forEachLimited(
+            Iterable<int>.generate(numParams)
+                .where((i) => visible.contains(i) && isMappable(i)),
+            (param) async {
+              try {
+                final mapping =
+                    await disting.requestMappings(algorithmIndex, param);
+                if (mapping != null) {
+                  final key = _getCacheKey(algorithmIndex, param);
+                  _mappingCache[key] = mapping;
+                  _updateSlotMapping(algorithmIndex, param, mapping);
+                }
+              } catch (e) {
+                debugPrint(
+                    'Background mapping load failed for $algorithmIndex:$param: $e');
+              }
+            },
+          ),
+          // Value strings
+          _forEachLimited(
+            Iterable<int>.generate(numParams)
+                .where((i) => visible.contains(i) && isString(i)),
+            (param) async {
+              try {
+                final valueString = await disting.requestParameterValueString(
+                    algorithmIndex, param);
+                if (valueString != null) {
+                  final key = _getCacheKey(algorithmIndex, param);
+                  _valueStringCache[key] = valueString;
+                  _updateSlotValueString(algorithmIndex, param, valueString);
+                }
+              } catch (e) {
+                debugPrint(
+                    'Background value string load failed for $algorithmIndex:$param: $e');
+              }
+            },
+          ),
+        ]);
+
+        debugPrint(
+            '[Background] Optional data loaded for slot $algorithmIndex');
+      } catch (e) {
+        debugPrint(
+            'Background optional data loading failed for slot $algorithmIndex: $e');
+      }
+    });
   }
 
 /* ---------------------------------------------------------------------- *
@@ -1852,7 +2184,8 @@ class DistingCubit extends Cubit<DistingState> {
 
     try {
       final disting = requireDisting();
-      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex,
+          fastSync: false); // Need full data for anomaly refresh
       final currentState = state as DistingStateSynchronized;
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;
@@ -2084,50 +2417,84 @@ class DistingCubit extends Cubit<DistingState> {
     return plugins;
   }
 
-  /// Refreshes parameter strings for a specific slot only
+  /// Refresh parameter strings for all parameters in a slot
+  /// This is called after parameter changes to ensure UI shows current values
   Future<void> refreshSlotParameterStrings(int algorithmIndex) async {
     final currentState = state;
-    if (currentState is! DistingStateSynchronized) {
-      debugPrint("[Cubit] Cannot refresh slot parameter strings: Not in synchronized state.");
-      return;
-    }
+    if (currentState is! DistingStateSynchronized) return;
 
-    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
-      debugPrint("[Cubit] Cannot refresh slot parameter strings: Invalid algorithm index $algorithmIndex");
-      return;
-    }
+    if (algorithmIndex >= currentState.slots.length) return;
 
-    final disting = requireDisting();
-    final currentSlot = currentState.slots[algorithmIndex];
+    final slot = currentState.slots[algorithmIndex];
+    final disting = this.disting();
+    if (disting == null) return;
 
     try {
-      // Only update parameter strings for string-type parameters (units 13, 14, 17)
-      var updatedValueStrings = List<ParameterValueString>.from(currentSlot.valueStrings);
-      
-      for (int parameterNumber = 0; parameterNumber < currentSlot.parameters.length; parameterNumber++) {
-        final parameter = currentSlot.parameters[parameterNumber];
-        if ([13, 14, 17].contains(parameter.unit)) {
-          final newValueString = await disting.requestParameterValueString(
-            algorithmIndex, 
-            parameterNumber
-          );
-          if (newValueString != null) {
-            updatedValueStrings[parameterNumber] = newValueString;
-          }
+      // Get parameters that need string values (string type parameters)
+      final stringParameters = <int>[];
+      for (int i = 0; i < slot.parameters.length; i++) {
+        if (const {13, 14, 17}.contains(slot.parameters[i].unit)) {
+          stringParameters.add(i);
         }
       }
 
-      // Update the slot with new parameter strings
-      final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
-      final updatedSlots = List<Slot>.from(currentState.slots);
-      updatedSlots[algorithmIndex] = updatedSlot;
+      // Request value strings for all string parameters
+      await _forEachLimited(
+        stringParameters,
+        (param) async {
+          try {
+            final valueString = await disting.requestParameterValueString(
+                algorithmIndex, param);
+            if (valueString != null) {
+              final key = _getCacheKey(algorithmIndex, param);
+              _valueStringCache[key] = valueString;
+              _updateSlotValueString(algorithmIndex, param, valueString);
+            }
+          } catch (e) {
+            debugPrint(
+                'Error refreshing value string for $algorithmIndex:$param: $e');
+          }
+        },
+      );
 
-      emit(currentState.copyWith(slots: updatedSlots));
-      
-      debugPrint("[Cubit] Refreshed parameter strings for slot $algorithmIndex");
+      debugPrint(
+          '[DistingCubit] Refreshed parameter strings for slot $algorithmIndex');
     } catch (e, stackTrace) {
-      debugPrint("[Cubit] Error refreshing parameter strings for slot $algorithmIndex: $e");
+      debugPrint(
+          'Error refreshing slot parameter strings for $algorithmIndex: $e');
       debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  /// Refresh parameter string for a specific parameter immediately
+  /// This is called when a parameter value changes
+  Future<void> refreshParameterString(
+      int algorithmIndex, int parameterNumber) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) return;
+
+    if (algorithmIndex >= currentState.slots.length) return;
+
+    final slot = currentState.slots[algorithmIndex];
+    if (parameterNumber >= slot.parameters.length) return;
+
+    final disting = this.disting();
+    if (disting == null) return;
+
+    try {
+      // Check if this parameter uses string values
+      if (const {13, 14, 17}.contains(slot.parameters[parameterNumber].unit)) {
+        final valueString = await disting.requestParameterValueString(
+            algorithmIndex, parameterNumber);
+        if (valueString != null) {
+          final key = _getCacheKey(algorithmIndex, parameterNumber);
+          _valueStringCache[key] = valueString;
+          _updateSlotValueString(algorithmIndex, parameterNumber, valueString);
+        }
+      }
+    } catch (e) {
+      debugPrint(
+          'Error refreshing parameter string for $algorithmIndex:$parameterNumber: $e');
     }
   }
 
@@ -2139,7 +2506,8 @@ class DistingCubit extends Cubit<DistingState> {
 
     try {
       final disting = requireDisting();
-      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex);
+      final Slot updatedSlot = await fetchSlot(disting, algorithmIndex,
+          fastSync: false); // Manual refresh needs full data
       final currentState = state as DistingStateSynchronized;
       final newSlots = List<Slot>.from(currentState.slots);
       newSlots[algorithmIndex] = updatedSlot;
@@ -2177,6 +2545,9 @@ class DistingCubit extends Cubit<DistingState> {
         );
 
         if (newValueString != null) {
+          final key = _getCacheKey(algorithmIndex, parameterNumber);
+          _valueStringCache[key] = newValueString;
+
           final state = (this.state as DistingStateSynchronized);
 
           emit(state.copyWith(

@@ -373,6 +373,7 @@ class DistingMidiManager implements IDistingMidiManager {
     return await _scheduler.sendRequest<AllParameterValues>(
       packet,
       key,
+      timeout: Duration(milliseconds: 1000),
       responseExpectation: ResponseExpectation.required,
     );
   }
@@ -741,8 +742,8 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetRealTimeClock(int unixTimeSeconds) async {
-    final message =
-        SetRealTimeClockMessage(sysExId: sysExId, unixTimeSeconds: unixTimeSeconds);
+    final message = SetRealTimeClockMessage(
+        sysExId: sysExId, unixTimeSeconds: unixTimeSeconds);
     final packet = message.encode();
 
     final key = RequestKey(
@@ -770,7 +771,7 @@ class DistingMidiManager implements IDistingMidiManager {
     );
     return _scheduler.sendRequest<ParameterPages>(
       maxRetries: 5,
-      timeout: Duration(milliseconds: 30000),
+      timeout: Duration(milliseconds: 500),
       retryDelay: Duration(milliseconds: 250),
       packet,
       key,
