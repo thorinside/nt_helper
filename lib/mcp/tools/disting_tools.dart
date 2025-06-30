@@ -635,4 +635,215 @@ class DistingTools {
       };
     }
   }
+
+  /// MCP Tool: Sets notes text by adding/updating a Notes algorithm and moving it to slot 0.
+  /// Parameters:
+  ///   - text (string, required): The note text content (max 7 lines, 31 characters each).
+  /// Returns:
+  ///   A JSON string confirming the action or an error.
+  Future<String> set_notes(Map<String, dynamic> params) async {
+    final String? text = params['text'];
+
+    if (text == null) {
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error': 'Missing "text" parameter.'
+      }));
+    }
+
+    try {
+      // Split and validate text using the same logic as NotesAlgorithmView
+      final lines = _splitTextIntoLines(text);
+      
+      if (!_validateNotesText(lines)) {
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Text validation failed. Maximum 7 lines of 31 characters each.'
+        }));
+      }
+
+      // Find existing Notes algorithm or add one
+      final notesSlotIndex = await _findOrAddNotesAlgorithm();
+      
+      if (notesSlotIndex == null) {
+        return jsonEncode(convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Failed to create Notes algorithm.'
+        }));
+      }
+
+      // Set text parameters (parameters 1-7)
+      for (int i = 0; i < 7; i++) {
+        final lineText = i < lines.length ? lines[i] : '';
+        await _controller.updateParameterString(
+          notesSlotIndex, 
+          i + 1, // Parameters 1-7, not 0-6
+          lineText
+        );
+      }
+
+      // Move Notes algorithm to slot 0 if it's not already there
+      if (notesSlotIndex != 0) {
+        int currentSlotIndex = notesSlotIndex;
+        while (currentSlotIndex > 0) {
+          await _controller.moveAlgorithmUp(currentSlotIndex);
+          currentSlotIndex--;
+        }
+      }
+
+      // Refresh slot 0 to ensure UI is updated with the latest notes content
+      await _controller.refreshSlot(0);
+
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': true,
+        'message': 'Notes algorithm updated with text and moved to slot 0.',
+        'lines_set': lines.length
+      }));
+
+    } catch (e, s) {
+      print('[MCP DistingTools] Error in set_notes: $e\n$s');
+      return jsonEncode(convertToSnakeCaseKeys({
+        'success': false,
+        'error': e.toString()
+      }));
+    }
+  }
+
+  /// Helper method to split text into lines with same logic as NotesAlgorithmView
+  List<String> _splitTextIntoLines(String text) {
+    const int maxLinesCount = 7;
+    const int maxLineLength = 31;
+    final lines = <String>[];
+
+    if (text.trim().isEmpty) {
+      return lines;
+    }
+
+    // Split by user line breaks first
+    final userLines = text.split('\n');
+
+    for (final userLine in userLines) {
+      // Stop if we've already reached the maximum number of lines
+      if (lines.length >= maxLinesCount) {
+        break;
+      }
+
+      // Clean up the current user line (collapse multiple spaces)
+      final cleanLine = userLine.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+      if (cleanLine.isEmpty) {
+        // User entered an empty line - add it as empty
+        lines.add('');
+        continue;
+      }
+
+      // If the line fits within the character limit, add it as-is
+      if (cleanLine.length <= maxLineLength) {
+        lines.add(cleanLine);
+      } else {
+        // Line is too long, need to wrap it
+        final words = cleanLine.split(' ');
+        String currentLine = '';
+
+        for (final word in words) {
+          // Check if adding this word would exceed line length
+          final testLine = currentLine.isEmpty ? word : '$currentLine $word';
+
+          if (testLine.length <= maxLineLength) {
+            currentLine = testLine;
+          } else {
+            // Current line is full, start a new one
+            if (currentLine.isNotEmpty) {
+              lines.add(currentLine);
+              currentLine = word;
+            } else {
+              // Single word is too long, truncate it
+              lines.add(word.substring(0, maxLineLength));
+              currentLine = '';
+            }
+
+            // Stop if we've reached the maximum number of lines
+            if (lines.length >= maxLinesCount) {
+              break;
+            }
+          }
+        }
+
+        // Add the last line if it's not empty and we haven't exceeded max lines
+        if (currentLine.isNotEmpty && lines.length < maxLinesCount) {
+          lines.add(currentLine);
+        }
+
+        // Stop processing if we've reached the line limit
+        if (lines.length >= maxLinesCount) {
+          break;
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  /// Helper method to validate notes text
+  bool _validateNotesText(List<String> lines) {
+    const int maxLinesCount = 7;
+    const int maxLineLength = 31;
+
+    // Check if we have too many lines
+    if (lines.length > maxLinesCount) {
+      return false;
+    }
+
+    // Check if any individual line exceeds the character limit
+    for (final line in lines) {
+      if (line.length > maxLineLength) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// Helper method to find existing Notes algorithm or add one
+  Future<int?> _findOrAddNotesAlgorithm() async {
+    const String notesGuid = 'note';
+    
+    // First, check if Notes algorithm already exists in any slot
+    final Map<int, Algorithm?> allSlots = await _controller.getAllSlots();
+    
+    for (int i = 0; i < maxSlots; i++) {
+      final algorithm = allSlots[i];
+      if (algorithm != null && algorithm.guid == notesGuid) {
+        return i; // Found existing Notes algorithm
+      }
+    }
+
+    // Notes algorithm not found, add it
+    try {
+      final notesAlgorithm = Algorithm(
+        algorithmIndex: -1, // Will be assigned by hardware
+        guid: notesGuid,
+        name: 'Notes'
+      );
+      
+      await _controller.addAlgorithm(notesAlgorithm);
+      
+      // Wait a bit for the algorithm to be added
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Find the newly added Notes algorithm
+      final updatedSlots = await _controller.getAllSlots();
+      for (int i = 0; i < maxSlots; i++) {
+        final algorithm = updatedSlots[i];
+        if (algorithm != null && algorithm.guid == notesGuid) {
+          return i; // Found newly added Notes algorithm
+        }
+      }
+      
+      return null; // Failed to find after adding
+    } catch (e) {
+      print('[MCP DistingTools] Error adding Notes algorithm: $e');
+      return null;
+    }
+  }
 }

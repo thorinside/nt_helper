@@ -337,6 +337,8 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
+      timeout: const Duration(milliseconds: 100),
+      maxRetries: 1,
     );
   }
 

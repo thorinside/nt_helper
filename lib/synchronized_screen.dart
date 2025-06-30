@@ -1019,31 +1019,46 @@ class AlgorithmListView extends StatelessWidget {
                 final slot = slots[index];
                 final displayName = slot.algorithm.name;
 
-                return ListTile(
-                  title: Text(
-                    displayName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                  selected: index == selectedIndex,
-                  selectedTileColor:
-                      Theme.of(context).colorScheme.secondaryContainer,
-                  selectedColor:
-                      Theme.of(context).colorScheme.onSecondaryContainer,
-                  onTap: () => onSelectionChanged(index),
-                  onLongPress: () async {
+                return GestureDetector(
+                  onDoubleTap: () async {
                     var cubit = context.read<DistingCubit>();
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (dialogCtx) => RenameSlotDialog(
-                        initialName: displayName,
-                      ),
+                    cubit.disting()?.let(
+                      (manager) {
+                        manager.requestSetFocus(index, 0);
+                        manager
+                            .requestSetDisplayMode(DisplayMode.algorithmUI);
+                      },
                     );
-
-                    if (newName != null && newName != displayName) {
-                      cubit.renameSlot(index, newName);
+                    if (SettingsService().hapticsEnabled) {
+                      Haptics.vibrate(HapticsType.medium);
                     }
                   },
+                  child: ListTile(
+                    title: Text(
+                      displayName,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    selected: index == selectedIndex,
+                    selectedTileColor:
+                        Theme.of(context).colorScheme.secondaryContainer,
+                    selectedColor:
+                        Theme.of(context).colorScheme.onSecondaryContainer,
+                    onTap: () => onSelectionChanged(index),
+                    onLongPress: () async {
+                      var cubit = context.read<DistingCubit>();
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (dialogCtx) => RenameSlotDialog(
+                          initialName: displayName,
+                        ),
+                      );
+
+                      if (newName != null && newName != displayName) {
+                        cubit.renameSlot(index, newName);
+                      }
+                    },
+                  ),
                 );
               },
             ),

@@ -148,6 +148,20 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
+  Future<void> updateParameterString(
+      int slotIndex, int parameterNumber, String value) async {
+    final state = _getSynchronizedState();
+    _validateParameterNumber(slotIndex, parameterNumber, state);
+
+    final Slot slotData = state.slots[slotIndex];
+
+    await _distingCubit.updateParameterString(
+        algorithmIndex: slotData.algorithm.algorithmIndex,
+        parameterNumber: parameterNumber,
+        value: value);
+  }
+
+  @override
   Future<Map<int, Algorithm?>> getAllSlots() async {
     final state = _getSynchronizedState();
     final Map<int, Algorithm?> slotAlgorithms = {};
@@ -212,5 +226,12 @@ class DistingControllerImpl implements DistingController {
       debugPrint('Error in getModuleScreenshot: ${e.toString()}');
       return null; // Ensure null is returned on any error
     }
+  }
+
+  @override
+  Future<void> refreshSlot(int slotIndex) async {
+    _validateSlotIndex(slotIndex);
+    _getSynchronizedState();
+    await _distingCubit.refreshSlot(slotIndex);
   }
 }

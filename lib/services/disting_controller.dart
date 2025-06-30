@@ -54,6 +54,13 @@ abstract class DistingController {
   Future<void> updateParameterValue(
       int slotIndex, int parameterNumber, dynamic value);
 
+  /// Updates the string value of a specific parameter for the algorithm in the given slot.
+  /// Used for text-based parameters like those in the Notes algorithm.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index or parameterNumber is invalid.
+  Future<void> updateParameterString(
+      int slotIndex, int parameterNumber, String value);
+
   /// Retrieves the state of all slots, mapping slot index to the loaded algorithm (or null).
   /// Throws StateError if the Disting is not in a synchronized state.
   Future<Map<int, Algorithm?>> getAllSlots();
@@ -81,4 +88,9 @@ abstract class DistingController {
   /// Returns null if not connected, screenshot unavailable, or an error occurs.
   /// Throws StateError if the Disting is not in a synchronized state (if applicable for this operation).
   Future<Uint8List?> getModuleScreenshot();
+
+  /// Refreshes the data for a specific slot to ensure UI is updated.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index is invalid.
+  Future<void> refreshSlot(int slotIndex);
 }

@@ -673,6 +673,21 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
       },
     );
 
+    server.tool(
+      'set_notes',
+      description: 'Add or update a Notes algorithm with text content and move it to slot 0. Text can be a maximum of 7 lines of 31 characters each.',
+      inputSchemaProperties: {
+        'text': {
+          'type': 'string',
+          'description': 'The note text content. Maximum 7 lines of 31 characters each. Lines are separated by newlines (\\n). Long lines will be automatically wrapped.'
+        }
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.set_notes(args ?? {});
+        return CallToolResult(content: [TextContent(text: resultJson)]);
+      },
+    );
+
     // Add any tools dynamically added via addTool()
     for (final t in _pendingTools) {
       server.tool(
@@ -684,11 +699,8 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
     }
     // Unlike the single server model, _pendingTools shouldn't be cleared here
     // as _buildServer can be called multiple times for new sessions.
-    // However, if addTool is meant to apply to *future* sessions only, this is fine.
-    // For simplicity matching the previous pattern, we clear it, assuming tools are added before any session starts,
-    // or new tools apply to new sessions.
-    // If tools should be added to existing McpServer on existing transports, that's a more complex refactor.
-    _pendingTools.clear();
+    // Keep tools available for future sessions by NOT clearing _pendingTools
+    // _pendingTools.clear(); // REMOVED: This was causing tools to disappear on reconnection
 
     return server;
   }

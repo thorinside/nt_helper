@@ -370,6 +370,6 @@ class PackedMappingData {
   }
 
   bool isMapped() {
-    return (cvInput != 0) || isMidiEnabled || isI2cEnabled;
+    return (cvInput > 0 || source > 0) || isMidiEnabled || isI2cEnabled;
   }
 }
