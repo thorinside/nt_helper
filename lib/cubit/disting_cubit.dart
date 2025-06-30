@@ -1707,7 +1707,7 @@ class DistingCubit extends Cubit<DistingState> {
     bool isEnum(int i) => parameters[i].unit == 1;
     bool isString(int i) => const {13, 14, 17}.contains(parameters[i].unit);
     bool isMappable(int i) =>
-        !isString(i) && parameters[i].unit != 0 && parameters[i].unit != -1;
+        parameters[i].unit != 0 && parameters[i].unit != -1;
 
     /* ------------------------------------------------------------------ *
    * 4. Enums, Mappings, Value-Strings  (all throttled in parallel)     *
