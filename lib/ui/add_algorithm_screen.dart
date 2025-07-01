@@ -22,6 +22,12 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   static const _favKey = 'favorite_algorithm_guids';
   static const _showFavOnlyKey =
       'add_algo_show_fav_only'; // Key for toggle state
+  static const _pluginTypeKey = 'add_algo_plugin_type';
+  
+  // Plugin type options
+  static const String _pluginTypeAll = 'all';
+  static const String _pluginTypeFactory = 'factory';
+  static const String _pluginTypeCommunity = 'community';
 
   // State for new UI
   final TextEditingController _searchController = TextEditingController();
@@ -35,6 +41,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   // New state for category filters
   List<String> _allCategories = [];
   Set<String> _selectedCategories = {};
+  
+  // Plugin type filter state
+  String _selectedPluginType = _pluginTypeAll;
 
   // New scroll controllers to fix Scrollbar exception
   final ScrollController _chipScrollController = ScrollController();
@@ -93,9 +102,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     final prefs = await SharedPreferences.getInstance();
     final favs = prefs.getStringList(_favKey) ?? [];
     final showOnlyFavs = prefs.getBool(_showFavOnlyKey) ?? false;
+    final pluginType = prefs.getString(_pluginTypeKey) ?? _pluginTypeAll;
     setState(() {
       _favoriteGuids = favs.toSet();
       _showFavoritesOnly = showOnlyFavs;
+      _selectedPluginType = pluginType;
       // Re-filter after loading settings
       _filterAlgorithms();
     });
@@ -109,6 +120,11 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   Future<void> _saveShowFavoritesOnlyState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showFavOnlyKey, _showFavoritesOnly);
+  }
+
+  Future<void> _savePluginTypeState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pluginTypeKey, _selectedPluginType);
   }
 
   void _toggleFavorite(String guid) {
@@ -168,6 +184,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     }
   }
 
+  // --- Plugin Type Detection ---
+  String _getPluginType(String guid) {
+    // Factory algorithms have all lowercase GUIDs
+    // Community plugins have any uppercase characters
+    return guid == guid.toLowerCase() ? _pluginTypeFactory : _pluginTypeCommunity;
+  }
+
   // --- Filtering Logic ---
 
   void _filterAlgorithms() {
@@ -182,6 +205,14 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           .toList();
     } else {
       baseList = List.from(_allAlgorithms);
+    }
+
+    // Filter by plugin type
+    if (_selectedPluginType != _pluginTypeAll) {
+      baseList = baseList.where((algo) {
+        final pluginType = _getPluginType(algo.guid);
+        return pluginType == _selectedPluginType;
+      }).toList();
     }
 
     // Filter by selected categories
@@ -363,6 +394,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                               _searchController.clear();
                               _showFavoritesOnly = false;
                               _selectedCategories.clear();
+                              _selectedPluginType = _pluginTypeAll;
                               _saveShowFavoritesOnlyState();
                               _filterAlgorithms();
                             });
@@ -371,7 +403,13 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildCategoryFilterButton(),
+                    Row(
+                      children: [
+                        _buildPluginTypeFilterButton(),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildCategoryFilterButton()),
+                      ],
+                    ),
                     const Divider(),
 
                     // --- Algorithm Chips (Expanded to allow scrolling) ---
@@ -484,6 +522,90 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             _ => const Center(child: CircularProgressIndicator()),
           },
         ),
+      ),
+    );
+  }
+
+  // --- Plugin Type Filter Button (Dialog-based Select) ---
+  Widget _buildPluginTypeFilterButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.extension),
+        label: Text(
+          _selectedPluginType == _pluginTypeAll
+              ? 'Plugin Type'
+              : _selectedPluginType == _pluginTypeFactory
+                  ? 'Factory'
+                  : 'Community',
+        ),
+        onPressed: () async {
+          final selected = await showDialog<String>(
+            context: context,
+            builder: (context) {
+              String tempSelected = _selectedPluginType;
+              return StatefulBuilder(
+                builder: (context, setStateDialog) => AlertDialog(
+                  title: const Text('Select Plugin Type'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RadioListTile<String>(
+                        value: _pluginTypeAll,
+                        groupValue: tempSelected,
+                        title: const Text('All Plugins'),
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            tempSelected = value!;
+                          });
+                        },
+                      ),
+                      RadioListTile<String>(
+                        value: _pluginTypeFactory,
+                        groupValue: tempSelected,
+                        title: const Text('Factory'),
+                        subtitle: const Text('Algorithms with all lowercase GUIDs'),
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            tempSelected = value!;
+                          });
+                        },
+                      ),
+                      RadioListTile<String>(
+                        value: _pluginTypeCommunity,
+                        groupValue: tempSelected,
+                        title: const Text('Community'),
+                        subtitle: const Text('Algorithms with uppercase characters in GUID'),
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            tempSelected = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, _selectedPluginType),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, tempSelected),
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+          if (selected != null) {
+            setState(() {
+              _selectedPluginType = selected;
+              _savePluginTypeState();
+              _filterAlgorithms();
+            });
+          }
+        },
       ),
     );
   }
