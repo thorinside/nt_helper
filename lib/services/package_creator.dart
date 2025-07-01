@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
@@ -24,6 +25,9 @@ class PackageCreator {
 
       // Load and parse preset JSON
       final presetBytes = await fileSystem.readFile(presetFilePath);
+      if (presetBytes == null)
+        throw Exception('Preset file not found: $presetFilePath');
+
       final presetJson = utf8.decode(presetBytes);
       final presetData = jsonDecode(presetJson) as Map<String, dynamic>;
       final presetFilename = presetFilePath.split('/').last;
@@ -37,7 +41,8 @@ class PackageCreator {
 
       // Collect dependency files
       final fileCollector = FileCollector(fileSystem);
-      final dependencyFiles = await fileCollector.collectDependencies(dependencies);
+      final dependencyFiles =
+          await fileCollector.collectDependencies(dependencies);
 
       onProgress?.call('Creating package...');
 
@@ -61,7 +66,8 @@ class PackageCreator {
       }
 
       // Add manifest file to top level
-      final manifest = _createManifest(presetData, presetFilename, dependencies, dependencyFiles);
+      final manifest = _createManifest(
+          presetData, presetFilename, dependencies, dependencyFiles);
       archive.addFile(ArchiveFile(
         'manifest.json',
         manifest.length,
@@ -82,16 +88,16 @@ class PackageCreator {
 
       // Create ZIP
       final zipEncoder = ZipEncoder();
-      final zipBytes = zipEncoder.encode(archive)!;
+      final zipBytes = zipEncoder.encode(archive);
 
       onProgress?.call('Complete!');
 
       // Print summary report
-      final report = PresetAnalyzer.generatePackageReport(dependencies, dependencyFiles);
-      print(report);
+      final report =
+          PresetAnalyzer.generatePackageReport(dependencies, dependencyFiles);
+      debugPrint(report);
 
       return Uint8List.fromList(zipBytes);
-
     } catch (e) {
       onProgress?.call('Error: $e');
       rethrow;
@@ -99,11 +105,11 @@ class PackageCreator {
   }
 
   String _createManifest(
-      Map<String, dynamic> presetData,
-      String filename,
-      PresetDependencies dependencies,
-      List<CollectedFile> files,
-      ) {
+    Map<String, dynamic> presetData,
+    String filename,
+    PresetDependencies dependencies,
+    List<CollectedFile> files,
+  ) {
     final manifest = {
       'preset': {
         'name': presetData['name']?.toString().trim() ?? 'Unknown',
@@ -157,10 +163,10 @@ class PackageCreator {
   }
 
   String _createReadme(
-      Map<String, dynamic> presetData,
-      String filename,
-      PresetDependencies dependencies,
-      ) {
+    Map<String, dynamic> presetData,
+    String filename,
+    PresetDependencies dependencies,
+  ) {
     final name = presetData['name']?.toString().trim() ?? 'Unknown';
     final author = presetData['author']?.toString().trim() ?? 'Unknown';
 
@@ -168,17 +174,23 @@ class PackageCreator {
 
     buffer.writeln('# $name\n');
     buffer.writeln('**Author:** $author');
-    buffer.writeln('**Packaged:** ${DateTime.now().toString().split(' ')[0]}\n');
+    buffer
+        .writeln('**Packaged:** ${DateTime.now().toString().split(' ')[0]}\n');
 
     buffer.writeln('## Installation');
     buffer.writeln('1. Extract this package to a temporary folder');
-    buffer.writeln('2. Copy the entire contents of the `root/` folder to the root of your Disting NT SD card');
-    buffer.writeln('3. The preset will be automatically placed in `/presets/$filename`');
-    buffer.writeln('4. All dependencies will be installed to their correct locations');
-    buffer.writeln('5. Load the preset on your Disting NT using the Load Preset function\n');
+    buffer.writeln(
+        '2. Copy the entire contents of the `root/` folder to the root of your Disting NT SD card');
+    buffer.writeln(
+        '3. The preset will be automatically placed in `/presets/$filename`');
+    buffer.writeln(
+        '4. All dependencies will be installed to their correct locations');
+    buffer.writeln(
+        '5. Load the preset on your Disting NT using the Load Preset function\n');
 
     buffer.writeln('## Contents');
-    buffer.writeln('This package contains the preset file and all required dependencies:\n');
+    buffer.writeln(
+        'This package contains the preset file and all required dependencies:\n');
 
     if (dependencies.wavetables.isNotEmpty) {
       buffer.writeln('### Wavetables (${dependencies.wavetables.length})');
@@ -189,7 +201,8 @@ class PackageCreator {
     }
 
     if (dependencies.sampleFolders.isNotEmpty) {
-      buffer.writeln('### Sample Folders (${dependencies.sampleFolders.length})');
+      buffer
+          .writeln('### Sample Folders (${dependencies.sampleFolders.length})');
       for (final folder in dependencies.sampleFolders) {
         buffer.writeln('- $folder/');
       }
@@ -197,7 +210,8 @@ class PackageCreator {
     }
 
     if (dependencies.multisampleFolders.isNotEmpty) {
-      buffer.writeln('### Multisample Folders (${dependencies.multisampleFolders.length})');
+      buffer.writeln(
+          '### Multisample Folders (${dependencies.multisampleFolders.length})');
       for (final folder in dependencies.multisampleFolders) {
         buffer.writeln('- $folder/');
       }
@@ -213,7 +227,8 @@ class PackageCreator {
     }
 
     if (dependencies.threePotPrograms.isNotEmpty) {
-      buffer.writeln('### Three Pot Programs (${dependencies.threePotPrograms.length})');
+      buffer.writeln(
+          '### Three Pot Programs (${dependencies.threePotPrograms.length})');
       for (final program in dependencies.threePotPrograms) {
         buffer.writeln('- $program');
       }
@@ -229,18 +244,23 @@ class PackageCreator {
     }
 
     if (dependencies.communityPlugins.isNotEmpty) {
-      buffer.writeln('### Community Plugins (${dependencies.communityPlugins.length})');
+      buffer.writeln(
+          '### Community Plugins (${dependencies.communityPlugins.length})');
       for (final plugin in dependencies.communityPlugins) {
         buffer.writeln('- $plugin (requires separate installation)');
       }
       buffer.writeln();
-      buffer.writeln('**Important:** Community plugins must be installed separately according to their individual documentation.\n');
+      buffer.writeln(
+          '**Important:** Community plugins must be installed separately according to their individual documentation.\n');
     }
 
     buffer.writeln('## Notes');
-    buffer.writeln('- Ensure you have sufficient space on your SD card for all sample content');
-    buffer.writeln('- Some samples may require specific folder structures to work correctly');
-    buffer.writeln('- This package was created with nt_helper Preset Packager\n');
+    buffer.writeln(
+        '- Ensure you have sufficient space on your SD card for all sample content');
+    buffer.writeln(
+        '- Some samples may require specific folder structures to work correctly');
+    buffer
+        .writeln('- This package was created with nt_helper Preset Packager\n');
 
     buffer.writeln('## Requirements');
     buffer.writeln('- Expert Sleepers Disting NT with compatible firmware');

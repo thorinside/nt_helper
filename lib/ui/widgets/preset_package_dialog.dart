@@ -43,6 +43,8 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       // Load and parse preset JSON directly
       final presetBytes =
           await widget.fileSystem.readFile(widget.presetFilePath);
+      if (presetBytes == null) throw Exception('Preset file not found');
+
       final presetJson = utf8.decode(presetBytes);
       final presetData = jsonDecode(presetJson) as Map<String, dynamic>;
 
@@ -50,6 +52,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
         dependencies = PresetAnalyzer.analyzeDependencies(presetData);
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error analyzing preset: $e')),
       );
