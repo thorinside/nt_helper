@@ -64,7 +64,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     super.dispose();
   }
 
-
   Future<void> _loadInstalledPlugins() async {
     setState(() {
       _isLoading = true;
@@ -905,7 +904,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       galleryService: _galleryService,
     );
   }
-
 }
 
 /// A dialog that shows backup progress and handles the backup operation

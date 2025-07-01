@@ -14,15 +14,15 @@ class PresetDependencies {
 
   int get totalCount =>
       wavetables.length +
-          sampleFolders.length +
-          multisampleFolders.length +
-          fmBanks.length +
-          granulatorSamples.length +
-          midiFiles.length +
-          threePotPrograms.length +
-          luaScripts.length +
-          communityPlugins.length +
-          pluginData.length;
+      sampleFolders.length +
+      multisampleFolders.length +
+      fmBanks.length +
+      granulatorSamples.length +
+      midiFiles.length +
+      threePotPrograms.length +
+      luaScripts.length +
+      communityPlugins.length +
+      pluginData.length;
 
   bool get isEmpty => totalCount == 0;
 

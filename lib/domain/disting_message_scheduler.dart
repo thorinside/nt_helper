@@ -139,7 +139,7 @@ class DistingMessageScheduler {
     );
 
     _queue.add(request);
-    
+
     // Process immediately if idle
     if (_state == _SchedulerState.idle) {
       _processNext();
@@ -177,7 +177,7 @@ class DistingMessageScheduler {
 
     _currentRequest = _queue.removeFirst();
     _state = _SchedulerState.sending;
-    
+
     _sendCurrentRequest();
   }
 
@@ -204,13 +204,13 @@ class DistingMessageScheduler {
 
   void _onTimeout() {
     final request = _currentRequest!;
-    
+
     if (request.attemptCount >= request.maxRetries) {
       // Out of retries
       if (request.expectation == ResponseExpectation.required) {
-        request.completer.completeError(
-          TimeoutException('No response after ${request.attemptCount} attempts', request.timeout)
-        );
+        request.completer.completeError(TimeoutException(
+            'No response after ${request.attemptCount} attempts',
+            request.timeout));
       } else {
         request.completer.complete(null);
       }
@@ -219,7 +219,7 @@ class DistingMessageScheduler {
       // Retry after delay
       debugPrint('Timeout, retrying (attempt ${request.attemptCount + 1})...');
       _state = _SchedulerState.sending;
-      
+
       if (request.retryDelay == Duration.zero) {
         _sendCurrentRequest();
       } else {
@@ -232,7 +232,7 @@ class DistingMessageScheduler {
     _currentRequest?.dispose();
     _currentRequest = null;
     _state = _SchedulerState.idle;
-    
+
     // Schedule next request after message interval
     if (_queue.isNotEmpty) {
       _nextProcessTimer = Timer(messageInterval, _processNext);
@@ -258,8 +258,8 @@ class DistingMessageScheduler {
     if (parsed.sysExId != _sysExId) return;
 
     final request = _currentRequest;
-    if (request == null || 
-        _state != _SchedulerState.waitingForResponse || 
+    if (request == null ||
+        _state != _SchedulerState.waitingForResponse ||
         request.completer.isCompleted) {
       debugPrint("Received SysEx but no matching request pending");
       return;
@@ -267,16 +267,18 @@ class DistingMessageScheduler {
 
     if (!request.key.matches(parsed)) {
       debugPrint("Received SysEx doesn't match pending request");
-      debugPrint("  Expected: ${request.key}");  
+      debugPrint("  Expected: ${request.key}");
       debugPrint("  Received: ${parsed.messageType}");
       return;
     }
 
-    debugPrint('Received matching SysEx: ${parsed.rawBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+    debugPrint(
+        'Received matching SysEx: ${parsed.rawBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
 
     // Parse and complete the response
-    final response = ResponseFactory.fromMessageType(parsed.messageType, parsed.payload);
-    
+    final response =
+        ResponseFactory.fromMessageType(parsed.messageType, parsed.payload);
+
     if (response != null) {
       try {
         request.completer.complete(response.parse());
@@ -289,7 +291,8 @@ class DistingMessageScheduler {
       if (request.expectation == ResponseExpectation.optional) {
         request.completer.complete(null);
       } else {
-        request.completer.completeError(StateError('Unhandled response type: ${parsed.messageType}'));
+        request.completer.completeError(
+            StateError('Unhandled response type: ${parsed.messageType}'));
       }
     }
 

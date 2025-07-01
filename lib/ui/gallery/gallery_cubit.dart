@@ -11,8 +11,7 @@ part 'gallery_state.dart';
 class GalleryCubit extends Cubit<GalleryState> {
   final GalleryService _galleryService;
 
-  GalleryCubit(this._galleryService)
-      : super(const GalleryState.initial()) {
+  GalleryCubit(this._galleryService) : super(const GalleryState.initial()) {
     // Listen to queue changes from the service
     _galleryService.queueStream.listen((queue) {
       if (state is GalleryLoaded) {

@@ -25,8 +25,9 @@ class PackageCreator {
 
       // Load and parse preset JSON
       final presetBytes = await fileSystem.readFile(presetFilePath);
-      if (presetBytes == null)
+      if (presetBytes == null) {
         throw Exception('Preset file not found: $presetFilePath');
+      }
 
       final presetJson = utf8.decode(presetBytes);
       final presetData = jsonDecode(presetJson) as Map<String, dynamic>;

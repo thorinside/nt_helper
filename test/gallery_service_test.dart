@@ -16,11 +16,13 @@ void main() {
 
     setUp(() {
       mockSettingsService = MockSettingsService();
-      when(mockSettingsService.galleryUrl).thenReturn('https://test.com/gallery.json');
+      when(mockSettingsService.galleryUrl)
+          .thenReturn('https://test.com/gallery.json');
       galleryService = GalleryService(settingsService: mockSettingsService);
     });
 
-    test('should prioritize downloadUrl over GitHub API when available', () async {
+    test('should prioritize downloadUrl over GitHub API when available',
+        () async {
       // Create a test plugin with downloadUrl
       final plugin = GalleryPlugin(
         id: 'test-plugin',
@@ -44,7 +46,8 @@ void main() {
       // Test that downloadUrl is used directly
       // Note: This is testing the logic, not actual network calls
       expect(plugin.installation.downloadUrl, isNotNull);
-      expect(plugin.installation.downloadUrl, 'https://example.com/direct-download.lua');
+      expect(plugin.installation.downloadUrl,
+          'https://example.com/direct-download.lua');
       expect(plugin.installation.extractPattern, r'.*\.lua$');
     });
 

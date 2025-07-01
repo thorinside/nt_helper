@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/db/database.dart';
@@ -593,14 +591,15 @@ class GalleryService {
   /// Get download URL for a plugin - prioritizes downloadUrl from installation config
   Future<String> _getDownloadUrl(GalleryPlugin plugin, String version) async {
     final repo = plugin.repository;
-    
+
     debugPrint(
         '🔍 _getDownloadUrl: Getting download URL for ${plugin.name} v$version');
 
     // Priority 1: Use direct download URL from installation config if available
-    if (plugin.installation.downloadUrl != null && 
+    if (plugin.installation.downloadUrl != null &&
         plugin.installation.downloadUrl!.isNotEmpty) {
-      debugPrint('🔍 _getDownloadUrl: Using direct downloadUrl: ${plugin.installation.downloadUrl}');
+      debugPrint(
+          '🔍 _getDownloadUrl: Using direct downloadUrl: ${plugin.installation.downloadUrl}');
       return plugin.installation.downloadUrl!;
     }
 
@@ -722,15 +721,17 @@ class GalleryService {
     final installation = plugin.installation;
 
     debugPrint('Extracting archive for ${plugin.name}');
-    
+
     // Compile regex pattern for file filtering if extractPattern is provided
     RegExp? extractRegex;
-    if (installation.extractPattern != null && installation.extractPattern!.isNotEmpty) {
+    if (installation.extractPattern != null &&
+        installation.extractPattern!.isNotEmpty) {
       try {
         extractRegex = RegExp(installation.extractPattern!);
         debugPrint('Using extract pattern: ${installation.extractPattern}');
       } catch (e) {
-        debugPrint('Invalid extract pattern ${installation.extractPattern}: $e');
+        debugPrint(
+            'Invalid extract pattern ${installation.extractPattern}: $e');
         // Continue without pattern filtering if regex is invalid
       }
     }
@@ -767,12 +768,13 @@ class GalleryService {
         // Check both the processed filePath and original file.name against the pattern
         final fileNameOnly = path.basename(filePath);
         final originalFileNameOnly = path.basename(originalFilePath);
-        
-        if (!extractRegex.hasMatch(filePath) && 
-            !extractRegex.hasMatch(fileNameOnly) && 
+
+        if (!extractRegex.hasMatch(filePath) &&
+            !extractRegex.hasMatch(fileNameOnly) &&
             !extractRegex.hasMatch(originalFilePath) &&
             !extractRegex.hasMatch(originalFileNameOnly)) {
-          debugPrint('Skipping file (does not match extract pattern): ${file.name}');
+          debugPrint(
+              'Skipping file (does not match extract pattern): ${file.name}');
           continue;
         }
       }
@@ -853,7 +855,7 @@ class GalleryService {
         debugPrint('Successfully uploaded to root: $fileName');
         onProgress?.call(filesProcessed / files.length);
       } catch (e) {
-        throw GalleryException('Failed to upload ${fileName}: $e');
+        throw GalleryException('Failed to upload $fileName: $e');
       }
     }
 

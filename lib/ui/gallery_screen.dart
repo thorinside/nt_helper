@@ -26,8 +26,7 @@ class GalleryScreen extends StatelessWidget {
       providers: [
         BlocProvider.value(value: distingCubit),
         BlocProvider(
-          create: (context) =>
-              GalleryCubit(galleryService)..loadGallery(),
+          create: (context) => GalleryCubit(galleryService)..loadGallery(),
         ),
       ],
       child: _GalleryView(
@@ -57,7 +56,7 @@ class _GalleryViewState extends State<_GalleryView>
 
   // UI state
   late TabController _tabController;
-  
+
   // Drag and drop state
   bool _isDragOver = false;
   bool _isInstalling = false;
@@ -197,9 +196,8 @@ class _GalleryViewState extends State<_GalleryView>
         ),
         IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: () => context
-              .read<GalleryCubit>()
-              .loadGallery(forceRefresh: true),
+          onPressed: () =>
+              context.read<GalleryCubit>().loadGallery(forceRefresh: true),
           tooltip: 'Refresh',
         ),
         IconButton(
@@ -288,9 +286,8 @@ class _GalleryViewState extends State<_GalleryView>
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => context
-                  .read<GalleryCubit>()
-                  .loadGallery(forceRefresh: true),
+              onPressed: () =>
+                  context.read<GalleryCubit>().loadGallery(forceRefresh: true),
               child: const Text('Retry'),
             ),
           ],
@@ -344,7 +341,7 @@ class _GalleryViewState extends State<_GalleryView>
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Filter chips in a row
               if (state is GalleryLoaded && state.gallery.categories.isNotEmpty)
                 PopupMenuButton<String?>(
@@ -378,9 +375,7 @@ class _GalleryViewState extends State<_GalleryView>
                       value: null,
                       child: Text('All Categories'),
                     ),
-                    ...(state is GalleryLoaded
-                            ? state.gallery.categories
-                            : [])
+                    ...(state is GalleryLoaded ? state.gallery.categories : [])
                         .map(
                       (cat) => PopupMenuItem<String>(
                         value: cat.id,
@@ -520,9 +515,8 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   Widget _buildPluginGrid(GalleryState state) {
-    final filteredPlugins = state is GalleryLoaded
-        ? state.filteredPlugins
-        : <GalleryPlugin>[];
+    final filteredPlugins =
+        state is GalleryLoaded ? state.filteredPlugins : <GalleryPlugin>[];
 
     if (filteredPlugins.isEmpty) {
       return Center(
@@ -575,8 +569,8 @@ class _GalleryViewState extends State<_GalleryView>
     );
   }
 
-
-  Widget _buildPluginCard(GalleryPlugin plugin, GalleryState state, BuildContext parentContext) {
+  Widget _buildPluginCard(
+      GalleryPlugin plugin, GalleryState state, BuildContext parentContext) {
     if (state is! GalleryLoaded) return const SizedBox.shrink();
 
     final author = plugin.getAuthor(state.gallery);
@@ -584,7 +578,7 @@ class _GalleryViewState extends State<_GalleryView>
 
     final width = MediaQuery.of(context).size.width;
     final isNarrowScreen = width < 375;
-    
+
     return SizedBox(
       width: 320,
       height: isNarrowScreen ? null : 305, // Flexible height for narrow screens
@@ -592,226 +586,223 @@ class _GalleryViewState extends State<_GalleryView>
         elevation: 2,
         clipBehavior: Clip.antiAlias,
         child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with badges
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.05),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withValues(alpha: 0.1),
-                      width: 1,
-                    ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with badges
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.05),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.1),
+                    width: 1,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              if (plugin.featured) ...[
-                                Icon(
-                                  Icons.star,
-                                  size: 16,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              Expanded(
-                                child: Text(
-                                  plugin.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (plugin.featured) ...[
+                              Icon(
+                                Icons.star,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
+                              const SizedBox(width: 8),
                             ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
+                            Expanded(
+                              child: Text(
+                                plugin.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.secondary,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                plugin.type.displayName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSecondary,
+                                    ),
+                              ),
+                            ),
+                            if (category != null) ...[
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color:
-                                      Theme.of(context).colorScheme.secondary,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outline
+                                      .withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  plugin.type.displayName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSecondary,
-                                      ),
+                                  category.name,
+                                  style: Theme.of(context).textTheme.labelSmall,
                                 ),
                               ),
-                              if (category != null) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline
-                                        .withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    category.name,
-                                    style:
-                                        Theme.of(context).textTheme.labelSmall,
-                                  ),
-                                ),
-                              ],
                             ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content with fixed layout sections
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 12), // 12px bottom margin
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Shrink to fit content
-                  children: [
-                    // Fixed description area (5 lines) with padding
-                    Container(
-                      height: 116, // Fixed height for 5 lines + padding (100 + 16)
-                      padding: const EdgeInsets.all(8),
-                      child: Text(
-                        plugin.description,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        maxLines: 5,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16), // Space after description
-                    
-                    // Metadata section (author, downloads, ratings)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            if (author != null) ...[
-                              Icon(
-                                Icons.person,
-                                size: 14,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  author.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.6),
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ] else
-                              const Spacer(),
-                            Text(
-                              plugin.formattedRating,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                            ),
                           ],
                         ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 8), // Reduced spacing above button
-
-                    // Action button at bottom
-                    SizedBox(
-                      width: double.infinity,
-                      child: () {
-                        final queue = state is GalleryLoaded
-                            ? state.queue
-                            : <QueuedPlugin>[];
-                        final isInQueue =
-                            queue.any((q) => q.plugin.id == plugin.id);
-
-                        return ElevatedButton.icon(
-                          onPressed: isInQueue
-                              ? () => parentContext
-                                  .read<GalleryCubit>()
-                                  .removeFromQueue(plugin.id)
-                              : () => parentContext
-                                  .read<GalleryCubit>()
-                                  .addToQueue(plugin),
-                          icon: Icon(isInQueue
-                              ? Icons.remove_from_queue
-                              : Icons.add_to_queue),
-                          label:
-                              Text(isInQueue ? 'Remove' : 'Add to Queue'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isInQueue
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).colorScheme.primary,
-                            foregroundColor: isInQueue
-                                ? Theme.of(context).colorScheme.onError
-                                : Theme.of(context).colorScheme.onPrimary,
-                          ),
-                        );
-                      }(),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // Content with fixed layout sections
+            Padding(
+              padding:
+                  const EdgeInsets.fromLTRB(8, 8, 8, 12), // 12px bottom margin
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // Shrink to fit content
+                children: [
+                  // Fixed description area (5 lines) with padding
+                  Container(
+                    height:
+                        116, // Fixed height for 5 lines + padding (100 + 16)
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      plugin.description,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16), // Space after description
+
+                  // Metadata section (author, downloads, ratings)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          if (author != null) ...[
+                            Icon(
+                              Icons.person,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                author.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ] else
+                            const Spacer(),
+                          Text(
+                            plugin.formattedRating,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8), // Reduced spacing above button
+
+                  // Action button at bottom
+                  SizedBox(
+                    width: double.infinity,
+                    child: () {
+                      final queue = state is GalleryLoaded
+                          ? state.queue
+                          : <QueuedPlugin>[];
+                      final isInQueue =
+                          queue.any((q) => q.plugin.id == plugin.id);
+
+                      return ElevatedButton.icon(
+                        onPressed: isInQueue
+                            ? () => parentContext
+                                .read<GalleryCubit>()
+                                .removeFromQueue(plugin.id)
+                            : () => parentContext
+                                .read<GalleryCubit>()
+                                .addToQueue(plugin),
+                        icon: Icon(isInQueue
+                            ? Icons.remove_from_queue
+                            : Icons.add_to_queue),
+                        label: Text(isInQueue ? 'Remove' : 'Add to Queue'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isInQueue
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
+                          foregroundColor: isInQueue
+                              ? Theme.of(context).colorScheme.onError
+                              : Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      );
+                    }(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -819,8 +810,7 @@ class _GalleryViewState extends State<_GalleryView>
   Widget _buildQueueTab() {
     return BlocBuilder<GalleryCubit, GalleryState>(
       builder: (context, state) {
-        final queue =
-            state is GalleryLoaded ? state.queue : <QueuedPlugin>[];
+        final queue = state is GalleryLoaded ? state.queue : <QueuedPlugin>[];
 
         if (queue.isEmpty) {
           return Center(
@@ -889,10 +879,10 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: queue
-                            .any((q) => q.status == QueuedPluginStatus.queued)
-                        ? () => context.read<GalleryCubit>().clearQueue()
-                        : null,
+                    onPressed:
+                        queue.any((q) => q.status == QueuedPluginStatus.queued)
+                            ? () => context.read<GalleryCubit>().clearQueue()
+                            : null,
                     child: const Text('Clear All'),
                   ),
                   const SizedBox(width: 8),
@@ -987,9 +977,8 @@ class _GalleryViewState extends State<_GalleryView>
                     queuedPlugin.status == QueuedPluginStatus.failed)
                 ? IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => context
-                        .read<GalleryCubit>()
-                        .removeFromQueue(plugin.id),
+                    onPressed: () =>
+                        context.read<GalleryCubit>().removeFromQueue(plugin.id),
                     tooltip: queuedPlugin.status == QueuedPluginStatus.failed
                         ? 'Dismiss error'
                         : 'Remove from queue',
@@ -1084,7 +1073,6 @@ class _GalleryViewState extends State<_GalleryView>
       ),
     );
   }
-
 
   Future<void> _installQueue() async {
     try {
@@ -1242,7 +1230,8 @@ class _GalleryViewState extends State<_GalleryView>
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color:
+                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1260,17 +1249,20 @@ class _GalleryViewState extends State<_GalleryView>
               Text(
                 'Drop plugin files here to install',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Supports .lua, .3pot, and .o files',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                    ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1291,7 +1283,8 @@ class _GalleryViewState extends State<_GalleryView>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color:
+                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1310,8 +1303,11 @@ class _GalleryViewState extends State<_GalleryView>
               Text(
                 'This may take a few moments',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                    ),
               ),
             ],
           ),
@@ -1498,9 +1494,8 @@ class _PluginDetailsDialog extends StatelessWidget {
                 const Spacer(),
                 BlocBuilder<GalleryCubit, GalleryState>(
                   builder: (context, state) {
-                    final queue = state is GalleryLoaded
-                        ? state.queue
-                        : <QueuedPlugin>[];
+                    final queue =
+                        state is GalleryLoaded ? state.queue : <QueuedPlugin>[];
                     final isInQueue =
                         queue.any((q) => q.plugin.id == plugin.id);
 
@@ -1509,9 +1504,8 @@ class _PluginDetailsDialog extends StatelessWidget {
                           ? () => context
                               .read<GalleryCubit>()
                               .removeFromQueue(plugin.id)
-                          : () => context
-                              .read<GalleryCubit>()
-                              .addToQueue(plugin),
+                          : () =>
+                              context.read<GalleryCubit>().addToQueue(plugin),
                       icon: Icon(isInQueue
                           ? Icons.remove_from_queue
                           : Icons.add_to_queue),
@@ -1536,4 +1530,3 @@ class _PluginDetailsDialog extends StatelessWidget {
     );
   }
 }
-

@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Consolidates rapid parameter updates to prevent queue buildup:
 // • Latest value wins: Replace pending updates for same parameter
-// • Combined operations: Parameter set + string query as one unit  
+// • Combined operations: Parameter set + string query as one unit
 // • Rate limited: Proper intervals between device communications
 // • Background processing: UI stays responsive with optimistic updates
 // -----------------------------------------------------------------------------
@@ -32,8 +32,8 @@ class ParameterUpdate {
   String get key => '$algorithmIndex:$parameterNumber';
 
   @override
-  String toString() => 
-    'ParameterUpdate(algo: $algorithmIndex, param: $parameterNumber, value: $value, needsString: $needsStringUpdate)';
+  String toString() =>
+      'ParameterUpdate(algo: $algorithmIndex, param: $parameterNumber, value: $value, needsString: $needsStringUpdate)';
 }
 
 // -----------------------------------------------------------------------------
@@ -51,11 +51,12 @@ class ParameterUpdateQueue {
   final IDistingMidiManager _midiManager;
   final Duration processingInterval;
   final Duration operationInterval;
-  final void Function(int algorithmIndex, int parameterNumber, String value)? onParameterStringUpdated;
+  final void Function(int algorithmIndex, int parameterNumber, String value)?
+      onParameterStringUpdated;
 
   // Latest value wins - keyed by "algorithmIndex:parameterNumber"
   final Map<String, ParameterUpdate> _pendingUpdates = {};
-  
+
   // Processing state
   bool _isProcessing = false;
   Timer? _processTimer;
@@ -95,21 +96,23 @@ class ParameterUpdateQueue {
 
     if (wasAlreadyPending) {
       _updatesConsolidated++;
-      debugPrint('[ParameterQueue] Consolidated update for ${update.key} (total consolidated: $_updatesConsolidated)');
+      debugPrint(
+          '[ParameterQueue] Consolidated update for ${update.key} (total consolidated: $_updatesConsolidated)');
     }
 
-    debugPrint('[ParameterQueue] Queued: $update (pending: ${_pendingUpdates.length})');
+    debugPrint(
+        '[ParameterQueue] Queued: $update (pending: ${_pendingUpdates.length})');
 
     _scheduleProcessing();
   }
 
   /// Get current queue statistics for debugging
   Map<String, int> getStatistics() => {
-    'received': _totalUpdatesReceived,
-    'sent': _totalUpdatesSent,
-    'consolidated': _updatesConsolidated,
-    'pending': _pendingUpdates.length,
-  };
+        'received': _totalUpdatesReceived,
+        'sent': _totalUpdatesSent,
+        'consolidated': _updatesConsolidated,
+        'pending': _pendingUpdates.length,
+      };
 
   /// Clear all pending updates
   void clear() {
@@ -159,12 +162,14 @@ class ParameterUpdateQueue {
       // Query parameter string if needed (expects response)
       if (update.needsStringUpdate) {
         try {
-          final parameterString = await _midiManager.requestParameterValueString(
+          final parameterString =
+              await _midiManager.requestParameterValueString(
             update.algorithmIndex,
             update.parameterNumber,
           );
           if (parameterString != null) {
-            debugPrint('[ParameterQueue] Updated parameter string for ${update.key}: "${parameterString.value}"');
+            debugPrint(
+                '[ParameterQueue] Updated parameter string for ${update.key}: "${parameterString.value}"');
             // Notify the cubit about the updated parameter string
             onParameterStringUpdated?.call(
               update.algorithmIndex,
@@ -172,17 +177,19 @@ class ParameterUpdateQueue {
               parameterString.value,
             );
           } else {
-            debugPrint('[ParameterQueue] No parameter string returned for ${update.key}');
+            debugPrint(
+                '[ParameterQueue] No parameter string returned for ${update.key}');
           }
         } catch (e) {
-          debugPrint('[ParameterQueue] Failed to update parameter string for ${update.key}: $e');
+          debugPrint(
+              '[ParameterQueue] Failed to update parameter string for ${update.key}: $e');
           // Continue processing even if string update fails
         }
       }
 
       _totalUpdatesSent++;
-      debugPrint('[ParameterQueue] Completed: $update (remaining: ${_pendingUpdates.length})');
-
+      debugPrint(
+          '[ParameterQueue] Completed: $update (remaining: ${_pendingUpdates.length})');
     } catch (e, stackTrace) {
       debugPrint('[ParameterQueue] Error processing update: $e');
       debugPrintStack(stackTrace: stackTrace);

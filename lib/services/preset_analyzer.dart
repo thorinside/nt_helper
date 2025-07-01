@@ -3,7 +3,8 @@ import '../models/preset_dependencies.dart';
 
 /// Analyzes preset JSON files to extract dependencies
 class PresetAnalyzer {
-  static PresetDependencies analyzeDependencies(Map<String, dynamic> presetData) {
+  static PresetDependencies analyzeDependencies(
+      Map<String, dynamic> presetData) {
     final dependencies = PresetDependencies();
 
     if (presetData['slots'] != null) {
@@ -44,7 +45,8 @@ class PresetAnalyzer {
       for (final timbre in slot['timbres']) {
         if (timbre['folder'] != null) {
           // Determine if it's a multisample or regular sample based on algorithm
-          if (guid == 'pyms') { // Poly Multisample algorithm
+          if (guid == 'pyms') {
+            // Poly Multisample algorithm
             deps.multisampleFolders.add(timbre['folder']);
           } else {
             deps.sampleFolders.add(timbre['folder']);
@@ -73,9 +75,7 @@ class PresetAnalyzer {
 
   /// Generate a report of what was included in the package
   static String generatePackageReport(
-      PresetDependencies dependencies,
-      List<CollectedFile> collectedFiles
-      ) {
+      PresetDependencies dependencies, List<CollectedFile> collectedFiles) {
     final foundFiles = collectedFiles.map((f) => f.relativePath).toSet();
     final missing = <String>[];
 

@@ -60,7 +60,7 @@ class DistingCubit extends Cubit<DistingState> {
   // Keep track of the offline manager instance when offline
   OfflineDistingMidiManager? _offlineManager;
   final Map<int, DateTime> _lastAnomalyRefreshAttempt = {};
-  
+
   // Parameter update queue for consolidated parameter changes
   ParameterUpdateQueue? _parameterQueue;
 
@@ -417,7 +417,8 @@ class DistingCubit extends Cubit<DistingState> {
       try {
         final currentUnixTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         await newDistingManager.requestSetRealTimeClock(currentUnixTime);
-        debugPrint("[DistingCubit] Device clock synchronized to $currentUnixTime");
+        debugPrint(
+            "[DistingCubit] Device clock synchronized to $currentUnixTime");
       } catch (e) {
         debugPrint("[DistingCubit] Failed to synchronize device clock: $e");
         // Continue with connection even if clock sync fails
@@ -702,31 +703,40 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   // Handle parameter string updates from the queue
-  void _onParameterStringUpdated(int algorithmIndex, int parameterNumber, String value) {
+  void _onParameterStringUpdated(
+      int algorithmIndex, int parameterNumber, String value) {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) return;
-    
-    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) return;
-    
+
+    if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
+      return;
+    }
+
     final currentSlot = currentState.slots[algorithmIndex];
-    if (parameterNumber < 0 || parameterNumber >= currentSlot.valueStrings.length) return;
-    
+    if (parameterNumber < 0 ||
+        parameterNumber >= currentSlot.valueStrings.length) {
+      return;
+    }
+
     try {
       // Update the parameter string in the UI
-      final updatedValueStrings = List<ParameterValueString>.from(currentSlot.valueStrings);
+      final updatedValueStrings =
+          List<ParameterValueString>.from(currentSlot.valueStrings);
       updatedValueStrings[parameterNumber] = ParameterValueString(
         algorithmIndex: algorithmIndex,
         parameterNumber: parameterNumber,
         value: value,
       );
-      
-      final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
+
+      final updatedSlot =
+          currentSlot.copyWith(valueStrings: updatedValueStrings);
       final updatedSlots = List<Slot>.from(currentState.slots);
       updatedSlots[algorithmIndex] = updatedSlot;
-      
+
       emit(currentState.copyWith(slots: updatedSlots));
-      
-      debugPrint('[DistingCubit] Updated parameter string UI for $algorithmIndex:$parameterNumber = "$value"');
+
+      debugPrint(
+          '[DistingCubit] Updated parameter string UI for $algorithmIndex:$parameterNumber = "$value"');
     } catch (e, stackTrace) {
       debugPrint('[DistingCubit] Error updating parameter string UI: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -774,7 +784,6 @@ class DistingCubit extends Cubit<DistingState> {
     ];
   }
 
-
   Future<void> updateParameterValue({
     required int algorithmIndex,
     required int parameterNumber,
@@ -793,7 +802,8 @@ class DistingCubit extends Cubit<DistingState> {
 
         // Always queue the parameter update for sending to device
         final currentSlot = syncstate.slots[algorithmIndex];
-        final needsStringUpdate = parameterNumber < currentSlot.parameters.length &&
+        final needsStringUpdate = parameterNumber <
+                currentSlot.parameters.length &&
             [13, 14, 17].contains(currentSlot.parameters[parameterNumber].unit);
 
         _parameterQueue?.updateParameter(
@@ -828,7 +838,7 @@ class DistingCubit extends Cubit<DistingState> {
           ));
         } else {
           // When user releases slider - do minimal additional processing
-          
+
           // Special case for switching programs
           if (_isProgramParameter(syncstate, algorithmIndex, parameterNumber)) {
             _programSlotUpdate?.cancel();
@@ -853,7 +863,8 @@ class DistingCubit extends Cubit<DistingState> {
 
           // Anomaly Check - using the value we're setting
           if (parameterNumber < currentSlot.parameters.length) {
-            final parameterInfo = currentSlot.parameters.elementAt(parameterNumber);
+            final parameterInfo =
+                currentSlot.parameters.elementAt(parameterNumber);
             if (value < parameterInfo.min || value > parameterInfo.max) {
               debugPrint(
                   "Out-of-bounds data for device: algo $algorithmIndex, param $parameterNumber, value $value, expected ${parameterInfo.min}-${parameterInfo.max}");
@@ -2084,12 +2095,14 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> refreshSlotParameterStrings(int algorithmIndex) async {
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
-      debugPrint("[Cubit] Cannot refresh slot parameter strings: Not in synchronized state.");
+      debugPrint(
+          "[Cubit] Cannot refresh slot parameter strings: Not in synchronized state.");
       return;
     }
 
     if (algorithmIndex < 0 || algorithmIndex >= currentState.slots.length) {
-      debugPrint("[Cubit] Cannot refresh slot parameter strings: Invalid algorithm index $algorithmIndex");
+      debugPrint(
+          "[Cubit] Cannot refresh slot parameter strings: Invalid algorithm index $algorithmIndex");
       return;
     }
 
@@ -2098,15 +2111,16 @@ class DistingCubit extends Cubit<DistingState> {
 
     try {
       // Only update parameter strings for string-type parameters (units 13, 14, 17)
-      var updatedValueStrings = List<ParameterValueString>.from(currentSlot.valueStrings);
-      
-      for (int parameterNumber = 0; parameterNumber < currentSlot.parameters.length; parameterNumber++) {
+      var updatedValueStrings =
+          List<ParameterValueString>.from(currentSlot.valueStrings);
+
+      for (int parameterNumber = 0;
+          parameterNumber < currentSlot.parameters.length;
+          parameterNumber++) {
         final parameter = currentSlot.parameters[parameterNumber];
         if ([13, 14, 17].contains(parameter.unit)) {
           final newValueString = await disting.requestParameterValueString(
-            algorithmIndex, 
-            parameterNumber
-          );
+              algorithmIndex, parameterNumber);
           if (newValueString != null) {
             updatedValueStrings[parameterNumber] = newValueString;
           }
@@ -2114,15 +2128,18 @@ class DistingCubit extends Cubit<DistingState> {
       }
 
       // Update the slot with new parameter strings
-      final updatedSlot = currentSlot.copyWith(valueStrings: updatedValueStrings);
+      final updatedSlot =
+          currentSlot.copyWith(valueStrings: updatedValueStrings);
       final updatedSlots = List<Slot>.from(currentState.slots);
       updatedSlots[algorithmIndex] = updatedSlot;
 
       emit(currentState.copyWith(slots: updatedSlots));
-      
-      debugPrint("[Cubit] Refreshed parameter strings for slot $algorithmIndex");
+
+      debugPrint(
+          "[Cubit] Refreshed parameter strings for slot $algorithmIndex");
     } catch (e, stackTrace) {
-      debugPrint("[Cubit] Error refreshing parameter strings for slot $algorithmIndex: $e");
+      debugPrint(
+          "[Cubit] Error refreshing parameter strings for slot $algorithmIndex: $e");
       debugPrintStack(stackTrace: stackTrace);
     }
   }
@@ -2298,7 +2315,7 @@ class DistingCubit extends Cubit<DistingState> {
     await disting.requestWake();
 
     debugPrint(
-        "[DistingCubit] Starting upload of ${fileName} (${fileData.length} bytes) to $targetPath");
+        "[DistingCubit] Starting upload of $fileName (${fileData.length} bytes) to $targetPath");
 
     // Upload in 512-byte chunks (matching JavaScript tool behavior)
     const chunkSize = 512;
@@ -2333,7 +2350,7 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     debugPrint(
-        "[DistingCubit] Successfully uploaded ${fileName} to $targetPath");
+        "[DistingCubit] Successfully uploaded $fileName to $targetPath");
   }
 
   /// Uploads a single chunk of file data.

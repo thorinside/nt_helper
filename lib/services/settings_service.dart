@@ -34,7 +34,8 @@ class SettingsService {
   static const bool defaultHapticsEnabled = true;
   static const bool defaultMcpEnabled = false;
   static const bool defaultStartPagesCollapsed = false;
-  static const String defaultGalleryUrl = 'https://nt-gallery.nosuch.dev/api/gallery.json';
+  static const String defaultGalleryUrl =
+      'https://nt-gallery.nosuch.dev/api/gallery.json';
 
   /// Initialize the settings service
   Future<void> init() async {

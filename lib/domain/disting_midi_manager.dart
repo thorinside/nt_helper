@@ -743,8 +743,8 @@ class DistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestSetRealTimeClock(int unixTimeSeconds) async {
-    final message =
-        SetRealTimeClockMessage(sysExId: sysExId, unixTimeSeconds: unixTimeSeconds);
+    final message = SetRealTimeClockMessage(
+        sysExId: sysExId, unixTimeSeconds: unixTimeSeconds);
     final packet = message.encode();
 
     final key = RequestKey(

@@ -639,41 +639,37 @@ class DistingTools {
     final String? text = params['text'];
 
     if (text == null) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error': 'Missing "text" parameter.'
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+          {'success': false, 'error': 'Missing "text" parameter.'}));
     }
 
     try {
       // Split and validate text using the same logic as NotesAlgorithmView
       final lines = _splitTextIntoLines(text);
-      
+
       if (!_validateNotesText(lines)) {
         return jsonEncode(convertToSnakeCaseKeys({
           'success': false,
-          'error': 'Text validation failed. Maximum 7 lines of 31 characters each.'
+          'error':
+              'Text validation failed. Maximum 7 lines of 31 characters each.'
         }));
       }
 
       // Find existing Notes algorithm or add one
       final notesSlotIndex = await _findOrAddNotesAlgorithm();
-      
+
       if (notesSlotIndex == null) {
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error': 'Failed to create Notes algorithm.'
-        }));
+        return jsonEncode(convertToSnakeCaseKeys(
+            {'success': false, 'error': 'Failed to create Notes algorithm.'}));
       }
 
       // Set text parameters (parameters 1-7)
       for (int i = 0; i < 7; i++) {
         final lineText = i < lines.length ? lines[i] : '';
         await _controller.updateParameterString(
-          notesSlotIndex, 
-          i + 1, // Parameters 1-7, not 0-6
-          lineText
-        );
+            notesSlotIndex,
+            i + 1, // Parameters 1-7, not 0-6
+            lineText);
       }
 
       // Move Notes algorithm to slot 0 if it's not already there
@@ -693,12 +689,9 @@ class DistingTools {
         'message': 'Notes algorithm updated with text and moved to slot 0.',
         'lines_set': lines.length
       }));
-
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error': e.toString()
-      }));
+      return jsonEncode(
+          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
@@ -800,10 +793,10 @@ class DistingTools {
   /// Helper method to find existing Notes algorithm or add one
   Future<int?> _findOrAddNotesAlgorithm() async {
     const String notesGuid = 'note';
-    
+
     // First, check if Notes algorithm already exists in any slot
     final Map<int, Algorithm?> allSlots = await _controller.getAllSlots();
-    
+
     for (int i = 0; i < maxSlots; i++) {
       final algorithm = allSlots[i];
       if (algorithm != null && algorithm.guid == notesGuid) {
@@ -814,16 +807,15 @@ class DistingTools {
     // Notes algorithm not found, add it
     try {
       final notesAlgorithm = Algorithm(
-        algorithmIndex: -1, // Will be assigned by hardware
-        guid: notesGuid,
-        name: 'Notes'
-      );
-      
+          algorithmIndex: -1, // Will be assigned by hardware
+          guid: notesGuid,
+          name: 'Notes');
+
       await _controller.addAlgorithm(notesAlgorithm);
-      
+
       // Wait a bit for the algorithm to be added
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Find the newly added Notes algorithm
       final updatedSlots = await _controller.getAllSlots();
       for (int i = 0; i < maxSlots; i++) {
@@ -832,7 +824,7 @@ class DistingTools {
           return i; // Found newly added Notes algorithm
         }
       }
-      
+
       return null; // Failed to find after adding
     } catch (e) {
       return null;
