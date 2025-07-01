@@ -33,7 +33,7 @@ class DistingTools {
   /// Returns:
   ///   A JSON string representing the current preset including name,
   ///   and details for each slot (algorithm and parameters).
-  Future<String> get_current_preset(Map<String, dynamic> params) async {
+  Future<String> getCurrentPreset(Map<String, dynamic> params) async {
     try {
       final presetName = await _controller.getCurrentPresetName();
       final Map<int, Algorithm?> slotAlgorithms =
@@ -85,8 +85,7 @@ class DistingTools {
           _buildPresetJson(presetName, slotsJsonList);
       return jsonEncode(
           convertToSnakeCaseKeys(presetData)); // Apply converter here
-    } catch (e, s) {
-      print('[MCP DistingTools] Error in get_current_preset: $e\\n$s');
+    } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -137,7 +136,7 @@ class DistingTools {
   ///   - algorithm_guid (string, required): The GUID of the algorithm to add.
   /// Returns:
   ///   A JSON string confirming the addition or an error.
-  Future<String> add_algorithm(Map<String, dynamic> params) async {
+  Future<String> addAlgorithm(Map<String, dynamic> params) async {
     final String? algorithmGuid = params['algorithm_guid'];
     final String? algorithmName = params['algorithm_name'];
     if ((algorithmGuid == null || algorithmGuid.isEmpty) &&
@@ -201,8 +200,7 @@ class DistingTools {
         'success': true,
         'message': 'Request to add algorithm $resolvedGuid sent.'
       }));
-    } catch (e, s) {
-      print('[MCP DistingTools] Error in add_algorithm: $e\\n$s');
+    } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -213,7 +211,7 @@ class DistingTools {
   ///   - slot_index (int, required): The index of the slot to clear.
   /// Returns:
   ///   A JSON string confirming the removal or an error.
-  Future<String> remove_algorithm(Map<String, dynamic> params) async {
+  Future<String> removeAlgorithm(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'];
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
@@ -227,15 +225,14 @@ class DistingTools {
         'success': true,
         'message': 'Algorithm removed from slot $slotIndex.'
       }));
-    } catch (e, s) {
-      print('[MCP DistingTools] Error in remove_algorithm: $e\\n$s');
+    } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
   }
 
   // Updated method to set parameter value, handling display_value and powerOfTen
-  Future<String> set_parameter_value(Map<String, dynamic> params) async {
+  Future<String> setParameterValue(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
     final int? parameterNumberParam = params['parameter_number'] as int?;
     final String? parameterNameParam = params['parameter_name'] as String?;
@@ -345,8 +342,7 @@ class DistingTools {
         'message':
             'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.'
       }));
-    } catch (e, s) {
-      print('[MCP DistingTools] Error in set_parameter_value: $e\\n$s');
+    } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -358,7 +354,7 @@ class DistingTools {
   ///   - parameter_number (int, required): The 0-based index of the parameter within the algorithm.
   /// Returns:
   ///   A JSON string with the parameter value or an error.
-  Future<String> get_parameter_value(Map<String, dynamic> params) async {
+  Future<String> getParameterValue(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
     final int? parameterNumber = params['parameter_number'] as int?;
 
@@ -405,8 +401,7 @@ class DistingTools {
             liveRawValue, paramInfo.powerOfTen), // Scaled value
       };
       return jsonEncode(convertToSnakeCaseKeys(result));
-    } catch (e, s) {
-      print('[MCP DistingTools] Error in get_parameter_value: $e\\n$s');
+    } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
     }
@@ -417,7 +412,7 @@ class DistingTools {
   ///   - name (string, required): The new name for the preset.
   /// Returns:
   ///   A JSON string confirming the action or an error.
-  Future<String> set_preset_name(Map<String, dynamic> params) async {
+  Future<String> setPresetName(Map<String, dynamic> params) async {
     final String? name = params['name'] as String?;
 
     if (name == null || name.isEmpty) {
@@ -443,7 +438,7 @@ class DistingTools {
   ///   - name (string, required): The desired custom name.
   /// Returns:
   ///   A JSON string confirming the action or an error.
-  Future<String> set_slot_name(Map<String, dynamic> params) async {
+  Future<String> setSlotName(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
     final String? name = params['name'] as String?;
 
@@ -471,7 +466,7 @@ class DistingTools {
   /// MCP Tool: Tells the device to clear the current preset and start a new, empty one.
   /// Parameters: None (can accept a dummy string for consistency if MCP requires it).
   /// Returns: A JSON string confirming the action or an error.
-  Future<String> new_preset(Map<String, dynamic> params) async {
+  Future<String> newPreset(Map<String, dynamic> params) async {
     try {
       await _controller.newPreset();
       return jsonEncode(convertToSnakeCaseKeys({
@@ -487,7 +482,7 @@ class DistingTools {
   /// MCP Tool: Tells the device to save the current working preset.
   /// Parameters: None (can accept a dummy string for consistency if MCP requires it).
   /// Returns: A JSON string confirming the action or an error.
-  Future<String> save_preset(Map<String, dynamic> params) async {
+  Future<String> savePreset(Map<String, dynamic> params) async {
     try {
       await _controller.savePreset();
       return jsonEncode(convertToSnakeCaseKeys({
@@ -508,7 +503,7 @@ class DistingTools {
   ///   - slot_index (int, required): The 0-based index of the slot to move up.
   /// Returns:
   ///   A JSON string confirming the move or an error.
-  Future<String> move_algorithm_up(Map<String, dynamic> params) async {
+  Future<String> moveAlgorithmUp(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
 
     if (slotIndex == null) {
@@ -547,7 +542,7 @@ class DistingTools {
   ///   - slot_index (int, required): The 0-based index of the slot to move down.
   /// Returns:
   ///   A JSON string confirming the move or an error.
-  Future<String> move_algorithm_down(Map<String, dynamic> params) async {
+  Future<String> moveAlgorithmDown(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
 
     if (slotIndex == null) {
@@ -586,7 +581,7 @@ class DistingTools {
   /// Returns:
   ///   A Map containing success status, and either base64 encoded screenshot_base64
   ///   and format, or an error message.
-  Future<Map<String, dynamic>> get_module_screenshot(
+  Future<Map<String, dynamic>> getModuleScreenshot(
       Map<String, dynamic> params) async {
     try {
       final Uint8List? pngBytesFromController =
@@ -640,7 +635,7 @@ class DistingTools {
   ///   - text (string, required): The note text content (max 7 lines, 31 characters each).
   /// Returns:
   ///   A JSON string confirming the action or an error.
-  Future<String> set_notes(Map<String, dynamic> params) async {
+  Future<String> setNotes(Map<String, dynamic> params) async {
     final String? text = params['text'];
 
     if (text == null) {
@@ -699,8 +694,7 @@ class DistingTools {
         'lines_set': lines.length
       }));
 
-    } catch (e, s) {
-      print('[MCP DistingTools] Error in set_notes: $e\n$s');
+    } catch (e) {
       return jsonEncode(convertToSnakeCaseKeys({
         'success': false,
         'error': e.toString()
@@ -841,7 +835,6 @@ class DistingTools {
       
       return null; // Failed to find after adding
     } catch (e) {
-      print('[MCP DistingTools] Error adding Notes algorithm: $e');
       return null;
     }
   }

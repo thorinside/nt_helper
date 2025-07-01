@@ -52,7 +52,7 @@ class MCPAlgorithmTools {
   ///   - expand_features (bool, optional, default: false): Expand feature parameters.
   /// Returns:
   ///   A JSON string representing the AlgorithmMetadata, or an error JSON if not found or ambiguous.
-  Future<String> get_algorithm_details(Map<String, dynamic> params) async {
+  Future<String> getAlgorithmDetails(Map<String, dynamic> params) async {
     final String? guid = params['guid'];
     final String? algorithmName = params['algorithm_name'];
     final bool expandFeatures = params['expand_features'] ?? false;
@@ -142,7 +142,7 @@ class MCPAlgorithmTools {
   /// Returns:
   ///   A JSON string representing a list of AlgorithmMetadata objects, containing
   ///   only guid, name, and the first sentence of the description.
-  Future<String> list_algorithms(Map<String, dynamic> params) async {
+  Future<String> listAlgorithms(Map<String, dynamic> params) async {
     final String? category = params['category'];
     final String? query = params['query']; // Added query parameter
 
@@ -195,7 +195,7 @@ class MCPAlgorithmTools {
   /// Returns:
   ///   A JSON string representing the input and output busses of each slot.
   ///   Returns an empty list '[]' if the state is not synchronized.
-  Future<String> get_current_routing_state(Map<String, dynamic> params) async {
+  Future<String> getCurrentRoutingState(Map<String, dynamic> params) async {
     // Access the injected DistingCubit instance
     final routingInfoList = _distingCubit.buildRoutingInformation();
 

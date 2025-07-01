@@ -402,7 +402,7 @@ class McpServerService extends ChangeNotifier {
       },
       callback: ({args, extra}) async {
         final resultJson =
-            await mcpAlgorithmTools.get_algorithm_details(args ?? {});
+            await mcpAlgorithmTools.getAlgorithmDetails(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -422,7 +422,7 @@ class McpServerService extends ChangeNotifier {
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await mcpAlgorithmTools.list_algorithms(args ?? {});
+        final resultJson = await mcpAlgorithmTools.listAlgorithms(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -442,7 +442,7 @@ Physical name to bus number mapping:
       inputSchemaProperties: {},
       callback: ({args, extra}) async {
         final resultJson =
-            await mcpAlgorithmTools.get_current_routing_state(args ?? {});
+            await mcpAlgorithmTools.getCurrentRoutingState(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -462,7 +462,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.get_current_preset(args ?? {});
+        final resultJson = await distingTools.getCurrentPreset(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -483,7 +483,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.add_algorithm(args ?? {});
+        final resultJson = await distingTools.addAlgorithm(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -499,7 +499,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.remove_algorithm(args ?? {});
+        final resultJson = await distingTools.removeAlgorithm(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -536,7 +536,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.set_parameter_value(args ?? {});
+        final resultJson = await distingTools.setParameterValue(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -556,7 +556,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.get_parameter_value(args ?? {});
+        final resultJson = await distingTools.getParameterValue(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -568,7 +568,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         'name': {'type': 'string', 'description': 'New preset name.'}
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.set_preset_name(args ?? {});
+        final resultJson = await distingTools.setPresetName(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -585,7 +585,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         'name': {'type': 'string', 'description': 'Custom slot name.'}
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.set_slot_name(args ?? {});
+        final resultJson = await distingTools.setSlotName(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -598,7 +598,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.new_preset(args ?? {});
+        final resultJson = await distingTools.newPreset(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -610,7 +610,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.save_preset(args ?? {});
+        final resultJson = await distingTools.savePreset(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -626,7 +626,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.move_algorithm_up(args ?? {});
+        final resultJson = await distingTools.moveAlgorithmUp(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -642,7 +642,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.move_algorithm_down(args ?? {});
+        final resultJson = await distingTools.moveAlgorithmDown(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
@@ -655,7 +655,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
       },
       callback: ({args, extra}) async {
         final Map<String, dynamic> result =
-            await distingTools.get_module_screenshot(args ?? {});
+            await distingTools.getModuleScreenshot(args ?? {});
         if (result['success'] == true) {
           return CallToolResult(content: [
             ImageContent(
@@ -683,7 +683,7 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
         }
       },
       callback: ({args, extra}) async {
-        final resultJson = await distingTools.set_notes(args ?? {});
+        final resultJson = await distingTools.setNotes(args ?? {});
         return CallToolResult(content: [TextContent(text: resultJson)]);
       },
     );
