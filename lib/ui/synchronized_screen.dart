@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
-import 'package:nt_helper/add_algorithm_screen.dart';
+import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
@@ -20,14 +20,14 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
         Mapping,
         ParameterValueString;
 
-import 'package:nt_helper/floating_screenshot_overlay.dart';
-import 'package:nt_helper/load_preset_dialog.dart';
+import 'package:nt_helper/ui/widgets/floating_screenshot_overlay.dart';
+import 'package:nt_helper/ui/widgets/load_preset_dialog.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
-import 'package:nt_helper/packed_mapping_data_editor.dart';
-import 'package:nt_helper/performance_screen.dart';
-import 'package:nt_helper/rename_preset_dialog.dart';
-import 'package:nt_helper/rename_slot_dialog.dart';
-import 'package:nt_helper/routing_page.dart';
+import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
+import 'package:nt_helper/ui/performance_screen.dart';
+import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
+import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
+import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
