@@ -526,7 +526,6 @@ class DistingTools {
     // For now, just check against 0. Max slot check can be added if necessary or rely on controller.
 
     final int sourceSlotIndex = slotIndex;
-    final int destSlotIndex = slotIndex - 1;
 
     try {
       await _controller.moveAlgorithmUp(sourceSlotIndex);

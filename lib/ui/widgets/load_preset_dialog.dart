@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 
+enum PresetAction { load, append, export }
+
 class LoadPresetDialog extends StatefulWidget {
   final String initialName;
   final SharedPreferences? preferences;
@@ -167,15 +169,20 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
   Future<void> _onAppend() async {
     if (!mounted) return; // Add mounted check
-    await _handlePresetSelection(isAppending: true);
+    await _handlePresetSelection(PresetAction.append);
   }
 
   Future<void> _onLoad() async {
     if (!mounted) return; // Add mounted check
-    await _handlePresetSelection(isAppending: false);
+    await _handlePresetSelection(PresetAction.load);
   }
 
-  Future<void> _handlePresetSelection({required bool isAppending}) async {
+  Future<void> _onExport() async {
+    if (!mounted) return;
+    await _handlePresetSelection(PresetAction.export);
+  }
+
+  Future<void> _handlePresetSelection(PresetAction action) async {
     setState(() {
       _isLoading = true; // Set loading to true
     });
@@ -191,7 +198,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           if (!mounted) return; // Add mounted check
           Navigator.of(context).pop({
             "sdCardPath": trimmed,
-            "append": isAppending,
+            "action": action,
             "displayName": trimmed.split('/').last
           });
           return;
@@ -208,7 +215,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           if (!mounted) return; // Add mounted check
           Navigator.of(context).pop({
             "sdCardPath": pathForEngine,
-            "append": isAppending,
+            "action": action,
             "displayName": trimmed
           });
           return;
@@ -240,7 +247,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           if (!mounted) return; // Add mounted check
           Navigator.of(context).pop({
             "sdCardPath": pathForEngine,
-            "append": isAppending,
+            "action": action,
             "displayName": trimmed
           });
           return;
@@ -558,6 +565,26 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         key: ValueKey('load_preset_dialog_cancel_button'),
         onPressed: _onCancel,
         child: const Text('CANCEL'),
+      ),
+      Builder(
+        builder: (context) {
+          final bool canEnableButtons = !_isLoading &&
+              (_useLiveSdScan ||
+                  (_selectedSdCard != null &&
+                      _controller.text.trim().isNotEmpty));
+          return ElevatedButton(
+            key: ValueKey('load_preset_dialog_export_button'),
+            onPressed: canEnableButtons ? _onExport : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.download, size: 16),
+                SizedBox(width: 4),
+                Text('EXPORT'),
+              ],
+            ),
+          );
+        },
       ),
       Builder(
         builder: (context) {

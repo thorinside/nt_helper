@@ -22,6 +22,8 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 
 import 'package:nt_helper/ui/widgets/floating_screenshot_overlay.dart';
 import 'package:nt_helper/ui/widgets/load_preset_dialog.dart';
+import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
+import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
 import 'package:nt_helper/ui/performance_screen.dart';
@@ -522,9 +524,23 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         );
                         if (presetInfo != null && presetInfo is Map) {
                           final sdCardPath = presetInfo['sdCardPath'];
-                          final append = presetInfo['append'];
-                          if (sdCardPath != null && sdCardPath.isNotEmpty) {
-                            cubit.loadPreset(sdCardPath, append);
+                          final action = presetInfo['action'] as PresetAction?;
+                          if (sdCardPath != null &&
+                              sdCardPath.isNotEmpty &&
+                              action != null) {
+                            switch (action) {
+                              case PresetAction.load:
+                                cubit.loadPreset(sdCardPath, false);
+                                break;
+                              case PresetAction.append:
+                                cubit.loadPreset(sdCardPath, true);
+                                break;
+                              case PresetAction.export:
+                                if (!mounted) return;
+                                await _handlePresetExport(
+                                    context, sdCardPath, cubit);
+                                break;
+                            }
                           }
                         }
                       }
@@ -816,6 +832,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ? null
                   : () async {
                       final info = await PackageInfo.fromPlatform();
+                      if (!mounted) return;
                       showDialog<String>(
                         context: popupCtx,
                         builder: (dialogCtx) => AboutDialog(
@@ -992,6 +1009,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
     Overlay.of(context).insert(overlayEntry);
   }
+
+  Future<void> _handlePresetExport(
+      BuildContext context, sdCardPath, DistingCubit cubit) async {
+    showDialog<void>(
+        context: context,
+        builder: (context) => PresetPackageDialog(
+            presetFilePath: sdCardPath,
+            fileSystem: PresetFileSystemImpl(cubit.requireDisting())));
+  }
 }
 
 /// A vertical list widget that displays algorithm slots in a list view
@@ -1012,7 +1038,7 @@ class AlgorithmListView extends StatelessWidget {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
         return switch (state) {
-          DistingStateSynchronized(slots: final syncState) => ListView.builder(
+          DistingStateSynchronized(slots: final _) => ListView.builder(
               padding: const EdgeInsets.only(top: 8.0),
               itemCount: slots.length,
               itemBuilder: (context, index) {
@@ -1025,8 +1051,7 @@ class AlgorithmListView extends StatelessWidget {
                     cubit.disting()?.let(
                       (manager) {
                         manager.requestSetFocus(index, 0);
-                        manager
-                            .requestSetDisplayMode(DisplayMode.algorithmUI);
+                        manager.requestSetDisplayMode(DisplayMode.algorithmUI);
                       },
                     );
                     if (SettingsService().hapticsEnabled) {

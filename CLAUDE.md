@@ -12,3 +12,6 @@ A Drift database is in the app, to keep track of offline algorithm information.
 - The MCP service handles communication and synchronization between different parts of the application
 - It likely manages the state and interactions for the MIDI device connections and data transfer
 - The MCP service uses a controller to abstract and hide the implementation details of how the Disting cubit works, providing a clean separation of concerns and encapsulation of the underlying device interaction logic
+
+## Synchronization
+- New location of synchronized_screen.dart is lib/synchronized_screen.dart

@@ -1331,7 +1331,7 @@ class DistingCubit extends Cubit<DistingState> {
   Future<void> saveMapping(
       int algorithmIndex, int parameterNumber, PackedMappingData data) async {
     switch (state) {
-      case DistingStateSynchronized syncstate:
+      case DistingStateSynchronized _:
         final disting = requireDisting();
         await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
         await _refreshStateFromManager(); // Refresh state from manager
@@ -1917,7 +1917,6 @@ class DistingCubit extends Cubit<DistingState> {
   /// Returns a sorted list of relative paths (e.g., "presets/my_preset.prst").
   /// Only available if firmware has SD card support.
   Future<List<String>> fetchSdCardPresets() async {
-    final disting = requireDisting();
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
@@ -1938,7 +1937,6 @@ class DistingCubit extends Cubit<DistingState> {
   /// Scans for Lua script plugins in the /programs/lua directory.
   /// Returns a sorted list of .lua files found.
   Future<List<PluginInfo>> fetchLuaPlugins() async {
-    final disting = requireDisting();
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
@@ -1959,7 +1957,6 @@ class DistingCubit extends Cubit<DistingState> {
   /// Scans for 3pot plugins in the /programs/3pot directory.
   /// Returns a sorted list of .3pot files found.
   Future<List<PluginInfo>> fetch3potPlugins() async {
-    final disting = requireDisting();
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
@@ -1980,7 +1977,6 @@ class DistingCubit extends Cubit<DistingState> {
   /// Scans for C++ plugins in the /programs/plug-ins directory.
   /// Returns a sorted list of .o files found.
   Future<List<PluginInfo>> fetchCppPlugins() async {
-    final disting = requireDisting();
     final currentState = state;
 
     if (currentState is! DistingStateSynchronized || currentState.offline) {
@@ -2161,7 +2157,7 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateSelectDevice():
       case DistingStateConnected():
         break;
-      case DistingStateSynchronized syncstate:
+      case DistingStateSynchronized _:
         var disting = requireDisting();
 
         await disting.setParameterString(
