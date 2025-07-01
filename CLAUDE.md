@@ -15,3 +15,10 @@ A Drift database is in the app, to keep track of offline algorithm information.
 
 ## Synchronization
 - New location of synchronized_screen.dart is lib/synchronized_screen.dart
+
+## Preset Export
+- The preset export feature allows users to save and transfer the configuration and settings of a device
+- Implementation involves serializing the current device state and parameters into a portable format
+- Supports exporting presets to a file that can be imported later or shared between devices
+- Likely uses the Drift database to manage and store preset information
+- The export process is abstracted through the MIDI manager interface to support different modes of operation (demo, offline, connected)
