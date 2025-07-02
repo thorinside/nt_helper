@@ -6,6 +6,7 @@ class PackageConfig {
   final bool includeThreePot;
   final bool includeLua;
   final bool includeReadme;
+  final bool includeCommunityPlugins;
 
   const PackageConfig({
     this.includeWavetables = true,
@@ -14,6 +15,7 @@ class PackageConfig {
     this.includeThreePot = true,
     this.includeLua = true,
     this.includeReadme = true,
+    this.includeCommunityPlugins = false,
   });
 
   PackageConfig copyWith({
@@ -23,6 +25,7 @@ class PackageConfig {
     bool? includeThreePot,
     bool? includeLua,
     bool? includeReadme,
+    bool? includeCommunityPlugins,
   }) {
     return PackageConfig(
       includeWavetables: includeWavetables ?? this.includeWavetables,
@@ -31,6 +34,7 @@ class PackageConfig {
       includeThreePot: includeThreePot ?? this.includeThreePot,
       includeLua: includeLua ?? this.includeLua,
       includeReadme: includeReadme ?? this.includeReadme,
+      includeCommunityPlugins: includeCommunityPlugins ?? this.includeCommunityPlugins,
     );
   }
 }

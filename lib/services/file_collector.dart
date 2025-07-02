@@ -1,6 +1,7 @@
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
+import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/util/extensions.dart';
 
 /// Collects dependency files from the file system
@@ -10,7 +11,8 @@ class FileCollector {
   FileCollector(this.fileSystem);
 
   Future<List<CollectedFile>> collectDependencies(
-      PresetDependencies dependencies) async {
+      PresetDependencies dependencies,
+      {PackageConfig? config}) async {
     final List<CollectedFile> files = [];
     final List<String> warnings = [];
     const maxFileSize = 50 * 1024 * 1024; // 50MB limit per file
@@ -72,6 +74,20 @@ class FileCollector {
         });
       } catch (e) {
         warnings.add('Error reading Lua script $script: $e');
+      }
+    }
+
+    // Collect community plugin files (if enabled)
+    if (config?.includeCommunityPlugins == true) {
+      for (final pluginGuid in dependencies.communityPlugins) {
+        final pluginPath = 'programs/plug-ins/$pluginGuid.o';
+        try {
+          (await fileSystem.readFile(pluginPath))?.let((bytes) {
+            files.add(CollectedFile(pluginPath, bytes));
+          });
+        } catch (e) {
+          warnings.add('Community plugin $pluginGuid.o not found locally. Consider downloading from gallery first.');
+        }
       }
     }
 

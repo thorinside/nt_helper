@@ -27,6 +27,7 @@ class SettingsService {
   static const String _mcpEnabledKey = 'mcp_enabled';
   static const String _startPagesCollapsedKey = 'start_pages_collapsed';
   static const String _galleryUrlKey = 'gallery_url';
+  static const String _includeCommunityPluginsKey = 'include_community_plugins_in_presets';
 
   // Default values
   static const int defaultRequestTimeout = 300;
@@ -36,6 +37,7 @@ class SettingsService {
   static const bool defaultStartPagesCollapsed = false;
   static const String defaultGalleryUrl =
       'https://nt-gallery.nosuch.dev/api/gallery.json';
+  static const bool defaultIncludeCommunityPlugins = false;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -95,6 +97,15 @@ class SettingsService {
     return await _prefs?.setString(_galleryUrlKey, value) ?? false;
   }
 
+  /// Check if community plugins should be included in preset packages by default
+  bool get includeCommunityPlugins =>
+      _prefs?.getBool(_includeCommunityPluginsKey) ?? defaultIncludeCommunityPlugins;
+
+  /// Set whether community plugins should be included in preset packages by default
+  Future<bool> setIncludeCommunityPlugins(bool value) async {
+    return await _prefs?.setBool(_includeCommunityPluginsKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -103,6 +114,7 @@ class SettingsService {
     await setMcpEnabled(defaultMcpEnabled);
     await setStartPagesCollapsed(defaultStartPagesCollapsed);
     await setGalleryUrl(defaultGalleryUrl);
+    await setIncludeCommunityPlugins(defaultIncludeCommunityPlugins);
   }
 }
 

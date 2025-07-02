@@ -7,6 +7,7 @@ import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 import 'package:nt_helper/services/package_creator.dart';
+import 'package:nt_helper/services/settings_service.dart';
 
 /// Dialog for creating preset packages
 class PresetPackageDialog extends StatefulWidget {
@@ -33,7 +34,15 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
   @override
   void initState() {
     super.initState();
+    _loadSettings();
     _analyzeDependencies();
+  }
+
+  void _loadSettings() {
+    final settings = SettingsService();
+    config = config.copyWith(
+      includeCommunityPlugins: settings.includeCommunityPlugins,
+    );
   }
 
   Future<void> _analyzeDependencies() async {
@@ -180,8 +189,12 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
             if (dependencies!.communityPlugins.isNotEmpty) ...[
               Text(
                   'Community plugins: ${dependencies!.communityPlugins.length}'),
-              const Text('⚠️ Requires manual installation',
-                  style: TextStyle(color: Colors.orange, fontSize: 12)),
+              if (config.includeCommunityPlugins)
+                const Text('✓ Will be included in package',
+                    style: TextStyle(color: Colors.green, fontSize: 12))
+              else
+                const Text('⚠️ Requires manual installation',
+                    style: TextStyle(color: Colors.orange, fontSize: 12)),
             ],
             if (dependencies!.isEmpty) const Text('No dependencies found'),
           ],
@@ -242,6 +255,20 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
                   () => config = config.copyWith(includeReadme: value)),
               dense: true,
             ),
+            if (dependencies?.hasCommunityPlugins == true)
+              CheckboxListTile(
+                title: const Text('Include Community Plugins'),
+                subtitle: const Text(
+                    'Package community plugins with preset (default: false)'),
+                value: config.includeCommunityPlugins,
+                onChanged: (value) {
+                  setState(() => config = config.copyWith(
+                      includeCommunityPlugins: value));
+                  // Save preference for future exports
+                  SettingsService().setIncludeCommunityPlugins(value ?? false);
+                },
+                dense: true,
+              ),
           ],
         ),
       ),

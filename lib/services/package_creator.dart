@@ -43,7 +43,7 @@ class PackageCreator {
       // Collect dependency files
       final fileCollector = FileCollector(fileSystem);
       final dependencyFiles =
-          await fileCollector.collectDependencies(dependencies);
+          await fileCollector.collectDependencies(dependencies, config: config);
 
       onProgress?.call('Creating package...');
 
@@ -68,7 +68,7 @@ class PackageCreator {
 
       // Add manifest file to top level
       final manifest = _createManifest(
-          presetData, presetFilename, dependencies, dependencyFiles);
+          presetData, presetFilename, dependencies, dependencyFiles, config);
       archive.addFile(ArchiveFile(
         'manifest.json',
         manifest.length,
@@ -77,7 +77,7 @@ class PackageCreator {
 
       // Add README to top level if requested
       if (config.includeReadme) {
-        final readme = _createReadme(presetData, presetFilename, dependencies);
+        final readme = _createReadme(presetData, presetFilename, dependencies, config);
         archive.addFile(ArchiveFile(
           'README.md',
           readme.length,
@@ -110,6 +110,7 @@ class PackageCreator {
     String filename,
     PresetDependencies dependencies,
     List<CollectedFile> files,
+    PackageConfig config,
   ) {
     final manifest = {
       'preset': {
@@ -145,7 +146,14 @@ class PackageCreator {
           'lua': '/programs/lua/',
           'plugins': '/programs/plug-ins/'
         },
-        'instructions': [
+        'instructions': config.includeCommunityPlugins && dependencies.hasCommunityPlugins ? [
+          'Extract this package to a temporary folder',
+          'Copy the entire contents of the root/ folder to the root of your SD card',
+          'The preset will be installed to /presets/',
+          'All dependencies including community plugins will be installed to their correct locations',
+          'Community plugins are included in this package in /programs/plug-ins/',
+          'Load the preset on your Disting NT using the Load Preset function'
+        ] : [
           'Extract this package to a temporary folder',
           'Copy the entire contents of the root/ folder to the root of your SD card',
           'The preset will be installed to /presets/',
@@ -167,6 +175,7 @@ class PackageCreator {
     Map<String, dynamic> presetData,
     String filename,
     PresetDependencies dependencies,
+    PackageConfig config,
   ) {
     final name = presetData['name']?.toString().trim() ?? 'Unknown';
     final author = presetData['author']?.toString().trim() ?? 'Unknown';
@@ -248,11 +257,20 @@ class PackageCreator {
       buffer.writeln(
           '### Community Plugins (${dependencies.communityPlugins.length})');
       for (final plugin in dependencies.communityPlugins) {
-        buffer.writeln('- $plugin (requires separate installation)');
+        if (config.includeCommunityPlugins) {
+          buffer.writeln('- $plugin (included in package)');
+        } else {
+          buffer.writeln('- $plugin (requires separate installation)');
+        }
       }
       buffer.writeln();
-      buffer.writeln(
-          '**Important:** Community plugins must be installed separately according to their individual documentation.\n');
+      if (config.includeCommunityPlugins) {
+        buffer.writeln(
+            '**Note:** Community plugins are included in this package and will be installed to `/programs/plug-ins/`.\n');
+      } else {
+        buffer.writeln(
+            '**Important:** Community plugins must be installed separately according to their individual documentation.\n');
+      }
     }
 
     buffer.writeln('## Notes');
