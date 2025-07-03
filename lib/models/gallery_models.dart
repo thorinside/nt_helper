@@ -1,6 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../services/plugin_metadata_extractor.dart';
 
 part 'gallery_models.freezed.dart';
+
 part 'gallery_models.g.dart';
 
 /// Gallery metadata and configuration
@@ -246,15 +248,33 @@ sealed class Gallery with _$Gallery {
       _$GalleryFromJson(json);
 }
 
+/// Individual plugin within a collection
+@freezed
+sealed class CollectionPlugin with _$CollectionPlugin {
+  const factory CollectionPlugin({
+    required String name,
+    required String relativePath,
+    required String fileType, // 'o', 'lua', '3pot'
+    String? description,
+    int? fileSize,
+    @Default(false) bool selected,
+  }) = _CollectionPlugin;
+
+  factory CollectionPlugin.fromJson(Map<String, dynamic> json) =>
+      _$CollectionPluginFromJson(json);
+}
+
 /// Plugin in the user's install queue
 @freezed
 sealed class QueuedPlugin with _$QueuedPlugin {
   const factory QueuedPlugin({
     required GalleryPlugin plugin,
     required String selectedVersion, // 'latest', 'stable', or 'beta'
+    required bool isCollection,
     @Default(QueuedPluginStatus.queued) QueuedPluginStatus status,
     String? errorMessage,
     double? progress,
+    @Default([]) List<CollectionPlugin> selectedPlugins, // For collections
   }) = _QueuedPlugin;
 
   factory QueuedPlugin.fromJson(Map<String, dynamic> json) =>
@@ -264,6 +284,7 @@ sealed class QueuedPlugin with _$QueuedPlugin {
 /// Status of a queued plugin installation
 enum QueuedPluginStatus {
   queued,
+  analyzing, // Analyzing if plugin is a collection
   downloading,
   extracting,
   installing,
@@ -319,5 +340,47 @@ extension GalleryPluginExtension on GalleryPlugin {
     if (downloads < 1000) return '$downloads';
     if (downloads < 1000000) return '${(downloads / 1000).toStringAsFixed(1)}K';
     return '${(downloads / 1000000).toStringAsFixed(1)}M';
+  }
+}
+
+/// Extension methods for queued plugins
+extension QueuedPluginExtension on QueuedPlugin {
+  /// Check if this queued plugin has selected plugins configured
+  bool get hasSelectedPlugins => selectedPlugins.isNotEmpty;
+
+  /// Get count of selected plugins
+  int get selectedPluginCount =>
+      selectedPlugins.where((p) => p.selected).length;
+
+  /// Get total plugin count in collection
+  int get totalPluginCount => selectedPlugins.length;
+
+  /// Get selection summary text
+  String get selectionSummary {
+    if (!hasSelectedPlugins) return 'Collection';
+    return '$selectedPluginCount of $totalPluginCount plugins selected';
+  }
+}
+
+/// Check if this plugin is actually a collection by analyzing the archive contents
+/// This method requires downloading and checking the actual plugin archive
+Future<bool> isActualCollection(
+  GalleryPlugin plugin,
+  Future<List<int>> Function(GalleryPlugin, String) downloadArchive,
+) async {
+  try {
+// Download and analyze the archive
+    final archiveBytes = await downloadArchive(plugin, plugin.releases.latest);
+    final installableCount =
+        await PluginMetadataExtractor.countInstallablePlugins(
+      archiveBytes,
+      plugin,
+    );
+
+// A true collection has more than 1 installable plugin
+    return installableCount > 1;
+  } catch (e) {
+// If we can't check, fall back to the heuristic
+    return false;
   }
 }

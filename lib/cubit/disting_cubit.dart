@@ -2310,7 +2310,22 @@ class DistingCubit extends Cubit<DistingState> {
         throw Exception("Unsupported plugin file type: .$extension");
     }
 
-    final targetPath = '$targetDirectory/$fileName';
+    // Handle paths that already contain directory structure
+    String targetPath;
+    if (fileName.contains('/')) {
+      // Check if the fileName already starts with the expected directory structure
+      final expectedPrefix = targetDirectory.substring(1); // Remove leading /
+      if (fileName.startsWith(expectedPrefix)) {
+        // The fileName already contains the full path structure, use it as-is
+        targetPath = '/$fileName';
+      } else {
+        // The fileName contains directories but not the expected prefix
+        targetPath = '$targetDirectory/$fileName';
+      }
+    } else {
+      // Simple filename without directory structure
+      targetPath = '$targetDirectory/$fileName';
+    }
     final disting = requireDisting();
     await disting.requestWake();
 

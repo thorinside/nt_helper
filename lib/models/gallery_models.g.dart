@@ -305,28 +305,56 @@ Map<String, dynamic> _$GalleryToJson(_Gallery instance) => <String, dynamic>{
       'plugins': instance.plugins,
     };
 
+_CollectionPlugin _$CollectionPluginFromJson(Map<String, dynamic> json) =>
+    _CollectionPlugin(
+      name: json['name'] as String,
+      relativePath: json['relativePath'] as String,
+      fileType: json['fileType'] as String,
+      description: json['description'] as String?,
+      fileSize: (json['fileSize'] as num?)?.toInt(),
+      selected: json['selected'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$CollectionPluginToJson(_CollectionPlugin instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'relativePath': instance.relativePath,
+      'fileType': instance.fileType,
+      'description': instance.description,
+      'fileSize': instance.fileSize,
+      'selected': instance.selected,
+    };
+
 _QueuedPlugin _$QueuedPluginFromJson(Map<String, dynamic> json) =>
     _QueuedPlugin(
       plugin: GalleryPlugin.fromJson(json['plugin'] as Map<String, dynamic>),
       selectedVersion: json['selectedVersion'] as String,
+      isCollection: json['isCollection'] as bool,
       status:
           $enumDecodeNullable(_$QueuedPluginStatusEnumMap, json['status']) ??
               QueuedPluginStatus.queued,
       errorMessage: json['errorMessage'] as String?,
       progress: (json['progress'] as num?)?.toDouble(),
+      selectedPlugins: (json['selectedPlugins'] as List<dynamic>?)
+              ?.map((e) => CollectionPlugin.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$QueuedPluginToJson(_QueuedPlugin instance) =>
     <String, dynamic>{
       'plugin': instance.plugin,
       'selectedVersion': instance.selectedVersion,
+      'isCollection': instance.isCollection,
       'status': _$QueuedPluginStatusEnumMap[instance.status]!,
       'errorMessage': instance.errorMessage,
       'progress': instance.progress,
+      'selectedPlugins': instance.selectedPlugins,
     };
 
 const _$QueuedPluginStatusEnumMap = {
   QueuedPluginStatus.queued: 'queued',
+  QueuedPluginStatus.analyzing: 'analyzing',
   QueuedPluginStatus.downloading: 'downloading',
   QueuedPluginStatus.extracting: 'extracting',
   QueuedPluginStatus.installing: 'installing',

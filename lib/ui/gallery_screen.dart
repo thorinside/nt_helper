@@ -8,6 +8,8 @@ import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
+import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
+import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 
 /// A beautiful gallery screen for discovering and installing plugins
 class GalleryScreen extends StatelessWidget {
@@ -375,7 +377,7 @@ class _GalleryViewState extends State<_GalleryView>
                       value: null,
                       child: Text('All Categories'),
                     ),
-                    ...(state is GalleryLoaded ? state.gallery.categories : [])
+                    ...(state.gallery.categories)
                         .map(
                       (cat) => PopupMenuItem<String>(
                         value: cat.id,
@@ -769,18 +771,15 @@ class _GalleryViewState extends State<_GalleryView>
                   SizedBox(
                     width: double.infinity,
                     child: () {
-                      final queue = state is GalleryLoaded
-                          ? state.queue
-                          : <QueuedPlugin>[];
                       final isInQueue =
-                          queue.any((q) => q.plugin.id == plugin.id);
+                          state.queue.any((q) => q.plugin.id == plugin.id);
 
                       return ElevatedButton.icon(
                         onPressed: isInQueue
                             ? () => parentContext
                                 .read<GalleryCubit>()
                                 .removeFromQueue(plugin.id)
-                            : () => parentContext
+                            : () async => await parentContext
                                 .read<GalleryCubit>()
                                 .addToQueue(plugin),
                         icon: Icon(isInQueue
@@ -887,10 +886,7 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
-                    onPressed:
-                        queue.any((q) => q.status == QueuedPluginStatus.queued)
-                            ? _installQueue
-                            : null,
+                    onPressed: _canInstallQueue(queue) ? _installQueue : null,
                     icon: const Icon(Icons.download),
                     label: const Text('Install All'),
                   ),
@@ -941,6 +937,22 @@ class _GalleryViewState extends State<_GalleryView>
               children: [
                 if (author != null) Text('by ${author.name}'),
                 Text('Version: ${queuedPlugin.selectedVersion}'),
+                if (queuedPlugin.isCollection) ...[
+                  Text(
+                    queuedPlugin.hasSelectedPlugins
+                        ? queuedPlugin.selectionSummary
+                        : 'Collection (selection needed)',
+                    style: TextStyle(
+                      color: queuedPlugin.hasSelectedPlugins
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                      fontWeight: queuedPlugin.hasSelectedPlugins
+                          ? FontWeight.normal
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ],
                 if (queuedPlugin.status != QueuedPluginStatus.queued) ...[
                   const SizedBox(height: 4),
                   Row(
@@ -975,14 +987,7 @@ class _GalleryViewState extends State<_GalleryView>
             ),
             trailing: (queuedPlugin.status == QueuedPluginStatus.queued ||
                     queuedPlugin.status == QueuedPluginStatus.failed)
-                ? IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () =>
-                        context.read<GalleryCubit>().removeFromQueue(plugin.id),
-                    tooltip: queuedPlugin.status == QueuedPluginStatus.failed
-                        ? 'Dismiss error'
-                        : 'Remove from queue',
-                  )
+                ? _buildQueueActions(queuedPlugin)
                 : null,
           ),
         );
@@ -1006,6 +1011,9 @@ class _GalleryViewState extends State<_GalleryView>
       case QueuedPluginStatus.failed:
         return Icon(Icons.error,
             size: 16, color: Theme.of(context).colorScheme.error);
+      case QueuedPluginStatus.analyzing:
+        return Icon(Icons.query_builder,
+            size: 16, color: Theme.of(context).colorScheme.error);
     }
   }
 
@@ -1023,6 +1031,8 @@ class _GalleryViewState extends State<_GalleryView>
         return 'Completed';
       case QueuedPluginStatus.failed:
         return 'Failed';
+      case QueuedPluginStatus.analyzing:
+        return 'Analyzing...';
     }
   }
 
@@ -1034,6 +1044,218 @@ class _GalleryViewState extends State<_GalleryView>
         return Icons.tune;
       case GalleryPluginType.cpp:
         return Icons.memory;
+    }
+  }
+
+  bool _canInstallQueue(List<QueuedPlugin> queue) {
+    // Check if there are any queued plugins
+    final queuedPlugins =
+        queue.where((q) => q.status == QueuedPluginStatus.queued);
+    if (queuedPlugins.isEmpty) return false;
+
+    // Check if all collections have valid selections
+    for (final queuedPlugin in queuedPlugins) {
+      if (queuedPlugin.isCollection && !queuedPlugin.hasSelectedPlugins) {
+        // Collection without selection - cannot install
+        return false;
+      }
+      if (queuedPlugin.isCollection && queuedPlugin.selectedPluginCount == 0) {
+        // Collection with no selected plugins - cannot install
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Widget _buildQueueActions(QueuedPlugin queuedPlugin) {
+    final plugin = queuedPlugin.plugin;
+
+    // For collections, show both Choose and Remove buttons
+    if (queuedPlugin.isCollection) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Choose button for collections (always show for potential collections)
+          IconButton(
+            icon: Icon(
+              queuedPlugin.hasSelectedPlugins ? Icons.edit : Icons.tune,
+              color: queuedPlugin.hasSelectedPlugins
+                  ? null
+                  : Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => _showPluginSelectionDialog(queuedPlugin),
+            tooltip: queuedPlugin.hasSelectedPlugins
+                ? 'Edit plugin selection'
+                : 'Choose plugins to install',
+          ),
+          // Remove button
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () =>
+                context.read<GalleryCubit>().removeFromQueue(plugin.id),
+            tooltip: queuedPlugin.status == QueuedPluginStatus.failed
+                ? 'Dismiss error'
+                : 'Remove from queue',
+          ),
+        ],
+      );
+    }
+
+    // For single plugins, show only remove button
+    return IconButton(
+      icon: const Icon(Icons.close),
+      onPressed: () => context.read<GalleryCubit>().removeFromQueue(plugin.id),
+      tooltip: queuedPlugin.status == QueuedPluginStatus.failed
+          ? 'Dismiss error'
+          : 'Remove from queue',
+    );
+  }
+
+  Future<void> _showPluginSelectionDialog(QueuedPlugin queuedPlugin) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Loading plugin collection...'),
+            ],
+          ),
+        ),
+      );
+
+      // Download and extract plugin list
+      var galleryCubit = context.read<GalleryCubit>();
+      final galleryService = galleryCubit.galleryService;
+      debugPrint(
+          '[PluginDialog] Downloading archive for ${queuedPlugin.plugin.name}');
+      final archiveBytes = await galleryService.downloadPluginArchive(
+        queuedPlugin.plugin,
+        queuedPlugin.selectedVersion,
+      );
+      debugPrint('[PluginDialog] Downloaded ${archiveBytes.length} bytes');
+
+      // Check if this is actually a collection with multiple installable plugins
+      final installableCount =
+          await PluginMetadataExtractor.countInstallablePlugins(
+        archiveBytes,
+        queuedPlugin.plugin,
+      );
+      debugPrint('[PluginDialog] Found $installableCount installable plugins');
+
+      if (!mounted) return;
+
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // If exactly one installable plugin, auto-select it and skip dialog
+      if (installableCount == 1) {
+        debugPrint('[PluginDialog] Single plugin detected, auto-selecting');
+        final availablePlugins =
+            await PluginMetadataExtractor.extractPluginsFromArchive(
+          archiveBytes,
+          queuedPlugin.plugin,
+        );
+
+        // Auto-select only installable plugins (.o, .lua, .3pot)
+        final autoSelectedPlugins = availablePlugins
+            .map((p) => p.copyWith(
+                selected:
+                    const ['.o', '.lua', '.3pot'].contains('.${p.fileType}')))
+            .toList();
+        galleryCubit.updateQueuedPluginSelection(
+              queuedPlugin.plugin.id,
+              autoSelectedPlugins,
+            );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Auto-selected single plugin from ${queuedPlugin.plugin.name}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // Handle case where no installable plugins found
+      if (installableCount == 0) {
+        debugPrint('[PluginDialog] No installable plugins found');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'No installable plugins found in ${queuedPlugin.plugin.name}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
+      // Multiple installable plugins - show selection dialog
+      final availablePlugins =
+          await PluginMetadataExtractor.extractPluginsFromArchive(
+        archiveBytes,
+        queuedPlugin.plugin,
+      );
+      debugPrint(
+          '[PluginDialog] Extraction returned ${availablePlugins.length} plugins');
+
+      // Initialize selection from existing state, or select all if first time
+      final existingSelection = queuedPlugin.selectedPlugins;
+      final hasExistingSelection = existingSelection.isNotEmpty;
+
+      for (int i = 0; i < availablePlugins.length; i++) {
+        if (hasExistingSelection) {
+          final existing = existingSelection.firstWhere(
+            (p) => p.relativePath == availablePlugins[i].relativePath,
+            orElse: () => availablePlugins[i],
+          );
+          availablePlugins[i] =
+              availablePlugins[i].copyWith(selected: existing.selected);
+        } else {
+          // First time - select all installable plugins by default
+          final isInstallable = const ['.o', '.lua', '.3pot']
+              .contains('.${availablePlugins[i].fileType}');
+          availablePlugins[i] =
+              availablePlugins[i].copyWith(selected: isInstallable);
+        }
+      }
+
+      // Show selection dialog
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => PluginSelectionDialog(
+          plugin: queuedPlugin.plugin,
+          availablePlugins: availablePlugins,
+          onSelectionChanged: (selectedPlugins) {
+            debugPrint(
+                '[PluginDialog] Selection changed: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} plugins selected');
+            galleryCubit.updateQueuedPluginSelection(
+                  queuedPlugin.plugin.id,
+                  selectedPlugins,
+                );
+          },
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog if it's still open
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load plugin collection: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
   }
 
@@ -1055,23 +1277,6 @@ class _GalleryViewState extends State<_GalleryView>
       default:
         return Icons.category;
     }
-  }
-
-  void _showPluginDetails(GalleryPlugin plugin) {
-    showDialog(
-      context: context,
-      builder: (context) => BlocBuilder<GalleryCubit, GalleryState>(
-        builder: (context, state) {
-          if (state is! GalleryLoaded) return const SizedBox.shrink();
-
-          return _PluginDetailsDialog(
-            plugin: plugin,
-            gallery: state.gallery,
-            galleryService: widget.galleryService,
-          );
-        },
-      ),
-    );
   }
 
   Future<void> _installQueue() async {
@@ -1111,6 +1316,7 @@ class _GalleryViewState extends State<_GalleryView>
         },
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Installation failed: $e'),
@@ -1180,6 +1386,7 @@ class _GalleryViewState extends State<_GalleryView>
       final fileName = file.name;
 
       // Install using the Disting cubit
+      if (!mounted) return;
       await context.read<DistingCubit>().installPlugin(
         fileName,
         fileBytes,
@@ -1193,6 +1400,7 @@ class _GalleryViewState extends State<_GalleryView>
       });
 
       // Show success message
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Successfully installed "$fileName"'),
@@ -1311,220 +1519,6 @@ class _GalleryViewState extends State<_GalleryView>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// Plugin details dialog
-class _PluginDetailsDialog extends StatelessWidget {
-  final GalleryPlugin plugin;
-  final Gallery gallery;
-  final GalleryService galleryService;
-
-  const _PluginDetailsDialog({
-    required this.plugin,
-    required this.gallery,
-    required this.galleryService,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final author = plugin.getAuthor(gallery);
-    final category = plugin.getCategory(gallery);
-
-    return Dialog(
-      child: Container(
-        width: 600,
-        height: 500,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (plugin.featured) ...[
-                            Icon(
-                              Icons.star,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Expanded(
-                            child: Text(
-                              plugin.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (author != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'by ${author.name}',
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.7),
-                                  ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Tags and metadata
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Chip(
-                  label: Text(plugin.type.displayName),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                ),
-                if (category != null)
-                  Chip(
-                    label: Text(category.name),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
-                  ),
-                ...plugin.tags.map(
-                  (tag) => Chip(
-                    label: Text(tag),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Description
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      plugin.description,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    if (plugin.longDescription != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        plugin.longDescription!,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-
-                    // Metrics
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.download,
-                          size: 16,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${plugin.formattedDownloads} downloads',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(
-                          Icons.star,
-                          size: 16,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          plugin.formattedRating,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Actions
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                if (plugin.repository.url.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () {
-                      // TODO: Open URL
-                    },
-                    icon: const Icon(Icons.code),
-                    label: const Text('View Source'),
-                  ),
-                const Spacer(),
-                BlocBuilder<GalleryCubit, GalleryState>(
-                  builder: (context, state) {
-                    final queue =
-                        state is GalleryLoaded ? state.queue : <QueuedPlugin>[];
-                    final isInQueue =
-                        queue.any((q) => q.plugin.id == plugin.id);
-
-                    return ElevatedButton.icon(
-                      onPressed: isInQueue
-                          ? () => context
-                              .read<GalleryCubit>()
-                              .removeFromQueue(plugin.id)
-                          : () =>
-                              context.read<GalleryCubit>().addToQueue(plugin),
-                      icon: Icon(isInQueue
-                          ? Icons.remove_from_queue
-                          : Icons.add_to_queue),
-                      label: Text(
-                          isInQueue ? 'Remove from Queue' : 'Add to Queue'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isInQueue
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
-                        foregroundColor: isInQueue
-                            ? Theme.of(context).colorScheme.onError
-                            : Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

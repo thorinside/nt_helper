@@ -3454,12 +3454,265 @@ class __$GalleryCopyWithImpl<$Res> implements _$GalleryCopyWith<$Res> {
 }
 
 /// @nodoc
+mixin _$CollectionPlugin {
+  String get name;
+  String get relativePath;
+  String get fileType; // 'o', 'lua', '3pot'
+  String? get description;
+  int? get fileSize;
+  bool get selected;
+
+  /// Create a copy of CollectionPlugin
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $CollectionPluginCopyWith<CollectionPlugin> get copyWith =>
+      _$CollectionPluginCopyWithImpl<CollectionPlugin>(
+          this as CollectionPlugin, _$identity);
+
+  /// Serializes this CollectionPlugin to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is CollectionPlugin &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.relativePath, relativePath) ||
+                other.relativePath == relativePath) &&
+            (identical(other.fileType, fileType) ||
+                other.fileType == fileType) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.fileSize, fileSize) ||
+                other.fileSize == fileSize) &&
+            (identical(other.selected, selected) ||
+                other.selected == selected));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, name, relativePath, fileType,
+      description, fileSize, selected);
+
+  @override
+  String toString() {
+    return 'CollectionPlugin(name: $name, relativePath: $relativePath, fileType: $fileType, description: $description, fileSize: $fileSize, selected: $selected)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $CollectionPluginCopyWith<$Res> {
+  factory $CollectionPluginCopyWith(
+          CollectionPlugin value, $Res Function(CollectionPlugin) _then) =
+      _$CollectionPluginCopyWithImpl;
+  @useResult
+  $Res call(
+      {String name,
+      String relativePath,
+      String fileType,
+      String? description,
+      int? fileSize,
+      bool selected});
+}
+
+/// @nodoc
+class _$CollectionPluginCopyWithImpl<$Res>
+    implements $CollectionPluginCopyWith<$Res> {
+  _$CollectionPluginCopyWithImpl(this._self, this._then);
+
+  final CollectionPlugin _self;
+  final $Res Function(CollectionPlugin) _then;
+
+  /// Create a copy of CollectionPlugin
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? name = null,
+    Object? relativePath = null,
+    Object? fileType = null,
+    Object? description = freezed,
+    Object? fileSize = freezed,
+    Object? selected = null,
+  }) {
+    return _then(_self.copyWith(
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      relativePath: null == relativePath
+          ? _self.relativePath
+          : relativePath // ignore: cast_nullable_to_non_nullable
+              as String,
+      fileType: null == fileType
+          ? _self.fileType
+          : fileType // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      fileSize: freezed == fileSize
+          ? _self.fileSize
+          : fileSize // ignore: cast_nullable_to_non_nullable
+              as int?,
+      selected: null == selected
+          ? _self.selected
+          : selected // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _CollectionPlugin implements CollectionPlugin {
+  const _CollectionPlugin(
+      {required this.name,
+      required this.relativePath,
+      required this.fileType,
+      this.description,
+      this.fileSize,
+      this.selected = false});
+  factory _CollectionPlugin.fromJson(Map<String, dynamic> json) =>
+      _$CollectionPluginFromJson(json);
+
+  @override
+  final String name;
+  @override
+  final String relativePath;
+  @override
+  final String fileType;
+// 'o', 'lua', '3pot'
+  @override
+  final String? description;
+  @override
+  final int? fileSize;
+  @override
+  @JsonKey()
+  final bool selected;
+
+  /// Create a copy of CollectionPlugin
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$CollectionPluginCopyWith<_CollectionPlugin> get copyWith =>
+      __$CollectionPluginCopyWithImpl<_CollectionPlugin>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$CollectionPluginToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _CollectionPlugin &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.relativePath, relativePath) ||
+                other.relativePath == relativePath) &&
+            (identical(other.fileType, fileType) ||
+                other.fileType == fileType) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.fileSize, fileSize) ||
+                other.fileSize == fileSize) &&
+            (identical(other.selected, selected) ||
+                other.selected == selected));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, name, relativePath, fileType,
+      description, fileSize, selected);
+
+  @override
+  String toString() {
+    return 'CollectionPlugin(name: $name, relativePath: $relativePath, fileType: $fileType, description: $description, fileSize: $fileSize, selected: $selected)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$CollectionPluginCopyWith<$Res>
+    implements $CollectionPluginCopyWith<$Res> {
+  factory _$CollectionPluginCopyWith(
+          _CollectionPlugin value, $Res Function(_CollectionPlugin) _then) =
+      __$CollectionPluginCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String name,
+      String relativePath,
+      String fileType,
+      String? description,
+      int? fileSize,
+      bool selected});
+}
+
+/// @nodoc
+class __$CollectionPluginCopyWithImpl<$Res>
+    implements _$CollectionPluginCopyWith<$Res> {
+  __$CollectionPluginCopyWithImpl(this._self, this._then);
+
+  final _CollectionPlugin _self;
+  final $Res Function(_CollectionPlugin) _then;
+
+  /// Create a copy of CollectionPlugin
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? name = null,
+    Object? relativePath = null,
+    Object? fileType = null,
+    Object? description = freezed,
+    Object? fileSize = freezed,
+    Object? selected = null,
+  }) {
+    return _then(_CollectionPlugin(
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      relativePath: null == relativePath
+          ? _self.relativePath
+          : relativePath // ignore: cast_nullable_to_non_nullable
+              as String,
+      fileType: null == fileType
+          ? _self.fileType
+          : fileType // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      fileSize: freezed == fileSize
+          ? _self.fileSize
+          : fileSize // ignore: cast_nullable_to_non_nullable
+              as int?,
+      selected: null == selected
+          ? _self.selected
+          : selected // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
 mixin _$QueuedPlugin {
   GalleryPlugin get plugin;
   String get selectedVersion; // 'latest', 'stable', or 'beta'
+  bool get isCollection;
   QueuedPluginStatus get status;
   String? get errorMessage;
   double? get progress;
+  List<CollectionPlugin> get selectedPlugins;
 
   /// Create a copy of QueuedPlugin
   /// with the given fields replaced by the non-null parameter values.
@@ -3480,21 +3733,32 @@ mixin _$QueuedPlugin {
             (identical(other.plugin, plugin) || other.plugin == plugin) &&
             (identical(other.selectedVersion, selectedVersion) ||
                 other.selectedVersion == selectedVersion) &&
+            (identical(other.isCollection, isCollection) ||
+                other.isCollection == isCollection) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage) &&
             (identical(other.progress, progress) ||
-                other.progress == progress));
+                other.progress == progress) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedPlugins, selectedPlugins));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, plugin, selectedVersion, status, errorMessage, progress);
+      runtimeType,
+      plugin,
+      selectedVersion,
+      isCollection,
+      status,
+      errorMessage,
+      progress,
+      const DeepCollectionEquality().hash(selectedPlugins));
 
   @override
   String toString() {
-    return 'QueuedPlugin(plugin: $plugin, selectedVersion: $selectedVersion, status: $status, errorMessage: $errorMessage, progress: $progress)';
+    return 'QueuedPlugin(plugin: $plugin, selectedVersion: $selectedVersion, isCollection: $isCollection, status: $status, errorMessage: $errorMessage, progress: $progress, selectedPlugins: $selectedPlugins)';
   }
 }
 
@@ -3507,9 +3771,11 @@ abstract mixin class $QueuedPluginCopyWith<$Res> {
   $Res call(
       {GalleryPlugin plugin,
       String selectedVersion,
+      bool isCollection,
       QueuedPluginStatus status,
       String? errorMessage,
-      double? progress});
+      double? progress,
+      List<CollectionPlugin> selectedPlugins});
 
   $GalleryPluginCopyWith<$Res> get plugin;
 }
@@ -3528,9 +3794,11 @@ class _$QueuedPluginCopyWithImpl<$Res> implements $QueuedPluginCopyWith<$Res> {
   $Res call({
     Object? plugin = null,
     Object? selectedVersion = null,
+    Object? isCollection = null,
     Object? status = null,
     Object? errorMessage = freezed,
     Object? progress = freezed,
+    Object? selectedPlugins = null,
   }) {
     return _then(_self.copyWith(
       plugin: null == plugin
@@ -3541,6 +3809,10 @@ class _$QueuedPluginCopyWithImpl<$Res> implements $QueuedPluginCopyWith<$Res> {
           ? _self.selectedVersion
           : selectedVersion // ignore: cast_nullable_to_non_nullable
               as String,
+      isCollection: null == isCollection
+          ? _self.isCollection
+          : isCollection // ignore: cast_nullable_to_non_nullable
+              as bool,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -3553,6 +3825,10 @@ class _$QueuedPluginCopyWithImpl<$Res> implements $QueuedPluginCopyWith<$Res> {
           ? _self.progress
           : progress // ignore: cast_nullable_to_non_nullable
               as double?,
+      selectedPlugins: null == selectedPlugins
+          ? _self.selectedPlugins
+          : selectedPlugins // ignore: cast_nullable_to_non_nullable
+              as List<CollectionPlugin>,
     ));
   }
 
@@ -3573,9 +3849,12 @@ class _QueuedPlugin implements QueuedPlugin {
   const _QueuedPlugin(
       {required this.plugin,
       required this.selectedVersion,
+      required this.isCollection,
       this.status = QueuedPluginStatus.queued,
       this.errorMessage,
-      this.progress});
+      this.progress,
+      final List<CollectionPlugin> selectedPlugins = const []})
+      : _selectedPlugins = selectedPlugins;
   factory _QueuedPlugin.fromJson(Map<String, dynamic> json) =>
       _$QueuedPluginFromJson(json);
 
@@ -3585,12 +3864,22 @@ class _QueuedPlugin implements QueuedPlugin {
   final String selectedVersion;
 // 'latest', 'stable', or 'beta'
   @override
+  final bool isCollection;
+  @override
   @JsonKey()
   final QueuedPluginStatus status;
   @override
   final String? errorMessage;
   @override
   final double? progress;
+  final List<CollectionPlugin> _selectedPlugins;
+  @override
+  @JsonKey()
+  List<CollectionPlugin> get selectedPlugins {
+    if (_selectedPlugins is EqualUnmodifiableListView) return _selectedPlugins;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_selectedPlugins);
+  }
 
   /// Create a copy of QueuedPlugin
   /// with the given fields replaced by the non-null parameter values.
@@ -3615,21 +3904,32 @@ class _QueuedPlugin implements QueuedPlugin {
             (identical(other.plugin, plugin) || other.plugin == plugin) &&
             (identical(other.selectedVersion, selectedVersion) ||
                 other.selectedVersion == selectedVersion) &&
+            (identical(other.isCollection, isCollection) ||
+                other.isCollection == isCollection) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage) &&
             (identical(other.progress, progress) ||
-                other.progress == progress));
+                other.progress == progress) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedPlugins, _selectedPlugins));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, plugin, selectedVersion, status, errorMessage, progress);
+      runtimeType,
+      plugin,
+      selectedVersion,
+      isCollection,
+      status,
+      errorMessage,
+      progress,
+      const DeepCollectionEquality().hash(_selectedPlugins));
 
   @override
   String toString() {
-    return 'QueuedPlugin(plugin: $plugin, selectedVersion: $selectedVersion, status: $status, errorMessage: $errorMessage, progress: $progress)';
+    return 'QueuedPlugin(plugin: $plugin, selectedVersion: $selectedVersion, isCollection: $isCollection, status: $status, errorMessage: $errorMessage, progress: $progress, selectedPlugins: $selectedPlugins)';
   }
 }
 
@@ -3644,9 +3944,11 @@ abstract mixin class _$QueuedPluginCopyWith<$Res>
   $Res call(
       {GalleryPlugin plugin,
       String selectedVersion,
+      bool isCollection,
       QueuedPluginStatus status,
       String? errorMessage,
-      double? progress});
+      double? progress,
+      List<CollectionPlugin> selectedPlugins});
 
   @override
   $GalleryPluginCopyWith<$Res> get plugin;
@@ -3667,9 +3969,11 @@ class __$QueuedPluginCopyWithImpl<$Res>
   $Res call({
     Object? plugin = null,
     Object? selectedVersion = null,
+    Object? isCollection = null,
     Object? status = null,
     Object? errorMessage = freezed,
     Object? progress = freezed,
+    Object? selectedPlugins = null,
   }) {
     return _then(_QueuedPlugin(
       plugin: null == plugin
@@ -3680,6 +3984,10 @@ class __$QueuedPluginCopyWithImpl<$Res>
           ? _self.selectedVersion
           : selectedVersion // ignore: cast_nullable_to_non_nullable
               as String,
+      isCollection: null == isCollection
+          ? _self.isCollection
+          : isCollection // ignore: cast_nullable_to_non_nullable
+              as bool,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -3692,6 +4000,10 @@ class __$QueuedPluginCopyWithImpl<$Res>
           ? _self.progress
           : progress // ignore: cast_nullable_to_non_nullable
               as double?,
+      selectedPlugins: null == selectedPlugins
+          ? _self._selectedPlugins
+          : selectedPlugins // ignore: cast_nullable_to_non_nullable
+              as List<CollectionPlugin>,
     ));
   }
 

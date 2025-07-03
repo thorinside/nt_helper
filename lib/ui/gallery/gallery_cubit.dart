@@ -94,8 +94,8 @@ class GalleryCubit extends Cubit<GalleryState> {
     ));
   }
 
-  void addToQueue(GalleryPlugin plugin) {
-    _galleryService.addToQueue(plugin);
+  Future<void> addToQueue(GalleryPlugin plugin) async {
+    await _galleryService.addToQueue(plugin);
     // State will be updated automatically via the stream listener
   }
 
@@ -134,4 +134,12 @@ class GalleryCubit extends Cubit<GalleryState> {
 
     return currentState.queue.any((q) => q.plugin.id == pluginId);
   }
+
+  void updateQueuedPluginSelection(String pluginId, List<CollectionPlugin> selectedPlugins) {
+    _galleryService.updateQueuedPluginSelection(pluginId, selectedPlugins);
+    // State will be updated automatically via the stream listener
+  }
+
+  /// Get a reference to the gallery service for direct access to download methods
+  GalleryService get galleryService => _galleryService;
 }

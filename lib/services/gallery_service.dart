@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
 
@@ -82,227 +83,11 @@ class GalleryService {
 
         final jsonData = json.decode(response.body) as Map<String, dynamic>;
 
-        // --- Start of added debug prints ---
-        debugPrint('==== In-depth JSON Data Inspection Start ====');
-        try {
-          debugPrint(
-              'Full jsonData (first 500 chars): ${json.encode(jsonData).substring(0, json.encode(jsonData).length > 500 ? 500 : json.encode(jsonData).length)}...');
-
-          debugPrint('Inspecting Gallery root fields:');
-          debugPrint(
-              '  version: ${jsonData['version']} (type: ${jsonData['version']?.runtimeType})');
-          debugPrint(
-              '  lastUpdated: ${jsonData['lastUpdated']} (type: ${jsonData['lastUpdated']?.runtimeType})');
-
-          if (jsonData['metadata'] != null && jsonData['metadata'] is Map) {
-            final meta = jsonData['metadata'] as Map<String, dynamic>;
-            debugPrint(
-                '  metadata.name: ${meta['name']} (type: ${meta['name']?.runtimeType})');
-            debugPrint(
-                '  metadata.description: ${meta['description']} (type: ${meta['description']?.runtimeType})');
-            if (meta['maintainer'] != null && meta['maintainer'] is Map) {
-              final maintainer = meta['maintainer'] as Map<String, dynamic>;
-              debugPrint(
-                  '  metadata.maintainer.name: ${maintainer['name']} (type: ${maintainer['name']?.runtimeType})');
-              debugPrint(
-                  '  metadata.maintainer.email: ${maintainer['email']} (type: ${maintainer['email']?.runtimeType})');
-              debugPrint(
-                  '  metadata.maintainer.url: ${maintainer['url']} (type: ${maintainer['url']?.runtimeType})');
-            } else {
-              debugPrint(
-                  '  metadata.maintainer is null or not a Map. Value: ${meta['maintainer']}');
-            }
-          } else {
-            debugPrint(
-                '  metadata is null or not a Map. Value: ${jsonData['metadata']}');
-          }
-
-          if (jsonData['categories'] != null &&
-              jsonData['categories'] is List) {
-            final categoriesList = jsonData['categories'] as List;
-            if (categoriesList.isNotEmpty) {
-              final category = categoriesList.first as Map<String, dynamic>;
-              debugPrint('Inspecting first category:');
-              debugPrint(
-                  '  category.id: ${category['id']} (type: ${category['id']?.runtimeType})');
-              debugPrint(
-                  '  category.name: ${category['name']} (type: ${category['name']?.runtimeType})');
-              debugPrint(
-                  '  category.description: ${category['description']} (type: ${category['description']?.runtimeType})');
-              debugPrint(
-                  '  category.icon: ${category['icon']} (type: ${category['icon']?.runtimeType})');
-            } else {
-              debugPrint('  categories list is empty.');
-            }
-          } else {
-            debugPrint(
-                '  categories is null or not a List. Value: ${jsonData['categories']}');
-          }
-
-          if (jsonData['authors'] != null && jsonData['authors'] is Map) {
-            final authorsMap = jsonData['authors'] as Map<String, dynamic>;
-            if (authorsMap.isNotEmpty) {
-              final firstAuthorKey = authorsMap.keys.first;
-              final author = authorsMap[firstAuthorKey] as Map<String, dynamic>;
-              debugPrint('Inspecting first author ("$firstAuthorKey"):');
-              debugPrint(
-                  '  author.name: ${author['name']} (type: ${author['name']?.runtimeType})');
-              debugPrint(
-                  '  author.bio: ${author['bio']} (type: ${author['bio']?.runtimeType})');
-              debugPrint(
-                  '  author.website: ${author['website']} (type: ${author['website']?.runtimeType})');
-              debugPrint(
-                  '  author.avatar: ${author['avatar']} (type: ${author['avatar']?.runtimeType})');
-            } else {
-              debugPrint('  authors map is empty.');
-            }
-          } else {
-            debugPrint(
-                '  authors is null or not a Map. Value: ${jsonData['authors']}');
-          }
-
-          if (jsonData['plugins'] != null && jsonData['plugins'] is List) {
-            final pluginsList = jsonData['plugins'] as List;
-            if (pluginsList.isNotEmpty) {
-              final plugin = pluginsList.first as Map<String, dynamic>;
-              debugPrint('Inspecting first plugin:');
-              debugPrint(
-                  '  plugin.id: ${plugin['id']} (type: ${plugin['id']?.runtimeType})');
-              debugPrint(
-                  '  plugin.name: ${plugin['name']} (type: ${plugin['name']?.runtimeType})');
-              debugPrint(
-                  '  plugin.description: ${plugin['description']} (type: ${plugin['description']?.runtimeType})');
-              debugPrint(
-                  '  plugin.longDescription: ${plugin['longDescription']} (type: ${plugin['longDescription']?.runtimeType})');
-              debugPrint(
-                  '  plugin.type: ${plugin['type']} (type: ${plugin['type']?.runtimeType})');
-              debugPrint(
-                  '  plugin.category: ${plugin['category']} (type: ${plugin['category']?.runtimeType})');
-              debugPrint(
-                  '  plugin.author: ${plugin['author']} (type: ${plugin['author']?.runtimeType})');
-
-              // --- Start: Added prints for plugin.tags ---
-              if (plugin['tags'] != null && plugin['tags'] is List) {
-                final tagsList = plugin['tags'] as List;
-                debugPrint('  plugin.tags (count: ${tagsList.length}):');
-                for (int i = 0; i < tagsList.length; i++) {
-                  debugPrint(
-                      '    tag[$i]: ${tagsList[i]} (type: ${tagsList[i]?.runtimeType})');
-                }
-              } else {
-                debugPrint(
-                    '  plugin.tags is null or not a List. Value: ${plugin['tags']}');
-              }
-              // --- End: Added prints for plugin.tags ---
-
-              if (plugin['repository'] != null && plugin['repository'] is Map) {
-                final repo = plugin['repository'] as Map<String, dynamic>;
-                debugPrint(
-                    '  plugin.repository.owner: ${repo['owner']} (type: ${repo['owner']?.runtimeType})');
-                debugPrint(
-                    '  plugin.repository.name: ${repo['name']} (type: ${repo['name']?.runtimeType})');
-                debugPrint(
-                    '  plugin.repository.url: ${repo['url']} (type: ${repo['url']?.runtimeType})');
-                debugPrint(
-                    '  plugin.repository.branch: ${repo['branch']} (type: ${repo['branch']?.runtimeType})');
-              } else {
-                debugPrint(
-                    '  plugin.repository is null or not a Map. Value: ${plugin['repository']}');
-              }
-
-              if (plugin['releases'] != null && plugin['releases'] is Map) {
-                final releases = plugin['releases'] as Map<String, dynamic>;
-                debugPrint(
-                    '  plugin.releases.latest: ${releases['latest']} (type: ${releases['latest']?.runtimeType})');
-                debugPrint(
-                    '  plugin.releases.stable: ${releases['stable']} (type: ${releases['stable']?.runtimeType})');
-                debugPrint(
-                    '  plugin.releases.beta: ${releases['beta']} (type: ${releases['beta']?.runtimeType})');
-              } else {
-                debugPrint(
-                    '  plugin.releases is null or not a Map. Value: ${plugin['releases']}');
-              }
-
-              if (plugin['installation'] != null &&
-                  plugin['installation'] is Map) {
-                final installation =
-                    plugin['installation'] as Map<String, dynamic>;
-                debugPrint(
-                    '  plugin.installation.targetPath: ${installation['targetPath']} (type: ${installation['targetPath']?.runtimeType})');
-                debugPrint(
-                    '  plugin.installation.subdirectory: ${installation['subdirectory']} (type: ${installation['subdirectory']?.runtimeType})');
-                debugPrint(
-                    '  plugin.installation.assetPattern: ${installation['assetPattern']} (type: ${installation['assetPattern']?.runtimeType})');
-                debugPrint(
-                    '  plugin.installation.extractPattern: ${installation['extractPattern']} (type: ${installation['extractPattern']?.runtimeType})');
-                debugPrint(
-                    '  plugin.installation.sourceDirectoryPath: ${installation['sourceDirectoryPath']} (type: ${installation['sourceDirectoryPath']?.runtimeType})');
-              } else {
-                debugPrint(
-                    '  plugin.installation is null or not a Map. Value: ${plugin['installation']}');
-              }
-
-              // --- Start: Added prints for plugin.compatibility.requiredFeatures ---
-              if (plugin['compatibility'] != null &&
-                  plugin['compatibility'] is Map) {
-                final compatibility =
-                    plugin['compatibility'] as Map<String, dynamic>;
-                debugPrint(
-                    '  plugin.compatibility.minFirmwareVersion: ${compatibility['minFirmwareVersion']} (type: ${compatibility['minFirmwareVersion']?.runtimeType})');
-                debugPrint(
-                    '  plugin.compatibility.maxFirmwareVersion: ${compatibility['maxFirmwareVersion']} (type: ${compatibility['maxFirmwareVersion']?.runtimeType})');
-                if (compatibility['requiredFeatures'] != null &&
-                    compatibility['requiredFeatures'] is List) {
-                  final featuresList =
-                      compatibility['requiredFeatures'] as List;
-                  debugPrint(
-                      '  plugin.compatibility.requiredFeatures (count: ${featuresList.length}):');
-                  for (int i = 0; i < featuresList.length; i++) {
-                    debugPrint(
-                        '    feature[$i]: ${featuresList[i]} (type: ${featuresList[i]?.runtimeType})');
-                  }
-                } else {
-                  debugPrint(
-                      '  plugin.compatibility.requiredFeatures is null or not a List. Value: ${compatibility['requiredFeatures']}');
-                }
-              } else {
-                debugPrint(
-                    '  plugin.compatibility is null or not a Map. Value: ${plugin['compatibility']}');
-              }
-              // --- End: Added prints for plugin.compatibility.requiredFeatures ---
-
-              if (plugin['screenshots'] != null &&
-                  plugin['screenshots'] is List) {
-                final screenshotsList = plugin['screenshots'] as List;
-                if (screenshotsList.isNotEmpty) {
-                  final screenshot =
-                      screenshotsList.first as Map<String, dynamic>;
-                  debugPrint('  Inspecting first plugin screenshot:');
-                  debugPrint(
-                      '    screenshot.url: ${screenshot['url']} (type: ${screenshot['url']?.runtimeType})');
-                  debugPrint(
-                      '    screenshot.caption: ${screenshot['caption']} (type: ${screenshot['caption']?.runtimeType})');
-                  debugPrint(
-                      '    screenshot.thumbnail: ${screenshot['thumbnail']} (type: ${screenshot['thumbnail']?.runtimeType})');
-                } else {
-                  debugPrint('  plugin.screenshots list is empty.');
-                }
-              } else {
-                debugPrint(
-                    '  plugin.screenshots is null or not a List. Value: ${plugin['screenshots']}');
-              }
-            } else {
-              debugPrint('  plugins list is empty.');
-            }
-          } else {
-            debugPrint(
-                '  plugins is null or not a List. Value: ${jsonData['plugins']}');
-          }
-        } catch (e, s) {
-          debugPrint('Error during detailed JSON inspection: $e\n$s');
-        }
-        debugPrint('==== In-depth JSON Data Inspection End ====');
-        // --- End of added debug prints ---
+        // Log basic gallery information
+        debugPrint('Gallery parsed successfully:');
+        debugPrint('  Version: ${jsonData['version']}');
+        debugPrint('  Plugins: ${(jsonData['plugins'] as List?)?.length ?? 0}');
+        debugPrint('  Categories: ${(jsonData['categories'] as List?)?.length ?? 0}');
 
         final gallery = Gallery.fromJson(jsonData);
 
@@ -367,29 +152,112 @@ class GalleryService {
     return plugins;
   }
 
-  /// Add plugin to install queue
-  void addToQueue(GalleryPlugin plugin, {String version = 'latest'}) {
+  /// Add plugin to install queue with metadata extraction
+  Future<void> addToQueue(GalleryPlugin plugin, {String version = 'latest'}) async {
     // Check if already in queue
     final existingIndex =
         _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
 
+    QueuedPlugin queuedPlugin;
+    
     if (existingIndex >= 0) {
       // Update existing entry
-      _installQueue[existingIndex] = _installQueue[existingIndex].copyWith(
+      queuedPlugin = _installQueue[existingIndex].copyWith(
         selectedVersion: version,
         status: QueuedPluginStatus.queued,
         errorMessage: null,
         progress: null,
       );
+      _installQueue[existingIndex] = queuedPlugin;
     } else {
       // Add new entry
-      _installQueue.add(QueuedPlugin(
+      final bool isCollection = await isActualCollection(plugin, downloadPluginArchive);
+      queuedPlugin = QueuedPlugin(
         plugin: plugin,
         selectedVersion: version,
-      ));
+        isCollection: isCollection,
+      );
+      _installQueue.add(queuedPlugin);
     }
 
     _notifyQueueChanged();
+
+    // Extract metadata asynchronously to determine if it's a collection
+    _extractPluginMetadata(queuedPlugin);
+  }
+
+  /// Extract plugin metadata to determine if it's a collection
+  Future<void> _extractPluginMetadata(QueuedPlugin queuedPlugin) async {
+    try {
+      final plugin = queuedPlugin.plugin;
+      debugPrint('Extracting metadata for plugin: ${plugin.name}');
+
+      // Skip if already processed or if it's clearly not a collection
+      if (queuedPlugin.selectedPlugins.isNotEmpty || !queuedPlugin.isCollection) {
+        debugPrint('Plugin ${plugin.name} already processed or not a collection');
+        return;
+      }
+
+      // Update status to analyzing
+      final queueIndex = _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+      if (queueIndex >= 0) {
+        _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
+          status: QueuedPluginStatus.analyzing,
+        );
+        _notifyQueueChanged();
+      }
+
+      // Download the plugin archive
+      final archiveBytes = await downloadPluginArchive(plugin, queuedPlugin.selectedVersion);
+
+      // Count installable plugins to determine if it's a collection
+      final pluginCount = await PluginMetadataExtractor.countInstallablePlugins(
+        archiveBytes,
+        plugin,
+      );
+
+      debugPrint('Plugin ${plugin.name} has $pluginCount installable files');
+
+      if (pluginCount > 1) {
+        // This is a collection - extract the plugin list
+        debugPrint('Extracting collection plugins for ${plugin.name}');
+        final collectionPlugins = await PluginMetadataExtractor.extractPluginsFromArchive(
+          archiveBytes,
+          plugin,
+        );
+
+        // Filter to only include installable plugins (.o, .lua, .3pot files)
+        final installablePlugins = collectionPlugins
+            .where((p) => const ['o', 'lua', '3pot'].contains(p.fileType))
+            .map((p) => p.copyWith(selected: true)) // Default to all selected
+            .toList();
+
+        // Update the queued plugin with the collection data
+        final queueIndex = _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+        if (queueIndex >= 0) {
+          _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
+            selectedPlugins: installablePlugins,
+            status: QueuedPluginStatus.queued,
+          );
+          _notifyQueueChanged();
+          debugPrint('Updated ${plugin.name} with ${installablePlugins.length} collection plugins (all selected by default)');
+        }
+      } else {
+        debugPrint('Plugin ${plugin.name} is a singular plugin');
+        // Reset status back to queued for singular plugins
+        final queueIndex = _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+        if (queueIndex >= 0) {
+          _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
+            status: QueuedPluginStatus.queued,
+          );
+          _notifyQueueChanged();
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to extract metadata for ${queuedPlugin.plugin.name}: $e');
+      // Don't fail the queue operation if metadata extraction fails
+      // The plugin will be treated as a singular plugin
+    }
   }
 
   /// Remove plugin from install queue
@@ -416,6 +284,38 @@ class GalleryService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Update selected plugins for a queued plugin collection
+  void updateQueuedPluginSelection(String pluginId, List<CollectionPlugin> selectedPlugins) {
+    debugPrint('[GalleryService] Updating plugin selection for $pluginId: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} selected');
+    final index = _installQueue.indexWhere((q) => q.plugin.id == pluginId);
+    if (index >= 0) {
+      _installQueue[index] = _installQueue[index].copyWith(
+        selectedPlugins: selectedPlugins,
+      );
+      debugPrint('[GalleryService] Queue updated successfully');
+      _notifyQueueChanged();
+    } else {
+      debugPrint('[GalleryService] Plugin not found in queue: $pluginId');
+    }
+  }
+
+  /// Download plugin archive for a specific version
+  Future<List<int>> downloadPluginArchive(GalleryPlugin plugin, String version) async {
+    final release = plugin.getVersionTag(version);
+    final downloadUrl = await _getDownloadUrl(plugin, release);
+    
+    debugPrint('Downloading plugin archive from: $downloadUrl');
+    
+    final response = await http.get(Uri.parse(downloadUrl));
+    if (response.statusCode != 200) {
+      throw GalleryException(
+        'Failed to download plugin archive: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+    
+    return response.bodyBytes;
   }
 
   /// Install all plugins in the queue using Disting upload functionality
@@ -554,7 +454,7 @@ class GalleryService {
           status: QueuedPluginStatus.extracting, progress: 0.6);
 
       // Extract the zip archive
-      filesToInstall = await _extractArchive(fileBytes, plugin);
+      filesToInstall = await _extractArchive(fileBytes, plugin, queuedPlugin: queuedPlugin);
     } else if (_isRawPluginFile(fileExtension)) {
       // Handle raw plugin files (.o, .lua, .3pot)
       debugPrint('Processing raw plugin file: $fileName');
@@ -592,26 +492,20 @@ class GalleryService {
   Future<String> _getDownloadUrl(GalleryPlugin plugin, String version) async {
     final repo = plugin.repository;
 
-    debugPrint(
-        '🔍 _getDownloadUrl: Getting download URL for ${plugin.name} v$version');
+    debugPrint('Getting download URL for ${plugin.name} v$version');
 
     // Priority 1: Use direct download URL from installation config if available
     if (plugin.installation.downloadUrl != null &&
         plugin.installation.downloadUrl!.isNotEmpty) {
-      debugPrint(
-          '🔍 _getDownloadUrl: Using direct downloadUrl: ${plugin.installation.downloadUrl}');
+      debugPrint('Using direct downloadUrl: ${plugin.installation.downloadUrl}');
       return plugin.installation.downloadUrl!;
     }
 
     // Priority 2: Fall back to GitHub API release asset discovery
-    debugPrint(
-        '🔍 _getDownloadUrl: No downloadUrl found, falling back to GitHub API for ${repo.owner}/${repo.name} version $version');
+    debugPrint('Falling back to GitHub API for ${repo.owner}/${repo.name} v$version');
 
     // Get release with assets
-    final apiUrl =
-        'https://api.github.com/repos/${repo.owner}/${repo.name}/releases/tags/$version';
-    debugPrint(
-        '🔍 _getDownloadUrl: Checking GitHub API for release assets: $apiUrl');
+    final apiUrl = 'https://api.github.com/repos/${repo.owner}/${repo.name}/releases/tags/$version';
 
     try {
       final response = await http.get(
@@ -619,15 +513,9 @@ class GalleryService {
         headers: {'Accept': 'application/vnd.github.v3+json'},
       );
 
-      debugPrint(
-          '🔍 _getDownloadUrl: GitHub API response status: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final releaseData = json.decode(response.body) as Map<String, dynamic>;
         final assets = releaseData['assets'] as List;
-
-        debugPrint(
-            '🔍 _getDownloadUrl: Found release with ${assets.length} assets');
 
         if (assets.isNotEmpty) {
           // Filter out GitHub's automatic source code assets
@@ -654,28 +542,21 @@ class GalleryService {
             final asset = pluginAssets.first as Map<String, dynamic>;
             final assetUrl = asset['browser_download_url'] as String;
             final assetName = asset['name'] as String;
-            debugPrint('🔍 _getDownloadUrl: Using plugin asset: $assetName');
-            debugPrint('🔍 _getDownloadUrl: Asset URL: $assetUrl');
+            debugPrint('Using plugin asset: $assetName');
             return assetUrl;
           } else {
-            debugPrint(
-                '🔍 _getDownloadUrl: No plugin assets found (only source code assets)');
             throw GalleryException(
                 'Release has no plugin assets - only source code found');
           }
         } else {
-          debugPrint('🔍 _getDownloadUrl: Release exists but has no assets');
           throw GalleryException('Release has no assets');
         }
       } else {
-        debugPrint(
-            '🔍 _getDownloadUrl: Release not found (${response.statusCode})');
         throw GalleryException(
             'Release $version not found for ${repo.owner}/${repo.name}');
       }
     } catch (e) {
       if (e is GalleryException) rethrow;
-      debugPrint('🔍 _getDownloadUrl: GitHub API error: $e');
       throw GalleryException(
           'Failed to fetch release $version for ${repo.owner}/${repo.name}: $e');
     }
@@ -714,8 +595,9 @@ class GalleryService {
   /// Extract archive and filter relevant files
   Future<List<MapEntry<String, List<int>>>> _extractArchive(
     List<int> archiveBytes,
-    GalleryPlugin plugin,
-  ) async {
+    GalleryPlugin plugin, {
+    QueuedPlugin? queuedPlugin,
+  }) async {
     final archive = ZipDecoder().decodeBytes(archiveBytes);
     final extractedFiles = <MapEntry<String, List<int>>>[];
     final installation = plugin.installation;
@@ -775,6 +657,19 @@ class GalleryService {
             !extractRegex.hasMatch(originalFileNameOnly)) {
           debugPrint(
               'Skipping file (does not match extract pattern): ${file.name}');
+          continue;
+        }
+      }
+
+      // Check if this file should be included based on plugin selection
+      if (queuedPlugin?.hasSelectedPlugins == true) {
+        final selectedPaths = queuedPlugin!.selectedPlugins
+            .where((p) => p.selected)
+            .map((p) => p.relativePath)
+            .toSet();
+        
+        if (!selectedPaths.contains(filePath)) {
+          debugPrint('Skipping file (not selected): ${file.name} -> $filePath');
           continue;
         }
       }
