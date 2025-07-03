@@ -12,6 +12,7 @@ class Algorithms extends Table {
   TextColumn get guid => text()(); // Primary key based on the 4-char GUID
   TextColumn get name => text()();
   IntColumn get numSpecifications => integer()();
+  TextColumn get pluginFilePath => text().nullable()(); // Path to .o file for community plugins
 
   @override
   Set<Column> get primaryKey => {guid};

@@ -72,6 +72,7 @@ dependencies:
 
   archive: ^4.0.7
   provider: ^6.1.5
+  dart_elf: ^1.0.1
 
 dev_dependencies:
   flutter_test:

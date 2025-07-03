@@ -8,16 +8,19 @@ import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/services/preset_analyzer.dart';
 import 'package:nt_helper/services/package_creator.dart';
 import 'package:nt_helper/services/settings_service.dart';
+import 'package:nt_helper/db/database.dart';
 
 /// Dialog for creating preset packages
 class PresetPackageDialog extends StatefulWidget {
   final String presetFilePath; // e.g., "presets/MyPreset.json"
   final PresetFileSystem fileSystem;
+  final AppDatabase database;
 
   const PresetPackageDialog({
     super.key,
     required this.presetFilePath,
     required this.fileSystem,
+    required this.database,
   });
 
   @override
@@ -84,7 +87,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       );
 
       if (outputPath != null) {
-        final packageCreator = PackageCreator(widget.fileSystem);
+        final packageCreator = PackageCreator(widget.fileSystem, widget.database);
         final packageBytes = await packageCreator.createPackage(
           presetFilePath: widget.presetFilePath,
           config: config,

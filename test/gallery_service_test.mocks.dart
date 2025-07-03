@@ -331,6 +331,12 @@ class MockSettingsService extends _i1.Mock implements _i7.SettingsService {
       ) as String);
 
   @override
+  bool get includeCommunityPlugins => (super.noSuchMethod(
+        Invocation.getter(#includeCommunityPlugins),
+        returnValue: false,
+      ) as bool);
+
+  @override
   _i3.Future<void> init() => (super.noSuchMethod(
         Invocation.method(
           #init,
@@ -389,6 +395,16 @@ class MockSettingsService extends _i1.Mock implements _i7.SettingsService {
   _i3.Future<bool> setGalleryUrl(String? value) => (super.noSuchMethod(
         Invocation.method(
           #setGalleryUrl,
+          [value],
+        ),
+        returnValue: _i3.Future<bool>.value(false),
+      ) as _i3.Future<bool>);
+
+  @override
+  _i3.Future<bool> setIncludeCommunityPlugins(bool? value) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setIncludeCommunityPlugins,
           [value],
         ),
         returnValue: _i3.Future<bool>.value(false),

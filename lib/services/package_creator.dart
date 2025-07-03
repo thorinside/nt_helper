@@ -6,14 +6,16 @@ import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
 import 'package:nt_helper/models/package_config.dart';
+import 'package:nt_helper/db/database.dart';
 import 'preset_analyzer.dart';
 import 'file_collector.dart';
 
 /// Creates preset packages with all dependencies
 class PackageCreator {
   final PresetFileSystem fileSystem;
+  final AppDatabase database;
 
-  PackageCreator(this.fileSystem);
+  PackageCreator(this.fileSystem, this.database);
 
   Future<Uint8List> createPackage({
     required String presetFilePath, // e.g., "presets/MyPreset.json"
@@ -41,7 +43,7 @@ class PackageCreator {
       onProgress?.call('Collecting files...');
 
       // Collect dependency files
-      final fileCollector = FileCollector(fileSystem);
+      final fileCollector = FileCollector(fileSystem, database);
       final dependencyFiles =
           await fileCollector.collectDependencies(dependencies, config: config);
 

@@ -273,6 +273,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  dart_elf:
+    dependency: "direct main"
+    description:
+      name: dart_elf
+      sha256: e036820202afe7f5f3d8003a6488168a97ec6d8e7b8ecd6ce1b36ba077b7f222
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   dart_style:
     dependency: transitive
     description:

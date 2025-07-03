@@ -29,6 +29,34 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Update plugin file path for a specific algorithm by GUID
+  Future<void> updateAlgorithmPluginFilePath(String guid, String? pluginFilePath) {
+    return (update(algorithms)..where((a) => a.guid.equals(guid)))
+        .write(AlgorithmsCompanion(pluginFilePath: Value(pluginFilePath)));
+  }
+
+  /// Get algorithm by GUID (useful for checking if algorithm exists)
+  Future<AlgorithmEntry?> getAlgorithmByGuid(String guid) {
+    return (select(algorithms)..where((a) => a.guid.equals(guid)))
+        .getSingleOrNull();
+  }
+
+  /// Get plugin file paths for the specified GUIDs
+  /// Returns a Map of GUID -> plugin file path for GUIDs that have plugin file paths
+  Future<Map<String, String>> getPluginFilePathsByGuids(Set<String> guids) async {
+    if (guids.isEmpty) return {};
+    
+    final query = select(algorithms)
+      ..where((a) => a.guid.isIn(guids.toList()) & a.pluginFilePath.isNotNull());
+    
+    final results = await query.get();
+    return {
+      for (final algo in results)
+        if (algo.pluginFilePath != null)
+          algo.guid: algo.pluginFilePath!
+    };
+  }
+
   Future<void> upsertSpecifications(List<SpecificationEntry> entries) {
     return batch((batch) {
       batch.insertAll(specifications, entries,

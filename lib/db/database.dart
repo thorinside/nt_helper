@@ -49,7 +49,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4; // Incremented schema version
+  int get schemaVersion => 5; // Incremented schema version
 
   // Access DAOs (Drift generates getters)
   // MetadataDao get metadataDao => MetadataDao(this); // This getter is generated
@@ -105,6 +105,19 @@ class AppDatabase extends _$AppDatabase {
             } catch (e) {
               debugPrint(
                   "Migration error adding PluginInstallations table: $e");
+            }
+          }
+
+          // Migration for version 5: Add pluginFilePath column to algorithms table
+          if (from <= 4) {
+            try {
+              debugPrint("Adding pluginFilePath column to algorithms table...");
+              await m.addColumn(algorithms, algorithms.pluginFilePath);
+              debugPrint(
+                  "Migration successful: Added pluginFilePath column to algorithms table.");
+            } catch (e) {
+              debugPrint(
+                  "Migration error adding pluginFilePath column: $e");
             }
           }
         },

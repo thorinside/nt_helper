@@ -25,8 +25,15 @@ class $AlgorithmsTable extends Algorithms
   late final GeneratedColumn<int> numSpecifications = GeneratedColumn<int>(
       'num_specifications', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _pluginFilePathMeta =
+      const VerificationMeta('pluginFilePath');
   @override
-  List<GeneratedColumn> get $columns => [guid, name, numSpecifications];
+  late final GeneratedColumn<String> pluginFilePath = GeneratedColumn<String>(
+      'plugin_file_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [guid, name, numSpecifications, pluginFilePath];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -57,6 +64,12 @@ class $AlgorithmsTable extends Algorithms
     } else if (isInserting) {
       context.missing(_numSpecificationsMeta);
     }
+    if (data.containsKey('plugin_file_path')) {
+      context.handle(
+          _pluginFilePathMeta,
+          pluginFilePath.isAcceptableOrUnknown(
+              data['plugin_file_path']!, _pluginFilePathMeta));
+    }
     return context;
   }
 
@@ -72,6 +85,8 @@ class $AlgorithmsTable extends Algorithms
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       numSpecifications: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}num_specifications'])!,
+      pluginFilePath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}plugin_file_path']),
     );
   }
 
@@ -85,16 +100,21 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
   final String guid;
   final String name;
   final int numSpecifications;
+  final String? pluginFilePath;
   const AlgorithmEntry(
       {required this.guid,
       required this.name,
-      required this.numSpecifications});
+      required this.numSpecifications,
+      this.pluginFilePath});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['guid'] = Variable<String>(guid);
     map['name'] = Variable<String>(name);
     map['num_specifications'] = Variable<int>(numSpecifications);
+    if (!nullToAbsent || pluginFilePath != null) {
+      map['plugin_file_path'] = Variable<String>(pluginFilePath);
+    }
     return map;
   }
 
@@ -103,6 +123,9 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
       guid: Value(guid),
       name: Value(name),
       numSpecifications: Value(numSpecifications),
+      pluginFilePath: pluginFilePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pluginFilePath),
     );
   }
 
@@ -113,6 +136,7 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
       guid: serializer.fromJson<String>(json['guid']),
       name: serializer.fromJson<String>(json['name']),
       numSpecifications: serializer.fromJson<int>(json['numSpecifications']),
+      pluginFilePath: serializer.fromJson<String?>(json['pluginFilePath']),
     );
   }
   @override
@@ -122,15 +146,21 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
       'guid': serializer.toJson<String>(guid),
       'name': serializer.toJson<String>(name),
       'numSpecifications': serializer.toJson<int>(numSpecifications),
+      'pluginFilePath': serializer.toJson<String?>(pluginFilePath),
     };
   }
 
   AlgorithmEntry copyWith(
-          {String? guid, String? name, int? numSpecifications}) =>
+          {String? guid,
+          String? name,
+          int? numSpecifications,
+          Value<String?> pluginFilePath = const Value.absent()}) =>
       AlgorithmEntry(
         guid: guid ?? this.guid,
         name: name ?? this.name,
         numSpecifications: numSpecifications ?? this.numSpecifications,
+        pluginFilePath:
+            pluginFilePath.present ? pluginFilePath.value : this.pluginFilePath,
       );
   AlgorithmEntry copyWithCompanion(AlgorithmsCompanion data) {
     return AlgorithmEntry(
@@ -139,6 +169,9 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
       numSpecifications: data.numSpecifications.present
           ? data.numSpecifications.value
           : this.numSpecifications,
+      pluginFilePath: data.pluginFilePath.present
+          ? data.pluginFilePath.value
+          : this.pluginFilePath,
     );
   }
 
@@ -147,37 +180,43 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
     return (StringBuffer('AlgorithmEntry(')
           ..write('guid: $guid, ')
           ..write('name: $name, ')
-          ..write('numSpecifications: $numSpecifications')
+          ..write('numSpecifications: $numSpecifications, ')
+          ..write('pluginFilePath: $pluginFilePath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(guid, name, numSpecifications);
+  int get hashCode =>
+      Object.hash(guid, name, numSpecifications, pluginFilePath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AlgorithmEntry &&
           other.guid == this.guid &&
           other.name == this.name &&
-          other.numSpecifications == this.numSpecifications);
+          other.numSpecifications == this.numSpecifications &&
+          other.pluginFilePath == this.pluginFilePath);
 }
 
 class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
   final Value<String> guid;
   final Value<String> name;
   final Value<int> numSpecifications;
+  final Value<String?> pluginFilePath;
   final Value<int> rowid;
   const AlgorithmsCompanion({
     this.guid = const Value.absent(),
     this.name = const Value.absent(),
     this.numSpecifications = const Value.absent(),
+    this.pluginFilePath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AlgorithmsCompanion.insert({
     required String guid,
     required String name,
     required int numSpecifications,
+    this.pluginFilePath = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : guid = Value(guid),
         name = Value(name),
@@ -186,12 +225,14 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
     Expression<String>? guid,
     Expression<String>? name,
     Expression<int>? numSpecifications,
+    Expression<String>? pluginFilePath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (guid != null) 'guid': guid,
       if (name != null) 'name': name,
       if (numSpecifications != null) 'num_specifications': numSpecifications,
+      if (pluginFilePath != null) 'plugin_file_path': pluginFilePath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -200,11 +241,13 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
       {Value<String>? guid,
       Value<String>? name,
       Value<int>? numSpecifications,
+      Value<String?>? pluginFilePath,
       Value<int>? rowid}) {
     return AlgorithmsCompanion(
       guid: guid ?? this.guid,
       name: name ?? this.name,
       numSpecifications: numSpecifications ?? this.numSpecifications,
+      pluginFilePath: pluginFilePath ?? this.pluginFilePath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -221,6 +264,9 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
     if (numSpecifications.present) {
       map['num_specifications'] = Variable<int>(numSpecifications.value);
     }
+    if (pluginFilePath.present) {
+      map['plugin_file_path'] = Variable<String>(pluginFilePath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -233,6 +279,7 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
           ..write('guid: $guid, ')
           ..write('name: $name, ')
           ..write('numSpecifications: $numSpecifications, ')
+          ..write('pluginFilePath: $pluginFilePath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5497,12 +5544,14 @@ typedef $$AlgorithmsTableCreateCompanionBuilder = AlgorithmsCompanion Function({
   required String guid,
   required String name,
   required int numSpecifications,
+  Value<String?> pluginFilePath,
   Value<int> rowid,
 });
 typedef $$AlgorithmsTableUpdateCompanionBuilder = AlgorithmsCompanion Function({
   Value<String> guid,
   Value<String> name,
   Value<int> numSpecifications,
+  Value<String?> pluginFilePath,
   Value<int> rowid,
 });
 
@@ -5591,6 +5640,10 @@ class $$AlgorithmsTableFilterComposer
 
   ColumnFilters<int> get numSpecifications => $composableBuilder(
       column: $table.numSpecifications,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pluginFilePath => $composableBuilder(
+      column: $table.pluginFilePath,
       builder: (column) => ColumnFilters(column));
 
   Expression<bool> specificationsRefs(
@@ -5696,6 +5749,10 @@ class $$AlgorithmsTableOrderingComposer
   ColumnOrderings<int> get numSpecifications => $composableBuilder(
       column: $table.numSpecifications,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pluginFilePath => $composableBuilder(
+      column: $table.pluginFilePath,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$AlgorithmsTableAnnotationComposer
@@ -5715,6 +5772,9 @@ class $$AlgorithmsTableAnnotationComposer
 
   GeneratedColumn<int> get numSpecifications => $composableBuilder(
       column: $table.numSpecifications, builder: (column) => column);
+
+  GeneratedColumn<String> get pluginFilePath => $composableBuilder(
+      column: $table.pluginFilePath, builder: (column) => column);
 
   Expression<T> specificationsRefs<T extends Object>(
       Expression<T> Function($$SpecificationsTableAnnotationComposer a) f) {
@@ -5831,24 +5891,28 @@ class $$AlgorithmsTableTableManager extends RootTableManager<
             Value<String> guid = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<int> numSpecifications = const Value.absent(),
+            Value<String?> pluginFilePath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               AlgorithmsCompanion(
             guid: guid,
             name: name,
             numSpecifications: numSpecifications,
+            pluginFilePath: pluginFilePath,
             rowid: rowid,
           ),
           createCompanionCallback: ({
             required String guid,
             required String name,
             required int numSpecifications,
+            Value<String?> pluginFilePath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               AlgorithmsCompanion.insert(
             guid: guid,
             name: name,
             numSpecifications: numSpecifications,
+            pluginFilePath: pluginFilePath,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

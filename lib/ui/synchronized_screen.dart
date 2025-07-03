@@ -1016,7 +1016,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         context: context,
         builder: (context) => PresetPackageDialog(
             presetFilePath: sdCardPath,
-            fileSystem: PresetFileSystemImpl(cubit.requireDisting())));
+            fileSystem: PresetFileSystemImpl(cubit.requireDisting()),
+            database: cubit.database));
   }
 }
 

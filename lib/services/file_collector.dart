@@ -3,12 +3,14 @@ import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
 import 'package:nt_helper/models/package_config.dart';
 import 'package:nt_helper/util/extensions.dart';
+import 'package:nt_helper/db/database.dart';
 
 /// Collects dependency files from the file system
 class FileCollector {
   final PresetFileSystem fileSystem;
+  final AppDatabase database;
 
-  FileCollector(this.fileSystem);
+  FileCollector(this.fileSystem, this.database);
 
   Future<List<CollectedFile>> collectDependencies(
       PresetDependencies dependencies,
@@ -79,14 +81,22 @@ class FileCollector {
 
     // Collect community plugin files (if enabled)
     if (config?.includeCommunityPlugins == true) {
+      // Get plugin file paths from database
+      final guidToPathMap = await database.metadataDao
+          .getPluginFilePathsByGuids(dependencies.communityPlugins);
+      
       for (final pluginGuid in dependencies.communityPlugins) {
-        final pluginPath = 'programs/plug-ins/$pluginGuid.o';
-        try {
-          (await fileSystem.readFile(pluginPath))?.let((bytes) {
-            files.add(CollectedFile(pluginPath, bytes));
-          });
-        } catch (e) {
-          warnings.add('Community plugin $pluginGuid.o not found locally. Consider downloading from gallery first.');
+        final pluginPath = guidToPathMap[pluginGuid];
+        if (pluginPath != null) {
+          try {
+            (await fileSystem.readFile(pluginPath))?.let((bytes) {
+              files.add(CollectedFile(pluginPath, bytes));
+            });
+          } catch (e) {
+            warnings.add('Error reading community plugin $pluginGuid at $pluginPath: $e');
+          }
+        } else {
+          warnings.add('Community plugin $pluginGuid not found locally. File path not available in database.');
         }
       }
     }
