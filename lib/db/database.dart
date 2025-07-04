@@ -116,8 +116,7 @@ class AppDatabase extends _$AppDatabase {
               debugPrint(
                   "Migration successful: Added pluginFilePath column to algorithms table.");
             } catch (e) {
-              debugPrint(
-                  "Migration error adding pluginFilePath column: $e");
+              debugPrint("Migration error adding pluginFilePath column: $e");
             }
           }
         },

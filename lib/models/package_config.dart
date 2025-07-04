@@ -34,7 +34,8 @@ class PackageConfig {
       includeThreePot: includeThreePot ?? this.includeThreePot,
       includeLua: includeLua ?? this.includeLua,
       includeReadme: includeReadme ?? this.includeReadme,
-      includeCommunityPlugins: includeCommunityPlugins ?? this.includeCommunityPlugins,
+      includeCommunityPlugins:
+          includeCommunityPlugins ?? this.includeCommunityPlugins,
     );
   }
 }

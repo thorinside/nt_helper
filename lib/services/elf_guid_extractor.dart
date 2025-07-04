@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:dart_elf/dart_elf.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
@@ -23,10 +22,12 @@ class PluginGuid {
   bool get isCommunityPlugin => guid.chars.any((c) => c.isUppercase);
 
   /// Check if GUID is all lowercase (factory/system algorithm)
-  bool get isFactoryAlgorithm => guid.chars.every((c) => c.isLowercase || !c.isLetter);
+  bool get isFactoryAlgorithm =>
+      guid.chars.every((c) => c.isLowercase || !c.isLetter);
 
   @override
-  String toString() => 'PluginGuid(guid: $guid, raw: 0x${rawValue.toRadixString(16).padLeft(8, '0').toUpperCase()})';
+  String toString() =>
+      'PluginGuid(guid: $guid, raw: 0x${rawValue.toRadixString(16).padLeft(8, '0').toUpperCase()})';
 }
 
 /// Service for extracting plugin GUIDs from ELF .o files
@@ -43,7 +44,8 @@ class ElfGuidExtractor {
 
     // Convert bytes to ASCII characters, handling non-printable chars
     final chars = bytes.map((b) {
-      if (b >= 32 && b <= 126) { // Printable ASCII range
+      if (b >= 32 && b <= 126) {
+        // Printable ASCII range
         return String.fromCharCode(b);
       } else {
         return '?';
@@ -54,20 +56,21 @@ class ElfGuidExtractor {
   }
 
   /// Extract plugin GUID from ELF bytes
-  static Future<PluginGuid> extractGuidFromBytes(Uint8List bytes, String fileName) async {
+  static Future<PluginGuid> extractGuidFromBytes(
+      Uint8List bytes, String fileName) async {
     try {
       // Parse the ELF file from bytes
       final reader = ElfReader.fromBytes(bytes);
-      
+
       // Find the factory symbol
       // Look for either "_ZL7factory" (mangled) or "factory" (unmangled)
       ElfSymbol? factorySymbol;
-      
+
       // Check symbol table section
       if (reader.symbolTableSection != null) {
         final symbolTable = reader.symbolTableSection!;
         final stringTable = reader.stringTable;
-        
+
         for (final symbol in symbolTable.symbols) {
           final name = stringTable?.at(symbol.nindex) ?? '';
           if (name == '_ZL7factory' || name == 'factory') {
@@ -76,12 +79,12 @@ class ElfGuidExtractor {
           }
         }
       }
-      
+
       // If not found in symbol table, check dynamic symbol table
       if (factorySymbol == null && reader.dynamicSymbolTableSection != null) {
         final dynamicSymbolTable = reader.dynamicSymbolTableSection!;
         final dynamicStringTable = reader.dynamicStringTable;
-        
+
         for (final symbol in dynamicSymbolTable.symbols) {
           final name = dynamicStringTable?.at(symbol.nindex) ?? '';
           if (name == '_ZL7factory' || name == 'factory') {
@@ -98,15 +101,16 @@ class ElfGuidExtractor {
       // Get the section containing the factory symbol
       final sectionIndex = factorySymbol.shndx;
       if (sectionIndex >= reader.sections.length) {
-        throw GuidExtractionException('Invalid section index for factory symbol');
+        throw GuidExtractionException(
+            'Invalid section index for factory symbol');
       }
 
       final section = reader.sections[sectionIndex];
-      
+
       // Calculate offset within section
       final symbolAddress = factorySymbol.value;
       final sectionAddress = section.header.addr;
-      
+
       if (symbolAddress < sectionAddress) {
         throw GuidExtractionException('Invalid factory symbol address');
       }
@@ -115,7 +119,7 @@ class ElfGuidExtractor {
 
       // Get section data
       final sectionData = section.data();
-      
+
       // Ensure we have enough data for the GUID (first 4 bytes of the factory struct)
       if (offset + 4 > sectionData.length) {
         throw GuidExtractionException('Not enough data for GUID extraction');
@@ -124,69 +128,72 @@ class ElfGuidExtractor {
       // Extract the GUID as a 32-bit little-endian integer
       // The _NT_factory struct starts with: uint32_t guid;
       final guidBytes = sectionData.sublist(offset, offset + 4);
-      final rawGuid = ByteData.sublistView(Uint8List.fromList(guidBytes)).getUint32(0, Endian.little);
+      final rawGuid = ByteData.sublistView(Uint8List.fromList(guidBytes))
+          .getUint32(0, Endian.little);
 
       // Convert to string representation
       final guidString = _guidFromU32(rawGuid);
 
       // Validate that we got a reasonable GUID (4 ASCII characters)
       if (guidString.length != 4) {
-        throw GuidExtractionException('GUID must be exactly 4 characters, got: $guidString');
+        throw GuidExtractionException(
+            'GUID must be exactly 4 characters, got: $guidString');
       }
 
       debugPrint('Extracted GUID "$guidString" from $fileName');
 
       return PluginGuid(guid: guidString, rawValue: rawGuid);
-
     } catch (e) {
       if (e is GuidExtractionException) rethrow;
-      throw GuidExtractionException('Failed to extract GUID from $fileName: $e');
+      throw GuidExtractionException(
+          'Failed to extract GUID from $fileName: $e');
     }
   }
 
   /// Scan a directory for .o files and extract GUIDs using PresetFileSystem
   /// Returns a Map of GUID -> relative file path
   static Future<Map<String, String>> scanPluginDirectory(
-    PresetFileSystem fileSystem, 
-    String directoryPath
-  ) async {
+      PresetFileSystem fileSystem, String directoryPath) async {
     final result = <String, String>{};
-    
+
     try {
       debugPrint('Scanning plugin directory: $directoryPath');
 
       // List all files in the plugin directory
-      final allFiles = await fileSystem.listFiles(directoryPath, recursive: true);
-      
+      final allFiles =
+          await fileSystem.listFiles(directoryPath, recursive: true);
+
       // Filter for .o files
-      final pluginFiles = allFiles.where((path) => path.endsWith('.o')).toList();
-      
+      final pluginFiles =
+          allFiles.where((path) => path.endsWith('.o')).toList();
+
       debugPrint('Found ${pluginFiles.length} .o files to process');
 
       for (final filePath in pluginFiles) {
         try {
           debugPrint('Processing plugin file: $filePath');
-          
+
           // Read the file via SYSEX
           final fileBytes = await fileSystem.readFile(filePath);
           if (fileBytes == null) {
             debugPrint('Failed to read file: $filePath');
             continue;
           }
-          
+
           // Extract GUID from the file bytes
           final pluginGuid = await extractGuidFromBytes(fileBytes, filePath);
           result[pluginGuid.guid] = filePath;
-          
-          debugPrint('Found ${pluginGuid.isCommunityPlugin ? 'community' : 'factory'} plugin: ${pluginGuid.guid} -> $filePath');
+
+          debugPrint(
+              'Found ${pluginGuid.isCommunityPlugin ? 'community' : 'factory'} plugin: ${pluginGuid.guid} -> $filePath');
         } catch (e) {
           debugPrint('Failed to extract GUID from $filePath: $e');
           // Continue processing other files
         }
       }
 
-      debugPrint('Plugin scan complete. Found ${result.length} plugins with GUIDs');
-      
+      debugPrint(
+          'Plugin scan complete. Found ${result.length} plugins with GUIDs');
     } catch (e) {
       debugPrint('Error scanning plugin directory $directoryPath: $e');
     }

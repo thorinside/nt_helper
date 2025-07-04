@@ -10,7 +10,6 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
 import 'package:nt_helper/services/elf_guid_extractor.dart';
-import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 
 /// Service to synchronize static algorithm metadata from the device to the local database.
@@ -443,14 +442,15 @@ class MetadataSyncService {
   }) async {
     try {
       onProgress?.call("Scanning plugin directory...");
-      
+
       // Create PresetFileSystemImpl with the MIDI manager
       final fileSystem = PresetFileSystemImpl(_distingManager);
-      
+
       // Scan the plugin directory for .o files and extract GUIDs
       final pluginDirectory = "/programs/plug-ins";
-      final guidToFilePathMap = await ElfGuidExtractor.scanPluginDirectory(fileSystem, pluginDirectory);
-      
+      final guidToFilePathMap = await ElfGuidExtractor.scanPluginDirectory(
+          fileSystem, pluginDirectory);
+
       if (guidToFilePathMap.isEmpty) {
         debugPrint("[MetadataSync] No plugin files found in $pluginDirectory");
         onProgress?.call("No plugin files found.");
@@ -458,7 +458,8 @@ class MetadataSyncService {
       }
 
       onProgress?.call("Updating algorithm records...");
-      debugPrint("[MetadataSync] Found ${guidToFilePathMap.length} plugin files, updating database...");
+      debugPrint(
+          "[MetadataSync] Found ${guidToFilePathMap.length} plugin files, updating database...");
 
       final metadataDao = _database.metadataDao;
       int updatedCount = 0;
@@ -466,7 +467,7 @@ class MetadataSyncService {
       for (final entry in guidToFilePathMap.entries) {
         final guid = entry.key;
         final filePath = entry.value;
-        
+
         try {
           // Check if algorithm exists in database
           final algorithm = await metadataDao.getAlgorithmByGuid(guid);
@@ -474,9 +475,11 @@ class MetadataSyncService {
             // Update the plugin file path
             await metadataDao.updateAlgorithmPluginFilePath(guid, filePath);
             updatedCount++;
-            debugPrint("[MetadataSync] Updated algorithm $guid with file path: $filePath");
+            debugPrint(
+                "[MetadataSync] Updated algorithm $guid with file path: $filePath");
           } else {
-            debugPrint("[MetadataSync] Algorithm $guid not found in database (plugin-only, not algorithm)");
+            debugPrint(
+                "[MetadataSync] Algorithm $guid not found in database (plugin-only, not algorithm)");
           }
         } catch (e) {
           debugPrint("[MetadataSync] Error updating algorithm $guid: $e");
@@ -484,10 +487,10 @@ class MetadataSyncService {
         }
       }
 
-      final message = "Updated $updatedCount algorithm records with plugin file paths.";
+      final message =
+          "Updated $updatedCount algorithm records with plugin file paths.";
       debugPrint("[MetadataSync] $message");
       onProgress?.call(message);
-
     } catch (e) {
       final errorMsg = "Plugin scan failed: $e";
       debugPrint("[MetadataSync] $errorMsg");

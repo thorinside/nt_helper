@@ -84,7 +84,7 @@ class FileCollector {
       // Get plugin file paths from database
       final guidToPathMap = await database.metadataDao
           .getPluginFilePathsByGuids(dependencies.communityPlugins);
-      
+
       for (final pluginGuid in dependencies.communityPlugins) {
         final pluginPath = guidToPathMap[pluginGuid];
         if (pluginPath != null) {
@@ -93,10 +93,12 @@ class FileCollector {
               files.add(CollectedFile(pluginPath, bytes));
             });
           } catch (e) {
-            warnings.add('Error reading community plugin $pluginGuid at $pluginPath: $e');
+            warnings.add(
+                'Error reading community plugin $pluginGuid at $pluginPath: $e');
           }
         } else {
-          warnings.add('Community plugin $pluginGuid not found locally. File path not available in database.');
+          warnings.add(
+              'Community plugin $pluginGuid not found locally. File path not available in database.');
         }
       }
     }

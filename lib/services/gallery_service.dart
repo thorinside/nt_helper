@@ -87,7 +87,8 @@ class GalleryService {
         debugPrint('Gallery parsed successfully:');
         debugPrint('  Version: ${jsonData['version']}');
         debugPrint('  Plugins: ${(jsonData['plugins'] as List?)?.length ?? 0}');
-        debugPrint('  Categories: ${(jsonData['categories'] as List?)?.length ?? 0}');
+        debugPrint(
+            '  Categories: ${(jsonData['categories'] as List?)?.length ?? 0}');
 
         final gallery = Gallery.fromJson(jsonData);
 
@@ -153,13 +154,14 @@ class GalleryService {
   }
 
   /// Add plugin to install queue with metadata extraction
-  Future<void> addToQueue(GalleryPlugin plugin, {String version = 'latest'}) async {
+  Future<void> addToQueue(GalleryPlugin plugin,
+      {String version = 'latest'}) async {
     // Check if already in queue
     final existingIndex =
         _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
 
     QueuedPlugin queuedPlugin;
-    
+
     if (existingIndex >= 0) {
       // Update existing entry
       queuedPlugin = _installQueue[existingIndex].copyWith(
@@ -171,7 +173,8 @@ class GalleryService {
       _installQueue[existingIndex] = queuedPlugin;
     } else {
       // Add new entry
-      final bool isCollection = await isActualCollection(plugin, downloadPluginArchive);
+      final bool isCollection =
+          await isActualCollection(plugin, downloadPluginArchive);
       queuedPlugin = QueuedPlugin(
         plugin: plugin,
         selectedVersion: version,
@@ -193,13 +196,16 @@ class GalleryService {
       debugPrint('Extracting metadata for plugin: ${plugin.name}');
 
       // Skip if already processed or if it's clearly not a collection
-      if (queuedPlugin.selectedPlugins.isNotEmpty || !queuedPlugin.isCollection) {
-        debugPrint('Plugin ${plugin.name} already processed or not a collection');
+      if (queuedPlugin.selectedPlugins.isNotEmpty ||
+          !queuedPlugin.isCollection) {
+        debugPrint(
+            'Plugin ${plugin.name} already processed or not a collection');
         return;
       }
 
       // Update status to analyzing
-      final queueIndex = _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+      final queueIndex =
+          _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
       if (queueIndex >= 0) {
         _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
           status: QueuedPluginStatus.analyzing,
@@ -208,7 +214,8 @@ class GalleryService {
       }
 
       // Download the plugin archive
-      final archiveBytes = await downloadPluginArchive(plugin, queuedPlugin.selectedVersion);
+      final archiveBytes =
+          await downloadPluginArchive(plugin, queuedPlugin.selectedVersion);
 
       // Count installable plugins to determine if it's a collection
       final pluginCount = await PluginMetadataExtractor.countInstallablePlugins(
@@ -221,7 +228,8 @@ class GalleryService {
       if (pluginCount > 1) {
         // This is a collection - extract the plugin list
         debugPrint('Extracting collection plugins for ${plugin.name}');
-        final collectionPlugins = await PluginMetadataExtractor.extractPluginsFromArchive(
+        final collectionPlugins =
+            await PluginMetadataExtractor.extractPluginsFromArchive(
           archiveBytes,
           plugin,
         );
@@ -233,19 +241,22 @@ class GalleryService {
             .toList();
 
         // Update the queued plugin with the collection data
-        final queueIndex = _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+        final queueIndex =
+            _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
         if (queueIndex >= 0) {
           _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
             selectedPlugins: installablePlugins,
             status: QueuedPluginStatus.queued,
           );
           _notifyQueueChanged();
-          debugPrint('Updated ${plugin.name} with ${installablePlugins.length} collection plugins (all selected by default)');
+          debugPrint(
+              'Updated ${plugin.name} with ${installablePlugins.length} collection plugins (all selected by default)');
         }
       } else {
         debugPrint('Plugin ${plugin.name} is a singular plugin');
         // Reset status back to queued for singular plugins
-        final queueIndex = _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+        final queueIndex =
+            _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
         if (queueIndex >= 0) {
           _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
             status: QueuedPluginStatus.queued,
@@ -254,7 +265,8 @@ class GalleryService {
         }
       }
     } catch (e) {
-      debugPrint('Failed to extract metadata for ${queuedPlugin.plugin.name}: $e');
+      debugPrint(
+          'Failed to extract metadata for ${queuedPlugin.plugin.name}: $e');
       // Don't fail the queue operation if metadata extraction fails
       // The plugin will be treated as a singular plugin
     }
@@ -287,8 +299,10 @@ class GalleryService {
   }
 
   /// Update selected plugins for a queued plugin collection
-  void updateQueuedPluginSelection(String pluginId, List<CollectionPlugin> selectedPlugins) {
-    debugPrint('[GalleryService] Updating plugin selection for $pluginId: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} selected');
+  void updateQueuedPluginSelection(
+      String pluginId, List<CollectionPlugin> selectedPlugins) {
+    debugPrint(
+        '[GalleryService] Updating plugin selection for $pluginId: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} selected');
     final index = _installQueue.indexWhere((q) => q.plugin.id == pluginId);
     if (index >= 0) {
       _installQueue[index] = _installQueue[index].copyWith(
@@ -302,19 +316,20 @@ class GalleryService {
   }
 
   /// Download plugin archive for a specific version
-  Future<List<int>> downloadPluginArchive(GalleryPlugin plugin, String version) async {
+  Future<List<int>> downloadPluginArchive(
+      GalleryPlugin plugin, String version) async {
     final release = plugin.getVersionTag(version);
     final downloadUrl = await _getDownloadUrl(plugin, release);
-    
+
     debugPrint('Downloading plugin archive from: $downloadUrl');
-    
+
     final response = await http.get(Uri.parse(downloadUrl));
     if (response.statusCode != 200) {
       throw GalleryException(
         'Failed to download plugin archive: ${response.statusCode} ${response.reasonPhrase}',
       );
     }
-    
+
     return response.bodyBytes;
   }
 
@@ -454,7 +469,8 @@ class GalleryService {
           status: QueuedPluginStatus.extracting, progress: 0.6);
 
       // Extract the zip archive
-      filesToInstall = await _extractArchive(fileBytes, plugin, queuedPlugin: queuedPlugin);
+      filesToInstall =
+          await _extractArchive(fileBytes, plugin, queuedPlugin: queuedPlugin);
     } else if (_isRawPluginFile(fileExtension)) {
       // Handle raw plugin files (.o, .lua, .3pot)
       debugPrint('Processing raw plugin file: $fileName');
@@ -497,15 +513,18 @@ class GalleryService {
     // Priority 1: Use direct download URL from installation config if available
     if (plugin.installation.downloadUrl != null &&
         plugin.installation.downloadUrl!.isNotEmpty) {
-      debugPrint('Using direct downloadUrl: ${plugin.installation.downloadUrl}');
+      debugPrint(
+          'Using direct downloadUrl: ${plugin.installation.downloadUrl}');
       return plugin.installation.downloadUrl!;
     }
 
     // Priority 2: Fall back to GitHub API release asset discovery
-    debugPrint('Falling back to GitHub API for ${repo.owner}/${repo.name} v$version');
+    debugPrint(
+        'Falling back to GitHub API for ${repo.owner}/${repo.name} v$version');
 
     // Get release with assets
-    final apiUrl = 'https://api.github.com/repos/${repo.owner}/${repo.name}/releases/tags/$version';
+    final apiUrl =
+        'https://api.github.com/repos/${repo.owner}/${repo.name}/releases/tags/$version';
 
     try {
       final response = await http.get(
@@ -667,7 +686,7 @@ class GalleryService {
             .where((p) => p.selected)
             .map((p) => p.relativePath)
             .toSet();
-        
+
         if (!selectedPaths.contains(filePath)) {
           debugPrint('Skipping file (not selected): ${file.name} -> $filePath');
           continue;

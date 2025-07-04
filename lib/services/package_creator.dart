@@ -79,7 +79,8 @@ class PackageCreator {
 
       // Add README to top level if requested
       if (config.includeReadme) {
-        final readme = _createReadme(presetData, presetFilename, dependencies, config);
+        final readme =
+            _createReadme(presetData, presetFilename, dependencies, config);
         archive.addFile(ArchiveFile(
           'README.md',
           readme.length,
@@ -148,21 +149,24 @@ class PackageCreator {
           'lua': '/programs/lua/',
           'plugins': '/programs/plug-ins/'
         },
-        'instructions': config.includeCommunityPlugins && dependencies.hasCommunityPlugins ? [
-          'Extract this package to a temporary folder',
-          'Copy the entire contents of the root/ folder to the root of your SD card',
-          'The preset will be installed to /presets/',
-          'All dependencies including community plugins will be installed to their correct locations',
-          'Community plugins are included in this package in /programs/plug-ins/',
-          'Load the preset on your Disting NT using the Load Preset function'
-        ] : [
-          'Extract this package to a temporary folder',
-          'Copy the entire contents of the root/ folder to the root of your SD card',
-          'The preset will be installed to /presets/',
-          'All dependencies will be installed to their correct locations',
-          'Community plugins (if any) must be installed separately in /programs/plug-ins/',
-          'Load the preset on your Disting NT using the Load Preset function'
-        ]
+        'instructions':
+            config.includeCommunityPlugins && dependencies.hasCommunityPlugins
+                ? [
+                    'Extract this package to a temporary folder',
+                    'Copy the entire contents of the root/ folder to the root of your SD card',
+                    'The preset will be installed to /presets/',
+                    'All dependencies including community plugins will be installed to their correct locations',
+                    'Community plugins are included in this package in /programs/plug-ins/',
+                    'Load the preset on your Disting NT using the Load Preset function'
+                  ]
+                : [
+                    'Extract this package to a temporary folder',
+                    'Copy the entire contents of the root/ folder to the root of your SD card',
+                    'The preset will be installed to /presets/',
+                    'All dependencies will be installed to their correct locations',
+                    'Community plugins (if any) must be installed separately in /programs/plug-ins/',
+                    'Load the preset on your Disting NT using the Load Preset function'
+                  ]
       },
       'packageInfo': {
         'createdAt': DateTime.now().toIso8601String(),

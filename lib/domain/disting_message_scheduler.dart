@@ -285,12 +285,13 @@ class DistingMessageScheduler {
         request.completer.complete(parsed);
       } catch (e) {
         // If parsing fails, complete with error instead of raw response to avoid type mismatches
-        debugPrint('[DistingMessageScheduler] Parsing failed for ${response.runtimeType}: $e');
+        debugPrint(
+            '[DistingMessageScheduler] Parsing failed for ${response.runtimeType}: $e');
         if (request.expectation == ResponseExpectation.optional) {
           request.completer.complete(null);
         } else {
-          request.completer.completeError(
-              StateError('Failed to parse response: ${response.runtimeType} - $e'));
+          request.completer.completeError(StateError(
+              'Failed to parse response: ${response.runtimeType} - $e'));
         }
       }
     } else {

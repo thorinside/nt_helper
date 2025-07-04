@@ -2364,8 +2364,7 @@ class DistingCubit extends Cubit<DistingState> {
       }
     }
 
-    debugPrint(
-        "[DistingCubit] Successfully uploaded $fileName to $targetPath");
+    debugPrint("[DistingCubit] Successfully uploaded $fileName to $targetPath");
   }
 
   /// Uploads a single chunk of file data.

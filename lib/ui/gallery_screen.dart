@@ -377,8 +377,7 @@ class _GalleryViewState extends State<_GalleryView>
                       value: null,
                       child: Text('All Categories'),
                     ),
-                    ...(state.gallery.categories)
-                        .map(
+                    ...(state.gallery.categories).map(
                       (cat) => PopupMenuItem<String>(
                         value: cat.id,
                         child: Row(
@@ -1169,9 +1168,9 @@ class _GalleryViewState extends State<_GalleryView>
                     const ['.o', '.lua', '.3pot'].contains('.${p.fileType}')))
             .toList();
         galleryCubit.updateQueuedPluginSelection(
-              queuedPlugin.plugin.id,
-              autoSelectedPlugins,
-            );
+          queuedPlugin.plugin.id,
+          autoSelectedPlugins,
+        );
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1240,9 +1239,9 @@ class _GalleryViewState extends State<_GalleryView>
             debugPrint(
                 '[PluginDialog] Selection changed: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} plugins selected');
             galleryCubit.updateQueuedPluginSelection(
-                  queuedPlugin.plugin.id,
-                  selectedPlugins,
-                );
+              queuedPlugin.plugin.id,
+              selectedPlugins,
+            );
           },
         ),
       );

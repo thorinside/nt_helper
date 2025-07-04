@@ -27,7 +27,8 @@ class SettingsService {
   static const String _mcpEnabledKey = 'mcp_enabled';
   static const String _startPagesCollapsedKey = 'start_pages_collapsed';
   static const String _galleryUrlKey = 'gallery_url';
-  static const String _includeCommunityPluginsKey = 'include_community_plugins_in_presets';
+  static const String _includeCommunityPluginsKey =
+      'include_community_plugins_in_presets';
 
   // Default values
   static const int defaultRequestTimeout = 300;
@@ -99,7 +100,8 @@ class SettingsService {
 
   /// Check if community plugins should be included in preset packages by default
   bool get includeCommunityPlugins =>
-      _prefs?.getBool(_includeCommunityPluginsKey) ?? defaultIncludeCommunityPlugins;
+      _prefs?.getBool(_includeCommunityPluginsKey) ??
+      defaultIncludeCommunityPlugins;
 
   /// Set whether community plugins should be included in preset packages by default
   Future<bool> setIncludeCommunityPlugins(bool value) async {

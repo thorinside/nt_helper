@@ -135,7 +135,8 @@ class GalleryCubit extends Cubit<GalleryState> {
     return currentState.queue.any((q) => q.plugin.id == pluginId);
   }
 
-  void updateQueuedPluginSelection(String pluginId, List<CollectionPlugin> selectedPlugins) {
+  void updateQueuedPluginSelection(
+      String pluginId, List<CollectionPlugin> selectedPlugins) {
     _galleryService.updateQueuedPluginSelection(pluginId, selectedPlugins);
     // State will be updated automatically via the stream listener
   }

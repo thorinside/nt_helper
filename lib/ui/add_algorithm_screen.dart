@@ -23,7 +23,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   static const _showFavOnlyKey =
       'add_algo_show_fav_only'; // Key for toggle state
   static const _pluginTypeKey = 'add_algo_plugin_type';
-  
+
   // Plugin type options
   static const String _pluginTypeAll = 'all';
   static const String _pluginTypeFactory = 'factory';
@@ -41,7 +41,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   // New state for category filters
   List<String> _allCategories = [];
   Set<String> _selectedCategories = {};
-  
+
   // Plugin type filter state
   String _selectedPluginType = _pluginTypeAll;
 
@@ -188,7 +188,9 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   String _getPluginType(String guid) {
     // Factory algorithms have all lowercase GUIDs
     // Community plugins have any uppercase characters
-    return guid == guid.toLowerCase() ? _pluginTypeFactory : _pluginTypeCommunity;
+    return guid == guid.toLowerCase()
+        ? _pluginTypeFactory
+        : _pluginTypeCommunity;
   }
 
   // --- Filtering Logic ---
@@ -564,7 +566,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         value: _pluginTypeFactory,
                         groupValue: tempSelected,
                         title: const Text('Factory'),
-                        subtitle: const Text('Algorithms with all lowercase GUIDs'),
+                        subtitle:
+                            const Text('Algorithms with all lowercase GUIDs'),
                         onChanged: (value) {
                           setStateDialog(() {
                             tempSelected = value!;
@@ -575,7 +578,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                         value: _pluginTypeCommunity,
                         groupValue: tempSelected,
                         title: const Text('Community'),
-                        subtitle: const Text('Algorithms with uppercase characters in GUID'),
+                        subtitle: const Text(
+                            'Algorithms with uppercase characters in GUID'),
                         onChanged: (value) {
                           setStateDialog(() {
                             tempSelected = value!;
@@ -586,7 +590,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context, _selectedPluginType),
+                      onPressed: () =>
+                          Navigator.pop(context, _selectedPluginType),
                       child: const Text('Cancel'),
                     ),
                     ElevatedButton(

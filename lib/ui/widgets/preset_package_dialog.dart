@@ -87,7 +87,8 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       );
 
       if (outputPath != null) {
-        final packageCreator = PackageCreator(widget.fileSystem, widget.database);
+        final packageCreator =
+            PackageCreator(widget.fileSystem, widget.database);
         final packageBytes = await packageCreator.createPackage(
           presetFilePath: widget.presetFilePath,
           config: config,
@@ -265,8 +266,8 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
                     'Package community plugins with preset (default: false)'),
                 value: config.includeCommunityPlugins,
                 onChanged: (value) {
-                  setState(() => config = config.copyWith(
-                      includeCommunityPlugins: value));
+                  setState(() =>
+                      config = config.copyWith(includeCommunityPlugins: value));
                   // Save preference for future exports
                   SettingsService().setIncludeCommunityPlugins(value ?? false);
                 },

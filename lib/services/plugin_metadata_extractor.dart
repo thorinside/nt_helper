@@ -16,13 +16,14 @@ class PluginMetadataExtractor {
     final installation = plugin.installation;
     int count = 0;
 
-    debugPrint('[PluginExtractor] Counting installable plugins in archive with ${archive.length} files');
+    debugPrint(
+        '[PluginExtractor] Counting installable plugins in archive with ${archive.length} files');
 
     for (final file in archive) {
       if (!file.isFile) continue;
 
       String filePath = file.name;
-      
+
       // Apply source directory filtering if specified
       if (installation.sourceDirectoryPath != null &&
           installation.sourceDirectoryPath!.isNotEmpty) {
@@ -41,9 +42,9 @@ class PluginMetadataExtractor {
       if (!const ['.o', '.lua', '.3pot'].contains(extension)) {
         continue;
       }
-      
+
       // Skip build/template files and includes
-      if (filePath.contains('/include/') || 
+      if (filePath.contains('/include/') ||
           filePath.contains('/make_plugins/') ||
           filePath.endsWith('template1.h') ||
           filePath.endsWith('template2.h') ||
@@ -51,7 +52,7 @@ class PluginMetadataExtractor {
           filePath.endsWith('templateStereo.h')) {
         continue;
       }
-      
+
       count++;
     }
 
@@ -68,13 +69,14 @@ class PluginMetadataExtractor {
     final plugins = <CollectionPlugin>[];
     final installation = plugin.installation;
 
-    debugPrint('[PluginExtractor] Archive has ${archive.length} files, sourceDir: ${installation.sourceDirectoryPath}');
+    debugPrint(
+        '[PluginExtractor] Archive has ${archive.length} files, sourceDir: ${installation.sourceDirectoryPath}');
 
     for (final file in archive) {
       if (!file.isFile) continue;
 
       String filePath = file.name;
-      
+
       // Apply source directory filtering if specified
       if (installation.sourceDirectoryPath != null &&
           installation.sourceDirectoryPath!.isNotEmpty) {
@@ -91,12 +93,13 @@ class PluginMetadataExtractor {
       // Skip if not a plugin file (include both source and compiled files)
       final extension = path.extension(filePath).toLowerCase();
       if (!const ['.o', '.lua', '.3pot', '.cpp'].contains(extension)) {
-        debugPrint('[PluginExtractor] Skipping non-plugin file: $filePath (ext: $extension)');
+        debugPrint(
+            '[PluginExtractor] Skipping non-plugin file: $filePath (ext: $extension)');
         continue;
       }
-      
+
       // Skip build/template files and includes
-      if (filePath.contains('/include/') || 
+      if (filePath.contains('/include/') ||
           filePath.contains('/make_plugins/') ||
           filePath.endsWith('template1.h') ||
           filePath.endsWith('template2.h') ||
@@ -105,13 +108,13 @@ class PluginMetadataExtractor {
         debugPrint('[PluginExtractor] Skipping template/build file: $filePath');
         continue;
       }
-      
+
       debugPrint('[PluginExtractor] Found plugin file: $filePath');
 
       final fileName = path.basenameWithoutExtension(filePath);
       final fileType = extension.substring(1); // Remove the dot
       String? description;
-      
+
       // For .cpp files, treat them as equivalent to .o files for display purposes
       final displayFileType = fileType == 'cpp' ? 'o' : fileType;
 
@@ -120,7 +123,8 @@ class PluginMetadataExtractor {
         if (fileType == 'o') {
           // For ELF files, try to extract GUID and derive name
           final fileBytes = Uint8List.fromList(file.content as List<int>);
-          final guid = await ElfGuidExtractor.extractGuidFromBytes(fileBytes, fileName);
+          final guid =
+              await ElfGuidExtractor.extractGuidFromBytes(fileBytes, fileName);
           description = 'Plugin GUID: ${guid.guid}';
         } else if (fileType == 'lua') {
           // For Lua files, try to extract description from comments
@@ -143,14 +147,15 @@ class PluginMetadataExtractor {
 
     // Sort plugins by name
     plugins.sort((a, b) => a.name.compareTo(b.name));
-    debugPrint('[PluginExtractor] Extracted ${plugins.length} plugins from archive');
+    debugPrint(
+        '[PluginExtractor] Extracted ${plugins.length} plugins from archive');
     return plugins;
   }
 
   /// Extract description from Lua script comments
   static String? _extractLuaDescription(String content) {
     final lines = content.split('\n');
-    
+
     // Look for the second comment line (first line after the shebang/title)
     int commentCount = 0;
     for (final line in lines) {
@@ -166,7 +171,7 @@ class PluginMetadataExtractor {
         break;
       }
     }
-    
+
     return null;
   }
 }
