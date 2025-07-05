@@ -10,6 +10,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
+import 'package:nt_helper/utils/responsive.dart';
 
 /// A beautiful gallery screen for discovering and installing plugins
 class GalleryScreen extends StatelessWidget {
@@ -301,8 +302,12 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   Widget _buildSearchAndFilters(GalleryState state) {
+    final isMobile = Responsive.isMobile(context);
+    final padding = Responsive.getScreenPadding(context);
+    final filterSpacing = Responsive.getFilterSpacing(context);
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: padding,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -313,188 +318,107 @@ class _GalleryViewState extends State<_GalleryView>
       ),
       child: Column(
         children: [
-          // Single row with search and filters
-          Row(
-            children: [
-              // Search field - takes available space
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search plugins...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              context.read<GalleryCubit>().clearFilters();
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
+          if (isMobile) ...[
+            // Mobile layout: Search bar on first line
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search plugins...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          context.read<GalleryCubit>().clearFilters();
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
               ),
-              const SizedBox(width: 12),
-
-              // Filter chips in a row
-              if (state is GalleryLoaded && state.gallery.categories.isNotEmpty)
-                PopupMenuButton<String?>(
-                  child: Chip(
-                    avatar: Icon(
-                      Icons.category,
-                      size: 18,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                    ),
-                    label: Text(state.selectedCategory ?? 'Category'),
-                    deleteIcon: Icon(
-                      Icons.arrow_drop_down,
-                      size: 18,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                    ),
-                    onDeleted: () {},
-                  ),
-                  onSelected: (value) {
-                    context.read<GalleryCubit>().applyFilters(
-                          category: value,
-                        );
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem<String?>(
-                      value: null,
-                      child: Text('All Categories'),
-                    ),
-                    ...(state.gallery.categories).map(
-                      (cat) => PopupMenuItem<String>(
-                        value: cat.id,
-                        child: Row(
-                          children: [
-                            if (cat.icon != null) ...[
-                              Icon(_getIconData(cat.icon!), size: 16),
-                              const SizedBox(width: 8),
-                            ],
-                            Text(cat.name),
-                          ],
-                        ),
-                      ),
-                    ),
+            ),
+            SizedBox(height: filterSpacing),
+            
+            // Mobile layout: Filters on second line
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildCategoryFilter(state),
+                  SizedBox(width: filterSpacing),
+                  _buildTypeFilter(state),
+                  SizedBox(width: filterSpacing),
+                  _buildFeaturedFilter(state),
+                  if (state is GalleryLoaded &&
+                      (state.selectedCategory != null ||
+                          state.selectedType != null ||
+                          state.showFeaturedOnly ||
+                          _searchController.text.isNotEmpty)) ...[
+                    SizedBox(width: filterSpacing),
+                    _buildClearFilter(),
                   ],
-                ),
-              const SizedBox(width: 8),
-
-              // Type filter
-              PopupMenuButton<GalleryPluginType?>(
-                child: Chip(
-                  avatar: Icon(
-                    Icons.extension,
-                    size: 18,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7),
-                  ),
-                  label: Text(state is GalleryLoaded
-                      ? (state.selectedType?.displayName ?? 'Type')
-                      : 'Type'),
-                  deleteIcon: Icon(
-                    Icons.arrow_drop_down,
-                    size: 18,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7),
-                  ),
-                  onDeleted: () {},
-                ),
-                onSelected: (value) {
-                  context.read<GalleryCubit>().applyFilters(
-                        type: value,
-                      );
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem<GalleryPluginType?>(
-                    value: null,
-                    child: Text('All Types'),
-                  ),
-                  ...GalleryPluginType.values.map(
-                    (type) => PopupMenuItem<GalleryPluginType>(
-                      value: type,
-                      child: Text(type.displayName),
-                    ),
-                  ),
                 ],
               ),
-              const SizedBox(width: 8),
-
-              // Featured filter
-              FilterChip(
-                avatar: Icon(
-                  Icons.star,
-                  size: 18,
-                  color: (state is GalleryLoaded && state.showFeaturedOnly)
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                ),
-                label: const Text('Featured'),
-                selected:
-                    state is GalleryLoaded ? state.showFeaturedOnly : false,
-                selectedColor: Theme.of(context).colorScheme.primary,
-                showCheckmark: false,
-                labelStyle: TextStyle(
-                  color: (state is GalleryLoaded && state.showFeaturedOnly)
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : null,
-                ),
-                onSelected: (selected) {
-                  context.read<GalleryCubit>().applyFilters(
-                        featured: selected,
-                      );
-                },
-              ),
-              const SizedBox(width: 8),
-
-              // Clear filters
-              if (state is GalleryLoaded &&
-                  (state.selectedCategory != null ||
-                      state.selectedType != null ||
-                      state.showFeaturedOnly ||
-                      _searchController.text.isNotEmpty))
-                ActionChip(
-                  avatar: Icon(
-                    Icons.clear,
-                    size: 18,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7),
+            ),
+          ] else ...[
+            // Desktop layout: Single row with search and filters
+            Row(
+              children: [
+                // Search field - takes available space
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search plugins...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                context.read<GalleryCubit>().clearFilters();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
                   ),
-                  label: const Text('Clear'),
-                  onPressed: () {
-                    _searchController.clear();
-                    context.read<GalleryCubit>().clearFilters();
-                  },
                 ),
-            ],
-          ),
+                const SizedBox(width: 12),
+
+                // Filter chips in a row
+                _buildCategoryFilter(state),
+                const SizedBox(width: 8),
+                _buildTypeFilter(state),
+                const SizedBox(width: 8),
+                _buildFeaturedFilter(state),
+                const SizedBox(width: 8),
+
+                // Clear filters
+                if (state is GalleryLoaded &&
+                    (state.selectedCategory != null ||
+                        state.selectedType != null ||
+                        state.showFeaturedOnly ||
+                        _searchController.text.isNotEmpty))
+                  _buildClearFilter(),
+              ],
+            ),
+          ],
 
           // Results count
-          const SizedBox(height: 12),
+          SizedBox(height: isMobile ? filterSpacing : 12),
           Row(
             children: [
               Text(
@@ -512,6 +436,152 @@ class _GalleryViewState extends State<_GalleryView>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCategoryFilter(GalleryState state) {
+    if (state is! GalleryLoaded || state.gallery.categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return PopupMenuButton<String?>(
+      child: Chip(
+        avatar: Icon(
+          Icons.category,
+          size: 18,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.7),
+        ),
+        label: Text(state.selectedCategory ?? 'Category'),
+        deleteIcon: Icon(
+          Icons.arrow_drop_down,
+          size: 18,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.7),
+        ),
+        onDeleted: () {},
+      ),
+      onSelected: (value) {
+        context.read<GalleryCubit>().applyFilters(
+              category: value,
+            );
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem<String?>(
+          value: null,
+          child: Text('All Categories'),
+        ),
+        ...(state.gallery.categories).map(
+          (cat) => PopupMenuItem<String>(
+            value: cat.id,
+            child: Row(
+              children: [
+                if (cat.icon != null) ...[
+                  Icon(_getIconData(cat.icon!), size: 16),
+                  const SizedBox(width: 8),
+                ],
+                Text(cat.name),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeFilter(GalleryState state) {
+    return PopupMenuButton<GalleryPluginType?>(
+      child: Chip(
+        avatar: Icon(
+          Icons.extension,
+          size: 18,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.7),
+        ),
+        label: Text(state is GalleryLoaded
+            ? (state.selectedType?.displayName ?? 'Type')
+            : 'Type'),
+        deleteIcon: Icon(
+          Icons.arrow_drop_down,
+          size: 18,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.7),
+        ),
+        onDeleted: () {},
+      ),
+      onSelected: (value) {
+        context.read<GalleryCubit>().applyFilters(
+              type: value,
+            );
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem<GalleryPluginType?>(
+          value: null,
+          child: Text('All Types'),
+        ),
+        ...GalleryPluginType.values.map(
+          (type) => PopupMenuItem<GalleryPluginType>(
+            value: type,
+            child: Text(type.displayName),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedFilter(GalleryState state) {
+    return FilterChip(
+      avatar: Icon(
+        Icons.star,
+        size: 18,
+        color: (state is GalleryLoaded && state.showFeaturedOnly)
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.7),
+      ),
+      label: const Text('Featured'),
+      selected:
+          state is GalleryLoaded ? state.showFeaturedOnly : false,
+      selectedColor: Theme.of(context).colorScheme.primary,
+      showCheckmark: false,
+      labelStyle: TextStyle(
+        color: (state is GalleryLoaded && state.showFeaturedOnly)
+            ? Theme.of(context).colorScheme.onPrimary
+            : null,
+      ),
+      onSelected: (selected) {
+        context.read<GalleryCubit>().applyFilters(
+              featured: selected,
+            );
+      },
+    );
+  }
+
+  Widget _buildClearFilter() {
+    return ActionChip(
+      avatar: Icon(
+        Icons.clear,
+        size: 18,
+        color: Theme.of(context)
+            .colorScheme
+            .onSurface
+            .withValues(alpha: 0.7),
+      ),
+      label: const Text('Clear'),
+      onPressed: () {
+        _searchController.clear();
+        context.read<GalleryCubit>().clearFilters();
+      },
     );
   }
 

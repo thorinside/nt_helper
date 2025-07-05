@@ -493,17 +493,25 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                     const Divider(),
                     const SizedBox(height: 12),
 
-                    // --- Specification Inputs (Flexible) ---
+                    // --- Specification Inputs (Expanded with minimum space) ---
                     if (_currentAlgoInfo != null &&
                         _currentAlgoInfo!.numSpecifications > 0)
-                      Flexible(
-                        flex: 2, // Give less space to specs, but still flexible
-                        child: _buildSpecificationInputs(
-                            _currentAlgoInfo!, isOffline),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: _buildSpecificationInputs(
+                                  _currentAlgoInfo!, isOffline),
+                            ),
+                            // Add bottom spacing for specifications visibility
+                            const SizedBox(height: 72), // About 3 rows of space
+                          ],
+                        ),
                       ),
 
-                    // --- Action Buttons (at the bottom) ---
-                    Padding(
+                    // --- Action Buttons (fixed at the bottom) ---
+                    Container(
                       padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
                       child: ElevatedButton(
                         onPressed:

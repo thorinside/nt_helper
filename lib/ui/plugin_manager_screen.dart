@@ -8,6 +8,7 @@ import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/gallery_screen.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/utils/responsive.dart';
 
 /// A screen for managing plugins and extensions for the NT Helper app.
 /// This provides a centralized location for plugin installation, configuration, and management.
@@ -499,6 +500,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final useCompactNav = Responsive.shouldUseCompactNavigation(context);
+    final navRailWidth = Responsive.getNavigationRailWidth(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Plugin Manager'),
@@ -521,11 +526,23 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           ],
         ],
       ),
-      body: Row(
-        children: [
-          // Sidebar
-          Padding(
-            padding: const EdgeInsets.only(top: 24.0),
+      body: isMobile ? _buildMobileLayout() : _buildDesktopLayout(navRailWidth, useCompactNav),
+      bottomNavigationBar: isMobile ? _buildBottomNavigation() : null,
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return _buildMainContent();
+  }
+
+  Widget _buildDesktopLayout(double navRailWidth, bool useCompactNav) {
+    return Row(
+      children: [
+        // Sidebar
+        Padding(
+          padding: const EdgeInsets.only(top: 24.0),
+          child: SizedBox(
+            width: navRailWidth,
             child: NavigationRail(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
@@ -533,24 +550,43 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
                   _selectedIndex = index;
                 });
               },
-              labelType: NavigationRailLabelType.all,
+              labelType: useCompactNav 
+                  ? NavigationRailLabelType.none 
+                  : NavigationRailLabelType.all,
               destinations: _sections.map((section) {
                 return NavigationRailDestination(
                   icon: _getIconForSection(section),
-                  label: Text(section),
+                  label: Text(useCompactNav ? '' : section),
                 );
               }).toList(),
             ),
           ),
+        ),
 
-          const VerticalDivider(thickness: 1, width: 1),
+        const VerticalDivider(thickness: 1, width: 1),
 
-          // Main content
-          Expanded(
-            child: _buildMainContent(),
-          ),
-        ],
-      ),
+        // Main content
+        Expanded(
+          child: _buildMainContent(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return BottomNavigationBar(
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      items: _sections.map((section) {
+        return BottomNavigationBarItem(
+          icon: _getIconForSection(section),
+          label: section,
+        );
+      }).toList(),
     );
   }
 
