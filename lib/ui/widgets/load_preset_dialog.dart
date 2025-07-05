@@ -4,6 +4,7 @@ import 'package:nt_helper/db/database.dart';
 import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/constants.dart';
 
 enum PresetAction { load, append, export }
 
@@ -560,32 +561,41 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
   // Extracted Load/Append actions
   List<Widget> _buildLoadActions() {
-    return [
+    final List<Widget> actions = [
       TextButton(
         key: ValueKey('load_preset_dialog_cancel_button'),
         onPressed: _onCancel,
         child: const Text('CANCEL'),
       ),
-      Builder(
-        builder: (context) {
-          final bool canEnableButtons = !_isLoading &&
-              (_useLiveSdScan ||
-                  (_selectedSdCard != null &&
-                      _controller.text.trim().isNotEmpty));
-          return ElevatedButton(
-            key: ValueKey('load_preset_dialog_export_button'),
-            onPressed: canEnableButtons ? _onExport : null,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.download, size: 16),
-                SizedBox(width: 4),
-                Text('EXPORT'),
-              ],
-            ),
-          );
-        },
-      ),
+    ];
+
+    // Only add Export button if feature flag is enabled
+    if (Constants.enablePresetExport) {
+      actions.add(
+        Builder(
+          builder: (context) {
+            final bool canEnableButtons = !_isLoading &&
+                (_useLiveSdScan ||
+                    (_selectedSdCard != null &&
+                        _controller.text.trim().isNotEmpty));
+            return ElevatedButton(
+              key: ValueKey('load_preset_dialog_export_button'),
+              onPressed: canEnableButtons ? _onExport : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.download, size: 16),
+                  SizedBox(width: 4),
+                  Text('EXPORT'),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    actions.addAll([
       Builder(
         builder: (context) {
           final bool canEnableButtons = !_isLoading &&
@@ -612,7 +622,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           );
         },
       ),
-    ];
+    ]);
+
+    return actions;
   }
 
   // Renamed from _buildCloseButton
