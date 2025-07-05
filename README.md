@@ -21,7 +21,7 @@ A cross-platform Flutter application designed for editing presets on the Expert 
 3.  Connect your Disting NT to your device via USB.
 4.  Launch `nt_helper`, select the MIDI input/output ports for your Disting NT, and connect.
 
-For detailed instructions, troubleshooting, and a full feature list, please refer to the [project website documentation](/nt_helper.md) or the `nt_helper.md` file within the project.
+For detailed instructions, troubleshooting, and a full feature list, please refer to the [project website documentation](https://nosuch.dev/nt-helper).
 
 ## Contributing
 
