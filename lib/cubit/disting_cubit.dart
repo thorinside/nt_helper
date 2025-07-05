@@ -671,9 +671,11 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
-  /// Refreshes the entire state from the Disting device (ONLINE ONLY).
-  Future<void> refresh() async {
-    debugPrint("[Cubit] Refresh requested.");
+  /// Refreshes the state from the Disting device (ONLINE ONLY).
+  /// By default, performs a fast refresh of preset data only.
+  /// Set [fullRefresh] to true to also re-download the algorithm library.
+  Future<void> refresh({bool fullRefresh = false}) async {
+    debugPrint("[Cubit] Refresh requested (fullRefresh: $fullRefresh).");
     final currentState = state;
     if (currentState is DistingStateSynchronized) {
       // *** Add check for offline mode ***
@@ -681,8 +683,19 @@ class DistingCubit extends Cubit<DistingState> {
         debugPrint("[Cubit] Cannot refresh while offline.");
         return;
       }
-      // Proceed with online refresh
-      await _performSyncAndEmit(); // Call the helper
+      
+      if (fullRefresh) {
+        // Full refresh: re-download everything including algorithm library
+        await _performSyncAndEmit();
+      } else {
+        // Fast refresh: only update preset data, then optionally refresh algorithms in background
+        await _refreshStateFromManager();
+        
+        // Check if we should refresh algorithms in the background
+        if (_shouldRefreshAlgorithms(currentState)) {
+          _refreshAlgorithmsInBackground();
+        }
+      }
     } else {
       debugPrint("[Cubit] Cannot refresh: Not in Synchronized state.");
       // Optionally handle error or do nothing
@@ -700,6 +713,53 @@ class DistingCubit extends Cubit<DistingState> {
       );
       debugPrint('[DistingCubit] Created parameter update queue');
     }
+  }
+
+  // Helper to determine if algorithm library should be refreshed
+  bool _shouldRefreshAlgorithms(DistingStateSynchronized currentState) {
+    // For now, be conservative and only refresh algorithms if the list is empty
+    // In the future, we could add more sophisticated logic like checking timestamps,
+    // firmware version changes, or comparing algorithm counts
+    return currentState.algorithms.isEmpty;
+  }
+
+  // Background refresh of algorithm library without blocking the UI
+  void _refreshAlgorithmsInBackground() {
+    debugPrint("[Cubit] Starting background algorithm refresh...");
+    
+    // Run asynchronously without awaiting
+    () async {
+      try {
+        final currentState = state;
+        if (currentState is! DistingStateSynchronized || currentState.offline) {
+          return; // State changed, abort
+        }
+        
+        final distingManager = requireDisting();
+        
+        // Fetch algorithm info in the background
+        final numAlgorithms = (await distingManager.requestNumberOfAlgorithms()) ?? 0;
+        final algorithms = numAlgorithms > 0
+            ? await Future.wait([
+                for (int i = 0; i < numAlgorithms; i++)
+                  distingManager.requestAlgorithmInfo(i)
+              ]).then((results) => results.whereType<AlgorithmInfo>().toList())
+            : <AlgorithmInfo>[];
+        
+        // Only update if state is still synchronized and algorithms changed
+        final newState = state;
+        if (newState is DistingStateSynchronized && 
+            !newState.offline &&
+            algorithms.length != newState.algorithms.length) {
+          debugPrint("[Cubit] Background algorithm refresh completed, updating state with ${algorithms.length} algorithms.");
+          emit(newState.copyWith(algorithms: algorithms));
+        }
+      } catch (e, stackTrace) {
+        debugPrint("Error during background algorithm refresh: $e");
+        debugPrintStack(stackTrace: stackTrace);
+        // Don't emit error state for background refresh failures
+      }
+    }();
   }
 
   // Handle parameter string updates from the queue
