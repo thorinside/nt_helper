@@ -11,5 +11,5 @@ class Constants {
   static const double mobileNavRailWidth = 56.0;
   
   // Feature flags
-  static const bool enablePresetExport = false; // Hide preset export feature for now
+  static const bool enablePresetExport = true; // Enable preset export feature
 }
