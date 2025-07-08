@@ -152,7 +152,8 @@ class MCPAlgorithmTools {
     if (category != null && category.isNotEmpty) {
       algorithms = algorithms
           .where((alg) => alg.categories
-              .any((cat) => cat.toLowerCase() == category.toLowerCase()))
+              .any((cat) => cat.toLowerCase() == category.toLowerCase() ||
+                  _similarity(cat, category) >= 0.7))
           .toList();
     }
 
