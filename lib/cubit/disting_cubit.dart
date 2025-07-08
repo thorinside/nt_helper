@@ -16,6 +16,7 @@ import 'package:nt_helper/domain/offline_disting_midi_manager.dart';
 import 'package:nt_helper/domain/parameter_update_queue.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/models/package_file.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/models/firmware_version.dart';
@@ -1971,7 +1972,7 @@ class DistingCubit extends Cubit<DistingState> {
           final newPath = '$path/${entry.name}';
           if (entry.isDirectory) {
             presets.addAll(await _scanDirectory(newPath));
-          } else if (entry.name.toLowerCase().endsWith('.prst')) {
+          } else if (entry.name.toLowerCase().endsWith('.json')) {
             presets.add(newPath);
           }
         }
@@ -1984,8 +1985,8 @@ class DistingCubit extends Cubit<DistingState> {
     return presets;
   }
 
-  /// Scans the SD card on the connected disting for .prst files.
-  /// Returns a sorted list of relative paths (e.g., "presets/my_preset.prst").
+  /// Scans the SD card on the connected disting for .json files.
+  /// Returns a sorted list of relative paths (e.g., "presets/my_preset.json").
   /// Only available if firmware has SD card support.
   Future<List<String>> fetchSdCardPresets() async {
     final currentState = state;
@@ -2478,6 +2479,99 @@ class DistingCubit extends Cubit<DistingState> {
       debugPrint("[DistingCubit] Plugin backup failed: $e");
       rethrow;
     }
+  }
+
+  /// Install multiple files from a preset package in batch
+  Future<void> installPackageFiles(
+    List<PackageFile> files,
+    Map<String, Uint8List> fileData, {
+    Function(String fileName, int completed, int total)? onFileStart,
+    Function(String fileName, double progress)? onFileProgress,
+    Function(String fileName)? onFileComplete,
+    Function(String fileName, String error)? onFileError,
+  }) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || currentState.offline) {
+      throw Exception("Cannot install package: Not synchronized or offline.");
+    }
+
+    if (!FirmwareVersion(currentState.distingVersion).hasSdCardSupport) {
+      throw Exception("Firmware does not support SD card operations.");
+    }
+
+    final filesToInstall = files.where((f) => f.shouldInstall).toList();
+    debugPrint("[DistingCubit] Installing ${filesToInstall.length} files from package");
+
+    for (int i = 0; i < filesToInstall.length; i++) {
+      final file = filesToInstall[i];
+      final data = fileData[file.relativePath];
+      
+      if (data == null) {
+        onFileError?.call(file.filename, 'File data not found');
+        continue;
+      }
+
+      try {
+        onFileStart?.call(file.filename, i + 1, filesToInstall.length);
+        
+        // Install the file directly to its target path
+        await installFileToPath(
+          file.targetPath,
+          data,
+          onProgress: (progress) => onFileProgress?.call(file.filename, progress),
+        );
+        
+        onFileComplete?.call(file.filename);
+        debugPrint("[DistingCubit] Successfully installed ${file.targetPath}");
+        
+      } catch (e) {
+        final errorMsg = "Failed to install ${file.filename}: $e";
+        debugPrint("[DistingCubit] $errorMsg");
+        onFileError?.call(file.filename, errorMsg);
+      }
+    }
+    
+    debugPrint("[DistingCubit] Package installation completed");
+  }
+
+  /// Install a single file to a specific path on the SD card
+  Future<void> installFileToPath(
+    String targetPath,
+    Uint8List fileData, {
+    Function(double)? onProgress,
+  }) async {
+    final disting = requireDisting();
+    await disting.requestWake();
+
+    debugPrint("[DistingCubit] Installing file to $targetPath (${fileData.length} bytes)");
+
+    // Upload in 512-byte chunks (matching existing implementation)
+    const chunkSize = 512;
+    int uploadPos = 0;
+
+    while (uploadPos < fileData.length) {
+      final remainingBytes = fileData.length - uploadPos;
+      final currentChunkSize = remainingBytes < chunkSize ? remainingBytes : chunkSize;
+      final chunk = fileData.sublist(uploadPos, uploadPos + currentChunkSize);
+
+      try {
+        await _uploadChunk(targetPath, chunk, uploadPos);
+        uploadPos += currentChunkSize;
+
+        // Report progress
+        final progress = uploadPos / fileData.length;
+        onProgress?.call(progress);
+
+        // Small delay between chunks
+        if (uploadPos < fileData.length) {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      } catch (e) {
+        throw Exception("Upload failed at position $uploadPos: $e");
+      }
+    }
+
+    debugPrint("[DistingCubit] Successfully installed file to $targetPath");
   }
 }
 

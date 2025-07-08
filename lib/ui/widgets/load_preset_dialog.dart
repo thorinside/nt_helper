@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/constants.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:nt_helper/services/preset_package_analyzer.dart';
+import 'package:nt_helper/services/file_conflict_detector.dart';
+import 'package:nt_helper/ui/widgets/package_install_dialog.dart';
+import 'dart:convert';
 
 enum PresetAction { load, append, export }
 
@@ -34,6 +41,10 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   List<String> _history = [];
   bool _isManagingHistory = false; // State for toggling view
   bool _isLoading = false; // Add loading state
+
+  // Drag and drop state
+  bool _isDragOver = false;
+  bool _isInstallingPackage = false;
 
   // New state for SD Cards and Presets
   List<SdCardEntry> _scannedCards = [];
@@ -284,10 +295,10 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     if (option is IndexedPresetFileEntry) {
       return _getDisplayPath(option);
     } else if (option is String) {
-      // Heuristic: If it looks like a file path (contains / and ends with .prst),
+      // Heuristic: If it looks like a file path (contains / and ends with .json),
       // treat it as a live SD preset path and show only the filename.
       // Otherwise, assume it's a history item and prefix it.
-      if (option.contains('/') && option.toLowerCase().endsWith('.prst')) {
+      if (option.contains('/') && option.toLowerCase().endsWith('.json')) {
         return option.split('/').last;
       } else {
         return "Recent: $option";
@@ -298,7 +309,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    Widget content = AlertDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
@@ -329,7 +340,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               // Fixed height container to prevent layout shift
               SizedBox(
                 height: 8, // Height to accommodate the progress bar
-                child: _isLoading ? LinearProgressIndicator() : null,
+                child: _isLoading || _isInstallingPackage ? LinearProgressIndicator() : null,
               ),
             ],
           ),
@@ -337,6 +348,26 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       ),
       actions: _isManagingHistory ? [_buildDoneButton()] : _buildLoadActions(),
     );
+
+    // Only add drag and drop on desktop platforms
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.linux)) {
+      return DropTarget(
+        onDragDone: _handleDragDone,
+        onDragEntered: _handleDragEntered,
+        onDragExited: _handleDragExited,
+        child: Stack(
+          children: [
+            content,
+            if (_isDragOver) _buildDragOverlay(),
+          ],
+        ),
+      );
+    }
+
+    return content;
   }
 
   // Extracted Autocomplete view builder
@@ -441,7 +472,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               // For live SD paths, we want the full path, not just the filename.
               // For history, it's just the name.
               if (selection.contains('/') &&
-                  selection.toLowerCase().endsWith('.prst')) {
+                  selection.toLowerCase().endsWith('.json')) {
                 textToSet = selection;
               } else {
                 textToSet = selection;
@@ -634,6 +665,318 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         _isManagingHistory = false;
       }),
       child: const Text('Done'),
+    );
+  }
+
+  // Drag and drop handlers
+  void _handleDragEntered(DropEventDetails details) {
+    setState(() {
+      _isDragOver = true;
+    });
+  }
+
+  void _handleDragExited(DropEventDetails details) {
+    setState(() {
+      _isDragOver = false;
+    });
+  }
+
+  void _handleDragDone(DropDoneDetails details) {
+    setState(() {
+      _isDragOver = false;
+    });
+
+    // Filter for supported files (zip packages or json presets)
+    final supportedFiles = details.files.where((file) {
+      final lowerPath = file.path.toLowerCase();
+      return lowerPath.endsWith('.zip') || lowerPath.endsWith('.json');
+    }).toList();
+
+    if (supportedFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please drop a preset package (.zip) or preset file (.json)'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (supportedFiles.length > 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please drop only one file at a time'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final file = supportedFiles.first;
+    if (file.path.toLowerCase().endsWith('.zip')) {
+      // Process as package
+      _processPackageFile(file);
+    } else if (file.path.toLowerCase().endsWith('.json')) {
+      // Process as single preset
+      _processPresetFile(file);
+    }
+  }
+
+  Future<void> _processPackageFile(XFile file) async {
+    setState(() {
+      _isInstallingPackage = true;
+    });
+
+    try {
+      // Read file data
+      final fileBytes = await file.readAsBytes();
+      
+      // Validate and analyze the package
+      final isValid = await PresetPackageAnalyzer.isValidPackage(fileBytes);
+      if (!isValid) {
+        setState(() {
+          _isInstallingPackage = false;
+        });
+        _showValidationErrorDialog(
+          'Invalid Package Format',
+          'The dropped file is not a valid preset package. Please ensure it contains a manifest.json file and a root/ directory with the preset files.',
+        );
+        return;
+      }
+
+      // Analyze the package
+      final analysis = await PresetPackageAnalyzer.analyzePackage(fileBytes);
+      if (!analysis.isValid) {
+        setState(() {
+          _isInstallingPackage = false;
+        });
+        _showValidationErrorDialog(
+          'Package Analysis Failed',
+          analysis.errorMessage ?? 'Unable to analyze the package contents.',
+        );
+        return;
+      }
+
+      // Detect file conflicts
+      final conflictDetector = FileConflictDetector(widget.distingCubit);
+      final analysisWithConflicts = await conflictDetector.detectConflicts(analysis);
+
+      setState(() {
+        _isInstallingPackage = false;
+      });
+
+      // Show package install dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => PackageInstallDialog(
+          analysis: analysisWithConflicts,
+          packageData: fileBytes,
+          distingCubit: widget.distingCubit,
+          onInstall: () {
+            Navigator.of(context).pop(); // Close package dialog
+            Navigator.of(context).pop(); // Close load preset dialog
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Package installation completed'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          },
+          onCancel: () => Navigator.of(context).pop(),
+        ),
+      );
+
+    } catch (e) {
+      setState(() {
+        _isInstallingPackage = false;
+      });
+
+      _showValidationErrorDialog(
+        'Package Processing Error',
+        'An unexpected error occurred while processing the package:\n\n$e',
+      );
+    }
+  }
+
+  Future<void> _processPresetFile(XFile file) async {
+    setState(() {
+      _isInstallingPackage = true;
+    });
+
+    try {
+      // Read preset file data
+      final fileBytes = await file.readAsBytes();
+      final fileName = file.name;
+      
+      // Validate that it's a valid JSON file
+      try {
+        final jsonString = String.fromCharCodes(fileBytes);
+        final presetData = jsonDecode(jsonString);
+        
+        // Basic validation - check if it looks like a preset
+        if (presetData is! Map<String, dynamic>) {
+          throw FormatException('Invalid preset format');
+        }
+        
+      } catch (e) {
+        setState(() {
+          _isInstallingPackage = false;
+        });
+        _showValidationErrorDialog(
+          'Invalid Preset File',
+          'The dropped file is not a valid JSON preset file. Please ensure it contains valid JSON data.',
+        );
+        return;
+      }
+
+      // Check if file already exists on SD card
+      final targetPath = '/presets/$fileName';
+      final conflictDetector = FileConflictDetector(widget.distingCubit);
+      final fileExists = await conflictDetector.fileExists(targetPath);
+
+      setState(() {
+        _isInstallingPackage = false;
+      });
+
+      if (fileExists) {
+        // Show confirmation dialog for overwrite
+        if (!mounted) return;
+        final shouldOverwrite = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('File Already Exists'),
+            content: Text('A preset named "$fileName" already exists on the SD card. Do you want to overwrite it?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Overwrite'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldOverwrite != true) return;
+      }
+
+      // Install the preset file
+      setState(() {
+        _isInstallingPackage = true;
+      });
+
+      await widget.distingCubit.installFileToPath(targetPath, fileBytes);
+
+      setState(() {
+        _isInstallingPackage = false;
+      });
+
+      // Close dialog and show success message
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close load preset dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully installed preset: $fileName'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+      );
+
+    } catch (e) {
+      setState(() {
+        _isInstallingPackage = false;
+      });
+
+      _showValidationErrorDialog(
+        'Preset Installation Error',
+        'An error occurred while installing the preset:\n\n$e',
+      );
+    }
+  }
+
+  void _showValidationErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+            const SizedBox(width: 8),
+            Expanded(child: Text(title)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDragOverlay() {
+    return Container(
+      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_upload_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Drop files here to install',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Supports .zip packages and .json presets',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
