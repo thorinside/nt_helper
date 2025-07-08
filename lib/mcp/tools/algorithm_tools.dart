@@ -196,7 +196,15 @@ class MCPAlgorithmTools {
   ///   A JSON string representing the input and output busses of each slot.
   ///   Returns an empty list '[]' if the state is not synchronized.
   Future<String> getCurrentRoutingState(Map<String, dynamic> params) async {
-    // Access the injected DistingCubit instance
+    try {
+      // First, actively refresh routing information from hardware
+      await _distingCubit.refreshRouting();
+    } catch (e) {
+      // If hardware refresh fails, continue with cached data
+      // This handles offline/mock modes gracefully
+    }
+
+    // Access the injected DistingCubit instance to get updated routing info
     final routingInfoList = _distingCubit.buildRoutingInformation();
 
     RoutingAnalyzer analyzer = RoutingAnalyzer(
