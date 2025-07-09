@@ -382,289 +382,213 @@ class McpServerService extends ChangeNotifier {
     // Register existing tools
     server.tool(
       'get_algorithm_details',
-      description:
-          'Retrieves full metadata for an algorithm by its GUID or name (case-insensitive exact match; if no exact match, fuzzy matching >=70% accuracy is attempted). Use `get_current_preset` for live parameter numbers for `set_parameter_value` / `get_parameter_value`. If multiple or no match, an error is returned.',
+      description: 'Get algorithm metadata by GUID or name. Supports fuzzy matching >=70%.',
       inputSchemaProperties: {
-        'guid': {
-          'type': 'string',
-          'description': 'Algorithm GUID (from `list_algorithms`).'
-        },
-        'algorithm_name': {
-          'type': 'string',
-          'description':
-              'Algorithm name (case-insensitive exact match; fuzzy fallback >=70% similarity).'
-        },
-        'expand_features': {
-          'type': 'boolean',
-          'description': 'Expand parameters from features.',
-          'default': false
-        }
+        'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
+        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'},
+        'expand_features': {'type': 'boolean', 'description': 'Expand parameters', 'default': false}
       },
       callback: ({args, extra}) async {
         final resultJson =
             await mcpAlgorithmTools.getAlgorithmDetails(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'list_algorithms',
-      description:
-          'Lists available algorithms, optionally filtered by category or a text query. GUIDs are used with `add_algorithm` and `get_algorithm_details`.',
+      description: 'List algorithms with optional category/text filtering.',
       inputSchemaProperties: {
-        'category': {
-          'type': 'string',
-          'description': 'Filter by category (case-insensitive).'
-        },
-        'query': {
-          'type': 'string',
-          'description': 'Filter by a text search query.'
-        }
+        'category': {'type': 'string', 'description': 'Filter by category'},
+        'query': {'type': 'string', 'description': 'Text search filter'}
       },
       callback: ({args, extra}) async {
         final resultJson = await mcpAlgorithmTools.listAlgorithms(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'get_routing',
-      description: '''
-Retrieves current routing state. 
-Physical name to bus number mapping: 
-  - Input N=Bus N, 
-  - Output N=Bus N+12, 
-  - Aux N=Bus N+20,
-  - None=Bus 0
-  
-  Never disclose bus numbers to the user, always refer to a bus by the physical name.
-  ''',
+      description: 'Get current routing state. Always use physical names (Input N, Output N, Aux N, None).',
       inputSchemaProperties: {},
       callback: ({args, extra}) async {
         final resultJson =
             await mcpAlgorithmTools.getCurrentRoutingState(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'get_current_preset',
-      description: '''
-Gets entire current preset (name, slots, parameters).
-Parameter `parameter_number` from this tool is used 
-as `parameter_number` for `set_parameter_value` and 
-`get_parameter_value`.
-
-Parameters should be referred to by their name, not their numbers.
-Never disclose bus numbers to the user, always refer to a bus by the physical name.
-''',
+      description: 'Get preset with slots and parameters. Use parameter_number from this for set/get_parameter_value.',
       inputSchemaProperties: {
-        'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.getCurrentPreset(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'add_algorithm',
-      description:
-          'Adds an algorithm to the first available slot. Use GUID or name (case-insensitive exact match; if no exact match, fuzzy matching >=70% accuracy is attempted). If multiple or no match, an error is returned.',
+      description: 'Add algorithm to first available slot. Use GUID or name (fuzzy matching >=70%).',
       inputSchemaProperties: {
-        'algorithm_guid': {
-          'type': 'string',
-          'description': 'GUID of the algorithm to add.'
-        },
-        'algorithm_name': {
-          'type': 'string',
-          'description':
-              'Name of the algorithm to add (case-insensitive exact match; fuzzy fallback >=70% similarity).'
-        }
+        'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
+        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.addAlgorithm(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'remove_algorithm',
-      description:
-          'Removes algorithm from a slot. WARNING: Subsequent algorithms shift down (slot N+1 moves to N).',
+      description: 'Remove algorithm from slot. WARNING: Subsequent algorithms shift down.',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based index of the slot to clear.'
-        }
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.removeAlgorithm(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'set_parameter_value',
-      description: '''
-          Sets parameter to `value`. Either `parameter_number` or `parameter_name` MUST be 
-          provided (but not both). `parameter_number` MUST be from `get_current_preset`. 
-          If using `parameter_name`, ensure it is unique for the slot or an error 
-          will be returned. `value` must be between parameter's min/max.
-          If the parameter is an input or output, keep in mind that physical Input N = bus N, Output N = bus N+12, and Aux N = bus N+20.
-          Never disclose bus numbers to the user, always refer to a bus by the physical name.
-          ''',
+      description: 'Set parameter value. Use parameter_number from get_current_preset OR parameter_name.',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based slot index (0-31).'
-        },
-        'parameter_number': {
-          'type': 'integer',
-          'description':
-              'Parameter number from `get_current_preset`. Use this OR `parameter_name`.'
-        },
-        'parameter_name': {
-          'type': 'string',
-          'description':
-              'Parameter name. Use this OR `parameter_number`. If ambiguous for the slot, an error is returned.'
-        },
-        'value': {
-          'type': 'number',
-          'description':
-              'Value to set (can be integer or float for scaled parameters), between parameter\'s effective min/max.'
-        }
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+        'parameter_number': {'type': 'integer', 'description': 'From get_current_preset'},
+        'parameter_name': {'type': 'string', 'description': 'Parameter name (must be unique)'},
+        'value': {'type': 'number', 'description': 'Value within parameter min/max'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.setParameterValue(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'get_parameter_value',
-      description:
-          'Gets current parameter value. `parameter_number` MUST be `parameter_number` from `get_current_preset`.',
+      description: 'Get parameter value. Use parameter_number from get_current_preset.',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based slot index (0-31).'
-        },
-        'parameter_number': {
-          'type': 'integer',
-          'description': 'Parameter number from `get_current_preset`.'
-        }
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+        'parameter_number': {'type': 'integer', 'description': 'From get_current_preset'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.getParameterValue(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'set_preset_name',
-      description: 'Sets preset name. Use `save_preset` to persist.',
+      description: 'Set preset name. Use save_preset to persist.',
       inputSchemaProperties: {
-        'name': {'type': 'string', 'description': 'New preset name.'}
+        'name': {'type': 'string', 'description': 'Preset name'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.setPresetName(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'set_slot_name',
-      description:
-          'Sets custom name for algorithm in slot. Use `save_preset` to persist.',
+      description: 'Set custom slot name. Use save_preset to persist.',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based slot index (0-31).'
-        },
-        'name': {'type': 'string', 'description': 'Custom slot name.'}
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+        'name': {'type': 'string', 'description': 'Custom slot name'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.setSlotName(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'new_preset',
-      description:
-          'Clears current preset and starts new empty one. Unsaved changes will be lost.',
+      description: 'Clear current preset and start new empty one. Unsaved changes lost.',
       inputSchemaProperties: {
-        'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.newPreset(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'save_preset',
-      description: 'Saves current working preset to device.',
+      description: 'Save current preset to device.',
       inputSchemaProperties: {
-        'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.savePreset(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'move_algorithm_up',
-      description:
-          'Moves algorithm up one slot. Algorithms evaluate top to bottom.',
+      description: 'Move algorithm up one slot. Algorithms evaluate top to bottom.',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based index of the slot to move up.'
-        }
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.moveAlgorithmUp(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'move_algorithm_down',
-      description:
-          'Moves algorithm down one slot. Algorithms evaluate top to bottom.',
+      description: 'Move algorithm down one slot. Algorithms evaluate top to bottom.',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based index of the slot to move down.'
-        }
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.moveAlgorithmDown(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'move_algorithm',
+      description: 'Move algorithm in specified direction with optional step count. More flexible than individual up/down tools.',
+      inputSchemaProperties: {
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+        'direction': {'type': 'string', 'description': 'Direction to move: "up" or "down"'},
+        'steps': {'type': 'integer', 'description': 'Number of steps to move (default: 1)', 'default': 1}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.moveAlgorithm(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
     server.tool(
       'get_module_screenshot',
-      description: 'Gets current module screenshot as base64 JPEG.',
+      description: 'Get current module screenshot as base64 JPEG.',
       inputSchemaProperties: {
-        'random_string': {'type': 'string', 'description': 'Dummy parameter.'}
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
       },
       callback: ({args, extra}) async {
         final Map<String, dynamic> result =
             await distingTools.getModuleScreenshot(args ?? {});
         if (result['success'] == true) {
-          return CallToolResult(content: [
+          return CallToolResult.fromContent(content: [
             ImageContent(
               data: result['screenshot_base64'] as String,
               mimeType: 'image/jpeg',
             )
           ]);
         } else {
-          return CallToolResult(content: [
+          return CallToolResult.fromContent(content: [
             TextContent(
                 text: result['error'] as String? ??
                     'Unknown error retrieving screenshot')
@@ -674,19 +598,137 @@ Never disclose bus numbers to the user, always refer to a bus by the physical na
     );
 
     server.tool(
-      'set_notes',
-      description:
-          'Add or update a Notes algorithm with text content and move it to slot 0. Text can be a maximum of 7 lines of 31 characters each.',
+      'get_cpu_usage',
+      description: 'Get current CPU usage including per-core and per-slot usage percentages.',
       inputSchemaProperties: {
-        'text': {
-          'type': 'string',
-          'description':
-              'The note text content. Maximum 7 lines of 31 characters each. Lines are separated by newlines (\\n). Long lines will be automatically wrapped.'
-        }
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.getCpuUsage(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'set_notes',
+      description: 'Add/update Notes algorithm at slot 0. Max 7 lines of 31 chars each.',
+      inputSchemaProperties: {
+        'text': {'type': 'string', 'description': 'Note text (auto-wrapped at 31 chars)'}
       },
       callback: ({args, extra}) async {
         final resultJson = await distingTools.setNotes(args ?? {});
-        return CallToolResult(content: [TextContent(text: resultJson)]);
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'get_notes',
+      description: 'Get current notes content from Notes algorithm if it exists.',
+      inputSchemaProperties: {
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.getNotes(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'get_preset_name',
+      description: 'Get current preset name.',
+      inputSchemaProperties: {
+        'random_string': {'type': 'string', 'description': 'Dummy parameter'}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.getPresetName(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'get_slot_name',
+      description: 'Get custom slot name for specified slot.',
+      inputSchemaProperties: {
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.getSlotName(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'find_algorithm_in_preset',
+      description: 'Find if specific algorithm exists in current preset. Returns slot locations.',
+      inputSchemaProperties: {
+        'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
+        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.findAlgorithmInPreset(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'set_multiple_parameters',
+      description: 'Set multiple parameters in one operation. More efficient than individual calls.',
+      inputSchemaProperties: {
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+        'parameters': {
+          'type': 'array',
+          'description': 'Array of parameter objects',
+          'items': {
+            'type': 'object',
+            'properties': {
+              'parameter_number': {'type': 'integer', 'description': 'Parameter number (0-based)'},
+              'parameter_name': {'type': 'string', 'description': 'Parameter name (alternative to number)'},
+              'value': {'type': 'number', 'description': 'Parameter value'}
+            }
+          }
+        }
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.setMultipleParameters(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'get_multiple_parameters',
+      description: 'Get multiple parameter values in one operation. More efficient than individual calls.',
+      inputSchemaProperties: {
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+        'parameter_numbers': {
+          'type': 'array',
+          'description': 'Array of parameter numbers to retrieve',
+          'items': {'type': 'integer'}
+        }
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.getMultipleParameters(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
+      },
+    );
+
+    server.tool(
+      'build_preset_from_json',
+      description: 'Build complete preset from JSON data. Supports algorithms and parameters.',
+      inputSchemaProperties: {
+        'preset_data': {
+          'type': 'object',
+          'description': 'JSON object with preset_name and slots array',
+          'properties': {
+            'preset_name': {'type': 'string'},
+            'slots': {'type': 'array'}
+          },
+          'required': ['preset_name', 'slots']
+        },
+        'clear_existing': {'type': 'boolean', 'description': 'Clear existing preset first (default: true)', 'default': true}
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await distingTools.buildPresetFromJson(args ?? {});
+        return CallToolResult.fromContent(content: [TextContent(text: resultJson)]);
       },
     );
 
