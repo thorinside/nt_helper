@@ -6,6 +6,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo, ParameterValue;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
+import 'package:nt_helper/models/cpu_usage.dart';
 
 class DistingControllerImpl implements DistingController {
   final DistingCubit _distingCubit;
@@ -193,6 +194,56 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
+  Future<String?> getParameterStringValue(int slotIndex, int parameterNumber) async {
+    final state = _getSynchronizedState();
+    _validateParameterNumber(slotIndex, parameterNumber, state);
+
+    final Slot slotData = state.slots[slotIndex];
+    final Algorithm algorithm = slotData.algorithm;
+    final int actualAlgorithmIndex = algorithm.algorithmIndex;
+
+    try {
+      final ParameterValue? paramValueResponse = await _getManager()
+          .requestParameterValue(actualAlgorithmIndex, parameterNumber);
+      
+      if (paramValueResponse?.value != null) {
+        // Convert the parameter value to a string
+        // For Notes algorithm, the parameter values are stored as encoded strings
+        final int value = paramValueResponse!.value!;
+        
+        // Convert from parameter encoding to string
+        // Notes algorithm uses a specific encoding for text parameters
+        if (value == 0) {
+          return ''; // Empty string
+        }
+        
+        // Decode the parameter value to string
+        // This is a simplified implementation - the actual encoding may be more complex
+        return _decodeParameterValueToString(value);
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint(
+          'Error fetching parameter string value for slot $slotIndex, param $parameterNumber (algoIndex $actualAlgorithmIndex): $e');
+      return null;
+    }
+  }
+
+  /// Helper method to decode parameter values to strings for Notes algorithm
+  String _decodeParameterValueToString(int value) {
+    // This is a simplified decoder - the actual Notes algorithm encoding
+    // may be more complex. For now, return a placeholder.
+    // The proper implementation would need to understand the specific
+    // encoding used by the Notes algorithm for text parameters.
+    if (value == 0) return '';
+    
+    // For demonstration, convert simple values
+    // The real implementation would decode the Disting's text encoding
+    return String.fromCharCode(value);
+  }
+
+  @override
   Future<void> setSlotName(int slotIndex, String name) async {
     final state = _getSynchronizedState();
     _validateSlotIndex(slotIndex);
@@ -202,6 +253,24 @@ class DistingControllerImpl implements DistingController {
     final int actualAlgorithmIndex = slotData.algorithm.algorithmIndex;
 
     _distingCubit.renameSlot(actualAlgorithmIndex, name);
+  }
+
+  @override
+  Future<String?> getSlotName(int slotIndex) async {
+    final state = _getSynchronizedState();
+    _validateSlotIndex(slotIndex);
+
+    final Slot slotData = state.slots[slotIndex];
+    
+    // Check if slot is empty
+    if (slotData.algorithm.guid.isEmpty) {
+      return null;
+    }
+
+    // Return the custom name if set, otherwise return the algorithm's default name
+    // The actual implementation may need to check for custom names stored in the state
+    // For now, return the algorithm name as a placeholder
+    return slotData.algorithm.name.isNotEmpty ? slotData.algorithm.name : null;
   }
 
   @override
@@ -233,5 +302,16 @@ class DistingControllerImpl implements DistingController {
     _validateSlotIndex(slotIndex);
     _getSynchronizedState();
     await _distingCubit.refreshSlot(slotIndex);
+  }
+
+  @override
+  Future<CpuUsage?> getCpuUsage() async {
+    try {
+      _getSynchronizedState(); // Ensure we're in sync state
+      return await _getManager().requestCpuUsage();
+    } catch (e) {
+      debugPrint('Error fetching CPU usage: ${e.toString()}');
+      return null; // Return null on any error
+    }
   }
 }

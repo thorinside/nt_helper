@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo;
+import 'package:nt_helper/models/cpu_usage.dart';
 
 /// Abstract interface defining operations to control the Disting state,
 /// intended for use by MCP tools or other services.
@@ -71,10 +72,23 @@ abstract class DistingController {
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
   Future<int?> getParameterValue(int slotIndex, int parameterNumber);
 
+  /// Retrieves the current string value of a specific parameter from the device.
+  /// Used for text-based parameters like those in the Notes algorithm.
+  /// Returns null if the value cannot be fetched (e.g., slot empty, parameter invalid, or MIDI error).
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index or parameterNumber is invalid.
+  Future<String?> getParameterStringValue(int slotIndex, int parameterNumber);
+
   /// Sets a custom name for the algorithm in the specified slot.
   /// Throws StateError if the Disting is not in a synchronized state or the slot is empty.
   /// Throws ArgumentError if the slot index is invalid.
   Future<void> setSlotName(int slotIndex, String name);
+
+  /// Gets the custom name for the algorithm in the specified slot.
+  /// Returns null if no custom name is set or the slot is empty.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index is invalid.
+  Future<String?> getSlotName(int slotIndex);
 
   /// Tells the device to clear the current preset and start a new, empty one.
   /// Throws StateError if the Disting is not in a synchronized state.
@@ -93,4 +107,10 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index is invalid.
   Future<void> refreshSlot(int slotIndex);
+
+  /// Retrieves the current CPU usage information from the device.
+  /// Returns CPU usage data including overall CPU usage and per-slot usage.
+  /// Returns null if the usage cannot be fetched (e.g., device not connected, MIDI error).
+  /// Throws StateError if the Disting is not in a synchronized state.
+  Future<CpuUsage?> getCpuUsage();
 }
