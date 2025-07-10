@@ -199,48 +199,21 @@ class DistingControllerImpl implements DistingController {
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
     final Slot slotData = state.slots[slotIndex];
-    final Algorithm algorithm = slotData.algorithm;
-    final int actualAlgorithmIndex = algorithm.algorithmIndex;
 
     try {
-      final ParameterValue? paramValueResponse = await _getManager()
-          .requestParameterValue(actualAlgorithmIndex, parameterNumber);
-      
-      if (paramValueResponse?.value != null) {
-        // Convert the parameter value to a string
-        // For Notes algorithm, the parameter values are stored as encoded strings
-        final int value = paramValueResponse!.value!;
-        
-        // Convert from parameter encoding to string
-        // Notes algorithm uses a specific encoding for text parameters
-        if (value == 0) {
-          return ''; // Empty string
-        }
-        
-        // Decode the parameter value to string
-        // This is a simplified implementation - the actual encoding may be more complex
-        return _decodeParameterValueToString(value);
+      // Access the parameter string value directly from the slot's valueStrings
+      // This is separate from the parameter value and is used for text-based parameters
+      // like those in the Notes algorithm
+      if (parameterNumber < slotData.valueStrings.length) {
+        return slotData.valueStrings[parameterNumber].value;
       }
       
       return null;
     } catch (e) {
       debugPrint(
-          'Error fetching parameter string value for slot $slotIndex, param $parameterNumber (algoIndex $actualAlgorithmIndex): $e');
+          'Error fetching parameter string value for slot $slotIndex, param $parameterNumber: $e');
       return null;
     }
-  }
-
-  /// Helper method to decode parameter values to strings for Notes algorithm
-  String _decodeParameterValueToString(int value) {
-    // This is a simplified decoder - the actual Notes algorithm encoding
-    // may be more complex. For now, return a placeholder.
-    // The proper implementation would need to understand the specific
-    // encoding used by the Notes algorithm for text parameters.
-    if (value == 0) return '';
-    
-    // For demonstration, convert simple values
-    // The real implementation would decode the Disting's text encoding
-    return String.fromCharCode(value);
   }
 
   @override
