@@ -1,24 +1,22 @@
-This is the nt_helper project. It is a flutter app that supports Linux, MacOS, iOS, Android and Windows.
-Desktop versions of the app have some features that iOS and Android don't, like backup and drag and drop install.
-There is a MIDI SysEX implementation in lib/domain/ as well as a main driver cubit lib/disting_cubit.dart.
-Most of the UI is rendered in lib/synchronized_screen.dart
-There are three modes of running the app, Demo mode, Offline mode, and connected mode (the default). 
-lib/domain/i_disting_midi_manager.dart is the main interface for all of the implementations. Some implementations 
-have empty implementations for some commands, because they aren't needed in that mode.
-An mcp service exists in the app.
-A Drift database is in the app, to keep track of offline algorithm information.
+Flutter app supporting Linux, macOS, iOS, Android, Windows. Desktop versions have backup and drag-drop install features.
 
-## MCP Service
-- The MCP service handles communication and synchronization between different parts of the application
-- It likely manages the state and interactions for the MIDI device connections and data transfer
-- The MCP service uses a controller to abstract and hide the implementation details of how the Disting cubit works, providing a clean separation of concerns and encapsulation of the underlying device interaction logic
+**Key Architecture:**
+- Main cubit: `lib/cubit/disting_cubit.dart`
+- MIDI SysEX: `lib/domain/` with interface `i_disting_midi_manager.dart`
+- UI: `lib/ui/synchronized_screen.dart`
+- Database: Drift at `lib/db/database.dart` for algorithms and presets
+- Three modes: Demo, Offline, Connected (default)
 
-## Synchronization
-- New location of synchronized_screen.dart is lib/synchronized_screen.dart
+**MCP Service:**
+- Implementation: `lib/services/mcp_server_service.dart`
+- Controller: `lib/services/disting_controller.dart` (abstracts cubit)
+- Tools: `lib/mcp/tools/` (algorithm_tools.dart, disting_tools.dart)
 
-## Preset Export
-- The preset export feature allows users to save and transfer the configuration and settings of a device
-- Implementation involves serializing the current device state and parameters into a portable format
-- Supports exporting presets to a file that can be imported later or shared between devices
-- Likely uses the Drift database to manage and store preset information
-- The export process is abstracted through the MIDI manager interface to support different modes of operation (demo, offline, connected)
+**Preset Export:**
+- Dialog: `lib/ui/widgets/preset_package_dialog.dart`
+- Services: `lib/services/package_creator.dart`, `preset_analyzer.dart`
+- Storage: Drift database with DAOs in `lib/db/daos/`
+
+**Development Best Practices:**
+- Always ensure `flutter analyze` has no errors.
+- Always start a new feature in a new branch. When development is complete ask if a PR is desired. If the user says yes, make a PR and submit it for review.

@@ -9,24 +9,21 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/util/case_converter.dart';
+import 'package:nt_helper/mcp/mcp_constants.dart';
+import 'package:nt_helper/models/cpu_usage.dart';
 
 /// Defines MCP tools for interacting with the Disting state (presets, slots, parameters)
 /// via the DistingController.
 class DistingTools {
   final DistingController _controller;
 
-  // Assuming a maximum number of slots for finding the first empty one
-  final int maxSlots = 32;
+  // Use shared constants
+  final int maxSlots = MCPConstants.maxSlots;
 
   DistingTools(this._controller);
 
-  // Helper to scale value based on powerOfTen for display
-  num _scaleForDisplay(int value, int? powerOfTen) {
-    if (powerOfTen != null && powerOfTen > 0) {
-      return value / pow(10, powerOfTen);
-    }
-    return value;
-  }
+  // Use shared utility
+  num _scaleForDisplay(int value, int? powerOfTen) => MCPUtils.scaleForDisplay(value, powerOfTen);
 
   /// MCP Tool: Gets the entire current preset state.
   /// Parameters: None
@@ -87,7 +84,7 @@ class DistingTools {
           convertToSnakeCaseKeys(presetData)); // Apply converter here
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -99,37 +96,6 @@ class DistingTools {
     };
   }
 
-  static int _levenshteinDistance(String s, String t) {
-    final int sLen = s.length;
-    final int tLen = t.length;
-    if (sLen == 0) return tLen;
-    if (tLen == 0) return sLen;
-    final v = List.generate(sLen + 1, (_) => List<int>.filled(tLen + 1, 0));
-    for (var i = 0; i <= sLen; i++) {
-      v[i][0] = i;
-    }
-    for (var j = 0; j <= tLen; j++) {
-      v[0][j] = j;
-    }
-    for (var i = 1; i <= sLen; i++) {
-      for (var j = 1; j <= tLen; j++) {
-        final cost = s[i - 1].toLowerCase() == t[j - 1].toLowerCase() ? 0 : 1;
-        v[i][j] = [
-          v[i - 1][j] + 1,
-          v[i][j - 1] + 1,
-          v[i - 1][j - 1] + cost,
-        ].reduce((a, b) => a < b ? a : b);
-      }
-    }
-    return v[sLen][tLen];
-  }
-
-  static double _similarity(String s, String t) {
-    final dist = _levenshteinDistance(s, t);
-    final maxLen = s.length > t.length ? s.length : t.length;
-    if (maxLen == 0) return 1.0;
-    return (maxLen - dist) / maxLen;
-  }
 
   /// MCP Tool: Adds an algorithm to the first available slot (determined by hardware).
   /// Parameters:
@@ -139,70 +105,30 @@ class DistingTools {
   Future<String> addAlgorithm(Map<String, dynamic> params) async {
     final String? algorithmGuid = params['algorithm_guid'];
     final String? algorithmName = params['algorithm_name'];
-    if ((algorithmGuid == null || algorithmGuid.isEmpty) &&
-        (algorithmName == null || algorithmName.isEmpty)) {
-      return jsonEncode({
-        'success': false,
-        'error':
-            'Missing or empty "algorithm_guid" or "algorithm_name" parameter.'
-      });
-    }
 
-    String resolvedGuid = algorithmGuid ?? '';
-    if (algorithmGuid == null || algorithmGuid.isEmpty) {
-      final algorithms = AlgorithmMetadataService().getAllAlgorithms();
-      final exactMatches = algorithms
-          .where(
-              (alg) => alg.name.toLowerCase() == algorithmName!.toLowerCase())
-          .toList();
-      if (exactMatches.isEmpty) {
-        final fuzzyMatches = algorithms.where((alg) {
-          return _similarity(alg.name, algorithmName!) >= 0.7;
-        }).toList();
-        if (fuzzyMatches.isEmpty) {
-          return jsonEncode(convertToSnakeCaseKeys({
-            'success': false,
-            'error': 'No algorithm named "$algorithmName" found.'
-          }));
-        }
-        if (fuzzyMatches.length > 1) {
-          final candidates = fuzzyMatches
-              .map((alg) => {'name': alg.name, 'guid': alg.guid})
-              .toList();
-          return jsonEncode(convertToSnakeCaseKeys({
-            'success': false,
-            'error':
-                'Ambiguous algorithm name "$algorithmName". Fuzzy matches (>=70%): $candidates. Please specify more precisely or use the GUID.'
-          }));
-        }
-        resolvedGuid = fuzzyMatches.first.guid;
-      } else if (exactMatches.length > 1) {
-        final candidates = exactMatches
-            .map((alg) => {'name': alg.name, 'guid': alg.guid})
-            .toList();
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error':
-              'Ambiguous algorithm name "$algorithmName". Matches: $candidates. Please specify more precisely.'
-        }));
-      } else {
-        resolvedGuid = exactMatches.first.guid;
-      }
+    // Use shared algorithm resolver
+    final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+    final resolution = AlgorithmResolver.resolveAlgorithm(
+      guid: algorithmGuid,
+      algorithmName: algorithmName,
+      allAlgorithms: algorithms,
+    );
+
+    if (!resolution.isSuccess) {
+      return jsonEncode(convertToSnakeCaseKeys(resolution.error!));
     }
 
     try {
       final algoStub =
-          Algorithm(algorithmIndex: -1, guid: resolvedGuid, name: '');
+          Algorithm(algorithmIndex: -1, guid: resolution.resolvedGuid!, name: '');
 
       await _controller.addAlgorithm(algoStub);
 
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Request to add algorithm $resolvedGuid sent.'
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Algorithm ${resolution.resolvedGuid!} added to slot')
+      ));
     } catch (e) {
-      return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -215,19 +141,17 @@ class DistingTools {
     final int? slotIndex = params['slot_index'];
     if (slotIndex == null) {
       return jsonEncode(convertToSnakeCaseKeys(
-          // Ensure snake case for error response
-          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
+        MCPUtils.buildError('${MCPConstants.missingParamError}: "slot_index"')
+      ));
     }
 
     try {
       await _controller.clearSlot(slotIndex);
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Algorithm removed from slot $slotIndex.'
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Algorithm removed from slot $slotIndex')
+      ));
     } catch (e) {
-      return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -238,34 +162,28 @@ class DistingTools {
     final String? parameterNameParam = params['parameter_name'] as String?;
     final num? displayValue = params['value'] as num?;
 
-    if (slotIndex == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
-    }
-    if (displayValue == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing "value" parameter.'}));
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
 
-    if (parameterNumberParam == null && parameterNameParam == null) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error':
-            'Either "parameter_number" or "parameter_name" must be provided.'
-      }));
+    // Validate value parameter
+    final valueError = MCPUtils.validateRequiredParam(displayValue, 'value');
+    if (valueError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(valueError));
     }
 
-    if (parameterNumberParam != null && parameterNameParam != null) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error':
-            'Provide either "parameter_number" or "parameter_name", not both.'
-      }));
+    // Validate exactly one of parameter_number or parameter_name
+    final paramError = MCPUtils.validateExactlyOne(params, ['parameter_number', 'parameter_name'], 
+      helpCommand: MCPConstants.getPresetHelp);
+    if (paramError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
 
     try {
       final List<ParameterInfo> paramInfos =
-          await _controller.getParametersForSlot(slotIndex);
+          await _controller.getParametersForSlot(slotIndex!);
 
       int? targetParameterNumber;
       ParameterInfo? paramInfo;
@@ -273,11 +191,9 @@ class DistingTools {
       if (parameterNumberParam != null) {
         if (parameterNumberParam >= paramInfos.length ||
             parameterNumberParam < 0) {
-          return jsonEncode(convertToSnakeCaseKeys({
-            'success': false,
-            'error':
-                'Parameter number $parameterNumberParam is out of bounds for slot $slotIndex.'
-          }));
+          return jsonEncode(convertToSnakeCaseKeys(
+            MCPUtils.buildError('Parameter number $parameterNumberParam is out of bounds for slot $slotIndex.')
+          ));
         }
         targetParameterNumber = parameterNumberParam;
         paramInfo = paramInfos[targetParameterNumber];
@@ -288,18 +204,14 @@ class DistingTools {
             .toList();
 
         if (matchingParams.isEmpty) {
-          return jsonEncode(convertToSnakeCaseKeys({
-            'success': false,
-            'error':
-                'Parameter with name "$parameterNameParam" not found in slot $slotIndex. Check `get_current_preset` for available parameters.'
-          }));
+          return jsonEncode(convertToSnakeCaseKeys(
+            MCPUtils.buildError('Parameter with name "$parameterNameParam" not found in slot $slotIndex. Check `get_current_preset` for available parameters.')
+          ));
         }
         if (matchingParams.length > 1) {
-          return jsonEncode(convertToSnakeCaseKeys({
-            'success': false,
-            'error':
-                'Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.'
-          }));
+          return jsonEncode(convertToSnakeCaseKeys(
+            MCPUtils.buildError('Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.')
+          ));
         }
         paramInfo = matchingParams.first;
         // We need to find the original index (parameterNumber) of this paramInfo
@@ -308,18 +220,17 @@ class DistingTools {
 
       if (paramInfo == null || targetParameterNumber == null) {
         // Should not happen if logic above is correct
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error': 'Failed to identify target parameter.'
-        }));
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Failed to identify target parameter.')
+        ));
       }
 
       int rawValue;
       if (paramInfo.powerOfTen > 0) {
-        rawValue = (displayValue * pow(10, paramInfo.powerOfTen)).round();
+        rawValue = (displayValue! * pow(10, paramInfo.powerOfTen)).round();
       } else {
         rawValue =
-            displayValue.round(); // Round even if no powerOfTen, to ensure int
+            displayValue!.round(); // Round even if no powerOfTen, to ensure int
       }
 
       if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
@@ -327,24 +238,20 @@ class DistingTools {
             _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
         final effectiveMax =
             _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error':
-              'Provided value $displayValue (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).'
-        }));
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Provided value $displayValue (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).')
+        ));
       }
 
       await _controller.updateParameterValue(
           slotIndex, targetParameterNumber, rawValue);
 
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message':
-            'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.'
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.')
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -358,52 +265,49 @@ class DistingTools {
     final int? slotIndex = params['slot_index'] as int?;
     final int? parameterNumber = params['parameter_number'] as int?;
 
-    if (slotIndex == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'}));
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
-    if (parameterNumber == null) {
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': false,
-        'error': 'Missing "parameter_number" parameter.'
-      }));
+
+    // Validate parameter number
+    final paramError = MCPUtils.validateRequiredParam(parameterNumber, 'parameter_number');
+    if (paramError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
 
     try {
       final int? liveRawValue =
-          await _controller.getParameterValue(slotIndex, parameterNumber);
+          await _controller.getParameterValue(slotIndex!, parameterNumber!);
 
       if (liveRawValue == null) {
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error':
-              'Could not retrieve value for parameter $parameterNumber in slot $slotIndex.'
-        }));
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Could not retrieve value for parameter $parameterNumber in slot $slotIndex.')
+        ));
       }
 
       // Fetch parameter info to get powerOfTen for scaling
       final List<ParameterInfo> paramInfos =
           await _controller.getParametersForSlot(slotIndex);
       if (parameterNumber >= paramInfos.length || parameterNumber < 0) {
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error':
-              'Parameter number $parameterNumber is out of bounds for slot $slotIndex (for scaling info).'
-        }));
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Parameter number $parameterNumber is out of bounds for slot $slotIndex (for scaling info).')
+        ));
       }
       final ParameterInfo paramInfo = paramInfos[parameterNumber];
 
-      final Map<String, dynamic> result = {
-        'success': true,
-        'slot_index': slotIndex,
-        'parameter_number': parameterNumber,
-        'value': _scaleForDisplay(
-            liveRawValue, paramInfo.powerOfTen), // Scaled value
-      };
-      return jsonEncode(convertToSnakeCaseKeys(result));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Parameter value retrieved successfully', data: {
+          'slot_index': slotIndex,
+          'parameter_number': parameterNumber,
+          'value': _scaleForDisplay(
+              liveRawValue, paramInfo.powerOfTen), // Scaled value
+        })
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -415,20 +319,20 @@ class DistingTools {
   Future<String> setPresetName(Map<String, dynamic> params) async {
     final String? name = params['name'] as String?;
 
-    if (name == null || name.isEmpty) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing or empty "name" parameter.'});
+    // Validate name parameter
+    final nameError = MCPUtils.validateRequiredParam(name, 'name');
+    if (nameError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(nameError));
     }
 
     try {
-      await _controller.setPresetName(name);
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Preset name set to "$name".',
-      }));
+      await _controller.setPresetName(name!);
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Preset name set to "$name".')
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -442,24 +346,26 @@ class DistingTools {
     final int? slotIndex = params['slot_index'] as int?;
     final String? name = params['name'] as String?;
 
-    if (slotIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
-    if (name == null || name.isEmpty) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing or empty "name" parameter.'});
+
+    // Validate name parameter
+    final nameError = MCPUtils.validateRequiredParam(name, 'name');
+    if (nameError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(nameError));
     }
 
     try {
-      await _controller.setSlotName(slotIndex, name);
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Name for slot $slotIndex set to "$name".',
-      }));
+      await _controller.setSlotName(slotIndex!, name!);
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Name for slot $slotIndex set to "$name".')
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -469,13 +375,12 @@ class DistingTools {
   Future<String> newPreset(Map<String, dynamic> params) async {
     try {
       await _controller.newPreset();
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'New empty preset initiated on the device.',
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('New empty preset initiated on the device.')
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -485,13 +390,12 @@ class DistingTools {
   Future<String> savePreset(Map<String, dynamic> params) async {
     try {
       await _controller.savePreset();
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Request to save current preset sent to the device.',
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Request to save current preset sent to the device.')
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -506,31 +410,30 @@ class DistingTools {
   Future<String> moveAlgorithmUp(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
 
-    if (slotIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
 
     if (slotIndex == 0) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Cannot move algorithm in slot 0 further up.'
-      });
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Cannot move algorithm in slot 0 further up.')
+      ));
     }
     // Ensure slotIndex is within a reasonable range if needed, though controller might handle this.
     // For now, just check against 0. Max slot check can be added if necessary or rely on controller.
 
-    final int sourceSlotIndex = slotIndex;
+    final int sourceSlotIndex = slotIndex!;
 
     try {
       await _controller.moveAlgorithmUp(sourceSlotIndex);
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Algorithm from slot $sourceSlotIndex moved up.'
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Algorithm from slot $sourceSlotIndex moved up.')
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -545,9 +448,10 @@ class DistingTools {
   Future<String> moveAlgorithmDown(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
 
-    if (slotIndex == null) {
-      return jsonEncode(
-          {'success': false, 'error': 'Missing "slot_index" parameter.'});
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
 
     // Assuming maxSlots is available or a way to check upper bound exists.
@@ -555,24 +459,93 @@ class DistingTools {
     // A check like `if (slotIndex >= maxSlots - 1)` could be added.
     // For now, we'll assume maxSlots is dynamic or handled by the controller.
 
-    final int sourceSlotIndex = slotIndex;
+    final int sourceSlotIndex = slotIndex!;
 
     try {
       // Check if sourceSlotIndex is already the last possible slot.
       // This requires knowing the total number of slots, which is `maxSlots`.
       if (sourceSlotIndex >= maxSlots - 1) {
-        return jsonEncode({
-          'success': false,
-          'error': 'Cannot move algorithm in slot ${maxSlots - 1} further down.'
-        });
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Cannot move algorithm in slot ${maxSlots - 1} further down.')
+        ));
       }
       await _controller.moveAlgorithmDown(sourceSlotIndex);
-      return jsonEncode({
-        'success': true,
-        'message': 'Algorithm from slot $sourceSlotIndex moved down.'
-      });
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Algorithm from slot $sourceSlotIndex moved down.')
+      ));
     } catch (e) {
-      return jsonEncode({'success': false, 'error': e.toString()});
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
+    }
+  }
+
+  /// MCP Tool: Moves an algorithm to a specified direction or position.
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot to move.
+  ///   - direction (string, required): Direction to move ('up' or 'down').
+  ///   - steps (int, optional): Number of steps to move (default: 1).
+  /// Returns:
+  ///   A JSON string confirming the move or an error.
+  Future<String> moveAlgorithm(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+    final String? direction = params['direction'] as String?;
+    final int steps = (params['steps'] as int?) ?? 1;
+
+    // Validate required parameters
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
+    }
+
+    final directionError = MCPUtils.validateRequiredParam(direction, 'direction');
+    if (directionError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(directionError));
+    }
+
+    // Validate direction parameter
+    if (direction != 'up' && direction != 'down') {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Invalid direction. Must be "up" or "down".')
+      ));
+    }
+
+    // Validate steps parameter
+    if (steps < 1) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Steps must be at least 1.')
+      ));
+    }
+
+    final int sourceSlotIndex = slotIndex!;
+
+    try {
+      // Perform multiple move operations
+      for (int i = 0; i < steps; i++) {
+        if (direction == 'up') {
+          // Check if we're already at the top
+          if (sourceSlotIndex - i <= 0) {
+            return jsonEncode(convertToSnakeCaseKeys(
+              MCPUtils.buildError('Cannot move algorithm further up. Already at or above slot 0.')
+            ));
+          }
+          await _controller.moveAlgorithmUp(sourceSlotIndex - i);
+        } else { // direction == 'down'
+          // Check if we're already at the bottom
+          if (sourceSlotIndex + i >= maxSlots - 1) {
+            return jsonEncode(convertToSnakeCaseKeys(
+              MCPUtils.buildError('Cannot move algorithm further down. Already at or below slot ${maxSlots - 1}.')
+            ));
+          }
+          await _controller.moveAlgorithmDown(sourceSlotIndex + i);
+        }
+      }
+
+      final String stepText = steps == 1 ? 'step' : 'steps';
+      final int finalSlot = direction == 'up' ? sourceSlotIndex - steps : sourceSlotIndex + steps;
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Algorithm moved $steps $stepText $direction from slot $sourceSlotIndex to slot $finalSlot.')
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -630,6 +603,45 @@ class DistingTools {
     }
   }
 
+  /// MCP Tool: Retrieves the current CPU usage information from the device.
+  /// Parameters: None
+  /// Returns:
+  ///   A JSON string with CPU usage data including overall CPU1 and CPU2 usage
+  ///   percentages and per-slot usage information, or an error message.
+  Future<String> getCpuUsage(Map<String, dynamic> params) async {
+    try {
+      final CpuUsage? cpuUsage = await _controller.getCpuUsage();
+
+      if (cpuUsage != null) {
+        // Build slot usage details
+        final List<Map<String, dynamic>> slotUsageList = [];
+        for (int i = 0; i < cpuUsage.slotUsages.length; i++) {
+          slotUsageList.add({
+            'slot_index': i,
+            'usage_percentage': cpuUsage.slotUsages[i]
+          });
+        }
+
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildSuccess('CPU usage retrieved successfully', data: {
+            'cpu1_percentage': cpuUsage.cpu1,
+            'cpu2_percentage': cpuUsage.cpu2,
+            'total_slots': cpuUsage.slotUsages.length,
+            'slot_usage': slotUsageList
+          })
+        ));
+      } else {
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('CPU usage data is currently unavailable. Device may not be connected or synchronized.')
+        ));
+      }
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error retrieving CPU usage: ${e.toString()}')
+      ));
+    }
+  }
+
   /// MCP Tool: Sets notes text by adding/updating a Notes algorithm and moving it to slot 0.
   /// Parameters:
   ///   - text (string, required): The note text content (max 7 lines, 31 characters each).
@@ -638,21 +650,20 @@ class DistingTools {
   Future<String> setNotes(Map<String, dynamic> params) async {
     final String? text = params['text'];
 
-    if (text == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-          {'success': false, 'error': 'Missing "text" parameter.'}));
+    // Validate text parameter
+    final textError = MCPUtils.validateRequiredParam(text, 'text');
+    if (textError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(textError));
     }
 
     try {
       // Split and validate text using the same logic as NotesAlgorithmView
-      final lines = _splitTextIntoLines(text);
+      final lines = _splitTextIntoLines(text!);
 
       if (!_validateNotesText(lines)) {
-        return jsonEncode(convertToSnakeCaseKeys({
-          'success': false,
-          'error':
-              'Text validation failed. Maximum 7 lines of 31 characters each.'
-        }));
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Text validation failed. Maximum 7 lines of 31 characters each.')
+        ));
       }
 
       // Find existing Notes algorithm or add one
@@ -660,7 +671,7 @@ class DistingTools {
 
       if (notesSlotIndex == null) {
         return jsonEncode(convertToSnakeCaseKeys(
-            {'success': false, 'error': 'Failed to create Notes algorithm.'}));
+            MCPUtils.buildError('Failed to create Notes algorithm.')));
       }
 
       // Set text parameters (parameters 1-7)
@@ -684,14 +695,565 @@ class DistingTools {
       // Refresh slot 0 to ensure UI is updated with the latest notes content
       await _controller.refreshSlot(0);
 
-      return jsonEncode(convertToSnakeCaseKeys({
-        'success': true,
-        'message': 'Notes algorithm updated with text and moved to slot 0.',
-        'lines_set': lines.length
-      }));
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Notes algorithm updated with text and moved to slot 0.', data: {
+          'lines_set': lines.length
+        })
+      ));
     } catch (e) {
       return jsonEncode(
-          convertToSnakeCaseKeys({'success': false, 'error': e.toString()}));
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
+    }
+  }
+
+  /// MCP Tool: Gets the current notes content from the Notes algorithm if it exists.
+  /// Parameters: None
+  /// Returns:
+  ///   A JSON string with the notes content or an error if no notes exist.
+  Future<String> getNotes(Map<String, dynamic> params) async {
+    try {
+      const String notesGuid = 'note';
+      
+      // Find Notes algorithm in any slot
+      final Map<int, Algorithm?> allSlots = await _controller.getAllSlots();
+      int? notesSlotIndex;
+      
+      for (int i = 0; i < maxSlots; i++) {
+        final algorithm = allSlots[i];
+        if (algorithm != null && algorithm.guid == notesGuid) {
+          notesSlotIndex = i;
+          break;
+        }
+      }
+      
+      if (notesSlotIndex == null) {
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('No Notes algorithm found in current preset', 
+            helpCommand: 'Use `set_notes` to create notes')
+        ));
+      }
+      
+      // Get the notes content from parameters 1-7
+      final List<String> lines = [];
+      for (int i = 1; i <= 7; i++) {
+        final String? lineContent = 
+            await _controller.getParameterStringValue(notesSlotIndex, i);
+        if (lineContent != null && lineContent.isNotEmpty) {
+          lines.add(lineContent);
+        }
+      }
+      
+      // Join lines with newline characters
+      final String notesText = lines.join('\n');
+      
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Notes content retrieved successfully', data: {
+          'slot_index': notesSlotIndex,
+          'text': notesText,
+          'lines': lines,
+          'line_count': lines.length
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error retrieving notes: ${e.toString()}')
+      ));
+    }
+  }
+
+  /// MCP Tool: Gets the current preset name.
+  /// Parameters: None
+  /// Returns:
+  ///   A JSON string with the preset name or an error.
+  Future<String> getPresetName(Map<String, dynamic> params) async {
+    try {
+      final String presetName = await _controller.getCurrentPresetName();
+      
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Preset name retrieved successfully', data: {
+          'preset_name': presetName
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error retrieving preset name: ${e.toString()}')
+      ));
+    }
+  }
+
+  /// MCP Tool: Gets the custom name for an algorithm in a specific slot.
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot.
+  /// Returns:
+  ///   A JSON string with the slot name or an error.
+  Future<String> getSlotName(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
+    }
+
+    try {
+      final String? slotName = await _controller.getSlotName(slotIndex!);
+      
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Slot name retrieved successfully', data: {
+          'slot_index': slotIndex,
+          'slot_name': slotName ?? ''
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error retrieving slot name: ${e.toString()}')
+      ));
+    }
+  }
+
+  /// MCP Tool: Finds if a specific algorithm exists in the current preset.
+  /// Parameters:
+  ///   - algorithm_guid (string): The unique identifier of the algorithm.
+  ///   - algorithm_name (string): The name of the algorithm.
+  /// Returns:
+  ///   A JSON string with algorithm location or an error if not found.
+  Future<String> findAlgorithmInPreset(Map<String, dynamic> params) async {
+    final String? algorithmGuid = params['algorithm_guid'];
+    final String? algorithmName = params['algorithm_name'];
+
+    // Validate exactly one of algorithm_guid or algorithm_name
+    final paramError = MCPUtils.validateExactlyOne(params, ['algorithm_guid', 'algorithm_name'], 
+      helpCommand: MCPConstants.getAlgorithmHelp);
+    if (paramError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(paramError));
+    }
+
+    try {
+      // Use shared algorithm resolver to get the target GUID
+      final algorithms = AlgorithmMetadataService().getAllAlgorithms();
+      final resolution = AlgorithmResolver.resolveAlgorithm(
+        guid: algorithmGuid,
+        algorithmName: algorithmName,
+        allAlgorithms: algorithms,
+      );
+
+      if (!resolution.isSuccess) {
+        return jsonEncode(convertToSnakeCaseKeys(resolution.error!));
+      }
+
+      final String targetGuid = resolution.resolvedGuid!;
+      
+      // Search through all slots to find the algorithm
+      final Map<int, Algorithm?> allSlots = await _controller.getAllSlots();
+      final List<Map<String, dynamic>> foundSlots = [];
+      
+      for (int i = 0; i < maxSlots; i++) {
+        final algorithm = allSlots[i];
+        if (algorithm != null && algorithm.guid == targetGuid) {
+          foundSlots.add({
+            'slot_index': i,
+            'algorithm_name': algorithm.name,
+            'algorithm_guid': algorithm.guid,
+            'algorithm_index': algorithm.algorithmIndex,
+          });
+        }
+      }
+      
+      if (foundSlots.isEmpty) {
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('Algorithm with GUID "$targetGuid" not found in current preset', 
+            helpCommand: 'Use `add_algorithm` to add it to the preset')
+        ));
+      }
+      
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Algorithm found in preset', data: {
+          'algorithm_guid': targetGuid,
+          'found_in_slots': foundSlots,
+          'slot_count': foundSlots.length
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error searching for algorithm: ${e.toString()}')
+      ));
+    }
+  }
+
+  /// MCP Tool: Sets multiple parameters for an algorithm in one operation.
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot.
+  ///   - parameters (array, required): Array of parameter objects with parameter_number/parameter_name and value.
+  /// Returns:
+  ///   A JSON string with results for each parameter or an error.
+  Future<String> setMultipleParameters(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+    final List<dynamic>? parameters = params['parameters'] as List<dynamic>?;
+
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
+    }
+
+    // Validate parameters array
+    final paramError = MCPUtils.validateRequiredParam(parameters, 'parameters');
+    if (paramError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(paramError));
+    }
+
+    if (parameters!.isEmpty) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Parameters array cannot be empty')
+      ));
+    }
+
+    try {
+      final List<Map<String, dynamic>> results = [];
+      bool hasErrors = false;
+
+      for (int i = 0; i < parameters.length; i++) {
+        final param = parameters[i];
+        if (param is! Map<String, dynamic>) {
+          results.add({
+            'index': i,
+            'success': false,
+            'error': 'Parameter at index $i must be an object'
+          });
+          hasErrors = true;
+          continue;
+        }
+
+        final paramMap = param;
+        final num? value = paramMap['value'] as num?;
+        final int? parameterNumber = paramMap['parameter_number'] as int?;
+        final String? parameterName = paramMap['parameter_name'] as String?;
+
+        // Validate this parameter
+        if (value == null) {
+          results.add({
+            'index': i,
+            'success': false,
+            'error': 'Missing "value" field'
+          });
+          hasErrors = true;
+          continue;
+        }
+
+        if (parameterNumber == null && parameterName == null) {
+          results.add({
+            'index': i,
+            'success': false,
+            'error': 'Must provide either "parameter_number" or "parameter_name"'
+          });
+          hasErrors = true;
+          continue;
+        }
+
+        if (parameterNumber != null && parameterName != null) {
+          results.add({
+            'index': i,
+            'success': false,
+            'error': 'Provide only one of "parameter_number" or "parameter_name"'
+          });
+          hasErrors = true;
+          continue;
+        }
+
+        // Create individual parameter update request
+        final Map<String, dynamic> individualParams = {
+          'slot_index': slotIndex,
+          'value': value,
+        };
+        if (parameterNumber != null) {
+          individualParams['parameter_number'] = parameterNumber;
+        } else {
+          individualParams['parameter_name'] = parameterName!;
+        }
+
+        // Call the individual setParameterValue method
+        final result = await setParameterValue(individualParams);
+        final resultMap = jsonDecode(result) as Map<String, dynamic>;
+        
+        if (resultMap['success'] == true) {
+          results.add({
+            'index': i,
+            'success': true,
+            'parameter_number': parameterNumber,
+            'parameter_name': parameterName,
+            'value': value
+          });
+        } else {
+          results.add({
+            'index': i,
+            'success': false,
+            'error': resultMap['error'] ?? 'Unknown error'
+          });
+          hasErrors = true;
+        }
+      }
+
+      final successCount = results.where((r) => r['success'] == true).length;
+      final totalCount = results.length;
+
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Batch parameter update completed', data: {
+          'slot_index': slotIndex,
+          'total_parameters': totalCount,
+          'successful_updates': successCount,
+          'failed_updates': totalCount - successCount,
+          'has_errors': hasErrors,
+          'results': results
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error in batch parameter update: ${e.toString()}')
+      ));
+    }
+  }
+
+  /// MCP Tool: Gets multiple parameter values for an algorithm in one operation.
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot.
+  ///   - parameter_numbers (array, required): Array of parameter numbers to retrieve.
+  /// Returns:
+  ///   A JSON string with values for each parameter or an error.
+  Future<String> getMultipleParameters(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+    final List<dynamic>? parameterNumbers = params['parameter_numbers'] as List<dynamic>?;
+
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
+    }
+
+    // Validate parameter_numbers array
+    final paramError = MCPUtils.validateRequiredParam(parameterNumbers, 'parameter_numbers');
+    if (paramError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(paramError));
+    }
+
+    if (parameterNumbers!.isEmpty) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Parameter numbers array cannot be empty')
+      ));
+    }
+
+    try {
+      final List<Map<String, dynamic>> results = [];
+      bool hasErrors = false;
+
+      for (int i = 0; i < parameterNumbers.length; i++) {
+        final paramNum = parameterNumbers[i];
+        if (paramNum is! int) {
+          results.add({
+            'index': i,
+            'parameter_number': paramNum,
+            'success': false,
+            'error': 'Parameter number at index $i must be an integer'
+          });
+          hasErrors = true;
+          continue;
+        }
+
+        // Call the individual getParameterValue method
+        final Map<String, dynamic> individualParams = {
+          'slot_index': slotIndex,
+          'parameter_number': paramNum,
+        };
+
+        final result = await getParameterValue(individualParams);
+        final resultMap = jsonDecode(result) as Map<String, dynamic>;
+        
+        if (resultMap['success'] == true) {
+          results.add({
+            'index': i,
+            'parameter_number': paramNum,
+            'success': true,
+            'value': resultMap['value']
+          });
+        } else {
+          results.add({
+            'index': i,
+            'parameter_number': paramNum,
+            'success': false,
+            'error': resultMap['error'] ?? 'Unknown error'
+          });
+          hasErrors = true;
+        }
+      }
+
+      final successCount = results.where((r) => r['success'] == true).length;
+      final totalCount = results.length;
+
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Batch parameter retrieval completed', data: {
+          'slot_index': slotIndex,
+          'total_parameters': totalCount,
+          'successful_retrievals': successCount,
+          'failed_retrievals': totalCount - successCount,
+          'has_errors': hasErrors,
+          'results': results
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error in batch parameter retrieval: ${e.toString()}')
+      ));
+    }
+  }
+
+  /// MCP Tool: Build a complete preset from JSON data.
+  /// Parameters:
+  ///   - preset_data (object, required): JSON object with preset_name and slots array.
+  ///   - clear_existing (bool, optional): Clear existing preset first (default: true).
+  /// Returns:
+  ///   A JSON string confirming preset creation or error details.
+  Future<String> buildPresetFromJson(Map<String, dynamic> params) async {
+    final Map<String, dynamic>? presetData = params['preset_data'] as Map<String, dynamic>?;
+    final bool clearExisting = params['clear_existing'] ?? true;
+
+    // Validate preset_data parameter
+    final presetError = MCPUtils.validateRequiredParam(presetData, 'preset_data');
+    if (presetError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(presetError));
+    }
+
+    try {
+      // Validate preset structure
+      if (!presetData!.containsKey('preset_name')) {
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('preset_data must contain "preset_name" field')
+        ));
+      }
+
+      if (!presetData.containsKey('slots') || presetData['slots'] is! List) {
+        return jsonEncode(convertToSnakeCaseKeys(
+          MCPUtils.buildError('preset_data must contain "slots" array')
+        ));
+      }
+
+      final String presetName = presetData['preset_name'].toString();
+      final List<dynamic> slots = presetData['slots'] as List<dynamic>;
+
+      // Clear existing preset if requested
+      if (clearExisting) {
+        await _controller.newPreset();
+      }
+
+      // Set preset name
+      await _controller.setPresetName(presetName);
+
+      final List<Map<String, dynamic>> results = [];
+      int successCount = 0;
+      int errorCount = 0;
+
+      // Process each slot
+      for (int slotIndex = 0; slotIndex < slots.length && slotIndex < maxSlots; slotIndex++) {
+        final slotData = slots[slotIndex];
+        
+        if (slotData == null) {
+          continue; // Skip empty slots
+        }
+
+        if (slotData is! Map<String, dynamic>) {
+          results.add({
+            'slot_index': slotIndex,
+            'success': false,
+            'error': 'Slot data must be an object'
+          });
+          errorCount++;
+          continue;
+        }
+
+        try {
+          // Process algorithm
+          if (slotData.containsKey('algorithm')) {
+            final algorithmData = slotData['algorithm'] as Map<String, dynamic>?;
+            if (algorithmData != null) {
+              final String? algorithmGuid = algorithmData['guid']?.toString();
+              final String? algorithmName = algorithmData['name']?.toString();
+
+              // Use AlgorithmResolver to find the algorithm
+              final resolution = AlgorithmResolver.resolveAlgorithm(
+                guid: algorithmGuid,
+                algorithmName: algorithmName,
+                allAlgorithms: [], // We'll need algorithm metadata here
+              );
+
+              if (resolution.isSuccess) {
+                // Add algorithm (this will be added to the first available slot)
+                final Map<String, dynamic> addParams = {
+                  'algorithm_guid': resolution.resolvedGuid
+                };
+                await addAlgorithm(addParams);
+                
+                // Process parameters if provided
+                if (slotData.containsKey('parameters') && slotData['parameters'] is List) {
+                  final List<dynamic> parameters = slotData['parameters'] as List<dynamic>;
+                  final List<Map<String, dynamic>> parameterList = [];
+                  
+                  for (final param in parameters) {
+                    if (param is Map<String, dynamic> && param.containsKey('value')) {
+                      parameterList.add({
+                        'parameter_number': param['parameter_number'] ?? param['parameterNumber'],
+                        'value': param['value']
+                      });
+                    }
+                  }
+                  
+                  if (parameterList.isNotEmpty) {
+                    final Map<String, dynamic> setParams = {
+                      'slot_index': slotIndex,
+                      'parameters': parameterList
+                    };
+                    await setMultipleParameters(setParams);
+                  }
+                }
+
+                results.add({
+                  'slot_index': slotIndex,
+                  'success': true,
+                  'algorithm_guid': resolution.resolvedGuid,
+                  'parameters_set': slotData.containsKey('parameters') ? (slotData['parameters'] as List).length : 0
+                });
+                successCount++;
+              } else {
+                results.add({
+                  'slot_index': slotIndex,
+                  'success': false,
+                  'error': 'Failed to resolve algorithm: ${resolution.error!['error']}'
+                });
+                errorCount++;
+              }
+            }
+          }
+        } catch (e) {
+          results.add({
+            'slot_index': slotIndex,
+            'success': false,
+            'error': 'Error processing slot: ${e.toString()}'
+          });
+          errorCount++;
+        }
+      }
+
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildSuccess('Preset built from JSON', data: {
+          'preset_name': presetName,
+          'total_slots_processed': results.length,
+          'successful_slots': successCount,
+          'failed_slots': errorCount,
+          'cleared_existing': clearExisting,
+          'results': results
+        })
+      ));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(
+        MCPUtils.buildError('Error building preset from JSON: ${e.toString()}')
+      ));
     }
   }
 
