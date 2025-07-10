@@ -913,6 +913,18 @@ class MockDistingMidiManager implements IDistingMidiManager {
       throw UnsupportedError('Not supported in mock');
 
   @override
+  Future<SdCardStatus?> requestDirectoryCreate(String path) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<void> requestSclFile(String filePath) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
+  Future<void> requestKbmFile(String filePath) =>
+      throw UnsupportedError('Not supported in mock');
+
+  @override
   Future<CpuUsage?> requestCpuUsage() async {
     throw UnsupportedError("CPU Usage is not available in mock mode.");
   }

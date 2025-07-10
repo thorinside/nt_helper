@@ -916,8 +916,6 @@ class DistingTools {
         final param = parameters[i];
         if (param is! Map<String, dynamic>) {
           results.add({
-            'index': i,
-            'success': false,
             'error': 'Parameter at index $i must be an object'
           });
           hasErrors = true;
@@ -932,8 +930,6 @@ class DistingTools {
         // Validate this parameter
         if (value == null) {
           results.add({
-            'index': i,
-            'success': false,
             'error': 'Missing "value" field'
           });
           hasErrors = true;
@@ -942,8 +938,6 @@ class DistingTools {
 
         if (parameterNumber == null && parameterName == null) {
           results.add({
-            'index': i,
-            'success': false,
             'error': 'Must provide either "parameter_number" or "parameter_name"'
           });
           hasErrors = true;
@@ -952,8 +946,6 @@ class DistingTools {
 
         if (parameterNumber != null && parameterName != null) {
           results.add({
-            'index': i,
-            'success': false,
             'error': 'Provide only one of "parameter_number" or "parameter_name"'
           });
           hasErrors = true;
@@ -977,23 +969,19 @@ class DistingTools {
         
         if (resultMap['success'] == true) {
           results.add({
-            'index': i,
-            'success': true,
             'parameter_number': parameterNumber,
             'parameter_name': parameterName,
             'value': value
           });
         } else {
           results.add({
-            'index': i,
-            'success': false,
             'error': resultMap['error'] ?? 'Unknown error'
           });
           hasErrors = true;
         }
       }
 
-      final successCount = results.where((r) => r['success'] == true).length;
+      final successCount = results.where((r) => r.containsKey('value')).length;
       final totalCount = results.length;
 
       return jsonEncode(convertToSnakeCaseKeys(
@@ -1049,9 +1037,7 @@ class DistingTools {
         final paramNum = parameterNumbers[i];
         if (paramNum is! int) {
           results.add({
-            'index': i,
             'parameter_number': paramNum,
-            'success': false,
             'error': 'Parameter number at index $i must be an integer'
           });
           hasErrors = true;
@@ -1069,23 +1055,19 @@ class DistingTools {
         
         if (resultMap['success'] == true) {
           results.add({
-            'index': i,
             'parameter_number': paramNum,
-            'success': true,
             'value': resultMap['value']
           });
         } else {
           results.add({
-            'index': i,
             'parameter_number': paramNum,
-            'success': false,
             'error': resultMap['error'] ?? 'Unknown error'
           });
           hasErrors = true;
         }
       }
 
-      final successCount = results.where((r) => r['success'] == true).length;
+      final successCount = results.where((r) => r.containsKey('value')).length;
       final totalCount = results.length;
 
       return jsonEncode(convertToSnakeCaseKeys(

@@ -820,6 +820,18 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<SdCardStatus?> requestDirectoryCreate(String path) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<void> requestSclFile(String filePath) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
+  Future<void> requestKbmFile(String filePath) =>
+      throw UnsupportedError('Not available in offline mode');
+
+  @override
   Future<CpuUsage?> requestCpuUsage() async {
     throw UnsupportedError("CPU Usage is not available in offline mode.");
   }
