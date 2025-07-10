@@ -75,6 +75,11 @@ abstract class IDistingMidiManager {
   Future<SdCardStatus?> requestFileUploadChunk(
       String path, Uint8List data, int position,
       {bool createAlways = false});
+  Future<SdCardStatus?> requestDirectoryCreate(String path);
+
+  // Scala/Tuning Operations
+  Future<void> requestSclFile(String filePath);
+  Future<void> requestKbmFile(String filePath);
 
   // Backup Operations
   Future<void> backupPlugins(String backupDirectory,

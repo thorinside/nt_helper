@@ -52,6 +52,9 @@ import 'package:nt_helper/domain/sysex/requests/request_file_delete.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_rename.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_upload.dart';
 import 'package:nt_helper/domain/sysex/requests/request_file_upload_chunk.dart';
+import 'package:nt_helper/domain/sysex/requests/request_directory_create.dart';
+import 'package:nt_helper/domain/sysex/requests/request_scl_file.dart';
+import 'package:nt_helper/domain/sysex/requests/request_kbm_file.dart';
 import 'package:nt_helper/domain/sysex/requests/request_cpu_usage.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
 import 'package:nt_helper/models/firmware_version.dart';
@@ -1009,6 +1012,51 @@ class DistingMidiManager implements IDistingMidiManager {
 
     // Return success status since we can't easily parse the ACK format
     return SdCardStatus(success: true, message: "Upload chunk sent");
+  }
+
+  @override
+  Future<SdCardStatus?> requestDirectoryCreate(String path) async {
+    await _checkSdCardSupport();
+    final message = RequestDirectoryCreateMessage(sysExId: sysExId, path: path);
+    final packet = message.encode();
+    await _scheduler.sendRequest<SdCardStatus>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respSdStatus,
+      ),
+      responseExpectation: ResponseExpectation.none, // Directory create is fire-and-forget
+    );
+    // Assume success since directory create doesn't send a response
+    return SdCardStatus(success: true, message: 'Directory create command sent');
+  }
+
+  @override
+  Future<void> requestSclFile(String filePath) async {
+    final message = RequestSclFileMessage(sysExId: sysExId, filePath: filePath);
+    final packet = message.encode();
+    await _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respMessage,
+      ),
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<void> requestKbmFile(String filePath) async {
+    final message = RequestKbmFileMessage(sysExId: sysExId, filePath: filePath);
+    final packet = message.encode();
+    await _scheduler.sendRequest<void>(
+      packet,
+      RequestKey(
+        sysExId: sysExId,
+        messageType: DistingNTRespMessageType.respMessage,
+      ),
+      responseExpectation: ResponseExpectation.none,
+    );
   }
 
   @override
