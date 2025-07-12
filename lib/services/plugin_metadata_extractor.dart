@@ -116,7 +116,6 @@ class PluginMetadataExtractor {
       String? description;
 
       // For .cpp files, treat them as equivalent to .o files for display purposes
-      final displayFileType = fileType == 'cpp' ? 'o' : fileType;
 
       // Try to extract description based on file type
       try {

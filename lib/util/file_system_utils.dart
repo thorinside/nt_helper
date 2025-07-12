@@ -207,7 +207,7 @@ class FileSystemUtils {
       String conceptualPresetsFolderName) async {
     final documents = await directory.listDocuments();
     for (final doc in documents) {
-      final String entryName = doc.name ?? 'unknown';
+      final String entryName = doc.name;
 
       if (doc.isDirectory) {
         String nextRelativePathWithinPresets;

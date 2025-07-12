@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/gallery_models.dart';
-import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:archive/archive.dart';
@@ -11,7 +10,6 @@ import 'package:path/path.dart' as path;
 
 /// Service for managing the plugin gallery
 class GalleryService {
-  final AppDatabase? _database;
   final SettingsService _settingsService;
   Gallery? _cachedGallery;
   DateTime? _lastFetch;
@@ -23,10 +21,8 @@ class GalleryService {
 
   /// Constructor with optional database for installation tracking
   GalleryService({
-    AppDatabase? database,
     required SettingsService settingsService,
-  })  : _database = database,
-        _settingsService = settingsService;
+  }) : _settingsService = settingsService;
 
   /// Stream of install queue updates
   Stream<List<QueuedPlugin>> get queueStream => _queueController.stream;
@@ -352,16 +348,13 @@ class GalleryService {
         onPluginStart?.call(queuedPlugin);
 
         // Track installation details for database recording
-        int fileCount = 0;
-        int totalBytes = 0;
 
         await _installSinglePluginViaDisting(
           queuedPlugin,
           distingInstallPlugin,
           onProgress: onProgress,
           onInstallationDetails: (files, bytes) {
-            fileCount = files;
-            totalBytes = bytes;
+            // Installation details tracked
           },
         );
 
@@ -817,18 +810,6 @@ class GalleryService {
     return rawPluginExtensions.contains(extension);
   }
 
-  /// Get the installation path for a plugin based on its configuration
-  String _getInstallationPath(GalleryPlugin plugin) {
-    final installation = plugin.installation;
-    String basePath = 'programs/${installation.targetPath}';
-
-    if (installation.subdirectory != null &&
-        installation.subdirectory!.isNotEmpty) {
-      basePath = '$basePath/${installation.subdirectory}';
-    }
-
-    return basePath;
-  }
 }
 
 /// Exception thrown by gallery operations

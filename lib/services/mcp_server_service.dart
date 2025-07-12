@@ -3,14 +3,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:mcp_dart/mcp_dart.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
+import 'package:uuid/uuid.dart';
+
+/// Generate a unique session ID
+String generateUUID() => const Uuid().v4();
 
 /// Simplified MCP server service using StreamableHTTPServerTransport
 /// for automatic session management, connection persistence, and health monitoring.
+/// This service manages multiple MCP server instances, one per client connection.
 class McpServerService extends ChangeNotifier {
   McpServerService._(this._distingCubit);
 
@@ -34,20 +40,22 @@ class McpServerService extends ChangeNotifier {
 
   final DistingCubit _distingCubit;
   
-  McpServer? _server;
-  StreamableHTTPServerTransport? _transport;
+  // Map of session ID to server instance for multi-client support
+  final Map<String, McpServer> _servers = {};
+  final Map<String, StreamableHTTPServerTransport> _transports = {};
   HttpServer? _httpServer;
   StreamSubscription<HttpRequest>? _httpSubscription;
+  
 
-  bool get isRunning => _httpServer != null && _server != null;
+  bool get isRunning => _httpServer != null;
 
   /// Get basic connection diagnostics
   Map<String, dynamic> get connectionDiagnostics {
     return {
       'server_running': isRunning,
-      'has_transport': _transport != null,
-      'transport_session_id': _transport?.sessionId,
-      'server_implementation': _server != null ? 'nt-helper-flutter' : null,
+      'active_servers': _servers.length,
+      'active_transports': _transports.length,
+      'server_implementation': 'nt-helper-flutter',
       'library_version': 'mcp_dart 0.5.3',
     };
   }
@@ -68,27 +76,6 @@ class McpServerService extends ChangeNotifier {
       _httpServer = await HttpServer.bind(address, port);
       debugPrint('[MCP] HTTP Server listening on http://${address.address}:$port/mcp');
 
-      // Create transport with built-in session management
-      _transport = StreamableHTTPServerTransport(
-        options: StreamableHTTPServerTransportOptions(
-          sessionIdGenerator: () => generateUUID(),
-          eventStore: InMemoryEventStore(),
-          onsessioninitialized: (sessionId) {
-            debugPrint('[MCP] Session initialized: $sessionId');
-          },
-        ),
-      );
-
-      // Set up transport close handler
-      _transport!.onclose = () {
-        debugPrint('[MCP] Transport connection closed');
-      };
-
-      // Create and connect server
-      _server = _buildServer();
-      await _server!.connect(_transport!);
-      debugPrint('[MCP] Server connected to transport');
-
       // Handle HTTP requests
       _httpSubscription = _httpServer!.listen(
         (HttpRequest request) async {
@@ -103,7 +90,7 @@ class McpServerService extends ChangeNotifier {
         },
         cancelOnError: false,
       );
-
+      
       notifyListeners();
       debugPrint('[MCP] Service started successfully');
     } catch (e, s) {
@@ -114,36 +101,184 @@ class McpServerService extends ChangeNotifier {
   }
 
   Future<void> _handleHttpRequest(HttpRequest request) async {
-    try {
-      // Only handle /mcp endpoint
-      if (request.uri.path != '/mcp') {
-        request.response.statusCode = HttpStatus.notFound;
-        request.response.headers.contentType = ContentType.text;
-        request.response.write('Not Found. Use /mcp endpoint.');
+    // Apply CORS headers to all responses
+    _setCorsHeaders(request.response);
+
+    if (request.method == 'OPTIONS') {
+      // Handle CORS preflight request
+      request.response.statusCode = HttpStatus.ok;
+      await request.response.close();
+      return;
+    }
+
+    if (request.uri.path != '/mcp') {
+      request.response.statusCode = HttpStatus.notFound;
+      request.response.headers.contentType = ContentType.text;
+      request.response.write('Not Found. Use /mcp endpoint.');
+      await request.response.close();
+      return;
+    }
+
+    switch (request.method) {
+      case 'POST':
+        await _handlePostRequest(request);
+        break;
+      case 'GET':
+        await _handleGetRequest(request);
+        break;
+      case 'DELETE':
+        await _handleDeleteRequest(request);
+        break;
+      default:
+        request.response.statusCode = HttpStatus.methodNotAllowed;
+        request.response.headers.set(HttpHeaders.allowHeader, 'GET, POST, DELETE, OPTIONS');
+        request.response.write('Method Not Allowed');
         await request.response.close();
+    }
+  }
+
+  void _setCorsHeaders(HttpResponse response) {
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 
+        'Origin, X-Requested-With, Content-Type, Accept, mcp-session-id, Last-Event-ID, Authorization');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Max-Age', '86400');
+    response.headers.set('Access-Control-Expose-Headers', 'mcp-session-id');
+  }
+
+  /// Check if request is an initialization request
+  bool _isInitializeRequest(dynamic body) {
+    if (body is Map<String, dynamic> &&
+        body.containsKey('method') &&
+        body['method'] == 'initialize') {
+      return true;
+    }
+    return false;
+  }
+
+  /// Handle POST requests for JSON-RPC calls
+  Future<void> _handlePostRequest(HttpRequest request) async {
+    debugPrint('[MCP] Received POST request');
+
+    try {
+      // Parse the request body
+      final bodyBytes = await _collectBytes(request);
+      final bodyString = utf8.decode(bodyBytes);
+      final body = jsonDecode(bodyString);
+
+      // Check for existing session ID
+      final sessionId = request.headers.value('mcp-session-id');
+      StreamableHTTPServerTransport? transport;
+
+      if (sessionId != null && _transports.containsKey(sessionId)) {
+        // Reuse existing transport
+        transport = _transports[sessionId]!;
+      } else if (sessionId == null && _isInitializeRequest(body)) {
+        // New initialization request - create transport and server
+        transport = await _createNewTransport();
+        
+        // Ensure session is fully initialized before proceeding
+        await Future.delayed(const Duration(milliseconds: 1));
+        
+        debugPrint('[MCP] Handling initialization request for new session');
+        await transport.handleRequest(request, body);
+        return; // Already handled
+      } else {
+        // Invalid request - no session ID or not initialization request
+        _sendErrorResponse(request, HttpStatus.badRequest,
+            'Bad Request: No valid session ID provided');
         return;
       }
 
-      // Let the transport handle the request with built-in session management
-      await _transport!.handleRequest(request);
+      // Handle the request with existing transport
+      await transport.handleRequest(request, body);
     } catch (e, s) {
-      debugPrint('[MCP] Error handling HTTP request: $e\n$s');
-      
-      // Send error response if possible
+      debugPrint('[MCP] Error handling POST request: $e\n$s');
+      _sendErrorResponse(request, HttpStatus.internalServerError, 'Internal server error');
+    }
+  }
+
+  /// Handle GET requests for SSE streams
+  Future<void> _handleGetRequest(HttpRequest request) async {
+    final sessionId = request.headers.value('mcp-session-id');
+    if (sessionId == null || !_transports.containsKey(sessionId)) {
+      _sendErrorResponse(request, HttpStatus.badRequest, 'Invalid or missing session ID');
+      return;
+    }
+
+    // Check for Last-Event-ID header for resumability
+    final lastEventId = request.headers.value('Last-Event-ID');
+    if (lastEventId != null) {
+      debugPrint('[MCP] Client reconnecting with Last-Event-ID: $lastEventId');
+    } else {
+      debugPrint('[MCP] Establishing new SSE stream for session $sessionId');
+    }
+
+    final transport = _transports[sessionId]!;
+    await transport.handleRequest(request);
+  }
+
+  /// Handle DELETE requests for session termination
+  Future<void> _handleDeleteRequest(HttpRequest request) async {
+    final sessionId = request.headers.value('mcp-session-id');
+    if (sessionId == null || !_transports.containsKey(sessionId)) {
+      _sendErrorResponse(request, HttpStatus.badRequest, 'Invalid or missing session ID');
+      return;
+    }
+
+    debugPrint('[MCP] Received session termination request for session $sessionId');
+
+    try {
+      final transport = _transports[sessionId]!;
+      await transport.handleRequest(request);
+    } catch (e, s) {
+      debugPrint('[MCP] Error handling DELETE request: $e\n$s');
+      _sendErrorResponse(request, HttpStatus.internalServerError, 'Error processing session termination');
+    }
+  }
+
+  /// Helper to send JSON error responses
+  void _sendErrorResponse(HttpRequest request, int statusCode, String message) {
+    try {
+      // Check if headers are already sent
+      bool headersSent = false;
       try {
-        request.response.statusCode = HttpStatus.internalServerError;
+        headersSent = request.response.headers.contentType
+            .toString()
+            .startsWith('text/event-stream');
+      } catch (_) {
+        // Ignore errors when checking headers
+      }
+
+      if (!headersSent) {
+        request.response.statusCode = statusCode;
         request.response.headers.contentType = ContentType.json;
         request.response.write(jsonEncode({
           'jsonrpc': '2.0',
-          'error': {'code': -32000, 'message': 'Internal server error'},
+          'error': {'code': -32000, 'message': message},
           'id': null,
         }));
-        await request.response.close();
-      } catch (_) {
-        // Ignore errors when trying to send error response
-        // Response may already be closed or headers already sent
+        request.response.close();
       }
+    } catch (_) {
+      // Ignore errors when sending error response
     }
+  }
+
+  /// Helper to collect bytes from HTTP request
+  Future<List<int>> _collectBytes(HttpRequest request) {
+    final completer = Completer<List<int>>();
+    final bytes = <int>[];
+
+    request.listen(
+      bytes.addAll,
+      onDone: () => completer.complete(bytes),
+      onError: completer.completeError,
+      cancelOnError: true,
+    );
+
+    return completer.future;
   }
 
   Future<void> stop() async {
@@ -160,10 +295,12 @@ class McpServerService extends ChangeNotifier {
     await _httpServer?.close(force: true);
     _httpServer = null;
 
-    _transport?.close();
-    _transport = null;
-
-    _server = null;
+    // Close all transports and servers
+    for (final transport in _transports.values) {
+      transport.close();
+    }
+    _transports.clear();
+    _servers.clear();
 
     notifyListeners();
     debugPrint('[MCP] MCP Service stopped.');
@@ -180,8 +317,8 @@ class McpServerService extends ChangeNotifier {
   void _cleanup() {
     _httpSubscription = null;
     _httpServer = null;
-    _transport = null;
-    _server = null;
+    _transports.clear();
+    _servers.clear();
     notifyListeners();
   }
 
@@ -192,13 +329,23 @@ class McpServerService extends ChangeNotifier {
 
     final server = McpServer(
       Implementation(name: 'nt-helper-flutter', version: '1.39.0'),
-      options: ServerOptions(capabilities: ServerCapabilities()),
+      options: ServerOptions(
+        capabilities: ServerCapabilities(
+          resources: ServerCapabilitiesResources(),
+          tools: ServerCapabilitiesTools(),
+          prompts: ServerCapabilitiesPrompts(),
+        ),
+      ),
     );
 
     // Register MCP tools - preserving existing tool definitions
     _registerAlgorithmTools(server, mcpAlgorithmTools);
     _registerDistingTools(server, distingTools);
     _registerDiagnosticTools(server);
+    
+    // Register MCP resources and prompts
+    _registerDocumentationResources(server);
+    _registerHelpfulPrompts(server);
 
     return server;
   }
@@ -572,29 +719,391 @@ class McpServerService extends ChangeNotifier {
     server.tool(
       'mcp_diagnostics',
       description: 'Get MCP server connection diagnostics and health information',
-      inputSchemaProperties: {
-        'include_sessions': {'type': 'boolean', 'description': 'Include detailed session information', 'default': false}
-      },
+      inputSchemaProperties: {},
       callback: ({args, extra}) async {
         final diagnostics = {
           'server_info': connectionDiagnostics,
           'transport_info': {
-            'session_id': _transport?.sessionId,
+            'active_transports': _transports.length,
+            'sessions': _transports.keys.toList(),
             'transport_type': 'StreamableHTTPServerTransport',
-            'library_managed': true,
           },
-          'simplified_implementation': {
-            'lines_of_code': '~250 (vs 1265 previously)',
-            'manual_session_tracking': false,
-            'manual_health_monitoring': false,
-            'uses_builtin_transport': true,
-          }
         };
         
         debugPrint('[MCP] Diagnostics requested - Server running: $isRunning');
         return CallToolResult.fromContent(content: [TextContent(text: jsonEncode(diagnostics))]);
       },
     );
+  }
+
+  /// Helper method to create resource callback that loads assets directly
+  ReadResourceCallback _createResourceCallback(String assetPath, String resourceName) {
+    return (uri, extra) async {
+      final stopwatch = Stopwatch()..start();
+      try {
+        debugPrint('[MCP] 🔄 Starting load for resource: $resourceName at ${DateTime.now()}');
+        
+        // Add timeout protection to debug if the issue is in our callback
+        final content = await rootBundle.loadString('assets/mcp_docs/$assetPath')
+            .timeout(const Duration(seconds: 5), onTimeout: () {
+          debugPrint('[MCP] ⏰ TIMEOUT in asset loading for $resourceName after ${stopwatch.elapsedMilliseconds}ms');
+          throw TimeoutException('Asset loading timeout', const Duration(seconds: 5));
+        });
+        
+        stopwatch.stop();
+        debugPrint('[MCP] ✅ Successfully loaded resource: $resourceName (${content.length} chars) in ${stopwatch.elapsedMilliseconds}ms');
+        
+        return ReadResourceResult(
+          contents: [
+            ResourceContents.fromJson({
+              'uri': uri.toString(),
+              'text': content,
+              'mimeType': 'text/markdown'
+            })
+          ]
+        );
+      } catch (e) {
+        stopwatch.stop();
+        debugPrint('[MCP] ❌ Error serving resource $resourceName after ${stopwatch.elapsedMilliseconds}ms: $e');
+        return ReadResourceResult(
+          contents: [
+            ResourceContents.fromJson({
+              'uri': uri.toString(),
+              'text': 'Documentation not available - Error: $e',
+              'mimeType': 'text/markdown'
+            })
+          ]
+        );
+      }
+    };
+  }
+
+  void _registerDocumentationResources(McpServer server) {
+    debugPrint('[MCP] 🔄 Starting resource registration...');
+    
+    // DEBUGGING: Test hypothesis - register only one resource at first
+    // Bus mapping documentation (this one works)
+    debugPrint('[MCP] Registering bus-mapping...');
+    server.resource(
+      'bus-mapping',
+      'bus-mapping',
+      _createResourceCallback('bus_mapping.md', 'bus-mapping'),
+      metadata: (mimeType: 'text/markdown', description: 'IO to Bus conversion rules and routing concepts')
+    );
+    debugPrint('[MCP] ✅ Registered bus-mapping');
+
+    // DEBUGGING: Test problematic resources one by one with different patterns
+    // Try MCP usage guide with simple name/URI pattern like bus-mapping
+    debugPrint('[MCP] Registering mcp-usage-guide...');
+    server.resource(
+      'mcp-usage-guide',
+      'mcp-usage-guide',
+      _createResourceCallback('mcp_usage_guide.md', 'mcp-usage-guide'),
+      metadata: (mimeType: 'text/markdown', description: 'Essential tools and workflows for MCP clients')
+    );
+    debugPrint('[MCP] ✅ Registered mcp-usage-guide');
+
+    // Comment out others temporarily to test one problematic resource at a time
+    /*
+    // Algorithm categories
+    server.resource(
+      'algorithm-categories', 
+      'algorithm-categories',
+      _createResourceCallback('algorithm_categories.md', 'algorithm-categories'),
+      metadata: (mimeType: 'text/markdown', description: 'Complete list of algorithm categories and descriptions')
+    );
+
+    // Preset format documentation
+    server.resource(
+      'preset-format',
+      'preset-format',
+      _createResourceCallback('preset_format.md', 'preset-format'),
+      metadata: (mimeType: 'text/markdown', description: 'JSON schema and examples for preset data')
+    );
+
+    // Routing concepts
+    server.resource(
+      'routing-concepts',
+      'routing-concepts',
+      _createResourceCallback('routing_concepts.md', 'routing-concepts'),
+      metadata: (mimeType: 'text/markdown', description: 'Signal flow and routing fundamentals')
+    );
+    */
+    
+    debugPrint('[MCP] 🔄 Resource registration complete');
+  }
+
+  void _registerHelpfulPrompts(McpServer server) {
+    // Preset builder prompt - guides through building a preset step by step
+    server.prompt(
+      'preset-builder',
+      description: 'Guides you through building a custom preset step by step',
+      argsSchema: {
+        'use_case': PromptArgumentDefinition(
+          description: 'Describe what you want the preset to do (e.g., "audio delay with modulation", "CV sequencer setup")',
+          required: true,
+        ),
+        'skill_level': PromptArgumentDefinition(
+          description: 'Your experience level: "beginner", "intermediate", or "advanced"',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final useCase = args!['use_case'] as String;
+        final skillLevel = args['skill_level'] as String? ?? 'intermediate';
+        
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
+                text: '''I want to build a Disting NT preset for: "$useCase"
+
+My skill level is: $skillLevel
+
+Please help me build this preset step by step. Start by:
+1. Understanding the current state with get_current_preset
+2. Suggesting appropriate algorithms from the right categories
+3. Setting up the signal routing properly
+4. Configuring parameters for the desired sound/behavior
+
+Use the MCP tools available to inspect the current state and build the preset interactively. Explain each step clearly and ask for feedback before proceeding to the next step.'''
+              )
+            )
+          ]
+        );
+      }
+    );
+
+    // Algorithm recommender prompt
+    server.prompt(
+      'algorithm-recommender',
+      description: 'Recommends algorithms based on musical/technical requirements',
+      argsSchema: {
+        'requirement': PromptArgumentDefinition(
+          description: 'What you need the algorithm to do (e.g., "filter bass frequencies", "generate random CV", "create stereo delay")',
+          required: true,
+        ),
+        'context': PromptArgumentDefinition(
+          description: 'Additional context about your setup or constraints',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final requirement = args!['requirement'] as String;
+        final context = args['context'] as String? ?? '';
+        
+        final contextText = context.isNotEmpty ? '\nAdditional context: $context' : '';
+        
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
+                text: '''I need an algorithm that can: "$requirement"$contextText
+
+Please help me find the best algorithm(s) for this by:
+1. Searching through appropriate categories using list_algorithms
+2. Getting detailed information about promising candidates with get_algorithm_details
+3. Explaining the pros and cons of each option
+4. Recommending the best choice with reasoning
+5. Suggesting how to integrate it into a preset effectively
+
+Focus on practical recommendations that will work well for my specific use case.'''
+              )
+            )
+          ]
+        );
+      }
+    );
+
+    // Routing analyzer prompt
+    server.prompt(
+      'routing-analyzer',
+      description: 'Analyzes and explains current routing configuration',
+      argsSchema: {
+        'focus': PromptArgumentDefinition(
+          description: 'What to focus on: "signal_flow", "problems", "optimization", or "explanation"',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final focus = args?['focus'] as String? ?? 'explanation';
+        
+        String focusInstructions;
+        switch (focus) {
+          case 'signal_flow':
+            focusInstructions = 'Focus on explaining the signal flow path through each algorithm.';
+            break;
+          case 'problems':
+            focusInstructions = 'Look for potential routing problems, conflicts, or inefficiencies.';
+            break;
+          case 'optimization':
+            focusInstructions = 'Suggest ways to optimize the routing for better performance or sound.';
+            break;
+          default:
+            focusInstructions = 'Provide a clear explanation of how the routing works.';
+        }
+        
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
+                text: '''Please analyze the current routing configuration of my Disting NT preset.
+
+$focusInstructions
+
+Steps to follow:
+1. Get the current preset state with get_current_preset
+2. Get the routing information with get_routing  
+3. Analyze the signal flow between algorithms
+4. Explain how signals move through the bus system
+5. Identify any issues or suggest improvements
+
+Please use the physical names (Input N, Output N, Aux N) when explaining the routing, not internal bus numbers. Make the explanation clear and educational.'''
+              )
+            )
+          ]
+        );
+      }
+    );
+
+    // Parameter tuner prompt
+    server.prompt(
+      'parameter-tuner',
+      description: 'Helps tune algorithm parameters for specific sounds or behaviors',
+      argsSchema: {
+        'slot_index': PromptArgumentDefinition(
+          description: 'Slot index of algorithm to tune (0-31)',
+          required: true,
+        ),
+        'desired_sound': PromptArgumentDefinition(
+          description: 'Describe the sound or behavior you want to achieve',
+          required: true,
+        ),
+        'current_issue': PromptArgumentDefinition(
+          description: 'What\'s not working about the current settings (optional)',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final slotIndex = args!['slot_index'];
+        final desiredSound = args['desired_sound'] as String;
+        final currentIssue = args['current_issue'] as String? ?? '';
+        
+        final issueText = currentIssue.isNotEmpty ? '\nCurrent issue: $currentIssue' : '';
+        
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
+                text: '''I want to tune the algorithm in slot $slotIndex to achieve: "$desiredSound"$issueText
+
+Please help me tune the parameters by:
+1. Getting the current preset state to see what algorithm is in slot $slotIndex
+2. Getting detailed information about the algorithm and its parameters
+3. Understanding the current parameter values and their ranges
+4. Suggesting specific parameter changes to achieve the desired sound
+5. Explaining what each parameter does and how it affects the sound
+6. Making the changes step by step with explanations
+
+Be specific about parameter values and explain the reasoning behind each suggestion.'''
+              )
+            )
+          ]
+        );
+      }
+    );
+
+    // Troubleshooter prompt
+    server.prompt(
+      'troubleshooter',
+      description: 'Helps diagnose and fix common Disting NT issues',
+      argsSchema: {
+        'problem': PromptArgumentDefinition(
+          description: 'Describe the problem you\'re experiencing',
+          required: true,
+        ),
+        'symptoms': PromptArgumentDefinition(
+          description: 'Additional symptoms or context about the issue',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final problem = args!['problem'] as String;
+        final symptoms = args['symptoms'] as String? ?? '';
+        
+        final symptomsText = symptoms.isNotEmpty ? '\nAdditional symptoms: $symptoms' : '';
+        
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
+                text: '''I'm having this problem with my Disting NT: "$problem"$symptomsText
+
+Please help me troubleshoot this by:
+1. Checking the connection status with mcp_diagnostics
+2. Getting the current preset state to understand the configuration
+3. Checking routing and signal flow if audio-related
+4. Looking at CPU usage if performance-related
+5. Suggesting step-by-step solutions to try
+6. Explaining what each diagnostic step reveals
+
+Work through the troubleshooting systematically and explain what we're checking at each step.'''
+              )
+            )
+          ]
+        );
+      }
+    );
+  }
+
+  /// Create a new transport and connect server following example pattern
+  Future<StreamableHTTPServerTransport> _createNewTransport() async {
+    StreamableHTTPServerTransport? transport;
+    McpServer? server;
+    
+    // Create new server instance first
+    server = _buildServer();
+    
+    // Create new transport with event store for resumability
+    transport = StreamableHTTPServerTransport(
+      options: StreamableHTTPServerTransportOptions(
+        sessionIdGenerator: () => generateUUID(),
+        eventStore: InMemoryEventStore(),
+        onsessioninitialized: (sessionId) {
+          // Store both transport and server by session ID when session is initialized
+          debugPrint('[MCP] Session initialized with ID: $sessionId');
+          _transports[sessionId] = transport!;
+          _servers[sessionId] = server!;
+        },
+      ),
+    );
+    
+    // Set up transport close handler with session cleanup
+    transport.onclose = () {
+      final sessionId = transport!.sessionId;
+      if (sessionId != null && _transports.containsKey(sessionId)) {
+        debugPrint('[MCP] Transport closed for session $sessionId, removing from transports map');
+        _cleanupSession(sessionId);
+      }
+    };
+    
+    // Connect server to transport BEFORE handling requests
+    await server.connect(transport);
+    
+    return transport;
+  }
+
+  /// Clean up a specific session
+  void _cleanupSession(String sessionId) {
+    _transports[sessionId]?.close();
+    _transports.remove(sessionId);
+    _servers.remove(sessionId);
+    debugPrint('[MCP] Cleaned up session: $sessionId');
   }
 }
 
@@ -656,3 +1165,5 @@ class InMemoryEventStore implements EventStore {
     return streamId;
   }
 }
+
+

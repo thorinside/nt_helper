@@ -75,6 +75,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
 
   Future<void> _createPackage() async {
     setState(() => isPackaging = true);
+    
+    // Save context references before async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
 
     try {
       final presetName =
@@ -97,13 +101,13 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
 
         await File(outputPath).writeAsBytes(packageBytes);
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Package created successfully!')),
         );
-        Navigator.of(context).pop();
+        navigator.pop();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('Error creating package: $e')),
       );
     } finally {

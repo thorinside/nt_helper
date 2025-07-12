@@ -428,7 +428,7 @@ class _PresetListView extends StatelessWidget {
           key: ValueKey(preset.id),
           selected: isCurrentlyLoadedOffline,
           selectedTileColor:
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
           title: Text(preset.name.trim()),
           subtitle: Text("Saved: $formattedDate"),
           trailing: Row(

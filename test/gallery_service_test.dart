@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/models/gallery_models.dart';
-import 'package:nt_helper/services/gallery_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/mockito.dart';
@@ -11,14 +10,12 @@ import 'gallery_service_test.mocks.dart';
 
 void main() {
   group('GalleryService downloadUrl Support', () {
-    late GalleryService galleryService;
     late MockSettingsService mockSettingsService;
 
     setUp(() {
       mockSettingsService = MockSettingsService();
       when(mockSettingsService.galleryUrl)
           .thenReturn('https://test.com/gallery.json');
-      galleryService = GalleryService(settingsService: mockSettingsService);
     });
 
     test('should prioritize downloadUrl over GitHub API when available',

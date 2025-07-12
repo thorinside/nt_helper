@@ -16,26 +16,11 @@ List<AlgorithmPort> _portsFromJson(List<dynamic> jsonList) =>
         // Parse the map using the standard factory
         return AlgorithmPort.fromJson(item);
       } else {
-        // Handle unexpected type
-        print('Warning: Unexpected type in ports list: ${item.runtimeType}');
-        // Returning a default/empty port or throwing might be better
-        return AlgorithmPort(name: 'Invalid Port');
+        // Handle unexpected type - return a default port
+        return AlgorithmPort(name: 'Unknown Port');
       }
     }).toList();
 
-// Helper function to handle serialization of potentially mixed list
-List<dynamic> _portsToJson(List<AlgorithmPort> ports) => ports.map((port) {
-      // Check if it's a "simple" port (only name is non-null/default)
-      if (port.id == null &&
-          port.description == null &&
-          port.busIdRef == null &&
-          port.channelCountRef == null &&
-          port.isPerChannel == null) {
-        return port.name; // Serialize as simple string
-      } else {
-        return port.toJson(); // Otherwise, serialize as full object
-      }
-    }).toList();
 
 List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
   if (jsonList == null) return [];
@@ -53,8 +38,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
               allParams.add(AlgorithmParameter.fromJson(paramJson)
                   .copyWith(parameterNumber: pNum));
             } catch (e) {
-              print(
-                  'Error parsing parameter within page ${item['page']}: $paramJson\nError: $e');
+              // Skip invalid parameters
             }
           }
         }
@@ -66,7 +50,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
           allParams.add(AlgorithmParameter.fromJson(item)
               .copyWith(parameterNumber: pNum));
         } catch (e) {
-          print('Error parsing parameter directly in list: $item\nError: $e');
+          // Skip invalid parameters
         }
       }
     }
@@ -74,7 +58,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
   return allParams;
 }
 
-// We don't need a custom _parametersToJson unless the serialization needs modification
+// Custom converters for JSON serialization
 
 @freezed
 sealed class AlgorithmMetadata with _$AlgorithmMetadata {
@@ -84,21 +68,12 @@ sealed class AlgorithmMetadata with _$AlgorithmMetadata {
     required List<String> categories,
     required String description,
     @Default([]) List<AlgorithmSpecification> specifications,
-    @JsonKey(fromJson: _parametersFromJson)
-    @Default([])
-    List<AlgorithmParameter> parameters, // Use custom parser
+    @JsonKey(fromJson: _parametersFromJson) @Default([]) List<AlgorithmParameter> parameters,
     @Default([]) List<String> features, // List of feature GUIDs
-    @JsonKey(
-        name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-    @Default([])
-    List<AlgorithmPort> inputPorts,
-    @JsonKey(
-        name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
-    @Default([])
-    List<AlgorithmPort> outputPorts,
+    @JsonKey(name: 'input_ports', fromJson: _portsFromJson) @Default([]) List<AlgorithmPort> inputPorts,
+    @JsonKey(name: 'output_ports', fromJson: _portsFromJson) @Default([]) List<AlgorithmPort> outputPorts,
   }) = _AlgorithmMetadata;
 
-  // Modify the factory to use the generated one internally but handle parameters separately
   factory AlgorithmMetadata.fromJson(Map<String, dynamic> json) =>
       _$AlgorithmMetadataFromJson(json);
 }

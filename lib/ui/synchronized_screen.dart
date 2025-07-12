@@ -832,7 +832,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   ? null
                   : () async {
                       final info = await PackageInfo.fromPlatform();
-                      if (!mounted) return;
+                      if (!popupCtx.mounted) return;
                       showDialog<String>(
                         context: popupCtx,
                         builder: (dialogCtx) => AboutDialog(

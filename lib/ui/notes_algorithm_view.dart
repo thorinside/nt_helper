@@ -379,7 +379,7 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurfaceVariant
-                        .withOpacity(0.6),
+                        .withValues(alpha: 0.6),
                   ),
             ),
             inputFormatters: [
@@ -455,13 +455,13 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                           color: Theme.of(context)
                               .colorScheme
                               .outline
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                         ),
                         borderRadius: BorderRadius.circular(4),
                         color: Theme.of(context)
                             .colorScheme
                             .surfaceContainerHighest
-                            .withOpacity(0.3),
+                            .withValues(alpha: 0.3),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,7 +502,7 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                                             : Theme.of(context)
                                                 .colorScheme
                                                 .onSurfaceVariant
-                                                .withOpacity(0.7),
+                                                .withValues(alpha: 0.7),
                                       ),
                                 ),
                               ],

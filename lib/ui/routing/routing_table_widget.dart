@@ -292,9 +292,9 @@ class RoutingTableWidget extends StatelessWidget {
 
   Color _darken(Color c, [double factor = 0.9]) {
     return Color.fromRGBO(
-      (c.red * factor).round().clamp(0, 255),
-      (c.green * factor).round().clamp(0, 255),
-      (c.blue * factor).round().clamp(0, 255),
+      ((c.r * 255.0).round() * factor).round().clamp(0, 255),
+      ((c.g * 255.0).round() * factor).round().clamp(0, 255),
+      ((c.b * 255.0).round() * factor).round().clamp(0, 255),
       1.0,
     );
   }

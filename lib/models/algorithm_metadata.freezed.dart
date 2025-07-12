@@ -21,11 +21,11 @@ mixin _$AlgorithmMetadata {
   String get description;
   List<AlgorithmSpecification> get specifications;
   @JsonKey(fromJson: _parametersFromJson)
-  List<AlgorithmParameter> get parameters; // Use custom parser
+  List<AlgorithmParameter> get parameters;
   List<String> get features; // List of feature GUIDs
-  @JsonKey(name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+  @JsonKey(name: 'input_ports', fromJson: _portsFromJson)
   List<AlgorithmPort> get inputPorts;
-  @JsonKey(name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+  @JsonKey(name: 'output_ports', fromJson: _portsFromJson)
   List<AlgorithmPort> get outputPorts;
 
   /// Create a copy of AlgorithmMetadata
@@ -96,11 +96,9 @@ abstract mixin class $AlgorithmMetadataCopyWith<$Res> {
       @JsonKey(fromJson: _parametersFromJson)
       List<AlgorithmParameter> parameters,
       List<String> features,
-      @JsonKey(
-          name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+      @JsonKey(name: 'input_ports', fromJson: _portsFromJson)
       List<AlgorithmPort> inputPorts,
-      @JsonKey(
-          name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+      @JsonKey(name: 'output_ports', fromJson: _portsFromJson)
       List<AlgorithmPort> outputPorts});
 }
 
@@ -180,11 +178,9 @@ class _AlgorithmMetadata implements AlgorithmMetadata {
       @JsonKey(fromJson: _parametersFromJson)
       final List<AlgorithmParameter> parameters = const [],
       final List<String> features = const [],
-      @JsonKey(
-          name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+      @JsonKey(name: 'input_ports', fromJson: _portsFromJson)
       final List<AlgorithmPort> inputPorts = const [],
-      @JsonKey(
-          name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+      @JsonKey(name: 'output_ports', fromJson: _portsFromJson)
       final List<AlgorithmPort> outputPorts = const []})
       : _categories = categories,
         _specifications = specifications,
@@ -227,9 +223,7 @@ class _AlgorithmMetadata implements AlgorithmMetadata {
     return EqualUnmodifiableListView(_parameters);
   }
 
-// Use custom parser
   final List<String> _features;
-// Use custom parser
   @override
   @JsonKey()
   List<String> get features {
@@ -242,7 +236,7 @@ class _AlgorithmMetadata implements AlgorithmMetadata {
   final List<AlgorithmPort> _inputPorts;
 // List of feature GUIDs
   @override
-  @JsonKey(name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+  @JsonKey(name: 'input_ports', fromJson: _portsFromJson)
   List<AlgorithmPort> get inputPorts {
     if (_inputPorts is EqualUnmodifiableListView) return _inputPorts;
     // ignore: implicit_dynamic_type
@@ -251,7 +245,7 @@ class _AlgorithmMetadata implements AlgorithmMetadata {
 
   final List<AlgorithmPort> _outputPorts;
   @override
-  @JsonKey(name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+  @JsonKey(name: 'output_ports', fromJson: _portsFromJson)
   List<AlgorithmPort> get outputPorts {
     if (_outputPorts is EqualUnmodifiableListView) return _outputPorts;
     // ignore: implicit_dynamic_type
@@ -332,11 +326,9 @@ abstract mixin class _$AlgorithmMetadataCopyWith<$Res>
       @JsonKey(fromJson: _parametersFromJson)
       List<AlgorithmParameter> parameters,
       List<String> features,
-      @JsonKey(
-          name: 'input_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+      @JsonKey(name: 'input_ports', fromJson: _portsFromJson)
       List<AlgorithmPort> inputPorts,
-      @JsonKey(
-          name: 'output_ports', fromJson: _portsFromJson, toJson: _portsToJson)
+      @JsonKey(name: 'output_ports', fromJson: _portsFromJson)
       List<AlgorithmPort> outputPorts});
 }
 
