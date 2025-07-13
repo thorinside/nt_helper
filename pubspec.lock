@@ -643,10 +643,11 @@ packages:
   mcp_dart:
     dependency: "direct main"
     description:
-      name: mcp_dart
-      sha256: "4bc05574bc8bda0ae779e177ab5639f580b37059b5cb1248288b7a79979dd5e6"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: "8d5d567d07e172c77a9f449a22ce809545905037"
+      url: "https://github.com/thorinside/mcp_dart"
+    source: git
     version: "0.5.3"
   meta:
     dependency: transitive
