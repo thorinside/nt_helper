@@ -40,6 +40,17 @@ class MetadataSyncPage extends StatelessWidget {
               _ => false,
             };
 
+            // Handle disconnected/invalid states by navigating back
+            if (distingState is DistingStateInitial || distingState is DistingStateSelectDevice) {
+              // Connection was lost or device disconnected - navigate back to main screen
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              });
+              return const Center(child: CircularProgressIndicator());
+            }
+
             // Get the current manager if available (online or offline)
             final currentManager = distingCubit.disting();
 
@@ -239,8 +250,25 @@ class MetadataSyncPage extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // Fallback
-                  return const Center(child: Text("Unhandled state"));
+                  // Fallback - this should rarely occur now
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning, size: 48, color: Colors.orange),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Unexpected state: ${metaState.runtimeType}",
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text("Return to Main Screen"),
+                        ),
+                      ],
+                    ),
+                  );
                 }),
               ),
             );

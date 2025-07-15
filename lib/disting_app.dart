@@ -294,7 +294,23 @@ class _DistingPageState extends State<DistingPage> {
                 firmwareVersion: state.firmwareVersion,
               );
             } else {
-              return Center(child: Text("Unknown State"));
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text("Unknown State: ${state.runtimeType}"),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<DistingCubit>().loadDevices();
+                      },
+                      child: const Text("Restart"),
+                    ),
+                  ],
+                ),
+              );
             }
           },
         ),
