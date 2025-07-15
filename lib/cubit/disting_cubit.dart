@@ -35,6 +35,27 @@ class _PollingTask {
   _PollingTask();
 }
 
+// Retry request types for background parameter retry queue
+enum _ParameterRetryType {
+  info,
+  enumStrings,
+  mappings,
+  valueStrings,
+}
+
+// Retry request data structure for background parameter retry queue
+class _ParameterRetryRequest {
+  final int slotIndex;
+  final int paramIndex;
+  final _ParameterRetryType type;
+
+  _ParameterRetryRequest({
+    required this.slotIndex,
+    required this.paramIndex,
+    required this.type,
+  });
+}
+
 class DistingCubit extends Cubit<DistingState> {
   final AppDatabase database; // Renamed from _database to make it public
   late final MetadataDao _metadataDao; // Added
@@ -180,16 +201,214 @@ class DistingCubit extends Cubit<DistingState> {
     _createParameterQueue();
   }
 
+  // Helper to determine if an algorithm is a factory algorithm (lowercase GUID) 
+  // vs community plugin (any uppercase letters in GUID)
+  bool _isFactoryAlgorithm(String guid) {
+    return guid == guid.toLowerCase();
+  }
+
+  // Helper to fetch algorithm info with prioritization (factory first, then community)
+  Future<List<AlgorithmInfo>> _fetchAlgorithmsWithPriority(
+      IDistingMidiManager manager, {bool enableBackgroundCommunityLoading = false}) async {
+    final numAlgorithms = await manager.requestNumberOfAlgorithms() ?? 0;
+    debugPrint("[Cubit] Found $numAlgorithms total algorithms to process");
+    
+    if (enableBackgroundCommunityLoading) {
+      // Optimized approach: only fetch factory algorithms synchronously
+      return _fetchFactoryAlgorithmsAndStartBackgroundLoading(manager, numAlgorithms);
+    } else {
+      // Original approach: fetch all algorithms synchronously with prioritization
+      return _fetchAllAlgorithmsSynchronously(manager, numAlgorithms);
+    }
+  }
+
+  // Optimized method: fetch factory algorithms quickly, queue slow ones for background
+  Future<List<AlgorithmInfo>> _fetchFactoryAlgorithmsAndStartBackgroundLoading(
+      IDistingMidiManager manager, int numAlgorithms) async {
+    final List<AlgorithmInfo> factoryResults = [];
+    final List<int> backgroundIndices = [];
+    
+    debugPrint("[Cubit] Starting optimized fetch with $numAlgorithms algorithms - using short timeouts to identify fast factory algorithms");
+    
+    // Quick pass with short timeout to catch fast-responding factory algorithms
+    for (int i = 0; i < numAlgorithms; i++) {
+      try {
+        // Use very short timeout - factory algorithms should respond quickly
+        final algorithmInfo = await manager.requestAlgorithmInfo(i).timeout(
+          const Duration(milliseconds: 200),
+          onTimeout: () => null,
+        );
+        
+        if (algorithmInfo != null && _isFactoryAlgorithm(algorithmInfo.guid)) {
+          factoryResults.add(algorithmInfo);
+          debugPrint("[Cubit] Quick factory algorithm: ${algorithmInfo.name}");
+        } else if (algorithmInfo != null) {
+          // Got response but it's a community plugin - queue for background
+          backgroundIndices.add(i);
+          debugPrint("[Cubit] Community plugin queued: ${algorithmInfo.name}");
+        } else {
+          // Timed out - likely a community plugin that's not loaded, queue for background
+          backgroundIndices.add(i);
+        }
+      } catch (e) {
+        // Error - queue for background retry
+        backgroundIndices.add(i);
+        debugPrint("[Cubit] Algorithm $i error, queued for background: $e");
+      }
+    }
+    
+    debugPrint("[Cubit] Quick sync complete: ${factoryResults.length} factory algorithms loaded, ${backgroundIndices.length} queued for background");
+    
+    // Start background loading for community plugins and timed-out algorithms
+    if (backgroundIndices.isNotEmpty) {
+      _loadCommunityPluginsInBackground(manager, backgroundIndices, List.from(factoryResults));
+    }
+    
+    return factoryResults;
+  }
+
+  // Original method: fetch all algorithms with full categorization pass
+  Future<List<AlgorithmInfo>> _fetchAllAlgorithmsSynchronously(
+      IDistingMidiManager manager, int numAlgorithms) async {
+    final List<int> factoryIndices = [];
+    final List<int> communityIndices = [];
+    
+    // First pass: categorize algorithms by requesting basic info
+    for (int i = 0; i < numAlgorithms; i++) {
+      try {
+        final algorithmInfo = await manager.requestAlgorithmInfo(i);
+        if (algorithmInfo != null) {
+          if (_isFactoryAlgorithm(algorithmInfo.guid)) {
+            factoryIndices.add(i);
+          } else {
+            communityIndices.add(i);
+          }
+        }
+      } catch (e) {
+        debugPrint("Error categorizing algorithm $i: $e");
+        // If we can't determine, treat as community (lower priority)
+        communityIndices.add(i);
+      }
+    }
+    
+    final List<AlgorithmInfo> results = [];
+    
+    // Fetch factory algorithms first (higher priority)
+    for (int i in factoryIndices) {
+      try {
+        final algorithmInfo = await manager.requestAlgorithmInfo(i);
+        if (algorithmInfo != null) {
+          results.add(algorithmInfo);
+        }
+      } catch (e) {
+        debugPrint("Error fetching factory algorithm $i: $e");
+      }
+    }
+    
+    // Synchronous community algorithm loading
+    for (int i in communityIndices) {
+      try {
+        final algorithmInfo = await manager.requestAlgorithmInfo(i);
+        if (algorithmInfo != null) {
+          results.add(algorithmInfo);
+        }
+      } catch (e) {
+        debugPrint("Error fetching community algorithm $i: $e");
+      }
+    }
+    
+    return results;
+  }
+
+
+  // Background loading of ALL algorithms with prioritization and state merging
+  Future<void> _loadAllAlgorithmsInBackground(
+      IDistingMidiManager manager, int numAlgorithms) async {
+    debugPrint("[Cubit] Starting background loading for all $numAlgorithms algorithms");
+    
+    final List<AlgorithmInfo> factoryResults = [];
+    final List<AlgorithmInfo> communityResults = [];
+    
+    // Load all algorithms with prioritization (factory first, then community)
+    for (int i = 0; i < numAlgorithms; i++) {
+      try {
+        final algorithmInfo = await manager.requestAlgorithmInfo(i);
+        if (algorithmInfo != null) {
+          if (_isFactoryAlgorithm(algorithmInfo.guid)) {
+            factoryResults.add(algorithmInfo);
+            
+            // Update state immediately when we get factory algorithms
+            final currentState = state;
+            if (currentState is DistingStateSynchronized && !currentState.offline) {
+              final currentAlgorithms = [...factoryResults, ...communityResults];
+              emit(currentState.copyWith(algorithms: currentAlgorithms));
+              debugPrint("[Cubit] Updated state with factory algorithm: ${algorithmInfo.name} (${factoryResults.length} factory total)");
+            }
+          } else {
+            communityResults.add(algorithmInfo);
+            
+            // Update state when we get community plugins too
+            final currentState = state;
+            if (currentState is DistingStateSynchronized && !currentState.offline) {
+              final currentAlgorithms = [...factoryResults, ...communityResults];
+              emit(currentState.copyWith(algorithms: currentAlgorithms));
+              debugPrint("[Cubit] Updated state with community plugin: ${algorithmInfo.name} (${communityResults.length} community total)");
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint("[Cubit] Failed to load algorithm at index $i: $e");
+        // Continue with next algorithm
+      }
+    }
+    
+    final totalLoaded = factoryResults.length + communityResults.length;
+    debugPrint("[Cubit] Background algorithm loading complete: ${factoryResults.length} factory + ${communityResults.length} community = $totalLoaded total");
+  }
+
+  // Background loading of community plugins with single retry and state merging
+  Future<void> _loadCommunityPluginsInBackground(
+      IDistingMidiManager manager, 
+      List<int> communityIndices, 
+      List<AlgorithmInfo> baseResults) async {
+    debugPrint("[Cubit] Starting background community plugin loading for ${communityIndices.length} plugins");
+    
+    final List<AlgorithmInfo> communityResults = [];
+    
+    for (int i in communityIndices) {
+      try {
+        // Single attempt to fetch community plugin
+        final algorithmInfo = await manager.requestAlgorithmInfo(i);
+        if (algorithmInfo != null) {
+          communityResults.add(algorithmInfo);
+          debugPrint("[Cubit] Successfully loaded community plugin: ${algorithmInfo.name} (${algorithmInfo.guid})");
+        }
+      } catch (e) {
+        debugPrint("[Cubit] Failed to load community plugin at index $i (single attempt): $e");
+        // Move on to next plugin - no retry
+      }
+    }
+    
+    // Merge results and update state if still synchronized
+    if (communityResults.isNotEmpty) {
+      final mergedResults = [...baseResults, ...communityResults];
+      debugPrint("[Cubit] Background loading complete. Merging ${communityResults.length} community plugins with ${baseResults.length} factory algorithms");
+      
+      // Only update state if we're still in synchronized mode and not offline
+      final currentState = state;
+      if (currentState is DistingStateSynchronized && !currentState.offline) {
+        emit(currentState.copyWith(algorithms: mergedResults));
+        debugPrint("[Cubit] State updated with ${mergedResults.length} total algorithms");
+      }
+    } else {
+      debugPrint("[Cubit] No community plugins successfully loaded in background");
+    }
+  }
+
   // Helper to fetch AlgorithmInfo list from mock/offline manager
   Future<List<AlgorithmInfo>> _fetchMockAlgorithms(
       IDistingMidiManager manager) async {
-    final numAlgorithms = await manager.requestNumberOfAlgorithms() ?? 0;
-    final List<Future<AlgorithmInfo?>> futures = [];
-    for (int i = 0; i < numAlgorithms; i++) {
-      futures.add(manager.requestAlgorithmInfo(i));
-    }
-    final results = await Future.wait(futures);
-    return results.whereType<AlgorithmInfo>().toList();
+    return _fetchAlgorithmsWithPriority(manager);
   }
 
   Future<void> loadDevices() async {
@@ -309,21 +528,30 @@ class DistingCubit extends Cubit<DistingState> {
       // --- Fetch ALL data from device REGARDLESS ---
       debugPrint("[Cubit] _performSyncAndEmit: Fetching full device state...");
 
-      final numAlgorithms =
-          (await distingManager.requestNumberOfAlgorithms()) ?? 0;
-      final algorithms = numAlgorithms > 0
-          ? await Future.wait([
-              for (int i = 0; i < numAlgorithms; i++)
-                distingManager.requestAlgorithmInfo(i)
-            ]).then((results) => results.whereType<AlgorithmInfo>().toList())
-          : <AlgorithmInfo>[];
-      final numAlgorithmsInPreset =
-          (await distingManager.requestNumAlgorithmsInPreset()) ?? 0;
+      // Start background algorithm loading (slots will have their own algorithm info)
+      List<AlgorithmInfo> algorithms = [];
+      int numInPreset = 0;
+      try {
+        final numAlgorithms = await distingManager.requestNumberOfAlgorithms() ?? 0;
+        numInPreset = await distingManager.requestNumAlgorithmsInPreset() ?? 0;
+        
+        debugPrint("[Cubit] Found $numAlgorithms total algorithms, $numInPreset in preset");
+        
+        // Start background loading for ALL algorithms (slots contain their own algorithm info for UI)
+        if (numAlgorithms > 0) {
+          _loadAllAlgorithmsInBackground(distingManager, numAlgorithms);
+        }
+        
+        debugPrint("[Cubit] Background algorithm loading started, continuing with device sync");
+      } catch (e, stackTrace) {
+        debugPrint("Error starting algorithm background loading: $e");
+        debugPrintStack(stackTrace: stackTrace);
+      }
+
       final distingVersion = await distingManager.requestVersionString() ?? "";
       final presetName = await distingManager.requestPresetName() ?? "Default";
       var unitStrings = await distingManager.requestUnitStrings() ?? [];
-      List<Slot> slots =
-          await fetchSlots(numAlgorithmsInPreset, distingManager);
+      List<Slot> slots = await fetchSlots(numInPreset, distingManager);
       debugPrint("[Cubit] _performSyncAndEmit: Fetched ${slots.length} slots.");
 
       // --- Emit final synchronized state --- (Ensure offline is false)
@@ -340,6 +568,14 @@ class DistingCubit extends Cubit<DistingState> {
         loading: false,
         offline: false,
       ));
+      
+      // Start background retry processing for any failed parameter requests
+      if (_parameterRetryQueue.isNotEmpty) {
+        debugPrint('[Cubit] Starting background retry processing for ${_parameterRetryQueue.length} failed requests');
+        _processParameterRetryQueue(distingManager).catchError((e) {
+          debugPrint('[Cubit] Background retry processing failed: $e');
+        });
+      }
     } catch (e, stackTrace) {
       debugPrint("Error during synchronization: $e");
       debugPrintStack(stackTrace: stackTrace);
@@ -738,22 +974,22 @@ class DistingCubit extends Cubit<DistingState> {
         
         final distingManager = requireDisting();
         
-        // Fetch algorithm info in the background
-        final numAlgorithms = (await distingManager.requestNumberOfAlgorithms()) ?? 0;
-        final algorithms = numAlgorithms > 0
-            ? await Future.wait([
-                for (int i = 0; i < numAlgorithms; i++)
-                  distingManager.requestAlgorithmInfo(i)
-              ]).then((results) => results.whereType<AlgorithmInfo>().toList())
-            : <AlgorithmInfo>[];
-        
-        // Only update if state is still synchronized and algorithms changed
-        final newState = state;
-        if (newState is DistingStateSynchronized && 
-            !newState.offline &&
-            algorithms.length != newState.algorithms.length) {
-          debugPrint("[Cubit] Background algorithm refresh completed, updating state with ${algorithms.length} algorithms.");
-          emit(newState.copyWith(algorithms: algorithms));
+        // Fetch algorithm info in the background with prioritization
+        try {
+          final algorithms = await _fetchAlgorithmsWithPriority(distingManager, enableBackgroundCommunityLoading: true);
+          
+          // Only update if state is still synchronized and algorithms changed
+          final newState = state;
+          if (newState is DistingStateSynchronized && 
+              !newState.offline &&
+              algorithms.length != newState.algorithms.length) {
+            debugPrint("[Cubit] Background algorithm refresh completed, updating state with ${algorithms.length} algorithms.");
+            emit(newState.copyWith(algorithms: algorithms));
+          }
+        } catch (e, stackTrace) {
+          debugPrint("Error during background algorithm refresh (continuing normally): $e");
+          debugPrintStack(stackTrace: stackTrace);
+          // Don't update state on algorithm fetch failure during background refresh
         }
       } catch (e, stackTrace) {
         debugPrint("Error during background algorithm refresh: $e");
@@ -1731,6 +1967,135 @@ class DistingCubit extends Cubit<DistingState> {
   /// Tune this — 4-6 usually keeps the module happy without stalling.
   static const int kParallel = 4;
 
+  // Background retry queue for failed parameter requests
+  final List<_ParameterRetryRequest> _parameterRetryQueue = [];
+
+  // Background retry for failed parameter requests
+  void _queueParameterRetry(_ParameterRetryRequest request) {
+    _parameterRetryQueue.add(request);
+    debugPrint('[fetchSlot] Queued for background retry: ${request.type} for slot ${request.slotIndex} param ${request.paramIndex}');
+  }
+
+  // Process the retry queue in the background
+  Future<void> _processParameterRetryQueue(IDistingMidiManager disting) async {
+    if (_parameterRetryQueue.isEmpty) return;
+    
+    debugPrint('[Cubit] Starting background retry for ${_parameterRetryQueue.length} failed parameter requests');
+    
+    final retryList = List.from(_parameterRetryQueue);
+    _parameterRetryQueue.clear();
+    
+    for (final request in retryList) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 100)); // Small delay between retries
+        
+        switch (request.type) {
+          case _ParameterRetryType.info:
+            final info = await disting.requestParameterInfo(request.slotIndex, request.paramIndex);
+            if (info != null) {
+              await _updateSlotParameterInfo(request.slotIndex, request.paramIndex, info);
+              debugPrint('[Cubit] Background retry succeeded: parameter info for slot ${request.slotIndex} param ${request.paramIndex}');
+            }
+            break;
+          case _ParameterRetryType.enumStrings:
+            final enums = await disting.requestParameterEnumStrings(request.slotIndex, request.paramIndex);
+            if (enums != null) {
+              await _updateSlotParameterEnums(request.slotIndex, request.paramIndex, enums);
+              debugPrint('[Cubit] Background retry succeeded: enum strings for slot ${request.slotIndex} param ${request.paramIndex}');
+            }
+            break;
+          case _ParameterRetryType.mappings:
+            final mappings = await disting.requestMappings(request.slotIndex, request.paramIndex);
+            if (mappings != null) {
+              await _updateSlotParameterMappings(request.slotIndex, request.paramIndex, mappings);
+              debugPrint('[Cubit] Background retry succeeded: mappings for slot ${request.slotIndex} param ${request.paramIndex}');
+            }
+            break;
+          case _ParameterRetryType.valueStrings:
+            final valueStrings = await disting.requestParameterValueString(request.slotIndex, request.paramIndex);
+            if (valueStrings != null) {
+              await _updateSlotParameterValueStrings(request.slotIndex, request.paramIndex, valueStrings);
+              debugPrint('[Cubit] Background retry succeeded: value strings for slot ${request.slotIndex} param ${request.paramIndex}');
+            }
+            break;
+        }
+      } catch (e) {
+        debugPrint('[Cubit] Background retry failed for ${request.type} slot ${request.slotIndex} param ${request.paramIndex}: $e');
+      }
+    }
+    
+    debugPrint('[Cubit] Background parameter retry processing complete');
+  }
+
+  // State update methods for retry results
+  Future<void> _updateSlotParameterInfo(int slotIndex, int paramIndex, ParameterInfo info) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || slotIndex >= currentState.slots.length) return;
+    
+    final slot = currentState.slots[slotIndex];
+    if (paramIndex >= slot.parameters.length) return;
+    
+    final updatedParameters = List<ParameterInfo>.from(slot.parameters);
+    updatedParameters[paramIndex] = info;
+    
+    final updatedSlot = slot.copyWith(parameters: updatedParameters);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[slotIndex] = updatedSlot;
+    
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  Future<void> _updateSlotParameterEnums(int slotIndex, int paramIndex, ParameterEnumStrings enums) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || slotIndex >= currentState.slots.length) return;
+    
+    final slot = currentState.slots[slotIndex];
+    if (paramIndex >= slot.enums.length) return;
+    
+    final updatedEnums = List<ParameterEnumStrings>.from(slot.enums);
+    updatedEnums[paramIndex] = enums;
+    
+    final updatedSlot = slot.copyWith(enums: updatedEnums);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[slotIndex] = updatedSlot;
+    
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  Future<void> _updateSlotParameterMappings(int slotIndex, int paramIndex, Mapping mappings) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || slotIndex >= currentState.slots.length) return;
+    
+    final slot = currentState.slots[slotIndex];
+    if (paramIndex >= slot.mappings.length) return;
+    
+    final updatedMappings = List<Mapping>.from(slot.mappings);
+    updatedMappings[paramIndex] = mappings;
+    
+    final updatedSlot = slot.copyWith(mappings: updatedMappings);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[slotIndex] = updatedSlot;
+    
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
+  Future<void> _updateSlotParameterValueStrings(int slotIndex, int paramIndex, ParameterValueString valueStrings) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized || slotIndex >= currentState.slots.length) return;
+    
+    final slot = currentState.slots[slotIndex];
+    if (paramIndex >= slot.valueStrings.length) return;
+    
+    final updatedValueStrings = List<ParameterValueString>.from(slot.valueStrings);
+    updatedValueStrings[paramIndex] = valueStrings;
+    
+    final updatedSlot = slot.copyWith(valueStrings: updatedValueStrings);
+    final updatedSlots = List<Slot>.from(currentState.slots);
+    updatedSlots[slotIndex] = updatedSlot;
+    
+    emit(currentState.copyWith(slots: updatedSlots));
+  }
+
   Future<Slot> fetchSlot(
     IDistingMidiManager disting,
     int algorithmIndex,
@@ -1741,20 +2106,39 @@ class DistingCubit extends Cubit<DistingState> {
     /* ------------------------------------------------------------------ *
    * 1-2.  Pages  |  #Parameters  |  Algorithm GUID  |  All Values      *
    * ------------------------------------------------------------------ */
-    final results = await Future.wait([
+    // Fetch essential info first (these usually don't timeout)
+    final essentialResults = await Future.wait([
       disting.requestParameterPages(algorithmIndex),
       disting.requestNumberOfParameters(algorithmIndex),
       disting.requestAlgorithmGuid(algorithmIndex),
-      disting.requestAllParameterValues(algorithmIndex),
     ]);
 
-    final pages = (results[0] as ParameterPages?) ??
+    final pages = (essentialResults[0] as ParameterPages?) ??
         ParameterPages(algorithmIndex: algorithmIndex, pages: []);
-    final numParams = (results[1] as NumParameters?)?.numParameters ?? 0;
-    final guid = results[2] as Algorithm?;
-    final allValues = (results[3] as AllParameterValues?)?.values ??
-        List<ParameterValue>.generate(
-            numParams, (_) => ParameterValue.filler());
+    final numParams = (essentialResults[1] as NumParameters?)?.numParameters ?? 0;
+    final guid = essentialResults[2] as Algorithm?;
+    
+    // Try to get parameter values with retry and longer timeout
+    List<ParameterValue> allValues;
+    try {
+      final paramValuesResult = await disting.requestAllParameterValues(algorithmIndex);
+      allValues = paramValuesResult?.values ?? 
+          List<ParameterValue>.generate(numParams, (_) => ParameterValue.filler());
+      debugPrint('[fetchSlot] Got parameter values for slot $algorithmIndex');
+    } catch (e) {
+      debugPrint('[fetchSlot] Parameter values failed for slot $algorithmIndex: $e - retrying with longer timeout');
+      try {
+        // Retry with a longer timeout - give it more time to respond
+        await Future.delayed(const Duration(milliseconds: 500)); // Brief pause before retry
+        final retryResult = await disting.requestAllParameterValues(algorithmIndex);
+        allValues = retryResult?.values ?? 
+            List<ParameterValue>.generate(numParams, (_) => ParameterValue.filler());
+        debugPrint('[fetchSlot] Parameter values retry succeeded for slot $algorithmIndex');
+      } catch (retryError) {
+        debugPrint('[fetchSlot] Parameter values retry also failed for slot $algorithmIndex: $retryError - using default values');
+        allValues = List<ParameterValue>.generate(numParams, (_) => ParameterValue.filler());
+      }
+    }
 
     debugPrint('[fetchSlot] meta finished in ${sw.elapsedMilliseconds} ms');
 
@@ -1769,8 +2153,25 @@ class DistingCubit extends Cubit<DistingState> {
     await _forEachLimited(
       Iterable<int>.generate(numParams).where((i) => visible.contains(i)),
       (param) async {
-        final info = await disting.requestParameterInfo(algorithmIndex, param);
-        parameters[param] = info ?? ParameterInfo.filler();
+        try {
+          final info = await disting.requestParameterInfo(algorithmIndex, param);
+          parameters[param] = info ?? ParameterInfo.filler();
+          if (info == null) {
+            _queueParameterRetry(_ParameterRetryRequest(
+              slotIndex: algorithmIndex,
+              paramIndex: param,
+              type: _ParameterRetryType.info,
+            ));
+          }
+        } catch (e) {
+          debugPrint('[fetchSlot] Parameter info failed for slot $algorithmIndex param $param: $e - queuing for retry');
+          parameters[param] = ParameterInfo.filler();
+          _queueParameterRetry(_ParameterRetryRequest(
+            slotIndex: algorithmIndex,
+            paramIndex: param,
+            type: _ParameterRetryType.info,
+          ));
+        }
       },
     );
     debugPrint('[fetchSlot] ParameterInfo ${sw.elapsedMilliseconds} ms');
@@ -1796,9 +2197,25 @@ class DistingCubit extends Cubit<DistingState> {
         Iterable<int>.generate(numParams)
             .where((i) => visible.contains(i) && isEnum(i)),
         (param) async {
-          enums[param] = await disting.requestParameterEnumStrings(
-                  algorithmIndex, param) ??
-              ParameterEnumStrings.filler();
+          try {
+            final enumResult = await disting.requestParameterEnumStrings(algorithmIndex, param);
+            enums[param] = enumResult ?? ParameterEnumStrings.filler();
+            if (enumResult == null) {
+              _queueParameterRetry(_ParameterRetryRequest(
+                slotIndex: algorithmIndex,
+                paramIndex: param,
+                type: _ParameterRetryType.enumStrings,
+              ));
+            }
+          } catch (e) {
+            debugPrint('[fetchSlot] Enum strings failed for slot $algorithmIndex param $param: $e - queuing for retry');
+            enums[param] = ParameterEnumStrings.filler();
+            _queueParameterRetry(_ParameterRetryRequest(
+              slotIndex: algorithmIndex,
+              paramIndex: param,
+              type: _ParameterRetryType.enumStrings,
+            ));
+          }
         },
       ),
       // Mappings
@@ -1806,9 +2223,25 @@ class DistingCubit extends Cubit<DistingState> {
         Iterable<int>.generate(numParams)
             .where((i) => visible.contains(i) && isMappable(i)),
         (param) async {
-          mappings[param] =
-              await disting.requestMappings(algorithmIndex, param) ??
-                  Mapping.filler();
+          try {
+            final mappingResult = await disting.requestMappings(algorithmIndex, param);
+            mappings[param] = mappingResult ?? Mapping.filler();
+            if (mappingResult == null) {
+              _queueParameterRetry(_ParameterRetryRequest(
+                slotIndex: algorithmIndex,
+                paramIndex: param,
+                type: _ParameterRetryType.mappings,
+              ));
+            }
+          } catch (e) {
+            debugPrint('[fetchSlot] Mappings failed for slot $algorithmIndex param $param: $e - queuing for retry');
+            mappings[param] = Mapping.filler();
+            _queueParameterRetry(_ParameterRetryRequest(
+              slotIndex: algorithmIndex,
+              paramIndex: param,
+              type: _ParameterRetryType.mappings,
+            ));
+          }
         },
       ),
       // Value strings
@@ -1816,9 +2249,25 @@ class DistingCubit extends Cubit<DistingState> {
         Iterable<int>.generate(numParams)
             .where((i) => visible.contains(i) && isString(i)),
         (param) async {
-          valueStrings[param] = await disting.requestParameterValueString(
-                  algorithmIndex, param) ??
-              ParameterValueString.filler();
+          try {
+            final valueStringResult = await disting.requestParameterValueString(algorithmIndex, param);
+            valueStrings[param] = valueStringResult ?? ParameterValueString.filler();
+            if (valueStringResult == null) {
+              _queueParameterRetry(_ParameterRetryRequest(
+                slotIndex: algorithmIndex,
+                paramIndex: param,
+                type: _ParameterRetryType.valueStrings,
+              ));
+            }
+          } catch (e) {
+            debugPrint('[fetchSlot] Value strings failed for slot $algorithmIndex param $param: $e - queuing for retry');
+            valueStrings[param] = ParameterValueString.filler();
+            _queueParameterRetry(_ParameterRetryRequest(
+              slotIndex: algorithmIndex,
+              paramIndex: param,
+              type: _ParameterRetryType.valueStrings,
+            ));
+          }
         },
       ),
     ]);
