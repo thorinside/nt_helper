@@ -22,17 +22,25 @@ class MetadataSyncService {
   // Corrected regex (removed extra ^)
   final RegExp _parameterPrefixRegex = RegExp(r"^([0-9]+|A|B|C|D):\s*");
 
+  // Helper to determine if an algorithm is a factory algorithm (lowercase GUID) 
+  // vs community plugin (any uppercase letters in GUID)
+  bool _isFactoryAlgorithm(String guid) {
+    return guid == guid.toLowerCase();
+  }
+
   /// Fetches all static algorithm metadata from the connected device
   /// by temporarily manipulating a preset, and caches it in the database.
   ///
   /// [onProgress] callback reports progress (0.0-1.0), counts, and messages.
   /// [onError] callback reports errors encountered during the process.
+  /// [onContinueRequired] callback prompts user to continue after reboot (returns Future&lt;bool&gt;).
   /// [isCancelled] callback allows checking if cancellation has been requested.
   Future<void> syncAllAlgorithmMetadata({
     Function(double progress, int processed, int total, String mainMessage,
             String subMessage)?
         onProgress,
     Function(String error)? onError,
+    Future<bool> Function(String message)? onContinueRequired,
     bool Function()? isCancelled,
   }) async {
     final metadataDao = _database.metadataDao;
@@ -179,13 +187,30 @@ class MetadataSyncService {
       // Reset processed count before starting instantiation phase
       algorithmsProcessed = 0;
 
-      // 3. Instantiate Each Algorithm to Get Parameter Details
+      // 3. Separate and Prioritize Algorithms
       reportProgress(
-          "Processing Algorithms", "Preparing instantiation loop...");
+          "Processing Algorithms", "Separating factory vs community algorithms...");
+      final factoryAlgorithms = <AlgorithmInfo>[];
+      final communityAlgorithms = <AlgorithmInfo>[];
+      
+      for (final algoInfo in allAlgorithmInfo) {
+        if (_isFactoryAlgorithm(algoInfo.guid)) {
+          factoryAlgorithms.add(algoInfo);
+        } else {
+          communityAlgorithms.add(algoInfo);
+        }
+      }
+      
+      debugPrint("[MetadataSync] Found ${factoryAlgorithms.length} factory algorithms and ${communityAlgorithms.length} community plugins.");
+      reportProgress("Processing Algorithms", 
+          "Found ${factoryAlgorithms.length} factory, ${communityAlgorithms.length} community");
+
       final dbUnits = await metadataDao.getAllUnits();
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
 
-      for (final algoInfo in allAlgorithmInfo) {
+      // 4. Process Factory Algorithms First
+      reportProgress("Processing Factory Algorithms", "Starting factory algorithm processing...");
+      for (final algoInfo in factoryAlgorithms) {
         if (checkCancel()) break;
 
         // Main message stays consistent for the duration of this algo's processing
@@ -274,6 +299,130 @@ class MetadataSyncService {
                 "Device preset clear failed: $presetClearError");
           }
           // No final "Done" report here, as it failed.
+        }
+      }
+
+      // 5. Process Community Plugins with Special Loading Strategy
+      if (communityAlgorithms.isNotEmpty && !checkCancel()) {
+        reportProgress("Processing Community Plugins", 
+            "Starting community plugin processing with on-demand loading...");
+        
+        for (final algoInfo in communityAlgorithms) {
+          if (checkCancel()) break;
+
+          final mainProgressMsg =
+              "Processing ${algoInfo.name} (${algorithmsProcessed + 1}/$totalAlgorithms)";
+          
+          reportProgress(mainProgressMsg, "Starting community plugin...", incrementCount: true);
+
+          bool communityPluginSuccess = false;
+          int attempts = 0;
+          const maxAttempts = 2;
+
+          while (!communityPluginSuccess && attempts < maxAttempts && !checkCancel()) {
+            attempts++;
+            try {
+              // Step 1: Add plugin to empty preset to trigger loading
+              reportProgress(mainProgressMsg, 
+                  "Adding to preset (attempt $attempts/$maxAttempts)...");
+              final defaultSpecs =
+                  algoInfo.specifications.map((s) => s.defaultValue).toList();
+              await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
+              await Future.delayed(const Duration(milliseconds: 1000)); // Longer delay for plugin loading
+              
+              if (checkCancel()) break;
+
+              // Verify it was added
+              var numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+              if (numInPreset != 1) {
+                throw Exception("Failed to add community plugin to preset (expected 1, found $numInPreset).");
+              }
+
+              // Step 2: Reload algorithm info now that plugin is loaded
+              reportProgress(mainProgressMsg, "Reloading algorithm info...");
+              final reloadedAlgoInfo = await _distingManager.requestAlgorithmInfo(algoInfo.algorithmIndex);
+              if (reloadedAlgoInfo == null) {
+                throw Exception("Failed to reload algorithm info after adding to preset.");
+              }
+
+              // Step 3: Query the instantiated algorithm parameters
+              reportProgress(mainProgressMsg, "Querying parameters...");
+              await _syncInstantiatedAlgorithmParams(
+                  metadataDao, reloadedAlgoInfo, unitIdMap, dbUnitStrings);
+
+              // Step 4: Remove algorithm from preset
+              reportProgress(mainProgressMsg, "Removing from preset...");
+              await _distingManager.requestRemoveAlgorithm(0);
+              await Future.delayed(const Duration(milliseconds: 600));
+              
+              if (checkCancel()) break;
+
+              // Verify removal
+              numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+              if (numInPreset != 0) {
+                debugPrint("[MetadataSync] Warning: Failed to remove ${algoInfo.name} cleanly (expected 0, found $numInPreset).");
+              }
+
+              reportProgress(mainProgressMsg, "Done.");
+              communityPluginSuccess = true;
+
+            } catch (e, stackTrace) {
+              debugPrint("[MetadataSync] Community plugin processing failed (attempt $attempts): $e");
+              debugPrintStack(stackTrace: stackTrace);
+              
+              if (attempts >= maxAttempts) {
+                // Final attempt failed - prompt for reboot
+                reportProgress(mainProgressMsg, "Failed - requesting device reboot...");
+                
+                if (onContinueRequired != null) {
+                  final shouldContinue = await onContinueRequired(
+                      "Community plugin ${algoInfo.name} failed to load. Please reboot your NT device and wait for the file scan to complete, then press Continue.");
+                  
+                  if (!shouldContinue || checkCancel()) {
+                    reportProgress(mainProgressMsg, "Sync cancelled by user.");
+                    return;
+                  }
+                  
+                  reportProgress(mainProgressMsg, "Continuing after reboot...");
+                  // Clear any potential state issues
+                  try {
+                    await _distingManager.requestNewPreset();
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  } catch (cleanupError) {
+                    debugPrint("[MetadataSync] Cleanup after reboot failed: $cleanupError");
+                  }
+                } else {
+                  // Fallback to old behavior if no continue callback provided
+                  onError?.call("Community plugin ${algoInfo.name} failed to load. Please reboot your NT device.");
+                }
+              } else {
+                // Not final attempt - clean up and retry
+                reportProgress(mainProgressMsg, "Retrying after cleanup...");
+                try {
+                  await _distingManager.requestNewPreset();
+                  await Future.delayed(const Duration(milliseconds: 800));
+                } catch (cleanupError) {
+                  debugPrint("[MetadataSync] Cleanup before retry failed: $cleanupError");
+                }
+              }
+            }
+          }
+
+          if (!communityPluginSuccess && !checkCancel()) {
+            // Mark as failed in database
+            reportProgress(mainProgressMsg, "Marking as failed in database...");
+            try {
+              await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
+              await (metadataDao.delete(metadataDao.specifications)
+                    ..where((s) => s.algorithmGuid.equals(algoInfo.guid)))
+                  .go();
+              await (metadataDao.delete(metadataDao.algorithms)
+                    ..where((a) => a.guid.equals(algoInfo.guid)))
+                  .go();
+            } catch (dbClearError) {
+              debugPrint("[MetadataSync] Failed to clear database for failed community plugin: $dbClearError");
+            }
+          }
         }
       }
 

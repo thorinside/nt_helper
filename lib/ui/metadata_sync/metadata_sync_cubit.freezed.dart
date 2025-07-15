@@ -193,6 +193,119 @@ class _$SyncingMetadataCopyWithImpl<$Res>
 
 /// @nodoc
 
+class WaitingForUserContinue
+    with DiagnosticableTreeMixin
+    implements MetadataSyncState {
+  const WaitingForUserContinue(
+      {required this.message,
+      required this.progress,
+      this.algorithmsProcessed,
+      this.totalAlgorithms});
+
+  final String message;
+// Reboot instruction message
+  final double progress;
+// Current progress
+  final int? algorithmsProcessed;
+  final int? totalAlgorithms;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $WaitingForUserContinueCopyWith<WaitingForUserContinue> get copyWith =>
+      _$WaitingForUserContinueCopyWithImpl<WaitingForUserContinue>(
+          this, _$identity);
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+      ..add(DiagnosticsProperty(
+          'type', 'MetadataSyncState.waitingForUserContinue'))
+      ..add(DiagnosticsProperty('message', message))
+      ..add(DiagnosticsProperty('progress', progress))
+      ..add(DiagnosticsProperty('algorithmsProcessed', algorithmsProcessed))
+      ..add(DiagnosticsProperty('totalAlgorithms', totalAlgorithms));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is WaitingForUserContinue &&
+            (identical(other.message, message) || other.message == message) &&
+            (identical(other.progress, progress) ||
+                other.progress == progress) &&
+            (identical(other.algorithmsProcessed, algorithmsProcessed) ||
+                other.algorithmsProcessed == algorithmsProcessed) &&
+            (identical(other.totalAlgorithms, totalAlgorithms) ||
+                other.totalAlgorithms == totalAlgorithms));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, message, progress, algorithmsProcessed, totalAlgorithms);
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.waitingForUserContinue(message: $message, progress: $progress, algorithmsProcessed: $algorithmsProcessed, totalAlgorithms: $totalAlgorithms)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $WaitingForUserContinueCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $WaitingForUserContinueCopyWith(WaitingForUserContinue value,
+          $Res Function(WaitingForUserContinue) _then) =
+      _$WaitingForUserContinueCopyWithImpl;
+  @useResult
+  $Res call(
+      {String message,
+      double progress,
+      int? algorithmsProcessed,
+      int? totalAlgorithms});
+}
+
+/// @nodoc
+class _$WaitingForUserContinueCopyWithImpl<$Res>
+    implements $WaitingForUserContinueCopyWith<$Res> {
+  _$WaitingForUserContinueCopyWithImpl(this._self, this._then);
+
+  final WaitingForUserContinue _self;
+  final $Res Function(WaitingForUserContinue) _then;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? message = null,
+    Object? progress = null,
+    Object? algorithmsProcessed = freezed,
+    Object? totalAlgorithms = freezed,
+  }) {
+    return _then(WaitingForUserContinue(
+      message: null == message
+          ? _self.message
+          : message // ignore: cast_nullable_to_non_nullable
+              as String,
+      progress: null == progress
+          ? _self.progress
+          : progress // ignore: cast_nullable_to_non_nullable
+              as double,
+      algorithmsProcessed: freezed == algorithmsProcessed
+          ? _self.algorithmsProcessed
+          : algorithmsProcessed // ignore: cast_nullable_to_non_nullable
+              as int?,
+      totalAlgorithms: freezed == totalAlgorithms
+          ? _self.totalAlgorithms
+          : totalAlgorithms // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+
 class MetadataSyncSuccess
     with DiagnosticableTreeMixin
     implements MetadataSyncState {
