@@ -1011,7 +1011,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       final sanitizedLength = finalContent.length;
       if (originalLength != sanitizedLength) {
         debugPrint(
-            '[MCP] 🧹 Content sanitized: ${originalLength} → ${sanitizedLength} chars');
+            '[MCP] 🧹 Content sanitized: $originalLength → $sanitizedLength chars');
       } else {
         debugPrint('[MCP] 🧹 Content requires no sanitization');
       }
@@ -1060,10 +1060,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     // Define resource metadata
     final resourceMeta = {
       'bus-mapping': 'IO to Bus conversion rules and routing concepts',
-      'mcp-usage-guide': 'Essential tools and workflows for MCP clients',
-      'algorithm-categories':
-          'Complete list of algorithm categories and descriptions',
-      'preset-format': 'JSON schema and examples for preset data',
+      // 'mcp-usage-guide': 'Essential tools and workflows for MCP clients',
+      // 'algorithm-categories':
+      //     'Complete list of algorithm categories and descriptions',
+      // 'preset-format': 'JSON schema and examples for preset data',
       'routing-concepts': 'Signal flow and routing fundamentals',
     };
 
