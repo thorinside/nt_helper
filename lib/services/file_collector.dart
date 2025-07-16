@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:nt_helper/interfaces/preset_file_system.dart';
 import 'package:nt_helper/models/preset_dependencies.dart';
 import 'package:nt_helper/models/collected_file.dart';
@@ -105,7 +106,7 @@ class FileCollector {
 
     // Log warnings if any
     if (warnings.isNotEmpty) {
-      print('Package warnings: ${warnings.join(', ')}');
+      debugPrint('Package warnings: ${warnings.join(', ')}');
     }
 
     return files;

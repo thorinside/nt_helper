@@ -37,9 +37,9 @@ The `nt_helper` application exposes several functions via its built-in MCP (Mode
 
 **Important Notes:**
 - All tool parameters are passed as a JSON object in the request.
-- All tools return a JSON string. Successful operations usually include `"success": true`, while errors include `"success": false` and an `"error": "message"` field.
+- All tools return a JSON string. Successful operations return the requested data directly, while errors include an `"error": "message"` field.
 - For tools interacting with the Disting NT hardware, the `parameter_index` for `set_parameter_value` and `get_parameter_value` refers to the 0-based index of the parameter *within the specific algorithm currently in that slot*, as returned by `get_current_preset`. This may not directly correspond to a globally unique parameter ID across all algorithms.
-- Some tools that take no logical parameters (e.g., `get_current_preset`, `new_preset`, `save_preset`, `get_current_routing_state`) might still expect an empty JSON object `{}` or a dummy parameter (e.g. `{"random_string": ""}`) if the MCP client or server framework requires it for no-argument calls.
+- Some tools that take no logical parameters (e.g., `get_current_preset`, `new_preset`, `save_preset`, `get_current_routing_state`) expect an empty JSON object `{}`.
 
 ### Algorithm Metadata Tools
 
@@ -51,7 +51,7 @@ These tools interact with the locally cached algorithm metadata.
         -   `guid` (string, optional): The unique identifier of the algorithm.
         -   `algorithm_name` (string, optional): The human‑readable name of the algorithm (case-insensitive exact match; fuzzy fallback ≥70% similarity).
         -   `expand_features` (bool, optional, default: `false`): If `true`, resolves and includes parameters defined within features directly in the main parameter list.
-    -   Returns: A JSON string representing the `AlgorithmMetadata` object for the specified algorithm, or an error JSON (`"success": false`, `"error"`).
+    -   Returns: A JSON string representing the `AlgorithmMetadata` object for the specified algorithm, or an error JSON with `"error"` field.
 
 -   **`list_algorithms`**
     -   Description: Lists available algorithms, optionally filtered.
@@ -62,7 +62,7 @@ These tools interact with the locally cached algorithm metadata.
 
 -   **`get_current_routing_state`**
     -   Description: Retrieves the current routing state of all algorithms in the preset, decoded into `RoutingInformation` objects. This helps visualize how audio and CV signals are passed between algorithms.
-    -   Parameters: None required (may accept a dummy parameter like `{"random_string": "some_value"}` for MCP compatibility).
+    -   Parameters: None required.
     -   Returns: A JSON string representing a list of `RoutingInformation` objects. Returns an empty list `[]` if the application state is not synchronized (e.g., not connected to a Disting NT or in offline mode without a loaded preset).
 
 ### Disting NT Interaction Tools
@@ -71,9 +71,8 @@ These tools interact directly with the connected Disting NT module or the offlin
 
 -   **`get_current_preset`**
     -   Description: Gets the entire current preset state from the Disting NT (or the current offline preset).
-    -   Parameters: None required (may accept a dummy parameter).
+    -   Parameters: None required.
     -   Returns: A JSON string containing:
-        -   `success` (bool): Indicates if the operation was successful.
         -   `presetName` (string): The name of the current preset.
         -   `slots` (array): An array (potentially sparse, up to `maxSlots` which is 32) of slot objects. Non-null slots include:
             -   `slotIndex` (int): The 0-based index of the slot.
@@ -123,12 +122,12 @@ These tools interact directly with the connected Disting NT module or the offlin
 
 -   **`new_preset`**
     -   Description: Tells the device to clear the current preset and start a new, empty one.
-    -   Parameters: None required (may accept a dummy parameter).
+    -   Parameters: None required.
     -   Returns: A JSON string with a success or error message.
 
 -   **`save_preset`**
     -   Description: Tells the device to save the current working preset (persisting all changes to algorithms, parameters, and names).
-    -   Parameters: None required (may accept a dummy parameter).
+    -   Parameters: None required.
     -   Returns: A JSON string with a success or error message.
 
 -   **`move_algorithm_up`**

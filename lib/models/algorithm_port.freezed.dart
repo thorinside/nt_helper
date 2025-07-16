@@ -18,11 +18,8 @@ mixin _$AlgorithmPort {
   String? get id;
   String get name;
   String? get description;
-  @JsonKey(name: 'busIdRef')
   String? get busIdRef;
-  @JsonKey(name: 'channelCountRef')
   String? get channelCountRef;
-  @JsonKey(name: 'isPerChannel')
   bool? get isPerChannel;
 
   /// Create a copy of AlgorithmPort
@@ -74,9 +71,9 @@ abstract mixin class $AlgorithmPortCopyWith<$Res> {
       {String? id,
       String name,
       String? description,
-      @JsonKey(name: 'busIdRef') String? busIdRef,
-      @JsonKey(name: 'channelCountRef') String? channelCountRef,
-      @JsonKey(name: 'isPerChannel') bool? isPerChannel});
+      String? busIdRef,
+      String? channelCountRef,
+      bool? isPerChannel});
 }
 
 /// @nodoc
@@ -135,9 +132,9 @@ class _AlgorithmPort implements AlgorithmPort {
       {this.id,
       required this.name,
       this.description,
-      @JsonKey(name: 'busIdRef') this.busIdRef,
-      @JsonKey(name: 'channelCountRef') this.channelCountRef,
-      @JsonKey(name: 'isPerChannel') this.isPerChannel});
+      this.busIdRef,
+      this.channelCountRef,
+      this.isPerChannel});
   factory _AlgorithmPort.fromJson(Map<String, dynamic> json) =>
       _$AlgorithmPortFromJson(json);
 
@@ -148,13 +145,10 @@ class _AlgorithmPort implements AlgorithmPort {
   @override
   final String? description;
   @override
-  @JsonKey(name: 'busIdRef')
   final String? busIdRef;
   @override
-  @JsonKey(name: 'channelCountRef')
   final String? channelCountRef;
   @override
-  @JsonKey(name: 'isPerChannel')
   final bool? isPerChannel;
 
   /// Create a copy of AlgorithmPort
@@ -212,9 +206,9 @@ abstract mixin class _$AlgorithmPortCopyWith<$Res>
       {String? id,
       String name,
       String? description,
-      @JsonKey(name: 'busIdRef') String? busIdRef,
-      @JsonKey(name: 'channelCountRef') String? channelCountRef,
-      @JsonKey(name: 'isPerChannel') bool? isPerChannel});
+      String? busIdRef,
+      String? channelCountRef,
+      bool? isPerChannel});
 }
 
 /// @nodoc

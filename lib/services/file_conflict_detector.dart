@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import '../models/package_analysis.dart';
 import '../models/package_file.dart';
 import '../cubit/disting_cubit.dart';
-import '../domain/i_disting_midi_manager.dart';
 
 /// Service for detecting file conflicts when installing preset packages
 class FileConflictDetector {
@@ -104,7 +103,7 @@ class FileConflictDetector {
   /// Check if a specific file exists on the SD card
   Future<bool> fileExists(String filePath) async {
     try {
-      final directory = '/' + filePath.split('/').take(filePath.split('/').length - 1).join('/');
+      final directory = '/${filePath.split('/').take(filePath.split('/').length - 1).join('/')}';
       final filename = filePath.split('/').last;
       
       final existingFiles = await _getExistingFilesInDirectory(directory);

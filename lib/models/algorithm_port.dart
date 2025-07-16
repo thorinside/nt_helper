@@ -9,9 +9,9 @@ sealed class AlgorithmPort with _$AlgorithmPort {
     String? id,
     required String name,
     String? description,
-    @JsonKey(name: 'busIdRef') String? busIdRef,
-    @JsonKey(name: 'channelCountRef') String? channelCountRef,
-    @JsonKey(name: 'isPerChannel') bool? isPerChannel,
+    String? busIdRef,
+    String? channelCountRef,
+    bool? isPerChannel,
   }) = _AlgorithmPort;
 
   factory AlgorithmPort.fromJson(Map<String, dynamic> json) =>

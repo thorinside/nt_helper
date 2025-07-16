@@ -214,9 +214,9 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
-          if (param.values != null && param.values!.isNotEmpty) ...[
+          if (param.enumValues != null && param.enumValues!.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text('Values: ${param.values!.join(', ')}',
+            Text('Values: ${param.enumValues!.join(', ')}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
@@ -226,24 +226,6 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(BuildContext context, String label, String? value) {
-    if (value == null || value.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('$label: ',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          Expanded(
-              child: Text(value, style: Theme.of(context).textTheme.bodySmall)),
-        ],
-      ),
-    );
-  }
 
   Widget _buildFeaturesCard(BuildContext context) {
     return Card(

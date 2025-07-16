@@ -671,6 +671,11 @@ class MockDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<void> requestLoadPlugin(String guid) async {
+    // No-op
+  }
+
+  @override
   Future<void> requestLoadPreset(String name, bool append) async {
     // No-op for mock
     debugPrint("[Mock] requestLoadPreset: name=$name, append=$append");

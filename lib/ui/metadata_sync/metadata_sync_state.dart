@@ -13,6 +13,16 @@ sealed class MetadataSyncState with _$MetadataSyncState {
     int? algorithmsProcessed, // Keep for progress calculation
     int? totalAlgorithms, // Keep for progress calculation
   }) = SyncingMetadata;
+  const factory MetadataSyncState.waitingForUserContinue({
+    required String message, // Reboot instruction message
+    required double progress, // Current progress
+    int? algorithmsProcessed,
+    int? totalAlgorithms,
+  }) = WaitingForUserContinue;
+  const factory MetadataSyncState.checkpointFound({
+    required String algorithmName,
+    required int algorithmIndex,
+  }) = CheckpointFound;
   const factory MetadataSyncState.metadataSyncSuccess(String message) =
       MetadataSyncSuccess;
   const factory MetadataSyncState.metadataSyncFailure(String error) =

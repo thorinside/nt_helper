@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
 import '../../models/package_analysis.dart';
 import '../../models/package_file.dart';
 import '../../services/file_conflict_detector.dart';
@@ -34,7 +33,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
   String _currentFile = '';
   int _completedFiles = 0;
   int _totalFiles = 0;
-  List<String> _errors = [];
+  final List<String> _errors = [];
 
   @override
   void initState() {

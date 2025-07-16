@@ -19,7 +19,7 @@ class PresetParserUtils {
   static Future<model.ParsedPresetData?> parsePresetFile(String filePathOrUri,
       {String? sdCardRootPathOrUri}) async {
     // Entry logs
-    print("--- PresetParserUtils.parsePresetFile --- ENTRY ---");
+    debugPrint("--- PresetParserUtils.parsePresetFile --- ENTRY ---");
     InAppLogger().log("--- PresetParserUtils.parsePresetFile --- ENTRY ---");
 
     final logger = InAppLogger();

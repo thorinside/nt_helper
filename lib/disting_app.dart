@@ -294,7 +294,13 @@ class _DistingPageState extends State<DistingPage> {
                 firmwareVersion: state.firmwareVersion,
               );
             } else {
-              return Center(child: Text("Unknown State"));
+              // Simple fallback - just restart the device selection
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.read<DistingCubit>().loadDevices();
+                }
+              });
+              return const Center(child: CircularProgressIndicator());
             }
           },
         ),

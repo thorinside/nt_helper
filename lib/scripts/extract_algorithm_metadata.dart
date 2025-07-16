@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
 // Define the schema for algorithm metadata
@@ -89,12 +90,12 @@ Future<void> main() async {
   // Define the output path for the JSON file
   final outputPath = path.join(projectRoot, 'test', 'doc', 'algorithms.json');
 
-  print('Starting algorithm metadata extraction from $manualPath');
+  debugPrint('Starting algorithm metadata extraction from $manualPath');
 
   // Read the manual content
   final File manualFile = File(manualPath);
   if (!await manualFile.exists()) {
-    print('Error: Manual file not found at $manualPath');
+    debugPrint('Error: Manual file not found at $manualPath');
     exit(1);
   }
 
@@ -104,12 +105,12 @@ Future<void> main() async {
   commonFeatures = await extractCommonFeatures(manualContent);
   commonPolysynthFeatures = await extractPolysynthFeatures(manualContent);
 
-  print('Extracted common features and polysynth features');
+  debugPrint('Extracted common features and polysynth features');
 
   // Extract all algorithm metadata
   final algorithms = await extractAllAlgorithms(manualContent);
 
-  print('Extracted ${algorithms.length} algorithms');
+  debugPrint('Extracted ${algorithms.length} algorithms');
 
   // Create the full JSON structure
   final outputJson = {
@@ -124,13 +125,13 @@ Future<void> main() async {
     JsonEncoder.withIndent('  ').convert(outputJson),
   );
 
-  print('Successfully wrote algorithm metadata to $outputPath');
+  debugPrint('Successfully wrote algorithm metadata to $outputPath');
 }
 
 // Function to extract common features from the manual
 Future<Map<String, dynamic>> extractCommonFeatures(String manualContent) async {
   // This will be implemented in Task #45
-  print('Extracting common features from the manual...');
+  debugPrint('Extracting common features from the manual...');
   return {}; // Placeholder
 }
 
@@ -138,7 +139,7 @@ Future<Map<String, dynamic>> extractCommonFeatures(String manualContent) async {
 Future<Map<String, dynamic>> extractPolysynthFeatures(
     String manualContent) async {
   // This will be implemented in Task #46
-  print('Extracting polysynth features from the manual...');
+  debugPrint('Extracting polysynth features from the manual...');
   return {}; // Placeholder
 }
 
@@ -149,7 +150,7 @@ Future<List<Map<String, dynamic>>> extractAllAlgorithms(
 
   // This will contain the regex and logic to extract each algorithm
   // For now, it's a placeholder that will be filled in by the individual tasks
-  print('Extracting algorithm metadata...');
+  debugPrint('Extracting algorithm metadata...');
 
   return algorithms; // Placeholder
 }
@@ -158,7 +159,7 @@ Future<List<Map<String, dynamic>>> extractAllAlgorithms(
 Future<Map<String, dynamic>?> extractAlgorithm(
     String manualContent, String algorithmName, String guid) async {
   // This will be implemented in the individual algorithm tasks
-  print('Extracting metadata for algorithm: $algorithmName (guid: $guid)');
+  debugPrint('Extracting metadata for algorithm: $algorithmName (guid: $guid)');
   return null; // Placeholder
 }
 

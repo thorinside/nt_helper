@@ -15,13 +15,13 @@ sealed class AlgorithmParameter with _$AlgorithmParameter {
     String?
         scope, // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
     String? description,
-    @JsonKey(name: 'enumValues') List<String>? values,
+    List<String>? enumValues,
     String?
         type, // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
-    @JsonKey(name: 'busIdRef') String? busIdRef,
-    @JsonKey(name: 'channelCountRef') String? channelCountRef,
-    @JsonKey(name: 'isPerChannel') bool? isPerChannel,
-    @JsonKey(name: 'isCommon') bool? isCommon,
+    String? busIdRef,
+    String? channelCountRef,
+    bool? isPerChannel,
+    bool? isCommon,
     int? parameterNumber,
   }) = _AlgorithmParameter;
 

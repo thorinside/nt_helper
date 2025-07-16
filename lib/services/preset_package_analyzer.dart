@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as path;
 import '../models/package_analysis.dart';
 import '../models/package_file.dart';
 

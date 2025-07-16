@@ -73,12 +73,28 @@ class AlgorithmInfoResponse extends SysexResponse {
       );
     }).toList();
 
-    // 9) Build and return the final AlgorithmInfo object.
+    // 9) Decode plugin flags (isPlugin and isLoaded) if available
+    bool isPlugin = false;
+    bool isLoaded = true;
+    
+    if (offset < data.length) {
+      isPlugin = data[offset] != 0;
+      offset += 1;
+    }
+    
+    if (offset < data.length) {
+      isLoaded = data[offset] != 0;
+      offset += 1;
+    }
+
+    // 10) Build and return the final AlgorithmInfo object.
     return AlgorithmInfo(
       algorithmIndex: algorithmIndex,
       guid: guid,
       specifications: updatedSpecs,
       name: algorithmName,
+      isPlugin: isPlugin,
+      isLoaded: isLoaded,
     );
   }
 }

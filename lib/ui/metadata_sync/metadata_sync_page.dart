@@ -5,7 +5,10 @@ import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart'
     show IDistingMidiManager;
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show AlgorithmInfo;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
+import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/disting_app.dart'; // Import DistingApp for the route name
 
 class MetadataSyncPage extends StatelessWidget {
@@ -22,9 +25,9 @@ class MetadataSyncPage extends StatelessWidget {
     // final distingManager = distingCubit.disting(); // No longer needed here
     // final bool isConnected = distingManager != null; // Determined by DistingState
 
-    // Provide MetadataSyncCubit without manager initially
+    // Provide MetadataSyncCubit with DistingCubit for CPU monitoring control
     return BlocProvider(
-      create: (context) => MetadataSyncCubit(database)..loadLocalData(),
+      create: (context) => MetadataSyncCubit(database, distingCubit)..loadLocalData(),
       child: BlocBuilder<DistingCubit, DistingState>(
           // Rebuild the whole page based on DistingState (online/offline)
           bloc: distingCubit,
@@ -40,17 +43,56 @@ class MetadataSyncPage extends StatelessWidget {
               _ => false,
             };
 
+            // Handle disconnected/invalid states by navigating back
+            if (distingState is DistingStateInitial || distingState is DistingStateSelectDevice) {
+              // Connection was lost or device disconnected - navigate back to main screen
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              });
+              return const Center(child: CircularProgressIndicator());
+            }
+
             // Get the current manager if available (online or offline)
             final currentManager = distingCubit.disting();
 
             // Provide the DistingCubit down the tree using BlocProvider.value
             return BlocProvider.value(
               value: distingCubit,
-              child: Scaffold(
+              child: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                builder: (context, metaState) {
+                  return PopScope(
+                    canPop: !(metaState is SyncingMetadata || 
+                             metaState is WaitingForUserContinue ||
+                             metaState is SavingPreset ||
+                             metaState is DeletingPreset),
+                    onPopInvokedWithResult: (didPop, result) {
+                      if (!didPop) {
+                        // Cancel sync if in progress
+                        context.read<MetadataSyncCubit>().cancelMetadataSync();
+                      }
+                    },
+                    child: Scaffold(
                 appBar: AppBar(
                   title: Text('Offline Data'),
-                  leading:
-                      BackButton(onPressed: () => Navigator.maybePop(context)),
+                  leading: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                    builder: (context, metaState) {
+                      return BackButton(
+                        onPressed: () {
+                          // Cancel sync if in progress, otherwise just navigate back
+                          if (metaState is SyncingMetadata || 
+                              metaState is WaitingForUserContinue ||
+                              metaState is SavingPreset ||
+                              metaState is DeletingPreset) {
+                            context.read<MetadataSyncCubit>().cancelMetadataSync();
+                          } else {
+                            Navigator.maybePop(context);
+                          }
+                        },
+                      );
+                    },
+                  ),
                   actions: [
                     // --- Offline Mode Toggle --- (Interacts with DistingCubit)
                     BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
@@ -156,6 +198,48 @@ class MetadataSyncPage extends StatelessWidget {
                         );
                       },
                     ),
+                    // --- More Actions Menu ---
+                    BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                      builder: (metaCtx, metaState) {
+                        final isMetaBusy = metaState is! ViewingLocalData &&
+                            metaState is! Idle &&
+                            metaState is! Failure;
+                        final isDistingBusy = switch (distingState) {
+                          DistingStateSynchronized(loading: final l) => l,
+                          _ => false,
+                        };
+                        final isBusy = isMetaBusy || isDistingBusy;
+                        final canSync = isConnected && !isBusy;
+                        
+                        return PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          tooltip: 'More Actions',
+                          enabled: !isBusy,
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'incremental_sync':
+                                if (canSync && currentManager != null) {
+                                  _showIncrementalSyncConfirmationDialog(metaCtx, currentManager);
+                                }
+                                break;
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem<String>(
+                              value: 'incremental_sync',
+                              enabled: canSync && currentManager != null,
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.sync_alt, size: 20),
+                                  SizedBox(width: 12),
+                                  Text('Sync New Algorithms Only'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
                 // Body uses MetadataSyncCubit for DB data, DistingCubit for state
@@ -170,6 +254,7 @@ class MetadataSyncPage extends StatelessWidget {
                     // Show spinner if metadata cubit is loading
                     return const Center(child: CircularProgressIndicator());
                   }
+
 
                   if (metaState is Failure ||
                       metaState is MetadataSyncFailure ||
@@ -210,7 +295,13 @@ class MetadataSyncPage extends StatelessWidget {
                     ));
                   }
 
+                  if (metaState is CheckpointFound) {
+                    return Center(
+                        child: _buildCheckpointDialog(context, metaState));
+                  }
+
                   if (metaState is SyncingMetadata ||
+                      metaState is WaitingForUserContinue ||
                       metaState is SavingPreset ||
                       metaState is DeletingPreset) {
                     return Center(
@@ -239,25 +330,62 @@ class MetadataSyncPage extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // Fallback
-                  return const Center(child: Text("Unhandled state"));
+                  // Fallback - this should rarely occur now
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning, size: 48, color: Colors.orange),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Unexpected state: ${metaState.runtimeType}",
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text("Return to Main Screen"),
+                        ),
+                      ],
+                    ),
+                  );
                 }),
-              ),
+                    ), // Scaffold
+                  ); // PopScope
+                }, // BlocBuilder for PopScope
+              ), // BlocProvider.value
             );
           }),
     );
   }
 
+
   // Progress Indicator Widget
   Widget _buildProgressIndicator(
       BuildContext context, MetadataSyncState state) {
     String mainMessage = "Processing...";
+    String? subMessage;
     double? progressValue; // Null for indeterminate
+    bool showContinueButtons = false;
+    String? userMessage;
+    int? algorithmsProcessed;
+    int? totalAlgorithms;
 
     switch (state) {
-      case SyncingMetadata(progress: final progress, mainMessage: final msg):
+      case SyncingMetadata(progress: final progress, mainMessage: final msg, subMessage: final sub, algorithmsProcessed: final processed, totalAlgorithms: final total):
         mainMessage = msg;
+        subMessage = sub;
         progressValue = progress > 0 ? progress : null;
+        algorithmsProcessed = processed;
+        totalAlgorithms = total;
+        break;
+      case WaitingForUserContinue(message: final msg, progress: final progress, algorithmsProcessed: final processed, totalAlgorithms: final total):
+        mainMessage = "Sync Paused - Device Reboot Required";
+        userMessage = msg;
+        progressValue = progress;
+        showContinueButtons = true;
+        algorithmsProcessed = processed;
+        totalAlgorithms = total;
         break;
       case SavingPreset():
         mainMessage = "Saving Preset...";
@@ -270,23 +398,247 @@ class MetadataSyncPage extends StatelessWidget {
         break;
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        LinearProgressIndicator(
-          value: progressValue,
-          minHeight: 8,
-          backgroundColor: Colors.grey[300],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Progress bar with enhanced styling
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: LinearProgressIndicator(
+                  value: progressValue,
+                  minHeight: 12,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Main message
+              Text(
+                mainMessage,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              // Progress counter
+              if (algorithmsProcessed != null && totalAlgorithms != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  "Algorithm $algorithmsProcessed of $totalAlgorithms",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              
+              // Sub message with animated dots
+              if (subMessage != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        subMessage,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: 200,
+                        child: LinearProgressIndicator(
+                          minHeight: 4,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              // User message for reboot dialog
+              if (userMessage != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          userMessage,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              // Action buttons
+              const SizedBox(height: 24),
+              if (showContinueButtons) ...[
+                Column(
+                  children: [
+                    // Primary action row - Cancel and Continue
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () {
+                            context.read<MetadataSyncCubit>().cancelMetadataSync();
+                          },
+                          icon: const Icon(Icons.close, size: 18),
+                          label: const Text("Cancel"),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            context.read<MetadataSyncCubit>().continueSync();
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text("Continue"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Secondary action - Skip (centered)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        context.read<MetadataSyncCubit>().userSkip();
+                      },
+                      icon: const Icon(Icons.skip_next),
+                      label: const Text("Skip Plugin"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Show cancel button for regular sync operations
+                TextButton.icon(
+                  onPressed: () {
+                    context.read<MetadataSyncCubit>().cancelMetadataSync();
+                  },
+                  icon: const Icon(Icons.close, size: 18),
+                  label: const Text("Cancel Sync"),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          mainMessage,
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  // Checkpoint Dialog Widget
+  Widget _buildCheckpointDialog(BuildContext context, CheckpointFound state) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.restore, size: 48, color: Colors.blue),
+            const SizedBox(height: 16),
+            const Text(
+              'Resume Metadata Sync?',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Found an interrupted sync that was processing "${state.algorithmName}" '
+              '(algorithm ${state.algorithmIndex + 1}). Would you like to resume from where you left off?',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    context.read<MetadataSyncCubit>().declineCheckpoint();
+                  },
+                  child: const Text('Start Fresh'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<MetadataSyncCubit>().resumeFromCheckpoint();
+                    final distingCubit = context.read<DistingCubit>();
+                    final manager = distingCubit.disting();
+                    if (manager != null) {
+                      context.read<MetadataSyncCubit>().startMetadataSync(
+                        manager, 
+                        resumeFromIndex: state.algorithmIndex,
+                      );
+                    }
+                  },
+                  child: const Text('Resume'),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -313,6 +665,37 @@ class MetadataSyncPage extends StatelessWidget {
                 metaContext
                     .read<MetadataSyncCubit>()
                     .startMetadataSync(manager);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Confirmation Dialog for Incremental Sync (Manager passed in)
+  void _showIncrementalSyncConfirmationDialog(
+      BuildContext metaContext, IDistingMidiManager manager) {
+    showDialog(
+      context: metaContext,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Sync New Algorithms Only?'),
+          content: const Text(
+              'This will check for algorithms on your device that are not yet in the local database and sync only those new algorithms. This is faster than a full sync but requires that you have already done at least one full sync. Continue?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: const Text('Sync New'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                // Call cubit with manager
+                metaContext
+                    .read<MetadataSyncCubit>()
+                    .syncNewAlgorithmsOnly(manager);
               },
             ),
           ],
@@ -428,7 +811,7 @@ class _PresetListView extends StatelessWidget {
           key: ValueKey(preset.id),
           selected: isCurrentlyLoadedOffline,
           selectedTileColor:
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
           title: Text(preset.name.trim()),
           subtitle: Text("Saved: $formattedDate"),
           trailing: Row(
@@ -740,11 +1123,15 @@ class _AlgorithmExpansionTile extends StatefulWidget {
 
 class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
   bool _isLoading = false;
+  bool _isRescanning = false;
   List<ParameterWithUnit>? _parameters;
   String? _error;
 
-  Future<void> _fetchParameters() async {
-    if (_isLoading || _parameters != null) return;
+  Future<void> _fetchParameters({bool forceRefresh = false}) async {
+    if (_isLoading) return;
+    
+    // Skip if we already have parameters and this isn't a forced refresh
+    if (_parameters != null && !forceRefresh) return;
 
     setState(() {
       _isLoading = true;
@@ -777,20 +1164,145 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
     }
   }
 
+  Future<void> _rescanAlgorithm() async {
+    if (_isRescanning) return;
+
+    final distingCubit = context.read<DistingCubit>();
+    final manager = distingCubit.disting();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final database = context.read<AppDatabase>();
+    final metadataCubit = context.read<MetadataSyncCubit>();
+    
+    if (manager == null) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text("Device not connected"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isRescanning = true;
+      _error = null;
+    });
+
+    try {
+      // Use the metadata sync service directly for the rescan
+      final syncService = MetadataSyncService(manager, database);
+      
+      // Find the algorithm info from the database
+      final dao = database.metadataDao;
+      final algorithm = await dao.getAlgorithmByGuid(widget.algorithm.guid);
+      if (algorithm == null) {
+        throw Exception("Algorithm not found in database");
+      }
+
+      // Get algorithm info from device
+      final numAlgoTypes = await manager.requestNumberOfAlgorithms();
+      if (numAlgoTypes == null) {
+        throw Exception("Failed to get algorithm count from device");
+      }
+
+      AlgorithmInfo? targetAlgoInfo;
+      for (int i = 0; i < numAlgoTypes; i++) {
+        final algoInfo = await manager.requestAlgorithmInfo(i);
+        if (algoInfo?.guid == widget.algorithm.guid) {
+          targetAlgoInfo = algoInfo;
+          break;
+        }
+      }
+
+      if (targetAlgoInfo == null) {
+        throw Exception("Algorithm not found on device");
+      }
+
+      // Perform the rescan using the service
+      await syncService.rescanSingleAlgorithm(targetAlgoInfo);
+
+      if (mounted) {
+        // Refresh the parameters after successful rescan
+        setState(() {
+          _parameters = null; // Clear cache to force reload
+          _isRescanning = false;
+        });
+        
+        // Trigger a reload of the entire algorithm list in the parent cubit
+        // This will update parameter counts and cause the widget to rebuild
+        await metadataCubit.loadLocalData();
+        
+        // Show success message
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text("${targetAlgoInfo.name} rescanned successfully"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error rescanning algorithm: $e\n$stackTrace');
+      if (mounted) {
+        setState(() {
+          _isRescanning = false;
+          _error = "Rescan failed: $e";
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      key: PageStorageKey(widget.algorithm.guid),
-      title: Text("${widget.algorithm.name} [${widget.algorithm.guid}]"),
-      subtitle: Text("Params: ${widget.parameterCount}"),
-      childrenPadding:
-          const EdgeInsets.only(left: 32.0, right: 16.0, bottom: 8.0),
-      onExpansionChanged: (isExpanding) {
-        if (isExpanding && _parameters == null && !_isLoading) {
-          _fetchParameters();
+    return BlocListener<MetadataSyncCubit, MetadataSyncState>(
+      listener: (context, state) {
+        // If we just completed a metadata sync successfully, refresh parameters
+        // Only needed for expandable tiles (parameterCount > 0)
+        if ((state is MetadataSyncSuccess || state is ViewingLocalData) && 
+            widget.parameterCount > 0) {
+          // Only refresh if this tile is expanded and has cached parameters
+          if (_parameters != null) {
+            _fetchParameters(forceRefresh: true);
+          }
         }
       },
-      children: [
+      child: widget.parameterCount == 0 
+        ? ListTile(
+            key: PageStorageKey(widget.algorithm.guid),
+            title: Text("${widget.algorithm.name} [${widget.algorithm.guid}]"),
+            subtitle: Text("Params: ${widget.parameterCount}"),
+            trailing: _isRescanning 
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : InkWell(
+                  onTap: _rescanAlgorithm,
+                  borderRadius: BorderRadius.circular(20),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.refresh,
+                      size: 24,
+                    ),
+                  ),
+                ),
+          )
+        : ExpansionTile(
+            key: PageStorageKey(widget.algorithm.guid),
+            title: Text("${widget.algorithm.name} [${widget.algorithm.guid}]"),
+            subtitle: Text("Params: ${widget.parameterCount}"),
+            childrenPadding:
+                const EdgeInsets.only(left: 32.0, right: 16.0, bottom: 8.0),
+            onExpansionChanged: (isExpanding) {
+              if (isExpanding && _parameters == null && !_isLoading) {
+                _fetchParameters();
+              }
+            },
+            children: [
         if (_isLoading)
           const Padding(
             padding: EdgeInsets.all(16.0),
@@ -852,9 +1364,10 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
             const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: Center(
-                    child: Text("No parameters for this algorithm.",
+                    child: Text("Algorithm has parameters but they couldn't be displayed.",
                         style: TextStyle(fontStyle: FontStyle.italic)))),
-      ],
+        ],
+      ),
     );
   }
 }

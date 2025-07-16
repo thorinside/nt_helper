@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "0.1.6"
   bloc:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: bloc
       sha256: "52c10575f4445c61dd9e0cafcc6356fdd827c4c64dd7945ef3c4105f6b6ac189"
@@ -513,7 +513,7 @@ packages:
     source: hosted
     version: "0.5.1+1"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "2c11f3f94c687ee9bad77c171151672986360b2b001d109814ee7140b2cf261b"
@@ -643,10 +643,11 @@ packages:
   mcp_dart:
     dependency: "direct main"
     description:
-      name: mcp_dart
-      sha256: "4bc05574bc8bda0ae779e177ab5639f580b37059b5cb1248288b7a79979dd5e6"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: "8d5d567d07e172c77a9f449a22ce809545905037"
+      url: "https://github.com/thorinside/mcp_dart"
+    source: git
     version: "0.5.3"
   meta:
     dependency: transitive
@@ -1142,7 +1143,7 @@ packages:
     source: hosted
     version: "1.1.0"
   uuid:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: uuid
       sha256: a5be9ef6618a7ac1e964353ef476418026db906c4facdedaa299b7a2e71690ff

@@ -43,6 +43,6 @@ Map<String, dynamic> _$AlgorithmMetadataToJson(_AlgorithmMetadata instance) =>
       'specifications': instance.specifications,
       'parameters': instance.parameters,
       'features': instance.features,
-      'input_ports': _portsToJson(instance.inputPorts),
-      'output_ports': _portsToJson(instance.outputPorts),
+      'input_ports': instance.inputPorts,
+      'output_ports': instance.outputPorts,
     };

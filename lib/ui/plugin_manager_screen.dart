@@ -53,7 +53,6 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   void initState() {
     super.initState();
     _galleryService = GalleryService(
-      database: widget.database,
       settingsService: SettingsService(),
     );
     _loadInstalledPlugins();
@@ -93,6 +92,11 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Future<void> _installPlugin() async {
+    // Save context references before async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final theme = Theme.of(context);
+    
     try {
       // Only show file picker on desktop platforms
       if (!kIsWeb &&
@@ -150,10 +154,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
               Navigator.of(context).pop();
 
               // Show success message
-              ScaffoldMessenger.of(context).showSnackBar(
+              scaffoldMessenger.showSnackBar(
                 SnackBar(
                   content: Text('Successfully installed "$fileName"'),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: theme.colorScheme.primary,
                 ),
               );
 
@@ -163,13 +167,13 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           } catch (e) {
             // Close progress dialog
             if (mounted) {
-              Navigator.of(context).pop();
+              navigator.pop();
 
               // Show error message
-              ScaffoldMessenger.of(context).showSnackBar(
+              scaffoldMessenger.showSnackBar(
                 SnackBar(
                   content: Text('Failed to install "$fileName": $e'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
+                  backgroundColor: theme.colorScheme.error,
                 ),
               );
             }
@@ -177,7 +181,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         }
       } else {
         // Show message for unsupported platforms
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text(
                 'File installation is only available on desktop platforms'),
@@ -185,10 +189,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Error selecting file: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: theme.colorScheme.error,
         ),
       );
     }
@@ -211,6 +215,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Future<void> _backupPlugins() async {
+    // Save context references before async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    
     try {
       // Show backup options dialog first
       final backupChoice = await _showBackupOptionsDialog();
@@ -245,10 +253,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Error setting up backup: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: theme.colorScheme.error,
         ),
       );
     }

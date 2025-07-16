@@ -23,7 +23,8 @@ class DistingTools {
   DistingTools(this._controller);
 
   // Use shared utility
-  num _scaleForDisplay(int value, int? powerOfTen) => MCPUtils.scaleForDisplay(value, powerOfTen);
+  num _scaleForDisplay(int value, int? powerOfTen) =>
+      MCPUtils.scaleForDisplay(value, powerOfTen);
 
   /// MCP Tool: Gets the entire current preset state.
   /// Parameters: None
@@ -46,12 +47,15 @@ class DistingTools {
               await _controller.getParametersForSlot(i);
 
           List<Map<String, dynamic>> parametersJsonList = [];
-          for (final pInfo in parameterInfos) {
+          for (int paramIndex = 0;
+              paramIndex < parameterInfos.length;
+              paramIndex++) {
+            final pInfo = parameterInfos[paramIndex];
             final int? liveRawValue =
-                await _controller.getParameterValue(i, pInfo.parameterNumber);
+                await _controller.getParameterValue(i, paramIndex);
 
             parametersJsonList.add({
-              'parameter_number': pInfo.parameterNumber,
+              'parameter_number': paramIndex,
               'name': pInfo.name,
               'min_value':
                   _scaleForDisplay(pInfo.min, pInfo.powerOfTen), // Scaled
@@ -96,7 +100,6 @@ class DistingTools {
     };
   }
 
-
   /// MCP Tool: Adds an algorithm to the first available slot (determined by hardware).
   /// Parameters:
   ///   - algorithm_guid (string, required): The GUID of the algorithm to add.
@@ -119,16 +122,16 @@ class DistingTools {
     }
 
     try {
-      final algoStub =
-          Algorithm(algorithmIndex: -1, guid: resolution.resolvedGuid!, name: '');
+      final algoStub = Algorithm(
+          algorithmIndex: -1, guid: resolution.resolvedGuid!, name: '');
 
       await _controller.addAlgorithm(algoStub);
 
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Algorithm ${resolution.resolvedGuid!} added to slot')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Algorithm ${resolution.resolvedGuid!} added to slot')));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
+      return jsonEncode(
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -140,18 +143,17 @@ class DistingTools {
   Future<String> removeAlgorithm(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'];
     if (slotIndex == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('${MCPConstants.missingParamError}: "slot_index"')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          '${MCPConstants.missingParamError}: "slot_index"')));
     }
 
     try {
       await _controller.clearSlot(slotIndex);
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Algorithm removed from slot $slotIndex')
-      ));
+          MCPUtils.buildSuccess('Algorithm removed from slot $slotIndex')));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
+      return jsonEncode(
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -175,8 +177,9 @@ class DistingTools {
     }
 
     // Validate exactly one of parameter_number or parameter_name
-    final paramError = MCPUtils.validateExactlyOne(params, ['parameter_number', 'parameter_name'], 
-      helpCommand: MCPConstants.getPresetHelp);
+    final paramError = MCPUtils.validateExactlyOne(
+        params, ['parameter_number', 'parameter_name'],
+        helpCommand: MCPConstants.getPresetHelp);
     if (paramError != null) {
       return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
@@ -191,9 +194,8 @@ class DistingTools {
       if (parameterNumberParam != null) {
         if (parameterNumberParam >= paramInfos.length ||
             parameterNumberParam < 0) {
-          return jsonEncode(convertToSnakeCaseKeys(
-            MCPUtils.buildError('Parameter number $parameterNumberParam is out of bounds for slot $slotIndex.')
-          ));
+          return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+              'Parameter number $parameterNumberParam is out of bounds for slot $slotIndex.')));
         }
         targetParameterNumber = parameterNumberParam;
         paramInfo = paramInfos[targetParameterNumber];
@@ -204,14 +206,12 @@ class DistingTools {
             .toList();
 
         if (matchingParams.isEmpty) {
-          return jsonEncode(convertToSnakeCaseKeys(
-            MCPUtils.buildError('Parameter with name "$parameterNameParam" not found in slot $slotIndex. Check `get_current_preset` for available parameters.')
-          ));
+          return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+              'Parameter with name "$parameterNameParam" not found in slot $slotIndex. Check `get_current_preset` for available parameters.')));
         }
         if (matchingParams.length > 1) {
-          return jsonEncode(convertToSnakeCaseKeys(
-            MCPUtils.buildError('Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.')
-          ));
+          return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+              'Parameter name "$parameterNameParam" is ambiguous in slot $slotIndex. Please use "parameter_number". Check `get_current_preset` for details.')));
         }
         paramInfo = matchingParams.first;
         // We need to find the original index (parameterNumber) of this paramInfo
@@ -221,8 +221,7 @@ class DistingTools {
       if (paramInfo == null || targetParameterNumber == null) {
         // Should not happen if logic above is correct
         return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Failed to identify target parameter.')
-        ));
+            MCPUtils.buildError('Failed to identify target parameter.')));
       }
 
       int rawValue;
@@ -238,17 +237,15 @@ class DistingTools {
             _scaleForDisplay(paramInfo.min, paramInfo.powerOfTen);
         final effectiveMax =
             _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Provided value $displayValue (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Provided value $displayValue (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).')));
       }
 
       await _controller.updateParameterValue(
           slotIndex, targetParameterNumber, rawValue);
 
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -272,7 +269,8 @@ class DistingTools {
     }
 
     // Validate parameter number
-    final paramError = MCPUtils.validateRequiredParam(parameterNumber, 'parameter_number');
+    final paramError =
+        MCPUtils.validateRequiredParam(parameterNumber, 'parameter_number');
     if (paramError != null) {
       return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
@@ -282,29 +280,27 @@ class DistingTools {
           await _controller.getParameterValue(slotIndex!, parameterNumber!);
 
       if (liveRawValue == null) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Could not retrieve value for parameter $parameterNumber in slot $slotIndex.')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Could not retrieve value for parameter $parameterNumber in slot $slotIndex.')));
       }
 
       // Fetch parameter info to get powerOfTen for scaling
       final List<ParameterInfo> paramInfos =
           await _controller.getParametersForSlot(slotIndex);
       if (parameterNumber >= paramInfos.length || parameterNumber < 0) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Parameter number $parameterNumber is out of bounds for slot $slotIndex (for scaling info).')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Parameter number $parameterNumber is out of bounds for slot $slotIndex (for scaling info).')));
       }
       final ParameterInfo paramInfo = paramInfos[parameterNumber];
 
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Parameter value retrieved successfully', data: {
-          'slot_index': slotIndex,
-          'parameter_number': parameterNumber,
-          'value': _scaleForDisplay(
-              liveRawValue, paramInfo.powerOfTen), // Scaled value
-        })
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Parameter value retrieved successfully',
+          data: {
+            'slot_index': slotIndex,
+            'parameter_number': parameterNumber,
+            'value': _scaleForDisplay(
+                liveRawValue, paramInfo.powerOfTen), // Scaled value
+          })));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -328,8 +324,7 @@ class DistingTools {
     try {
       await _controller.setPresetName(name!);
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Preset name set to "$name".')
-      ));
+          MCPUtils.buildSuccess('Preset name set to "$name".')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -361,8 +356,7 @@ class DistingTools {
     try {
       await _controller.setSlotName(slotIndex!, name!);
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Name for slot $slotIndex set to "$name".')
-      ));
+          MCPUtils.buildSuccess('Name for slot $slotIndex set to "$name".')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -376,8 +370,7 @@ class DistingTools {
     try {
       await _controller.newPreset();
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('New empty preset initiated on the device.')
-      ));
+          MCPUtils.buildSuccess('New empty preset initiated on the device.')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -390,9 +383,8 @@ class DistingTools {
   Future<String> savePreset(Map<String, dynamic> params) async {
     try {
       await _controller.savePreset();
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Request to save current preset sent to the device.')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Request to save current preset sent to the device.')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -418,8 +410,7 @@ class DistingTools {
 
     if (slotIndex == 0) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Cannot move algorithm in slot 0 further up.')
-      ));
+          MCPUtils.buildError('Cannot move algorithm in slot 0 further up.')));
     }
     // Ensure slotIndex is within a reasonable range if needed, though controller might handle this.
     // For now, just check against 0. Max slot check can be added if necessary or rely on controller.
@@ -428,9 +419,8 @@ class DistingTools {
 
     try {
       await _controller.moveAlgorithmUp(sourceSlotIndex);
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Algorithm from slot $sourceSlotIndex moved up.')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Algorithm from slot $sourceSlotIndex moved up.')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -465,16 +455,15 @@ class DistingTools {
       // Check if sourceSlotIndex is already the last possible slot.
       // This requires knowing the total number of slots, which is `maxSlots`.
       if (sourceSlotIndex >= maxSlots - 1) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Cannot move algorithm in slot ${maxSlots - 1} further down.')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Cannot move algorithm in slot ${maxSlots - 1} further down.')));
       }
       await _controller.moveAlgorithmDown(sourceSlotIndex);
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Algorithm from slot $sourceSlotIndex moved down.')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Algorithm from slot $sourceSlotIndex moved down.')));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
+      return jsonEncode(
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -496,7 +485,8 @@ class DistingTools {
       return jsonEncode(convertToSnakeCaseKeys(slotError));
     }
 
-    final directionError = MCPUtils.validateRequiredParam(direction, 'direction');
+    final directionError =
+        MCPUtils.validateRequiredParam(direction, 'direction');
     if (directionError != null) {
       return jsonEncode(convertToSnakeCaseKeys(directionError));
     }
@@ -504,15 +494,13 @@ class DistingTools {
     // Validate direction parameter
     if (direction != 'up' && direction != 'down') {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Invalid direction. Must be "up" or "down".')
-      ));
+          MCPUtils.buildError('Invalid direction. Must be "up" or "down".')));
     }
 
     // Validate steps parameter
     if (steps < 1) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Steps must be at least 1.')
-      ));
+          MCPUtils.buildError('Steps must be at least 1.')));
     }
 
     final int sourceSlotIndex = slotIndex!;
@@ -523,29 +511,29 @@ class DistingTools {
         if (direction == 'up') {
           // Check if we're already at the top
           if (sourceSlotIndex - i <= 0) {
-            return jsonEncode(convertToSnakeCaseKeys(
-              MCPUtils.buildError('Cannot move algorithm further up. Already at or above slot 0.')
-            ));
+            return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+                'Cannot move algorithm further up. Already at or above slot 0.')));
           }
           await _controller.moveAlgorithmUp(sourceSlotIndex - i);
-        } else { // direction == 'down'
+        } else {
+          // direction == 'down'
           // Check if we're already at the bottom
           if (sourceSlotIndex + i >= maxSlots - 1) {
-            return jsonEncode(convertToSnakeCaseKeys(
-              MCPUtils.buildError('Cannot move algorithm further down. Already at or below slot ${maxSlots - 1}.')
-            ));
+            return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+                'Cannot move algorithm further down. Already at or below slot ${maxSlots - 1}.')));
           }
           await _controller.moveAlgorithmDown(sourceSlotIndex + i);
         }
       }
 
       final String stepText = steps == 1 ? 'step' : 'steps';
-      final int finalSlot = direction == 'up' ? sourceSlotIndex - steps : sourceSlotIndex + steps;
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Algorithm moved $steps $stepText $direction from slot $sourceSlotIndex to slot $finalSlot.')
-      ));
+      final int finalSlot =
+          direction == 'up' ? sourceSlotIndex - steps : sourceSlotIndex + steps;
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Algorithm moved $steps $stepText $direction from slot $sourceSlotIndex to slot $finalSlot.')));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
+      return jsonEncode(
+          convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 
@@ -616,29 +604,24 @@ class DistingTools {
         // Build slot usage details
         final List<Map<String, dynamic>> slotUsageList = [];
         for (int i = 0; i < cpuUsage.slotUsages.length; i++) {
-          slotUsageList.add({
-            'slot_index': i,
-            'usage_percentage': cpuUsage.slotUsages[i]
-          });
+          slotUsageList.add(
+              {'slot_index': i, 'usage_percentage': cpuUsage.slotUsages[i]});
         }
 
         return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildSuccess('CPU usage retrieved successfully', data: {
-            'cpu1_percentage': cpuUsage.cpu1,
-            'cpu2_percentage': cpuUsage.cpu2,
-            'total_slots': cpuUsage.slotUsages.length,
-            'slot_usage': slotUsageList
-          })
-        ));
+            MCPUtils.buildSuccess('CPU usage retrieved successfully', data: {
+          'cpu1_percentage': cpuUsage.cpu1,
+          'cpu2_percentage': cpuUsage.cpu2,
+          'total_slots': cpuUsage.slotUsages.length,
+          'slot_usage': slotUsageList
+        })));
       } else {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('CPU usage data is currently unavailable. Device may not be connected or synchronized.')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'CPU usage data is currently unavailable. Device may not be connected or synchronized.')));
       }
     } catch (e) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error retrieving CPU usage: ${e.toString()}')
-      ));
+          MCPUtils.buildError('Error retrieving CPU usage: ${e.toString()}')));
     }
   }
 
@@ -661,9 +644,8 @@ class DistingTools {
       final lines = _splitTextIntoLines(text!);
 
       if (!_validateNotesText(lines)) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Text validation failed. Maximum 7 lines of 31 characters each.')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Text validation failed. Maximum 7 lines of 31 characters each.')));
       }
 
       // Find existing Notes algorithm or add one
@@ -695,11 +677,9 @@ class DistingTools {
       // Refresh slot 0 to ensure UI is updated with the latest notes content
       await _controller.refreshSlot(0);
 
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Notes algorithm updated with text and moved to slot 0.', data: {
-          'lines_set': lines.length
-        })
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Notes algorithm updated with text and moved to slot 0.',
+          data: {'lines_set': lines.length})));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -713,11 +693,11 @@ class DistingTools {
   Future<String> getNotes(Map<String, dynamic> params) async {
     try {
       const String notesGuid = 'note';
-      
+
       // Find Notes algorithm in any slot
       final Map<int, Algorithm?> allSlots = await _controller.getAllSlots();
       int? notesSlotIndex;
-      
+
       for (int i = 0; i < maxSlots; i++) {
         final algorithm = allSlots[i];
         if (algorithm != null && algorithm.guid == notesGuid) {
@@ -725,39 +705,36 @@ class DistingTools {
           break;
         }
       }
-      
+
       if (notesSlotIndex == null) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('No Notes algorithm found in current preset', 
-            helpCommand: 'Use `set_notes` to create notes')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'No Notes algorithm found in current preset',
+            helpCommand: 'Use `set_notes` to create notes')));
       }
-      
+
       // Get the notes content from parameters 1-7
       final List<String> lines = [];
       for (int i = 1; i <= 7; i++) {
-        final String? lineContent = 
+        final String? lineContent =
             await _controller.getParameterStringValue(notesSlotIndex, i);
         if (lineContent != null && lineContent.isNotEmpty) {
           lines.add(lineContent);
         }
       }
-      
+
       // Join lines with newline characters
       final String notesText = lines.join('\n');
-      
+
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Notes content retrieved successfully', data: {
-          'slot_index': notesSlotIndex,
-          'text': notesText,
-          'lines': lines,
-          'line_count': lines.length
-        })
-      ));
+          MCPUtils.buildSuccess('Notes content retrieved successfully', data: {
+        'slot_index': notesSlotIndex,
+        'text': notesText,
+        'lines': lines,
+        'line_count': lines.length
+      })));
     } catch (e) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error retrieving notes: ${e.toString()}')
-      ));
+          MCPUtils.buildError('Error retrieving notes: ${e.toString()}')));
     }
   }
 
@@ -768,16 +745,13 @@ class DistingTools {
   Future<String> getPresetName(Map<String, dynamic> params) async {
     try {
       final String presetName = await _controller.getCurrentPresetName();
-      
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Preset name retrieved successfully', data: {
-          'preset_name': presetName
-        })
-      ));
+
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Preset name retrieved successfully',
+          data: {'preset_name': presetName})));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error retrieving preset name: ${e.toString()}')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          'Error retrieving preset name: ${e.toString()}')));
     }
   }
 
@@ -797,17 +771,13 @@ class DistingTools {
 
     try {
       final String? slotName = await _controller.getSlotName(slotIndex!);
-      
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Slot name retrieved successfully', data: {
-          'slot_index': slotIndex,
-          'slot_name': slotName ?? ''
-        })
-      ));
+
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Slot name retrieved successfully',
+          data: {'slot_index': slotIndex, 'slot_name': slotName ?? ''})));
     } catch (e) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error retrieving slot name: ${e.toString()}')
-      ));
+          MCPUtils.buildError('Error retrieving slot name: ${e.toString()}')));
     }
   }
 
@@ -822,8 +792,9 @@ class DistingTools {
     final String? algorithmName = params['algorithm_name'];
 
     // Validate exactly one of algorithm_guid or algorithm_name
-    final paramError = MCPUtils.validateExactlyOne(params, ['algorithm_guid', 'algorithm_name'], 
-      helpCommand: MCPConstants.getAlgorithmHelp);
+    final paramError = MCPUtils.validateExactlyOne(
+        params, ['algorithm_guid', 'algorithm_name'],
+        helpCommand: MCPConstants.getAlgorithmHelp);
     if (paramError != null) {
       return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
@@ -842,11 +813,11 @@ class DistingTools {
       }
 
       final String targetGuid = resolution.resolvedGuid!;
-      
+
       // Search through all slots to find the algorithm
       final Map<int, Algorithm?> allSlots = await _controller.getAllSlots();
       final List<Map<String, dynamic>> foundSlots = [];
-      
+
       for (int i = 0; i < maxSlots; i++) {
         final algorithm = allSlots[i];
         if (algorithm != null && algorithm.guid == targetGuid) {
@@ -858,25 +829,22 @@ class DistingTools {
           });
         }
       }
-      
+
       if (foundSlots.isEmpty) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('Algorithm with GUID "$targetGuid" not found in current preset', 
-            helpCommand: 'Use `add_algorithm` to add it to the preset')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Algorithm with GUID "$targetGuid" not found in current preset',
+            helpCommand: 'Use `add_algorithm` to add it to the preset')));
       }
-      
+
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Algorithm found in preset', data: {
-          'algorithm_guid': targetGuid,
-          'found_in_slots': foundSlots,
-          'slot_count': foundSlots.length
-        })
-      ));
+          MCPUtils.buildSuccess('Algorithm found in preset', data: {
+        'algorithm_guid': targetGuid,
+        'found_in_slots': foundSlots,
+        'slot_count': foundSlots.length
+      })));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error searching for algorithm: ${e.toString()}')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          'Error searching for algorithm: ${e.toString()}')));
     }
   }
 
@@ -904,8 +872,7 @@ class DistingTools {
 
     if (parameters!.isEmpty) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Parameters array cannot be empty')
-      ));
+          MCPUtils.buildError('Parameters array cannot be empty')));
     }
 
     try {
@@ -915,9 +882,7 @@ class DistingTools {
       for (int i = 0; i < parameters.length; i++) {
         final param = parameters[i];
         if (param is! Map<String, dynamic>) {
-          results.add({
-            'error': 'Parameter at index $i must be an object'
-          });
+          results.add({'error': 'Parameter at index $i must be an object'});
           hasErrors = true;
           continue;
         }
@@ -929,16 +894,15 @@ class DistingTools {
 
         // Validate this parameter
         if (value == null) {
-          results.add({
-            'error': 'Missing "value" field'
-          });
+          results.add({'error': 'Missing "value" field'});
           hasErrors = true;
           continue;
         }
 
         if (parameterNumber == null && parameterName == null) {
           results.add({
-            'error': 'Must provide either "parameter_number" or "parameter_name"'
+            'error':
+                'Must provide either "parameter_number" or "parameter_name"'
           });
           hasErrors = true;
           continue;
@@ -946,7 +910,8 @@ class DistingTools {
 
         if (parameterNumber != null && parameterName != null) {
           results.add({
-            'error': 'Provide only one of "parameter_number" or "parameter_name"'
+            'error':
+                'Provide only one of "parameter_number" or "parameter_name"'
           });
           hasErrors = true;
           continue;
@@ -966,7 +931,7 @@ class DistingTools {
         // Call the individual setParameterValue method
         final result = await setParameterValue(individualParams);
         final resultMap = jsonDecode(result) as Map<String, dynamic>;
-        
+
         if (resultMap['success'] == true) {
           results.add({
             'parameter_number': parameterNumber,
@@ -974,9 +939,7 @@ class DistingTools {
             'value': value
           });
         } else {
-          results.add({
-            'error': resultMap['error'] ?? 'Unknown error'
-          });
+          results.add({'error': resultMap['error'] ?? 'Unknown error'});
           hasErrors = true;
         }
       }
@@ -985,19 +948,17 @@ class DistingTools {
       final totalCount = results.length;
 
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Batch parameter update completed', data: {
-          'slot_index': slotIndex,
-          'total_parameters': totalCount,
-          'successful_updates': successCount,
-          'failed_updates': totalCount - successCount,
-          'has_errors': hasErrors,
-          'results': results
-        })
-      ));
+          MCPUtils.buildSuccess('Batch parameter update completed', data: {
+        'slot_index': slotIndex,
+        'total_parameters': totalCount,
+        'successful_updates': successCount,
+        'failed_updates': totalCount - successCount,
+        'has_errors': hasErrors,
+        'results': results
+      })));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error in batch parameter update: ${e.toString()}')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          'Error in batch parameter update: ${e.toString()}')));
     }
   }
 
@@ -1009,7 +970,8 @@ class DistingTools {
   ///   A JSON string with values for each parameter or an error.
   Future<String> getMultipleParameters(Map<String, dynamic> params) async {
     final int? slotIndex = params['slot_index'] as int?;
-    final List<dynamic>? parameterNumbers = params['parameter_numbers'] as List<dynamic>?;
+    final List<dynamic>? parameterNumbers =
+        params['parameter_numbers'] as List<dynamic>?;
 
     // Validate slot index
     final slotError = MCPUtils.validateSlotIndex(slotIndex);
@@ -1018,15 +980,15 @@ class DistingTools {
     }
 
     // Validate parameter_numbers array
-    final paramError = MCPUtils.validateRequiredParam(parameterNumbers, 'parameter_numbers');
+    final paramError =
+        MCPUtils.validateRequiredParam(parameterNumbers, 'parameter_numbers');
     if (paramError != null) {
       return jsonEncode(convertToSnakeCaseKeys(paramError));
     }
 
     if (parameterNumbers!.isEmpty) {
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Parameter numbers array cannot be empty')
-      ));
+          MCPUtils.buildError('Parameter numbers array cannot be empty')));
     }
 
     try {
@@ -1052,12 +1014,10 @@ class DistingTools {
 
         final result = await getParameterValue(individualParams);
         final resultMap = jsonDecode(result) as Map<String, dynamic>;
-        
+
         if (resultMap['success'] == true) {
-          results.add({
-            'parameter_number': paramNum,
-            'value': resultMap['value']
-          });
+          results
+              .add({'parameter_number': paramNum, 'value': resultMap['value']});
         } else {
           results.add({
             'parameter_number': paramNum,
@@ -1071,19 +1031,17 @@ class DistingTools {
       final totalCount = results.length;
 
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Batch parameter retrieval completed', data: {
-          'slot_index': slotIndex,
-          'total_parameters': totalCount,
-          'successful_retrievals': successCount,
-          'failed_retrievals': totalCount - successCount,
-          'has_errors': hasErrors,
-          'results': results
-        })
-      ));
+          MCPUtils.buildSuccess('Batch parameter retrieval completed', data: {
+        'slot_index': slotIndex,
+        'total_parameters': totalCount,
+        'successful_retrievals': successCount,
+        'failed_retrievals': totalCount - successCount,
+        'has_errors': hasErrors,
+        'results': results
+      })));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error in batch parameter retrieval: ${e.toString()}')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          'Error in batch parameter retrieval: ${e.toString()}')));
     }
   }
 
@@ -1094,11 +1052,13 @@ class DistingTools {
   /// Returns:
   ///   A JSON string confirming preset creation or error details.
   Future<String> buildPresetFromJson(Map<String, dynamic> params) async {
-    final Map<String, dynamic>? presetData = params['preset_data'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? presetData =
+        params['preset_data'] as Map<String, dynamic>?;
     final bool clearExisting = params['clear_existing'] ?? true;
 
     // Validate preset_data parameter
-    final presetError = MCPUtils.validateRequiredParam(presetData, 'preset_data');
+    final presetError =
+        MCPUtils.validateRequiredParam(presetData, 'preset_data');
     if (presetError != null) {
       return jsonEncode(convertToSnakeCaseKeys(presetError));
     }
@@ -1106,15 +1066,13 @@ class DistingTools {
     try {
       // Validate preset structure
       if (!presetData!.containsKey('preset_name')) {
-        return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('preset_data must contain "preset_name" field')
-        ));
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'preset_data must contain "preset_name" field')));
       }
 
       if (!presetData.containsKey('slots') || presetData['slots'] is! List) {
         return jsonEncode(convertToSnakeCaseKeys(
-          MCPUtils.buildError('preset_data must contain "slots" array')
-        ));
+            MCPUtils.buildError('preset_data must contain "slots" array')));
       }
 
       final String presetName = presetData['preset_name'].toString();
@@ -1133,9 +1091,11 @@ class DistingTools {
       int errorCount = 0;
 
       // Process each slot
-      for (int slotIndex = 0; slotIndex < slots.length && slotIndex < maxSlots; slotIndex++) {
+      for (int slotIndex = 0;
+          slotIndex < slots.length && slotIndex < maxSlots;
+          slotIndex++) {
         final slotData = slots[slotIndex];
-        
+
         if (slotData == null) {
           continue; // Skip empty slots
         }
@@ -1153,7 +1113,8 @@ class DistingTools {
         try {
           // Process algorithm
           if (slotData.containsKey('algorithm')) {
-            final algorithmData = slotData['algorithm'] as Map<String, dynamic>?;
+            final algorithmData =
+                slotData['algorithm'] as Map<String, dynamic>?;
             if (algorithmData != null) {
               final String? algorithmGuid = algorithmData['guid']?.toString();
               final String? algorithmName = algorithmData['name']?.toString();
@@ -1171,21 +1132,25 @@ class DistingTools {
                   'algorithm_guid': resolution.resolvedGuid
                 };
                 await addAlgorithm(addParams);
-                
+
                 // Process parameters if provided
-                if (slotData.containsKey('parameters') && slotData['parameters'] is List) {
-                  final List<dynamic> parameters = slotData['parameters'] as List<dynamic>;
+                if (slotData.containsKey('parameters') &&
+                    slotData['parameters'] is List) {
+                  final List<dynamic> parameters =
+                      slotData['parameters'] as List<dynamic>;
                   final List<Map<String, dynamic>> parameterList = [];
-                  
+
                   for (final param in parameters) {
-                    if (param is Map<String, dynamic> && param.containsKey('value')) {
+                    if (param is Map<String, dynamic> &&
+                        param.containsKey('value')) {
                       parameterList.add({
-                        'parameter_number': param['parameter_number'] ?? param['parameterNumber'],
+                        'parameter_number': param['parameter_number'] ??
+                            param['parameterNumber'],
                         'value': param['value']
                       });
                     }
                   }
-                  
+
                   if (parameterList.isNotEmpty) {
                     final Map<String, dynamic> setParams = {
                       'slot_index': slotIndex,
@@ -1199,14 +1164,17 @@ class DistingTools {
                   'slot_index': slotIndex,
                   'success': true,
                   'algorithm_guid': resolution.resolvedGuid,
-                  'parameters_set': slotData.containsKey('parameters') ? (slotData['parameters'] as List).length : 0
+                  'parameters_set': slotData.containsKey('parameters')
+                      ? (slotData['parameters'] as List).length
+                      : 0
                 });
                 successCount++;
               } else {
                 results.add({
                   'slot_index': slotIndex,
                   'success': false,
-                  'error': 'Failed to resolve algorithm: ${resolution.error!['error']}'
+                  'error':
+                      'Failed to resolve algorithm: ${resolution.error!['error']}'
                 });
                 errorCount++;
               }
@@ -1223,19 +1191,17 @@ class DistingTools {
       }
 
       return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildSuccess('Preset built from JSON', data: {
-          'preset_name': presetName,
-          'total_slots_processed': results.length,
-          'successful_slots': successCount,
-          'failed_slots': errorCount,
-          'cleared_existing': clearExisting,
-          'results': results
-        })
-      ));
+          MCPUtils.buildSuccess('Preset built from JSON', data: {
+        'preset_name': presetName,
+        'total_slots_processed': results.length,
+        'successful_slots': successCount,
+        'failed_slots': errorCount,
+        'cleared_existing': clearExisting,
+        'results': results
+      })));
     } catch (e) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('Error building preset from JSON: ${e.toString()}')
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          'Error building preset from JSON: ${e.toString()}')));
     }
   }
 

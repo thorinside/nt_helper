@@ -24,17 +24,12 @@ mixin _$AlgorithmParameter {
   String?
       get scope; // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
   String? get description;
-  @JsonKey(name: 'enumValues')
-  List<String>? get values;
+  List<String>? get enumValues;
   String?
       get type; // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
-  @JsonKey(name: 'busIdRef')
   String? get busIdRef;
-  @JsonKey(name: 'channelCountRef')
   String? get channelCountRef;
-  @JsonKey(name: 'isPerChannel')
   bool? get isPerChannel;
-  @JsonKey(name: 'isCommon')
   bool? get isCommon;
   int? get parameterNumber;
 
@@ -63,7 +58,8 @@ mixin _$AlgorithmParameter {
             (identical(other.scope, scope) || other.scope == scope) &&
             (identical(other.description, description) ||
                 other.description == description) &&
-            const DeepCollectionEquality().equals(other.values, values) &&
+            const DeepCollectionEquality()
+                .equals(other.enumValues, enumValues) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.busIdRef, busIdRef) ||
                 other.busIdRef == busIdRef) &&
@@ -88,7 +84,7 @@ mixin _$AlgorithmParameter {
       const DeepCollectionEquality().hash(defaultValue),
       scope,
       description,
-      const DeepCollectionEquality().hash(values),
+      const DeepCollectionEquality().hash(enumValues),
       type,
       busIdRef,
       channelCountRef,
@@ -98,7 +94,7 @@ mixin _$AlgorithmParameter {
 
   @override
   String toString() {
-    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
+    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, enumValues: $enumValues, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
   }
 }
 
@@ -116,12 +112,12 @@ abstract mixin class $AlgorithmParameterCopyWith<$Res> {
       dynamic defaultValue,
       String? scope,
       String? description,
-      @JsonKey(name: 'enumValues') List<String>? values,
+      List<String>? enumValues,
       String? type,
-      @JsonKey(name: 'busIdRef') String? busIdRef,
-      @JsonKey(name: 'channelCountRef') String? channelCountRef,
-      @JsonKey(name: 'isPerChannel') bool? isPerChannel,
-      @JsonKey(name: 'isCommon') bool? isCommon,
+      String? busIdRef,
+      String? channelCountRef,
+      bool? isPerChannel,
+      bool? isCommon,
       int? parameterNumber});
 }
 
@@ -145,7 +141,7 @@ class _$AlgorithmParameterCopyWithImpl<$Res>
     Object? defaultValue = freezed,
     Object? scope = freezed,
     Object? description = freezed,
-    Object? values = freezed,
+    Object? enumValues = freezed,
     Object? type = freezed,
     Object? busIdRef = freezed,
     Object? channelCountRef = freezed,
@@ -182,9 +178,9 @@ class _$AlgorithmParameterCopyWithImpl<$Res>
           ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
-      values: freezed == values
-          ? _self.values
-          : values // ignore: cast_nullable_to_non_nullable
+      enumValues: freezed == enumValues
+          ? _self.enumValues
+          : enumValues // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       type: freezed == type
           ? _self.type
@@ -225,14 +221,14 @@ class _AlgorithmParameter implements AlgorithmParameter {
       this.defaultValue,
       this.scope,
       this.description,
-      @JsonKey(name: 'enumValues') final List<String>? values,
+      final List<String>? enumValues,
       this.type,
-      @JsonKey(name: 'busIdRef') this.busIdRef,
-      @JsonKey(name: 'channelCountRef') this.channelCountRef,
-      @JsonKey(name: 'isPerChannel') this.isPerChannel,
-      @JsonKey(name: 'isCommon') this.isCommon,
+      this.busIdRef,
+      this.channelCountRef,
+      this.isPerChannel,
+      this.isCommon,
       this.parameterNumber})
-      : _values = values;
+      : _enumValues = enumValues;
   factory _AlgorithmParameter.fromJson(Map<String, dynamic> json) =>
       _$AlgorithmParameterFromJson(json);
 
@@ -252,13 +248,12 @@ class _AlgorithmParameter implements AlgorithmParameter {
 // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
   @override
   final String? description;
-  final List<String>? _values;
+  final List<String>? _enumValues;
   @override
-  @JsonKey(name: 'enumValues')
-  List<String>? get values {
-    final value = _values;
+  List<String>? get enumValues {
+    final value = _enumValues;
     if (value == null) return null;
-    if (_values is EqualUnmodifiableListView) return _values;
+    if (_enumValues is EqualUnmodifiableListView) return _enumValues;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
   }
@@ -267,16 +262,12 @@ class _AlgorithmParameter implements AlgorithmParameter {
   final String? type;
 // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
   @override
-  @JsonKey(name: 'busIdRef')
   final String? busIdRef;
   @override
-  @JsonKey(name: 'channelCountRef')
   final String? channelCountRef;
   @override
-  @JsonKey(name: 'isPerChannel')
   final bool? isPerChannel;
   @override
-  @JsonKey(name: 'isCommon')
   final bool? isCommon;
   @override
   final int? parameterNumber;
@@ -310,7 +301,8 @@ class _AlgorithmParameter implements AlgorithmParameter {
             (identical(other.scope, scope) || other.scope == scope) &&
             (identical(other.description, description) ||
                 other.description == description) &&
-            const DeepCollectionEquality().equals(other._values, _values) &&
+            const DeepCollectionEquality()
+                .equals(other._enumValues, _enumValues) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.busIdRef, busIdRef) ||
                 other.busIdRef == busIdRef) &&
@@ -335,7 +327,7 @@ class _AlgorithmParameter implements AlgorithmParameter {
       const DeepCollectionEquality().hash(defaultValue),
       scope,
       description,
-      const DeepCollectionEquality().hash(_values),
+      const DeepCollectionEquality().hash(_enumValues),
       type,
       busIdRef,
       channelCountRef,
@@ -345,7 +337,7 @@ class _AlgorithmParameter implements AlgorithmParameter {
 
   @override
   String toString() {
-    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, values: $values, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
+    return 'AlgorithmParameter(name: $name, unit: $unit, min: $min, max: $max, defaultValue: $defaultValue, scope: $scope, description: $description, enumValues: $enumValues, type: $type, busIdRef: $busIdRef, channelCountRef: $channelCountRef, isPerChannel: $isPerChannel, isCommon: $isCommon, parameterNumber: $parameterNumber)';
   }
 }
 
@@ -365,12 +357,12 @@ abstract mixin class _$AlgorithmParameterCopyWith<$Res>
       dynamic defaultValue,
       String? scope,
       String? description,
-      @JsonKey(name: 'enumValues') List<String>? values,
+      List<String>? enumValues,
       String? type,
-      @JsonKey(name: 'busIdRef') String? busIdRef,
-      @JsonKey(name: 'channelCountRef') String? channelCountRef,
-      @JsonKey(name: 'isPerChannel') bool? isPerChannel,
-      @JsonKey(name: 'isCommon') bool? isCommon,
+      String? busIdRef,
+      String? channelCountRef,
+      bool? isPerChannel,
+      bool? isCommon,
       int? parameterNumber});
 }
 
@@ -394,7 +386,7 @@ class __$AlgorithmParameterCopyWithImpl<$Res>
     Object? defaultValue = freezed,
     Object? scope = freezed,
     Object? description = freezed,
-    Object? values = freezed,
+    Object? enumValues = freezed,
     Object? type = freezed,
     Object? busIdRef = freezed,
     Object? channelCountRef = freezed,
@@ -431,9 +423,9 @@ class __$AlgorithmParameterCopyWithImpl<$Res>
           ? _self.description
           : description // ignore: cast_nullable_to_non_nullable
               as String?,
-      values: freezed == values
-          ? _self._values
-          : values // ignore: cast_nullable_to_non_nullable
+      enumValues: freezed == enumValues
+          ? _self._enumValues
+          : enumValues // ignore: cast_nullable_to_non_nullable
               as List<String>?,
       type: freezed == type
           ? _self.type

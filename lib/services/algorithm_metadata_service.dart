@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
@@ -27,7 +28,7 @@ class AlgorithmMetadataService {
     await _mergeSyncedAlgorithms(database);
 
     _isInitialized = true;
-    print(
+    debugPrint(
         'AlgorithmMetadataService initialized with a total of ${_algorithms.length} algorithms (from JSON and DB) and ${_features.length} features.');
   }
 
@@ -40,7 +41,7 @@ class AlgorithmMetadataService {
             path.startsWith('docs/algorithms/') && path.endsWith('.json'))
         .toList();
 
-    print('Found ${algorithmFiles.length} algorithm files in manifest.');
+    debugPrint('Found ${algorithmFiles.length} algorithm files in manifest.');
 
     for (final path in algorithmFiles) {
       try {
@@ -50,7 +51,7 @@ class AlgorithmMetadataService {
         _algorithms[algorithm.guid] = algorithm;
         // print('Loaded algorithm: ${algorithm.name} (${algorithm.guid})');
       } catch (e, stacktrace) {
-        print('Error processing algorithm file $path: $e\n$stacktrace');
+        debugPrint('Error processing algorithm file $path: $e\n$stacktrace');
       }
     }
   }
@@ -64,7 +65,7 @@ class AlgorithmMetadataService {
             path.startsWith('docs/features/') && path.endsWith('.json'))
         .toList();
 
-    print('Found ${featureFiles.length} feature files in manifest.');
+    debugPrint('Found ${featureFiles.length} feature files in manifest.');
 
     for (final path in featureFiles) {
       try {
@@ -74,7 +75,7 @@ class AlgorithmMetadataService {
         _features[feature.guid] = feature;
         // print('Loaded feature: ${feature.name} (${feature.guid})');
       } catch (e, stacktrace) {
-        print('Error processing feature file $path: $e\n$stacktrace');
+        debugPrint('Error processing feature file $path: $e\n$stacktrace');
       }
     }
   }
@@ -85,7 +86,7 @@ class AlgorithmMetadataService {
         await metadataDao.getAllAlgorithms();
     int mergedCount = 0;
 
-    print(
+    debugPrint(
         '[AlgorithmMetadataService] Found ${syncedEntries.length} algorithm entries in local DB for potential merging.');
 
     for (final entry in syncedEntries) {
@@ -104,10 +105,10 @@ class AlgorithmMetadataService {
       }
     }
     if (mergedCount > 0) {
-      print(
+      debugPrint(
           '[AlgorithmMetadataService] Successfully merged $mergedCount new algorithms from the local database.');
     } else {
-      print(
+      debugPrint(
           '[AlgorithmMetadataService] No new algorithms from local DB to merge (all already present in JSON or DB empty).');
     }
   }
@@ -175,7 +176,7 @@ class AlgorithmMetadataService {
           combinedParams[param.name] = param; // Overwrite if name exists
         }
       } else {
-        print(
+        debugPrint(
             'Warning: Feature with guid $featureGuid not found for algorithm ${algorithm.guid}');
       }
     }

@@ -15,7 +15,7 @@ _AlgorithmParameter _$AlgorithmParameterFromJson(Map<String, dynamic> json) =>
       defaultValue: json['defaultValue'],
       scope: json['scope'] as String?,
       description: json['description'] as String?,
-      values: (json['enumValues'] as List<dynamic>?)
+      enumValues: (json['enumValues'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
       type: json['type'] as String?,
@@ -35,7 +35,7 @@ Map<String, dynamic> _$AlgorithmParameterToJson(_AlgorithmParameter instance) =>
       'defaultValue': instance.defaultValue,
       'scope': instance.scope,
       'description': instance.description,
-      'enumValues': instance.values,
+      'enumValues': instance.enumValues,
       'type': instance.type,
       'busIdRef': instance.busIdRef,
       'channelCountRef': instance.channelCountRef,
