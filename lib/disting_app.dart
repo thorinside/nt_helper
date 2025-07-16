@@ -294,23 +294,13 @@ class _DistingPageState extends State<DistingPage> {
                 firmwareVersion: state.firmwareVersion,
               );
             } else {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text("Unknown State: ${state.runtimeType}"),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<DistingCubit>().loadDevices();
-                      },
-                      child: const Text("Restart"),
-                    ),
-                  ],
-                ),
-              );
+              // Simple fallback - just restart the device selection
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  context.read<DistingCubit>().loadDevices();
+                }
+              });
+              return const Center(child: CircularProgressIndicator());
             }
           },
         ),

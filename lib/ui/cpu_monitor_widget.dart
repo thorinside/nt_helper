@@ -5,20 +5,53 @@ import 'package:nt_helper/models/cpu_usage.dart';
 
 /// A compact CPU monitor widget that displays CPU usage information.
 /// Shows the two main CPU usage numbers with a tooltip containing slot breakdown.
-class CpuMonitorWidget extends StatelessWidget {
+/// Automatically pauses CPU monitoring when not visible and resumes when visible.
+class CpuMonitorWidget extends StatefulWidget {
   const CpuMonitorWidget({super.key});
+
+  @override
+  State<CpuMonitorWidget> createState() => _CpuMonitorWidgetState();
+}
+
+class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
+  late DistingCubit _distingCubit;
+  bool _isVisible = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _distingCubit = context.read<DistingCubit>();
+  }
+
+  void _updateVisibility(bool isVisible) {
+    if (_isVisible != isVisible) {
+      _isVisible = isVisible;
+      if (isVisible) {
+        _distingCubit.resumeCpuMonitoring();
+      } else {
+        _distingCubit.pauseCpuMonitoring();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
         // Only show CPU monitor when connected to a physical device
-        if (state is! DistingStateSynchronized || state.offline || state.demo) {
+        final shouldShow = state is DistingStateSynchronized && !state.offline && !state.demo;
+        
+        if (!shouldShow) {
+          // Pause monitoring when not showing
+          _updateVisibility(false);
           return const SizedBox.shrink();
         }
 
+        // Resume monitoring when visible
+        _updateVisibility(true);
+
         return StreamBuilder<CpuUsage>(
-          stream: context.read<DistingCubit>().cpuUsageStream,
+          stream: _distingCubit.cpuUsageStream,
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               // Show placeholder while loading
@@ -43,6 +76,13 @@ class CpuMonitorWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    // Pause monitoring when widget is disposed
+    _updateVisibility(false);
+    super.dispose();
   }
 
   Widget _buildCpuDisplay({

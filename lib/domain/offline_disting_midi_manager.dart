@@ -534,6 +534,11 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<void> requestLoadPlugin(String guid) async {
+    // No-op in offline mode
+  }
+
+  @override
   Future<void> requestMoveAlgorithmUp(int algorithmIndex) async {
     if (algorithmIndex > 0 && algorithmIndex < _presetAlgorithmGuids.length) {
       final guid = _presetAlgorithmGuids.removeAt(algorithmIndex);

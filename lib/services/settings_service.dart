@@ -31,7 +31,7 @@ class SettingsService {
       'include_community_plugins_in_presets';
 
   // Default values
-  static const int defaultRequestTimeout = 300;
+  static const int defaultRequestTimeout = 1000;
   static const int defaultInterMessageDelay = 50;
   static const bool defaultHapticsEnabled = true;
   static const bool defaultMcpEnabled = false;

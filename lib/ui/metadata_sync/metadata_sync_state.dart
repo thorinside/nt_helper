@@ -19,6 +19,10 @@ sealed class MetadataSyncState with _$MetadataSyncState {
     int? algorithmsProcessed,
     int? totalAlgorithms,
   }) = WaitingForUserContinue;
+  const factory MetadataSyncState.checkpointFound({
+    required String algorithmName,
+    required int algorithmIndex,
+  }) = CheckpointFound;
   const factory MetadataSyncState.metadataSyncSuccess(String message) =
       MetadataSyncSuccess;
   const factory MetadataSyncState.metadataSyncFailure(String error) =

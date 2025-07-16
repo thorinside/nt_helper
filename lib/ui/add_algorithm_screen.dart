@@ -45,9 +45,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   // Plugin type filter state
   String _selectedPluginType = _pluginTypeAll;
 
-  // New scroll controllers to fix Scrollbar exception
+  // Scroll controller for algorithm chips
   final ScrollController _chipScrollController = ScrollController();
-  final ScrollController _specScrollController = ScrollController();
 
   // Original state variables
   String? selectedAlgorithmGuid;
@@ -79,9 +78,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _debounce?.cancel(); // Cancel timer on dispose
+    _debounce?.cancel();
     _chipScrollController.dispose();
-    _specScrollController.dispose();
     super.dispose();
   }
 
@@ -187,10 +185,18 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
   // --- Plugin Type Detection ---
   String _getPluginType(String guid) {
     // Factory algorithms have all lowercase GUIDs
-    // Community plugins have any uppercase characters
+    // Plugins have any uppercase characters
     return guid == guid.toLowerCase()
         ? _pluginTypeFactory
         : _pluginTypeCommunity;
+  }
+
+  bool _isPlugin(String guid) {
+    return guid != guid.toLowerCase();
+  }
+
+  bool _needsLoading(AlgorithmInfo algorithm) {
+    return _isPlugin(algorithm.guid) && !algorithm.isLoaded;
   }
 
   // --- Filtering Logic ---
@@ -287,6 +293,76 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     });
   }
 
+  /// Load a plugin to get its full specifications
+  void _loadPlugin(String algorithmGuid) async {
+    final algorithm = _allAlgorithms.firstWhereOrNull((algo) => algo.guid == algorithmGuid);
+    if (algorithm == null) return;
+
+    // Show loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Loading plugin ${algorithm.name}...'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+
+    try {
+      final cubit = context.read<DistingCubit>();
+      debugPrint("[AddAlgorithmScreen] Loading plugin: ${algorithm.name}");
+      
+      final loadedInfo = await cubit.loadPlugin(algorithmGuid);
+      
+      if (loadedInfo != null && mounted) {
+        debugPrint("[AddAlgorithmScreen] Plugin loaded successfully: ${algorithm.name}");
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${loadedInfo.name} loaded with ${loadedInfo.numSpecifications} specifications'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Update the algorithm info in our local list
+        final index = _allAlgorithms.indexWhere((algo) => algo.guid == algorithmGuid);
+        if (index != -1) {
+          setState(() {
+            _allAlgorithms[index] = loadedInfo;
+            // If this algorithm is currently selected, update the current info too
+            if (selectedAlgorithmGuid == algorithmGuid) {
+              _currentAlgoInfo = loadedInfo;
+              specValues = loadedInfo.specifications.map((s) => s.defaultValue).toList();
+            }
+          });
+        }
+      } else if (mounted) {
+        debugPrint("[AddAlgorithmScreen] Plugin load failed: ${algorithm.name}");
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load ${algorithm.name}'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("[AddAlgorithmScreen] Plugin load error for ${algorithm.name}: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading ${algorithm.name}: $e'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final distingState = context.watch<DistingCubit>().state;
@@ -322,6 +398,36 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Algorithm'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Add Algorithm Help'),
+                  content: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• Long press any algorithm to add/remove from favorites'),
+                      SizedBox(height: 8),
+                      Text('• Select a plugin to see a "Load Plugin" button if it needs loading'),
+                      SizedBox(height: 8),
+                      Text('• Plugins show full specifications only after being loaded'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: _isHelpAvailableForSelected
           ? FloatingActionButton(
@@ -414,9 +520,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                     ),
                     const Divider(),
 
-                    // --- Algorithm Chips (Expanded to allow scrolling) ---
+                    // --- Algorithm Chips (Expanded to take remaining space) ---
                     Expanded(
-                      flex: 3, // Give more space to chips
                       child: _filteredAlgorithms.isEmpty
                           ? Center(
                               child: Text(_showFavoritesOnly
@@ -426,10 +531,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                   : 'No algorithms match "${_searchController.text}".'))
                           : Scrollbar(
                               controller: _chipScrollController,
-                              // Add scrollbar for chip area
                               child: SingleChildScrollView(
                                 controller: _chipScrollController,
-                                // Inner scroll view for chips
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Wrap(
                                   spacing: 8.0,
@@ -439,6 +542,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                         selectedAlgorithmGuid == algo.guid;
                                     final bool isFavorite =
                                         _favoriteGuids.contains(algo.guid);
+                                    final bool isCommunityPlugin =
+                                        algo.guid != algo.guid.toLowerCase();
                                     return GestureDetector(
                                       onLongPress: () =>
                                           _toggleFavorite(algo.guid),
@@ -454,7 +559,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                               ),
                                             ),
                                             if (isFavorite) ...[
-                                              const SizedBox(width: 8.0),
+                                              const SizedBox(width: 4.0),
                                               Icon(
                                                 Icons.star,
                                                 size: 16,
@@ -465,6 +570,20 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                                                     : Theme.of(context)
                                                         .colorScheme
                                                         .primary,
+                                              ),
+                                            ],
+                                            if (isCommunityPlugin) ...[
+                                              const SizedBox(width: 4.0),
+                                              Icon(
+                                                Icons.extension,
+                                                size: 14,
+                                                color: isSelected
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onPrimaryContainer
+                                                    : Theme.of(context)
+                                                        .colorScheme
+                                                        .secondary,
                                               ),
                                             ],
                                           ],
@@ -490,41 +609,18 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                             ),
                     ),
 
-                    const Divider(),
-                    const SizedBox(height: 12),
-
-                    // --- Specification Inputs (Expanded with minimum space) ---
+                    // --- Specification Inputs (Auto-sized to content) ---
                     if (_currentAlgoInfo != null &&
-                        _currentAlgoInfo!.numSpecifications > 0)
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: _buildSpecificationInputs(
-                                  _currentAlgoInfo!, isOffline),
-                            ),
-                            // Add bottom spacing for specifications visibility
-                            const SizedBox(height: 72), // About 3 rows of space
-                          ],
-                        ),
-                      ),
+                        _currentAlgoInfo!.numSpecifications > 0) ...[
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      _buildSpecificationInputs(_currentAlgoInfo!, isOffline),
+                    ],
 
                     // --- Action Buttons (fixed at the bottom) ---
                     Container(
                       padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-                      child: ElevatedButton(
-                        onPressed:
-                            _currentAlgoInfo != null && specValues != null
-                                ? () {
-                                    Navigator.pop(context, {
-                                      'algorithm': _currentAlgoInfo,
-                                      'specValues': specValues,
-                                    });
-                                  }
-                                : null,
-                        child: const Text('Add to Preset'),
-                      ),
+                      child: _buildActionButton(isOffline),
                     ),
                   ],
                 );
@@ -708,94 +804,117 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           setState(() {});
         }
       });
-      return const Center(
-          child: Padding(
+      return const Padding(
         padding: EdgeInsets.all(8.0),
         child: Text("Loading specifications..."),
-      ));
+      );
     }
 
-    return Scrollbar(
-      controller: _specScrollController,
-      child: SingleChildScrollView(
-        controller: _specScrollController,
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Specs column takes minimum height
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                'Specifications:',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            ...List.generate(algorithm.numSpecifications, (index) {
-              final specInfo = algorithm.specifications[index];
-              if (index >= specValues!.length) {
-                return const SizedBox.shrink(); // Avoid index error
-              }
-              // Define the TextFormField
-              final textField = TextFormField(
-                key: ValueKey('${algorithm.guid}_spec_$index'),
-                initialValue: specValues![index].toString(),
-                readOnly: isOffline,
-                decoration: InputDecoration(
-                  labelText: specInfo.name.isNotEmpty
-                      ? specInfo.name
-                      : 'Specification ${index + 1}',
-                  hintText: '(${specInfo.min} to ${specInfo.max})',
-                  border: const OutlineInputBorder(),
-                  // Reduce density for specs section
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12.0, vertical: 10.0),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: isOffline
-                    ? null
-                    : (value) {
-                        int parsedValue =
-                            int.tryParse(value) ?? specInfo.defaultValue;
-                        parsedValue =
-                            parsedValue.clamp(specInfo.min, specInfo.max);
-                        if (index < specValues!.length &&
-                            specValues![index] != parsedValue) {
-                          setState(() {
-                            specValues![index] = parsedValue;
-                          });
-                        }
-                      },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a value';
-                  }
-                  final int? parsed = int.tryParse(value);
-                  if (parsed == null) {
-                    return 'Please enter a number';
-                  }
-                  if (parsed < specInfo.min || parsed > specInfo.max) {
-                    return 'Value must be between ${specInfo.min} and ${specInfo.max}';
-                  }
-                  return null; // Valid
-                },
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-              );
-
-              // Wrap with Tooltip only if offline
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: isOffline
-                    ? Tooltip(
-                        message: 'Defaults are used in offline mode',
-                        child: textField,
-                      )
-                    : textField,
-              );
-            }),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            'Specifications:',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
-      ),
+        ...List.generate(algorithm.numSpecifications, (index) {
+          final specInfo = algorithm.specifications[index];
+          if (index >= specValues!.length) {
+            return const SizedBox.shrink();
+          }
+          
+          final textField = TextFormField(
+            key: ValueKey('${algorithm.guid}_spec_$index'),
+            initialValue: specValues![index].toString(),
+            readOnly: isOffline,
+            decoration: InputDecoration(
+              labelText: specInfo.name.isNotEmpty
+                  ? specInfo.name
+                  : 'Specification ${index + 1}',
+              hintText: '(${specInfo.min} to ${specInfo.max})',
+              border: const OutlineInputBorder(),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12.0, vertical: 10.0),
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: isOffline
+                ? null
+                : (value) {
+                    int parsedValue =
+                        int.tryParse(value) ?? specInfo.defaultValue;
+                    parsedValue =
+                        parsedValue.clamp(specInfo.min, specInfo.max);
+                    if (index < specValues!.length &&
+                        specValues![index] != parsedValue) {
+                      setState(() {
+                        specValues![index] = parsedValue;
+                      });
+                    }
+                  },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a value';
+              }
+              final int? parsed = int.tryParse(value);
+              if (parsed == null) {
+                return 'Please enter a number';
+              }
+              if (parsed < specInfo.min || parsed > specInfo.max) {
+                return 'Value must be between ${specInfo.min} and ${specInfo.max}';
+              }
+              return null;
+            },
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+          );
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: isOffline
+                ? Tooltip(
+                    message: 'Defaults are used in offline mode',
+                    child: textField,
+                  )
+                : textField,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(bool isOffline) {
+    if (_currentAlgoInfo == null) {
+      return ElevatedButton(
+        onPressed: null,
+        child: const Text('Select Algorithm'),
+      );
+    }
+
+    final algorithm = _currentAlgoInfo!;
+    
+    // Show Load button for unloaded plugins
+    if (_needsLoading(algorithm) && !isOffline) {
+      return ElevatedButton(
+        onPressed: () => _loadPlugin(algorithm.guid),
+        child: const Text('Load Plugin'),
+      );
+    }
+    
+    // Show Add button for loaded algorithms (factory or loaded plugins)
+    return ElevatedButton(
+      onPressed: _currentAlgoInfo != null && specValues != null
+          ? () {
+              Navigator.pop(context, {
+                'algorithm': _currentAlgoInfo,
+                'specValues': specValues,
+              });
+            }
+          : null,
+      child: const Text('Add to Preset'),
     );
   }
 }

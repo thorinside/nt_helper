@@ -306,6 +306,90 @@ class _$WaitingForUserContinueCopyWithImpl<$Res>
 
 /// @nodoc
 
+class CheckpointFound
+    with DiagnosticableTreeMixin
+    implements MetadataSyncState {
+  const CheckpointFound(
+      {required this.algorithmName, required this.algorithmIndex});
+
+  final String algorithmName;
+  final int algorithmIndex;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $CheckpointFoundCopyWith<CheckpointFound> get copyWith =>
+      _$CheckpointFoundCopyWithImpl<CheckpointFound>(this, _$identity);
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+      ..add(DiagnosticsProperty('type', 'MetadataSyncState.checkpointFound'))
+      ..add(DiagnosticsProperty('algorithmName', algorithmName))
+      ..add(DiagnosticsProperty('algorithmIndex', algorithmIndex));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is CheckpointFound &&
+            (identical(other.algorithmName, algorithmName) ||
+                other.algorithmName == algorithmName) &&
+            (identical(other.algorithmIndex, algorithmIndex) ||
+                other.algorithmIndex == algorithmIndex));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, algorithmName, algorithmIndex);
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'MetadataSyncState.checkpointFound(algorithmName: $algorithmName, algorithmIndex: $algorithmIndex)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $CheckpointFoundCopyWith<$Res>
+    implements $MetadataSyncStateCopyWith<$Res> {
+  factory $CheckpointFoundCopyWith(
+          CheckpointFound value, $Res Function(CheckpointFound) _then) =
+      _$CheckpointFoundCopyWithImpl;
+  @useResult
+  $Res call({String algorithmName, int algorithmIndex});
+}
+
+/// @nodoc
+class _$CheckpointFoundCopyWithImpl<$Res>
+    implements $CheckpointFoundCopyWith<$Res> {
+  _$CheckpointFoundCopyWithImpl(this._self, this._then);
+
+  final CheckpointFound _self;
+  final $Res Function(CheckpointFound) _then;
+
+  /// Create a copy of MetadataSyncState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? algorithmName = null,
+    Object? algorithmIndex = null,
+  }) {
+    return _then(CheckpointFound(
+      algorithmName: null == algorithmName
+          ? _self.algorithmName
+          : algorithmName // ignore: cast_nullable_to_non_nullable
+              as String,
+      algorithmIndex: null == algorithmIndex
+          ? _self.algorithmIndex
+          : algorithmIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+
 class MetadataSyncSuccess
     with DiagnosticableTreeMixin
     implements MetadataSyncState {

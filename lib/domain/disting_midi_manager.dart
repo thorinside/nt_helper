@@ -11,6 +11,7 @@ import 'package:nt_helper/domain/request_key.dart';
 import 'package:nt_helper/domain/sysex/requests/add_algorithm.dart';
 import 'package:nt_helper/domain/sysex/requests/execute_lua.dart';
 import 'package:nt_helper/domain/sysex/requests/install_lua.dart';
+import 'package:nt_helper/domain/sysex/requests/load_plugin.dart';
 import 'package:nt_helper/domain/sysex/requests/load_preset.dart';
 import 'package:nt_helper/domain/sysex/requests/move_algorithm.dart';
 import 'package:nt_helper/domain/sysex/requests/new_preset.dart';
@@ -487,6 +488,21 @@ class DistingMidiManager implements IDistingMidiManager {
   Future<void> requestRemoveAlgorithm(int algorithmIndex) {
     final message = RemoveAlgorithmMessage(
         sysExId: sysExId, algorithmIndex: algorithmIndex);
+    final packet = message.encode();
+    final key = RequestKey(
+      sysExId: sysExId,
+    );
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
+    );
+  }
+
+  @override
+  Future<void> requestLoadPlugin(String guid) {
+    final message = LoadPluginMessage(sysExId: sysExId, guid: guid);
     final packet = message.encode();
     final key = RequestKey(
       sysExId: sysExId,

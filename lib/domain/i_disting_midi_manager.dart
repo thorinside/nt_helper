@@ -48,6 +48,7 @@ abstract class IDistingMidiManager {
   Future<void> requestAddAlgorithm(
       AlgorithmInfo algorithm, List<int> specifications);
   Future<void> requestRemoveAlgorithm(int algorithmIndex);
+  Future<void> requestLoadPlugin(String guid);
   Future<void> requestSetFocus(int algorithmIndex, int parameterNumber);
   Future<void> requestSetPresetName(String newName);
   Future<void> requestSavePreset({int option});

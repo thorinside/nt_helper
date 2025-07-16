@@ -281,12 +281,16 @@ class AlgorithmInfo {
   final String name;
   final String guid;
   final List<Specification> specifications;
+  final bool isPlugin;
+  final bool isLoaded;
 
   AlgorithmInfo(
       {required this.algorithmIndex,
       required this.name,
       required this.guid,
-      required this.specifications});
+      required this.specifications,
+      this.isPlugin = false,
+      this.isLoaded = true});
 
   int get numSpecifications {
     return specifications.length;
@@ -294,7 +298,7 @@ class AlgorithmInfo {
 
   @override
   String toString() {
-    return "AlgorithmInfo: name=$name, guid=$guid, specs=$specifications";
+    return "AlgorithmInfo: name=$name, guid=$guid, specs=$specifications, isPlugin=$isPlugin, isLoaded=$isLoaded";
   }
 }
 
@@ -352,6 +356,7 @@ enum DistingNTRequestMessageType {
   newPreset(0x35),
   savePreset(0x36),
   moveAlgorithm(0x37),
+  loadPlugin(0x38),
   requestAlgorithm(0x40),
   requestPresetName(0x41),
   requestNumParameters(0x42),
