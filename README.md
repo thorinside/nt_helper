@@ -11,7 +11,8 @@ A cross-platform Flutter application designed for editing presets on the Expert 
 - **Performance Mode**: View and interact with all your mapped parameters on a single screen, with real-time updates from MIDI/I2C (CV changes provide offsets and are not currently reflected in real-time on sliders).
 - **Specialized Editors**: Benefit from dedicated UI components for certain parameter types, such as an intuitive BPM editor for tempo-related parameters.
 - **MCP Server**: Includes a built-in MCP (Model Context Protocol) server (on desktop platforms) for integration with external tools and AI-driven workflows. See the [Model Context Protocol website](https://modelcontextprotocol.io/introduction) for more details on MCP.
-- **Offline Data Management**: Synchronize and manage algorithm metadata for offline use or when the Disting NT is not connected.
+- **Offline Data Management**: Synchronize and manage algorithm metadata for offline use or when the Disting NT is not connected. Features incremental sync and improved algorithm rescan UX.
+- **Drag & Drop Installation**: Install preset packages by simply dragging and dropping them onto the load dialog (desktop platforms).
 - **Cross-Platform**: Runs on Windows, macOS, Linux, iOS, and Android.
 
 ## Getting Started
@@ -23,6 +24,14 @@ A cross-platform Flutter application designed for editing presets on the Expert 
 
 For detailed instructions, troubleshooting, and a full feature list, please refer to the [project website documentation](https://nosuch.dev/nt-helper).
 
+## Recent Updates
+
+- **v1.39.0+77**: Added incremental sync and improved algorithm rescan UX
+- **Drag & Drop Support**: Preset packages can now be installed via drag-and-drop on desktop platforms
+- **MCP Enhancements**: Simplified server implementation, improved connection stability, and added CPU usage monitoring
+- **Algorithm Matching**: Added fuzzy category matching for better algorithm discovery
+- **Routing Improvements**: Enhanced real-time routing data queries from hardware
+
 ## Contributing
 
 Contributions, issues, and feature requests are welcome! Please feel free to check the [issues page](https://github.com/thorinside/nt_helper/issues).
@@ -33,111 +42,149 @@ This project is open source.
 
 ## MCP Tool Reference
 
-The `nt_helper` application exposes several functions via its built-in MCP (Model Context Protocol) server, allowing for programmatic interaction. These tools are used by AI assistants like Cursor to control the application.
+The `nt_helper` application exposes a comprehensive set of functions via its built-in MCP (Model Context Protocol) server, allowing for programmatic interaction. These tools enable AI assistants to control the application and interact with the Disting NT hardware.
 
 **Important Notes:**
 - All tool parameters are passed as a JSON object in the request.
-- All tools return a JSON string. Successful operations return the requested data directly, while errors include an `"error": "message"` field.
-- For tools interacting with the Disting NT hardware, the `parameter_index` for `set_parameter_value` and `get_parameter_value` refers to the 0-based index of the parameter *within the specific algorithm currently in that slot*, as returned by `get_current_preset`. This may not directly correspond to a globally unique parameter ID across all algorithms.
-- Some tools that take no logical parameters (e.g., `get_current_preset`, `new_preset`, `save_preset`, `get_current_routing_state`) expect an empty JSON object `{}`.
+- All tools return a JSON string. Successful operations return the requested data, while errors include an `"error": "message"` field.
+- Parameter references use `parameter_number` (0-based index) from `get_current_preset` or `parameter_name` for unique parameter names.
+- Values are automatically scaled using display values (not raw internal values).
+- Some tools accept empty JSON object `{}` when no parameters are required.
 
 ### Algorithm Metadata Tools
 
-These tools interact with the locally cached algorithm metadata.
+**`get_algorithm_details`** - Retrieves full metadata for a specific algorithm
+- Parameters: `algorithm_guid` (string) OR `algorithm_name` (string), `expand_features` (bool, optional)
+- Supports fuzzy matching ≥70% similarity for algorithm names
+- Returns: Complete `AlgorithmMetadata` object with parameters, categories, and description
 
-   **`get_algorithm_details`**
-    -   Description: Retrieves full metadata for a specific algorithm by its GUID or name (case-insensitive exact match; if no exact match, fuzzy matching ≥70% similarity is attempted). If multiple or no match, returns an error.
-    -   Parameters:
-        -   `guid` (string, optional): The unique identifier of the algorithm.
-        -   `algorithm_name` (string, optional): The human‑readable name of the algorithm (case-insensitive exact match; fuzzy fallback ≥70% similarity).
-        -   `expand_features` (bool, optional, default: `false`): If `true`, resolves and includes parameters defined within features directly in the main parameter list.
-    -   Returns: A JSON string representing the `AlgorithmMetadata` object for the specified algorithm, or an error JSON with `"error"` field.
+**`list_algorithms`** - Lists available algorithms with optional filtering  
+- Parameters: `category` (string, optional), `query` (string, optional)
+- Supports fuzzy category matching and text search across names/descriptions
+- Returns: Array of algorithm summaries with name, GUID, and first sentence of description
 
--   **`list_algorithms`**
-    -   Description: Lists available algorithms, optionally filtered.
-    -   Parameters:
-        -   `category` (string, optional): Filters the list to algorithms belonging to this category (case-insensitive).
-        -   `feature_guid` (string, optional): Filters the list to algorithms that include this feature GUID.
-    -   Returns: A JSON string representing a list of `AlgorithmMetadata` objects.
+**`get_routing`** - Retrieves current routing state and signal flow
+- Parameters: None
+- Actively refreshes routing data from hardware before returning
+- Returns: Bus usage information showing inputs/outputs for each algorithm slot
 
--   **`get_current_routing_state`**
-    -   Description: Retrieves the current routing state of all algorithms in the preset, decoded into `RoutingInformation` objects. This helps visualize how audio and CV signals are passed between algorithms.
-    -   Parameters: None required.
-    -   Returns: A JSON string representing a list of `RoutingInformation` objects. Returns an empty list `[]` if the application state is not synchronized (e.g., not connected to a Disting NT or in offline mode without a loaded preset).
+### Core Disting NT Tools
 
-### Disting NT Interaction Tools
+**`get_current_preset`** - Gets complete preset state including all slots and parameters
+- Parameters: None  
+- Returns: Preset name, slot configurations, algorithm details, and parameter info with live values
+- Essential starting point for understanding current device state
 
-These tools interact directly with the connected Disting NT module or the offline preset representation.
+**`add_algorithm`** - Adds algorithm to first available slot
+- Parameters: `algorithm_guid` (string) OR `algorithm_name` (string)
+- Supports exact and fuzzy name matching
+- Returns: Success confirmation with slot placement
 
--   **`get_current_preset`**
-    -   Description: Gets the entire current preset state from the Disting NT (or the current offline preset).
-    -   Parameters: None required.
-    -   Returns: A JSON string containing:
-        -   `presetName` (string): The name of the current preset.
-        -   `slots` (array): An array (potentially sparse, up to `maxSlots` which is 32) of slot objects. Non-null slots include:
-            -   `slotIndex` (int): The 0-based index of the slot.
-            -   `algorithm` (object): Details of the algorithm in the slot (`guid`, `name`, `algorithmIndex` which is the module's internal reference for this instance).
-            -   `parameters` (array): A list of parameter information objects for the algorithm in this slot (`parameterNumber` which is the 0-based index for API calls, `name`, `min`, `max`, `defaultValue`, `unit`, `powerOfTen`). **Note**: The live `value` is NOT returned here; use `get_parameter_value` for that.
+**`remove_algorithm`** - Clears algorithm from specified slot
+- Parameters: `slot_index` (int, required)
+- Returns: Success confirmation
 
-   **`add_algorithm`**
-    -   Description: Adds a specified algorithm to the *first available empty slot* on the Disting NT (as determined by firmware). Accepts GUID or name (case-insensitive exact match; if no exact match, fuzzy matching ≥70% similarity is attempted). If multiple or no match, returns an error.
-    -   Parameters:
-        -   `algorithm_guid` (string, optional): The GUID of the algorithm to add.
-        -   `algorithm_name` (string, optional): The human‑readable name of the algorithm (case-insensitive exact match; fuzzy fallback ≥70% similarity).
-    -   Returns: A JSON string with a success or error message.
+**`set_parameter_value`** - Sets parameter value using display values
+- Parameters: `slot_index` (int), `parameter_number` (int) OR `parameter_name` (string), `value` (number)
+- Automatically handles scaling based on parameter metadata
+- Returns: Success confirmation with parameter details
 
--   **`remove_algorithm`**
-    -   Description: Removes (clears) the algorithm from a specific slot.
-    -   Parameters:
-        -   `slot_index` (int, required): The 0-based index of the slot to clear.
-    -   Returns: A JSON string with a success or error message.
+**`get_parameter_value`** - Gets current parameter value
+- Parameters: `slot_index` (int), `parameter_number` (int)
+- Returns: Scaled parameter value with metadata
 
--   **`set_parameter_value`**
-    -   Description: Sets the value of a specific parameter in a slot, using its human-readable display value. The tool automatically handles scaling based on the parameter's `powerOfTen` metadata.
-    -   Parameters:
-        -   `slot_index` (int, required): The 0-based index of the slot containing the algorithm.
-        -   `parameter_index` (int, required): The 0-based index of the parameter *within the algorithm in that slot* (this is the `parameterNumber` from `get_current_preset`).
-        -   `display_value` (number, required): The human-readable value to set (e.g., for a frequency in Hz, send `5.0`; for a percentage, send `50.0`). If the parameter is an enum, this should be the 0-based index of the desired enum string.
-    -   Returns: A JSON string with a success or error message.
+### Preset Management Tools
 
--   **`get_parameter_value`**
-    -   Description: Gets the current raw integer value of a specific parameter directly from the Disting NT.
-    -   Parameters:
-        -   `slot_index` (int, required): The 0-based index of the slot.
-        -   `parameter_index` (int, required): The 0-based index of the parameter (`parameterNumber`).
-    -   Returns: A JSON string with `success`, `slotIndex`, `parameterIndex`, and `value` (the raw integer value), or an error message.
+**`set_preset_name`** / **`get_preset_name`** - Manage preset names
+- Set parameters: `name` (string, required)
+- Get parameters: None
+- Returns: Success confirmation or current preset name
 
--   **`set_preset_name`**
-    -   Description: Sets the name of the currently loaded preset on the device (or the current offline preset).
-    -   Parameters:
-        -   `name` (string, required): The new name for the preset.
-    -   Returns: A JSON string with a success or error message.
+**`set_slot_name`** / **`get_slot_name`** - Manage custom slot names  
+- Set parameters: `slot_index` (int), `name` (string)
+- Get parameters: `slot_index` (int)
+- Returns: Success confirmation or current slot name
 
--   **`set_slot_name`**
-    -   Description: Sets a custom name for the algorithm in a specific slot.
-    -   Parameters:
-        -   `slot_index` (int, required): The 0-based index of the slot.
-        -   `name` (string, required): The desired custom name for the slot.
-    -   Returns: A JSON string with a success or error message.
+**`new_preset`** - Creates new empty preset
+- Parameters: None
+- Clears all slots and resets to default state
 
--   **`new_preset`**
-    -   Description: Tells the device to clear the current preset and start a new, empty one.
-    -   Parameters: None required.
-    -   Returns: A JSON string with a success or error message.
+**`save_preset`** - Saves current preset to device
+- Parameters: None  
+- Persists all changes to device memory
 
--   **`save_preset`**
-    -   Description: Tells the device to save the current working preset (persisting all changes to algorithms, parameters, and names).
-    -   Parameters: None required.
-    -   Returns: A JSON string with a success or error message.
+### Algorithm Movement Tools
 
--   **`move_algorithm_up`**
-    -   Description: Moves an algorithm in a specified slot one position up in the slot list (e.g., slot 2 moves to slot 1).
-    -   Parameters:
-        -   `slot_index` (int, required): The 0-based index of the slot containing the algorithm to move up. Cannot be slot 0.
-    -   Returns: A JSON string with a success or error message.
+**`move_algorithm_up`** / **`move_algorithm_down`** - Move algorithms one position
+- Parameters: `slot_index` (int, required)
+- Changes processing order (slot 0 processes first)
+- Returns: Success confirmation
 
--   **`move_algorithm_down`**
-    -   Description: Moves an algorithm in a specified slot one position down in the slot list (e.g., slot 1 moves to slot 2).
-    -   Parameters:
-        -   `slot_index` (int, required): The 0-based index of the slot containing the algorithm to move down. Cannot be the last occupied slot.
-    -   Returns: A JSON string with a success or error message.
+**`move_algorithm`** - Move algorithms multiple positions
+- Parameters: `slot_index` (int), `direction` (string: "up"/"down"), `steps` (int, optional, default: 1)
+- Performs multiple move operations in sequence
+- Returns: Success confirmation with final position
+
+### Batch Operation Tools
+
+**`set_multiple_parameters`** - Set multiple parameters in one operation
+- Parameters: `slot_index` (int), `parameters` (array of objects with `parameter_number`/`parameter_name` and `value`)
+- Efficient for configuring multiple parameters simultaneously
+- Returns: Results array with success/failure status for each parameter
+
+**`get_multiple_parameters`** - Get multiple parameter values efficiently
+- Parameters: `slot_index` (int), `parameter_numbers` (array of integers)
+- Returns: Array of parameter values with metadata
+
+**`build_preset_from_json`** - Build complete preset from structured data
+- Parameters: `preset_data` (object with `preset_name` and `slots` array), `clear_existing` (bool, optional, default: true)
+- Supports complex preset creation with algorithms and parameter configurations
+- Returns: Detailed build results with success/failure status per slot
+
+### Utility Tools
+
+**`get_module_screenshot`** - Captures current device display  
+- Parameters: None
+- Returns: Base64-encoded JPEG image of module screen
+- Useful for visual confirmation of device state
+
+**`get_cpu_usage`** - Monitors device performance
+- Parameters: None
+- Returns: CPU1/CPU2 percentages and per-slot usage breakdown
+
+**`set_notes`** / **`get_notes`** - Manage preset notes
+- Set parameters: `text` (string, max 7 lines × 31 characters)
+- Get parameters: None
+- Automatically creates/manages Notes algorithm in slot 0
+- Returns: Notes content or success confirmation
+
+**`find_algorithm_in_preset`** - Locate algorithms in current preset
+- Parameters: `algorithm_guid` (string) OR `algorithm_name` (string)
+- Searches all slots for specified algorithm
+- Returns: Array of slot locations where algorithm is found
+
+### Diagnostic Tools
+
+**`mcp_diagnostics`** - Check MCP server health and connection status
+- Parameters: None
+- Returns: Server status, active connections, and library version information
+
+### MCP Resources
+
+The server also provides documentation resources accessible via MCP resource URLs:
+
+- **`mcp://nt-helper/bus-mapping`** - Physical I/O to internal bus mapping reference
+- **`mcp://nt-helper/usage-guide`** - Essential tools and best practices for small LLMs  
+- **`mcp://nt-helper/algorithm-categories`** - Complete list of 44+ algorithm categories
+- **`mcp://nt-helper/preset-format`** - JSON structure documentation for `build_preset_from_json`
+- **`mcp://nt-helper/routing-concepts`** - Signal flow and routing fundamentals
+
+### Best Practices
+
+1. **Start with `get_current_preset`** to understand the current state
+2. **Use exact algorithm GUIDs** when possible for reliable results  
+3. **Check parameter ranges** from `get_current_preset` before setting values
+4. **Save presets** after making changes to persist them
+5. **Use batch operations** for efficiency when setting multiple parameters
+6. **Monitor CPU usage** when building complex presets
+7. **Use physical names** (Input N, Output N, Aux N) when discussing routing
