@@ -36,6 +36,7 @@ import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
+import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
@@ -1305,6 +1306,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                         final unit = parameterInfo.getUnitString(widget.units);
 
                         return ParameterEditorView(
+                          slot: widget.slot,
                           parameterInfo: parameterInfo,
                           value: value,
                           enumStrings: enumStrings,
@@ -1350,6 +1352,7 @@ class ParameterListView extends StatelessWidget {
         final unit = parameter.getUnitString(units);
 
         return ParameterEditorView(
+          slot: slot,
           parameterInfo: parameter,
           value: value,
           enumStrings: enumStrings,
@@ -1363,6 +1366,7 @@ class ParameterListView extends StatelessWidget {
 }
 
 class ParameterEditorView extends StatelessWidget {
+  final Slot slot;
   final ParameterInfo parameterInfo;
   final ParameterValue value;
   final ParameterEnumStrings enumStrings;
@@ -1372,6 +1376,7 @@ class ParameterEditorView extends StatelessWidget {
 
   const ParameterEditorView({
     super.key,
+    required this.slot,
     required this.parameterInfo,
     required this.value,
     required this.enumStrings,
@@ -1401,6 +1406,7 @@ class ParameterEditorView extends StatelessWidget {
             : parameterInfo.defaultValue,
         unit: unit,
         mappingData: mapping?.packedMappingData,
+        slot: slot,
       );
 }
 
@@ -1419,6 +1425,7 @@ class ParameterViewRow extends StatefulWidget {
   final int algorithmIndex;
   final int parameterNumber;
   final PackedMappingData? mappingData;
+  final Slot slot;
 
   const ParameterViewRow({
     super.key,
@@ -1435,6 +1442,7 @@ class ParameterViewRow extends StatefulWidget {
     this.isOnOff = false,
     this.mappingData,
     required this.initialValue,
+    required this.slot,
   });
 
   @override
@@ -1505,6 +1513,22 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
     // Determine if the unit is BPM
     final bool isBpmUnit = widget.unit?.toUpperCase().contains('BPM') ?? false;
+    
+    // Check if this parameter should use a specialized file editor
+    final Widget? fileEditor = widget.slot.parameters.length > widget.parameterNumber 
+        ? ParameterEditorRegistry.findEditorFor(
+            slot: widget.slot,
+            parameterInfo: widget.slot.parameters[widget.parameterNumber],
+            parameterNumber: widget.parameterNumber,
+            currentValue: currentValue,
+            onValueChanged: (newValue) {
+              setState(() {
+                currentValue = newValue;
+              });
+              _updateCubitValue(newValue);
+            },
+          )
+        : null;
 
     debugPrint("${widget.name} isBpmUnit: $isBpmUnit ${widget.unit}");
 
@@ -1564,7 +1588,8 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
               // Proportionally larger space for the slider
               child: GestureDetector(
                 onDoubleTap: () => isBpmUnit ||
-                        _showAlternateEditor // Do not allow double tap to change editor for BPM or if alternate is already shown
+                        fileEditor != null ||
+                        _showAlternateEditor // Do not allow double tap to change editor for BPM, file editor, or if alternate is already shown
                     ? {}
                     : setState(() {
                         currentValue = widget.defaultValue;
@@ -1592,7 +1617,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                               });
                             },
                           )
-                        : _showAlternateEditor
+                        : fileEditor ?? (_showAlternateEditor
                             ? Row(
                                 // Alternate +/- editor
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1652,7 +1677,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                   // Throttle a bit
                                   onSliderChanged(currentValue);
                                 },
-                              ),
+                              )),
                   ),
                 ),
               )),
@@ -1661,9 +1686,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
-              child: isBpmUnit // Check if it's the BPM unit
+              child: isBpmUnit || fileEditor != null // Check if it's the BPM unit or file editor
                   ? const SizedBox
-                      .shrink() // If BPM, render an empty box to hide default text
+                      .shrink() // If BPM or file editor, render an empty box to hide default text
                   : widget.isOnOff
                       ? Checkbox(
                           value: isChecked,
@@ -1708,8 +1733,8 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                               : widget.displayString != null
                                   ? GestureDetector(
                                       onLongPress: () => setState(() {
-                                        // Show alternate editor only if not BPM
-                                        if (!isBpmUnit) {
+                                        // Show alternate editor only if not BPM or file editor
+                                        if (!isBpmUnit && fileEditor == null) {
                                           _showAlternateEditor =
                                               !_showAlternateEditor;
                                         }
@@ -1722,8 +1747,8 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                             : textTheme.labelSmall,
                                       ),
                                     )
-                                  // Only show unit text if it's NOT BPM and unit is present
-                                  : widget.unit != null && !isBpmUnit
+                                  // Only show unit text if it's NOT BPM, NOT file editor, and unit is present
+                                  : widget.unit != null && !isBpmUnit && fileEditor == null
                                       ? Text(
                                           formatWithUnit(
                                             currentValue,
