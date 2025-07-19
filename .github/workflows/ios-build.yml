@@ -96,9 +96,10 @@ jobs:
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: Install iOS 18.4 runtime
+      - name: Install Xcode 16.4 and iOS 18.4 runtime
         run: |
-          brew install xcodesorg/made/xcodes
+          brew install --quiet xcodesorg/made/xcodes || true
+          sudo xcodes install 16.4 --select
           sudo xcodes runtimes install "iOS 18.4"
 
       - name: Flutter build IPA
