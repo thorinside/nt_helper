@@ -1,22 +1,29 @@
-Flutter app supporting Linux, macOS, iOS, Android, Windows. Desktop versions have backup and drag-drop install features.
+# nt_helper - Disting NT MIDI Helper
 
-**Key Architecture:**
-- Main cubit: `lib/cubit/disting_cubit.dart`
-- MIDI SysEX: `lib/domain/` with interface `i_disting_midi_manager.dart`
-- UI: `lib/ui/synchronized_screen.dart`
-- Database: Drift at `lib/db/database.dart` for algorithms and presets
-- Three modes: Demo, Offline, Connected (default)
+Cross-platform Flutter application for managing Disting NT Eurorack module presets and algorithms.
 
-**MCP Service:**
-- Implementation: `lib/services/mcp_server_service.dart`
-- Controller: `lib/services/disting_controller.dart` (abstracts cubit)
-- Tools: `lib/mcp/tools/` (algorithm_tools.dart, disting_tools.dart)
+## Core Concepts
 
-**Preset Export:**
-- Dialog: `lib/ui/widgets/preset_package_dialog.dart`
-- Services: `lib/services/package_creator.dart`, `preset_analyzer.dart`
-- Storage: Drift database with DAOs in `lib/db/daos/`
+**Purpose:** MIDI SysEx communication with Disting NT hardware for preset management, algorithm loading, and parameter control.
 
-**Development Best Practices:**
-- Always ensure `flutter analyze` has no errors.
-- Always start a new feature in a new branch. When development is complete ask if a PR is desired. If the user says yes, make a PR and submit it for review.
+**Platforms:** Linux, macOS, iOS, Android, Windows with desktop drag-drop and backup features.
+
+**Operation Modes:** Demo (no hardware), Offline (cached data), Connected (live MIDI).
+
+## Architecture Patterns
+
+**State Management:** Cubit pattern for application state.
+
+**MIDI Layer:** Interface-based design with multiple implementations (mock, offline, live).
+
+**Database:** Drift ORM for local data persistence.
+
+**MCP Integration:** Model Context Protocol server for external tool access.
+
+## Development Standards
+
+**Code Quality:** Zero tolerance for `flutter analyze` errors.
+
+**Debugging:** Always use `debugPrint()`, never `print()`.
+
+**Workflow:** Feature branches required, PR approval needed.
