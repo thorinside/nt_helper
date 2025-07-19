@@ -97,7 +97,7 @@ jobs:
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - name: Download iOS 18 SDK
-        run: sudo xcodebuild -downloadPlatform iOS
+        run: sudo xcodebuild -downloadPlatform iOS --versionspec 18.4
 
       - name: Flutter build IPA
         run: |
