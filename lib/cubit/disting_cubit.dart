@@ -678,10 +678,11 @@ class DistingCubit extends Cubit<DistingState> {
 
       // Synchronize device clock with system time
       try {
-        final currentUnixTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final now = DateTime.now();
+        final currentUnixTime = now.millisecondsSinceEpoch ~/ 1000 + now.timeZoneOffset.inSeconds;
         await newDistingManager.requestSetRealTimeClock(currentUnixTime);
         debugPrint(
-            "[DistingCubit] Device clock synchronized to $currentUnixTime");
+            "[DistingCubit] Device clock synchronized to $currentUnixTime (local time adjusted)");
       } catch (e) {
         debugPrint("[DistingCubit] Failed to synchronize device clock: $e");
         // Continue with connection even if clock sync fails
