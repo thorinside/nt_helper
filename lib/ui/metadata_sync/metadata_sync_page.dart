@@ -10,6 +10,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/disting_app.dart'; // Import DistingApp for the route name
+import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 
 class MetadataSyncPage extends StatelessWidget {
   // Accept DistingCubit as a parameter
@@ -222,6 +223,9 @@ class MetadataSyncPage extends StatelessWidget {
                                   _showIncrementalSyncConfirmationDialog(metaCtx, currentManager);
                                 }
                                 break;
+                              case 'export_algorithms':
+                                _showExportDialog(metaCtx);
+                                break;
                             }
                           },
                           itemBuilder: (context) => [
@@ -233,6 +237,18 @@ class MetadataSyncPage extends StatelessWidget {
                                   Icon(Icons.sync_alt, size: 20),
                                   SizedBox(width: 12),
                                   Text('Sync New Algorithms Only'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: 'export_algorithms',
+                              enabled: !isBusy,
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.download, size: 20),
+                                  SizedBox(width: 12),
+                                  Text('Export Algorithm Details'),
                                 ],
                               ),
                             ),
@@ -752,6 +768,18 @@ class MetadataSyncPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // Show Export Dialog
+  void _showExportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlgorithmExportDialog(
+          database: context.read<AppDatabase>(),
+        );
+      },
     );
   }
 }
