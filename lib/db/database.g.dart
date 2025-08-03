@@ -4726,6 +4726,26 @@ class $PluginInstallationsTable extends PluginInstallations
   late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
       'error_message', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _availableVersionMeta =
+      const VerificationMeta('availableVersion');
+  @override
+  late final GeneratedColumn<String> availableVersion = GeneratedColumn<String>(
+      'available_version', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _updateAvailableMeta =
+      const VerificationMeta('updateAvailable');
+  @override
+  late final GeneratedColumn<String> updateAvailable = GeneratedColumn<String>(
+      'update_available', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('false'));
+  static const VerificationMeta _lastCheckedMeta =
+      const VerificationMeta('lastChecked');
+  @override
+  late final GeneratedColumn<DateTime> lastChecked = GeneratedColumn<DateTime>(
+      'last_checked', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -4744,7 +4764,10 @@ class $PluginInstallationsTable extends PluginInstallations
         fileCount,
         totalBytes,
         installationNotes,
-        errorMessage
+        errorMessage,
+        availableVersion,
+        updateAvailable,
+        lastChecked
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4864,6 +4887,24 @@ class $PluginInstallationsTable extends PluginInstallations
           errorMessage.isAcceptableOrUnknown(
               data['error_message']!, _errorMessageMeta));
     }
+    if (data.containsKey('available_version')) {
+      context.handle(
+          _availableVersionMeta,
+          availableVersion.isAcceptableOrUnknown(
+              data['available_version']!, _availableVersionMeta));
+    }
+    if (data.containsKey('update_available')) {
+      context.handle(
+          _updateAvailableMeta,
+          updateAvailable.isAcceptableOrUnknown(
+              data['update_available']!, _updateAvailableMeta));
+    }
+    if (data.containsKey('last_checked')) {
+      context.handle(
+          _lastCheckedMeta,
+          lastChecked.isAcceptableOrUnknown(
+              data['last_checked']!, _lastCheckedMeta));
+    }
     return context;
   }
 
@@ -4908,6 +4949,12 @@ class $PluginInstallationsTable extends PluginInstallations
           DriftSqlType.string, data['${effectivePrefix}installation_notes']),
       errorMessage: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}error_message']),
+      availableVersion: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}available_version']),
+      updateAvailable: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}update_available'])!,
+      lastChecked: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_checked']),
     );
   }
 
@@ -4936,6 +4983,9 @@ class PluginInstallationEntry extends DataClass
   final int? totalBytes;
   final String? installationNotes;
   final String? errorMessage;
+  final String? availableVersion;
+  final String updateAvailable;
+  final DateTime? lastChecked;
   const PluginInstallationEntry(
       {required this.id,
       required this.pluginId,
@@ -4953,7 +5003,10 @@ class PluginInstallationEntry extends DataClass
       this.fileCount,
       this.totalBytes,
       this.installationNotes,
-      this.errorMessage});
+      this.errorMessage,
+      this.availableVersion,
+      required this.updateAvailable,
+      this.lastChecked});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4989,6 +5042,13 @@ class PluginInstallationEntry extends DataClass
     }
     if (!nullToAbsent || errorMessage != null) {
       map['error_message'] = Variable<String>(errorMessage);
+    }
+    if (!nullToAbsent || availableVersion != null) {
+      map['available_version'] = Variable<String>(availableVersion);
+    }
+    map['update_available'] = Variable<String>(updateAvailable);
+    if (!nullToAbsent || lastChecked != null) {
+      map['last_checked'] = Variable<DateTime>(lastChecked);
     }
     return map;
   }
@@ -5028,6 +5088,13 @@ class PluginInstallationEntry extends DataClass
       errorMessage: errorMessage == null && nullToAbsent
           ? const Value.absent()
           : Value(errorMessage),
+      availableVersion: availableVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(availableVersion),
+      updateAvailable: Value(updateAvailable),
+      lastChecked: lastChecked == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastChecked),
     );
   }
 
@@ -5055,6 +5122,9 @@ class PluginInstallationEntry extends DataClass
       installationNotes:
           serializer.fromJson<String?>(json['installationNotes']),
       errorMessage: serializer.fromJson<String?>(json['errorMessage']),
+      availableVersion: serializer.fromJson<String?>(json['availableVersion']),
+      updateAvailable: serializer.fromJson<String>(json['updateAvailable']),
+      lastChecked: serializer.fromJson<DateTime?>(json['lastChecked']),
     );
   }
   @override
@@ -5078,6 +5148,9 @@ class PluginInstallationEntry extends DataClass
       'totalBytes': serializer.toJson<int?>(totalBytes),
       'installationNotes': serializer.toJson<String?>(installationNotes),
       'errorMessage': serializer.toJson<String?>(errorMessage),
+      'availableVersion': serializer.toJson<String?>(availableVersion),
+      'updateAvailable': serializer.toJson<String>(updateAvailable),
+      'lastChecked': serializer.toJson<DateTime?>(lastChecked),
     };
   }
 
@@ -5098,7 +5171,10 @@ class PluginInstallationEntry extends DataClass
           Value<int?> fileCount = const Value.absent(),
           Value<int?> totalBytes = const Value.absent(),
           Value<String?> installationNotes = const Value.absent(),
-          Value<String?> errorMessage = const Value.absent()}) =>
+          Value<String?> errorMessage = const Value.absent(),
+          Value<String?> availableVersion = const Value.absent(),
+          String? updateAvailable,
+          Value<DateTime?> lastChecked = const Value.absent()}) =>
       PluginInstallationEntry(
         id: id ?? this.id,
         pluginId: pluginId ?? this.pluginId,
@@ -5126,6 +5202,11 @@ class PluginInstallationEntry extends DataClass
             : this.installationNotes,
         errorMessage:
             errorMessage.present ? errorMessage.value : this.errorMessage,
+        availableVersion: availableVersion.present
+            ? availableVersion.value
+            : this.availableVersion,
+        updateAvailable: updateAvailable ?? this.updateAvailable,
+        lastChecked: lastChecked.present ? lastChecked.value : this.lastChecked,
       );
   PluginInstallationEntry copyWithCompanion(PluginInstallationsCompanion data) {
     return PluginInstallationEntry(
@@ -5170,6 +5251,14 @@ class PluginInstallationEntry extends DataClass
       errorMessage: data.errorMessage.present
           ? data.errorMessage.value
           : this.errorMessage,
+      availableVersion: data.availableVersion.present
+          ? data.availableVersion.value
+          : this.availableVersion,
+      updateAvailable: data.updateAvailable.present
+          ? data.updateAvailable.value
+          : this.updateAvailable,
+      lastChecked:
+          data.lastChecked.present ? data.lastChecked.value : this.lastChecked,
     );
   }
 
@@ -5192,7 +5281,10 @@ class PluginInstallationEntry extends DataClass
           ..write('fileCount: $fileCount, ')
           ..write('totalBytes: $totalBytes, ')
           ..write('installationNotes: $installationNotes, ')
-          ..write('errorMessage: $errorMessage')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('availableVersion: $availableVersion, ')
+          ..write('updateAvailable: $updateAvailable, ')
+          ..write('lastChecked: $lastChecked')
           ..write(')'))
         .toString();
   }
@@ -5215,7 +5307,10 @@ class PluginInstallationEntry extends DataClass
       fileCount,
       totalBytes,
       installationNotes,
-      errorMessage);
+      errorMessage,
+      availableVersion,
+      updateAvailable,
+      lastChecked);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5236,7 +5331,10 @@ class PluginInstallationEntry extends DataClass
           other.fileCount == this.fileCount &&
           other.totalBytes == this.totalBytes &&
           other.installationNotes == this.installationNotes &&
-          other.errorMessage == this.errorMessage);
+          other.errorMessage == this.errorMessage &&
+          other.availableVersion == this.availableVersion &&
+          other.updateAvailable == this.updateAvailable &&
+          other.lastChecked == this.lastChecked);
 }
 
 class PluginInstallationsCompanion
@@ -5258,6 +5356,9 @@ class PluginInstallationsCompanion
   final Value<int?> totalBytes;
   final Value<String?> installationNotes;
   final Value<String?> errorMessage;
+  final Value<String?> availableVersion;
+  final Value<String> updateAvailable;
+  final Value<DateTime?> lastChecked;
   const PluginInstallationsCompanion({
     this.id = const Value.absent(),
     this.pluginId = const Value.absent(),
@@ -5276,6 +5377,9 @@ class PluginInstallationsCompanion
     this.totalBytes = const Value.absent(),
     this.installationNotes = const Value.absent(),
     this.errorMessage = const Value.absent(),
+    this.availableVersion = const Value.absent(),
+    this.updateAvailable = const Value.absent(),
+    this.lastChecked = const Value.absent(),
   });
   PluginInstallationsCompanion.insert({
     this.id = const Value.absent(),
@@ -5295,6 +5399,9 @@ class PluginInstallationsCompanion
     this.totalBytes = const Value.absent(),
     this.installationNotes = const Value.absent(),
     this.errorMessage = const Value.absent(),
+    this.availableVersion = const Value.absent(),
+    this.updateAvailable = const Value.absent(),
+    this.lastChecked = const Value.absent(),
   })  : pluginId = Value(pluginId),
         pluginName = Value(pluginName),
         pluginVersion = Value(pluginVersion),
@@ -5319,6 +5426,9 @@ class PluginInstallationsCompanion
     Expression<int>? totalBytes,
     Expression<String>? installationNotes,
     Expression<String>? errorMessage,
+    Expression<String>? availableVersion,
+    Expression<String>? updateAvailable,
+    Expression<DateTime>? lastChecked,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5339,6 +5449,9 @@ class PluginInstallationsCompanion
       if (totalBytes != null) 'total_bytes': totalBytes,
       if (installationNotes != null) 'installation_notes': installationNotes,
       if (errorMessage != null) 'error_message': errorMessage,
+      if (availableVersion != null) 'available_version': availableVersion,
+      if (updateAvailable != null) 'update_available': updateAvailable,
+      if (lastChecked != null) 'last_checked': lastChecked,
     });
   }
 
@@ -5359,7 +5472,10 @@ class PluginInstallationsCompanion
       Value<int?>? fileCount,
       Value<int?>? totalBytes,
       Value<String?>? installationNotes,
-      Value<String?>? errorMessage}) {
+      Value<String?>? errorMessage,
+      Value<String?>? availableVersion,
+      Value<String>? updateAvailable,
+      Value<DateTime?>? lastChecked}) {
     return PluginInstallationsCompanion(
       id: id ?? this.id,
       pluginId: pluginId ?? this.pluginId,
@@ -5378,6 +5494,9 @@ class PluginInstallationsCompanion
       totalBytes: totalBytes ?? this.totalBytes,
       installationNotes: installationNotes ?? this.installationNotes,
       errorMessage: errorMessage ?? this.errorMessage,
+      availableVersion: availableVersion ?? this.availableVersion,
+      updateAvailable: updateAvailable ?? this.updateAvailable,
+      lastChecked: lastChecked ?? this.lastChecked,
     );
   }
 
@@ -5435,6 +5554,15 @@ class PluginInstallationsCompanion
     if (errorMessage.present) {
       map['error_message'] = Variable<String>(errorMessage.value);
     }
+    if (availableVersion.present) {
+      map['available_version'] = Variable<String>(availableVersion.value);
+    }
+    if (updateAvailable.present) {
+      map['update_available'] = Variable<String>(updateAvailable.value);
+    }
+    if (lastChecked.present) {
+      map['last_checked'] = Variable<DateTime>(lastChecked.value);
+    }
     return map;
   }
 
@@ -5457,7 +5585,10 @@ class PluginInstallationsCompanion
           ..write('fileCount: $fileCount, ')
           ..write('totalBytes: $totalBytes, ')
           ..write('installationNotes: $installationNotes, ')
-          ..write('errorMessage: $errorMessage')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('availableVersion: $availableVersion, ')
+          ..write('updateAvailable: $updateAvailable, ')
+          ..write('lastChecked: $lastChecked')
           ..write(')'))
         .toString();
   }
@@ -10100,6 +10231,9 @@ typedef $$PluginInstallationsTableCreateCompanionBuilder
   Value<int?> totalBytes,
   Value<String?> installationNotes,
   Value<String?> errorMessage,
+  Value<String?> availableVersion,
+  Value<String> updateAvailable,
+  Value<DateTime?> lastChecked,
 });
 typedef $$PluginInstallationsTableUpdateCompanionBuilder
     = PluginInstallationsCompanion Function({
@@ -10120,6 +10254,9 @@ typedef $$PluginInstallationsTableUpdateCompanionBuilder
   Value<int?> totalBytes,
   Value<String?> installationNotes,
   Value<String?> errorMessage,
+  Value<String?> availableVersion,
+  Value<String> updateAvailable,
+  Value<DateTime?> lastChecked,
 });
 
 class $$PluginInstallationsTableFilterComposer
@@ -10187,6 +10324,17 @@ class $$PluginInstallationsTableFilterComposer
 
   ColumnFilters<String> get errorMessage => $composableBuilder(
       column: $table.errorMessage, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get availableVersion => $composableBuilder(
+      column: $table.availableVersion,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get updateAvailable => $composableBuilder(
+      column: $table.updateAvailable,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastChecked => $composableBuilder(
+      column: $table.lastChecked, builder: (column) => ColumnFilters(column));
 }
 
 class $$PluginInstallationsTableOrderingComposer
@@ -10258,6 +10406,17 @@ class $$PluginInstallationsTableOrderingComposer
   ColumnOrderings<String> get errorMessage => $composableBuilder(
       column: $table.errorMessage,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get availableVersion => $composableBuilder(
+      column: $table.availableVersion,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get updateAvailable => $composableBuilder(
+      column: $table.updateAvailable,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastChecked => $composableBuilder(
+      column: $table.lastChecked, builder: (column) => ColumnOrderings(column));
 }
 
 class $$PluginInstallationsTableAnnotationComposer
@@ -10319,6 +10478,15 @@ class $$PluginInstallationsTableAnnotationComposer
 
   GeneratedColumn<String> get errorMessage => $composableBuilder(
       column: $table.errorMessage, builder: (column) => column);
+
+  GeneratedColumn<String> get availableVersion => $composableBuilder(
+      column: $table.availableVersion, builder: (column) => column);
+
+  GeneratedColumn<String> get updateAvailable => $composableBuilder(
+      column: $table.updateAvailable, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastChecked => $composableBuilder(
+      column: $table.lastChecked, builder: (column) => column);
 }
 
 class $$PluginInstallationsTableTableManager extends RootTableManager<
@@ -10368,6 +10536,9 @@ class $$PluginInstallationsTableTableManager extends RootTableManager<
             Value<int?> totalBytes = const Value.absent(),
             Value<String?> installationNotes = const Value.absent(),
             Value<String?> errorMessage = const Value.absent(),
+            Value<String?> availableVersion = const Value.absent(),
+            Value<String> updateAvailable = const Value.absent(),
+            Value<DateTime?> lastChecked = const Value.absent(),
           }) =>
               PluginInstallationsCompanion(
             id: id,
@@ -10387,6 +10558,9 @@ class $$PluginInstallationsTableTableManager extends RootTableManager<
             totalBytes: totalBytes,
             installationNotes: installationNotes,
             errorMessage: errorMessage,
+            availableVersion: availableVersion,
+            updateAvailable: updateAvailable,
+            lastChecked: lastChecked,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -10406,6 +10580,9 @@ class $$PluginInstallationsTableTableManager extends RootTableManager<
             Value<int?> totalBytes = const Value.absent(),
             Value<String?> installationNotes = const Value.absent(),
             Value<String?> errorMessage = const Value.absent(),
+            Value<String?> availableVersion = const Value.absent(),
+            Value<String> updateAvailable = const Value.absent(),
+            Value<DateTime?> lastChecked = const Value.absent(),
           }) =>
               PluginInstallationsCompanion.insert(
             id: id,
@@ -10425,6 +10602,9 @@ class $$PluginInstallationsTableTableManager extends RootTableManager<
             totalBytes: totalBytes,
             installationNotes: installationNotes,
             errorMessage: errorMessage,
+            availableVersion: availableVersion,
+            updateAvailable: updateAvailable,
+            lastChecked: lastChecked,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

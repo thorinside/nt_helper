@@ -192,4 +192,110 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
           ..orderBy([(tbl) => OrderingTerm.desc(tbl.installedAt)]))
         .get();
   }
+
+  // --- Version Tracking Methods ---
+
+  /// Update version tracking information for a plugin
+  Future<bool> updatePluginVersionInfo({
+    required String pluginId,
+    required String installedVersion,
+    required String availableVersion,
+    required bool updateAvailable,
+  }) async {
+    final update = this.update(pluginInstallations)
+      ..where((tbl) => tbl.pluginId.equals(pluginId))
+      ..where((tbl) => tbl.pluginVersion.equals(installedVersion));
+
+    final rowsAffected = await update.write(
+      PluginInstallationsCompanion(
+        availableVersion: Value(availableVersion),
+        updateAvailable: Value(updateAvailable.toString()),
+        lastChecked: Value(DateTime.now()),
+      ),
+    );
+
+    return rowsAffected > 0;
+  }
+
+  /// Get plugins that have updates available
+  Future<List<PluginInstallationEntry>> getPluginsWithUpdates() =>
+      (select(pluginInstallations)
+            ..where((tbl) => tbl.updateAvailable.equals('true'))
+            ..where((tbl) => tbl.installationStatus.equals('completed'))
+            ..orderBy([(tbl) => OrderingTerm.desc(tbl.lastChecked)]))
+          .get();
+
+  /// Get plugins that need update checking (never checked or > 1 hour old)
+  Future<List<PluginInstallationEntry>> getPluginsNeedingUpdateCheck() {
+    final oneHourAgo = DateTime.now().subtract(const Duration(hours: 1));
+
+    return (select(pluginInstallations)
+          ..where((tbl) => tbl.installationStatus.equals('completed'))
+          ..where((tbl) => 
+              tbl.lastChecked.isNull() | 
+              tbl.lastChecked.isSmallerThanValue(oneHourAgo))
+          ..orderBy([(tbl) => OrderingTerm.asc(tbl.lastChecked)]))
+        .get();
+  }
+
+  /// Get update status for all installed plugins
+  Future<Map<String, PluginUpdateInfo>> getPluginUpdateStatus() async {
+    final plugins = await getAllInstalledPlugins();
+    final updateInfo = <String, PluginUpdateInfo>{};
+
+    for (final plugin in plugins) {
+      if (plugin.installationStatus == 'completed') {
+        updateInfo[plugin.pluginId] = PluginUpdateInfo(
+          pluginId: plugin.pluginId,
+          pluginName: plugin.pluginName,
+          installedVersion: plugin.pluginVersion,
+          availableVersion: plugin.availableVersion,
+          updateAvailable: plugin.updateAvailable == 'true',
+          lastChecked: plugin.lastChecked,
+        );
+      }
+    }
+
+    return updateInfo;
+  }
+
+  /// Clear update flags for all plugins (useful for testing or cache invalidation)
+  Future<int> clearAllUpdateFlags() async {
+    final update = this.update(pluginInstallations);
+
+    return await update.write(
+      PluginInstallationsCompanion(
+        updateAvailable: const Value('false'),
+        availableVersion: const Value.absent(),
+        lastChecked: const Value.absent(),
+      ),
+    );
+  }
+}
+
+/// Data class for plugin update information
+class PluginUpdateInfo {
+  final String pluginId;
+  final String pluginName;
+  final String installedVersion;
+  final String? availableVersion;
+  final bool updateAvailable;
+  final DateTime? lastChecked;
+
+  const PluginUpdateInfo({
+    required this.pluginId,
+    required this.pluginName,
+    required this.installedVersion,
+    this.availableVersion,
+    required this.updateAvailable,
+    this.lastChecked,
+  });
+
+  bool get hasUpdate => updateAvailable && availableVersion != null;
+  
+  bool get needsCheck => lastChecked == null || 
+      DateTime.now().difference(lastChecked!).inHours >= 1;
+
+  @override
+  String toString() => 'PluginUpdateInfo($pluginId: $installedVersion -> $availableVersion, update: $updateAvailable)';
 }

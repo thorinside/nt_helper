@@ -86,9 +86,11 @@ class GalleryLoaded implements GalleryState {
       this.selectedCategory,
       this.selectedType,
       required this.showFeaturedOnly,
-      required this.showVerifiedOnly})
+      required this.showVerifiedOnly,
+      final Map<String, PluginUpdateInfo> updateInfo = const {}})
       : _filteredPlugins = filteredPlugins,
-        _queue = queue;
+        _queue = queue,
+        _updateInfo = updateInfo;
 
   final Gallery gallery;
   final List<GalleryPlugin> _filteredPlugins;
@@ -110,6 +112,13 @@ class GalleryLoaded implements GalleryState {
   final GalleryPluginType? selectedType;
   final bool showFeaturedOnly;
   final bool showVerifiedOnly;
+  final Map<String, PluginUpdateInfo> _updateInfo;
+  @JsonKey()
+  Map<String, PluginUpdateInfo> get updateInfo {
+    if (_updateInfo is EqualUnmodifiableMapView) return _updateInfo;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_updateInfo);
+  }
 
   /// Create a copy of GalleryState
   /// with the given fields replaced by the non-null parameter values.
@@ -136,7 +145,9 @@ class GalleryLoaded implements GalleryState {
             (identical(other.showFeaturedOnly, showFeaturedOnly) ||
                 other.showFeaturedOnly == showFeaturedOnly) &&
             (identical(other.showVerifiedOnly, showVerifiedOnly) ||
-                other.showVerifiedOnly == showVerifiedOnly));
+                other.showVerifiedOnly == showVerifiedOnly) &&
+            const DeepCollectionEquality()
+                .equals(other._updateInfo, _updateInfo));
   }
 
   @override
@@ -149,11 +160,12 @@ class GalleryLoaded implements GalleryState {
       selectedCategory,
       selectedType,
       showFeaturedOnly,
-      showVerifiedOnly);
+      showVerifiedOnly,
+      const DeepCollectionEquality().hash(_updateInfo));
 
   @override
   String toString() {
-    return 'GalleryState.loaded(gallery: $gallery, filteredPlugins: $filteredPlugins, queue: $queue, searchQuery: $searchQuery, selectedCategory: $selectedCategory, selectedType: $selectedType, showFeaturedOnly: $showFeaturedOnly, showVerifiedOnly: $showVerifiedOnly)';
+    return 'GalleryState.loaded(gallery: $gallery, filteredPlugins: $filteredPlugins, queue: $queue, searchQuery: $searchQuery, selectedCategory: $selectedCategory, selectedType: $selectedType, showFeaturedOnly: $showFeaturedOnly, showVerifiedOnly: $showVerifiedOnly, updateInfo: $updateInfo)';
   }
 }
 
@@ -172,7 +184,8 @@ abstract mixin class $GalleryLoadedCopyWith<$Res>
       String? selectedCategory,
       GalleryPluginType? selectedType,
       bool showFeaturedOnly,
-      bool showVerifiedOnly});
+      bool showVerifiedOnly,
+      Map<String, PluginUpdateInfo> updateInfo});
 
   $GalleryCopyWith<$Res> get gallery;
 }
@@ -197,6 +210,7 @@ class _$GalleryLoadedCopyWithImpl<$Res>
     Object? selectedType = freezed,
     Object? showFeaturedOnly = null,
     Object? showVerifiedOnly = null,
+    Object? updateInfo = null,
   }) {
     return _then(GalleryLoaded(
       gallery: null == gallery
@@ -231,6 +245,10 @@ class _$GalleryLoadedCopyWithImpl<$Res>
           ? _self.showVerifiedOnly
           : showVerifiedOnly // ignore: cast_nullable_to_non_nullable
               as bool,
+      updateInfo: null == updateInfo
+          ? _self._updateInfo
+          : updateInfo // ignore: cast_nullable_to_non_nullable
+              as Map<String, PluginUpdateInfo>,
     ));
   }
 

@@ -183,9 +183,41 @@ class _GalleryViewState extends State<_GalleryView>
 
   Widget _buildHeaderActions(GalleryState state) {
     final queueCount = state is GalleryLoaded ? state.queue.length : 0;
+    final updateCount = state is GalleryLoaded 
+        ? state.updateInfo.values.where((info) => info.updateAvailable).length 
+        : 0;
+    final isRefreshing = state is GalleryLoading;
 
     return Row(
       children: [
+        // Update check button with badge
+        Badge(
+          isLabelVisible: updateCount > 0,
+          label: Text('$updateCount'),
+          child: IconButton(
+            icon: isRefreshing 
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
+                : Icon(
+                    updateCount > 0 ? Icons.update : Icons.sync,
+                    color: updateCount > 0 ? Colors.orange : null,
+                  ),
+            onPressed: isRefreshing 
+                ? null 
+                : () => context.read<GalleryCubit>().refreshUpdates(),
+            tooltip: isRefreshing 
+                ? 'Refreshing gallery...'
+                : updateCount > 0 
+                    ? 'Updates available ($updateCount) - Tap to refresh'
+                    : 'Refresh gallery',
+          ),
+        ),
         Badge(
           isLabelVisible: queueCount > 0,
           label: Text('$queueCount'),
@@ -650,6 +682,11 @@ class _GalleryViewState extends State<_GalleryView>
     final width = MediaQuery.of(context).size.width;
     final isNarrowScreen = width < 375;
 
+    // Get update information for this plugin
+    final updateInfo = state.updateInfo[plugin.id];
+    final hasUpdate = updateInfo?.hasUpdate ?? false;
+    final isInstalled = updateInfo != null;
+
     return SizedBox(
       width: 320,
       height: isNarrowScreen ? null : 305, // Flexible height for narrow screens
@@ -690,6 +727,54 @@ class _GalleryViewState extends State<_GalleryView>
                                 Icons.star,
                                 size: 16,
                                 color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (hasUpdate) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'UPDATE',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (isInstalled && !hasUpdate) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'INSTALLED',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                ),
                               ),
                               const SizedBox(width: 8),
                             ],
@@ -819,18 +904,59 @@ class _GalleryViewState extends State<_GalleryView>
                             ),
                           ] else
                             const Spacer(),
-                          Text(
-                            plugin.formattedRating,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                          ),
+                          if (plugin.formattedLatestVersion.isNotEmpty)
+                            Text(
+                              plugin.formattedLatestVersion,
+                              style:
+                                  Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.6),
+                                      ),
+                            ),
                         ],
                       ),
+                      // Version information row
+                      if (isInstalled) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                hasUpdate
+                                    ? 'v${updateInfo.installedVersion} → v${updateInfo.availableVersion}'
+                                    : 'v${updateInfo.installedVersion} (up to date)',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: hasUpdate
+                                          ? Colors.orange
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.6),
+                                      fontWeight: hasUpdate
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
 
@@ -843,27 +969,60 @@ class _GalleryViewState extends State<_GalleryView>
                       final isInQueue =
                           state.queue.any((q) => q.plugin.id == plugin.id);
 
-                      return ElevatedButton.icon(
-                        onPressed: isInQueue
-                            ? () => parentContext
-                                .read<GalleryCubit>()
-                                .removeFromQueue(plugin.id)
-                            : () async => await parentContext
-                                .read<GalleryCubit>()
-                                .addToQueue(plugin),
-                        icon: Icon(isInQueue
-                            ? Icons.remove_from_queue
-                            : Icons.add_to_queue),
-                        label: Text(isInQueue ? 'Remove' : 'Add to Queue'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isInQueue
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.primary,
-                          foregroundColor: isInQueue
-                              ? Theme.of(context).colorScheme.onError
-                              : Theme.of(context).colorScheme.onPrimary,
-                        ),
-                      );
+                      // Determine button state based on update and queue status
+                      if (isInQueue) {
+                        // Plugin is in queue - show remove button
+                        return ElevatedButton.icon(
+                          onPressed: () => parentContext
+                              .read<GalleryCubit>()
+                              .removeFromQueue(plugin.id),
+                          icon: const Icon(Icons.remove_from_queue),
+                          label: const Text('Remove'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.error,
+                            foregroundColor: Theme.of(context).colorScheme.onError,
+                          ),
+                        );
+                      } else if (hasUpdate) {
+                        // Plugin has update available - show update button
+                        return ElevatedButton.icon(
+                          onPressed: () async => await parentContext
+                              .read<GalleryCubit>()
+                              .addToQueue(plugin),
+                          icon: const Icon(Icons.update),
+                          label: const Text('Update'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                        );
+                      } else if (isInstalled) {
+                        // Plugin is installed and up to date - show installed status
+                        return ElevatedButton.icon(
+                          onPressed: null, // No action needed - updates are detected automatically
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Installed'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.green,
+                            disabledForegroundColor: Colors.white,
+                          ),
+                        );
+                      } else {
+                        // Plugin not installed - show add to queue button
+                        return ElevatedButton.icon(
+                          onPressed: () async => await parentContext
+                              .read<GalleryCubit>()
+                              .addToQueue(plugin),
+                          icon: const Icon(Icons.add_to_queue),
+                          label: const Text('Add to Queue'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        );
+                      }
                     }(),
                   ),
                 ],

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/gallery_service.dart';
+import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 
 part 'gallery_cubit.freezed.dart';
 part 'gallery_state.dart';
@@ -30,6 +31,9 @@ class GalleryCubit extends Cubit<GalleryState> {
 
       final queue = _galleryService.installQueue;
 
+      // Compare gallery plugins with installed versions immediately
+      final updateInfo = await _galleryService.compareWithInstalledVersions(gallery);
+
       emit(GalleryState.loaded(
         gallery: gallery,
         filteredPlugins: gallery.plugins,
@@ -39,6 +43,7 @@ class GalleryCubit extends Cubit<GalleryState> {
         showFeaturedOnly: false,
         showVerifiedOnly: false,
         searchQuery: '',
+        updateInfo: updateInfo,
       ));
     } catch (e) {
       emit(GalleryState.error(e.toString()));
@@ -143,4 +148,36 @@ class GalleryCubit extends Cubit<GalleryState> {
 
   /// Get a reference to the gallery service for direct access to download methods
   GalleryService get galleryService => _galleryService;
+
+  // --- Update Management Methods ---
+
+  /// Refresh update information by reloading gallery data
+  Future<void> refreshUpdates() async {
+    await loadGallery(forceRefresh: true);
+  }
+
+  /// Get update info for a specific plugin
+  PluginUpdateInfo? getPluginUpdateInfo(String pluginId) {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return null;
+    
+    return currentState.updateInfo[pluginId];
+  }
+
+  /// Check if any plugins have updates available
+  bool get hasUpdatesAvailable {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return false;
+    
+    return currentState.updateInfo.values.any((info) => info.updateAvailable);
+  }
+
+  /// Get count of plugins with updates available
+  int get updateCount {
+    final currentState = state;
+    if (currentState is! GalleryLoaded) return 0;
+    
+    return currentState.updateInfo.values.where((info) => info.updateAvailable).length;
+  }
+
 }
