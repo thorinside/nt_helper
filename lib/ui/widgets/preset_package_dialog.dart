@@ -75,7 +75,7 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
 
   Future<void> _createPackage() async {
     setState(() => isPackaging = true);
-    
+
     // Save context references before async operations
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);

@@ -183,8 +183,8 @@ class _GalleryViewState extends State<_GalleryView>
 
   Widget _buildHeaderActions(GalleryState state) {
     final queueCount = state is GalleryLoaded ? state.queue.length : 0;
-    final updateCount = state is GalleryLoaded 
-        ? state.updateInfo.values.where((info) => info.updateAvailable).length 
+    final updateCount = state is GalleryLoaded
+        ? state.updateInfo.values.where((info) => info.updateAvailable).length
         : 0;
     final isRefreshing = state is GalleryLoading;
 
@@ -195,7 +195,7 @@ class _GalleryViewState extends State<_GalleryView>
           isLabelVisible: updateCount > 0,
           label: Text('$updateCount'),
           child: IconButton(
-            icon: isRefreshing 
+            icon: isRefreshing
                 ? SizedBox(
                     width: 20,
                     height: 20,
@@ -208,12 +208,12 @@ class _GalleryViewState extends State<_GalleryView>
                     updateCount > 0 ? Icons.update : Icons.sync,
                     color: updateCount > 0 ? Colors.orange : null,
                   ),
-            onPressed: isRefreshing 
-                ? null 
+            onPressed: isRefreshing
+                ? null
                 : () => context.read<GalleryCubit>().refreshUpdates(),
-            tooltip: isRefreshing 
+            tooltip: isRefreshing
                 ? 'Refreshing gallery...'
-                : updateCount > 0 
+                : updateCount > 0
                     ? 'Updates available ($updateCount) - Tap to refresh'
                     : 'Refresh gallery',
           ),
@@ -337,7 +337,7 @@ class _GalleryViewState extends State<_GalleryView>
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.getScreenPadding(context);
     final filterSpacing = Responsive.getFilterSpacing(context);
-    
+
     return Container(
       padding: padding,
       decoration: BoxDecoration(
@@ -376,7 +376,7 @@ class _GalleryViewState extends State<_GalleryView>
               ),
             ),
             SizedBox(height: filterSpacing),
-            
+
             // Mobile layout: Filters on second line
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -475,25 +475,19 @@ class _GalleryViewState extends State<_GalleryView>
     if (state is! GalleryLoaded || state.gallery.categories.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     return PopupMenuButton<String?>(
       child: Chip(
         avatar: Icon(
           Icons.category,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         label: Text(state.selectedCategory ?? 'Category'),
         deleteIcon: Icon(
           Icons.arrow_drop_down,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         onDeleted: () {},
       ),
@@ -531,10 +525,7 @@ class _GalleryViewState extends State<_GalleryView>
         avatar: Icon(
           Icons.extension,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         label: Text(state is GalleryLoaded
             ? (state.selectedType?.displayName ?? 'Type')
@@ -542,10 +533,7 @@ class _GalleryViewState extends State<_GalleryView>
         deleteIcon: Icon(
           Icons.arrow_drop_down,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         onDeleted: () {},
       ),
@@ -576,14 +564,10 @@ class _GalleryViewState extends State<_GalleryView>
         size: 18,
         color: (state is GalleryLoaded && state.showFeaturedOnly)
             ? Theme.of(context).colorScheme.onPrimary
-            : Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.7),
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
       ),
       label: const Text('Featured'),
-      selected:
-          state is GalleryLoaded ? state.showFeaturedOnly : false,
+      selected: state is GalleryLoaded ? state.showFeaturedOnly : false,
       selectedColor: Theme.of(context).colorScheme.primary,
       showCheckmark: false,
       labelStyle: TextStyle(
@@ -604,10 +588,7 @@ class _GalleryViewState extends State<_GalleryView>
       avatar: Icon(
         Icons.clear,
         size: 18,
-        color: Theme.of(context)
-            .colorScheme
-            .onSurface
-            .withValues(alpha: 0.7),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
       ),
       label: const Text('Clear'),
       onPressed: () {
@@ -907,13 +888,15 @@ class _GalleryViewState extends State<_GalleryView>
                           if (plugin.formattedLatestVersion.isNotEmpty)
                             Text(
                               plugin.formattedLatestVersion,
-                              style:
-                                  Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.6),
-                                      ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
                             ),
                         ],
                       ),
@@ -979,8 +962,10 @@ class _GalleryViewState extends State<_GalleryView>
                           icon: const Icon(Icons.remove_from_queue),
                           label: const Text('Remove'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.error,
-                            foregroundColor: Theme.of(context).colorScheme.onError,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.error,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onError,
                           ),
                         );
                       } else if (hasUpdate) {
@@ -999,7 +984,8 @@ class _GalleryViewState extends State<_GalleryView>
                       } else if (isInstalled) {
                         // Plugin is installed and up to date - show installed status
                         return ElevatedButton.icon(
-                          onPressed: null, // No action needed - updates are detected automatically
+                          onPressed:
+                              null, // No action needed - updates are detected automatically
                           icon: const Icon(Icons.check_circle),
                           label: const Text('Installed'),
                           style: ElevatedButton.styleFrom(
@@ -1018,8 +1004,10 @@ class _GalleryViewState extends State<_GalleryView>
                           icon: const Icon(Icons.add_to_queue),
                           label: const Text('Add to Queue'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
                           ),
                         );
                       }

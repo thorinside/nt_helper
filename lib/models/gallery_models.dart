@@ -346,16 +346,17 @@ extension GalleryPluginExtension on GalleryPlugin {
   String get formattedLatestVersion {
     final version = releases.latest;
     if (version.isEmpty) return '';
-    
+
     // Check if version follows semantic version format (numbers and dots with optional 'v' prefix)
-    final cleanVersion = version.startsWith('v') ? version.substring(1) : version;
+    final cleanVersion =
+        version.startsWith('v') ? version.substring(1) : version;
     final semverPattern = RegExp(r'^\d+(\.\d+)*(\.\d+)*$');
-    
+
     if (!semverPattern.hasMatch(cleanVersion)) {
       // Skip non-semantic versions
       return '';
     }
-    
+
     return 'v$cleanVersion';
   }
 }

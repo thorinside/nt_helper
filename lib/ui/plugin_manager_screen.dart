@@ -96,7 +96,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final theme = Theme.of(context);
-    
+
     try {
       // Only show file picker on desktop platforms
       if (!kIsWeb &&
@@ -218,7 +218,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     // Save context references before async operations
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final theme = Theme.of(context);
-    
+
     try {
       // Show backup options dialog first
       final backupChoice = await _showBackupOptionsDialog();
@@ -511,7 +511,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     final isMobile = Responsive.isMobile(context);
     final useCompactNav = Responsive.shouldUseCompactNavigation(context);
     final navRailWidth = Responsive.getNavigationRailWidth(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Plugin Manager'),
@@ -534,7 +534,9 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           ],
         ],
       ),
-      body: isMobile ? _buildMobileLayout() : _buildDesktopLayout(navRailWidth, useCompactNav),
+      body: isMobile
+          ? _buildMobileLayout()
+          : _buildDesktopLayout(navRailWidth, useCompactNav),
       bottomNavigationBar: isMobile ? _buildBottomNavigation() : null,
     );
   }
@@ -558,8 +560,8 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
                   _selectedIndex = index;
                 });
               },
-              labelType: useCompactNav 
-                  ? NavigationRailLabelType.none 
+              labelType: useCompactNav
+                  ? NavigationRailLabelType.none
                   : NavigationRailLabelType.all,
               destinations: _sections.map((section) {
                 return NavigationRailDestination(

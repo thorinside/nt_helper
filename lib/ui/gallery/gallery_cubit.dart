@@ -32,7 +32,8 @@ class GalleryCubit extends Cubit<GalleryState> {
       final queue = _galleryService.installQueue;
 
       // Compare gallery plugins with installed versions immediately
-      final updateInfo = await _galleryService.compareWithInstalledVersions(gallery);
+      final updateInfo =
+          await _galleryService.compareWithInstalledVersions(gallery);
 
       emit(GalleryState.loaded(
         gallery: gallery,
@@ -160,7 +161,7 @@ class GalleryCubit extends Cubit<GalleryState> {
   PluginUpdateInfo? getPluginUpdateInfo(String pluginId) {
     final currentState = state;
     if (currentState is! GalleryLoaded) return null;
-    
+
     return currentState.updateInfo[pluginId];
   }
 
@@ -168,7 +169,7 @@ class GalleryCubit extends Cubit<GalleryState> {
   bool get hasUpdatesAvailable {
     final currentState = state;
     if (currentState is! GalleryLoaded) return false;
-    
+
     return currentState.updateInfo.values.any((info) => info.updateAvailable);
   }
 
@@ -176,8 +177,9 @@ class GalleryCubit extends Cubit<GalleryState> {
   int get updateCount {
     final currentState = state;
     if (currentState is! GalleryLoaded) return 0;
-    
-    return currentState.updateInfo.values.where((info) => info.updateAvailable).length;
-  }
 
+    return currentState.updateInfo.values
+        .where((info) => info.updateAvailable)
+        .length;
+  }
 }

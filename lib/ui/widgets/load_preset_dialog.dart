@@ -340,7 +340,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               // Fixed height container to prevent layout shift
               SizedBox(
                 height: 8, // Height to accommodate the progress bar
-                child: _isLoading || _isInstallingPackage ? LinearProgressIndicator() : null,
+                child: _isLoading || _isInstallingPackage
+                    ? LinearProgressIndicator()
+                    : null,
               ),
             ],
           ),
@@ -695,7 +697,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     if (supportedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please drop a preset package (.zip) or preset file (.json)'),
+          content: Text(
+              'Please drop a preset package (.zip) or preset file (.json)'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -730,7 +733,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     try {
       // Read file data
       final fileBytes = await file.readAsBytes();
-      
+
       // Validate and analyze the package
       final isValid = await PresetPackageAnalyzer.isValidPackage(fileBytes);
       if (!isValid) {
@@ -759,7 +762,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
       // Detect file conflicts
       final conflictDetector = FileConflictDetector(widget.distingCubit);
-      final analysisWithConflicts = await conflictDetector.detectConflicts(analysis);
+      final analysisWithConflicts =
+          await conflictDetector.detectConflicts(analysis);
 
       setState(() {
         _isInstallingPackage = false;
@@ -786,7 +790,6 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           onCancel: () => Navigator.of(context).pop(),
         ),
       );
-
     } catch (e) {
       setState(() {
         _isInstallingPackage = false;
@@ -808,17 +811,16 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       // Read preset file data
       final fileBytes = await file.readAsBytes();
       final fileName = file.name;
-      
+
       // Validate that it's a valid JSON file
       try {
         final jsonString = String.fromCharCodes(fileBytes);
         final presetData = jsonDecode(jsonString);
-        
+
         // Basic validation - check if it looks like a preset
         if (presetData is! Map<String, dynamic>) {
           throw FormatException('Invalid preset format');
         }
-        
       } catch (e) {
         setState(() {
           _isInstallingPackage = false;
@@ -846,7 +848,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('File Already Exists'),
-            content: Text('A preset named "$fileName" already exists on the SD card. Do you want to overwrite it?'),
+            content: Text(
+                'A preset named "$fileName" already exists on the SD card. Do you want to overwrite it?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -883,7 +886,6 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
-
     } catch (e) {
       setState(() {
         _isInstallingPackage = false;
@@ -939,7 +941,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color:
+                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -957,20 +960,20 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               Text(
                 'Drop files here to install',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Supports .zip packages and .json presets',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                    ),
                 textAlign: TextAlign.center,
               ),
             ],

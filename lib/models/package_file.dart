@@ -15,7 +15,7 @@ class PackageFile {
   });
 
   String get filename => relativePath.split('/').last;
-  
+
   bool get shouldInstall => action == FileAction.install;
   bool get shouldSkip => action == FileAction.skip;
 
@@ -39,14 +39,14 @@ class PackageFile {
 /// Actions that can be taken for a file during package installation
 enum FileAction {
   install, // Install the file (overwrite if exists)
-  skip,    // Skip installing this file
+  skip, // Skip installing this file
 }
 
 /// Status of a file during installation
 enum FileStatus {
-  pending,    // Not yet processed
+  pending, // Not yet processed
   installing, // Currently being installed
-  completed,  // Successfully installed
-  skipped,    // User chose to skip
-  failed,     // Installation failed
+  completed, // Successfully installed
+  skipped, // User chose to skip
+  failed, // Installation failed
 }

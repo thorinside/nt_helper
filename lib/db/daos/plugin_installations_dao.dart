@@ -231,8 +231,8 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
 
     return (select(pluginInstallations)
           ..where((tbl) => tbl.installationStatus.equals('completed'))
-          ..where((tbl) => 
-              tbl.lastChecked.isNull() | 
+          ..where((tbl) =>
+              tbl.lastChecked.isNull() |
               tbl.lastChecked.isSmallerThanValue(oneHourAgo))
           ..orderBy([(tbl) => OrderingTerm.asc(tbl.lastChecked)]))
         .get();
@@ -292,10 +292,12 @@ class PluginUpdateInfo {
   });
 
   bool get hasUpdate => updateAvailable && availableVersion != null;
-  
-  bool get needsCheck => lastChecked == null || 
+
+  bool get needsCheck =>
+      lastChecked == null ||
       DateTime.now().difference(lastChecked!).inHours >= 1;
 
   @override
-  String toString() => 'PluginUpdateInfo($pluginId: $installedVersion -> $availableVersion, update: $updateAvailable)';
+  String toString() =>
+      'PluginUpdateInfo($pluginId: $installedVersion -> $availableVersion, update: $updateAvailable)';
 }

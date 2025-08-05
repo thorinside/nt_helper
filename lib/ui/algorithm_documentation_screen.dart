@@ -226,7 +226,6 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
     );
   }
 
-
   Widget _buildFeaturesCard(BuildContext context) {
     return Card(
       elevation: 2,

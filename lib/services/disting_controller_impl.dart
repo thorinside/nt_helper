@@ -194,7 +194,8 @@ class DistingControllerImpl implements DistingController {
   }
 
   @override
-  Future<String?> getParameterStringValue(int slotIndex, int parameterNumber) async {
+  Future<String?> getParameterStringValue(
+      int slotIndex, int parameterNumber) async {
     final state = _getSynchronizedState();
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
@@ -207,7 +208,7 @@ class DistingControllerImpl implements DistingController {
       if (parameterNumber < slotData.valueStrings.length) {
         return slotData.valueStrings[parameterNumber].value;
       }
-      
+
       return null;
     } catch (e) {
       debugPrint(
@@ -234,7 +235,7 @@ class DistingControllerImpl implements DistingController {
     _validateSlotIndex(slotIndex);
 
     final Slot slotData = state.slots[slotIndex];
-    
+
     // Check if slot is empty
     if (slotData.algorithm.guid.isEmpty) {
       return null;

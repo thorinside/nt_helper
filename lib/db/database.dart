@@ -123,11 +123,16 @@ class AppDatabase extends _$AppDatabase {
           // Migration for version 6: Add version tracking columns to plugin_installations table
           if (from <= 5) {
             try {
-              debugPrint("Adding version tracking columns to plugin_installations table...");
-              await m.addColumn(pluginInstallations, pluginInstallations.availableVersion);
-              await m.addColumn(pluginInstallations, pluginInstallations.updateAvailable);
-              await m.addColumn(pluginInstallations, pluginInstallations.lastChecked);
-              debugPrint("Migration successful: Added version tracking columns.");
+              debugPrint(
+                  "Adding version tracking columns to plugin_installations table...");
+              await m.addColumn(
+                  pluginInstallations, pluginInstallations.availableVersion);
+              await m.addColumn(
+                  pluginInstallations, pluginInstallations.updateAvailable);
+              await m.addColumn(
+                  pluginInstallations, pluginInstallations.lastChecked);
+              debugPrint(
+                  "Migration successful: Added version tracking columns.");
             } catch (e) {
               debugPrint("Migration error adding version tracking: $e");
             }

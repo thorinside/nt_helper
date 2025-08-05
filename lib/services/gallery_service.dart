@@ -29,8 +29,8 @@ class GalleryService {
   GalleryService({
     required SettingsService settingsService,
     AppDatabase? database,
-  }) : _settingsService = settingsService,
-       _database = database {
+  })  : _settingsService = settingsService,
+        _database = database {
     // Initialize update checker if database is available
     if (_database != null) {
       _updateChecker = PluginUpdateChecker(
@@ -810,7 +810,8 @@ class GalleryService {
   // --- Plugin Update Methods ---
 
   /// Check for updates for all installed plugins
-  Future<UpdateCheckResult?> checkAllPluginUpdates({bool forceCheck = false}) async {
+  Future<UpdateCheckResult?> checkAllPluginUpdates(
+      {bool forceCheck = false}) async {
     return await _updateChecker?.checkAllPluginUpdates(forceCheck: forceCheck);
   }
 
@@ -860,9 +861,10 @@ class GalleryService {
   }
 
   /// Compare gallery plugins with installed versions and return update info
-  Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(Gallery gallery) async {
+  Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(
+      Gallery gallery) async {
     final Map<String, PluginUpdateInfo> updateInfo = {};
-    
+
     if (_database == null) {
       debugPrint('Database not available for version comparison');
       return updateInfo;
@@ -870,14 +872,15 @@ class GalleryService {
 
     try {
       // Get all installed plugins
-      final installedPlugins = await _database!.pluginInstallationsDao.getAllInstalledPlugins();
-      
+      final installedPlugins =
+          await _database!.pluginInstallationsDao.getAllInstalledPlugins();
+
       for (final galleryPlugin in gallery.plugins) {
         // Find matching installed plugin(s)
-        final matchingInstalled = installedPlugins.where(
-          (installed) => installed.pluginId == galleryPlugin.id
-        ).toList();
-        
+        final matchingInstalled = installedPlugins
+            .where((installed) => installed.pluginId == galleryPlugin.id)
+            .toList();
+
         if (matchingInstalled.isEmpty) {
           // Plugin not installed - no update info needed
           continue;
@@ -885,16 +888,17 @@ class GalleryService {
 
         // Get the latest installed version
         final latestInstalled = matchingInstalled.reduce(
-          (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b
-        );
+            (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b);
 
-        // Get the best available version from gallery channels  
+        // Get the best available version from gallery channels
         final availableVersion = _getBestAvailableVersion(galleryPlugin);
-        
+
         if (availableVersion != null) {
           // Compare versions
-          final hasUpdate = _compareVersions(latestInstalled.pluginVersion, availableVersion) < 0;
-          
+          final hasUpdate = _compareVersions(
+                  latestInstalled.pluginVersion, availableVersion) <
+              0;
+
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(
             pluginId: galleryPlugin.id,
             pluginName: latestInstalled.pluginName,
@@ -905,14 +909,14 @@ class GalleryService {
           );
         }
       }
-      
-      debugPrint('Version comparison complete: ${updateInfo.length} plugins checked, '
-                '${updateInfo.values.where((info) => info.updateAvailable).length} updates available');
-      
+
+      debugPrint(
+          'Version comparison complete: ${updateInfo.length} plugins checked, '
+          '${updateInfo.values.where((info) => info.updateAvailable).length} updates available');
     } catch (e) {
       debugPrint('Error comparing plugin versions: $e');
     }
-    
+
     return updateInfo;
   }
 
@@ -954,7 +958,6 @@ class GalleryService {
     const rawPluginExtensions = {'.o', '.lua', '.3pot'};
     return rawPluginExtensions.contains(extension);
   }
-
 }
 
 /// Exception thrown by gallery operations

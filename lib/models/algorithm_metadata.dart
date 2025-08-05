@@ -21,7 +21,6 @@ List<AlgorithmPort> _portsFromJson(List<dynamic> jsonList) =>
       }
     }).toList();
 
-
 List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
   if (jsonList == null) return [];
   final List<AlgorithmParameter> allParams = [];
@@ -68,10 +67,16 @@ sealed class AlgorithmMetadata with _$AlgorithmMetadata {
     required List<String> categories,
     required String description,
     @Default([]) List<AlgorithmSpecification> specifications,
-    @JsonKey(fromJson: _parametersFromJson) @Default([]) List<AlgorithmParameter> parameters,
+    @JsonKey(fromJson: _parametersFromJson)
+    @Default([])
+    List<AlgorithmParameter> parameters,
     @Default([]) List<String> features, // List of feature GUIDs
-    @JsonKey(name: 'input_ports', fromJson: _portsFromJson) @Default([]) List<AlgorithmPort> inputPorts,
-    @JsonKey(name: 'output_ports', fromJson: _portsFromJson) @Default([]) List<AlgorithmPort> outputPorts,
+    @JsonKey(name: 'input_ports', fromJson: _portsFromJson)
+    @Default([])
+    List<AlgorithmPort> inputPorts,
+    @JsonKey(name: 'output_ports', fromJson: _portsFromJson)
+    @Default([])
+    List<AlgorithmPort> outputPorts,
   }) = _AlgorithmMetadata;
 
   factory AlgorithmMetadata.fromJson(Map<String, dynamic> json) =>

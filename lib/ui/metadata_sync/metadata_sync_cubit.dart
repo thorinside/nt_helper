@@ -25,13 +25,15 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
   // Cancellation flag for metadata sync
   bool _isMetadataSyncCancelled = false;
-  
+
   // Completer for user continue prompt (returns bool)
   Completer<bool>? _continueCompleter;
 
   // Checkpoint keys for SharedPreferences
-  static const String _checkpointAlgorithmName = 'metadata_sync_checkpoint_name';
-  static const String _checkpointAlgorithmIndex = 'metadata_sync_checkpoint_index';
+  static const String _checkpointAlgorithmName =
+      'metadata_sync_checkpoint_name';
+  static const String _checkpointAlgorithmIndex =
+      'metadata_sync_checkpoint_index';
 
   MetadataSyncCubit(
     this._database, [
@@ -43,7 +45,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
   // --- Metadata Sync Methods ---
 
-  Future<void> startMetadataSync(IDistingMidiManager manager, {int? resumeFromIndex}) async {
+  Future<void> startMetadataSync(IDistingMidiManager manager,
+      {int? resumeFromIndex}) async {
     if (switch (state) { SyncingMetadata() => true, _ => false }) {
       return;
     }
@@ -85,20 +88,25 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       },
       onContinueRequired: (message) async {
         if (_isMetadataSyncCancelled || isClosed) return false;
-        
+
         // Store current progress for the waiting state
         final currentState = state;
-        final currentProgress = currentState is SyncingMetadata ? currentState.progress : 0.0;
-        final algorithmsProcessed = currentState is SyncingMetadata ? currentState.algorithmsProcessed : null;
-        final totalAlgorithms = currentState is SyncingMetadata ? currentState.totalAlgorithms : null;
-        
+        final currentProgress =
+            currentState is SyncingMetadata ? currentState.progress : 0.0;
+        final algorithmsProcessed = currentState is SyncingMetadata
+            ? currentState.algorithmsProcessed
+            : null;
+        final totalAlgorithms = currentState is SyncingMetadata
+            ? currentState.totalAlgorithms
+            : null;
+
         emit(MetadataSyncState.waitingForUserContinue(
           message: message,
           progress: currentProgress,
           algorithmsProcessed: algorithmsProcessed,
           totalAlgorithms: totalAlgorithms,
         ));
-        
+
         _continueCompleter = Completer<bool>();
         return await _continueCompleter!.future;
       },
@@ -137,22 +145,23 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       DeletingPreset() => true,
       _ => false,
     };
-    
+
     if (wasCancelled) {
       _isMetadataSyncCancelled = true;
-      
+
       // Resume CPU monitoring when cancelling
       _distingCubit?.resumeCpuMonitoring();
-      
+
       // If waiting for continue, complete with false (cancel)
       if (_continueCompleter != null && !_continueCompleter!.isCompleted) {
         _continueCompleter!.complete(false);
         _continueCompleter = null;
       }
-      
+
       // Emit cancelled state immediately for better UX
-      emit(const MetadataSyncState.metadataSyncFailure("Sync cancelled by user."));
-      
+      emit(const MetadataSyncState.metadataSyncFailure(
+          "Sync cancelled by user."));
+
       // Load local data to return to normal state
       Future.delayed(const Duration(milliseconds: 500), () {
         if (!isClosed) {
@@ -163,8 +172,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   void userContinue() {
-    if (state is WaitingForUserContinue && 
-        _continueCompleter != null && 
+    if (state is WaitingForUserContinue &&
+        _continueCompleter != null &&
         !_continueCompleter!.isCompleted) {
       _continueCompleter!.complete(true);
       _continueCompleter = null;
@@ -172,8 +181,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   void userCancelAfterReboot() {
-    if (state is WaitingForUserContinue && 
-        _continueCompleter != null && 
+    if (state is WaitingForUserContinue &&
+        _continueCompleter != null &&
         !_continueCompleter!.isCompleted) {
       _continueCompleter!.complete(false);
       _continueCompleter = null;
@@ -182,17 +191,17 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   void userSkip() {
-    if (state is WaitingForUserContinue && 
-        _continueCompleter != null && 
+    if (state is WaitingForUserContinue &&
+        _continueCompleter != null &&
         !_continueCompleter!.isCompleted) {
-      _continueCompleter!.complete(true); // Skip means continue but skip this algorithm
+      _continueCompleter!
+          .complete(true); // Skip means continue but skip this algorithm
       _continueCompleter = null;
     }
   }
 
   // Alias for userContinue() for UI compatibility
   void continueSync() => userContinue();
-
 
   // --- Preset Management Methods ---
 
@@ -438,7 +447,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
       // Check for checkpoint after loading data
       final hasCheckpoint = await _hasCheckpoint();
-      
+
       if (hasCheckpoint) {
         await _checkForCheckpoint();
         // Don't emit ViewingLocalData yet - let CheckpointFound state show first
@@ -469,7 +478,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     final prefs = await SharedPreferences.getInstance();
     final algorithmName = prefs.getString(_checkpointAlgorithmName);
     final algorithmIndex = prefs.getInt(_checkpointAlgorithmIndex);
-    
+
     if (algorithmName != null && algorithmIndex != null) {
       emit(MetadataSyncState.checkpointFound(
         algorithmName: algorithmName,
@@ -509,7 +518,7 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   // Load data without checkpoint check
   Future<void> _loadLocalDataOnly() async {
     emit(const MetadataSyncState.loadingPreset());
-    
+
     try {
       final results = await Future.wait([
         _metadataDao.getAllAlgorithms(),
@@ -589,20 +598,25 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       },
       onContinueRequired: (message) async {
         if (_isMetadataSyncCancelled || isClosed) return false;
-        
+
         // Store current progress for the waiting state
         final currentState = state;
-        final currentProgress = currentState is SyncingMetadata ? currentState.progress : 0.0;
-        final algorithmsProcessed = currentState is SyncingMetadata ? currentState.algorithmsProcessed : null;
-        final totalAlgorithms = currentState is SyncingMetadata ? currentState.totalAlgorithms : null;
-        
+        final currentProgress =
+            currentState is SyncingMetadata ? currentState.progress : 0.0;
+        final algorithmsProcessed = currentState is SyncingMetadata
+            ? currentState.algorithmsProcessed
+            : null;
+        final totalAlgorithms = currentState is SyncingMetadata
+            ? currentState.totalAlgorithms
+            : null;
+
         emit(MetadataSyncState.waitingForUserContinue(
           message: message,
           progress: currentProgress,
           algorithmsProcessed: algorithmsProcessed,
           totalAlgorithms: totalAlgorithms,
         ));
-        
+
         _continueCompleter = Completer<bool>();
         return await _continueCompleter!.future;
       },
@@ -625,7 +639,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     }
   }
 
-  Future<void> rescanSingleAlgorithm(IDistingMidiManager manager, String algorithmGuid) async {
+  Future<void> rescanSingleAlgorithm(
+      IDistingMidiManager manager, String algorithmGuid) async {
     emit(const MetadataSyncState.syncingMetadata(
       progress: 0.0,
       mainMessage: "Rescanning algorithm...",
@@ -668,15 +683,16 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       final syncService = MetadataSyncService(manager, _database);
       await syncService.rescanSingleAlgorithm(targetAlgoInfo);
 
-      emit(const MetadataSyncState.metadataSyncSuccess("Algorithm rescanned successfully"));
-      
+      emit(const MetadataSyncState.metadataSyncSuccess(
+          "Algorithm rescanned successfully"));
+
       // Reload data to show updated parameter count
       await loadLocalData();
-      
     } catch (e, stackTrace) {
       debugPrint('Error rescanning algorithm: $e\n$stackTrace');
-      emit(MetadataSyncState.metadataSyncFailure("Failed to rescan algorithm: $e"));
-      
+      emit(MetadataSyncState.metadataSyncFailure(
+          "Failed to rescan algorithm: $e"));
+
       // Return to data view after error
       Future.delayed(const Duration(seconds: 2), () {
         if (!isClosed) {
@@ -685,5 +701,4 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       });
     }
   }
-
 }

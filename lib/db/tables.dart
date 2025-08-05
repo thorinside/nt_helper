@@ -314,8 +314,8 @@ class PluginInstallations extends Table {
   // Version tracking for update notifications
   TextColumn get availableVersion =>
       text().nullable()(); // Latest version from gallery
-  TextColumn get updateAvailable => text().withDefault(
-      const Constant('false'))(); // Update flag ('true'/'false')
+  TextColumn get updateAvailable => text()
+      .withDefault(const Constant('false'))(); // Update flag ('true'/'false')
   DateTimeColumn get lastChecked =>
       dateTime().nullable()(); // Last update check timestamp
 

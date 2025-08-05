@@ -12,17 +12,18 @@ class AlgorithmJsonExporter {
   Future<void> exportAlgorithmDetails(String filePath) async {
     try {
       debugPrint('Starting algorithm export to: $filePath');
-      
+
       final dao = database.metadataDao;
       final algorithms = await dao.getAllAlgorithms();
       final List<Map<String, dynamic>> exportData = [];
 
       for (final algorithm in algorithms) {
-        debugPrint('Processing algorithm: ${algorithm.name} (${algorithm.guid})');
-        
+        debugPrint(
+            'Processing algorithm: ${algorithm.name} (${algorithm.guid})');
+
         // Get full details including parameters
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
-        
+
         final Map<String, dynamic> algorithmData = {
           'guid': algorithm.guid,
           'name': algorithm.name,
@@ -51,7 +52,8 @@ class AlgorithmJsonExporter {
       }
 
       // Sort algorithms by name for consistent output
-      exportData.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+      exportData
+          .sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
 
       // Create the final export structure
       final Map<String, dynamic> exportJson = {
@@ -67,7 +69,8 @@ class AlgorithmJsonExporter {
         encoding: utf8,
       );
 
-      debugPrint('Successfully exported ${exportData.length} algorithms to $filePath');
+      debugPrint(
+          'Successfully exported ${exportData.length} algorithms to $filePath');
     } catch (e, stackTrace) {
       debugPrint('Error exporting algorithm details: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -80,10 +83,10 @@ class AlgorithmJsonExporter {
     try {
       final dao = database.metadataDao;
       final algorithms = await dao.getAllAlgorithms();
-      
+
       int totalParameters = 0;
       final List<String> sampleAlgorithms = [];
-      
+
       for (int i = 0; i < algorithms.length && i < 5; i++) {
         final details = await dao.getFullAlgorithmDetails(algorithms[i].guid);
         final paramCount = details?.parameters.length ?? 0;
