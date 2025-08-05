@@ -34,7 +34,7 @@ class GalleryService {
     // Initialize update checker if database is available
     if (_database != null) {
       _updateChecker = PluginUpdateChecker(
-        database: _database!,
+        database: _database,
         galleryService: this,
       );
     }
@@ -382,7 +382,7 @@ class GalleryService {
         if (_database != null) {
           try {
             final installationPath = _getInstallationPath(queuedPlugin.plugin);
-            await _database!.pluginInstallationsDao.recordPluginInstallation(
+            await _database.pluginInstallationsDao.recordPluginInstallation(
               plugin: queuedPlugin.plugin,
               installedVersion: queuedPlugin.selectedVersion,
               installationPath: installationPath,
@@ -410,7 +410,7 @@ class GalleryService {
         if (_database != null) {
           try {
             final installationPath = _getInstallationPath(queuedPlugin.plugin);
-            await _database!.pluginInstallationsDao
+            await _database.pluginInstallationsDao
                 .recordPluginInstallationFailure(
               plugin: queuedPlugin.plugin,
               attemptedVersion: queuedPlugin.selectedVersion,
@@ -873,7 +873,7 @@ class GalleryService {
     try {
       // Get all installed plugins
       final installedPlugins =
-          await _database!.pluginInstallationsDao.getAllInstalledPlugins();
+          await _database.pluginInstallationsDao.getAllInstalledPlugins();
 
       for (final galleryPlugin in gallery.plugins) {
         // Find matching installed plugin(s)
