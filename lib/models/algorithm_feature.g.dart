@@ -11,9 +11,11 @@ _AlgorithmFeature _$AlgorithmFeatureFromJson(Map<String, dynamic> json) =>
       guid: json['guid'] as String,
       name: json['name'] as String,
       description: json['description'] as String?,
-      parameters: (json['parameters'] as List<dynamic>?)
+      parameters:
+          (json['parameters'] as List<dynamic>?)
               ?.map(
-                  (e) => AlgorithmParameter.fromJson(e as Map<String, dynamic>))
+                (e) => AlgorithmParameter.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           const [],
     );

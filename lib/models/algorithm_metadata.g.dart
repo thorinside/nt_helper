@@ -14,15 +14,19 @@ _AlgorithmMetadata _$AlgorithmMetadataFromJson(Map<String, dynamic> json) =>
           .map((e) => e as String)
           .toList(),
       description: json['description'] as String,
-      specifications: (json['specifications'] as List<dynamic>?)
-              ?.map((e) =>
-                  AlgorithmSpecification.fromJson(e as Map<String, dynamic>))
+      specifications:
+          (json['specifications'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    AlgorithmSpecification.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           const [],
       parameters: json['parameters'] == null
           ? const []
           : _parametersFromJson(json['parameters'] as List?),
-      features: (json['features'] as List<dynamic>?)
+      features:
+          (json['features'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

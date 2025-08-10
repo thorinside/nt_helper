@@ -12,63 +12,97 @@ class $AlgorithmsTable extends Algorithms
   static const VerificationMeta _guidMeta = const VerificationMeta('guid');
   @override
   late final GeneratedColumn<String> guid = GeneratedColumn<String>(
-      'guid', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _numSpecificationsMeta =
-      const VerificationMeta('numSpecifications');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _numSpecificationsMeta = const VerificationMeta(
+    'numSpecifications',
+  );
   @override
   late final GeneratedColumn<int> numSpecifications = GeneratedColumn<int>(
-      'num_specifications', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _pluginFilePathMeta =
-      const VerificationMeta('pluginFilePath');
+    'num_specifications',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pluginFilePathMeta = const VerificationMeta(
+    'pluginFilePath',
+  );
   @override
   late final GeneratedColumn<String> pluginFilePath = GeneratedColumn<String>(
-      'plugin_file_path', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+    'plugin_file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [guid, name, numSpecifications, pluginFilePath];
+  List<GeneratedColumn> get $columns => [
+    guid,
+    name,
+    numSpecifications,
+    pluginFilePath,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'algorithms';
   @override
-  VerificationContext validateIntegrity(Insertable<AlgorithmEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<AlgorithmEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('guid')) {
       context.handle(
-          _guidMeta, guid.isAcceptableOrUnknown(data['guid']!, _guidMeta));
+        _guidMeta,
+        guid.isAcceptableOrUnknown(data['guid']!, _guidMeta),
+      );
     } else if (isInserting) {
       context.missing(_guidMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('num_specifications')) {
       context.handle(
+        _numSpecificationsMeta,
+        numSpecifications.isAcceptableOrUnknown(
+          data['num_specifications']!,
           _numSpecificationsMeta,
-          numSpecifications.isAcceptableOrUnknown(
-              data['num_specifications']!, _numSpecificationsMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_numSpecificationsMeta);
     }
     if (data.containsKey('plugin_file_path')) {
       context.handle(
+        _pluginFilePathMeta,
+        pluginFilePath.isAcceptableOrUnknown(
+          data['plugin_file_path']!,
           _pluginFilePathMeta,
-          pluginFilePath.isAcceptableOrUnknown(
-              data['plugin_file_path']!, _pluginFilePathMeta));
+        ),
+      );
     }
     return context;
   }
@@ -79,14 +113,22 @@ class $AlgorithmsTable extends Algorithms
   AlgorithmEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AlgorithmEntry(
-      guid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}guid'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      guid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guid'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
       numSpecifications: attachedDatabase.typeMapping.read(
-          DriftSqlType.int, data['${effectivePrefix}num_specifications'])!,
+        DriftSqlType.int,
+        data['${effectivePrefix}num_specifications'],
+      )!,
       pluginFilePath: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}plugin_file_path']),
+        DriftSqlType.string,
+        data['${effectivePrefix}plugin_file_path'],
+      ),
     );
   }
 
@@ -101,11 +143,12 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
   final String name;
   final int numSpecifications;
   final String? pluginFilePath;
-  const AlgorithmEntry(
-      {required this.guid,
-      required this.name,
-      required this.numSpecifications,
-      this.pluginFilePath});
+  const AlgorithmEntry({
+    required this.guid,
+    required this.name,
+    required this.numSpecifications,
+    this.pluginFilePath,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -129,8 +172,10 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
     );
   }
 
-  factory AlgorithmEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory AlgorithmEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AlgorithmEntry(
       guid: serializer.fromJson<String>(json['guid']),
@@ -150,18 +195,19 @@ class AlgorithmEntry extends DataClass implements Insertable<AlgorithmEntry> {
     };
   }
 
-  AlgorithmEntry copyWith(
-          {String? guid,
-          String? name,
-          int? numSpecifications,
-          Value<String?> pluginFilePath = const Value.absent()}) =>
-      AlgorithmEntry(
-        guid: guid ?? this.guid,
-        name: name ?? this.name,
-        numSpecifications: numSpecifications ?? this.numSpecifications,
-        pluginFilePath:
-            pluginFilePath.present ? pluginFilePath.value : this.pluginFilePath,
-      );
+  AlgorithmEntry copyWith({
+    String? guid,
+    String? name,
+    int? numSpecifications,
+    Value<String?> pluginFilePath = const Value.absent(),
+  }) => AlgorithmEntry(
+    guid: guid ?? this.guid,
+    name: name ?? this.name,
+    numSpecifications: numSpecifications ?? this.numSpecifications,
+    pluginFilePath: pluginFilePath.present
+        ? pluginFilePath.value
+        : this.pluginFilePath,
+  );
   AlgorithmEntry copyWithCompanion(AlgorithmsCompanion data) {
     return AlgorithmEntry(
       guid: data.guid.present ? data.guid.value : this.guid,
@@ -218,9 +264,9 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
     required int numSpecifications,
     this.pluginFilePath = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : guid = Value(guid),
-        name = Value(name),
-        numSpecifications = Value(numSpecifications);
+  }) : guid = Value(guid),
+       name = Value(name),
+       numSpecifications = Value(numSpecifications);
   static Insertable<AlgorithmEntry> custom({
     Expression<String>? guid,
     Expression<String>? name,
@@ -237,12 +283,13 @@ class AlgorithmsCompanion extends UpdateCompanion<AlgorithmEntry> {
     });
   }
 
-  AlgorithmsCompanion copyWith(
-      {Value<String>? guid,
-      Value<String>? name,
-      Value<int>? numSpecifications,
-      Value<String?>? pluginFilePath,
-      Value<int>? rowid}) {
+  AlgorithmsCompanion copyWith({
+    Value<String>? guid,
+    Value<String>? name,
+    Value<int>? numSpecifications,
+    Value<String?>? pluginFilePath,
+    Value<int>? rowid,
+  }) {
     return AlgorithmsCompanion(
       guid: guid ?? this.guid,
       name: name ?? this.name,
@@ -292,105 +339,163 @@ class $SpecificationsTable extends Specifications
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $SpecificationsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _algorithmGuidMeta =
-      const VerificationMeta('algorithmGuid');
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
   @override
   late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
-      'algorithm_guid', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES algorithms (guid)'));
-  static const VerificationMeta _specIndexMeta =
-      const VerificationMeta('specIndex');
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES algorithms (guid)',
+    ),
+  );
+  static const VerificationMeta _specIndexMeta = const VerificationMeta(
+    'specIndex',
+  );
   @override
   late final GeneratedColumn<int> specIndex = GeneratedColumn<int>(
-      'spec_index', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'spec_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _minValueMeta =
-      const VerificationMeta('minValue');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _minValueMeta = const VerificationMeta(
+    'minValue',
+  );
   @override
   late final GeneratedColumn<int> minValue = GeneratedColumn<int>(
-      'min_value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _maxValueMeta =
-      const VerificationMeta('maxValue');
+    'min_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _maxValueMeta = const VerificationMeta(
+    'maxValue',
+  );
   @override
   late final GeneratedColumn<int> maxValue = GeneratedColumn<int>(
-      'max_value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _defaultValueMeta =
-      const VerificationMeta('defaultValue');
+    'max_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _defaultValueMeta = const VerificationMeta(
+    'defaultValue',
+  );
   @override
   late final GeneratedColumn<int> defaultValue = GeneratedColumn<int>(
-      'default_value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'default_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumn<int> type = GeneratedColumn<int>(
-      'type', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [algorithmGuid, specIndex, name, minValue, maxValue, defaultValue, type];
+  List<GeneratedColumn> get $columns => [
+    algorithmGuid,
+    specIndex,
+    name,
+    minValue,
+    maxValue,
+    defaultValue,
+    type,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'specifications';
   @override
-  VerificationContext validateIntegrity(Insertable<SpecificationEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<SpecificationEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('algorithm_guid')) {
       context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
           _algorithmGuidMeta,
-          algorithmGuid.isAcceptableOrUnknown(
-              data['algorithm_guid']!, _algorithmGuidMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_algorithmGuidMeta);
     }
     if (data.containsKey('spec_index')) {
-      context.handle(_specIndexMeta,
-          specIndex.isAcceptableOrUnknown(data['spec_index']!, _specIndexMeta));
+      context.handle(
+        _specIndexMeta,
+        specIndex.isAcceptableOrUnknown(data['spec_index']!, _specIndexMeta),
+      );
     } else if (isInserting) {
       context.missing(_specIndexMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('min_value')) {
-      context.handle(_minValueMeta,
-          minValue.isAcceptableOrUnknown(data['min_value']!, _minValueMeta));
+      context.handle(
+        _minValueMeta,
+        minValue.isAcceptableOrUnknown(data['min_value']!, _minValueMeta),
+      );
     } else if (isInserting) {
       context.missing(_minValueMeta);
     }
     if (data.containsKey('max_value')) {
-      context.handle(_maxValueMeta,
-          maxValue.isAcceptableOrUnknown(data['max_value']!, _maxValueMeta));
+      context.handle(
+        _maxValueMeta,
+        maxValue.isAcceptableOrUnknown(data['max_value']!, _maxValueMeta),
+      );
     } else if (isInserting) {
       context.missing(_maxValueMeta);
     }
     if (data.containsKey('default_value')) {
       context.handle(
+        _defaultValueMeta,
+        defaultValue.isAcceptableOrUnknown(
+          data['default_value']!,
           _defaultValueMeta,
-          defaultValue.isAcceptableOrUnknown(
-              data['default_value']!, _defaultValueMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_defaultValueMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
@@ -403,20 +508,34 @@ class $SpecificationsTable extends Specifications
   SpecificationEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SpecificationEntry(
-      algorithmGuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}algorithm_guid'])!,
-      specIndex: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}spec_index'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      minValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}min_value'])!,
-      maxValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}max_value'])!,
-      defaultValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}default_value'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}type'])!,
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      specIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}spec_index'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      minValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}min_value'],
+      )!,
+      maxValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_value'],
+      )!,
+      defaultValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}default_value'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}type'],
+      )!,
     );
   }
 
@@ -435,14 +554,15 @@ class SpecificationEntry extends DataClass
   final int maxValue;
   final int defaultValue;
   final int type;
-  const SpecificationEntry(
-      {required this.algorithmGuid,
-      required this.specIndex,
-      required this.name,
-      required this.minValue,
-      required this.maxValue,
-      required this.defaultValue,
-      required this.type});
+  const SpecificationEntry({
+    required this.algorithmGuid,
+    required this.specIndex,
+    required this.name,
+    required this.minValue,
+    required this.maxValue,
+    required this.defaultValue,
+    required this.type,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -468,8 +588,10 @@ class SpecificationEntry extends DataClass
     );
   }
 
-  factory SpecificationEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory SpecificationEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SpecificationEntry(
       algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
@@ -495,23 +617,23 @@ class SpecificationEntry extends DataClass
     };
   }
 
-  SpecificationEntry copyWith(
-          {String? algorithmGuid,
-          int? specIndex,
-          String? name,
-          int? minValue,
-          int? maxValue,
-          int? defaultValue,
-          int? type}) =>
-      SpecificationEntry(
-        algorithmGuid: algorithmGuid ?? this.algorithmGuid,
-        specIndex: specIndex ?? this.specIndex,
-        name: name ?? this.name,
-        minValue: minValue ?? this.minValue,
-        maxValue: maxValue ?? this.maxValue,
-        defaultValue: defaultValue ?? this.defaultValue,
-        type: type ?? this.type,
-      );
+  SpecificationEntry copyWith({
+    String? algorithmGuid,
+    int? specIndex,
+    String? name,
+    int? minValue,
+    int? maxValue,
+    int? defaultValue,
+    int? type,
+  }) => SpecificationEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    specIndex: specIndex ?? this.specIndex,
+    name: name ?? this.name,
+    minValue: minValue ?? this.minValue,
+    maxValue: maxValue ?? this.maxValue,
+    defaultValue: defaultValue ?? this.defaultValue,
+    type: type ?? this.type,
+  );
   SpecificationEntry copyWithCompanion(SpecificationsCompanion data) {
     return SpecificationEntry(
       algorithmGuid: data.algorithmGuid.present
@@ -544,7 +666,14 @@ class SpecificationEntry extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      algorithmGuid, specIndex, name, minValue, maxValue, defaultValue, type);
+    algorithmGuid,
+    specIndex,
+    name,
+    minValue,
+    maxValue,
+    defaultValue,
+    type,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -586,13 +715,13 @@ class SpecificationsCompanion extends UpdateCompanion<SpecificationEntry> {
     required int defaultValue,
     required int type,
     this.rowid = const Value.absent(),
-  })  : algorithmGuid = Value(algorithmGuid),
-        specIndex = Value(specIndex),
-        name = Value(name),
-        minValue = Value(minValue),
-        maxValue = Value(maxValue),
-        defaultValue = Value(defaultValue),
-        type = Value(type);
+  }) : algorithmGuid = Value(algorithmGuid),
+       specIndex = Value(specIndex),
+       name = Value(name),
+       minValue = Value(minValue),
+       maxValue = Value(maxValue),
+       defaultValue = Value(defaultValue),
+       type = Value(type);
   static Insertable<SpecificationEntry> custom({
     Expression<String>? algorithmGuid,
     Expression<int>? specIndex,
@@ -615,15 +744,16 @@ class SpecificationsCompanion extends UpdateCompanion<SpecificationEntry> {
     });
   }
 
-  SpecificationsCompanion copyWith(
-      {Value<String>? algorithmGuid,
-      Value<int>? specIndex,
-      Value<String>? name,
-      Value<int>? minValue,
-      Value<int>? maxValue,
-      Value<int>? defaultValue,
-      Value<int>? type,
-      Value<int>? rowid}) {
+  SpecificationsCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? specIndex,
+    Value<String>? name,
+    Value<int>? minValue,
+    Value<int>? maxValue,
+    Value<int>? defaultValue,
+    Value<int>? type,
+    Value<int>? rowid,
+  }) {
     return SpecificationsCompanion(
       algorithmGuid: algorithmGuid ?? this.algorithmGuid,
       specIndex: specIndex ?? this.specIndex,
@@ -690,20 +820,28 @@ class $UnitsTable extends Units with TableInfo<$UnitsTable, UnitEntry> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _unitStringMeta =
-      const VerificationMeta('unitString');
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _unitStringMeta = const VerificationMeta(
+    'unitString',
+  );
   @override
   late final GeneratedColumn<String> unitString = GeneratedColumn<String>(
-      'unit_string', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+    'unit_string',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
   @override
   List<GeneratedColumn> get $columns => [id, unitString];
   @override
@@ -712,8 +850,10 @@ class $UnitsTable extends Units with TableInfo<$UnitsTable, UnitEntry> {
   String get actualTableName => $name;
   static const String $name = 'units';
   @override
-  VerificationContext validateIntegrity(Insertable<UnitEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<UnitEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -721,9 +861,9 @@ class $UnitsTable extends Units with TableInfo<$UnitsTable, UnitEntry> {
     }
     if (data.containsKey('unit_string')) {
       context.handle(
-          _unitStringMeta,
-          unitString.isAcceptableOrUnknown(
-              data['unit_string']!, _unitStringMeta));
+        _unitStringMeta,
+        unitString.isAcceptableOrUnknown(data['unit_string']!, _unitStringMeta),
+      );
     } else if (isInserting) {
       context.missing(_unitStringMeta);
     }
@@ -736,10 +876,14 @@ class $UnitsTable extends Units with TableInfo<$UnitsTable, UnitEntry> {
   UnitEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return UnitEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      unitString: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}unit_string'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      unitString: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit_string'],
+      )!,
     );
   }
 
@@ -762,14 +906,13 @@ class UnitEntry extends DataClass implements Insertable<UnitEntry> {
   }
 
   UnitsCompanion toCompanion(bool nullToAbsent) {
-    return UnitsCompanion(
-      id: Value(id),
-      unitString: Value(unitString),
-    );
+    return UnitsCompanion(id: Value(id), unitString: Value(unitString));
   }
 
-  factory UnitEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory UnitEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return UnitEntry(
       id: serializer.fromJson<int>(json['id']),
@@ -785,15 +928,14 @@ class UnitEntry extends DataClass implements Insertable<UnitEntry> {
     };
   }
 
-  UnitEntry copyWith({int? id, String? unitString}) => UnitEntry(
-        id: id ?? this.id,
-        unitString: unitString ?? this.unitString,
-      );
+  UnitEntry copyWith({int? id, String? unitString}) =>
+      UnitEntry(id: id ?? this.id, unitString: unitString ?? this.unitString);
   UnitEntry copyWithCompanion(UnitsCompanion data) {
     return UnitEntry(
       id: data.id.present ? data.id.value : this.id,
-      unitString:
-          data.unitString.present ? data.unitString.value : this.unitString,
+      unitString: data.unitString.present
+          ? data.unitString.value
+          : this.unitString,
     );
   }
 
@@ -872,137 +1014,205 @@ class $ParametersTable extends Parameters
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ParametersTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _algorithmGuidMeta =
-      const VerificationMeta('algorithmGuid');
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
   @override
   late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
-      'algorithm_guid', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES algorithms (guid)'));
-  static const VerificationMeta _parameterNumberMeta =
-      const VerificationMeta('parameterNumber');
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES algorithms (guid)',
+    ),
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
   @override
   late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
-      'parameter_number', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _minValueMeta =
-      const VerificationMeta('minValue');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _minValueMeta = const VerificationMeta(
+    'minValue',
+  );
   @override
   late final GeneratedColumn<int> minValue = GeneratedColumn<int>(
-      'min_value', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _maxValueMeta =
-      const VerificationMeta('maxValue');
+    'min_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _maxValueMeta = const VerificationMeta(
+    'maxValue',
+  );
   @override
   late final GeneratedColumn<int> maxValue = GeneratedColumn<int>(
-      'max_value', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _defaultValueMeta =
-      const VerificationMeta('defaultValue');
+    'max_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _defaultValueMeta = const VerificationMeta(
+    'defaultValue',
+  );
   @override
   late final GeneratedColumn<int> defaultValue = GeneratedColumn<int>(
-      'default_value', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
+    'default_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _unitIdMeta = const VerificationMeta('unitId');
   @override
   late final GeneratedColumn<int> unitId = GeneratedColumn<int>(
-      'unit_id', aliasedName, true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES units (id)'));
-  static const VerificationMeta _powerOfTenMeta =
-      const VerificationMeta('powerOfTen');
+    'unit_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES units (id)',
+    ),
+  );
+  static const VerificationMeta _powerOfTenMeta = const VerificationMeta(
+    'powerOfTen',
+  );
   @override
   late final GeneratedColumn<int> powerOfTen = GeneratedColumn<int>(
-      'power_of_ten', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _rawUnitIndexMeta =
-      const VerificationMeta('rawUnitIndex');
+    'power_of_ten',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rawUnitIndexMeta = const VerificationMeta(
+    'rawUnitIndex',
+  );
   @override
   late final GeneratedColumn<int> rawUnitIndex = GeneratedColumn<int>(
-      'raw_unit_index', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
+    'raw_unit_index',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        algorithmGuid,
-        parameterNumber,
-        name,
-        minValue,
-        maxValue,
-        defaultValue,
-        unitId,
-        powerOfTen,
-        rawUnitIndex
-      ];
+    algorithmGuid,
+    parameterNumber,
+    name,
+    minValue,
+    maxValue,
+    defaultValue,
+    unitId,
+    powerOfTen,
+    rawUnitIndex,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'parameters';
   @override
-  VerificationContext validateIntegrity(Insertable<ParameterEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<ParameterEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('algorithm_guid')) {
       context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
           _algorithmGuidMeta,
-          algorithmGuid.isAcceptableOrUnknown(
-              data['algorithm_guid']!, _algorithmGuidMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_algorithmGuidMeta);
     }
     if (data.containsKey('parameter_number')) {
       context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
           _parameterNumberMeta,
-          parameterNumber.isAcceptableOrUnknown(
-              data['parameter_number']!, _parameterNumberMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('min_value')) {
-      context.handle(_minValueMeta,
-          minValue.isAcceptableOrUnknown(data['min_value']!, _minValueMeta));
+      context.handle(
+        _minValueMeta,
+        minValue.isAcceptableOrUnknown(data['min_value']!, _minValueMeta),
+      );
     }
     if (data.containsKey('max_value')) {
-      context.handle(_maxValueMeta,
-          maxValue.isAcceptableOrUnknown(data['max_value']!, _maxValueMeta));
+      context.handle(
+        _maxValueMeta,
+        maxValue.isAcceptableOrUnknown(data['max_value']!, _maxValueMeta),
+      );
     }
     if (data.containsKey('default_value')) {
       context.handle(
+        _defaultValueMeta,
+        defaultValue.isAcceptableOrUnknown(
+          data['default_value']!,
           _defaultValueMeta,
-          defaultValue.isAcceptableOrUnknown(
-              data['default_value']!, _defaultValueMeta));
+        ),
+      );
     }
     if (data.containsKey('unit_id')) {
-      context.handle(_unitIdMeta,
-          unitId.isAcceptableOrUnknown(data['unit_id']!, _unitIdMeta));
+      context.handle(
+        _unitIdMeta,
+        unitId.isAcceptableOrUnknown(data['unit_id']!, _unitIdMeta),
+      );
     }
     if (data.containsKey('power_of_ten')) {
       context.handle(
+        _powerOfTenMeta,
+        powerOfTen.isAcceptableOrUnknown(
+          data['power_of_ten']!,
           _powerOfTenMeta,
-          powerOfTen.isAcceptableOrUnknown(
-              data['power_of_ten']!, _powerOfTenMeta));
+        ),
+      );
     }
     if (data.containsKey('raw_unit_index')) {
       context.handle(
+        _rawUnitIndexMeta,
+        rawUnitIndex.isAcceptableOrUnknown(
+          data['raw_unit_index']!,
           _rawUnitIndexMeta,
-          rawUnitIndex.isAcceptableOrUnknown(
-              data['raw_unit_index']!, _rawUnitIndexMeta));
+        ),
+      );
     }
     return context;
   }
@@ -1013,24 +1223,42 @@ class $ParametersTable extends Parameters
   ParameterEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ParameterEntry(
-      algorithmGuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}algorithm_guid'])!,
-      parameterNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      minValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}min_value']),
-      maxValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}max_value']),
-      defaultValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}default_value']),
-      unitId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}unit_id']),
-      powerOfTen: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}power_of_ten']),
-      rawUnitIndex: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}raw_unit_index']),
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      minValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}min_value'],
+      ),
+      maxValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_value'],
+      ),
+      defaultValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}default_value'],
+      ),
+      unitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}unit_id'],
+      ),
+      powerOfTen: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}power_of_ten'],
+      ),
+      rawUnitIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}raw_unit_index'],
+      ),
     );
   }
 
@@ -1050,16 +1278,17 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
   final int? unitId;
   final int? powerOfTen;
   final int? rawUnitIndex;
-  const ParameterEntry(
-      {required this.algorithmGuid,
-      required this.parameterNumber,
-      required this.name,
-      this.minValue,
-      this.maxValue,
-      this.defaultValue,
-      this.unitId,
-      this.powerOfTen,
-      this.rawUnitIndex});
+  const ParameterEntry({
+    required this.algorithmGuid,
+    required this.parameterNumber,
+    required this.name,
+    this.minValue,
+    this.maxValue,
+    this.defaultValue,
+    this.unitId,
+    this.powerOfTen,
+    this.rawUnitIndex,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1101,8 +1330,9 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
       defaultValue: defaultValue == null && nullToAbsent
           ? const Value.absent()
           : Value(defaultValue),
-      unitId:
-          unitId == null && nullToAbsent ? const Value.absent() : Value(unitId),
+      unitId: unitId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(unitId),
       powerOfTen: powerOfTen == null && nullToAbsent
           ? const Value.absent()
           : Value(powerOfTen),
@@ -1112,8 +1342,10 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     );
   }
 
-  factory ParameterEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory ParameterEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ParameterEntry(
       algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
@@ -1143,29 +1375,27 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
     };
   }
 
-  ParameterEntry copyWith(
-          {String? algorithmGuid,
-          int? parameterNumber,
-          String? name,
-          Value<int?> minValue = const Value.absent(),
-          Value<int?> maxValue = const Value.absent(),
-          Value<int?> defaultValue = const Value.absent(),
-          Value<int?> unitId = const Value.absent(),
-          Value<int?> powerOfTen = const Value.absent(),
-          Value<int?> rawUnitIndex = const Value.absent()}) =>
-      ParameterEntry(
-        algorithmGuid: algorithmGuid ?? this.algorithmGuid,
-        parameterNumber: parameterNumber ?? this.parameterNumber,
-        name: name ?? this.name,
-        minValue: minValue.present ? minValue.value : this.minValue,
-        maxValue: maxValue.present ? maxValue.value : this.maxValue,
-        defaultValue:
-            defaultValue.present ? defaultValue.value : this.defaultValue,
-        unitId: unitId.present ? unitId.value : this.unitId,
-        powerOfTen: powerOfTen.present ? powerOfTen.value : this.powerOfTen,
-        rawUnitIndex:
-            rawUnitIndex.present ? rawUnitIndex.value : this.rawUnitIndex,
-      );
+  ParameterEntry copyWith({
+    String? algorithmGuid,
+    int? parameterNumber,
+    String? name,
+    Value<int?> minValue = const Value.absent(),
+    Value<int?> maxValue = const Value.absent(),
+    Value<int?> defaultValue = const Value.absent(),
+    Value<int?> unitId = const Value.absent(),
+    Value<int?> powerOfTen = const Value.absent(),
+    Value<int?> rawUnitIndex = const Value.absent(),
+  }) => ParameterEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+    name: name ?? this.name,
+    minValue: minValue.present ? minValue.value : this.minValue,
+    maxValue: maxValue.present ? maxValue.value : this.maxValue,
+    defaultValue: defaultValue.present ? defaultValue.value : this.defaultValue,
+    unitId: unitId.present ? unitId.value : this.unitId,
+    powerOfTen: powerOfTen.present ? powerOfTen.value : this.powerOfTen,
+    rawUnitIndex: rawUnitIndex.present ? rawUnitIndex.value : this.rawUnitIndex,
+  );
   ParameterEntry copyWithCompanion(ParametersCompanion data) {
     return ParameterEntry(
       algorithmGuid: data.algorithmGuid.present
@@ -1181,8 +1411,9 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
           ? data.defaultValue.value
           : this.defaultValue,
       unitId: data.unitId.present ? data.unitId.value : this.unitId,
-      powerOfTen:
-          data.powerOfTen.present ? data.powerOfTen.value : this.powerOfTen,
+      powerOfTen: data.powerOfTen.present
+          ? data.powerOfTen.value
+          : this.powerOfTen,
       rawUnitIndex: data.rawUnitIndex.present
           ? data.rawUnitIndex.value
           : this.rawUnitIndex,
@@ -1206,8 +1437,17 @@ class ParameterEntry extends DataClass implements Insertable<ParameterEntry> {
   }
 
   @override
-  int get hashCode => Object.hash(algorithmGuid, parameterNumber, name,
-      minValue, maxValue, defaultValue, unitId, powerOfTen, rawUnitIndex);
+  int get hashCode => Object.hash(
+    algorithmGuid,
+    parameterNumber,
+    name,
+    minValue,
+    maxValue,
+    defaultValue,
+    unitId,
+    powerOfTen,
+    rawUnitIndex,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1257,9 +1497,9 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     this.powerOfTen = const Value.absent(),
     this.rawUnitIndex = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : algorithmGuid = Value(algorithmGuid),
-        parameterNumber = Value(parameterNumber),
-        name = Value(name);
+  }) : algorithmGuid = Value(algorithmGuid),
+       parameterNumber = Value(parameterNumber),
+       name = Value(name);
   static Insertable<ParameterEntry> custom({
     Expression<String>? algorithmGuid,
     Expression<int>? parameterNumber,
@@ -1286,17 +1526,18 @@ class ParametersCompanion extends UpdateCompanion<ParameterEntry> {
     });
   }
 
-  ParametersCompanion copyWith(
-      {Value<String>? algorithmGuid,
-      Value<int>? parameterNumber,
-      Value<String>? name,
-      Value<int?>? minValue,
-      Value<int?>? maxValue,
-      Value<int?>? defaultValue,
-      Value<int?>? unitId,
-      Value<int?>? powerOfTen,
-      Value<int?>? rawUnitIndex,
-      Value<int>? rowid}) {
+  ParametersCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? parameterNumber,
+    Value<String>? name,
+    Value<int?>? minValue,
+    Value<int?>? maxValue,
+    Value<int?>? defaultValue,
+    Value<int?>? unitId,
+    Value<int?>? powerOfTen,
+    Value<int?>? rawUnitIndex,
+    Value<int>? rowid,
+  }) {
     return ParametersCompanion(
       algorithmGuid: algorithmGuid ?? this.algorithmGuid,
       parameterNumber: parameterNumber ?? this.parameterNumber,
@@ -1371,70 +1612,104 @@ class $ParameterEnumsTable extends ParameterEnums
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ParameterEnumsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _algorithmGuidMeta =
-      const VerificationMeta('algorithmGuid');
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
   @override
   late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
-      'algorithm_guid', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _parameterNumberMeta =
-      const VerificationMeta('parameterNumber');
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
   @override
   late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
-      'parameter_number', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _enumIndexMeta =
-      const VerificationMeta('enumIndex');
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enumIndexMeta = const VerificationMeta(
+    'enumIndex',
+  );
   @override
   late final GeneratedColumn<int> enumIndex = GeneratedColumn<int>(
-      'enum_index', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _enumStringMeta =
-      const VerificationMeta('enumString');
+    'enum_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enumStringMeta = const VerificationMeta(
+    'enumString',
+  );
   @override
   late final GeneratedColumn<String> enumString = GeneratedColumn<String>(
-      'enum_string', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'enum_string',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [algorithmGuid, parameterNumber, enumIndex, enumString];
+  List<GeneratedColumn> get $columns => [
+    algorithmGuid,
+    parameterNumber,
+    enumIndex,
+    enumString,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'parameter_enums';
   @override
-  VerificationContext validateIntegrity(Insertable<ParameterEnumEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<ParameterEnumEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('algorithm_guid')) {
       context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
           _algorithmGuidMeta,
-          algorithmGuid.isAcceptableOrUnknown(
-              data['algorithm_guid']!, _algorithmGuidMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_algorithmGuidMeta);
     }
     if (data.containsKey('parameter_number')) {
       context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
           _parameterNumberMeta,
-          parameterNumber.isAcceptableOrUnknown(
-              data['parameter_number']!, _parameterNumberMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
     if (data.containsKey('enum_index')) {
-      context.handle(_enumIndexMeta,
-          enumIndex.isAcceptableOrUnknown(data['enum_index']!, _enumIndexMeta));
+      context.handle(
+        _enumIndexMeta,
+        enumIndex.isAcceptableOrUnknown(data['enum_index']!, _enumIndexMeta),
+      );
     } else if (isInserting) {
       context.missing(_enumIndexMeta);
     }
     if (data.containsKey('enum_string')) {
       context.handle(
-          _enumStringMeta,
-          enumString.isAcceptableOrUnknown(
-              data['enum_string']!, _enumStringMeta));
+        _enumStringMeta,
+        enumString.isAcceptableOrUnknown(data['enum_string']!, _enumStringMeta),
+      );
     } else if (isInserting) {
       context.missing(_enumStringMeta);
     }
@@ -1442,20 +1717,31 @@ class $ParameterEnumsTable extends ParameterEnums
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey =>
-      {algorithmGuid, parameterNumber, enumIndex};
+  Set<GeneratedColumn> get $primaryKey => {
+    algorithmGuid,
+    parameterNumber,
+    enumIndex,
+  };
   @override
   ParameterEnumEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ParameterEnumEntry(
-      algorithmGuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}algorithm_guid'])!,
-      parameterNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
-      enumIndex: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}enum_index'])!,
-      enumString: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}enum_string'])!,
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
+      enumIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}enum_index'],
+      )!,
+      enumString: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}enum_string'],
+      )!,
     );
   }
 
@@ -1471,11 +1757,12 @@ class ParameterEnumEntry extends DataClass
   final int parameterNumber;
   final int enumIndex;
   final String enumString;
-  const ParameterEnumEntry(
-      {required this.algorithmGuid,
-      required this.parameterNumber,
-      required this.enumIndex,
-      required this.enumString});
+  const ParameterEnumEntry({
+    required this.algorithmGuid,
+    required this.parameterNumber,
+    required this.enumIndex,
+    required this.enumString,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1495,8 +1782,10 @@ class ParameterEnumEntry extends DataClass
     );
   }
 
-  factory ParameterEnumEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory ParameterEnumEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ParameterEnumEntry(
       algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
@@ -1516,17 +1805,17 @@ class ParameterEnumEntry extends DataClass
     };
   }
 
-  ParameterEnumEntry copyWith(
-          {String? algorithmGuid,
-          int? parameterNumber,
-          int? enumIndex,
-          String? enumString}) =>
-      ParameterEnumEntry(
-        algorithmGuid: algorithmGuid ?? this.algorithmGuid,
-        parameterNumber: parameterNumber ?? this.parameterNumber,
-        enumIndex: enumIndex ?? this.enumIndex,
-        enumString: enumString ?? this.enumString,
-      );
+  ParameterEnumEntry copyWith({
+    String? algorithmGuid,
+    int? parameterNumber,
+    int? enumIndex,
+    String? enumString,
+  }) => ParameterEnumEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+    enumIndex: enumIndex ?? this.enumIndex,
+    enumString: enumString ?? this.enumString,
+  );
   ParameterEnumEntry copyWithCompanion(ParameterEnumsCompanion data) {
     return ParameterEnumEntry(
       algorithmGuid: data.algorithmGuid.present
@@ -1536,8 +1825,9 @@ class ParameterEnumEntry extends DataClass
           ? data.parameterNumber.value
           : this.parameterNumber,
       enumIndex: data.enumIndex.present ? data.enumIndex.value : this.enumIndex,
-      enumString:
-          data.enumString.present ? data.enumString.value : this.enumString,
+      enumString: data.enumString.present
+          ? data.enumString.value
+          : this.enumString,
     );
   }
 
@@ -1584,10 +1874,10 @@ class ParameterEnumsCompanion extends UpdateCompanion<ParameterEnumEntry> {
     required int enumIndex,
     required String enumString,
     this.rowid = const Value.absent(),
-  })  : algorithmGuid = Value(algorithmGuid),
-        parameterNumber = Value(parameterNumber),
-        enumIndex = Value(enumIndex),
-        enumString = Value(enumString);
+  }) : algorithmGuid = Value(algorithmGuid),
+       parameterNumber = Value(parameterNumber),
+       enumIndex = Value(enumIndex),
+       enumString = Value(enumString);
   static Insertable<ParameterEnumEntry> custom({
     Expression<String>? algorithmGuid,
     Expression<int>? parameterNumber,
@@ -1604,12 +1894,13 @@ class ParameterEnumsCompanion extends UpdateCompanion<ParameterEnumEntry> {
     });
   }
 
-  ParameterEnumsCompanion copyWith(
-      {Value<String>? algorithmGuid,
-      Value<int>? parameterNumber,
-      Value<int>? enumIndex,
-      Value<String>? enumString,
-      Value<int>? rowid}) {
+  ParameterEnumsCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? parameterNumber,
+    Value<int>? enumIndex,
+    Value<String>? enumString,
+    Value<int>? rowid,
+  }) {
     return ParameterEnumsCompanion(
       algorithmGuid: algorithmGuid ?? this.algorithmGuid,
       parameterNumber: parameterNumber ?? this.parameterNumber,
@@ -1659,26 +1950,40 @@ class $ParameterPagesTable extends ParameterPages
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ParameterPagesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _algorithmGuidMeta =
-      const VerificationMeta('algorithmGuid');
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
   @override
   late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
-      'algorithm_guid', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES algorithms (guid)'));
-  static const VerificationMeta _pageIndexMeta =
-      const VerificationMeta('pageIndex');
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES algorithms (guid)',
+    ),
+  );
+  static const VerificationMeta _pageIndexMeta = const VerificationMeta(
+    'pageIndex',
+  );
   @override
   late final GeneratedColumn<int> pageIndex = GeneratedColumn<int>(
-      'page_index', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'page_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [algorithmGuid, pageIndex, name];
   @override
@@ -1687,27 +1992,36 @@ class $ParameterPagesTable extends ParameterPages
   String get actualTableName => $name;
   static const String $name = 'parameter_pages';
   @override
-  VerificationContext validateIntegrity(Insertable<ParameterPageEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<ParameterPageEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('algorithm_guid')) {
       context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
           _algorithmGuidMeta,
-          algorithmGuid.isAcceptableOrUnknown(
-              data['algorithm_guid']!, _algorithmGuidMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_algorithmGuidMeta);
     }
     if (data.containsKey('page_index')) {
-      context.handle(_pageIndexMeta,
-          pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta));
+      context.handle(
+        _pageIndexMeta,
+        pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta),
+      );
     } else if (isInserting) {
       context.missing(_pageIndexMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
@@ -1720,12 +2034,18 @@ class $ParameterPagesTable extends ParameterPages
   ParameterPageEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ParameterPageEntry(
-      algorithmGuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}algorithm_guid'])!,
-      pageIndex: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}page_index'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      pageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_index'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
     );
   }
 
@@ -1740,10 +2060,11 @@ class ParameterPageEntry extends DataClass
   final String algorithmGuid;
   final int pageIndex;
   final String name;
-  const ParameterPageEntry(
-      {required this.algorithmGuid,
-      required this.pageIndex,
-      required this.name});
+  const ParameterPageEntry({
+    required this.algorithmGuid,
+    required this.pageIndex,
+    required this.name,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1761,8 +2082,10 @@ class ParameterPageEntry extends DataClass
     );
   }
 
-  factory ParameterPageEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory ParameterPageEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ParameterPageEntry(
       algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
@@ -1780,13 +2103,15 @@ class ParameterPageEntry extends DataClass
     };
   }
 
-  ParameterPageEntry copyWith(
-          {String? algorithmGuid, int? pageIndex, String? name}) =>
-      ParameterPageEntry(
-        algorithmGuid: algorithmGuid ?? this.algorithmGuid,
-        pageIndex: pageIndex ?? this.pageIndex,
-        name: name ?? this.name,
-      );
+  ParameterPageEntry copyWith({
+    String? algorithmGuid,
+    int? pageIndex,
+    String? name,
+  }) => ParameterPageEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    pageIndex: pageIndex ?? this.pageIndex,
+    name: name ?? this.name,
+  );
   ParameterPageEntry copyWithCompanion(ParameterPagesCompanion data) {
     return ParameterPageEntry(
       algorithmGuid: data.algorithmGuid.present
@@ -1834,9 +2159,9 @@ class ParameterPagesCompanion extends UpdateCompanion<ParameterPageEntry> {
     required int pageIndex,
     required String name,
     this.rowid = const Value.absent(),
-  })  : algorithmGuid = Value(algorithmGuid),
-        pageIndex = Value(pageIndex),
-        name = Value(name);
+  }) : algorithmGuid = Value(algorithmGuid),
+       pageIndex = Value(pageIndex),
+       name = Value(name);
   static Insertable<ParameterPageEntry> custom({
     Expression<String>? algorithmGuid,
     Expression<int>? pageIndex,
@@ -1851,11 +2176,12 @@ class ParameterPagesCompanion extends UpdateCompanion<ParameterPageEntry> {
     });
   }
 
-  ParameterPagesCompanion copyWith(
-      {Value<String>? algorithmGuid,
-      Value<int>? pageIndex,
-      Value<String>? name,
-      Value<int>? rowid}) {
+  ParameterPagesCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? pageIndex,
+    Value<String>? name,
+    Value<int>? rowid,
+  }) {
     return ParameterPagesCompanion(
       algorithmGuid: algorithmGuid ?? this.algorithmGuid,
       pageIndex: pageIndex ?? this.pageIndex,
@@ -1900,27 +2226,45 @@ class $ParameterPageItemsTable extends ParameterPageItems
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ParameterPageItemsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _algorithmGuidMeta =
-      const VerificationMeta('algorithmGuid');
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
   @override
   late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
-      'algorithm_guid', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _pageIndexMeta =
-      const VerificationMeta('pageIndex');
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pageIndexMeta = const VerificationMeta(
+    'pageIndex',
+  );
   @override
   late final GeneratedColumn<int> pageIndex = GeneratedColumn<int>(
-      'page_index', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _parameterNumberMeta =
-      const VerificationMeta('parameterNumber');
+    'page_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
   @override
   late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
-      'parameter_number', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [algorithmGuid, pageIndex, parameterNumber];
+  List<GeneratedColumn> get $columns => [
+    algorithmGuid,
+    pageIndex,
+    parameterNumber,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1928,29 +2272,38 @@ class $ParameterPageItemsTable extends ParameterPageItems
   static const String $name = 'parameter_page_items';
   @override
   VerificationContext validateIntegrity(
-      Insertable<ParameterPageItemEntry> instance,
-      {bool isInserting = false}) {
+    Insertable<ParameterPageItemEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('algorithm_guid')) {
       context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
           _algorithmGuidMeta,
-          algorithmGuid.isAcceptableOrUnknown(
-              data['algorithm_guid']!, _algorithmGuidMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_algorithmGuidMeta);
     }
     if (data.containsKey('page_index')) {
-      context.handle(_pageIndexMeta,
-          pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta));
+      context.handle(
+        _pageIndexMeta,
+        pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta),
+      );
     } else if (isInserting) {
       context.missing(_pageIndexMeta);
     }
     if (data.containsKey('parameter_number')) {
       context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
           _parameterNumberMeta,
-          parameterNumber.isAcceptableOrUnknown(
-              data['parameter_number']!, _parameterNumberMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
@@ -1958,18 +2311,27 @@ class $ParameterPageItemsTable extends ParameterPageItems
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey =>
-      {algorithmGuid, pageIndex, parameterNumber};
+  Set<GeneratedColumn> get $primaryKey => {
+    algorithmGuid,
+    pageIndex,
+    parameterNumber,
+  };
   @override
   ParameterPageItemEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ParameterPageItemEntry(
-      algorithmGuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}algorithm_guid'])!,
-      pageIndex: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}page_index'])!,
-      parameterNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      pageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_index'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
     );
   }
 
@@ -1984,10 +2346,11 @@ class ParameterPageItemEntry extends DataClass
   final String algorithmGuid;
   final int pageIndex;
   final int parameterNumber;
-  const ParameterPageItemEntry(
-      {required this.algorithmGuid,
-      required this.pageIndex,
-      required this.parameterNumber});
+  const ParameterPageItemEntry({
+    required this.algorithmGuid,
+    required this.pageIndex,
+    required this.parameterNumber,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2005,8 +2368,10 @@ class ParameterPageItemEntry extends DataClass
     );
   }
 
-  factory ParameterPageItemEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory ParameterPageItemEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ParameterPageItemEntry(
       algorithmGuid: serializer.fromJson<String>(json['algorithmGuid']),
@@ -2024,13 +2389,15 @@ class ParameterPageItemEntry extends DataClass
     };
   }
 
-  ParameterPageItemEntry copyWith(
-          {String? algorithmGuid, int? pageIndex, int? parameterNumber}) =>
-      ParameterPageItemEntry(
-        algorithmGuid: algorithmGuid ?? this.algorithmGuid,
-        pageIndex: pageIndex ?? this.pageIndex,
-        parameterNumber: parameterNumber ?? this.parameterNumber,
-      );
+  ParameterPageItemEntry copyWith({
+    String? algorithmGuid,
+    int? pageIndex,
+    int? parameterNumber,
+  }) => ParameterPageItemEntry(
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    pageIndex: pageIndex ?? this.pageIndex,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+  );
   ParameterPageItemEntry copyWithCompanion(ParameterPageItemsCompanion data) {
     return ParameterPageItemEntry(
       algorithmGuid: data.algorithmGuid.present
@@ -2081,9 +2448,9 @@ class ParameterPageItemsCompanion
     required int pageIndex,
     required int parameterNumber,
     this.rowid = const Value.absent(),
-  })  : algorithmGuid = Value(algorithmGuid),
-        pageIndex = Value(pageIndex),
-        parameterNumber = Value(parameterNumber);
+  }) : algorithmGuid = Value(algorithmGuid),
+       pageIndex = Value(pageIndex),
+       parameterNumber = Value(parameterNumber);
   static Insertable<ParameterPageItemEntry> custom({
     Expression<String>? algorithmGuid,
     Expression<int>? pageIndex,
@@ -2098,11 +2465,12 @@ class ParameterPageItemsCompanion
     });
   }
 
-  ParameterPageItemsCompanion copyWith(
-      {Value<String>? algorithmGuid,
-      Value<int>? pageIndex,
-      Value<int>? parameterNumber,
-      Value<int>? rowid}) {
+  ParameterPageItemsCompanion copyWith({
+    Value<String>? algorithmGuid,
+    Value<int>? pageIndex,
+    Value<int>? parameterNumber,
+    Value<int>? rowid,
+  }) {
     return ParameterPageItemsCompanion(
       algorithmGuid: algorithmGuid ?? this.algorithmGuid,
       pageIndex: pageIndex ?? this.pageIndex,
@@ -2149,25 +2517,37 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _lastModifiedMeta =
-      const VerificationMeta('lastModified');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
   @override
   late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
-      'last_modified', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      defaultValue: currentDateAndTime);
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [id, name, lastModified];
   @override
@@ -2176,8 +2556,10 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
   String get actualTableName => $name;
   static const String $name = 'presets';
   @override
-  VerificationContext validateIntegrity(Insertable<PresetEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<PresetEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -2185,15 +2567,20 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('last_modified')) {
       context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
           _lastModifiedMeta,
-          lastModified.isAcceptableOrUnknown(
-              data['last_modified']!, _lastModifiedMeta));
+        ),
+      );
     }
     return context;
   }
@@ -2204,12 +2591,18 @@ class $PresetsTable extends Presets with TableInfo<$PresetsTable, PresetEntry> {
   PresetEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
       lastModified: attachedDatabase.typeMapping.read(
-          DriftSqlType.dateTime, data['${effectivePrefix}last_modified'])!,
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
     );
   }
 
@@ -2223,8 +2616,11 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
   final int id;
   final String name;
   final DateTime lastModified;
-  const PresetEntry(
-      {required this.id, required this.name, required this.lastModified});
+  const PresetEntry({
+    required this.id,
+    required this.name,
+    required this.lastModified,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2242,8 +2638,10 @@ class PresetEntry extends DataClass implements Insertable<PresetEntry> {
     );
   }
 
-  factory PresetEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PresetEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetEntry(
       id: serializer.fromJson<int>(json['id']),
@@ -2324,8 +2722,11 @@ class PresetsCompanion extends UpdateCompanion<PresetEntry> {
     });
   }
 
-  PresetsCompanion copyWith(
-      {Value<int>? id, Value<String>? name, Value<DateTime>? lastModified}) {
+  PresetsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<DateTime>? lastModified,
+  }) {
     return PresetsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2368,83 +2769,121 @@ class $PresetSlotsTable extends PresetSlots
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _presetIdMeta =
-      const VerificationMeta('presetId');
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _presetIdMeta = const VerificationMeta(
+    'presetId',
+  );
   @override
   late final GeneratedColumn<int> presetId = GeneratedColumn<int>(
-      'preset_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES presets (id)'));
-  static const VerificationMeta _slotIndexMeta =
-      const VerificationMeta('slotIndex');
+    'preset_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES presets (id)',
+    ),
+  );
+  static const VerificationMeta _slotIndexMeta = const VerificationMeta(
+    'slotIndex',
+  );
   @override
   late final GeneratedColumn<int> slotIndex = GeneratedColumn<int>(
-      'slot_index', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _algorithmGuidMeta =
-      const VerificationMeta('algorithmGuid');
+    'slot_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _algorithmGuidMeta = const VerificationMeta(
+    'algorithmGuid',
+  );
   @override
   late final GeneratedColumn<String> algorithmGuid = GeneratedColumn<String>(
-      'algorithm_guid', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES algorithms (guid)'));
-  static const VerificationMeta _customNameMeta =
-      const VerificationMeta('customName');
+    'algorithm_guid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES algorithms (guid)',
+    ),
+  );
+  static const VerificationMeta _customNameMeta = const VerificationMeta(
+    'customName',
+  );
   @override
   late final GeneratedColumn<String> customName = GeneratedColumn<String>(
-      'custom_name', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+    'custom_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, presetId, slotIndex, algorithmGuid, customName];
+  List<GeneratedColumn> get $columns => [
+    id,
+    presetId,
+    slotIndex,
+    algorithmGuid,
+    customName,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'preset_slots';
   @override
-  VerificationContext validateIntegrity(Insertable<PresetSlotEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<PresetSlotEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('preset_id')) {
-      context.handle(_presetIdMeta,
-          presetId.isAcceptableOrUnknown(data['preset_id']!, _presetIdMeta));
+      context.handle(
+        _presetIdMeta,
+        presetId.isAcceptableOrUnknown(data['preset_id']!, _presetIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_presetIdMeta);
     }
     if (data.containsKey('slot_index')) {
-      context.handle(_slotIndexMeta,
-          slotIndex.isAcceptableOrUnknown(data['slot_index']!, _slotIndexMeta));
+      context.handle(
+        _slotIndexMeta,
+        slotIndex.isAcceptableOrUnknown(data['slot_index']!, _slotIndexMeta),
+      );
     } else if (isInserting) {
       context.missing(_slotIndexMeta);
     }
     if (data.containsKey('algorithm_guid')) {
       context.handle(
+        _algorithmGuidMeta,
+        algorithmGuid.isAcceptableOrUnknown(
+          data['algorithm_guid']!,
           _algorithmGuidMeta,
-          algorithmGuid.isAcceptableOrUnknown(
-              data['algorithm_guid']!, _algorithmGuidMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_algorithmGuidMeta);
     }
     if (data.containsKey('custom_name')) {
       context.handle(
-          _customNameMeta,
-          customName.isAcceptableOrUnknown(
-              data['custom_name']!, _customNameMeta));
+        _customNameMeta,
+        customName.isAcceptableOrUnknown(data['custom_name']!, _customNameMeta),
+      );
     }
     return context;
   }
@@ -2455,16 +2894,26 @@ class $PresetSlotsTable extends PresetSlots
   PresetSlotEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetSlotEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      presetId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}preset_id'])!,
-      slotIndex: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}slot_index'])!,
-      algorithmGuid: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}algorithm_guid'])!,
-      customName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}custom_name']),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      presetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}preset_id'],
+      )!,
+      slotIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}slot_index'],
+      )!,
+      algorithmGuid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_guid'],
+      )!,
+      customName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_name'],
+      ),
     );
   }
 
@@ -2480,12 +2929,13 @@ class PresetSlotEntry extends DataClass implements Insertable<PresetSlotEntry> {
   final int slotIndex;
   final String algorithmGuid;
   final String? customName;
-  const PresetSlotEntry(
-      {required this.id,
-      required this.presetId,
-      required this.slotIndex,
-      required this.algorithmGuid,
-      this.customName});
+  const PresetSlotEntry({
+    required this.id,
+    required this.presetId,
+    required this.slotIndex,
+    required this.algorithmGuid,
+    this.customName,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2511,8 +2961,10 @@ class PresetSlotEntry extends DataClass implements Insertable<PresetSlotEntry> {
     );
   }
 
-  factory PresetSlotEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PresetSlotEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetSlotEntry(
       id: serializer.fromJson<int>(json['id']),
@@ -2534,19 +2986,19 @@ class PresetSlotEntry extends DataClass implements Insertable<PresetSlotEntry> {
     };
   }
 
-  PresetSlotEntry copyWith(
-          {int? id,
-          int? presetId,
-          int? slotIndex,
-          String? algorithmGuid,
-          Value<String?> customName = const Value.absent()}) =>
-      PresetSlotEntry(
-        id: id ?? this.id,
-        presetId: presetId ?? this.presetId,
-        slotIndex: slotIndex ?? this.slotIndex,
-        algorithmGuid: algorithmGuid ?? this.algorithmGuid,
-        customName: customName.present ? customName.value : this.customName,
-      );
+  PresetSlotEntry copyWith({
+    int? id,
+    int? presetId,
+    int? slotIndex,
+    String? algorithmGuid,
+    Value<String?> customName = const Value.absent(),
+  }) => PresetSlotEntry(
+    id: id ?? this.id,
+    presetId: presetId ?? this.presetId,
+    slotIndex: slotIndex ?? this.slotIndex,
+    algorithmGuid: algorithmGuid ?? this.algorithmGuid,
+    customName: customName.present ? customName.value : this.customName,
+  );
   PresetSlotEntry copyWithCompanion(PresetSlotsCompanion data) {
     return PresetSlotEntry(
       id: data.id.present ? data.id.value : this.id,
@@ -2555,8 +3007,9 @@ class PresetSlotEntry extends DataClass implements Insertable<PresetSlotEntry> {
       algorithmGuid: data.algorithmGuid.present
           ? data.algorithmGuid.value
           : this.algorithmGuid,
-      customName:
-          data.customName.present ? data.customName.value : this.customName,
+      customName: data.customName.present
+          ? data.customName.value
+          : this.customName,
     );
   }
 
@@ -2605,9 +3058,9 @@ class PresetSlotsCompanion extends UpdateCompanion<PresetSlotEntry> {
     required int slotIndex,
     required String algorithmGuid,
     this.customName = const Value.absent(),
-  })  : presetId = Value(presetId),
-        slotIndex = Value(slotIndex),
-        algorithmGuid = Value(algorithmGuid);
+  }) : presetId = Value(presetId),
+       slotIndex = Value(slotIndex),
+       algorithmGuid = Value(algorithmGuid);
   static Insertable<PresetSlotEntry> custom({
     Expression<int>? id,
     Expression<int>? presetId,
@@ -2624,12 +3077,13 @@ class PresetSlotsCompanion extends UpdateCompanion<PresetSlotEntry> {
     });
   }
 
-  PresetSlotsCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? presetId,
-      Value<int>? slotIndex,
-      Value<String>? algorithmGuid,
-      Value<String?>? customName}) {
+  PresetSlotsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? presetId,
+    Value<int>? slotIndex,
+    Value<String>? algorithmGuid,
+    Value<String?>? customName,
+  }) {
     return PresetSlotsCompanion(
       id: id ?? this.id,
       presetId: presetId ?? this.presetId,
@@ -2682,35 +3136,57 @@ class $PresetParameterValuesTable extends PresetParameterValues
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _presetSlotIdMeta =
-      const VerificationMeta('presetSlotId');
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _presetSlotIdMeta = const VerificationMeta(
+    'presetSlotId',
+  );
   @override
   late final GeneratedColumn<int> presetSlotId = GeneratedColumn<int>(
-      'preset_slot_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'REFERENCES preset_slots (id) ON DELETE CASCADE'));
-  static const VerificationMeta _parameterNumberMeta =
-      const VerificationMeta('parameterNumber');
+    'preset_slot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES preset_slots (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
   @override
   late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
-      'parameter_number', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _valueMeta = const VerificationMeta('value');
   @override
   late final GeneratedColumn<int> value = GeneratedColumn<int>(
-      'value', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, presetSlotId, parameterNumber, value];
+  List<GeneratedColumn> get $columns => [
+    id,
+    presetSlotId,
+    parameterNumber,
+    value,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2718,8 +3194,9 @@ class $PresetParameterValuesTable extends PresetParameterValues
   static const String $name = 'preset_parameter_values';
   @override
   VerificationContext validateIntegrity(
-      Insertable<PresetParameterValueEntry> instance,
-      {bool isInserting = false}) {
+    Insertable<PresetParameterValueEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -2727,23 +3204,31 @@ class $PresetParameterValuesTable extends PresetParameterValues
     }
     if (data.containsKey('preset_slot_id')) {
       context.handle(
+        _presetSlotIdMeta,
+        presetSlotId.isAcceptableOrUnknown(
+          data['preset_slot_id']!,
           _presetSlotIdMeta,
-          presetSlotId.isAcceptableOrUnknown(
-              data['preset_slot_id']!, _presetSlotIdMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_presetSlotIdMeta);
     }
     if (data.containsKey('parameter_number')) {
       context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
           _parameterNumberMeta,
-          parameterNumber.isAcceptableOrUnknown(
-              data['parameter_number']!, _parameterNumberMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
     if (data.containsKey('value')) {
       context.handle(
-          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
     } else if (isInserting) {
       context.missing(_valueMeta);
     }
@@ -2753,18 +3238,28 @@ class $PresetParameterValuesTable extends PresetParameterValues
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  PresetParameterValueEntry map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  PresetParameterValueEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetParameterValueEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      presetSlotId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}preset_slot_id'])!,
-      parameterNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
-      value: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}value'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      presetSlotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}preset_slot_id'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}value'],
+      )!,
     );
   }
 
@@ -2780,11 +3275,12 @@ class PresetParameterValueEntry extends DataClass
   final int presetSlotId;
   final int parameterNumber;
   final int value;
-  const PresetParameterValueEntry(
-      {required this.id,
-      required this.presetSlotId,
-      required this.parameterNumber,
-      required this.value});
+  const PresetParameterValueEntry({
+    required this.id,
+    required this.presetSlotId,
+    required this.parameterNumber,
+    required this.value,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2804,8 +3300,10 @@ class PresetParameterValueEntry extends DataClass
     );
   }
 
-  factory PresetParameterValueEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PresetParameterValueEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetParameterValueEntry(
       id: serializer.fromJson<int>(json['id']),
@@ -2825,16 +3323,20 @@ class PresetParameterValueEntry extends DataClass
     };
   }
 
-  PresetParameterValueEntry copyWith(
-          {int? id, int? presetSlotId, int? parameterNumber, int? value}) =>
-      PresetParameterValueEntry(
-        id: id ?? this.id,
-        presetSlotId: presetSlotId ?? this.presetSlotId,
-        parameterNumber: parameterNumber ?? this.parameterNumber,
-        value: value ?? this.value,
-      );
+  PresetParameterValueEntry copyWith({
+    int? id,
+    int? presetSlotId,
+    int? parameterNumber,
+    int? value,
+  }) => PresetParameterValueEntry(
+    id: id ?? this.id,
+    presetSlotId: presetSlotId ?? this.presetSlotId,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+    value: value ?? this.value,
+  );
   PresetParameterValueEntry copyWithCompanion(
-      PresetParameterValuesCompanion data) {
+    PresetParameterValuesCompanion data,
+  ) {
     return PresetParameterValueEntry(
       id: data.id.present ? data.id.value : this.id,
       presetSlotId: data.presetSlotId.present
@@ -2887,9 +3389,9 @@ class PresetParameterValuesCompanion
     required int presetSlotId,
     required int parameterNumber,
     required int value,
-  })  : presetSlotId = Value(presetSlotId),
-        parameterNumber = Value(parameterNumber),
-        value = Value(value);
+  }) : presetSlotId = Value(presetSlotId),
+       parameterNumber = Value(parameterNumber),
+       value = Value(value);
   static Insertable<PresetParameterValueEntry> custom({
     Expression<int>? id,
     Expression<int>? presetSlotId,
@@ -2904,11 +3406,12 @@ class PresetParameterValuesCompanion
     });
   }
 
-  PresetParameterValuesCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? presetSlotId,
-      Value<int>? parameterNumber,
-      Value<int>? value}) {
+  PresetParameterValuesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? presetSlotId,
+    Value<int>? parameterNumber,
+    Value<int>? value,
+  }) {
     return PresetParameterValuesCompanion(
       id: id ?? this.id,
       presetSlotId: presetSlotId ?? this.presetSlotId,
@@ -2949,36 +3452,56 @@ class PresetParameterValuesCompanion
 
 class $PresetParameterStringValuesTable extends PresetParameterStringValues
     with
-        TableInfo<$PresetParameterStringValuesTable,
-            PresetParameterStringValueEntry> {
+        TableInfo<
+          $PresetParameterStringValuesTable,
+          PresetParameterStringValueEntry
+        > {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $PresetParameterStringValuesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _presetSlotIdMeta =
-      const VerificationMeta('presetSlotId');
+  static const VerificationMeta _presetSlotIdMeta = const VerificationMeta(
+    'presetSlotId',
+  );
   @override
   late final GeneratedColumn<int> presetSlotId = GeneratedColumn<int>(
-      'preset_slot_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'REFERENCES preset_slots (id) ON DELETE CASCADE'));
-  static const VerificationMeta _parameterNumberMeta =
-      const VerificationMeta('parameterNumber');
+    'preset_slot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES preset_slots (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
   @override
   late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
-      'parameter_number', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _stringValueMeta =
-      const VerificationMeta('stringValue');
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stringValueMeta = const VerificationMeta(
+    'stringValue',
+  );
   @override
   late final GeneratedColumn<String> stringValue = GeneratedColumn<String>(
-      'string_value', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'string_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [presetSlotId, parameterNumber, stringValue];
+  List<GeneratedColumn> get $columns => [
+    presetSlotId,
+    parameterNumber,
+    stringValue,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2986,31 +3509,41 @@ class $PresetParameterStringValuesTable extends PresetParameterStringValues
   static const String $name = 'preset_parameter_string_values';
   @override
   VerificationContext validateIntegrity(
-      Insertable<PresetParameterStringValueEntry> instance,
-      {bool isInserting = false}) {
+    Insertable<PresetParameterStringValueEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('preset_slot_id')) {
       context.handle(
+        _presetSlotIdMeta,
+        presetSlotId.isAcceptableOrUnknown(
+          data['preset_slot_id']!,
           _presetSlotIdMeta,
-          presetSlotId.isAcceptableOrUnknown(
-              data['preset_slot_id']!, _presetSlotIdMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_presetSlotIdMeta);
     }
     if (data.containsKey('parameter_number')) {
       context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
           _parameterNumberMeta,
-          parameterNumber.isAcceptableOrUnknown(
-              data['parameter_number']!, _parameterNumberMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
     if (data.containsKey('string_value')) {
       context.handle(
+        _stringValueMeta,
+        stringValue.isAcceptableOrUnknown(
+          data['string_value']!,
           _stringValueMeta,
-          stringValue.isAcceptableOrUnknown(
-              data['string_value']!, _stringValueMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_stringValueMeta);
     }
@@ -3020,16 +3553,24 @@ class $PresetParameterStringValuesTable extends PresetParameterStringValues
   @override
   Set<GeneratedColumn> get $primaryKey => {presetSlotId, parameterNumber};
   @override
-  PresetParameterStringValueEntry map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  PresetParameterStringValueEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetParameterStringValueEntry(
-      presetSlotId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}preset_slot_id'])!,
-      parameterNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
-      stringValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}string_value'])!,
+      presetSlotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}preset_slot_id'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
+      stringValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}string_value'],
+      )!,
     );
   }
 
@@ -3044,10 +3585,11 @@ class PresetParameterStringValueEntry extends DataClass
   final int presetSlotId;
   final int parameterNumber;
   final String stringValue;
-  const PresetParameterStringValueEntry(
-      {required this.presetSlotId,
-      required this.parameterNumber,
-      required this.stringValue});
+  const PresetParameterStringValueEntry({
+    required this.presetSlotId,
+    required this.parameterNumber,
+    required this.stringValue,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3065,8 +3607,10 @@ class PresetParameterStringValueEntry extends DataClass
     );
   }
 
-  factory PresetParameterStringValueEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PresetParameterStringValueEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetParameterStringValueEntry(
       presetSlotId: serializer.fromJson<int>(json['presetSlotId']),
@@ -3084,15 +3628,18 @@ class PresetParameterStringValueEntry extends DataClass
     };
   }
 
-  PresetParameterStringValueEntry copyWith(
-          {int? presetSlotId, int? parameterNumber, String? stringValue}) =>
-      PresetParameterStringValueEntry(
-        presetSlotId: presetSlotId ?? this.presetSlotId,
-        parameterNumber: parameterNumber ?? this.parameterNumber,
-        stringValue: stringValue ?? this.stringValue,
-      );
+  PresetParameterStringValueEntry copyWith({
+    int? presetSlotId,
+    int? parameterNumber,
+    String? stringValue,
+  }) => PresetParameterStringValueEntry(
+    presetSlotId: presetSlotId ?? this.presetSlotId,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+    stringValue: stringValue ?? this.stringValue,
+  );
   PresetParameterStringValueEntry copyWithCompanion(
-      PresetParameterStringValuesCompanion data) {
+    PresetParameterStringValuesCompanion data,
+  ) {
     return PresetParameterStringValueEntry(
       presetSlotId: data.presetSlotId.present
           ? data.presetSlotId.value
@@ -3100,8 +3647,9 @@ class PresetParameterStringValueEntry extends DataClass
       parameterNumber: data.parameterNumber.present
           ? data.parameterNumber.value
           : this.parameterNumber,
-      stringValue:
-          data.stringValue.present ? data.stringValue.value : this.stringValue,
+      stringValue: data.stringValue.present
+          ? data.stringValue.value
+          : this.stringValue,
     );
   }
 
@@ -3143,9 +3691,9 @@ class PresetParameterStringValuesCompanion
     required int parameterNumber,
     required String stringValue,
     this.rowid = const Value.absent(),
-  })  : presetSlotId = Value(presetSlotId),
-        parameterNumber = Value(parameterNumber),
-        stringValue = Value(stringValue);
+  }) : presetSlotId = Value(presetSlotId),
+       parameterNumber = Value(parameterNumber),
+       stringValue = Value(stringValue);
   static Insertable<PresetParameterStringValueEntry> custom({
     Expression<int>? presetSlotId,
     Expression<int>? parameterNumber,
@@ -3160,11 +3708,12 @@ class PresetParameterStringValuesCompanion
     });
   }
 
-  PresetParameterStringValuesCompanion copyWith(
-      {Value<int>? presetSlotId,
-      Value<int>? parameterNumber,
-      Value<String>? stringValue,
-      Value<int>? rowid}) {
+  PresetParameterStringValuesCompanion copyWith({
+    Value<int>? presetSlotId,
+    Value<int>? parameterNumber,
+    Value<String>? stringValue,
+    Value<int>? rowid,
+  }) {
     return PresetParameterStringValuesCompanion(
       presetSlotId: presetSlotId ?? this.presetSlotId,
       parameterNumber: parameterNumber ?? this.parameterNumber,
@@ -3209,53 +3758,77 @@ class $PresetMappingsTable extends PresetMappings
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $PresetMappingsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _presetSlotIdMeta =
-      const VerificationMeta('presetSlotId');
+  static const VerificationMeta _presetSlotIdMeta = const VerificationMeta(
+    'presetSlotId',
+  );
   @override
   late final GeneratedColumn<int> presetSlotId = GeneratedColumn<int>(
-      'preset_slot_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES preset_slots (id)'));
-  static const VerificationMeta _parameterNumberMeta =
-      const VerificationMeta('parameterNumber');
+    'preset_slot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES preset_slots (id)',
+    ),
+  );
+  static const VerificationMeta _parameterNumberMeta = const VerificationMeta(
+    'parameterNumber',
+  );
   @override
   late final GeneratedColumn<int> parameterNumber = GeneratedColumn<int>(
-      'parameter_number', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+    'parameter_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<PackedMappingData, Uint8List>
-      packedData = GeneratedColumn<Uint8List>('packed_data', aliasedName, false,
-              type: DriftSqlType.blob, requiredDuringInsert: true)
-          .withConverter<PackedMappingData>(
-              $PresetMappingsTable.$converterpackedData);
+  packedData = GeneratedColumn<Uint8List>(
+    'packed_data',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  ).withConverter<PackedMappingData>($PresetMappingsTable.$converterpackedData);
   @override
-  List<GeneratedColumn> get $columns =>
-      [presetSlotId, parameterNumber, packedData];
+  List<GeneratedColumn> get $columns => [
+    presetSlotId,
+    parameterNumber,
+    packedData,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'preset_mappings';
   @override
-  VerificationContext validateIntegrity(Insertable<PresetMappingEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<PresetMappingEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('preset_slot_id')) {
       context.handle(
+        _presetSlotIdMeta,
+        presetSlotId.isAcceptableOrUnknown(
+          data['preset_slot_id']!,
           _presetSlotIdMeta,
-          presetSlotId.isAcceptableOrUnknown(
-              data['preset_slot_id']!, _presetSlotIdMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_presetSlotIdMeta);
     }
     if (data.containsKey('parameter_number')) {
       context.handle(
+        _parameterNumberMeta,
+        parameterNumber.isAcceptableOrUnknown(
+          data['parameter_number']!,
           _parameterNumberMeta,
-          parameterNumber.isAcceptableOrUnknown(
-              data['parameter_number']!, _parameterNumberMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
@@ -3268,13 +3841,20 @@ class $PresetMappingsTable extends PresetMappings
   PresetMappingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetMappingEntry(
-      presetSlotId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}preset_slot_id'])!,
-      parameterNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}parameter_number'])!,
+      presetSlotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}preset_slot_id'],
+      )!,
+      parameterNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parameter_number'],
+      )!,
       packedData: $PresetMappingsTable.$converterpackedData.fromSql(
-          attachedDatabase.typeMapping
-              .read(DriftSqlType.blob, data['${effectivePrefix}packed_data'])!),
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.blob,
+          data['${effectivePrefix}packed_data'],
+        )!,
+      ),
     );
   }
 
@@ -3292,10 +3872,11 @@ class PresetMappingEntry extends DataClass
   final int presetSlotId;
   final int parameterNumber;
   final PackedMappingData packedData;
-  const PresetMappingEntry(
-      {required this.presetSlotId,
-      required this.parameterNumber,
-      required this.packedData});
+  const PresetMappingEntry({
+    required this.presetSlotId,
+    required this.parameterNumber,
+    required this.packedData,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3303,7 +3884,8 @@ class PresetMappingEntry extends DataClass
     map['parameter_number'] = Variable<int>(parameterNumber);
     {
       map['packed_data'] = Variable<Uint8List>(
-          $PresetMappingsTable.$converterpackedData.toSql(packedData));
+        $PresetMappingsTable.$converterpackedData.toSql(packedData),
+      );
     }
     return map;
   }
@@ -3316,8 +3898,10 @@ class PresetMappingEntry extends DataClass
     );
   }
 
-  factory PresetMappingEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PresetMappingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetMappingEntry(
       presetSlotId: serializer.fromJson<int>(json['presetSlotId']),
@@ -3335,15 +3919,15 @@ class PresetMappingEntry extends DataClass
     };
   }
 
-  PresetMappingEntry copyWith(
-          {int? presetSlotId,
-          int? parameterNumber,
-          PackedMappingData? packedData}) =>
-      PresetMappingEntry(
-        presetSlotId: presetSlotId ?? this.presetSlotId,
-        parameterNumber: parameterNumber ?? this.parameterNumber,
-        packedData: packedData ?? this.packedData,
-      );
+  PresetMappingEntry copyWith({
+    int? presetSlotId,
+    int? parameterNumber,
+    PackedMappingData? packedData,
+  }) => PresetMappingEntry(
+    presetSlotId: presetSlotId ?? this.presetSlotId,
+    parameterNumber: parameterNumber ?? this.parameterNumber,
+    packedData: packedData ?? this.packedData,
+  );
   PresetMappingEntry copyWithCompanion(PresetMappingsCompanion data) {
     return PresetMappingEntry(
       presetSlotId: data.presetSlotId.present
@@ -3352,8 +3936,9 @@ class PresetMappingEntry extends DataClass
       parameterNumber: data.parameterNumber.present
           ? data.parameterNumber.value
           : this.parameterNumber,
-      packedData:
-          data.packedData.present ? data.packedData.value : this.packedData,
+      packedData: data.packedData.present
+          ? data.packedData.value
+          : this.packedData,
     );
   }
 
@@ -3394,9 +3979,9 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
     required int parameterNumber,
     required PackedMappingData packedData,
     this.rowid = const Value.absent(),
-  })  : presetSlotId = Value(presetSlotId),
-        parameterNumber = Value(parameterNumber),
-        packedData = Value(packedData);
+  }) : presetSlotId = Value(presetSlotId),
+       parameterNumber = Value(parameterNumber),
+       packedData = Value(packedData);
   static Insertable<PresetMappingEntry> custom({
     Expression<int>? presetSlotId,
     Expression<int>? parameterNumber,
@@ -3411,11 +3996,12 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
     });
   }
 
-  PresetMappingsCompanion copyWith(
-      {Value<int>? presetSlotId,
-      Value<int>? parameterNumber,
-      Value<PackedMappingData>? packedData,
-      Value<int>? rowid}) {
+  PresetMappingsCompanion copyWith({
+    Value<int>? presetSlotId,
+    Value<int>? parameterNumber,
+    Value<PackedMappingData>? packedData,
+    Value<int>? rowid,
+  }) {
     return PresetMappingsCompanion(
       presetSlotId: presetSlotId ?? this.presetSlotId,
       parameterNumber: parameterNumber ?? this.parameterNumber,
@@ -3435,7 +4021,8 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
     }
     if (packedData.present) {
       map['packed_data'] = Variable<Uint8List>(
-          $PresetMappingsTable.$converterpackedData.toSql(packedData.value));
+        $PresetMappingsTable.$converterpackedData.toSql(packedData.value),
+      );
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -3461,22 +4048,29 @@ class $PresetRoutingsTable extends PresetRoutings
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $PresetRoutingsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _presetSlotIdMeta =
-      const VerificationMeta('presetSlotId');
+  static const VerificationMeta _presetSlotIdMeta = const VerificationMeta(
+    'presetSlotId',
+  );
   @override
   late final GeneratedColumn<int> presetSlotId = GeneratedColumn<int>(
-      'preset_slot_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES preset_slots (id)'));
+    'preset_slot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES preset_slots (id)',
+    ),
+  );
   @override
   late final GeneratedColumnWithTypeConverter<List<int>, String>
-      routingInfoJson = GeneratedColumn<String>(
-              'routing_info_json', aliasedName, false,
-              type: DriftSqlType.string, requiredDuringInsert: true)
-          .withConverter<List<int>>(
-              $PresetRoutingsTable.$converterroutingInfoJson);
+  routingInfoJson = GeneratedColumn<String>(
+    'routing_info_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  ).withConverter<List<int>>($PresetRoutingsTable.$converterroutingInfoJson);
   @override
   List<GeneratedColumn> get $columns => [presetSlotId, routingInfoJson];
   @override
@@ -3485,15 +4079,20 @@ class $PresetRoutingsTable extends PresetRoutings
   String get actualTableName => $name;
   static const String $name = 'preset_routings';
   @override
-  VerificationContext validateIntegrity(Insertable<PresetRoutingEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<PresetRoutingEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('preset_slot_id')) {
       context.handle(
+        _presetSlotIdMeta,
+        presetSlotId.isAcceptableOrUnknown(
+          data['preset_slot_id']!,
           _presetSlotIdMeta,
-          presetSlotId.isAcceptableOrUnknown(
-              data['preset_slot_id']!, _presetSlotIdMeta));
+        ),
+      );
     }
     return context;
   }
@@ -3504,11 +4103,16 @@ class $PresetRoutingsTable extends PresetRoutings
   PresetRoutingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PresetRoutingEntry(
-      presetSlotId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}preset_slot_id'])!,
+      presetSlotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}preset_slot_id'],
+      )!,
       routingInfoJson: $PresetRoutingsTable.$converterroutingInfoJson.fromSql(
-          attachedDatabase.typeMapping.read(DriftSqlType.string,
-              data['${effectivePrefix}routing_info_json'])!),
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}routing_info_json'],
+        )!,
+      ),
     );
   }
 
@@ -3525,16 +4129,18 @@ class PresetRoutingEntry extends DataClass
     implements Insertable<PresetRoutingEntry> {
   final int presetSlotId;
   final List<int> routingInfoJson;
-  const PresetRoutingEntry(
-      {required this.presetSlotId, required this.routingInfoJson});
+  const PresetRoutingEntry({
+    required this.presetSlotId,
+    required this.routingInfoJson,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['preset_slot_id'] = Variable<int>(presetSlotId);
     {
-      map['routing_info_json'] = Variable<String>($PresetRoutingsTable
-          .$converterroutingInfoJson
-          .toSql(routingInfoJson));
+      map['routing_info_json'] = Variable<String>(
+        $PresetRoutingsTable.$converterroutingInfoJson.toSql(routingInfoJson),
+      );
     }
     return map;
   }
@@ -3546,8 +4152,10 @@ class PresetRoutingEntry extends DataClass
     );
   }
 
-  factory PresetRoutingEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PresetRoutingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PresetRoutingEntry(
       presetSlotId: serializer.fromJson<int>(json['presetSlotId']),
@@ -3563,12 +4171,13 @@ class PresetRoutingEntry extends DataClass
     };
   }
 
-  PresetRoutingEntry copyWith(
-          {int? presetSlotId, List<int>? routingInfoJson}) =>
-      PresetRoutingEntry(
-        presetSlotId: presetSlotId ?? this.presetSlotId,
-        routingInfoJson: routingInfoJson ?? this.routingInfoJson,
-      );
+  PresetRoutingEntry copyWith({
+    int? presetSlotId,
+    List<int>? routingInfoJson,
+  }) => PresetRoutingEntry(
+    presetSlotId: presetSlotId ?? this.presetSlotId,
+    routingInfoJson: routingInfoJson ?? this.routingInfoJson,
+  );
   PresetRoutingEntry copyWithCompanion(PresetRoutingsCompanion data) {
     return PresetRoutingEntry(
       presetSlotId: data.presetSlotId.present
@@ -3620,8 +4229,10 @@ class PresetRoutingsCompanion extends UpdateCompanion<PresetRoutingEntry> {
     });
   }
 
-  PresetRoutingsCompanion copyWith(
-      {Value<int>? presetSlotId, Value<List<int>>? routingInfoJson}) {
+  PresetRoutingsCompanion copyWith({
+    Value<int>? presetSlotId,
+    Value<List<int>>? routingInfoJson,
+  }) {
     return PresetRoutingsCompanion(
       presetSlotId: presetSlotId ?? this.presetSlotId,
       routingInfoJson: routingInfoJson ?? this.routingInfoJson,
@@ -3635,9 +4246,11 @@ class PresetRoutingsCompanion extends UpdateCompanion<PresetRoutingEntry> {
       map['preset_slot_id'] = Variable<int>(presetSlotId.value);
     }
     if (routingInfoJson.present) {
-      map['routing_info_json'] = Variable<String>($PresetRoutingsTable
-          .$converterroutingInfoJson
-          .toSql(routingInfoJson.value));
+      map['routing_info_json'] = Variable<String>(
+        $PresetRoutingsTable.$converterroutingInfoJson.toSql(
+          routingInfoJson.value,
+        ),
+      );
     }
     return map;
   }
@@ -3660,28 +4273,40 @@ class $SdCardsTable extends SdCards with TableInfo<$SdCardsTable, SdCardEntry> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _userLabelMeta =
-      const VerificationMeta('userLabel');
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _userLabelMeta = const VerificationMeta(
+    'userLabel',
+  );
   @override
   late final GeneratedColumn<String> userLabel = GeneratedColumn<String>(
-      'user_label', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
-  static const VerificationMeta _systemIdentifierMeta =
-      const VerificationMeta('systemIdentifier');
+    'user_label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _systemIdentifierMeta = const VerificationMeta(
+    'systemIdentifier',
+  );
   @override
   late final GeneratedColumn<String> systemIdentifier = GeneratedColumn<String>(
-      'system_identifier', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+    'system_identifier',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
   @override
   List<GeneratedColumn> get $columns => [id, userLabel, systemIdentifier];
   @override
@@ -3690,24 +4315,31 @@ class $SdCardsTable extends SdCards with TableInfo<$SdCardsTable, SdCardEntry> {
   String get actualTableName => $name;
   static const String $name = 'sd_cards';
   @override
-  VerificationContext validateIntegrity(Insertable<SdCardEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<SdCardEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('user_label')) {
-      context.handle(_userLabelMeta,
-          userLabel.isAcceptableOrUnknown(data['user_label']!, _userLabelMeta));
+      context.handle(
+        _userLabelMeta,
+        userLabel.isAcceptableOrUnknown(data['user_label']!, _userLabelMeta),
+      );
     } else if (isInserting) {
       context.missing(_userLabelMeta);
     }
     if (data.containsKey('system_identifier')) {
       context.handle(
+        _systemIdentifierMeta,
+        systemIdentifier.isAcceptableOrUnknown(
+          data['system_identifier']!,
           _systemIdentifierMeta,
-          systemIdentifier.isAcceptableOrUnknown(
-              data['system_identifier']!, _systemIdentifierMeta));
+        ),
+      );
     }
     return context;
   }
@@ -3718,12 +4350,18 @@ class $SdCardsTable extends SdCards with TableInfo<$SdCardsTable, SdCardEntry> {
   SdCardEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SdCardEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      userLabel: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}user_label'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      userLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_label'],
+      )!,
       systemIdentifier: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}system_identifier']),
+        DriftSqlType.string,
+        data['${effectivePrefix}system_identifier'],
+      ),
     );
   }
 
@@ -3737,8 +4375,11 @@ class SdCardEntry extends DataClass implements Insertable<SdCardEntry> {
   final int id;
   final String userLabel;
   final String? systemIdentifier;
-  const SdCardEntry(
-      {required this.id, required this.userLabel, this.systemIdentifier});
+  const SdCardEntry({
+    required this.id,
+    required this.userLabel,
+    this.systemIdentifier,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3760,8 +4401,10 @@ class SdCardEntry extends DataClass implements Insertable<SdCardEntry> {
     );
   }
 
-  factory SdCardEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory SdCardEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SdCardEntry(
       id: serializer.fromJson<int>(json['id']),
@@ -3779,17 +4422,17 @@ class SdCardEntry extends DataClass implements Insertable<SdCardEntry> {
     };
   }
 
-  SdCardEntry copyWith(
-          {int? id,
-          String? userLabel,
-          Value<String?> systemIdentifier = const Value.absent()}) =>
-      SdCardEntry(
-        id: id ?? this.id,
-        userLabel: userLabel ?? this.userLabel,
-        systemIdentifier: systemIdentifier.present
-            ? systemIdentifier.value
-            : this.systemIdentifier,
-      );
+  SdCardEntry copyWith({
+    int? id,
+    String? userLabel,
+    Value<String?> systemIdentifier = const Value.absent(),
+  }) => SdCardEntry(
+    id: id ?? this.id,
+    userLabel: userLabel ?? this.userLabel,
+    systemIdentifier: systemIdentifier.present
+        ? systemIdentifier.value
+        : this.systemIdentifier,
+  );
   SdCardEntry copyWithCompanion(SdCardsCompanion data) {
     return SdCardEntry(
       id: data.id.present ? data.id.value : this.id,
@@ -3847,10 +4490,11 @@ class SdCardsCompanion extends UpdateCompanion<SdCardEntry> {
     });
   }
 
-  SdCardsCompanion copyWith(
-      {Value<int>? id,
-      Value<String>? userLabel,
-      Value<String?>? systemIdentifier}) {
+  SdCardsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? userLabel,
+    Value<String?>? systemIdentifier,
+  }) {
     return SdCardsCompanion(
       id: id ?? this.id,
       userLabel: userLabel ?? this.userLabel,
@@ -3893,76 +4537,119 @@ class $IndexedPresetFilesTable extends IndexedPresetFiles
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _sdCardIdMeta =
-      const VerificationMeta('sdCardId');
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sdCardIdMeta = const VerificationMeta(
+    'sdCardId',
+  );
   @override
   late final GeneratedColumn<int> sdCardId = GeneratedColumn<int>(
-      'sd_card_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES sd_cards (id)'));
-  static const VerificationMeta _relativePathMeta =
-      const VerificationMeta('relativePath');
+    'sd_card_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sd_cards (id)',
+    ),
+  );
+  static const VerificationMeta _relativePathMeta = const VerificationMeta(
+    'relativePath',
+  );
   @override
   late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
-      'relative_path', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _fileNameMeta =
-      const VerificationMeta('fileName');
+    'relative_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
   @override
   late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
-      'file_name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _absolutePathAtScanTimeMeta =
       const VerificationMeta('absolutePathAtScanTime');
   @override
   late final GeneratedColumn<String> absolutePathAtScanTime =
-      GeneratedColumn<String>('absolute_path_at_scan_time', aliasedName, false,
-          type: DriftSqlType.string, requiredDuringInsert: true);
+      GeneratedColumn<String>(
+        'absolute_path_at_scan_time',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
   static const VerificationMeta _algorithmNameFromPresetMeta =
       const VerificationMeta('algorithmNameFromPreset');
   @override
   late final GeneratedColumn<String> algorithmNameFromPreset =
-      GeneratedColumn<String>('algorithm_name_from_preset', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _notesFromPresetMeta =
-      const VerificationMeta('notesFromPreset');
+      GeneratedColumn<String>(
+        'algorithm_name_from_preset',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _notesFromPresetMeta = const VerificationMeta(
+    'notesFromPreset',
+  );
   @override
   late final GeneratedColumn<String> notesFromPreset = GeneratedColumn<String>(
-      'notes_from_preset', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+    'notes_from_preset',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _otherExtractedMetadataJsonMeta =
       const VerificationMeta('otherExtractedMetadataJson');
   @override
   late final GeneratedColumn<String> otherExtractedMetadataJson =
       GeneratedColumn<String>(
-          'other_extracted_metadata_json', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _lastSeenUtcMeta =
-      const VerificationMeta('lastSeenUtc');
+        'other_extracted_metadata_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastSeenUtcMeta = const VerificationMeta(
+    'lastSeenUtc',
+  );
   @override
   late final GeneratedColumn<DateTime> lastSeenUtc = GeneratedColumn<DateTime>(
-      'last_seen_utc', aliasedName, false,
-      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+    'last_seen_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        sdCardId,
-        relativePath,
-        fileName,
-        absolutePathAtScanTime,
-        algorithmNameFromPreset,
-        notesFromPreset,
-        otherExtractedMetadataJson,
-        lastSeenUtc
-      ];
+    id,
+    sdCardId,
+    relativePath,
+    fileName,
+    absolutePathAtScanTime,
+    algorithmNameFromPreset,
+    notesFromPreset,
+    otherExtractedMetadataJson,
+    lastSeenUtc,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3970,67 +4657,87 @@ class $IndexedPresetFilesTable extends IndexedPresetFiles
   static const String $name = 'indexed_preset_files';
   @override
   VerificationContext validateIntegrity(
-      Insertable<IndexedPresetFileEntry> instance,
-      {bool isInserting = false}) {
+    Insertable<IndexedPresetFileEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('sd_card_id')) {
-      context.handle(_sdCardIdMeta,
-          sdCardId.isAcceptableOrUnknown(data['sd_card_id']!, _sdCardIdMeta));
+      context.handle(
+        _sdCardIdMeta,
+        sdCardId.isAcceptableOrUnknown(data['sd_card_id']!, _sdCardIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_sdCardIdMeta);
     }
     if (data.containsKey('relative_path')) {
       context.handle(
+        _relativePathMeta,
+        relativePath.isAcceptableOrUnknown(
+          data['relative_path']!,
           _relativePathMeta,
-          relativePath.isAcceptableOrUnknown(
-              data['relative_path']!, _relativePathMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_relativePathMeta);
     }
     if (data.containsKey('file_name')) {
-      context.handle(_fileNameMeta,
-          fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta));
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
     } else if (isInserting) {
       context.missing(_fileNameMeta);
     }
     if (data.containsKey('absolute_path_at_scan_time')) {
       context.handle(
+        _absolutePathAtScanTimeMeta,
+        absolutePathAtScanTime.isAcceptableOrUnknown(
+          data['absolute_path_at_scan_time']!,
           _absolutePathAtScanTimeMeta,
-          absolutePathAtScanTime.isAcceptableOrUnknown(
-              data['absolute_path_at_scan_time']!,
-              _absolutePathAtScanTimeMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_absolutePathAtScanTimeMeta);
     }
     if (data.containsKey('algorithm_name_from_preset')) {
       context.handle(
+        _algorithmNameFromPresetMeta,
+        algorithmNameFromPreset.isAcceptableOrUnknown(
+          data['algorithm_name_from_preset']!,
           _algorithmNameFromPresetMeta,
-          algorithmNameFromPreset.isAcceptableOrUnknown(
-              data['algorithm_name_from_preset']!,
-              _algorithmNameFromPresetMeta));
+        ),
+      );
     }
     if (data.containsKey('notes_from_preset')) {
       context.handle(
+        _notesFromPresetMeta,
+        notesFromPreset.isAcceptableOrUnknown(
+          data['notes_from_preset']!,
           _notesFromPresetMeta,
-          notesFromPreset.isAcceptableOrUnknown(
-              data['notes_from_preset']!, _notesFromPresetMeta));
+        ),
+      );
     }
     if (data.containsKey('other_extracted_metadata_json')) {
       context.handle(
+        _otherExtractedMetadataJsonMeta,
+        otherExtractedMetadataJson.isAcceptableOrUnknown(
+          data['other_extracted_metadata_json']!,
           _otherExtractedMetadataJsonMeta,
-          otherExtractedMetadataJson.isAcceptableOrUnknown(
-              data['other_extracted_metadata_json']!,
-              _otherExtractedMetadataJsonMeta));
+        ),
+      );
     }
     if (data.containsKey('last_seen_utc')) {
       context.handle(
+        _lastSeenUtcMeta,
+        lastSeenUtc.isAcceptableOrUnknown(
+          data['last_seen_utc']!,
           _lastSeenUtcMeta,
-          lastSeenUtc.isAcceptableOrUnknown(
-              data['last_seen_utc']!, _lastSeenUtcMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_lastSeenUtcMeta);
     }
@@ -4043,27 +4750,42 @@ class $IndexedPresetFilesTable extends IndexedPresetFiles
   IndexedPresetFileEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return IndexedPresetFileEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      sdCardId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}sd_card_id'])!,
-      relativePath: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}relative_path'])!,
-      fileName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}file_name'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sdCardId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sd_card_id'],
+      )!,
+      relativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relative_path'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
       absolutePathAtScanTime: attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}absolute_path_at_scan_time'])!,
+        DriftSqlType.string,
+        data['${effectivePrefix}absolute_path_at_scan_time'],
+      )!,
       algorithmNameFromPreset: attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}algorithm_name_from_preset']),
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_name_from_preset'],
+      ),
       notesFromPreset: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}notes_from_preset']),
+        DriftSqlType.string,
+        data['${effectivePrefix}notes_from_preset'],
+      ),
       otherExtractedMetadataJson: attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}other_extracted_metadata_json']),
+        DriftSqlType.string,
+        data['${effectivePrefix}other_extracted_metadata_json'],
+      ),
       lastSeenUtc: attachedDatabase.typeMapping.read(
-          DriftSqlType.dateTime, data['${effectivePrefix}last_seen_utc'])!,
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_seen_utc'],
+      )!,
     );
   }
 
@@ -4084,16 +4806,17 @@ class IndexedPresetFileEntry extends DataClass
   final String? notesFromPreset;
   final String? otherExtractedMetadataJson;
   final DateTime lastSeenUtc;
-  const IndexedPresetFileEntry(
-      {required this.id,
-      required this.sdCardId,
-      required this.relativePath,
-      required this.fileName,
-      required this.absolutePathAtScanTime,
-      this.algorithmNameFromPreset,
-      this.notesFromPreset,
-      this.otherExtractedMetadataJson,
-      required this.lastSeenUtc});
+  const IndexedPresetFileEntry({
+    required this.id,
+    required this.sdCardId,
+    required this.relativePath,
+    required this.fileName,
+    required this.absolutePathAtScanTime,
+    this.algorithmNameFromPreset,
+    this.notesFromPreset,
+    this.otherExtractedMetadataJson,
+    required this.lastSeenUtc,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4101,18 +4824,21 @@ class IndexedPresetFileEntry extends DataClass
     map['sd_card_id'] = Variable<int>(sdCardId);
     map['relative_path'] = Variable<String>(relativePath);
     map['file_name'] = Variable<String>(fileName);
-    map['absolute_path_at_scan_time'] =
-        Variable<String>(absolutePathAtScanTime);
+    map['absolute_path_at_scan_time'] = Variable<String>(
+      absolutePathAtScanTime,
+    );
     if (!nullToAbsent || algorithmNameFromPreset != null) {
-      map['algorithm_name_from_preset'] =
-          Variable<String>(algorithmNameFromPreset);
+      map['algorithm_name_from_preset'] = Variable<String>(
+        algorithmNameFromPreset,
+      );
     }
     if (!nullToAbsent || notesFromPreset != null) {
       map['notes_from_preset'] = Variable<String>(notesFromPreset);
     }
     if (!nullToAbsent || otherExtractedMetadataJson != null) {
-      map['other_extracted_metadata_json'] =
-          Variable<String>(otherExtractedMetadataJson);
+      map['other_extracted_metadata_json'] = Variable<String>(
+        otherExtractedMetadataJson,
+      );
     }
     map['last_seen_utc'] = Variable<DateTime>(lastSeenUtc);
     return map;
@@ -4133,27 +4859,32 @@ class IndexedPresetFileEntry extends DataClass
           : Value(notesFromPreset),
       otherExtractedMetadataJson:
           otherExtractedMetadataJson == null && nullToAbsent
-              ? const Value.absent()
-              : Value(otherExtractedMetadataJson),
+          ? const Value.absent()
+          : Value(otherExtractedMetadataJson),
       lastSeenUtc: Value(lastSeenUtc),
     );
   }
 
-  factory IndexedPresetFileEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory IndexedPresetFileEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return IndexedPresetFileEntry(
       id: serializer.fromJson<int>(json['id']),
       sdCardId: serializer.fromJson<int>(json['sdCardId']),
       relativePath: serializer.fromJson<String>(json['relativePath']),
       fileName: serializer.fromJson<String>(json['fileName']),
-      absolutePathAtScanTime:
-          serializer.fromJson<String>(json['absolutePathAtScanTime']),
-      algorithmNameFromPreset:
-          serializer.fromJson<String?>(json['algorithmNameFromPreset']),
+      absolutePathAtScanTime: serializer.fromJson<String>(
+        json['absolutePathAtScanTime'],
+      ),
+      algorithmNameFromPreset: serializer.fromJson<String?>(
+        json['algorithmNameFromPreset'],
+      ),
       notesFromPreset: serializer.fromJson<String?>(json['notesFromPreset']),
-      otherExtractedMetadataJson:
-          serializer.fromJson<String?>(json['otherExtractedMetadataJson']),
+      otherExtractedMetadataJson: serializer.fromJson<String?>(
+        json['otherExtractedMetadataJson'],
+      ),
       lastSeenUtc: serializer.fromJson<DateTime>(json['lastSeenUtc']),
     );
   }
@@ -4165,45 +4896,48 @@ class IndexedPresetFileEntry extends DataClass
       'sdCardId': serializer.toJson<int>(sdCardId),
       'relativePath': serializer.toJson<String>(relativePath),
       'fileName': serializer.toJson<String>(fileName),
-      'absolutePathAtScanTime':
-          serializer.toJson<String>(absolutePathAtScanTime),
-      'algorithmNameFromPreset':
-          serializer.toJson<String?>(algorithmNameFromPreset),
+      'absolutePathAtScanTime': serializer.toJson<String>(
+        absolutePathAtScanTime,
+      ),
+      'algorithmNameFromPreset': serializer.toJson<String?>(
+        algorithmNameFromPreset,
+      ),
       'notesFromPreset': serializer.toJson<String?>(notesFromPreset),
-      'otherExtractedMetadataJson':
-          serializer.toJson<String?>(otherExtractedMetadataJson),
+      'otherExtractedMetadataJson': serializer.toJson<String?>(
+        otherExtractedMetadataJson,
+      ),
       'lastSeenUtc': serializer.toJson<DateTime>(lastSeenUtc),
     };
   }
 
-  IndexedPresetFileEntry copyWith(
-          {int? id,
-          int? sdCardId,
-          String? relativePath,
-          String? fileName,
-          String? absolutePathAtScanTime,
-          Value<String?> algorithmNameFromPreset = const Value.absent(),
-          Value<String?> notesFromPreset = const Value.absent(),
-          Value<String?> otherExtractedMetadataJson = const Value.absent(),
-          DateTime? lastSeenUtc}) =>
-      IndexedPresetFileEntry(
-        id: id ?? this.id,
-        sdCardId: sdCardId ?? this.sdCardId,
-        relativePath: relativePath ?? this.relativePath,
-        fileName: fileName ?? this.fileName,
-        absolutePathAtScanTime:
-            absolutePathAtScanTime ?? this.absolutePathAtScanTime,
-        algorithmNameFromPreset: algorithmNameFromPreset.present
-            ? algorithmNameFromPreset.value
-            : this.algorithmNameFromPreset,
-        notesFromPreset: notesFromPreset.present
-            ? notesFromPreset.value
-            : this.notesFromPreset,
-        otherExtractedMetadataJson: otherExtractedMetadataJson.present
-            ? otherExtractedMetadataJson.value
-            : this.otherExtractedMetadataJson,
-        lastSeenUtc: lastSeenUtc ?? this.lastSeenUtc,
-      );
+  IndexedPresetFileEntry copyWith({
+    int? id,
+    int? sdCardId,
+    String? relativePath,
+    String? fileName,
+    String? absolutePathAtScanTime,
+    Value<String?> algorithmNameFromPreset = const Value.absent(),
+    Value<String?> notesFromPreset = const Value.absent(),
+    Value<String?> otherExtractedMetadataJson = const Value.absent(),
+    DateTime? lastSeenUtc,
+  }) => IndexedPresetFileEntry(
+    id: id ?? this.id,
+    sdCardId: sdCardId ?? this.sdCardId,
+    relativePath: relativePath ?? this.relativePath,
+    fileName: fileName ?? this.fileName,
+    absolutePathAtScanTime:
+        absolutePathAtScanTime ?? this.absolutePathAtScanTime,
+    algorithmNameFromPreset: algorithmNameFromPreset.present
+        ? algorithmNameFromPreset.value
+        : this.algorithmNameFromPreset,
+    notesFromPreset: notesFromPreset.present
+        ? notesFromPreset.value
+        : this.notesFromPreset,
+    otherExtractedMetadataJson: otherExtractedMetadataJson.present
+        ? otherExtractedMetadataJson.value
+        : this.otherExtractedMetadataJson,
+    lastSeenUtc: lastSeenUtc ?? this.lastSeenUtc,
+  );
   IndexedPresetFileEntry copyWithCompanion(IndexedPresetFilesCompanion data) {
     return IndexedPresetFileEntry(
       id: data.id.present ? data.id.value : this.id,
@@ -4224,8 +4958,9 @@ class IndexedPresetFileEntry extends DataClass
       otherExtractedMetadataJson: data.otherExtractedMetadataJson.present
           ? data.otherExtractedMetadataJson.value
           : this.otherExtractedMetadataJson,
-      lastSeenUtc:
-          data.lastSeenUtc.present ? data.lastSeenUtc.value : this.lastSeenUtc,
+      lastSeenUtc: data.lastSeenUtc.present
+          ? data.lastSeenUtc.value
+          : this.lastSeenUtc,
     );
   }
 
@@ -4247,15 +4982,16 @@ class IndexedPresetFileEntry extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      id,
-      sdCardId,
-      relativePath,
-      fileName,
-      absolutePathAtScanTime,
-      algorithmNameFromPreset,
-      notesFromPreset,
-      otherExtractedMetadataJson,
-      lastSeenUtc);
+    id,
+    sdCardId,
+    relativePath,
+    fileName,
+    absolutePathAtScanTime,
+    algorithmNameFromPreset,
+    notesFromPreset,
+    otherExtractedMetadataJson,
+    lastSeenUtc,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4303,11 +5039,11 @@ class IndexedPresetFilesCompanion
     this.notesFromPreset = const Value.absent(),
     this.otherExtractedMetadataJson = const Value.absent(),
     required DateTime lastSeenUtc,
-  })  : sdCardId = Value(sdCardId),
-        relativePath = Value(relativePath),
-        fileName = Value(fileName),
-        absolutePathAtScanTime = Value(absolutePathAtScanTime),
-        lastSeenUtc = Value(lastSeenUtc);
+  }) : sdCardId = Value(sdCardId),
+       relativePath = Value(relativePath),
+       fileName = Value(fileName),
+       absolutePathAtScanTime = Value(absolutePathAtScanTime),
+       lastSeenUtc = Value(lastSeenUtc);
   static Insertable<IndexedPresetFileEntry> custom({
     Expression<int>? id,
     Expression<int>? sdCardId,
@@ -4335,16 +5071,17 @@ class IndexedPresetFilesCompanion
     });
   }
 
-  IndexedPresetFilesCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? sdCardId,
-      Value<String>? relativePath,
-      Value<String>? fileName,
-      Value<String>? absolutePathAtScanTime,
-      Value<String?>? algorithmNameFromPreset,
-      Value<String?>? notesFromPreset,
-      Value<String?>? otherExtractedMetadataJson,
-      Value<DateTime>? lastSeenUtc}) {
+  IndexedPresetFilesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? sdCardId,
+    Value<String>? relativePath,
+    Value<String>? fileName,
+    Value<String>? absolutePathAtScanTime,
+    Value<String?>? algorithmNameFromPreset,
+    Value<String?>? notesFromPreset,
+    Value<String?>? otherExtractedMetadataJson,
+    Value<DateTime>? lastSeenUtc,
+  }) {
     return IndexedPresetFilesCompanion(
       id: id ?? this.id,
       sdCardId: sdCardId ?? this.sdCardId,
@@ -4377,19 +5114,22 @@ class IndexedPresetFilesCompanion
       map['file_name'] = Variable<String>(fileName.value);
     }
     if (absolutePathAtScanTime.present) {
-      map['absolute_path_at_scan_time'] =
-          Variable<String>(absolutePathAtScanTime.value);
+      map['absolute_path_at_scan_time'] = Variable<String>(
+        absolutePathAtScanTime.value,
+      );
     }
     if (algorithmNameFromPreset.present) {
-      map['algorithm_name_from_preset'] =
-          Variable<String>(algorithmNameFromPreset.value);
+      map['algorithm_name_from_preset'] = Variable<String>(
+        algorithmNameFromPreset.value,
+      );
     }
     if (notesFromPreset.present) {
       map['notes_from_preset'] = Variable<String>(notesFromPreset.value);
     }
     if (otherExtractedMetadataJson.present) {
-      map['other_extracted_metadata_json'] =
-          Variable<String>(otherExtractedMetadataJson.value);
+      map['other_extracted_metadata_json'] = Variable<String>(
+        otherExtractedMetadataJson.value,
+      );
     }
     if (lastSeenUtc.present) {
       map['last_seen_utc'] = Variable<DateTime>(lastSeenUtc.value);
@@ -4420,18 +5160,28 @@ class $MetadataCacheTable extends MetadataCache
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $MetadataCacheTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _cacheKeyMeta =
-      const VerificationMeta('cacheKey');
+  static const VerificationMeta _cacheKeyMeta = const VerificationMeta(
+    'cacheKey',
+  );
   @override
   late final GeneratedColumn<String> cacheKey = GeneratedColumn<String>(
-      'cache_key', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _cacheValueMeta =
-      const VerificationMeta('cacheValue');
+    'cache_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cacheValueMeta = const VerificationMeta(
+    'cacheValue',
+  );
   @override
   late final GeneratedColumn<String> cacheValue = GeneratedColumn<String>(
-      'cache_value', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'cache_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [cacheKey, cacheValue];
   @override
@@ -4440,21 +5190,25 @@ class $MetadataCacheTable extends MetadataCache
   String get actualTableName => $name;
   static const String $name = 'metadata_cache';
   @override
-  VerificationContext validateIntegrity(Insertable<MetadataCacheEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<MetadataCacheEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('cache_key')) {
-      context.handle(_cacheKeyMeta,
-          cacheKey.isAcceptableOrUnknown(data['cache_key']!, _cacheKeyMeta));
+      context.handle(
+        _cacheKeyMeta,
+        cacheKey.isAcceptableOrUnknown(data['cache_key']!, _cacheKeyMeta),
+      );
     } else if (isInserting) {
       context.missing(_cacheKeyMeta);
     }
     if (data.containsKey('cache_value')) {
       context.handle(
-          _cacheValueMeta,
-          cacheValue.isAcceptableOrUnknown(
-              data['cache_value']!, _cacheValueMeta));
+        _cacheValueMeta,
+        cacheValue.isAcceptableOrUnknown(data['cache_value']!, _cacheValueMeta),
+      );
     } else if (isInserting) {
       context.missing(_cacheValueMeta);
     }
@@ -4467,10 +5221,14 @@ class $MetadataCacheTable extends MetadataCache
   MetadataCacheEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MetadataCacheEntry(
-      cacheKey: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}cache_key'])!,
-      cacheValue: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}cache_value'])!,
+      cacheKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cache_key'],
+      )!,
+      cacheValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cache_value'],
+      )!,
     );
   }
 
@@ -4500,8 +5258,10 @@ class MetadataCacheEntry extends DataClass
     );
   }
 
-  factory MetadataCacheEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory MetadataCacheEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MetadataCacheEntry(
       cacheKey: serializer.fromJson<String>(json['cacheKey']),
@@ -4525,8 +5285,9 @@ class MetadataCacheEntry extends DataClass
   MetadataCacheEntry copyWithCompanion(MetadataCacheCompanion data) {
     return MetadataCacheEntry(
       cacheKey: data.cacheKey.present ? data.cacheKey.value : this.cacheKey,
-      cacheValue:
-          data.cacheValue.present ? data.cacheValue.value : this.cacheValue,
+      cacheValue: data.cacheValue.present
+          ? data.cacheValue.value
+          : this.cacheValue,
     );
   }
 
@@ -4562,8 +5323,8 @@ class MetadataCacheCompanion extends UpdateCompanion<MetadataCacheEntry> {
     required String cacheKey,
     required String cacheValue,
     this.rowid = const Value.absent(),
-  })  : cacheKey = Value(cacheKey),
-        cacheValue = Value(cacheValue);
+  }) : cacheKey = Value(cacheKey),
+       cacheValue = Value(cacheValue);
   static Insertable<MetadataCacheEntry> custom({
     Expression<String>? cacheKey,
     Expression<String>? cacheValue,
@@ -4576,8 +5337,11 @@ class MetadataCacheCompanion extends UpdateCompanion<MetadataCacheEntry> {
     });
   }
 
-  MetadataCacheCompanion copyWith(
-      {Value<String>? cacheKey, Value<String>? cacheValue, Value<int>? rowid}) {
+  MetadataCacheCompanion copyWith({
+    Value<String>? cacheKey,
+    Value<String>? cacheValue,
+    Value<int>? rowid,
+  }) {
     return MetadataCacheCompanion(
       cacheKey: cacheKey ?? this.cacheKey,
       cacheValue: cacheValue ?? this.cacheValue,
@@ -4620,155 +5384,252 @@ class $PluginInstallationsTable extends PluginInstallations
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _pluginIdMeta =
-      const VerificationMeta('pluginId');
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _pluginIdMeta = const VerificationMeta(
+    'pluginId',
+  );
   @override
   late final GeneratedColumn<String> pluginId = GeneratedColumn<String>(
-      'plugin_id', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _pluginNameMeta =
-      const VerificationMeta('pluginName');
+    'plugin_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pluginNameMeta = const VerificationMeta(
+    'pluginName',
+  );
   @override
   late final GeneratedColumn<String> pluginName = GeneratedColumn<String>(
-      'plugin_name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _pluginVersionMeta =
-      const VerificationMeta('pluginVersion');
+    'plugin_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pluginVersionMeta = const VerificationMeta(
+    'pluginVersion',
+  );
   @override
   late final GeneratedColumn<String> pluginVersion = GeneratedColumn<String>(
-      'plugin_version', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _pluginTypeMeta =
-      const VerificationMeta('pluginType');
+    'plugin_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pluginTypeMeta = const VerificationMeta(
+    'pluginType',
+  );
   @override
   late final GeneratedColumn<String> pluginType = GeneratedColumn<String>(
-      'plugin_type', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _pluginAuthorMeta =
-      const VerificationMeta('pluginAuthor');
+    'plugin_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pluginAuthorMeta = const VerificationMeta(
+    'pluginAuthor',
+  );
   @override
   late final GeneratedColumn<String> pluginAuthor = GeneratedColumn<String>(
-      'plugin_author', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _installedAtMeta =
-      const VerificationMeta('installedAt');
+    'plugin_author',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _installedAtMeta = const VerificationMeta(
+    'installedAt',
+  );
   @override
   late final GeneratedColumn<DateTime> installedAt = GeneratedColumn<DateTime>(
-      'installed_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      defaultValue: currentDateAndTime);
-  static const VerificationMeta _installationPathMeta =
-      const VerificationMeta('installationPath');
+    'installed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _installationPathMeta = const VerificationMeta(
+    'installationPath',
+  );
   @override
   late final GeneratedColumn<String> installationPath = GeneratedColumn<String>(
-      'installation_path', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'installation_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _installationStatusMeta =
       const VerificationMeta('installationStatus');
   @override
   late final GeneratedColumn<String> installationStatus =
-      GeneratedColumn<String>('installation_status', aliasedName, false,
-          type: DriftSqlType.string,
-          requiredDuringInsert: false,
-          defaultValue: const Constant('completed'));
+      GeneratedColumn<String>(
+        'installation_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('completed'),
+      );
   static const VerificationMeta _marketplaceMetadataMeta =
       const VerificationMeta('marketplaceMetadata');
   @override
   late final GeneratedColumn<String> marketplaceMetadata =
-      GeneratedColumn<String>('marketplace_metadata', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _repositoryUrlMeta =
-      const VerificationMeta('repositoryUrl');
+      GeneratedColumn<String>(
+        'marketplace_metadata',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _repositoryUrlMeta = const VerificationMeta(
+    'repositoryUrl',
+  );
   @override
   late final GeneratedColumn<String> repositoryUrl = GeneratedColumn<String>(
-      'repository_url', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _repositoryOwnerMeta =
-      const VerificationMeta('repositoryOwner');
+    'repository_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _repositoryOwnerMeta = const VerificationMeta(
+    'repositoryOwner',
+  );
   @override
   late final GeneratedColumn<String> repositoryOwner = GeneratedColumn<String>(
-      'repository_owner', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _repositoryNameMeta =
-      const VerificationMeta('repositoryName');
+    'repository_owner',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _repositoryNameMeta = const VerificationMeta(
+    'repositoryName',
+  );
   @override
   late final GeneratedColumn<String> repositoryName = GeneratedColumn<String>(
-      'repository_name', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _fileCountMeta =
-      const VerificationMeta('fileCount');
+    'repository_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileCountMeta = const VerificationMeta(
+    'fileCount',
+  );
   @override
   late final GeneratedColumn<int> fileCount = GeneratedColumn<int>(
-      'file_count', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _totalBytesMeta =
-      const VerificationMeta('totalBytes');
+    'file_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalBytesMeta = const VerificationMeta(
+    'totalBytes',
+  );
   @override
   late final GeneratedColumn<int> totalBytes = GeneratedColumn<int>(
-      'total_bytes', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _installationNotesMeta =
-      const VerificationMeta('installationNotes');
+    'total_bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _installationNotesMeta = const VerificationMeta(
+    'installationNotes',
+  );
   @override
   late final GeneratedColumn<String> installationNotes =
-      GeneratedColumn<String>('installation_notes', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _errorMessageMeta =
-      const VerificationMeta('errorMessage');
+      GeneratedColumn<String>(
+        'installation_notes',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _errorMessageMeta = const VerificationMeta(
+    'errorMessage',
+  );
   @override
   late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
-      'error_message', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _availableVersionMeta =
-      const VerificationMeta('availableVersion');
+    'error_message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _availableVersionMeta = const VerificationMeta(
+    'availableVersion',
+  );
   @override
   late final GeneratedColumn<String> availableVersion = GeneratedColumn<String>(
-      'available_version', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _updateAvailableMeta =
-      const VerificationMeta('updateAvailable');
+    'available_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updateAvailableMeta = const VerificationMeta(
+    'updateAvailable',
+  );
   @override
   late final GeneratedColumn<String> updateAvailable = GeneratedColumn<String>(
-      'update_available', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('false'));
-  static const VerificationMeta _lastCheckedMeta =
-      const VerificationMeta('lastChecked');
+    'update_available',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('false'),
+  );
+  static const VerificationMeta _lastCheckedMeta = const VerificationMeta(
+    'lastChecked',
+  );
   @override
   late final GeneratedColumn<DateTime> lastChecked = GeneratedColumn<DateTime>(
-      'last_checked', aliasedName, true,
-      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+    'last_checked',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        pluginId,
-        pluginName,
-        pluginVersion,
-        pluginType,
-        pluginAuthor,
-        installedAt,
-        installationPath,
-        installationStatus,
-        marketplaceMetadata,
-        repositoryUrl,
-        repositoryOwner,
-        repositoryName,
-        fileCount,
-        totalBytes,
-        installationNotes,
-        errorMessage,
-        availableVersion,
-        updateAvailable,
-        lastChecked
-      ];
+    id,
+    pluginId,
+    pluginName,
+    pluginVersion,
+    pluginType,
+    pluginAuthor,
+    installedAt,
+    installationPath,
+    installationStatus,
+    marketplaceMetadata,
+    repositoryUrl,
+    repositoryOwner,
+    repositoryName,
+    fileCount,
+    totalBytes,
+    installationNotes,
+    errorMessage,
+    availableVersion,
+    updateAvailable,
+    lastChecked,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4776,134 +5637,181 @@ class $PluginInstallationsTable extends PluginInstallations
   static const String $name = 'plugin_installations';
   @override
   VerificationContext validateIntegrity(
-      Insertable<PluginInstallationEntry> instance,
-      {bool isInserting = false}) {
+    Insertable<PluginInstallationEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('plugin_id')) {
-      context.handle(_pluginIdMeta,
-          pluginId.isAcceptableOrUnknown(data['plugin_id']!, _pluginIdMeta));
+      context.handle(
+        _pluginIdMeta,
+        pluginId.isAcceptableOrUnknown(data['plugin_id']!, _pluginIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_pluginIdMeta);
     }
     if (data.containsKey('plugin_name')) {
       context.handle(
-          _pluginNameMeta,
-          pluginName.isAcceptableOrUnknown(
-              data['plugin_name']!, _pluginNameMeta));
+        _pluginNameMeta,
+        pluginName.isAcceptableOrUnknown(data['plugin_name']!, _pluginNameMeta),
+      );
     } else if (isInserting) {
       context.missing(_pluginNameMeta);
     }
     if (data.containsKey('plugin_version')) {
       context.handle(
+        _pluginVersionMeta,
+        pluginVersion.isAcceptableOrUnknown(
+          data['plugin_version']!,
           _pluginVersionMeta,
-          pluginVersion.isAcceptableOrUnknown(
-              data['plugin_version']!, _pluginVersionMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_pluginVersionMeta);
     }
     if (data.containsKey('plugin_type')) {
       context.handle(
-          _pluginTypeMeta,
-          pluginType.isAcceptableOrUnknown(
-              data['plugin_type']!, _pluginTypeMeta));
+        _pluginTypeMeta,
+        pluginType.isAcceptableOrUnknown(data['plugin_type']!, _pluginTypeMeta),
+      );
     } else if (isInserting) {
       context.missing(_pluginTypeMeta);
     }
     if (data.containsKey('plugin_author')) {
       context.handle(
+        _pluginAuthorMeta,
+        pluginAuthor.isAcceptableOrUnknown(
+          data['plugin_author']!,
           _pluginAuthorMeta,
-          pluginAuthor.isAcceptableOrUnknown(
-              data['plugin_author']!, _pluginAuthorMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_pluginAuthorMeta);
     }
     if (data.containsKey('installed_at')) {
       context.handle(
+        _installedAtMeta,
+        installedAt.isAcceptableOrUnknown(
+          data['installed_at']!,
           _installedAtMeta,
-          installedAt.isAcceptableOrUnknown(
-              data['installed_at']!, _installedAtMeta));
+        ),
+      );
     }
     if (data.containsKey('installation_path')) {
       context.handle(
+        _installationPathMeta,
+        installationPath.isAcceptableOrUnknown(
+          data['installation_path']!,
           _installationPathMeta,
-          installationPath.isAcceptableOrUnknown(
-              data['installation_path']!, _installationPathMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_installationPathMeta);
     }
     if (data.containsKey('installation_status')) {
       context.handle(
+        _installationStatusMeta,
+        installationStatus.isAcceptableOrUnknown(
+          data['installation_status']!,
           _installationStatusMeta,
-          installationStatus.isAcceptableOrUnknown(
-              data['installation_status']!, _installationStatusMeta));
+        ),
+      );
     }
     if (data.containsKey('marketplace_metadata')) {
       context.handle(
+        _marketplaceMetadataMeta,
+        marketplaceMetadata.isAcceptableOrUnknown(
+          data['marketplace_metadata']!,
           _marketplaceMetadataMeta,
-          marketplaceMetadata.isAcceptableOrUnknown(
-              data['marketplace_metadata']!, _marketplaceMetadataMeta));
+        ),
+      );
     }
     if (data.containsKey('repository_url')) {
       context.handle(
+        _repositoryUrlMeta,
+        repositoryUrl.isAcceptableOrUnknown(
+          data['repository_url']!,
           _repositoryUrlMeta,
-          repositoryUrl.isAcceptableOrUnknown(
-              data['repository_url']!, _repositoryUrlMeta));
+        ),
+      );
     }
     if (data.containsKey('repository_owner')) {
       context.handle(
+        _repositoryOwnerMeta,
+        repositoryOwner.isAcceptableOrUnknown(
+          data['repository_owner']!,
           _repositoryOwnerMeta,
-          repositoryOwner.isAcceptableOrUnknown(
-              data['repository_owner']!, _repositoryOwnerMeta));
+        ),
+      );
     }
     if (data.containsKey('repository_name')) {
       context.handle(
+        _repositoryNameMeta,
+        repositoryName.isAcceptableOrUnknown(
+          data['repository_name']!,
           _repositoryNameMeta,
-          repositoryName.isAcceptableOrUnknown(
-              data['repository_name']!, _repositoryNameMeta));
+        ),
+      );
     }
     if (data.containsKey('file_count')) {
-      context.handle(_fileCountMeta,
-          fileCount.isAcceptableOrUnknown(data['file_count']!, _fileCountMeta));
+      context.handle(
+        _fileCountMeta,
+        fileCount.isAcceptableOrUnknown(data['file_count']!, _fileCountMeta),
+      );
     }
     if (data.containsKey('total_bytes')) {
       context.handle(
-          _totalBytesMeta,
-          totalBytes.isAcceptableOrUnknown(
-              data['total_bytes']!, _totalBytesMeta));
+        _totalBytesMeta,
+        totalBytes.isAcceptableOrUnknown(data['total_bytes']!, _totalBytesMeta),
+      );
     }
     if (data.containsKey('installation_notes')) {
       context.handle(
+        _installationNotesMeta,
+        installationNotes.isAcceptableOrUnknown(
+          data['installation_notes']!,
           _installationNotesMeta,
-          installationNotes.isAcceptableOrUnknown(
-              data['installation_notes']!, _installationNotesMeta));
+        ),
+      );
     }
     if (data.containsKey('error_message')) {
       context.handle(
+        _errorMessageMeta,
+        errorMessage.isAcceptableOrUnknown(
+          data['error_message']!,
           _errorMessageMeta,
-          errorMessage.isAcceptableOrUnknown(
-              data['error_message']!, _errorMessageMeta));
+        ),
+      );
     }
     if (data.containsKey('available_version')) {
       context.handle(
+        _availableVersionMeta,
+        availableVersion.isAcceptableOrUnknown(
+          data['available_version']!,
           _availableVersionMeta,
-          availableVersion.isAcceptableOrUnknown(
-              data['available_version']!, _availableVersionMeta));
+        ),
+      );
     }
     if (data.containsKey('update_available')) {
       context.handle(
+        _updateAvailableMeta,
+        updateAvailable.isAcceptableOrUnknown(
+          data['update_available']!,
           _updateAvailableMeta,
-          updateAvailable.isAcceptableOrUnknown(
-              data['update_available']!, _updateAvailableMeta));
+        ),
+      );
     }
     if (data.containsKey('last_checked')) {
       context.handle(
+        _lastCheckedMeta,
+        lastChecked.isAcceptableOrUnknown(
+          data['last_checked']!,
           _lastCheckedMeta,
-          lastChecked.isAcceptableOrUnknown(
-              data['last_checked']!, _lastCheckedMeta));
+        ),
+      );
     }
     return context;
   }
@@ -4911,50 +5819,92 @@ class $PluginInstallationsTable extends PluginInstallations
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  PluginInstallationEntry map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  PluginInstallationEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return PluginInstallationEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      pluginId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plugin_id'])!,
-      pluginName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plugin_name'])!,
-      pluginVersion: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plugin_version'])!,
-      pluginType: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plugin_type'])!,
-      pluginAuthor: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plugin_author'])!,
-      installedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}installed_at'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      pluginId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plugin_id'],
+      )!,
+      pluginName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plugin_name'],
+      )!,
+      pluginVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plugin_version'],
+      )!,
+      pluginType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plugin_type'],
+      )!,
+      pluginAuthor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plugin_author'],
+      )!,
+      installedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}installed_at'],
+      )!,
       installationPath: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}installation_path'])!,
+        DriftSqlType.string,
+        data['${effectivePrefix}installation_path'],
+      )!,
       installationStatus: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}installation_status'])!,
+        DriftSqlType.string,
+        data['${effectivePrefix}installation_status'],
+      )!,
       marketplaceMetadata: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}marketplace_metadata']),
-      repositoryUrl: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}repository_url']),
+        DriftSqlType.string,
+        data['${effectivePrefix}marketplace_metadata'],
+      ),
+      repositoryUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repository_url'],
+      ),
       repositoryOwner: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}repository_owner']),
-      repositoryName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}repository_name']),
-      fileCount: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}file_count']),
-      totalBytes: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}total_bytes']),
+        DriftSqlType.string,
+        data['${effectivePrefix}repository_owner'],
+      ),
+      repositoryName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repository_name'],
+      ),
+      fileCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_count'],
+      ),
+      totalBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_bytes'],
+      ),
       installationNotes: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}installation_notes']),
-      errorMessage: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}error_message']),
+        DriftSqlType.string,
+        data['${effectivePrefix}installation_notes'],
+      ),
+      errorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_message'],
+      ),
       availableVersion: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}available_version']),
+        DriftSqlType.string,
+        data['${effectivePrefix}available_version'],
+      ),
       updateAvailable: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}update_available'])!,
-      lastChecked: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_checked']),
+        DriftSqlType.string,
+        data['${effectivePrefix}update_available'],
+      )!,
+      lastChecked: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_checked'],
+      ),
     );
   }
 
@@ -4986,27 +5936,28 @@ class PluginInstallationEntry extends DataClass
   final String? availableVersion;
   final String updateAvailable;
   final DateTime? lastChecked;
-  const PluginInstallationEntry(
-      {required this.id,
-      required this.pluginId,
-      required this.pluginName,
-      required this.pluginVersion,
-      required this.pluginType,
-      required this.pluginAuthor,
-      required this.installedAt,
-      required this.installationPath,
-      required this.installationStatus,
-      this.marketplaceMetadata,
-      this.repositoryUrl,
-      this.repositoryOwner,
-      this.repositoryName,
-      this.fileCount,
-      this.totalBytes,
-      this.installationNotes,
-      this.errorMessage,
-      this.availableVersion,
-      required this.updateAvailable,
-      this.lastChecked});
+  const PluginInstallationEntry({
+    required this.id,
+    required this.pluginId,
+    required this.pluginName,
+    required this.pluginVersion,
+    required this.pluginType,
+    required this.pluginAuthor,
+    required this.installedAt,
+    required this.installationPath,
+    required this.installationStatus,
+    this.marketplaceMetadata,
+    this.repositoryUrl,
+    this.repositoryOwner,
+    this.repositoryName,
+    this.fileCount,
+    this.totalBytes,
+    this.installationNotes,
+    this.errorMessage,
+    this.availableVersion,
+    required this.updateAvailable,
+    this.lastChecked,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5098,8 +6049,10 @@ class PluginInstallationEntry extends DataClass
     );
   }
 
-  factory PluginInstallationEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory PluginInstallationEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PluginInstallationEntry(
       id: serializer.fromJson<int>(json['id']),
@@ -5110,17 +6063,20 @@ class PluginInstallationEntry extends DataClass
       pluginAuthor: serializer.fromJson<String>(json['pluginAuthor']),
       installedAt: serializer.fromJson<DateTime>(json['installedAt']),
       installationPath: serializer.fromJson<String>(json['installationPath']),
-      installationStatus:
-          serializer.fromJson<String>(json['installationStatus']),
-      marketplaceMetadata:
-          serializer.fromJson<String?>(json['marketplaceMetadata']),
+      installationStatus: serializer.fromJson<String>(
+        json['installationStatus'],
+      ),
+      marketplaceMetadata: serializer.fromJson<String?>(
+        json['marketplaceMetadata'],
+      ),
       repositoryUrl: serializer.fromJson<String?>(json['repositoryUrl']),
       repositoryOwner: serializer.fromJson<String?>(json['repositoryOwner']),
       repositoryName: serializer.fromJson<String?>(json['repositoryName']),
       fileCount: serializer.fromJson<int?>(json['fileCount']),
       totalBytes: serializer.fromJson<int?>(json['totalBytes']),
-      installationNotes:
-          serializer.fromJson<String?>(json['installationNotes']),
+      installationNotes: serializer.fromJson<String?>(
+        json['installationNotes'],
+      ),
       errorMessage: serializer.fromJson<String?>(json['errorMessage']),
       availableVersion: serializer.fromJson<String?>(json['availableVersion']),
       updateAvailable: serializer.fromJson<String>(json['updateAvailable']),
@@ -5154,76 +6110,80 @@ class PluginInstallationEntry extends DataClass
     };
   }
 
-  PluginInstallationEntry copyWith(
-          {int? id,
-          String? pluginId,
-          String? pluginName,
-          String? pluginVersion,
-          String? pluginType,
-          String? pluginAuthor,
-          DateTime? installedAt,
-          String? installationPath,
-          String? installationStatus,
-          Value<String?> marketplaceMetadata = const Value.absent(),
-          Value<String?> repositoryUrl = const Value.absent(),
-          Value<String?> repositoryOwner = const Value.absent(),
-          Value<String?> repositoryName = const Value.absent(),
-          Value<int?> fileCount = const Value.absent(),
-          Value<int?> totalBytes = const Value.absent(),
-          Value<String?> installationNotes = const Value.absent(),
-          Value<String?> errorMessage = const Value.absent(),
-          Value<String?> availableVersion = const Value.absent(),
-          String? updateAvailable,
-          Value<DateTime?> lastChecked = const Value.absent()}) =>
-      PluginInstallationEntry(
-        id: id ?? this.id,
-        pluginId: pluginId ?? this.pluginId,
-        pluginName: pluginName ?? this.pluginName,
-        pluginVersion: pluginVersion ?? this.pluginVersion,
-        pluginType: pluginType ?? this.pluginType,
-        pluginAuthor: pluginAuthor ?? this.pluginAuthor,
-        installedAt: installedAt ?? this.installedAt,
-        installationPath: installationPath ?? this.installationPath,
-        installationStatus: installationStatus ?? this.installationStatus,
-        marketplaceMetadata: marketplaceMetadata.present
-            ? marketplaceMetadata.value
-            : this.marketplaceMetadata,
-        repositoryUrl:
-            repositoryUrl.present ? repositoryUrl.value : this.repositoryUrl,
-        repositoryOwner: repositoryOwner.present
-            ? repositoryOwner.value
-            : this.repositoryOwner,
-        repositoryName:
-            repositoryName.present ? repositoryName.value : this.repositoryName,
-        fileCount: fileCount.present ? fileCount.value : this.fileCount,
-        totalBytes: totalBytes.present ? totalBytes.value : this.totalBytes,
-        installationNotes: installationNotes.present
-            ? installationNotes.value
-            : this.installationNotes,
-        errorMessage:
-            errorMessage.present ? errorMessage.value : this.errorMessage,
-        availableVersion: availableVersion.present
-            ? availableVersion.value
-            : this.availableVersion,
-        updateAvailable: updateAvailable ?? this.updateAvailable,
-        lastChecked: lastChecked.present ? lastChecked.value : this.lastChecked,
-      );
+  PluginInstallationEntry copyWith({
+    int? id,
+    String? pluginId,
+    String? pluginName,
+    String? pluginVersion,
+    String? pluginType,
+    String? pluginAuthor,
+    DateTime? installedAt,
+    String? installationPath,
+    String? installationStatus,
+    Value<String?> marketplaceMetadata = const Value.absent(),
+    Value<String?> repositoryUrl = const Value.absent(),
+    Value<String?> repositoryOwner = const Value.absent(),
+    Value<String?> repositoryName = const Value.absent(),
+    Value<int?> fileCount = const Value.absent(),
+    Value<int?> totalBytes = const Value.absent(),
+    Value<String?> installationNotes = const Value.absent(),
+    Value<String?> errorMessage = const Value.absent(),
+    Value<String?> availableVersion = const Value.absent(),
+    String? updateAvailable,
+    Value<DateTime?> lastChecked = const Value.absent(),
+  }) => PluginInstallationEntry(
+    id: id ?? this.id,
+    pluginId: pluginId ?? this.pluginId,
+    pluginName: pluginName ?? this.pluginName,
+    pluginVersion: pluginVersion ?? this.pluginVersion,
+    pluginType: pluginType ?? this.pluginType,
+    pluginAuthor: pluginAuthor ?? this.pluginAuthor,
+    installedAt: installedAt ?? this.installedAt,
+    installationPath: installationPath ?? this.installationPath,
+    installationStatus: installationStatus ?? this.installationStatus,
+    marketplaceMetadata: marketplaceMetadata.present
+        ? marketplaceMetadata.value
+        : this.marketplaceMetadata,
+    repositoryUrl: repositoryUrl.present
+        ? repositoryUrl.value
+        : this.repositoryUrl,
+    repositoryOwner: repositoryOwner.present
+        ? repositoryOwner.value
+        : this.repositoryOwner,
+    repositoryName: repositoryName.present
+        ? repositoryName.value
+        : this.repositoryName,
+    fileCount: fileCount.present ? fileCount.value : this.fileCount,
+    totalBytes: totalBytes.present ? totalBytes.value : this.totalBytes,
+    installationNotes: installationNotes.present
+        ? installationNotes.value
+        : this.installationNotes,
+    errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
+    availableVersion: availableVersion.present
+        ? availableVersion.value
+        : this.availableVersion,
+    updateAvailable: updateAvailable ?? this.updateAvailable,
+    lastChecked: lastChecked.present ? lastChecked.value : this.lastChecked,
+  );
   PluginInstallationEntry copyWithCompanion(PluginInstallationsCompanion data) {
     return PluginInstallationEntry(
       id: data.id.present ? data.id.value : this.id,
       pluginId: data.pluginId.present ? data.pluginId.value : this.pluginId,
-      pluginName:
-          data.pluginName.present ? data.pluginName.value : this.pluginName,
+      pluginName: data.pluginName.present
+          ? data.pluginName.value
+          : this.pluginName,
       pluginVersion: data.pluginVersion.present
           ? data.pluginVersion.value
           : this.pluginVersion,
-      pluginType:
-          data.pluginType.present ? data.pluginType.value : this.pluginType,
+      pluginType: data.pluginType.present
+          ? data.pluginType.value
+          : this.pluginType,
       pluginAuthor: data.pluginAuthor.present
           ? data.pluginAuthor.value
           : this.pluginAuthor,
-      installedAt:
-          data.installedAt.present ? data.installedAt.value : this.installedAt,
+      installedAt: data.installedAt.present
+          ? data.installedAt.value
+          : this.installedAt,
       installationPath: data.installationPath.present
           ? data.installationPath.value
           : this.installationPath,
@@ -5243,8 +6203,9 @@ class PluginInstallationEntry extends DataClass
           ? data.repositoryName.value
           : this.repositoryName,
       fileCount: data.fileCount.present ? data.fileCount.value : this.fileCount,
-      totalBytes:
-          data.totalBytes.present ? data.totalBytes.value : this.totalBytes,
+      totalBytes: data.totalBytes.present
+          ? data.totalBytes.value
+          : this.totalBytes,
       installationNotes: data.installationNotes.present
           ? data.installationNotes.value
           : this.installationNotes,
@@ -5257,8 +6218,9 @@ class PluginInstallationEntry extends DataClass
       updateAvailable: data.updateAvailable.present
           ? data.updateAvailable.value
           : this.updateAvailable,
-      lastChecked:
-          data.lastChecked.present ? data.lastChecked.value : this.lastChecked,
+      lastChecked: data.lastChecked.present
+          ? data.lastChecked.value
+          : this.lastChecked,
     );
   }
 
@@ -5291,26 +6253,27 @@ class PluginInstallationEntry extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      id,
-      pluginId,
-      pluginName,
-      pluginVersion,
-      pluginType,
-      pluginAuthor,
-      installedAt,
-      installationPath,
-      installationStatus,
-      marketplaceMetadata,
-      repositoryUrl,
-      repositoryOwner,
-      repositoryName,
-      fileCount,
-      totalBytes,
-      installationNotes,
-      errorMessage,
-      availableVersion,
-      updateAvailable,
-      lastChecked);
+    id,
+    pluginId,
+    pluginName,
+    pluginVersion,
+    pluginType,
+    pluginAuthor,
+    installedAt,
+    installationPath,
+    installationStatus,
+    marketplaceMetadata,
+    repositoryUrl,
+    repositoryOwner,
+    repositoryName,
+    fileCount,
+    totalBytes,
+    installationNotes,
+    errorMessage,
+    availableVersion,
+    updateAvailable,
+    lastChecked,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5402,12 +6365,12 @@ class PluginInstallationsCompanion
     this.availableVersion = const Value.absent(),
     this.updateAvailable = const Value.absent(),
     this.lastChecked = const Value.absent(),
-  })  : pluginId = Value(pluginId),
-        pluginName = Value(pluginName),
-        pluginVersion = Value(pluginVersion),
-        pluginType = Value(pluginType),
-        pluginAuthor = Value(pluginAuthor),
-        installationPath = Value(installationPath);
+  }) : pluginId = Value(pluginId),
+       pluginName = Value(pluginName),
+       pluginVersion = Value(pluginVersion),
+       pluginType = Value(pluginType),
+       pluginAuthor = Value(pluginAuthor),
+       installationPath = Value(installationPath);
   static Insertable<PluginInstallationEntry> custom({
     Expression<int>? id,
     Expression<String>? pluginId,
@@ -5455,27 +6418,28 @@ class PluginInstallationsCompanion
     });
   }
 
-  PluginInstallationsCompanion copyWith(
-      {Value<int>? id,
-      Value<String>? pluginId,
-      Value<String>? pluginName,
-      Value<String>? pluginVersion,
-      Value<String>? pluginType,
-      Value<String>? pluginAuthor,
-      Value<DateTime>? installedAt,
-      Value<String>? installationPath,
-      Value<String>? installationStatus,
-      Value<String?>? marketplaceMetadata,
-      Value<String?>? repositoryUrl,
-      Value<String?>? repositoryOwner,
-      Value<String?>? repositoryName,
-      Value<int?>? fileCount,
-      Value<int?>? totalBytes,
-      Value<String?>? installationNotes,
-      Value<String?>? errorMessage,
-      Value<String?>? availableVersion,
-      Value<String>? updateAvailable,
-      Value<DateTime?>? lastChecked}) {
+  PluginInstallationsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? pluginId,
+    Value<String>? pluginName,
+    Value<String>? pluginVersion,
+    Value<String>? pluginType,
+    Value<String>? pluginAuthor,
+    Value<DateTime>? installedAt,
+    Value<String>? installationPath,
+    Value<String>? installationStatus,
+    Value<String?>? marketplaceMetadata,
+    Value<String?>? repositoryUrl,
+    Value<String?>? repositoryOwner,
+    Value<String?>? repositoryName,
+    Value<int?>? fileCount,
+    Value<int?>? totalBytes,
+    Value<String?>? installationNotes,
+    Value<String?>? errorMessage,
+    Value<String?>? availableVersion,
+    Value<String>? updateAvailable,
+    Value<DateTime?>? lastChecked,
+  }) {
     return PluginInstallationsCompanion(
       id: id ?? this.id,
       pluginId: pluginId ?? this.pluginId,
@@ -5631,126 +6595,147 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-        algorithms,
-        specifications,
-        units,
-        parameters,
-        parameterEnums,
-        parameterPages,
-        parameterPageItems,
-        presets,
-        presetSlots,
-        presetParameterValues,
-        presetParameterStringValues,
-        presetMappings,
-        presetRoutings,
-        sdCards,
-        indexedPresetFiles,
-        metadataCache,
-        pluginInstallations
-      ];
+    algorithms,
+    specifications,
+    units,
+    parameters,
+    parameterEnums,
+    parameterPages,
+    parameterPageItems,
+    presets,
+    presetSlots,
+    presetParameterValues,
+    presetParameterStringValues,
+    presetMappings,
+    presetRoutings,
+    sdCards,
+    indexedPresetFiles,
+    metadataCache,
+    pluginInstallations,
+  ];
   @override
-  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
-        [
-          WritePropagation(
-            on: TableUpdateQuery.onTableName('preset_slots',
-                limitUpdateKind: UpdateKind.delete),
-            result: [
-              TableUpdate('preset_parameter_values', kind: UpdateKind.delete),
-            ],
-          ),
-          WritePropagation(
-            on: TableUpdateQuery.onTableName('preset_slots',
-                limitUpdateKind: UpdateKind.delete),
-            result: [
-              TableUpdate('preset_parameter_string_values',
-                  kind: UpdateKind.delete),
-            ],
-          ),
-        ],
-      );
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'preset_slots',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('preset_parameter_values', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'preset_slots',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('preset_parameter_string_values', kind: UpdateKind.delete),
+      ],
+    ),
+  ]);
 }
 
-typedef $$AlgorithmsTableCreateCompanionBuilder = AlgorithmsCompanion Function({
-  required String guid,
-  required String name,
-  required int numSpecifications,
-  Value<String?> pluginFilePath,
-  Value<int> rowid,
-});
-typedef $$AlgorithmsTableUpdateCompanionBuilder = AlgorithmsCompanion Function({
-  Value<String> guid,
-  Value<String> name,
-  Value<int> numSpecifications,
-  Value<String?> pluginFilePath,
-  Value<int> rowid,
-});
+typedef $$AlgorithmsTableCreateCompanionBuilder =
+    AlgorithmsCompanion Function({
+      required String guid,
+      required String name,
+      required int numSpecifications,
+      Value<String?> pluginFilePath,
+      Value<int> rowid,
+    });
+typedef $$AlgorithmsTableUpdateCompanionBuilder =
+    AlgorithmsCompanion Function({
+      Value<String> guid,
+      Value<String> name,
+      Value<int> numSpecifications,
+      Value<String?> pluginFilePath,
+      Value<int> rowid,
+    });
 
 final class $$AlgorithmsTableReferences
     extends BaseReferences<_$AppDatabase, $AlgorithmsTable, AlgorithmEntry> {
   $$AlgorithmsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$SpecificationsTable, List<SpecificationEntry>>
-      _specificationsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.specifications,
-              aliasName: $_aliasNameGenerator(
-                  db.algorithms.guid, db.specifications.algorithmGuid));
+  _specificationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.specifications,
+    aliasName: $_aliasNameGenerator(
+      db.algorithms.guid,
+      db.specifications.algorithmGuid,
+    ),
+  );
 
   $$SpecificationsTableProcessedTableManager get specificationsRefs {
     final manager = $$SpecificationsTableTableManager($_db, $_db.specifications)
-        .filter((f) =>
-            f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!));
+        .filter(
+          (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!),
+        );
 
     final cache = $_typedResult.readTableOrNull(_specificationsRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 
   static MultiTypedResultKey<$ParametersTable, List<ParameterEntry>>
-      _parametersRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.parameters,
-              aliasName: $_aliasNameGenerator(
-                  db.algorithms.guid, db.parameters.algorithmGuid));
+  _parametersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.parameters,
+    aliasName: $_aliasNameGenerator(
+      db.algorithms.guid,
+      db.parameters.algorithmGuid,
+    ),
+  );
 
   $$ParametersTableProcessedTableManager get parametersRefs {
     final manager = $$ParametersTableTableManager($_db, $_db.parameters).filter(
-        (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!));
+      (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!),
+    );
 
     final cache = $_typedResult.readTableOrNull(_parametersRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 
   static MultiTypedResultKey<$ParameterPagesTable, List<ParameterPageEntry>>
-      _parameterPagesRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.parameterPages,
-              aliasName: $_aliasNameGenerator(
-                  db.algorithms.guid, db.parameterPages.algorithmGuid));
+  _parameterPagesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.parameterPages,
+    aliasName: $_aliasNameGenerator(
+      db.algorithms.guid,
+      db.parameterPages.algorithmGuid,
+    ),
+  );
 
   $$ParameterPagesTableProcessedTableManager get parameterPagesRefs {
     final manager = $$ParameterPagesTableTableManager($_db, $_db.parameterPages)
-        .filter((f) =>
-            f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!));
+        .filter(
+          (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!),
+        );
 
     final cache = $_typedResult.readTableOrNull(_parameterPagesRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 
   static MultiTypedResultKey<$PresetSlotsTable, List<PresetSlotEntry>>
-      _presetSlotsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.presetSlots,
-              aliasName: $_aliasNameGenerator(
-                  db.algorithms.guid, db.presetSlots.algorithmGuid));
+  _presetSlotsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.presetSlots,
+    aliasName: $_aliasNameGenerator(
+      db.algorithms.guid,
+      db.presetSlots.algorithmGuid,
+    ),
+  );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotsRefs {
     final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
-        .filter((f) =>
-            f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!));
+        .filter(
+          (f) => f.algorithmGuid.guid.sqlEquals($_itemColumn<String>('guid')!),
+        );
 
     final cache = $_typedResult.readTableOrNull(_presetSlotsRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 }
 
@@ -5764,100 +6749,122 @@ class $$AlgorithmsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get guid => $composableBuilder(
-      column: $table.guid, builder: (column) => ColumnFilters(column));
+    column: $table.guid,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get numSpecifications => $composableBuilder(
-      column: $table.numSpecifications,
-      builder: (column) => ColumnFilters(column));
+    column: $table.numSpecifications,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get pluginFilePath => $composableBuilder(
-      column: $table.pluginFilePath,
-      builder: (column) => ColumnFilters(column));
+    column: $table.pluginFilePath,
+    builder: (column) => ColumnFilters(column),
+  );
 
   Expression<bool> specificationsRefs(
-      Expression<bool> Function($$SpecificationsTableFilterComposer f) f) {
+    Expression<bool> Function($$SpecificationsTableFilterComposer f) f,
+  ) {
     final $$SpecificationsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.specifications,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$SpecificationsTableFilterComposer(
-              $db: $db,
-              $table: $db.specifications,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.specifications,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SpecificationsTableFilterComposer(
+            $db: $db,
+            $table: $db.specifications,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<bool> parametersRefs(
-      Expression<bool> Function($$ParametersTableFilterComposer f) f) {
+    Expression<bool> Function($$ParametersTableFilterComposer f) f,
+  ) {
     final $$ParametersTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.parameters,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ParametersTableFilterComposer(
-              $db: $db,
-              $table: $db.parameters,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.parameters,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ParametersTableFilterComposer(
+            $db: $db,
+            $table: $db.parameters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<bool> parameterPagesRefs(
-      Expression<bool> Function($$ParameterPagesTableFilterComposer f) f) {
+    Expression<bool> Function($$ParameterPagesTableFilterComposer f) f,
+  ) {
     final $$ParameterPagesTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.parameterPages,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ParameterPagesTableFilterComposer(
-              $db: $db,
-              $table: $db.parameterPages,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.parameterPages,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ParameterPagesTableFilterComposer(
+            $db: $db,
+            $table: $db.parameterPages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<bool> presetSlotsRefs(
-      Expression<bool> Function($$PresetSlotsTableFilterComposer f) f) {
+    Expression<bool> Function($$PresetSlotsTableFilterComposer f) f,
+  ) {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -5872,18 +6879,24 @@ class $$AlgorithmsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get guid => $composableBuilder(
-      column: $table.guid, builder: (column) => ColumnOrderings(column));
+    column: $table.guid,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get numSpecifications => $composableBuilder(
-      column: $table.numSpecifications,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.numSpecifications,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get pluginFilePath => $composableBuilder(
-      column: $table.pluginFilePath,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.pluginFilePath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AlgorithmsTableAnnotationComposer
@@ -5902,114 +6915,139 @@ class $$AlgorithmsTableAnnotationComposer
       $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<int> get numSpecifications => $composableBuilder(
-      column: $table.numSpecifications, builder: (column) => column);
+    column: $table.numSpecifications,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get pluginFilePath => $composableBuilder(
-      column: $table.pluginFilePath, builder: (column) => column);
+    column: $table.pluginFilePath,
+    builder: (column) => column,
+  );
 
   Expression<T> specificationsRefs<T extends Object>(
-      Expression<T> Function($$SpecificationsTableAnnotationComposer a) f) {
+    Expression<T> Function($$SpecificationsTableAnnotationComposer a) f,
+  ) {
     final $$SpecificationsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.specifications,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$SpecificationsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.specifications,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.specifications,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SpecificationsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.specifications,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<T> parametersRefs<T extends Object>(
-      Expression<T> Function($$ParametersTableAnnotationComposer a) f) {
+    Expression<T> Function($$ParametersTableAnnotationComposer a) f,
+  ) {
     final $$ParametersTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.parameters,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ParametersTableAnnotationComposer(
-              $db: $db,
-              $table: $db.parameters,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.parameters,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ParametersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.parameters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<T> parameterPagesRefs<T extends Object>(
-      Expression<T> Function($$ParameterPagesTableAnnotationComposer a) f) {
+    Expression<T> Function($$ParameterPagesTableAnnotationComposer a) f,
+  ) {
     final $$ParameterPagesTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.parameterPages,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ParameterPagesTableAnnotationComposer(
-              $db: $db,
-              $table: $db.parameterPages,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.parameterPages,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ParameterPagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.parameterPages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<T> presetSlotsRefs<T extends Object>(
-      Expression<T> Function($$PresetSlotsTableAnnotationComposer a) f) {
+    Expression<T> Function($$PresetSlotsTableAnnotationComposer a) f,
+  ) {
     final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.guid,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.algorithmGuid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.guid,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.algorithmGuid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
 
-class $$AlgorithmsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $AlgorithmsTable,
-    AlgorithmEntry,
-    $$AlgorithmsTableFilterComposer,
-    $$AlgorithmsTableOrderingComposer,
-    $$AlgorithmsTableAnnotationComposer,
-    $$AlgorithmsTableCreateCompanionBuilder,
-    $$AlgorithmsTableUpdateCompanionBuilder,
-    (AlgorithmEntry, $$AlgorithmsTableReferences),
-    AlgorithmEntry,
-    PrefetchHooks Function(
-        {bool specificationsRefs,
-        bool parametersRefs,
-        bool parameterPagesRefs,
-        bool presetSlotsRefs})> {
+class $$AlgorithmsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AlgorithmsTable,
+          AlgorithmEntry,
+          $$AlgorithmsTableFilterComposer,
+          $$AlgorithmsTableOrderingComposer,
+          $$AlgorithmsTableAnnotationComposer,
+          $$AlgorithmsTableCreateCompanionBuilder,
+          $$AlgorithmsTableUpdateCompanionBuilder,
+          (AlgorithmEntry, $$AlgorithmsTableReferences),
+          AlgorithmEntry,
+          PrefetchHooks Function({
+            bool specificationsRefs,
+            bool parametersRefs,
+            bool parameterPagesRefs,
+            bool presetSlotsRefs,
+          })
+        > {
   $$AlgorithmsTableTableManager(_$AppDatabase db, $AlgorithmsTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -6018,172 +7056,227 @@ class $$AlgorithmsTableTableManager extends RootTableManager<
               $$AlgorithmsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$AlgorithmsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> guid = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<int> numSpecifications = const Value.absent(),
-            Value<String?> pluginFilePath = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              AlgorithmsCompanion(
-            guid: guid,
-            name: name,
-            numSpecifications: numSpecifications,
-            pluginFilePath: pluginFilePath,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String guid,
-            required String name,
-            required int numSpecifications,
-            Value<String?> pluginFilePath = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              AlgorithmsCompanion.insert(
-            guid: guid,
-            name: name,
-            numSpecifications: numSpecifications,
-            pluginFilePath: pluginFilePath,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> guid = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> numSpecifications = const Value.absent(),
+                Value<String?> pluginFilePath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AlgorithmsCompanion(
+                guid: guid,
+                name: name,
+                numSpecifications: numSpecifications,
+                pluginFilePath: pluginFilePath,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String guid,
+                required String name,
+                required int numSpecifications,
+                Value<String?> pluginFilePath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AlgorithmsCompanion.insert(
+                guid: guid,
+                name: name,
+                numSpecifications: numSpecifications,
+                pluginFilePath: pluginFilePath,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$AlgorithmsTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AlgorithmsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: (
-              {specificationsRefs = false,
-              parametersRefs = false,
-              parameterPagesRefs = false,
-              presetSlotsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (specificationsRefs) db.specifications,
-                if (parametersRefs) db.parameters,
-                if (parameterPagesRefs) db.parameterPages,
-                if (presetSlotsRefs) db.presetSlots
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (specificationsRefs)
-                    await $_getPrefetchedData<AlgorithmEntry, $AlgorithmsTable,
-                            SpecificationEntry>(
-                        currentTable: table,
-                        referencedTable: $$AlgorithmsTableReferences
-                            ._specificationsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$AlgorithmsTableReferences(db, table, p0)
-                                .specificationsRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.algorithmGuid == item.guid),
-                        typedResults: items),
-                  if (parametersRefs)
-                    await $_getPrefetchedData<AlgorithmEntry, $AlgorithmsTable,
-                            ParameterEntry>(
-                        currentTable: table,
-                        referencedTable: $$AlgorithmsTableReferences
-                            ._parametersRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$AlgorithmsTableReferences(db, table, p0)
-                                .parametersRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.algorithmGuid == item.guid),
-                        typedResults: items),
-                  if (parameterPagesRefs)
-                    await $_getPrefetchedData<AlgorithmEntry, $AlgorithmsTable,
-                            ParameterPageEntry>(
-                        currentTable: table,
-                        referencedTable: $$AlgorithmsTableReferences
-                            ._parameterPagesRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$AlgorithmsTableReferences(db, table, p0)
-                                .parameterPagesRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.algorithmGuid == item.guid),
-                        typedResults: items),
-                  if (presetSlotsRefs)
-                    await $_getPrefetchedData<AlgorithmEntry, $AlgorithmsTable,
-                            PresetSlotEntry>(
-                        currentTable: table,
-                        referencedTable: $$AlgorithmsTableReferences
-                            ._presetSlotsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$AlgorithmsTableReferences(db, table, p0)
-                                .presetSlotsRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.algorithmGuid == item.guid),
-                        typedResults: items)
-                ];
+          prefetchHooksCallback:
+              ({
+                specificationsRefs = false,
+                parametersRefs = false,
+                parameterPagesRefs = false,
+                presetSlotsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (specificationsRefs) db.specifications,
+                    if (parametersRefs) db.parameters,
+                    if (parameterPagesRefs) db.parameterPages,
+                    if (presetSlotsRefs) db.presetSlots,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (specificationsRefs)
+                        await $_getPrefetchedData<
+                          AlgorithmEntry,
+                          $AlgorithmsTable,
+                          SpecificationEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AlgorithmsTableReferences
+                              ._specificationsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AlgorithmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).specificationsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.algorithmGuid == item.guid,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (parametersRefs)
+                        await $_getPrefetchedData<
+                          AlgorithmEntry,
+                          $AlgorithmsTable,
+                          ParameterEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AlgorithmsTableReferences
+                              ._parametersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AlgorithmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).parametersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.algorithmGuid == item.guid,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (parameterPagesRefs)
+                        await $_getPrefetchedData<
+                          AlgorithmEntry,
+                          $AlgorithmsTable,
+                          ParameterPageEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AlgorithmsTableReferences
+                              ._parameterPagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AlgorithmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).parameterPagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.algorithmGuid == item.guid,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (presetSlotsRefs)
+                        await $_getPrefetchedData<
+                          AlgorithmEntry,
+                          $AlgorithmsTable,
+                          PresetSlotEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AlgorithmsTableReferences
+                              ._presetSlotsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AlgorithmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).presetSlotsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.algorithmGuid == item.guid,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
-        ));
+        ),
+      );
 }
 
-typedef $$AlgorithmsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $AlgorithmsTable,
-    AlgorithmEntry,
-    $$AlgorithmsTableFilterComposer,
-    $$AlgorithmsTableOrderingComposer,
-    $$AlgorithmsTableAnnotationComposer,
-    $$AlgorithmsTableCreateCompanionBuilder,
-    $$AlgorithmsTableUpdateCompanionBuilder,
-    (AlgorithmEntry, $$AlgorithmsTableReferences),
-    AlgorithmEntry,
-    PrefetchHooks Function(
-        {bool specificationsRefs,
+typedef $$AlgorithmsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AlgorithmsTable,
+      AlgorithmEntry,
+      $$AlgorithmsTableFilterComposer,
+      $$AlgorithmsTableOrderingComposer,
+      $$AlgorithmsTableAnnotationComposer,
+      $$AlgorithmsTableCreateCompanionBuilder,
+      $$AlgorithmsTableUpdateCompanionBuilder,
+      (AlgorithmEntry, $$AlgorithmsTableReferences),
+      AlgorithmEntry,
+      PrefetchHooks Function({
+        bool specificationsRefs,
         bool parametersRefs,
         bool parameterPagesRefs,
-        bool presetSlotsRefs})>;
-typedef $$SpecificationsTableCreateCompanionBuilder = SpecificationsCompanion
-    Function({
-  required String algorithmGuid,
-  required int specIndex,
-  required String name,
-  required int minValue,
-  required int maxValue,
-  required int defaultValue,
-  required int type,
-  Value<int> rowid,
-});
-typedef $$SpecificationsTableUpdateCompanionBuilder = SpecificationsCompanion
-    Function({
-  Value<String> algorithmGuid,
-  Value<int> specIndex,
-  Value<String> name,
-  Value<int> minValue,
-  Value<int> maxValue,
-  Value<int> defaultValue,
-  Value<int> type,
-  Value<int> rowid,
-});
+        bool presetSlotsRefs,
+      })
+    >;
+typedef $$SpecificationsTableCreateCompanionBuilder =
+    SpecificationsCompanion Function({
+      required String algorithmGuid,
+      required int specIndex,
+      required String name,
+      required int minValue,
+      required int maxValue,
+      required int defaultValue,
+      required int type,
+      Value<int> rowid,
+    });
+typedef $$SpecificationsTableUpdateCompanionBuilder =
+    SpecificationsCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> specIndex,
+      Value<String> name,
+      Value<int> minValue,
+      Value<int> maxValue,
+      Value<int> defaultValue,
+      Value<int> type,
+      Value<int> rowid,
+    });
 
-final class $$SpecificationsTableReferences extends BaseReferences<
-    _$AppDatabase, $SpecificationsTable, SpecificationEntry> {
+final class $$SpecificationsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SpecificationsTable,
+          SpecificationEntry
+        > {
   $$SpecificationsTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias($_aliasNameGenerator(
-          db.specifications.algorithmGuid, db.algorithms.guid));
+      db.algorithms.createAlias(
+        $_aliasNameGenerator(
+          db.specifications.algorithmGuid,
+          db.algorithms.guid,
+        ),
+      );
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
 
-    final manager = $$AlgorithmsTableTableManager($_db, $_db.algorithms)
-        .filter((f) => f.guid.sqlEquals($_column));
+    final manager = $$AlgorithmsTableTableManager(
+      $_db,
+      $_db.algorithms,
+    ).filter((f) => f.guid.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_algorithmGuidTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -6197,40 +7290,55 @@ class $$SpecificationsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get specIndex => $composableBuilder(
-      column: $table.specIndex, builder: (column) => ColumnFilters(column));
+    column: $table.specIndex,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get minValue => $composableBuilder(
-      column: $table.minValue, builder: (column) => ColumnFilters(column));
+    column: $table.minValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get maxValue => $composableBuilder(
-      column: $table.maxValue, builder: (column) => ColumnFilters(column));
+    column: $table.maxValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get defaultValue => $composableBuilder(
-      column: $table.defaultValue, builder: (column) => ColumnFilters(column));
+    column: $table.defaultValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$AlgorithmsTableFilterComposer get algorithmGuid {
     final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableFilterComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableFilterComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -6245,41 +7353,55 @@ class $$SpecificationsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get specIndex => $composableBuilder(
-      column: $table.specIndex, builder: (column) => ColumnOrderings(column));
+    column: $table.specIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get minValue => $composableBuilder(
-      column: $table.minValue, builder: (column) => ColumnOrderings(column));
+    column: $table.minValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get maxValue => $composableBuilder(
-      column: $table.maxValue, builder: (column) => ColumnOrderings(column));
+    column: $table.maxValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get defaultValue => $composableBuilder(
-      column: $table.defaultValue,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.defaultValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$AlgorithmsTableOrderingComposer get algorithmGuid {
     final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableOrderingComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -6306,47 +7428,57 @@ class $$SpecificationsTableAnnotationComposer
       $composableBuilder(column: $table.maxValue, builder: (column) => column);
 
   GeneratedColumn<int> get defaultValue => $composableBuilder(
-      column: $table.defaultValue, builder: (column) => column);
+    column: $table.defaultValue,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
   $$AlgorithmsTableAnnotationComposer get algorithmGuid {
     final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$SpecificationsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $SpecificationsTable,
-    SpecificationEntry,
-    $$SpecificationsTableFilterComposer,
-    $$SpecificationsTableOrderingComposer,
-    $$SpecificationsTableAnnotationComposer,
-    $$SpecificationsTableCreateCompanionBuilder,
-    $$SpecificationsTableUpdateCompanionBuilder,
-    (SpecificationEntry, $$SpecificationsTableReferences),
-    SpecificationEntry,
-    PrefetchHooks Function({bool algorithmGuid})> {
+class $$SpecificationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SpecificationsTable,
+          SpecificationEntry,
+          $$SpecificationsTableFilterComposer,
+          $$SpecificationsTableOrderingComposer,
+          $$SpecificationsTableAnnotationComposer,
+          $$SpecificationsTableCreateCompanionBuilder,
+          $$SpecificationsTableUpdateCompanionBuilder,
+          (SpecificationEntry, $$SpecificationsTableReferences),
+          SpecificationEntry,
+          PrefetchHooks Function({bool algorithmGuid})
+        > {
   $$SpecificationsTableTableManager(
-      _$AppDatabase db, $SpecificationsTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $SpecificationsTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -6355,58 +7487,61 @@ class $$SpecificationsTableTableManager extends RootTableManager<
               $$SpecificationsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$SpecificationsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> algorithmGuid = const Value.absent(),
-            Value<int> specIndex = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<int> minValue = const Value.absent(),
-            Value<int> maxValue = const Value.absent(),
-            Value<int> defaultValue = const Value.absent(),
-            Value<int> type = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SpecificationsCompanion(
-            algorithmGuid: algorithmGuid,
-            specIndex: specIndex,
-            name: name,
-            minValue: minValue,
-            maxValue: maxValue,
-            defaultValue: defaultValue,
-            type: type,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String algorithmGuid,
-            required int specIndex,
-            required String name,
-            required int minValue,
-            required int maxValue,
-            required int defaultValue,
-            required int type,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              SpecificationsCompanion.insert(
-            algorithmGuid: algorithmGuid,
-            specIndex: specIndex,
-            name: name,
-            minValue: minValue,
-            maxValue: maxValue,
-            defaultValue: defaultValue,
-            type: type,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> specIndex = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> minValue = const Value.absent(),
+                Value<int> maxValue = const Value.absent(),
+                Value<int> defaultValue = const Value.absent(),
+                Value<int> type = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SpecificationsCompanion(
+                algorithmGuid: algorithmGuid,
+                specIndex: specIndex,
+                name: name,
+                minValue: minValue,
+                maxValue: maxValue,
+                defaultValue: defaultValue,
+                type: type,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int specIndex,
+                required String name,
+                required int minValue,
+                required int maxValue,
+                required int defaultValue,
+                required int type,
+                Value<int> rowid = const Value.absent(),
+              }) => SpecificationsCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                specIndex: specIndex,
+                name: name,
+                minValue: minValue,
+                maxValue: maxValue,
+                defaultValue: defaultValue,
+                type: type,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$SpecificationsTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SpecificationsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({algorithmGuid = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -6417,66 +7552,74 @@ class $$SpecificationsTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (algorithmGuid) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.algorithmGuid,
-                    referencedTable:
-                        $$SpecificationsTableReferences._algorithmGuidTable(db),
-                    referencedColumn: $$SpecificationsTableReferences
-                        ._algorithmGuidTable(db)
-                        .guid,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (algorithmGuid) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.algorithmGuid,
+                                referencedTable: $$SpecificationsTableReferences
+                                    ._algorithmGuidTable(db),
+                                referencedColumn:
+                                    $$SpecificationsTableReferences
+                                        ._algorithmGuidTable(db)
+                                        .guid,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$SpecificationsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $SpecificationsTable,
-    SpecificationEntry,
-    $$SpecificationsTableFilterComposer,
-    $$SpecificationsTableOrderingComposer,
-    $$SpecificationsTableAnnotationComposer,
-    $$SpecificationsTableCreateCompanionBuilder,
-    $$SpecificationsTableUpdateCompanionBuilder,
-    (SpecificationEntry, $$SpecificationsTableReferences),
-    SpecificationEntry,
-    PrefetchHooks Function({bool algorithmGuid})>;
-typedef $$UnitsTableCreateCompanionBuilder = UnitsCompanion Function({
-  Value<int> id,
-  required String unitString,
-});
-typedef $$UnitsTableUpdateCompanionBuilder = UnitsCompanion Function({
-  Value<int> id,
-  Value<String> unitString,
-});
+typedef $$SpecificationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SpecificationsTable,
+      SpecificationEntry,
+      $$SpecificationsTableFilterComposer,
+      $$SpecificationsTableOrderingComposer,
+      $$SpecificationsTableAnnotationComposer,
+      $$SpecificationsTableCreateCompanionBuilder,
+      $$SpecificationsTableUpdateCompanionBuilder,
+      (SpecificationEntry, $$SpecificationsTableReferences),
+      SpecificationEntry,
+      PrefetchHooks Function({bool algorithmGuid})
+    >;
+typedef $$UnitsTableCreateCompanionBuilder =
+    UnitsCompanion Function({Value<int> id, required String unitString});
+typedef $$UnitsTableUpdateCompanionBuilder =
+    UnitsCompanion Function({Value<int> id, Value<String> unitString});
 
 final class $$UnitsTableReferences
     extends BaseReferences<_$AppDatabase, $UnitsTable, UnitEntry> {
   $$UnitsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$ParametersTable, List<ParameterEntry>>
-      _parametersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-          db.parameters,
-          aliasName: $_aliasNameGenerator(db.units.id, db.parameters.unitId));
+  _parametersRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.parameters,
+    aliasName: $_aliasNameGenerator(db.units.id, db.parameters.unitId),
+  );
 
   $$ParametersTableProcessedTableManager get parametersRefs {
-    final manager = $$ParametersTableTableManager($_db, $_db.parameters)
-        .filter((f) => f.unitId.id.sqlEquals($_itemColumn<int>('id')!));
+    final manager = $$ParametersTableTableManager(
+      $_db,
+      $_db.parameters,
+    ).filter((f) => f.unitId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_parametersRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 }
 
@@ -6489,29 +7632,37 @@ class $$UnitsTableFilterComposer extends Composer<_$AppDatabase, $UnitsTable> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get unitString => $composableBuilder(
-      column: $table.unitString, builder: (column) => ColumnFilters(column));
+    column: $table.unitString,
+    builder: (column) => ColumnFilters(column),
+  );
 
   Expression<bool> parametersRefs(
-      Expression<bool> Function($$ParametersTableFilterComposer f) f) {
+    Expression<bool> Function($$ParametersTableFilterComposer f) f,
+  ) {
     final $$ParametersTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.parameters,
-        getReferencedColumn: (t) => t.unitId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ParametersTableFilterComposer(
-              $db: $db,
-              $table: $db.parameters,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.parameters,
+      getReferencedColumn: (t) => t.unitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ParametersTableFilterComposer(
+            $db: $db,
+            $table: $db.parameters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -6526,10 +7677,14 @@ class $$UnitsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get unitString => $composableBuilder(
-      column: $table.unitString, builder: (column) => ColumnOrderings(column));
+    column: $table.unitString,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UnitsTableAnnotationComposer
@@ -6545,44 +7700,54 @@ class $$UnitsTableAnnotationComposer
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get unitString => $composableBuilder(
-      column: $table.unitString, builder: (column) => column);
+    column: $table.unitString,
+    builder: (column) => column,
+  );
 
   Expression<T> parametersRefs<T extends Object>(
-      Expression<T> Function($$ParametersTableAnnotationComposer a) f) {
+    Expression<T> Function($$ParametersTableAnnotationComposer a) f,
+  ) {
     final $$ParametersTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.parameters,
-        getReferencedColumn: (t) => t.unitId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ParametersTableAnnotationComposer(
-              $db: $db,
-              $table: $db.parameters,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.parameters,
+      getReferencedColumn: (t) => t.unitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ParametersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.parameters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
 
-class $$UnitsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $UnitsTable,
-    UnitEntry,
-    $$UnitsTableFilterComposer,
-    $$UnitsTableOrderingComposer,
-    $$UnitsTableAnnotationComposer,
-    $$UnitsTableCreateCompanionBuilder,
-    $$UnitsTableUpdateCompanionBuilder,
-    (UnitEntry, $$UnitsTableReferences),
-    UnitEntry,
-    PrefetchHooks Function({bool parametersRefs})> {
+class $$UnitsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UnitsTable,
+          UnitEntry,
+          $$UnitsTableFilterComposer,
+          $$UnitsTableOrderingComposer,
+          $$UnitsTableAnnotationComposer,
+          $$UnitsTableCreateCompanionBuilder,
+          $$UnitsTableUpdateCompanionBuilder,
+          (UnitEntry, $$UnitsTableReferences),
+          UnitEntry,
+          PrefetchHooks Function({bool parametersRefs})
+        > {
   $$UnitsTableTableManager(_$AppDatabase db, $UnitsTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -6591,25 +7756,21 @@ class $$UnitsTableTableManager extends RootTableManager<
               $$UnitsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$UnitsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<String> unitString = const Value.absent(),
-          }) =>
-              UnitsCompanion(
-            id: id,
-            unitString: unitString,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String unitString,
-          }) =>
-              UnitsCompanion.insert(
-            id: id,
-            unitString: unitString,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> unitString = const Value.absent(),
+              }) => UnitsCompanion(id: id, unitString: unitString),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String unitString,
+              }) => UnitsCompanion.insert(id: id, unitString: unitString),
           withReferenceMapper: (p0) => p0
-              .map((e) =>
-                  (e.readTable(table), $$UnitsTableReferences(db, table, e)))
+              .map(
+                (e) =>
+                    (e.readTable(table), $$UnitsTableReferences(db, table, e)),
+              )
               .toList(),
           prefetchHooksCallback: ({parametersRefs = false}) {
             return PrefetchHooks(
@@ -6619,93 +7780,108 @@ class $$UnitsTableTableManager extends RootTableManager<
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (parametersRefs)
-                    await $_getPrefetchedData<UnitEntry, $UnitsTable,
-                            ParameterEntry>(
-                        currentTable: table,
-                        referencedTable:
-                            $$UnitsTableReferences._parametersRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$UnitsTableReferences(db, table, p0)
-                                .parametersRefs,
-                        referencedItemsForCurrentItem: (item,
-                                referencedItems) =>
-                            referencedItems.where((e) => e.unitId == item.id),
-                        typedResults: items)
+                    await $_getPrefetchedData<
+                      UnitEntry,
+                      $UnitsTable,
+                      ParameterEntry
+                    >(
+                      currentTable: table,
+                      referencedTable: $$UnitsTableReferences
+                          ._parametersRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$UnitsTableReferences(db, table, p0).parametersRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.unitId == item.id),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$UnitsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $UnitsTable,
-    UnitEntry,
-    $$UnitsTableFilterComposer,
-    $$UnitsTableOrderingComposer,
-    $$UnitsTableAnnotationComposer,
-    $$UnitsTableCreateCompanionBuilder,
-    $$UnitsTableUpdateCompanionBuilder,
-    (UnitEntry, $$UnitsTableReferences),
-    UnitEntry,
-    PrefetchHooks Function({bool parametersRefs})>;
-typedef $$ParametersTableCreateCompanionBuilder = ParametersCompanion Function({
-  required String algorithmGuid,
-  required int parameterNumber,
-  required String name,
-  Value<int?> minValue,
-  Value<int?> maxValue,
-  Value<int?> defaultValue,
-  Value<int?> unitId,
-  Value<int?> powerOfTen,
-  Value<int?> rawUnitIndex,
-  Value<int> rowid,
-});
-typedef $$ParametersTableUpdateCompanionBuilder = ParametersCompanion Function({
-  Value<String> algorithmGuid,
-  Value<int> parameterNumber,
-  Value<String> name,
-  Value<int?> minValue,
-  Value<int?> maxValue,
-  Value<int?> defaultValue,
-  Value<int?> unitId,
-  Value<int?> powerOfTen,
-  Value<int?> rawUnitIndex,
-  Value<int> rowid,
-});
+typedef $$UnitsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UnitsTable,
+      UnitEntry,
+      $$UnitsTableFilterComposer,
+      $$UnitsTableOrderingComposer,
+      $$UnitsTableAnnotationComposer,
+      $$UnitsTableCreateCompanionBuilder,
+      $$UnitsTableUpdateCompanionBuilder,
+      (UnitEntry, $$UnitsTableReferences),
+      UnitEntry,
+      PrefetchHooks Function({bool parametersRefs})
+    >;
+typedef $$ParametersTableCreateCompanionBuilder =
+    ParametersCompanion Function({
+      required String algorithmGuid,
+      required int parameterNumber,
+      required String name,
+      Value<int?> minValue,
+      Value<int?> maxValue,
+      Value<int?> defaultValue,
+      Value<int?> unitId,
+      Value<int?> powerOfTen,
+      Value<int?> rawUnitIndex,
+      Value<int> rowid,
+    });
+typedef $$ParametersTableUpdateCompanionBuilder =
+    ParametersCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> parameterNumber,
+      Value<String> name,
+      Value<int?> minValue,
+      Value<int?> maxValue,
+      Value<int?> defaultValue,
+      Value<int?> unitId,
+      Value<int?> powerOfTen,
+      Value<int?> rawUnitIndex,
+      Value<int> rowid,
+    });
 
 final class $$ParametersTableReferences
     extends BaseReferences<_$AppDatabase, $ParametersTable, ParameterEntry> {
   $$ParametersTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias($_aliasNameGenerator(
-          db.parameters.algorithmGuid, db.algorithms.guid));
+      db.algorithms.createAlias(
+        $_aliasNameGenerator(db.parameters.algorithmGuid, db.algorithms.guid),
+      );
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
 
-    final manager = $$AlgorithmsTableTableManager($_db, $_db.algorithms)
-        .filter((f) => f.guid.sqlEquals($_column));
+    final manager = $$AlgorithmsTableTableManager(
+      $_db,
+      $_db.algorithms,
+    ).filter((f) => f.guid.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_algorithmGuidTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 
-  static $UnitsTable _unitIdTable(_$AppDatabase db) => db.units
-      .createAlias($_aliasNameGenerator(db.parameters.unitId, db.units.id));
+  static $UnitsTable _unitIdTable(_$AppDatabase db) => db.units.createAlias(
+    $_aliasNameGenerator(db.parameters.unitId, db.units.id),
+  );
 
   $$UnitsTableProcessedTableManager? get unitId {
     final $_column = $_itemColumn<int>('unit_id');
     if ($_column == null) return null;
-    final manager = $$UnitsTableTableManager($_db, $_db.units)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$UnitsTableTableManager(
+      $_db,
+      $_db.units,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_unitIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -6719,64 +7895,83 @@ class $$ParametersTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnFilters(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get minValue => $composableBuilder(
-      column: $table.minValue, builder: (column) => ColumnFilters(column));
+    column: $table.minValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get maxValue => $composableBuilder(
-      column: $table.maxValue, builder: (column) => ColumnFilters(column));
+    column: $table.maxValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get defaultValue => $composableBuilder(
-      column: $table.defaultValue, builder: (column) => ColumnFilters(column));
+    column: $table.defaultValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get powerOfTen => $composableBuilder(
-      column: $table.powerOfTen, builder: (column) => ColumnFilters(column));
+    column: $table.powerOfTen,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get rawUnitIndex => $composableBuilder(
-      column: $table.rawUnitIndex, builder: (column) => ColumnFilters(column));
+    column: $table.rawUnitIndex,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$AlgorithmsTableFilterComposer get algorithmGuid {
     final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableFilterComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableFilterComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   $$UnitsTableFilterComposer get unitId {
     final $$UnitsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.unitId,
-        referencedTable: $db.units,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$UnitsTableFilterComposer(
-              $db: $db,
-              $table: $db.units,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.unitId,
+      referencedTable: $db.units,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UnitsTableFilterComposer(
+            $db: $db,
+            $table: $db.units,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -6791,66 +7986,83 @@ class $$ParametersTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get minValue => $composableBuilder(
-      column: $table.minValue, builder: (column) => ColumnOrderings(column));
+    column: $table.minValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get maxValue => $composableBuilder(
-      column: $table.maxValue, builder: (column) => ColumnOrderings(column));
+    column: $table.maxValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get defaultValue => $composableBuilder(
-      column: $table.defaultValue,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.defaultValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get powerOfTen => $composableBuilder(
-      column: $table.powerOfTen, builder: (column) => ColumnOrderings(column));
+    column: $table.powerOfTen,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get rawUnitIndex => $composableBuilder(
-      column: $table.rawUnitIndex,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.rawUnitIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$AlgorithmsTableOrderingComposer get algorithmGuid {
     final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableOrderingComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   $$UnitsTableOrderingComposer get unitId {
     final $$UnitsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.unitId,
-        referencedTable: $db.units,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$UnitsTableOrderingComposer(
-              $db: $db,
-              $table: $db.units,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.unitId,
+      referencedTable: $db.units,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UnitsTableOrderingComposer(
+            $db: $db,
+            $table: $db.units,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -6865,7 +8077,9 @@ class $$ParametersTableAnnotationComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber, builder: (column) => column);
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -6877,69 +8091,85 @@ class $$ParametersTableAnnotationComposer
       $composableBuilder(column: $table.maxValue, builder: (column) => column);
 
   GeneratedColumn<int> get defaultValue => $composableBuilder(
-      column: $table.defaultValue, builder: (column) => column);
+    column: $table.defaultValue,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get powerOfTen => $composableBuilder(
-      column: $table.powerOfTen, builder: (column) => column);
+    column: $table.powerOfTen,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get rawUnitIndex => $composableBuilder(
-      column: $table.rawUnitIndex, builder: (column) => column);
+    column: $table.rawUnitIndex,
+    builder: (column) => column,
+  );
 
   $$AlgorithmsTableAnnotationComposer get algorithmGuid {
     final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   $$UnitsTableAnnotationComposer get unitId {
     final $$UnitsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.unitId,
-        referencedTable: $db.units,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$UnitsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.units,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.unitId,
+      referencedTable: $db.units,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UnitsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.units,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$ParametersTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $ParametersTable,
-    ParameterEntry,
-    $$ParametersTableFilterComposer,
-    $$ParametersTableOrderingComposer,
-    $$ParametersTableAnnotationComposer,
-    $$ParametersTableCreateCompanionBuilder,
-    $$ParametersTableUpdateCompanionBuilder,
-    (ParameterEntry, $$ParametersTableReferences),
-    ParameterEntry,
-    PrefetchHooks Function({bool algorithmGuid, bool unitId})> {
+class $$ParametersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParametersTable,
+          ParameterEntry,
+          $$ParametersTableFilterComposer,
+          $$ParametersTableOrderingComposer,
+          $$ParametersTableAnnotationComposer,
+          $$ParametersTableCreateCompanionBuilder,
+          $$ParametersTableUpdateCompanionBuilder,
+          (ParameterEntry, $$ParametersTableReferences),
+          ParameterEntry,
+          PrefetchHooks Function({bool algorithmGuid, bool unitId})
+        > {
   $$ParametersTableTableManager(_$AppDatabase db, $ParametersTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -6948,66 +8178,69 @@ class $$ParametersTableTableManager extends RootTableManager<
               $$ParametersTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$ParametersTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> algorithmGuid = const Value.absent(),
-            Value<int> parameterNumber = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<int?> minValue = const Value.absent(),
-            Value<int?> maxValue = const Value.absent(),
-            Value<int?> defaultValue = const Value.absent(),
-            Value<int?> unitId = const Value.absent(),
-            Value<int?> powerOfTen = const Value.absent(),
-            Value<int?> rawUnitIndex = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParametersCompanion(
-            algorithmGuid: algorithmGuid,
-            parameterNumber: parameterNumber,
-            name: name,
-            minValue: minValue,
-            maxValue: maxValue,
-            defaultValue: defaultValue,
-            unitId: unitId,
-            powerOfTen: powerOfTen,
-            rawUnitIndex: rawUnitIndex,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String algorithmGuid,
-            required int parameterNumber,
-            required String name,
-            Value<int?> minValue = const Value.absent(),
-            Value<int?> maxValue = const Value.absent(),
-            Value<int?> defaultValue = const Value.absent(),
-            Value<int?> unitId = const Value.absent(),
-            Value<int?> powerOfTen = const Value.absent(),
-            Value<int?> rawUnitIndex = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParametersCompanion.insert(
-            algorithmGuid: algorithmGuid,
-            parameterNumber: parameterNumber,
-            name: name,
-            minValue: minValue,
-            maxValue: maxValue,
-            defaultValue: defaultValue,
-            unitId: unitId,
-            powerOfTen: powerOfTen,
-            rawUnitIndex: rawUnitIndex,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int?> minValue = const Value.absent(),
+                Value<int?> maxValue = const Value.absent(),
+                Value<int?> defaultValue = const Value.absent(),
+                Value<int?> unitId = const Value.absent(),
+                Value<int?> powerOfTen = const Value.absent(),
+                Value<int?> rawUnitIndex = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParametersCompanion(
+                algorithmGuid: algorithmGuid,
+                parameterNumber: parameterNumber,
+                name: name,
+                minValue: minValue,
+                maxValue: maxValue,
+                defaultValue: defaultValue,
+                unitId: unitId,
+                powerOfTen: powerOfTen,
+                rawUnitIndex: rawUnitIndex,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int parameterNumber,
+                required String name,
+                Value<int?> minValue = const Value.absent(),
+                Value<int?> maxValue = const Value.absent(),
+                Value<int?> defaultValue = const Value.absent(),
+                Value<int?> unitId = const Value.absent(),
+                Value<int?> powerOfTen = const Value.absent(),
+                Value<int?> rawUnitIndex = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParametersCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                parameterNumber: parameterNumber,
+                name: name,
+                minValue: minValue,
+                maxValue: maxValue,
+                defaultValue: defaultValue,
+                unitId: unitId,
+                powerOfTen: powerOfTen,
+                rawUnitIndex: rawUnitIndex,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$ParametersTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ParametersTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({algorithmGuid = false, unitId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -7018,67 +8251,77 @@ class $$ParametersTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (algorithmGuid) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.algorithmGuid,
-                    referencedTable:
-                        $$ParametersTableReferences._algorithmGuidTable(db),
-                    referencedColumn: $$ParametersTableReferences
-                        ._algorithmGuidTable(db)
-                        .guid,
-                  ) as T;
-                }
-                if (unitId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.unitId,
-                    referencedTable:
-                        $$ParametersTableReferences._unitIdTable(db),
-                    referencedColumn:
-                        $$ParametersTableReferences._unitIdTable(db).id,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (algorithmGuid) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.algorithmGuid,
+                                referencedTable: $$ParametersTableReferences
+                                    ._algorithmGuidTable(db),
+                                referencedColumn: $$ParametersTableReferences
+                                    ._algorithmGuidTable(db)
+                                    .guid,
+                              )
+                              as T;
+                    }
+                    if (unitId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.unitId,
+                                referencedTable: $$ParametersTableReferences
+                                    ._unitIdTable(db),
+                                referencedColumn: $$ParametersTableReferences
+                                    ._unitIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$ParametersTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $ParametersTable,
-    ParameterEntry,
-    $$ParametersTableFilterComposer,
-    $$ParametersTableOrderingComposer,
-    $$ParametersTableAnnotationComposer,
-    $$ParametersTableCreateCompanionBuilder,
-    $$ParametersTableUpdateCompanionBuilder,
-    (ParameterEntry, $$ParametersTableReferences),
-    ParameterEntry,
-    PrefetchHooks Function({bool algorithmGuid, bool unitId})>;
-typedef $$ParameterEnumsTableCreateCompanionBuilder = ParameterEnumsCompanion
-    Function({
-  required String algorithmGuid,
-  required int parameterNumber,
-  required int enumIndex,
-  required String enumString,
-  Value<int> rowid,
-});
-typedef $$ParameterEnumsTableUpdateCompanionBuilder = ParameterEnumsCompanion
-    Function({
-  Value<String> algorithmGuid,
-  Value<int> parameterNumber,
-  Value<int> enumIndex,
-  Value<String> enumString,
-  Value<int> rowid,
-});
+typedef $$ParametersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParametersTable,
+      ParameterEntry,
+      $$ParametersTableFilterComposer,
+      $$ParametersTableOrderingComposer,
+      $$ParametersTableAnnotationComposer,
+      $$ParametersTableCreateCompanionBuilder,
+      $$ParametersTableUpdateCompanionBuilder,
+      (ParameterEntry, $$ParametersTableReferences),
+      ParameterEntry,
+      PrefetchHooks Function({bool algorithmGuid, bool unitId})
+    >;
+typedef $$ParameterEnumsTableCreateCompanionBuilder =
+    ParameterEnumsCompanion Function({
+      required String algorithmGuid,
+      required int parameterNumber,
+      required int enumIndex,
+      required String enumString,
+      Value<int> rowid,
+    });
+typedef $$ParameterEnumsTableUpdateCompanionBuilder =
+    ParameterEnumsCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> parameterNumber,
+      Value<int> enumIndex,
+      Value<String> enumString,
+      Value<int> rowid,
+    });
 
 class $$ParameterEnumsTableFilterComposer
     extends Composer<_$AppDatabase, $ParameterEnumsTable> {
@@ -7090,17 +8333,24 @@ class $$ParameterEnumsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get algorithmGuid => $composableBuilder(
-      column: $table.algorithmGuid, builder: (column) => ColumnFilters(column));
+    column: $table.algorithmGuid,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnFilters(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get enumIndex => $composableBuilder(
-      column: $table.enumIndex, builder: (column) => ColumnFilters(column));
+    column: $table.enumIndex,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get enumString => $composableBuilder(
-      column: $table.enumString, builder: (column) => ColumnFilters(column));
+    column: $table.enumString,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$ParameterEnumsTableOrderingComposer
@@ -7113,18 +8363,24 @@ class $$ParameterEnumsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get algorithmGuid => $composableBuilder(
-      column: $table.algorithmGuid,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.algorithmGuid,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get enumIndex => $composableBuilder(
-      column: $table.enumIndex, builder: (column) => ColumnOrderings(column));
+    column: $table.enumIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get enumString => $composableBuilder(
-      column: $table.enumString, builder: (column) => ColumnOrderings(column));
+    column: $table.enumString,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ParameterEnumsTableAnnotationComposer
@@ -7137,36 +8393,51 @@ class $$ParameterEnumsTableAnnotationComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   GeneratedColumn<String> get algorithmGuid => $composableBuilder(
-      column: $table.algorithmGuid, builder: (column) => column);
+    column: $table.algorithmGuid,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber, builder: (column) => column);
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get enumIndex =>
       $composableBuilder(column: $table.enumIndex, builder: (column) => column);
 
   GeneratedColumn<String> get enumString => $composableBuilder(
-      column: $table.enumString, builder: (column) => column);
+    column: $table.enumString,
+    builder: (column) => column,
+  );
 }
 
-class $$ParameterEnumsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $ParameterEnumsTable,
-    ParameterEnumEntry,
-    $$ParameterEnumsTableFilterComposer,
-    $$ParameterEnumsTableOrderingComposer,
-    $$ParameterEnumsTableAnnotationComposer,
-    $$ParameterEnumsTableCreateCompanionBuilder,
-    $$ParameterEnumsTableUpdateCompanionBuilder,
-    (
-      ParameterEnumEntry,
-      BaseReferences<_$AppDatabase, $ParameterEnumsTable, ParameterEnumEntry>
-    ),
-    ParameterEnumEntry,
-    PrefetchHooks Function()> {
+class $$ParameterEnumsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParameterEnumsTable,
+          ParameterEnumEntry,
+          $$ParameterEnumsTableFilterComposer,
+          $$ParameterEnumsTableOrderingComposer,
+          $$ParameterEnumsTableAnnotationComposer,
+          $$ParameterEnumsTableCreateCompanionBuilder,
+          $$ParameterEnumsTableUpdateCompanionBuilder,
+          (
+            ParameterEnumEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $ParameterEnumsTable,
+              ParameterEnumEntry
+            >,
+          ),
+          ParameterEnumEntry,
+          PrefetchHooks Function()
+        > {
   $$ParameterEnumsTableTableManager(
-      _$AppDatabase db, $ParameterEnumsTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $ParameterEnumsTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7175,89 +8446,107 @@ class $$ParameterEnumsTableTableManager extends RootTableManager<
               $$ParameterEnumsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$ParameterEnumsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> algorithmGuid = const Value.absent(),
-            Value<int> parameterNumber = const Value.absent(),
-            Value<int> enumIndex = const Value.absent(),
-            Value<String> enumString = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParameterEnumsCompanion(
-            algorithmGuid: algorithmGuid,
-            parameterNumber: parameterNumber,
-            enumIndex: enumIndex,
-            enumString: enumString,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String algorithmGuid,
-            required int parameterNumber,
-            required int enumIndex,
-            required String enumString,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParameterEnumsCompanion.insert(
-            algorithmGuid: algorithmGuid,
-            parameterNumber: parameterNumber,
-            enumIndex: enumIndex,
-            enumString: enumString,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<int> enumIndex = const Value.absent(),
+                Value<String> enumString = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterEnumsCompanion(
+                algorithmGuid: algorithmGuid,
+                parameterNumber: parameterNumber,
+                enumIndex: enumIndex,
+                enumString: enumString,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int parameterNumber,
+                required int enumIndex,
+                required String enumString,
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterEnumsCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                parameterNumber: parameterNumber,
+                enumIndex: enumIndex,
+                enumString: enumString,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $$ParameterEnumsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $ParameterEnumsTable,
-    ParameterEnumEntry,
-    $$ParameterEnumsTableFilterComposer,
-    $$ParameterEnumsTableOrderingComposer,
-    $$ParameterEnumsTableAnnotationComposer,
-    $$ParameterEnumsTableCreateCompanionBuilder,
-    $$ParameterEnumsTableUpdateCompanionBuilder,
-    (
+typedef $$ParameterEnumsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParameterEnumsTable,
       ParameterEnumEntry,
-      BaseReferences<_$AppDatabase, $ParameterEnumsTable, ParameterEnumEntry>
-    ),
-    ParameterEnumEntry,
-    PrefetchHooks Function()>;
-typedef $$ParameterPagesTableCreateCompanionBuilder = ParameterPagesCompanion
-    Function({
-  required String algorithmGuid,
-  required int pageIndex,
-  required String name,
-  Value<int> rowid,
-});
-typedef $$ParameterPagesTableUpdateCompanionBuilder = ParameterPagesCompanion
-    Function({
-  Value<String> algorithmGuid,
-  Value<int> pageIndex,
-  Value<String> name,
-  Value<int> rowid,
-});
+      $$ParameterEnumsTableFilterComposer,
+      $$ParameterEnumsTableOrderingComposer,
+      $$ParameterEnumsTableAnnotationComposer,
+      $$ParameterEnumsTableCreateCompanionBuilder,
+      $$ParameterEnumsTableUpdateCompanionBuilder,
+      (
+        ParameterEnumEntry,
+        BaseReferences<_$AppDatabase, $ParameterEnumsTable, ParameterEnumEntry>,
+      ),
+      ParameterEnumEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$ParameterPagesTableCreateCompanionBuilder =
+    ParameterPagesCompanion Function({
+      required String algorithmGuid,
+      required int pageIndex,
+      required String name,
+      Value<int> rowid,
+    });
+typedef $$ParameterPagesTableUpdateCompanionBuilder =
+    ParameterPagesCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> pageIndex,
+      Value<String> name,
+      Value<int> rowid,
+    });
 
-final class $$ParameterPagesTableReferences extends BaseReferences<
-    _$AppDatabase, $ParameterPagesTable, ParameterPageEntry> {
+final class $$ParameterPagesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ParameterPagesTable,
+          ParameterPageEntry
+        > {
   $$ParameterPagesTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias($_aliasNameGenerator(
-          db.parameterPages.algorithmGuid, db.algorithms.guid));
+      db.algorithms.createAlias(
+        $_aliasNameGenerator(
+          db.parameterPages.algorithmGuid,
+          db.algorithms.guid,
+        ),
+      );
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
 
-    final manager = $$AlgorithmsTableTableManager($_db, $_db.algorithms)
-        .filter((f) => f.guid.sqlEquals($_column));
+    final manager = $$AlgorithmsTableTableManager(
+      $_db,
+      $_db.algorithms,
+    ).filter((f) => f.guid.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_algorithmGuidTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -7271,28 +8560,35 @@ class $$ParameterPagesTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get pageIndex => $composableBuilder(
-      column: $table.pageIndex, builder: (column) => ColumnFilters(column));
+    column: $table.pageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$AlgorithmsTableFilterComposer get algorithmGuid {
     final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableFilterComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableFilterComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -7307,28 +8603,35 @@ class $$ParameterPagesTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get pageIndex => $composableBuilder(
-      column: $table.pageIndex, builder: (column) => ColumnOrderings(column));
+    column: $table.pageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$AlgorithmsTableOrderingComposer get algorithmGuid {
     final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableOrderingComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -7350,40 +8653,48 @@ class $$ParameterPagesTableAnnotationComposer
 
   $$AlgorithmsTableAnnotationComposer get algorithmGuid {
     final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$ParameterPagesTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $ParameterPagesTable,
-    ParameterPageEntry,
-    $$ParameterPagesTableFilterComposer,
-    $$ParameterPagesTableOrderingComposer,
-    $$ParameterPagesTableAnnotationComposer,
-    $$ParameterPagesTableCreateCompanionBuilder,
-    $$ParameterPagesTableUpdateCompanionBuilder,
-    (ParameterPageEntry, $$ParameterPagesTableReferences),
-    ParameterPageEntry,
-    PrefetchHooks Function({bool algorithmGuid})> {
+class $$ParameterPagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParameterPagesTable,
+          ParameterPageEntry,
+          $$ParameterPagesTableFilterComposer,
+          $$ParameterPagesTableOrderingComposer,
+          $$ParameterPagesTableAnnotationComposer,
+          $$ParameterPagesTableCreateCompanionBuilder,
+          $$ParameterPagesTableUpdateCompanionBuilder,
+          (ParameterPageEntry, $$ParameterPagesTableReferences),
+          ParameterPageEntry,
+          PrefetchHooks Function({bool algorithmGuid})
+        > {
   $$ParameterPagesTableTableManager(
-      _$AppDatabase db, $ParameterPagesTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $ParameterPagesTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7392,42 +8703,45 @@ class $$ParameterPagesTableTableManager extends RootTableManager<
               $$ParameterPagesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$ParameterPagesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> algorithmGuid = const Value.absent(),
-            Value<int> pageIndex = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParameterPagesCompanion(
-            algorithmGuid: algorithmGuid,
-            pageIndex: pageIndex,
-            name: name,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String algorithmGuid,
-            required int pageIndex,
-            required String name,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParameterPagesCompanion.insert(
-            algorithmGuid: algorithmGuid,
-            pageIndex: pageIndex,
-            name: name,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> pageIndex = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterPagesCompanion(
+                algorithmGuid: algorithmGuid,
+                pageIndex: pageIndex,
+                name: name,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int pageIndex,
+                required String name,
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterPagesCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                pageIndex: pageIndex,
+                name: name,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$ParameterPagesTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ParameterPagesTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({algorithmGuid = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -7438,55 +8752,63 @@ class $$ParameterPagesTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (algorithmGuid) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.algorithmGuid,
-                    referencedTable:
-                        $$ParameterPagesTableReferences._algorithmGuidTable(db),
-                    referencedColumn: $$ParameterPagesTableReferences
-                        ._algorithmGuidTable(db)
-                        .guid,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (algorithmGuid) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.algorithmGuid,
+                                referencedTable: $$ParameterPagesTableReferences
+                                    ._algorithmGuidTable(db),
+                                referencedColumn:
+                                    $$ParameterPagesTableReferences
+                                        ._algorithmGuidTable(db)
+                                        .guid,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$ParameterPagesTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $ParameterPagesTable,
-    ParameterPageEntry,
-    $$ParameterPagesTableFilterComposer,
-    $$ParameterPagesTableOrderingComposer,
-    $$ParameterPagesTableAnnotationComposer,
-    $$ParameterPagesTableCreateCompanionBuilder,
-    $$ParameterPagesTableUpdateCompanionBuilder,
-    (ParameterPageEntry, $$ParameterPagesTableReferences),
-    ParameterPageEntry,
-    PrefetchHooks Function({bool algorithmGuid})>;
-typedef $$ParameterPageItemsTableCreateCompanionBuilder
-    = ParameterPageItemsCompanion Function({
-  required String algorithmGuid,
-  required int pageIndex,
-  required int parameterNumber,
-  Value<int> rowid,
-});
-typedef $$ParameterPageItemsTableUpdateCompanionBuilder
-    = ParameterPageItemsCompanion Function({
-  Value<String> algorithmGuid,
-  Value<int> pageIndex,
-  Value<int> parameterNumber,
-  Value<int> rowid,
-});
+typedef $$ParameterPagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParameterPagesTable,
+      ParameterPageEntry,
+      $$ParameterPagesTableFilterComposer,
+      $$ParameterPagesTableOrderingComposer,
+      $$ParameterPagesTableAnnotationComposer,
+      $$ParameterPagesTableCreateCompanionBuilder,
+      $$ParameterPagesTableUpdateCompanionBuilder,
+      (ParameterPageEntry, $$ParameterPagesTableReferences),
+      ParameterPageEntry,
+      PrefetchHooks Function({bool algorithmGuid})
+    >;
+typedef $$ParameterPageItemsTableCreateCompanionBuilder =
+    ParameterPageItemsCompanion Function({
+      required String algorithmGuid,
+      required int pageIndex,
+      required int parameterNumber,
+      Value<int> rowid,
+    });
+typedef $$ParameterPageItemsTableUpdateCompanionBuilder =
+    ParameterPageItemsCompanion Function({
+      Value<String> algorithmGuid,
+      Value<int> pageIndex,
+      Value<int> parameterNumber,
+      Value<int> rowid,
+    });
 
 class $$ParameterPageItemsTableFilterComposer
     extends Composer<_$AppDatabase, $ParameterPageItemsTable> {
@@ -7498,14 +8820,19 @@ class $$ParameterPageItemsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get algorithmGuid => $composableBuilder(
-      column: $table.algorithmGuid, builder: (column) => ColumnFilters(column));
+    column: $table.algorithmGuid,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get pageIndex => $composableBuilder(
-      column: $table.pageIndex, builder: (column) => ColumnFilters(column));
+    column: $table.pageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnFilters(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$ParameterPageItemsTableOrderingComposer
@@ -7518,15 +8845,19 @@ class $$ParameterPageItemsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get algorithmGuid => $composableBuilder(
-      column: $table.algorithmGuid,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.algorithmGuid,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get pageIndex => $composableBuilder(
-      column: $table.pageIndex, builder: (column) => ColumnOrderings(column));
+    column: $table.pageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ParameterPageItemsTableAnnotationComposer
@@ -7539,34 +8870,46 @@ class $$ParameterPageItemsTableAnnotationComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   GeneratedColumn<String> get algorithmGuid => $composableBuilder(
-      column: $table.algorithmGuid, builder: (column) => column);
+    column: $table.algorithmGuid,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get pageIndex =>
       $composableBuilder(column: $table.pageIndex, builder: (column) => column);
 
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber, builder: (column) => column);
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
 }
 
-class $$ParameterPageItemsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $ParameterPageItemsTable,
-    ParameterPageItemEntry,
-    $$ParameterPageItemsTableFilterComposer,
-    $$ParameterPageItemsTableOrderingComposer,
-    $$ParameterPageItemsTableAnnotationComposer,
-    $$ParameterPageItemsTableCreateCompanionBuilder,
-    $$ParameterPageItemsTableUpdateCompanionBuilder,
-    (
-      ParameterPageItemEntry,
-      BaseReferences<_$AppDatabase, $ParameterPageItemsTable,
-          ParameterPageItemEntry>
-    ),
-    ParameterPageItemEntry,
-    PrefetchHooks Function()> {
+class $$ParameterPageItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParameterPageItemsTable,
+          ParameterPageItemEntry,
+          $$ParameterPageItemsTableFilterComposer,
+          $$ParameterPageItemsTableOrderingComposer,
+          $$ParameterPageItemsTableAnnotationComposer,
+          $$ParameterPageItemsTableCreateCompanionBuilder,
+          $$ParameterPageItemsTableUpdateCompanionBuilder,
+          (
+            ParameterPageItemEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $ParameterPageItemsTable,
+              ParameterPageItemEntry
+            >,
+          ),
+          ParameterPageItemEntry,
+          PrefetchHooks Function()
+        > {
   $$ParameterPageItemsTableTableManager(
-      _$AppDatabase db, $ParameterPageItemsTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $ParameterPageItemsTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7575,82 +8918,95 @@ class $$ParameterPageItemsTableTableManager extends RootTableManager<
               $$ParameterPageItemsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$ParameterPageItemsTableAnnotationComposer(
-                  $db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> algorithmGuid = const Value.absent(),
-            Value<int> pageIndex = const Value.absent(),
-            Value<int> parameterNumber = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParameterPageItemsCompanion(
-            algorithmGuid: algorithmGuid,
-            pageIndex: pageIndex,
-            parameterNumber: parameterNumber,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String algorithmGuid,
-            required int pageIndex,
-            required int parameterNumber,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ParameterPageItemsCompanion.insert(
-            algorithmGuid: algorithmGuid,
-            pageIndex: pageIndex,
-            parameterNumber: parameterNumber,
-            rowid: rowid,
-          ),
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<int> pageIndex = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterPageItemsCompanion(
+                algorithmGuid: algorithmGuid,
+                pageIndex: pageIndex,
+                parameterNumber: parameterNumber,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String algorithmGuid,
+                required int pageIndex,
+                required int parameterNumber,
+                Value<int> rowid = const Value.absent(),
+              }) => ParameterPageItemsCompanion.insert(
+                algorithmGuid: algorithmGuid,
+                pageIndex: pageIndex,
+                parameterNumber: parameterNumber,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $$ParameterPageItemsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $ParameterPageItemsTable,
-    ParameterPageItemEntry,
-    $$ParameterPageItemsTableFilterComposer,
-    $$ParameterPageItemsTableOrderingComposer,
-    $$ParameterPageItemsTableAnnotationComposer,
-    $$ParameterPageItemsTableCreateCompanionBuilder,
-    $$ParameterPageItemsTableUpdateCompanionBuilder,
-    (
+typedef $$ParameterPageItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParameterPageItemsTable,
       ParameterPageItemEntry,
-      BaseReferences<_$AppDatabase, $ParameterPageItemsTable,
-          ParameterPageItemEntry>
-    ),
-    ParameterPageItemEntry,
-    PrefetchHooks Function()>;
-typedef $$PresetsTableCreateCompanionBuilder = PresetsCompanion Function({
-  Value<int> id,
-  required String name,
-  Value<DateTime> lastModified,
-});
-typedef $$PresetsTableUpdateCompanionBuilder = PresetsCompanion Function({
-  Value<int> id,
-  Value<String> name,
-  Value<DateTime> lastModified,
-});
+      $$ParameterPageItemsTableFilterComposer,
+      $$ParameterPageItemsTableOrderingComposer,
+      $$ParameterPageItemsTableAnnotationComposer,
+      $$ParameterPageItemsTableCreateCompanionBuilder,
+      $$ParameterPageItemsTableUpdateCompanionBuilder,
+      (
+        ParameterPageItemEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $ParameterPageItemsTable,
+          ParameterPageItemEntry
+        >,
+      ),
+      ParameterPageItemEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$PresetsTableCreateCompanionBuilder =
+    PresetsCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<DateTime> lastModified,
+    });
+typedef $$PresetsTableUpdateCompanionBuilder =
+    PresetsCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<DateTime> lastModified,
+    });
 
 final class $$PresetsTableReferences
     extends BaseReferences<_$AppDatabase, $PresetsTable, PresetEntry> {
   $$PresetsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$PresetSlotsTable, List<PresetSlotEntry>>
-      _presetSlotsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.presetSlots,
-              aliasName:
-                  $_aliasNameGenerator(db.presets.id, db.presetSlots.presetId));
+  _presetSlotsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.presetSlots,
+    aliasName: $_aliasNameGenerator(db.presets.id, db.presetSlots.presetId),
+  );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotsRefs {
-    final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
-        .filter((f) => f.presetId.id.sqlEquals($_itemColumn<int>('id')!));
+    final manager = $$PresetSlotsTableTableManager(
+      $_db,
+      $_db.presetSlots,
+    ).filter((f) => f.presetId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_presetSlotsRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 }
 
@@ -7664,32 +9020,42 @@ class $$PresetsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get lastModified => $composableBuilder(
-      column: $table.lastModified, builder: (column) => ColumnFilters(column));
+    column: $table.lastModified,
+    builder: (column) => ColumnFilters(column),
+  );
 
   Expression<bool> presetSlotsRefs(
-      Expression<bool> Function($$PresetSlotsTableFilterComposer f) f) {
+    Expression<bool> Function($$PresetSlotsTableFilterComposer f) f,
+  ) {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.presetId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.presetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -7704,14 +9070,19 @@ class $$PresetsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get lastModified => $composableBuilder(
-      column: $table.lastModified,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PresetsTableAnnotationComposer
@@ -7730,44 +9101,54 @@ class $$PresetsTableAnnotationComposer
       $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<DateTime> get lastModified => $composableBuilder(
-      column: $table.lastModified, builder: (column) => column);
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
 
   Expression<T> presetSlotsRefs<T extends Object>(
-      Expression<T> Function($$PresetSlotsTableAnnotationComposer a) f) {
+    Expression<T> Function($$PresetSlotsTableAnnotationComposer a) f,
+  ) {
     final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.presetId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.presetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
 
-class $$PresetsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PresetsTable,
-    PresetEntry,
-    $$PresetsTableFilterComposer,
-    $$PresetsTableOrderingComposer,
-    $$PresetsTableAnnotationComposer,
-    $$PresetsTableCreateCompanionBuilder,
-    $$PresetsTableUpdateCompanionBuilder,
-    (PresetEntry, $$PresetsTableReferences),
-    PresetEntry,
-    PrefetchHooks Function({bool presetSlotsRefs})> {
+class $$PresetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PresetsTable,
+          PresetEntry,
+          $$PresetsTableFilterComposer,
+          $$PresetsTableOrderingComposer,
+          $$PresetsTableAnnotationComposer,
+          $$PresetsTableCreateCompanionBuilder,
+          $$PresetsTableUpdateCompanionBuilder,
+          (PresetEntry, $$PresetsTableReferences),
+          PresetEntry,
+          PrefetchHooks Function({bool presetSlotsRefs})
+        > {
   $$PresetsTableTableManager(_$AppDatabase db, $PresetsTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7776,29 +9157,33 @@ class $$PresetsTableTableManager extends RootTableManager<
               $$PresetsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$PresetsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> lastModified = const Value.absent(),
-          }) =>
-              PresetsCompanion(
-            id: id,
-            name: name,
-            lastModified: lastModified,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String name,
-            Value<DateTime> lastModified = const Value.absent(),
-          }) =>
-              PresetsCompanion.insert(
-            id: id,
-            name: name,
-            lastModified: lastModified,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
+              }) => PresetsCompanion(
+                id: id,
+                name: name,
+                lastModified: lastModified,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<DateTime> lastModified = const Value.absent(),
+              }) => PresetsCompanion.insert(
+                id: id,
+                name: name,
+                lastModified: lastModified,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) =>
-                  (e.readTable(table), $$PresetsTableReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PresetsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({presetSlotsRefs = false}) {
             return PrefetchHooks(
@@ -7808,53 +9193,61 @@ class $$PresetsTableTableManager extends RootTableManager<
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (presetSlotsRefs)
-                    await $_getPrefetchedData<PresetEntry, $PresetsTable,
-                            PresetSlotEntry>(
-                        currentTable: table,
-                        referencedTable:
-                            $$PresetsTableReferences._presetSlotsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$PresetsTableReferences(db, table, p0)
-                                .presetSlotsRefs,
-                        referencedItemsForCurrentItem: (item,
-                                referencedItems) =>
-                            referencedItems.where((e) => e.presetId == item.id),
-                        typedResults: items)
+                    await $_getPrefetchedData<
+                      PresetEntry,
+                      $PresetsTable,
+                      PresetSlotEntry
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PresetsTableReferences
+                          ._presetSlotsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$PresetsTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).presetSlotsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.presetId == item.id),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$PresetsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $PresetsTable,
-    PresetEntry,
-    $$PresetsTableFilterComposer,
-    $$PresetsTableOrderingComposer,
-    $$PresetsTableAnnotationComposer,
-    $$PresetsTableCreateCompanionBuilder,
-    $$PresetsTableUpdateCompanionBuilder,
-    (PresetEntry, $$PresetsTableReferences),
-    PresetEntry,
-    PrefetchHooks Function({bool presetSlotsRefs})>;
-typedef $$PresetSlotsTableCreateCompanionBuilder = PresetSlotsCompanion
-    Function({
-  Value<int> id,
-  required int presetId,
-  required int slotIndex,
-  required String algorithmGuid,
-  Value<String?> customName,
-});
-typedef $$PresetSlotsTableUpdateCompanionBuilder = PresetSlotsCompanion
-    Function({
-  Value<int> id,
-  Value<int> presetId,
-  Value<int> slotIndex,
-  Value<String> algorithmGuid,
-  Value<String?> customName,
-});
+typedef $$PresetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PresetsTable,
+      PresetEntry,
+      $$PresetsTableFilterComposer,
+      $$PresetsTableOrderingComposer,
+      $$PresetsTableAnnotationComposer,
+      $$PresetsTableCreateCompanionBuilder,
+      $$PresetsTableUpdateCompanionBuilder,
+      (PresetEntry, $$PresetsTableReferences),
+      PresetEntry,
+      PrefetchHooks Function({bool presetSlotsRefs})
+    >;
+typedef $$PresetSlotsTableCreateCompanionBuilder =
+    PresetSlotsCompanion Function({
+      Value<int> id,
+      required int presetId,
+      required int slotIndex,
+      required String algorithmGuid,
+      Value<String?> customName,
+    });
+typedef $$PresetSlotsTableUpdateCompanionBuilder =
+    PresetSlotsCompanion Function({
+      Value<int> id,
+      Value<int> presetId,
+      Value<int> slotIndex,
+      Value<String> algorithmGuid,
+      Value<String?> customName,
+    });
 
 final class $$PresetSlotsTableReferences
     extends BaseReferences<_$AppDatabase, $PresetSlotsTable, PresetSlotEntry> {
@@ -7862,100 +9255,138 @@ final class $$PresetSlotsTableReferences
 
   static $PresetsTable _presetIdTable(_$AppDatabase db) =>
       db.presets.createAlias(
-          $_aliasNameGenerator(db.presetSlots.presetId, db.presets.id));
+        $_aliasNameGenerator(db.presetSlots.presetId, db.presets.id),
+      );
 
   $$PresetsTableProcessedTableManager get presetId {
     final $_column = $_itemColumn<int>('preset_id')!;
 
-    final manager = $$PresetsTableTableManager($_db, $_db.presets)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$PresetsTableTableManager(
+      $_db,
+      $_db.presets,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_presetIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 
   static $AlgorithmsTable _algorithmGuidTable(_$AppDatabase db) =>
-      db.algorithms.createAlias($_aliasNameGenerator(
-          db.presetSlots.algorithmGuid, db.algorithms.guid));
+      db.algorithms.createAlias(
+        $_aliasNameGenerator(db.presetSlots.algorithmGuid, db.algorithms.guid),
+      );
 
   $$AlgorithmsTableProcessedTableManager get algorithmGuid {
     final $_column = $_itemColumn<String>('algorithm_guid')!;
 
-    final manager = $$AlgorithmsTableTableManager($_db, $_db.algorithms)
-        .filter((f) => f.guid.sqlEquals($_column));
+    final manager = $$AlgorithmsTableTableManager(
+      $_db,
+      $_db.algorithms,
+    ).filter((f) => f.guid.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_algorithmGuidTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 
-  static MultiTypedResultKey<$PresetParameterValuesTable,
-      List<PresetParameterValueEntry>> _presetParameterValuesRefsTable(
-          _$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(db.presetParameterValues,
-          aliasName: $_aliasNameGenerator(
-              db.presetSlots.id, db.presetParameterValues.presetSlotId));
+  static MultiTypedResultKey<
+    $PresetParameterValuesTable,
+    List<PresetParameterValueEntry>
+  >
+  _presetParameterValuesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.presetParameterValues,
+        aliasName: $_aliasNameGenerator(
+          db.presetSlots.id,
+          db.presetParameterValues.presetSlotId,
+        ),
+      );
 
   $$PresetParameterValuesTableProcessedTableManager
-      get presetParameterValuesRefs {
+  get presetParameterValuesRefs {
     final manager = $$PresetParameterValuesTableTableManager(
-            $_db, $_db.presetParameterValues)
-        .filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
+      $_db,
+      $_db.presetParameterValues,
+    ).filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache =
-        $_typedResult.readTableOrNull(_presetParameterValuesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _presetParameterValuesRefsTable($_db),
+    );
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 
-  static MultiTypedResultKey<$PresetParameterStringValuesTable,
-          List<PresetParameterStringValueEntry>>
-      _presetParameterStringValuesRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.presetParameterStringValues,
-              aliasName: $_aliasNameGenerator(db.presetSlots.id,
-                  db.presetParameterStringValues.presetSlotId));
+  static MultiTypedResultKey<
+    $PresetParameterStringValuesTable,
+    List<PresetParameterStringValueEntry>
+  >
+  _presetParameterStringValuesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.presetParameterStringValues,
+        aliasName: $_aliasNameGenerator(
+          db.presetSlots.id,
+          db.presetParameterStringValues.presetSlotId,
+        ),
+      );
 
   $$PresetParameterStringValuesTableProcessedTableManager
-      get presetParameterStringValuesRefs {
+  get presetParameterStringValuesRefs {
     final manager = $$PresetParameterStringValuesTableTableManager(
-            $_db, $_db.presetParameterStringValues)
-        .filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
+      $_db,
+      $_db.presetParameterStringValues,
+    ).filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult
-        .readTableOrNull(_presetParameterStringValuesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _presetParameterStringValuesRefsTable($_db),
+    );
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 
   static MultiTypedResultKey<$PresetMappingsTable, List<PresetMappingEntry>>
-      _presetMappingsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.presetMappings,
-              aliasName: $_aliasNameGenerator(
-                  db.presetSlots.id, db.presetMappings.presetSlotId));
+  _presetMappingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.presetMappings,
+    aliasName: $_aliasNameGenerator(
+      db.presetSlots.id,
+      db.presetMappings.presetSlotId,
+    ),
+  );
 
   $$PresetMappingsTableProcessedTableManager get presetMappingsRefs {
-    final manager = $$PresetMappingsTableTableManager($_db, $_db.presetMappings)
-        .filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
+    final manager = $$PresetMappingsTableTableManager(
+      $_db,
+      $_db.presetMappings,
+    ).filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_presetMappingsRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 
   static MultiTypedResultKey<$PresetRoutingsTable, List<PresetRoutingEntry>>
-      _presetRoutingsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.presetRoutings,
-              aliasName: $_aliasNameGenerator(
-                  db.presetSlots.id, db.presetRoutings.presetSlotId));
+  _presetRoutingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.presetRoutings,
+    aliasName: $_aliasNameGenerator(
+      db.presetSlots.id,
+      db.presetRoutings.presetSlotId,
+    ),
+  );
 
   $$PresetRoutingsTableProcessedTableManager get presetRoutingsRefs {
-    final manager = $$PresetRoutingsTableTableManager($_db, $_db.presetRoutings)
-        .filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
+    final manager = $$PresetRoutingsTableTableManager(
+      $_db,
+      $_db.presetRoutings,
+    ).filter((f) => f.presetSlotId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_presetRoutingsRefsTable($_db));
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 }
 
@@ -7969,140 +9400,168 @@ class $$PresetSlotsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get slotIndex => $composableBuilder(
-      column: $table.slotIndex, builder: (column) => ColumnFilters(column));
+    column: $table.slotIndex,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get customName => $composableBuilder(
-      column: $table.customName, builder: (column) => ColumnFilters(column));
+    column: $table.customName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$PresetsTableFilterComposer get presetId {
     final $$PresetsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetId,
-        referencedTable: $db.presets,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetsTableFilterComposer(
-              $db: $db,
-              $table: $db.presets,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetId,
+      referencedTable: $db.presets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetsTableFilterComposer(
+            $db: $db,
+            $table: $db.presets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   $$AlgorithmsTableFilterComposer get algorithmGuid {
     final $$AlgorithmsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableFilterComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableFilterComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   Expression<bool> presetParameterValuesRefs(
-      Expression<bool> Function($$PresetParameterValuesTableFilterComposer f)
-          f) {
+    Expression<bool> Function($$PresetParameterValuesTableFilterComposer f) f,
+  ) {
     final $$PresetParameterValuesTableFilterComposer composer =
         $composerBuilder(
-            composer: this,
-            getCurrentColumn: (t) => t.id,
-            referencedTable: $db.presetParameterValues,
-            getReferencedColumn: (t) => t.presetSlotId,
-            builder: (joinBuilder,
-                    {$addJoinBuilderToRootComposer,
-                    $removeJoinBuilderFromRootComposer}) =>
-                $$PresetParameterValuesTableFilterComposer(
-                  $db: $db,
-                  $table: $db.presetParameterValues,
-                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                  joinBuilder: joinBuilder,
-                  $removeJoinBuilderFromRootComposer:
-                      $removeJoinBuilderFromRootComposer,
-                ));
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.presetParameterValues,
+          getReferencedColumn: (t) => t.presetSlotId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PresetParameterValuesTableFilterComposer(
+                $db: $db,
+                $table: $db.presetParameterValues,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
   Expression<bool> presetParameterStringValuesRefs(
-      Expression<bool> Function(
-              $$PresetParameterStringValuesTableFilterComposer f)
-          f) {
+    Expression<bool> Function(
+      $$PresetParameterStringValuesTableFilterComposer f,
+    )
+    f,
+  ) {
     final $$PresetParameterStringValuesTableFilterComposer composer =
         $composerBuilder(
-            composer: this,
-            getCurrentColumn: (t) => t.id,
-            referencedTable: $db.presetParameterStringValues,
-            getReferencedColumn: (t) => t.presetSlotId,
-            builder: (joinBuilder,
-                    {$addJoinBuilderToRootComposer,
-                    $removeJoinBuilderFromRootComposer}) =>
-                $$PresetParameterStringValuesTableFilterComposer(
-                  $db: $db,
-                  $table: $db.presetParameterStringValues,
-                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                  joinBuilder: joinBuilder,
-                  $removeJoinBuilderFromRootComposer:
-                      $removeJoinBuilderFromRootComposer,
-                ));
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.presetParameterStringValues,
+          getReferencedColumn: (t) => t.presetSlotId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PresetParameterStringValuesTableFilterComposer(
+                $db: $db,
+                $table: $db.presetParameterStringValues,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
   Expression<bool> presetMappingsRefs(
-      Expression<bool> Function($$PresetMappingsTableFilterComposer f) f) {
+    Expression<bool> Function($$PresetMappingsTableFilterComposer f) f,
+  ) {
     final $$PresetMappingsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.presetMappings,
-        getReferencedColumn: (t) => t.presetSlotId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetMappingsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetMappings,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.presetMappings,
+      getReferencedColumn: (t) => t.presetSlotId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetMappingsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetMappings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<bool> presetRoutingsRefs(
-      Expression<bool> Function($$PresetRoutingsTableFilterComposer f) f) {
+    Expression<bool> Function($$PresetRoutingsTableFilterComposer f) f,
+  ) {
     final $$PresetRoutingsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.presetRoutings,
-        getReferencedColumn: (t) => t.presetSlotId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetRoutingsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetRoutings,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.presetRoutings,
+      getReferencedColumn: (t) => t.presetSlotId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetRoutingsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetRoutings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -8117,51 +9576,63 @@ class $$PresetSlotsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get slotIndex => $composableBuilder(
-      column: $table.slotIndex, builder: (column) => ColumnOrderings(column));
+    column: $table.slotIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get customName => $composableBuilder(
-      column: $table.customName, builder: (column) => ColumnOrderings(column));
+    column: $table.customName,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$PresetsTableOrderingComposer get presetId {
     final $$PresetsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetId,
-        referencedTable: $db.presets,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetsTableOrderingComposer(
-              $db: $db,
-              $table: $db.presets,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetId,
+      referencedTable: $db.presets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.presets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   $$AlgorithmsTableOrderingComposer get algorithmGuid {
     final $$AlgorithmsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableOrderingComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -8182,158 +9653,187 @@ class $$PresetSlotsTableAnnotationComposer
       $composableBuilder(column: $table.slotIndex, builder: (column) => column);
 
   GeneratedColumn<String> get customName => $composableBuilder(
-      column: $table.customName, builder: (column) => column);
+    column: $table.customName,
+    builder: (column) => column,
+  );
 
   $$PresetsTableAnnotationComposer get presetId {
     final $$PresetsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetId,
-        referencedTable: $db.presets,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presets,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetId,
+      referencedTable: $db.presets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   $$AlgorithmsTableAnnotationComposer get algorithmGuid {
     final $$AlgorithmsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.algorithmGuid,
-        referencedTable: $db.algorithms,
-        getReferencedColumn: (t) => t.guid,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$AlgorithmsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.algorithms,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.algorithmGuid,
+      referencedTable: $db.algorithms,
+      getReferencedColumn: (t) => t.guid,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlgorithmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.algorithms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 
   Expression<T> presetParameterValuesRefs<T extends Object>(
-      Expression<T> Function($$PresetParameterValuesTableAnnotationComposer a)
-          f) {
+    Expression<T> Function($$PresetParameterValuesTableAnnotationComposer a) f,
+  ) {
     final $$PresetParameterValuesTableAnnotationComposer composer =
         $composerBuilder(
-            composer: this,
-            getCurrentColumn: (t) => t.id,
-            referencedTable: $db.presetParameterValues,
-            getReferencedColumn: (t) => t.presetSlotId,
-            builder: (joinBuilder,
-                    {$addJoinBuilderToRootComposer,
-                    $removeJoinBuilderFromRootComposer}) =>
-                $$PresetParameterValuesTableAnnotationComposer(
-                  $db: $db,
-                  $table: $db.presetParameterValues,
-                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                  joinBuilder: joinBuilder,
-                  $removeJoinBuilderFromRootComposer:
-                      $removeJoinBuilderFromRootComposer,
-                ));
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.presetParameterValues,
+          getReferencedColumn: (t) => t.presetSlotId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PresetParameterValuesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.presetParameterValues,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
   Expression<T> presetParameterStringValuesRefs<T extends Object>(
-      Expression<T> Function(
-              $$PresetParameterStringValuesTableAnnotationComposer a)
-          f) {
+    Expression<T> Function(
+      $$PresetParameterStringValuesTableAnnotationComposer a,
+    )
+    f,
+  ) {
     final $$PresetParameterStringValuesTableAnnotationComposer composer =
         $composerBuilder(
-            composer: this,
-            getCurrentColumn: (t) => t.id,
-            referencedTable: $db.presetParameterStringValues,
-            getReferencedColumn: (t) => t.presetSlotId,
-            builder: (joinBuilder,
-                    {$addJoinBuilderToRootComposer,
-                    $removeJoinBuilderFromRootComposer}) =>
-                $$PresetParameterStringValuesTableAnnotationComposer(
-                  $db: $db,
-                  $table: $db.presetParameterStringValues,
-                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                  joinBuilder: joinBuilder,
-                  $removeJoinBuilderFromRootComposer:
-                      $removeJoinBuilderFromRootComposer,
-                ));
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.presetParameterStringValues,
+          getReferencedColumn: (t) => t.presetSlotId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PresetParameterStringValuesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.presetParameterStringValues,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
   Expression<T> presetMappingsRefs<T extends Object>(
-      Expression<T> Function($$PresetMappingsTableAnnotationComposer a) f) {
+    Expression<T> Function($$PresetMappingsTableAnnotationComposer a) f,
+  ) {
     final $$PresetMappingsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.presetMappings,
-        getReferencedColumn: (t) => t.presetSlotId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetMappingsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetMappings,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.presetMappings,
+      getReferencedColumn: (t) => t.presetSlotId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetMappingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetMappings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 
   Expression<T> presetRoutingsRefs<T extends Object>(
-      Expression<T> Function($$PresetRoutingsTableAnnotationComposer a) f) {
+    Expression<T> Function($$PresetRoutingsTableAnnotationComposer a) f,
+  ) {
     final $$PresetRoutingsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.presetRoutings,
-        getReferencedColumn: (t) => t.presetSlotId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetRoutingsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetRoutings,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.presetRoutings,
+      getReferencedColumn: (t) => t.presetSlotId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetRoutingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetRoutings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
 
-class $$PresetSlotsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PresetSlotsTable,
-    PresetSlotEntry,
-    $$PresetSlotsTableFilterComposer,
-    $$PresetSlotsTableOrderingComposer,
-    $$PresetSlotsTableAnnotationComposer,
-    $$PresetSlotsTableCreateCompanionBuilder,
-    $$PresetSlotsTableUpdateCompanionBuilder,
-    (PresetSlotEntry, $$PresetSlotsTableReferences),
-    PresetSlotEntry,
-    PrefetchHooks Function(
-        {bool presetId,
-        bool algorithmGuid,
-        bool presetParameterValuesRefs,
-        bool presetParameterStringValuesRefs,
-        bool presetMappingsRefs,
-        bool presetRoutingsRefs})> {
+class $$PresetSlotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PresetSlotsTable,
+          PresetSlotEntry,
+          $$PresetSlotsTableFilterComposer,
+          $$PresetSlotsTableOrderingComposer,
+          $$PresetSlotsTableAnnotationComposer,
+          $$PresetSlotsTableCreateCompanionBuilder,
+          $$PresetSlotsTableUpdateCompanionBuilder,
+          (PresetSlotEntry, $$PresetSlotsTableReferences),
+          PresetSlotEntry,
+          PrefetchHooks Function({
+            bool presetId,
+            bool algorithmGuid,
+            bool presetParameterValuesRefs,
+            bool presetParameterStringValuesRefs,
+            bool presetMappingsRefs,
+            bool presetRoutingsRefs,
+          })
+        > {
   $$PresetSlotsTableTableManager(_$AppDatabase db, $PresetSlotsTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -8342,205 +9842,272 @@ class $$PresetSlotsTableTableManager extends RootTableManager<
               $$PresetSlotsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$PresetSlotsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> presetId = const Value.absent(),
-            Value<int> slotIndex = const Value.absent(),
-            Value<String> algorithmGuid = const Value.absent(),
-            Value<String?> customName = const Value.absent(),
-          }) =>
-              PresetSlotsCompanion(
-            id: id,
-            presetId: presetId,
-            slotIndex: slotIndex,
-            algorithmGuid: algorithmGuid,
-            customName: customName,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int presetId,
-            required int slotIndex,
-            required String algorithmGuid,
-            Value<String?> customName = const Value.absent(),
-          }) =>
-              PresetSlotsCompanion.insert(
-            id: id,
-            presetId: presetId,
-            slotIndex: slotIndex,
-            algorithmGuid: algorithmGuid,
-            customName: customName,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> presetId = const Value.absent(),
+                Value<int> slotIndex = const Value.absent(),
+                Value<String> algorithmGuid = const Value.absent(),
+                Value<String?> customName = const Value.absent(),
+              }) => PresetSlotsCompanion(
+                id: id,
+                presetId: presetId,
+                slotIndex: slotIndex,
+                algorithmGuid: algorithmGuid,
+                customName: customName,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int presetId,
+                required int slotIndex,
+                required String algorithmGuid,
+                Value<String?> customName = const Value.absent(),
+              }) => PresetSlotsCompanion.insert(
+                id: id,
+                presetId: presetId,
+                slotIndex: slotIndex,
+                algorithmGuid: algorithmGuid,
+                customName: customName,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$PresetSlotsTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PresetSlotsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: (
-              {presetId = false,
-              algorithmGuid = false,
-              presetParameterValuesRefs = false,
-              presetParameterStringValuesRefs = false,
-              presetMappingsRefs = false,
-              presetRoutingsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (presetParameterValuesRefs) db.presetParameterValues,
-                if (presetParameterStringValuesRefs)
-                  db.presetParameterStringValues,
-                if (presetMappingsRefs) db.presetMappings,
-                if (presetRoutingsRefs) db.presetRoutings
-              ],
-              addJoins: <
-                  T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic>>(state) {
-                if (presetId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.presetId,
-                    referencedTable:
-                        $$PresetSlotsTableReferences._presetIdTable(db),
-                    referencedColumn:
-                        $$PresetSlotsTableReferences._presetIdTable(db).id,
-                  ) as T;
-                }
-                if (algorithmGuid) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.algorithmGuid,
-                    referencedTable:
-                        $$PresetSlotsTableReferences._algorithmGuidTable(db),
-                    referencedColumn: $$PresetSlotsTableReferences
-                        ._algorithmGuidTable(db)
-                        .guid,
-                  ) as T;
-                }
+          prefetchHooksCallback:
+              ({
+                presetId = false,
+                algorithmGuid = false,
+                presetParameterValuesRefs = false,
+                presetParameterStringValuesRefs = false,
+                presetMappingsRefs = false,
+                presetRoutingsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (presetParameterValuesRefs) db.presetParameterValues,
+                    if (presetParameterStringValuesRefs)
+                      db.presetParameterStringValues,
+                    if (presetMappingsRefs) db.presetMappings,
+                    if (presetRoutingsRefs) db.presetRoutings,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (presetId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.presetId,
+                                    referencedTable:
+                                        $$PresetSlotsTableReferences
+                                            ._presetIdTable(db),
+                                    referencedColumn:
+                                        $$PresetSlotsTableReferences
+                                            ._presetIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (algorithmGuid) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.algorithmGuid,
+                                    referencedTable:
+                                        $$PresetSlotsTableReferences
+                                            ._algorithmGuidTable(db),
+                                    referencedColumn:
+                                        $$PresetSlotsTableReferences
+                                            ._algorithmGuidTable(db)
+                                            .guid,
+                                  )
+                                  as T;
+                        }
 
-                return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (presetParameterValuesRefs)
+                        await $_getPrefetchedData<
+                          PresetSlotEntry,
+                          $PresetSlotsTable,
+                          PresetParameterValueEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PresetSlotsTableReferences
+                              ._presetParameterValuesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PresetSlotsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).presetParameterValuesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.presetSlotId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (presetParameterStringValuesRefs)
+                        await $_getPrefetchedData<
+                          PresetSlotEntry,
+                          $PresetSlotsTable,
+                          PresetParameterStringValueEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PresetSlotsTableReferences
+                              ._presetParameterStringValuesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PresetSlotsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).presetParameterStringValuesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.presetSlotId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (presetMappingsRefs)
+                        await $_getPrefetchedData<
+                          PresetSlotEntry,
+                          $PresetSlotsTable,
+                          PresetMappingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PresetSlotsTableReferences
+                              ._presetMappingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PresetSlotsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).presetMappingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.presetSlotId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (presetRoutingsRefs)
+                        await $_getPrefetchedData<
+                          PresetSlotEntry,
+                          $PresetSlotsTable,
+                          PresetRoutingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PresetSlotsTableReferences
+                              ._presetRoutingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PresetSlotsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).presetRoutingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.presetSlotId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (presetParameterValuesRefs)
-                    await $_getPrefetchedData<PresetSlotEntry,
-                            $PresetSlotsTable, PresetParameterValueEntry>(
-                        currentTable: table,
-                        referencedTable: $$PresetSlotsTableReferences
-                            ._presetParameterValuesRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$PresetSlotsTableReferences(db, table, p0)
-                                .presetParameterValuesRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.presetSlotId == item.id),
-                        typedResults: items),
-                  if (presetParameterStringValuesRefs)
-                    await $_getPrefetchedData<PresetSlotEntry,
-                            $PresetSlotsTable, PresetParameterStringValueEntry>(
-                        currentTable: table,
-                        referencedTable: $$PresetSlotsTableReferences
-                            ._presetParameterStringValuesRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$PresetSlotsTableReferences(db, table, p0)
-                                .presetParameterStringValuesRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.presetSlotId == item.id),
-                        typedResults: items),
-                  if (presetMappingsRefs)
-                    await $_getPrefetchedData<PresetSlotEntry,
-                            $PresetSlotsTable, PresetMappingEntry>(
-                        currentTable: table,
-                        referencedTable: $$PresetSlotsTableReferences
-                            ._presetMappingsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$PresetSlotsTableReferences(db, table, p0)
-                                .presetMappingsRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.presetSlotId == item.id),
-                        typedResults: items),
-                  if (presetRoutingsRefs)
-                    await $_getPrefetchedData<PresetSlotEntry,
-                            $PresetSlotsTable, PresetRoutingEntry>(
-                        currentTable: table,
-                        referencedTable: $$PresetSlotsTableReferences
-                            ._presetRoutingsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$PresetSlotsTableReferences(db, table, p0)
-                                .presetRoutingsRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.presetSlotId == item.id),
-                        typedResults: items)
-                ];
-              },
-            );
-          },
-        ));
+        ),
+      );
 }
 
-typedef $$PresetSlotsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $PresetSlotsTable,
-    PresetSlotEntry,
-    $$PresetSlotsTableFilterComposer,
-    $$PresetSlotsTableOrderingComposer,
-    $$PresetSlotsTableAnnotationComposer,
-    $$PresetSlotsTableCreateCompanionBuilder,
-    $$PresetSlotsTableUpdateCompanionBuilder,
-    (PresetSlotEntry, $$PresetSlotsTableReferences),
-    PresetSlotEntry,
-    PrefetchHooks Function(
-        {bool presetId,
+typedef $$PresetSlotsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PresetSlotsTable,
+      PresetSlotEntry,
+      $$PresetSlotsTableFilterComposer,
+      $$PresetSlotsTableOrderingComposer,
+      $$PresetSlotsTableAnnotationComposer,
+      $$PresetSlotsTableCreateCompanionBuilder,
+      $$PresetSlotsTableUpdateCompanionBuilder,
+      (PresetSlotEntry, $$PresetSlotsTableReferences),
+      PresetSlotEntry,
+      PrefetchHooks Function({
+        bool presetId,
         bool algorithmGuid,
         bool presetParameterValuesRefs,
         bool presetParameterStringValuesRefs,
         bool presetMappingsRefs,
-        bool presetRoutingsRefs})>;
-typedef $$PresetParameterValuesTableCreateCompanionBuilder
-    = PresetParameterValuesCompanion Function({
-  Value<int> id,
-  required int presetSlotId,
-  required int parameterNumber,
-  required int value,
-});
-typedef $$PresetParameterValuesTableUpdateCompanionBuilder
-    = PresetParameterValuesCompanion Function({
-  Value<int> id,
-  Value<int> presetSlotId,
-  Value<int> parameterNumber,
-  Value<int> value,
-});
+        bool presetRoutingsRefs,
+      })
+    >;
+typedef $$PresetParameterValuesTableCreateCompanionBuilder =
+    PresetParameterValuesCompanion Function({
+      Value<int> id,
+      required int presetSlotId,
+      required int parameterNumber,
+      required int value,
+    });
+typedef $$PresetParameterValuesTableUpdateCompanionBuilder =
+    PresetParameterValuesCompanion Function({
+      Value<int> id,
+      Value<int> presetSlotId,
+      Value<int> parameterNumber,
+      Value<int> value,
+    });
 
-final class $$PresetParameterValuesTableReferences extends BaseReferences<
-    _$AppDatabase, $PresetParameterValuesTable, PresetParameterValueEntry> {
+final class $$PresetParameterValuesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PresetParameterValuesTable,
+          PresetParameterValueEntry
+        > {
   $$PresetParameterValuesTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias($_aliasNameGenerator(
-          db.presetParameterValues.presetSlotId, db.presetSlots.id));
+      db.presetSlots.createAlias(
+        $_aliasNameGenerator(
+          db.presetParameterValues.presetSlotId,
+          db.presetSlots.id,
+        ),
+      );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;
 
-    final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$PresetSlotsTableTableManager(
+      $_db,
+      $_db.presetSlots,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_presetSlotIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -8554,32 +10121,40 @@ class $$PresetParameterValuesTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnFilters(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get value => $composableBuilder(
-      column: $table.value, builder: (column) => ColumnFilters(column));
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$PresetSlotsTableFilterComposer get presetSlotId {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -8594,32 +10169,40 @@ class $$PresetParameterValuesTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get value => $composableBuilder(
-      column: $table.value, builder: (column) => ColumnOrderings(column));
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$PresetSlotsTableOrderingComposer get presetSlotId {
     final $$PresetSlotsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableOrderingComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableOrderingComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -8637,94 +10220,113 @@ class $$PresetParameterValuesTableAnnotationComposer
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber, builder: (column) => column);
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get value =>
       $composableBuilder(column: $table.value, builder: (column) => column);
 
   $$PresetSlotsTableAnnotationComposer get presetSlotId {
     final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$PresetParameterValuesTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PresetParameterValuesTable,
-    PresetParameterValueEntry,
-    $$PresetParameterValuesTableFilterComposer,
-    $$PresetParameterValuesTableOrderingComposer,
-    $$PresetParameterValuesTableAnnotationComposer,
-    $$PresetParameterValuesTableCreateCompanionBuilder,
-    $$PresetParameterValuesTableUpdateCompanionBuilder,
-    (PresetParameterValueEntry, $$PresetParameterValuesTableReferences),
-    PresetParameterValueEntry,
-    PrefetchHooks Function({bool presetSlotId})> {
+class $$PresetParameterValuesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PresetParameterValuesTable,
+          PresetParameterValueEntry,
+          $$PresetParameterValuesTableFilterComposer,
+          $$PresetParameterValuesTableOrderingComposer,
+          $$PresetParameterValuesTableAnnotationComposer,
+          $$PresetParameterValuesTableCreateCompanionBuilder,
+          $$PresetParameterValuesTableUpdateCompanionBuilder,
+          (PresetParameterValueEntry, $$PresetParameterValuesTableReferences),
+          PresetParameterValueEntry,
+          PrefetchHooks Function({bool presetSlotId})
+        > {
   $$PresetParameterValuesTableTableManager(
-      _$AppDatabase db, $PresetParameterValuesTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $PresetParameterValuesTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
               $$PresetParameterValuesTableFilterComposer(
-                  $db: db, $table: table),
+                $db: db,
+                $table: table,
+              ),
           createOrderingComposer: () =>
               $$PresetParameterValuesTableOrderingComposer(
-                  $db: db, $table: table),
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
               $$PresetParameterValuesTableAnnotationComposer(
-                  $db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> presetSlotId = const Value.absent(),
-            Value<int> parameterNumber = const Value.absent(),
-            Value<int> value = const Value.absent(),
-          }) =>
-              PresetParameterValuesCompanion(
-            id: id,
-            presetSlotId: presetSlotId,
-            parameterNumber: parameterNumber,
-            value: value,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int presetSlotId,
-            required int parameterNumber,
-            required int value,
-          }) =>
-              PresetParameterValuesCompanion.insert(
-            id: id,
-            presetSlotId: presetSlotId,
-            parameterNumber: parameterNumber,
-            value: value,
-          ),
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> presetSlotId = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<int> value = const Value.absent(),
+              }) => PresetParameterValuesCompanion(
+                id: id,
+                presetSlotId: presetSlotId,
+                parameterNumber: parameterNumber,
+                value: value,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int presetSlotId,
+                required int parameterNumber,
+                required int value,
+              }) => PresetParameterValuesCompanion.insert(
+                id: id,
+                presetSlotId: presetSlotId,
+                parameterNumber: parameterNumber,
+                value: value,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$PresetParameterValuesTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PresetParameterValuesTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({presetSlotId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -8735,77 +10337,98 @@ class $$PresetParameterValuesTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (presetSlotId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.presetSlotId,
-                    referencedTable: $$PresetParameterValuesTableReferences
-                        ._presetSlotIdTable(db),
-                    referencedColumn: $$PresetParameterValuesTableReferences
-                        ._presetSlotIdTable(db)
-                        .id,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (presetSlotId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.presetSlotId,
+                                referencedTable:
+                                    $$PresetParameterValuesTableReferences
+                                        ._presetSlotIdTable(db),
+                                referencedColumn:
+                                    $$PresetParameterValuesTableReferences
+                                        ._presetSlotIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$PresetParameterValuesTableProcessedTableManager
-    = ProcessedTableManager<
-        _$AppDatabase,
-        $PresetParameterValuesTable,
-        PresetParameterValueEntry,
-        $$PresetParameterValuesTableFilterComposer,
-        $$PresetParameterValuesTableOrderingComposer,
-        $$PresetParameterValuesTableAnnotationComposer,
-        $$PresetParameterValuesTableCreateCompanionBuilder,
-        $$PresetParameterValuesTableUpdateCompanionBuilder,
-        (PresetParameterValueEntry, $$PresetParameterValuesTableReferences),
-        PresetParameterValueEntry,
-        PrefetchHooks Function({bool presetSlotId})>;
-typedef $$PresetParameterStringValuesTableCreateCompanionBuilder
-    = PresetParameterStringValuesCompanion Function({
-  required int presetSlotId,
-  required int parameterNumber,
-  required String stringValue,
-  Value<int> rowid,
-});
-typedef $$PresetParameterStringValuesTableUpdateCompanionBuilder
-    = PresetParameterStringValuesCompanion Function({
-  Value<int> presetSlotId,
-  Value<int> parameterNumber,
-  Value<String> stringValue,
-  Value<int> rowid,
-});
+typedef $$PresetParameterValuesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PresetParameterValuesTable,
+      PresetParameterValueEntry,
+      $$PresetParameterValuesTableFilterComposer,
+      $$PresetParameterValuesTableOrderingComposer,
+      $$PresetParameterValuesTableAnnotationComposer,
+      $$PresetParameterValuesTableCreateCompanionBuilder,
+      $$PresetParameterValuesTableUpdateCompanionBuilder,
+      (PresetParameterValueEntry, $$PresetParameterValuesTableReferences),
+      PresetParameterValueEntry,
+      PrefetchHooks Function({bool presetSlotId})
+    >;
+typedef $$PresetParameterStringValuesTableCreateCompanionBuilder =
+    PresetParameterStringValuesCompanion Function({
+      required int presetSlotId,
+      required int parameterNumber,
+      required String stringValue,
+      Value<int> rowid,
+    });
+typedef $$PresetParameterStringValuesTableUpdateCompanionBuilder =
+    PresetParameterStringValuesCompanion Function({
+      Value<int> presetSlotId,
+      Value<int> parameterNumber,
+      Value<String> stringValue,
+      Value<int> rowid,
+    });
 
-final class $$PresetParameterStringValuesTableReferences extends BaseReferences<
-    _$AppDatabase,
-    $PresetParameterStringValuesTable,
-    PresetParameterStringValueEntry> {
+final class $$PresetParameterStringValuesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PresetParameterStringValuesTable,
+          PresetParameterStringValueEntry
+        > {
   $$PresetParameterStringValuesTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias($_aliasNameGenerator(
-          db.presetParameterStringValues.presetSlotId, db.presetSlots.id));
+      db.presetSlots.createAlias(
+        $_aliasNameGenerator(
+          db.presetParameterStringValues.presetSlotId,
+          db.presetSlots.id,
+        ),
+      );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;
 
-    final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$PresetSlotsTableTableManager(
+      $_db,
+      $_db.presetSlots,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_presetSlotIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -8819,29 +10442,35 @@ class $$PresetParameterStringValuesTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnFilters(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get stringValue => $composableBuilder(
-      column: $table.stringValue, builder: (column) => ColumnFilters(column));
+    column: $table.stringValue,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$PresetSlotsTableFilterComposer get presetSlotId {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -8856,29 +10485,35 @@ class $$PresetParameterStringValuesTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get stringValue => $composableBuilder(
-      column: $table.stringValue, builder: (column) => ColumnOrderings(column));
+    column: $table.stringValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$PresetSlotsTableOrderingComposer get presetSlotId {
     final $$PresetSlotsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableOrderingComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableOrderingComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -8893,97 +10528,118 @@ class $$PresetParameterStringValuesTableAnnotationComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber, builder: (column) => column);
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get stringValue => $composableBuilder(
-      column: $table.stringValue, builder: (column) => column);
+    column: $table.stringValue,
+    builder: (column) => column,
+  );
 
   $$PresetSlotsTableAnnotationComposer get presetSlotId {
     final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$PresetParameterStringValuesTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PresetParameterStringValuesTable,
-    PresetParameterStringValueEntry,
-    $$PresetParameterStringValuesTableFilterComposer,
-    $$PresetParameterStringValuesTableOrderingComposer,
-    $$PresetParameterStringValuesTableAnnotationComposer,
-    $$PresetParameterStringValuesTableCreateCompanionBuilder,
-    $$PresetParameterStringValuesTableUpdateCompanionBuilder,
-    (
-      PresetParameterStringValueEntry,
-      $$PresetParameterStringValuesTableReferences
-    ),
-    PresetParameterStringValueEntry,
-    PrefetchHooks Function({bool presetSlotId})> {
+class $$PresetParameterStringValuesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PresetParameterStringValuesTable,
+          PresetParameterStringValueEntry,
+          $$PresetParameterStringValuesTableFilterComposer,
+          $$PresetParameterStringValuesTableOrderingComposer,
+          $$PresetParameterStringValuesTableAnnotationComposer,
+          $$PresetParameterStringValuesTableCreateCompanionBuilder,
+          $$PresetParameterStringValuesTableUpdateCompanionBuilder,
+          (
+            PresetParameterStringValueEntry,
+            $$PresetParameterStringValuesTableReferences,
+          ),
+          PresetParameterStringValueEntry,
+          PrefetchHooks Function({bool presetSlotId})
+        > {
   $$PresetParameterStringValuesTableTableManager(
-      _$AppDatabase db, $PresetParameterStringValuesTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $PresetParameterStringValuesTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
               $$PresetParameterStringValuesTableFilterComposer(
-                  $db: db, $table: table),
+                $db: db,
+                $table: table,
+              ),
           createOrderingComposer: () =>
               $$PresetParameterStringValuesTableOrderingComposer(
-                  $db: db, $table: table),
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
               $$PresetParameterStringValuesTableAnnotationComposer(
-                  $db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> presetSlotId = const Value.absent(),
-            Value<int> parameterNumber = const Value.absent(),
-            Value<String> stringValue = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              PresetParameterStringValuesCompanion(
-            presetSlotId: presetSlotId,
-            parameterNumber: parameterNumber,
-            stringValue: stringValue,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required int presetSlotId,
-            required int parameterNumber,
-            required String stringValue,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              PresetParameterStringValuesCompanion.insert(
-            presetSlotId: presetSlotId,
-            parameterNumber: parameterNumber,
-            stringValue: stringValue,
-            rowid: rowid,
-          ),
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> presetSlotId = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<String> stringValue = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PresetParameterStringValuesCompanion(
+                presetSlotId: presetSlotId,
+                parameterNumber: parameterNumber,
+                stringValue: stringValue,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int presetSlotId,
+                required int parameterNumber,
+                required String stringValue,
+                Value<int> rowid = const Value.absent(),
+              }) => PresetParameterStringValuesCompanion.insert(
+                presetSlotId: presetSlotId,
+                parameterNumber: parameterNumber,
+                stringValue: stringValue,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$PresetParameterStringValuesTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PresetParameterStringValuesTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({presetSlotId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -8994,79 +10650,98 @@ class $$PresetParameterStringValuesTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (presetSlotId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.presetSlotId,
-                    referencedTable:
-                        $$PresetParameterStringValuesTableReferences
-                            ._presetSlotIdTable(db),
-                    referencedColumn:
-                        $$PresetParameterStringValuesTableReferences
-                            ._presetSlotIdTable(db)
-                            .id,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (presetSlotId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.presetSlotId,
+                                referencedTable:
+                                    $$PresetParameterStringValuesTableReferences
+                                        ._presetSlotIdTable(db),
+                                referencedColumn:
+                                    $$PresetParameterStringValuesTableReferences
+                                        ._presetSlotIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$PresetParameterStringValuesTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $PresetParameterStringValuesTable,
-    PresetParameterStringValueEntry,
-    $$PresetParameterStringValuesTableFilterComposer,
-    $$PresetParameterStringValuesTableOrderingComposer,
-    $$PresetParameterStringValuesTableAnnotationComposer,
-    $$PresetParameterStringValuesTableCreateCompanionBuilder,
-    $$PresetParameterStringValuesTableUpdateCompanionBuilder,
-    (
+typedef $$PresetParameterStringValuesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PresetParameterStringValuesTable,
       PresetParameterStringValueEntry,
-      $$PresetParameterStringValuesTableReferences
-    ),
-    PresetParameterStringValueEntry,
-    PrefetchHooks Function({bool presetSlotId})>;
-typedef $$PresetMappingsTableCreateCompanionBuilder = PresetMappingsCompanion
-    Function({
-  required int presetSlotId,
-  required int parameterNumber,
-  required PackedMappingData packedData,
-  Value<int> rowid,
-});
-typedef $$PresetMappingsTableUpdateCompanionBuilder = PresetMappingsCompanion
-    Function({
-  Value<int> presetSlotId,
-  Value<int> parameterNumber,
-  Value<PackedMappingData> packedData,
-  Value<int> rowid,
-});
+      $$PresetParameterStringValuesTableFilterComposer,
+      $$PresetParameterStringValuesTableOrderingComposer,
+      $$PresetParameterStringValuesTableAnnotationComposer,
+      $$PresetParameterStringValuesTableCreateCompanionBuilder,
+      $$PresetParameterStringValuesTableUpdateCompanionBuilder,
+      (
+        PresetParameterStringValueEntry,
+        $$PresetParameterStringValuesTableReferences,
+      ),
+      PresetParameterStringValueEntry,
+      PrefetchHooks Function({bool presetSlotId})
+    >;
+typedef $$PresetMappingsTableCreateCompanionBuilder =
+    PresetMappingsCompanion Function({
+      required int presetSlotId,
+      required int parameterNumber,
+      required PackedMappingData packedData,
+      Value<int> rowid,
+    });
+typedef $$PresetMappingsTableUpdateCompanionBuilder =
+    PresetMappingsCompanion Function({
+      Value<int> presetSlotId,
+      Value<int> parameterNumber,
+      Value<PackedMappingData> packedData,
+      Value<int> rowid,
+    });
 
-final class $$PresetMappingsTableReferences extends BaseReferences<
-    _$AppDatabase, $PresetMappingsTable, PresetMappingEntry> {
+final class $$PresetMappingsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PresetMappingsTable,
+          PresetMappingEntry
+        > {
   $$PresetMappingsTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias($_aliasNameGenerator(
-          db.presetMappings.presetSlotId, db.presetSlots.id));
+      db.presetSlots.createAlias(
+        $_aliasNameGenerator(db.presetMappings.presetSlotId, db.presetSlots.id),
+      );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;
 
-    final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$PresetSlotsTableTableManager(
+      $_db,
+      $_db.presetSlots,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_presetSlotIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -9080,32 +10755,40 @@ class $$PresetMappingsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnFilters(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnFilters(column),
+  );
 
-  ColumnWithTypeConverterFilters<PackedMappingData, PackedMappingData,
-          Uint8List>
-      get packedData => $composableBuilder(
-          column: $table.packedData,
-          builder: (column) => ColumnWithTypeConverterFilters(column));
+  ColumnWithTypeConverterFilters<
+    PackedMappingData,
+    PackedMappingData,
+    Uint8List
+  >
+  get packedData => $composableBuilder(
+    column: $table.packedData,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 
   $$PresetSlotsTableFilterComposer get presetSlotId {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -9120,29 +10803,35 @@ class $$PresetMappingsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.parameterNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<Uint8List> get packedData => $composableBuilder(
-      column: $table.packedData, builder: (column) => ColumnOrderings(column));
+    column: $table.packedData,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$PresetSlotsTableOrderingComposer get presetSlotId {
     final $$PresetSlotsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableOrderingComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableOrderingComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -9157,48 +10846,60 @@ class $$PresetMappingsTableAnnotationComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   GeneratedColumn<int> get parameterNumber => $composableBuilder(
-      column: $table.parameterNumber, builder: (column) => column);
+    column: $table.parameterNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumnWithTypeConverter<PackedMappingData, Uint8List>
-      get packedData => $composableBuilder(
-          column: $table.packedData, builder: (column) => column);
+  get packedData => $composableBuilder(
+    column: $table.packedData,
+    builder: (column) => column,
+  );
 
   $$PresetSlotsTableAnnotationComposer get presetSlotId {
     final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$PresetMappingsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PresetMappingsTable,
-    PresetMappingEntry,
-    $$PresetMappingsTableFilterComposer,
-    $$PresetMappingsTableOrderingComposer,
-    $$PresetMappingsTableAnnotationComposer,
-    $$PresetMappingsTableCreateCompanionBuilder,
-    $$PresetMappingsTableUpdateCompanionBuilder,
-    (PresetMappingEntry, $$PresetMappingsTableReferences),
-    PresetMappingEntry,
-    PrefetchHooks Function({bool presetSlotId})> {
+class $$PresetMappingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PresetMappingsTable,
+          PresetMappingEntry,
+          $$PresetMappingsTableFilterComposer,
+          $$PresetMappingsTableOrderingComposer,
+          $$PresetMappingsTableAnnotationComposer,
+          $$PresetMappingsTableCreateCompanionBuilder,
+          $$PresetMappingsTableUpdateCompanionBuilder,
+          (PresetMappingEntry, $$PresetMappingsTableReferences),
+          PresetMappingEntry,
+          PrefetchHooks Function({bool presetSlotId})
+        > {
   $$PresetMappingsTableTableManager(
-      _$AppDatabase db, $PresetMappingsTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $PresetMappingsTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9207,42 +10908,45 @@ class $$PresetMappingsTableTableManager extends RootTableManager<
               $$PresetMappingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$PresetMappingsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> presetSlotId = const Value.absent(),
-            Value<int> parameterNumber = const Value.absent(),
-            Value<PackedMappingData> packedData = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              PresetMappingsCompanion(
-            presetSlotId: presetSlotId,
-            parameterNumber: parameterNumber,
-            packedData: packedData,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required int presetSlotId,
-            required int parameterNumber,
-            required PackedMappingData packedData,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              PresetMappingsCompanion.insert(
-            presetSlotId: presetSlotId,
-            parameterNumber: parameterNumber,
-            packedData: packedData,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> presetSlotId = const Value.absent(),
+                Value<int> parameterNumber = const Value.absent(),
+                Value<PackedMappingData> packedData = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PresetMappingsCompanion(
+                presetSlotId: presetSlotId,
+                parameterNumber: parameterNumber,
+                packedData: packedData,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int presetSlotId,
+                required int parameterNumber,
+                required PackedMappingData packedData,
+                Value<int> rowid = const Value.absent(),
+              }) => PresetMappingsCompanion.insert(
+                presetSlotId: presetSlotId,
+                parameterNumber: parameterNumber,
+                packedData: packedData,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$PresetMappingsTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PresetMappingsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({presetSlotId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -9253,70 +10957,90 @@ class $$PresetMappingsTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (presetSlotId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.presetSlotId,
-                    referencedTable:
-                        $$PresetMappingsTableReferences._presetSlotIdTable(db),
-                    referencedColumn: $$PresetMappingsTableReferences
-                        ._presetSlotIdTable(db)
-                        .id,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (presetSlotId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.presetSlotId,
+                                referencedTable: $$PresetMappingsTableReferences
+                                    ._presetSlotIdTable(db),
+                                referencedColumn:
+                                    $$PresetMappingsTableReferences
+                                        ._presetSlotIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$PresetMappingsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $PresetMappingsTable,
-    PresetMappingEntry,
-    $$PresetMappingsTableFilterComposer,
-    $$PresetMappingsTableOrderingComposer,
-    $$PresetMappingsTableAnnotationComposer,
-    $$PresetMappingsTableCreateCompanionBuilder,
-    $$PresetMappingsTableUpdateCompanionBuilder,
-    (PresetMappingEntry, $$PresetMappingsTableReferences),
-    PresetMappingEntry,
-    PrefetchHooks Function({bool presetSlotId})>;
-typedef $$PresetRoutingsTableCreateCompanionBuilder = PresetRoutingsCompanion
-    Function({
-  Value<int> presetSlotId,
-  required List<int> routingInfoJson,
-});
-typedef $$PresetRoutingsTableUpdateCompanionBuilder = PresetRoutingsCompanion
-    Function({
-  Value<int> presetSlotId,
-  Value<List<int>> routingInfoJson,
-});
+typedef $$PresetMappingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PresetMappingsTable,
+      PresetMappingEntry,
+      $$PresetMappingsTableFilterComposer,
+      $$PresetMappingsTableOrderingComposer,
+      $$PresetMappingsTableAnnotationComposer,
+      $$PresetMappingsTableCreateCompanionBuilder,
+      $$PresetMappingsTableUpdateCompanionBuilder,
+      (PresetMappingEntry, $$PresetMappingsTableReferences),
+      PresetMappingEntry,
+      PrefetchHooks Function({bool presetSlotId})
+    >;
+typedef $$PresetRoutingsTableCreateCompanionBuilder =
+    PresetRoutingsCompanion Function({
+      Value<int> presetSlotId,
+      required List<int> routingInfoJson,
+    });
+typedef $$PresetRoutingsTableUpdateCompanionBuilder =
+    PresetRoutingsCompanion Function({
+      Value<int> presetSlotId,
+      Value<List<int>> routingInfoJson,
+    });
 
-final class $$PresetRoutingsTableReferences extends BaseReferences<
-    _$AppDatabase, $PresetRoutingsTable, PresetRoutingEntry> {
+final class $$PresetRoutingsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PresetRoutingsTable,
+          PresetRoutingEntry
+        > {
   $$PresetRoutingsTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $PresetSlotsTable _presetSlotIdTable(_$AppDatabase db) =>
-      db.presetSlots.createAlias($_aliasNameGenerator(
-          db.presetRoutings.presetSlotId, db.presetSlots.id));
+      db.presetSlots.createAlias(
+        $_aliasNameGenerator(db.presetRoutings.presetSlotId, db.presetSlots.id),
+      );
 
   $$PresetSlotsTableProcessedTableManager get presetSlotId {
     final $_column = $_itemColumn<int>('preset_slot_id')!;
 
-    final manager = $$PresetSlotsTableTableManager($_db, $_db.presetSlots)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$PresetSlotsTableTableManager(
+      $_db,
+      $_db.presetSlots,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_presetSlotIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -9330,27 +11054,31 @@ class $$PresetRoutingsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnWithTypeConverterFilters<List<int>, List<int>, String>
-      get routingInfoJson => $composableBuilder(
-          column: $table.routingInfoJson,
-          builder: (column) => ColumnWithTypeConverterFilters(column));
+  get routingInfoJson => $composableBuilder(
+    column: $table.routingInfoJson,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 
   $$PresetSlotsTableFilterComposer get presetSlotId {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableFilterComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableFilterComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -9365,26 +11093,30 @@ class $$PresetRoutingsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get routingInfoJson => $composableBuilder(
-      column: $table.routingInfoJson,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.routingInfoJson,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$PresetSlotsTableOrderingComposer get presetSlotId {
     final $$PresetSlotsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableOrderingComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableOrderingComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -9400,44 +11132,54 @@ class $$PresetRoutingsTableAnnotationComposer
   });
   GeneratedColumnWithTypeConverter<List<int>, String> get routingInfoJson =>
       $composableBuilder(
-          column: $table.routingInfoJson, builder: (column) => column);
+        column: $table.routingInfoJson,
+        builder: (column) => column,
+      );
 
   $$PresetSlotsTableAnnotationComposer get presetSlotId {
     final $$PresetSlotsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.presetSlotId,
-        referencedTable: $db.presetSlots,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$PresetSlotsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.presetSlots,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.presetSlotId,
+      referencedTable: $db.presetSlots,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PresetSlotsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.presetSlots,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$PresetRoutingsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PresetRoutingsTable,
-    PresetRoutingEntry,
-    $$PresetRoutingsTableFilterComposer,
-    $$PresetRoutingsTableOrderingComposer,
-    $$PresetRoutingsTableAnnotationComposer,
-    $$PresetRoutingsTableCreateCompanionBuilder,
-    $$PresetRoutingsTableUpdateCompanionBuilder,
-    (PresetRoutingEntry, $$PresetRoutingsTableReferences),
-    PresetRoutingEntry,
-    PrefetchHooks Function({bool presetSlotId})> {
+class $$PresetRoutingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PresetRoutingsTable,
+          PresetRoutingEntry,
+          $$PresetRoutingsTableFilterComposer,
+          $$PresetRoutingsTableOrderingComposer,
+          $$PresetRoutingsTableAnnotationComposer,
+          $$PresetRoutingsTableCreateCompanionBuilder,
+          $$PresetRoutingsTableUpdateCompanionBuilder,
+          (PresetRoutingEntry, $$PresetRoutingsTableReferences),
+          PresetRoutingEntry,
+          PrefetchHooks Function({bool presetSlotId})
+        > {
   $$PresetRoutingsTableTableManager(
-      _$AppDatabase db, $PresetRoutingsTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $PresetRoutingsTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9446,34 +11188,37 @@ class $$PresetRoutingsTableTableManager extends RootTableManager<
               $$PresetRoutingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$PresetRoutingsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> presetSlotId = const Value.absent(),
-            Value<List<int>> routingInfoJson = const Value.absent(),
-          }) =>
-              PresetRoutingsCompanion(
-            presetSlotId: presetSlotId,
-            routingInfoJson: routingInfoJson,
-          ),
-          createCompanionCallback: ({
-            Value<int> presetSlotId = const Value.absent(),
-            required List<int> routingInfoJson,
-          }) =>
-              PresetRoutingsCompanion.insert(
-            presetSlotId: presetSlotId,
-            routingInfoJson: routingInfoJson,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> presetSlotId = const Value.absent(),
+                Value<List<int>> routingInfoJson = const Value.absent(),
+              }) => PresetRoutingsCompanion(
+                presetSlotId: presetSlotId,
+                routingInfoJson: routingInfoJson,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> presetSlotId = const Value.absent(),
+                required List<int> routingInfoJson,
+              }) => PresetRoutingsCompanion.insert(
+                presetSlotId: presetSlotId,
+                routingInfoJson: routingInfoJson,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$PresetRoutingsTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PresetRoutingsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({presetSlotId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -9484,72 +11229,91 @@ class $$PresetRoutingsTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (presetSlotId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.presetSlotId,
-                    referencedTable:
-                        $$PresetRoutingsTableReferences._presetSlotIdTable(db),
-                    referencedColumn: $$PresetRoutingsTableReferences
-                        ._presetSlotIdTable(db)
-                        .id,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (presetSlotId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.presetSlotId,
+                                referencedTable: $$PresetRoutingsTableReferences
+                                    ._presetSlotIdTable(db),
+                                referencedColumn:
+                                    $$PresetRoutingsTableReferences
+                                        ._presetSlotIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$PresetRoutingsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $PresetRoutingsTable,
-    PresetRoutingEntry,
-    $$PresetRoutingsTableFilterComposer,
-    $$PresetRoutingsTableOrderingComposer,
-    $$PresetRoutingsTableAnnotationComposer,
-    $$PresetRoutingsTableCreateCompanionBuilder,
-    $$PresetRoutingsTableUpdateCompanionBuilder,
-    (PresetRoutingEntry, $$PresetRoutingsTableReferences),
-    PresetRoutingEntry,
-    PrefetchHooks Function({bool presetSlotId})>;
-typedef $$SdCardsTableCreateCompanionBuilder = SdCardsCompanion Function({
-  Value<int> id,
-  required String userLabel,
-  Value<String?> systemIdentifier,
-});
-typedef $$SdCardsTableUpdateCompanionBuilder = SdCardsCompanion Function({
-  Value<int> id,
-  Value<String> userLabel,
-  Value<String?> systemIdentifier,
-});
+typedef $$PresetRoutingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PresetRoutingsTable,
+      PresetRoutingEntry,
+      $$PresetRoutingsTableFilterComposer,
+      $$PresetRoutingsTableOrderingComposer,
+      $$PresetRoutingsTableAnnotationComposer,
+      $$PresetRoutingsTableCreateCompanionBuilder,
+      $$PresetRoutingsTableUpdateCompanionBuilder,
+      (PresetRoutingEntry, $$PresetRoutingsTableReferences),
+      PresetRoutingEntry,
+      PrefetchHooks Function({bool presetSlotId})
+    >;
+typedef $$SdCardsTableCreateCompanionBuilder =
+    SdCardsCompanion Function({
+      Value<int> id,
+      required String userLabel,
+      Value<String?> systemIdentifier,
+    });
+typedef $$SdCardsTableUpdateCompanionBuilder =
+    SdCardsCompanion Function({
+      Value<int> id,
+      Value<String> userLabel,
+      Value<String?> systemIdentifier,
+    });
 
 final class $$SdCardsTableReferences
     extends BaseReferences<_$AppDatabase, $SdCardsTable, SdCardEntry> {
   $$SdCardsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$IndexedPresetFilesTable,
-      List<IndexedPresetFileEntry>> _indexedPresetFilesRefsTable(
-          _$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(db.indexedPresetFiles,
-          aliasName: $_aliasNameGenerator(
-              db.sdCards.id, db.indexedPresetFiles.sdCardId));
+  static MultiTypedResultKey<
+    $IndexedPresetFilesTable,
+    List<IndexedPresetFileEntry>
+  >
+  _indexedPresetFilesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.indexedPresetFiles,
+        aliasName: $_aliasNameGenerator(
+          db.sdCards.id,
+          db.indexedPresetFiles.sdCardId,
+        ),
+      );
 
   $$IndexedPresetFilesTableProcessedTableManager get indexedPresetFilesRefs {
-    final manager =
-        $$IndexedPresetFilesTableTableManager($_db, $_db.indexedPresetFiles)
-            .filter((f) => f.sdCardId.id.sqlEquals($_itemColumn<int>('id')!));
+    final manager = $$IndexedPresetFilesTableTableManager(
+      $_db,
+      $_db.indexedPresetFiles,
+    ).filter((f) => f.sdCardId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache =
-        $_typedResult.readTableOrNull(_indexedPresetFilesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _indexedPresetFilesRefsTable($_db),
+    );
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
+      manager.$state.copyWith(prefetchedData: cache),
+    );
   }
 }
 
@@ -9563,33 +11327,42 @@ class $$SdCardsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get userLabel => $composableBuilder(
-      column: $table.userLabel, builder: (column) => ColumnFilters(column));
+    column: $table.userLabel,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get systemIdentifier => $composableBuilder(
-      column: $table.systemIdentifier,
-      builder: (column) => ColumnFilters(column));
+    column: $table.systemIdentifier,
+    builder: (column) => ColumnFilters(column),
+  );
 
   Expression<bool> indexedPresetFilesRefs(
-      Expression<bool> Function($$IndexedPresetFilesTableFilterComposer f) f) {
+    Expression<bool> Function($$IndexedPresetFilesTableFilterComposer f) f,
+  ) {
     final $$IndexedPresetFilesTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.indexedPresetFiles,
-        getReferencedColumn: (t) => t.sdCardId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$IndexedPresetFilesTableFilterComposer(
-              $db: $db,
-              $table: $db.indexedPresetFiles,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.indexedPresetFiles,
+      getReferencedColumn: (t) => t.sdCardId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IndexedPresetFilesTableFilterComposer(
+            $db: $db,
+            $table: $db.indexedPresetFiles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -9604,14 +11377,19 @@ class $$SdCardsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get userLabel => $composableBuilder(
-      column: $table.userLabel, builder: (column) => ColumnOrderings(column));
+    column: $table.userLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get systemIdentifier => $composableBuilder(
-      column: $table.systemIdentifier,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.systemIdentifier,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SdCardsTableAnnotationComposer
@@ -9630,45 +11408,55 @@ class $$SdCardsTableAnnotationComposer
       $composableBuilder(column: $table.userLabel, builder: (column) => column);
 
   GeneratedColumn<String> get systemIdentifier => $composableBuilder(
-      column: $table.systemIdentifier, builder: (column) => column);
+    column: $table.systemIdentifier,
+    builder: (column) => column,
+  );
 
   Expression<T> indexedPresetFilesRefs<T extends Object>(
-      Expression<T> Function($$IndexedPresetFilesTableAnnotationComposer a) f) {
+    Expression<T> Function($$IndexedPresetFilesTableAnnotationComposer a) f,
+  ) {
     final $$IndexedPresetFilesTableAnnotationComposer composer =
         $composerBuilder(
-            composer: this,
-            getCurrentColumn: (t) => t.id,
-            referencedTable: $db.indexedPresetFiles,
-            getReferencedColumn: (t) => t.sdCardId,
-            builder: (joinBuilder,
-                    {$addJoinBuilderToRootComposer,
-                    $removeJoinBuilderFromRootComposer}) =>
-                $$IndexedPresetFilesTableAnnotationComposer(
-                  $db: $db,
-                  $table: $db.indexedPresetFiles,
-                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                  joinBuilder: joinBuilder,
-                  $removeJoinBuilderFromRootComposer:
-                      $removeJoinBuilderFromRootComposer,
-                ));
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.indexedPresetFiles,
+          getReferencedColumn: (t) => t.sdCardId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$IndexedPresetFilesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.indexedPresetFiles,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
 
-class $$SdCardsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $SdCardsTable,
-    SdCardEntry,
-    $$SdCardsTableFilterComposer,
-    $$SdCardsTableOrderingComposer,
-    $$SdCardsTableAnnotationComposer,
-    $$SdCardsTableCreateCompanionBuilder,
-    $$SdCardsTableUpdateCompanionBuilder,
-    (SdCardEntry, $$SdCardsTableReferences),
-    SdCardEntry,
-    PrefetchHooks Function({bool indexedPresetFilesRefs})> {
+class $$SdCardsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SdCardsTable,
+          SdCardEntry,
+          $$SdCardsTableFilterComposer,
+          $$SdCardsTableOrderingComposer,
+          $$SdCardsTableAnnotationComposer,
+          $$SdCardsTableCreateCompanionBuilder,
+          $$SdCardsTableUpdateCompanionBuilder,
+          (SdCardEntry, $$SdCardsTableReferences),
+          SdCardEntry,
+          PrefetchHooks Function({bool indexedPresetFilesRefs})
+        > {
   $$SdCardsTableTableManager(_$AppDatabase db, $SdCardsTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9677,114 +11465,138 @@ class $$SdCardsTableTableManager extends RootTableManager<
               $$SdCardsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$SdCardsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<String> userLabel = const Value.absent(),
-            Value<String?> systemIdentifier = const Value.absent(),
-          }) =>
-              SdCardsCompanion(
-            id: id,
-            userLabel: userLabel,
-            systemIdentifier: systemIdentifier,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String userLabel,
-            Value<String?> systemIdentifier = const Value.absent(),
-          }) =>
-              SdCardsCompanion.insert(
-            id: id,
-            userLabel: userLabel,
-            systemIdentifier: systemIdentifier,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> userLabel = const Value.absent(),
+                Value<String?> systemIdentifier = const Value.absent(),
+              }) => SdCardsCompanion(
+                id: id,
+                userLabel: userLabel,
+                systemIdentifier: systemIdentifier,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String userLabel,
+                Value<String?> systemIdentifier = const Value.absent(),
+              }) => SdCardsCompanion.insert(
+                id: id,
+                userLabel: userLabel,
+                systemIdentifier: systemIdentifier,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) =>
-                  (e.readTable(table), $$SdCardsTableReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SdCardsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({indexedPresetFilesRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
-                if (indexedPresetFilesRefs) db.indexedPresetFiles
+                if (indexedPresetFilesRefs) db.indexedPresetFiles,
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (indexedPresetFilesRefs)
-                    await $_getPrefetchedData<SdCardEntry, $SdCardsTable,
-                            IndexedPresetFileEntry>(
-                        currentTable: table,
-                        referencedTable: $$SdCardsTableReferences
-                            ._indexedPresetFilesRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$SdCardsTableReferences(db, table, p0)
-                                .indexedPresetFilesRefs,
-                        referencedItemsForCurrentItem: (item,
-                                referencedItems) =>
-                            referencedItems.where((e) => e.sdCardId == item.id),
-                        typedResults: items)
+                    await $_getPrefetchedData<
+                      SdCardEntry,
+                      $SdCardsTable,
+                      IndexedPresetFileEntry
+                    >(
+                      currentTable: table,
+                      referencedTable: $$SdCardsTableReferences
+                          ._indexedPresetFilesRefsTable(db),
+                      managerFromTypedResult: (p0) => $$SdCardsTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).indexedPresetFilesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.sdCardId == item.id),
+                      typedResults: items,
+                    ),
                 ];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$SdCardsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $SdCardsTable,
-    SdCardEntry,
-    $$SdCardsTableFilterComposer,
-    $$SdCardsTableOrderingComposer,
-    $$SdCardsTableAnnotationComposer,
-    $$SdCardsTableCreateCompanionBuilder,
-    $$SdCardsTableUpdateCompanionBuilder,
-    (SdCardEntry, $$SdCardsTableReferences),
-    SdCardEntry,
-    PrefetchHooks Function({bool indexedPresetFilesRefs})>;
-typedef $$IndexedPresetFilesTableCreateCompanionBuilder
-    = IndexedPresetFilesCompanion Function({
-  Value<int> id,
-  required int sdCardId,
-  required String relativePath,
-  required String fileName,
-  required String absolutePathAtScanTime,
-  Value<String?> algorithmNameFromPreset,
-  Value<String?> notesFromPreset,
-  Value<String?> otherExtractedMetadataJson,
-  required DateTime lastSeenUtc,
-});
-typedef $$IndexedPresetFilesTableUpdateCompanionBuilder
-    = IndexedPresetFilesCompanion Function({
-  Value<int> id,
-  Value<int> sdCardId,
-  Value<String> relativePath,
-  Value<String> fileName,
-  Value<String> absolutePathAtScanTime,
-  Value<String?> algorithmNameFromPreset,
-  Value<String?> notesFromPreset,
-  Value<String?> otherExtractedMetadataJson,
-  Value<DateTime> lastSeenUtc,
-});
+typedef $$SdCardsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SdCardsTable,
+      SdCardEntry,
+      $$SdCardsTableFilterComposer,
+      $$SdCardsTableOrderingComposer,
+      $$SdCardsTableAnnotationComposer,
+      $$SdCardsTableCreateCompanionBuilder,
+      $$SdCardsTableUpdateCompanionBuilder,
+      (SdCardEntry, $$SdCardsTableReferences),
+      SdCardEntry,
+      PrefetchHooks Function({bool indexedPresetFilesRefs})
+    >;
+typedef $$IndexedPresetFilesTableCreateCompanionBuilder =
+    IndexedPresetFilesCompanion Function({
+      Value<int> id,
+      required int sdCardId,
+      required String relativePath,
+      required String fileName,
+      required String absolutePathAtScanTime,
+      Value<String?> algorithmNameFromPreset,
+      Value<String?> notesFromPreset,
+      Value<String?> otherExtractedMetadataJson,
+      required DateTime lastSeenUtc,
+    });
+typedef $$IndexedPresetFilesTableUpdateCompanionBuilder =
+    IndexedPresetFilesCompanion Function({
+      Value<int> id,
+      Value<int> sdCardId,
+      Value<String> relativePath,
+      Value<String> fileName,
+      Value<String> absolutePathAtScanTime,
+      Value<String?> algorithmNameFromPreset,
+      Value<String?> notesFromPreset,
+      Value<String?> otherExtractedMetadataJson,
+      Value<DateTime> lastSeenUtc,
+    });
 
-final class $$IndexedPresetFilesTableReferences extends BaseReferences<
-    _$AppDatabase, $IndexedPresetFilesTable, IndexedPresetFileEntry> {
+final class $$IndexedPresetFilesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $IndexedPresetFilesTable,
+          IndexedPresetFileEntry
+        > {
   $$IndexedPresetFilesTableReferences(
-      super.$_db, super.$_table, super.$_typedResult);
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $SdCardsTable _sdCardIdTable(_$AppDatabase db) =>
       db.sdCards.createAlias(
-          $_aliasNameGenerator(db.indexedPresetFiles.sdCardId, db.sdCards.id));
+        $_aliasNameGenerator(db.indexedPresetFiles.sdCardId, db.sdCards.id),
+      );
 
   $$SdCardsTableProcessedTableManager get sdCardId {
     final $_column = $_itemColumn<int>('sd_card_id')!;
 
-    final manager = $$SdCardsTableTableManager($_db, $_db.sdCards)
-        .filter((f) => f.id.sqlEquals($_column));
+    final manager = $$SdCardsTableTableManager(
+      $_db,
+      $_db.sdCards,
+    ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_sdCardIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
   }
 }
 
@@ -9798,50 +11610,65 @@ class $$IndexedPresetFilesTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get relativePath => $composableBuilder(
-      column: $table.relativePath, builder: (column) => ColumnFilters(column));
+    column: $table.relativePath,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get fileName => $composableBuilder(
-      column: $table.fileName, builder: (column) => ColumnFilters(column));
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get absolutePathAtScanTime => $composableBuilder(
-      column: $table.absolutePathAtScanTime,
-      builder: (column) => ColumnFilters(column));
+    column: $table.absolutePathAtScanTime,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get algorithmNameFromPreset => $composableBuilder(
-      column: $table.algorithmNameFromPreset,
-      builder: (column) => ColumnFilters(column));
+    column: $table.algorithmNameFromPreset,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get notesFromPreset => $composableBuilder(
-      column: $table.notesFromPreset,
-      builder: (column) => ColumnFilters(column));
+    column: $table.notesFromPreset,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get otherExtractedMetadataJson => $composableBuilder(
-      column: $table.otherExtractedMetadataJson,
-      builder: (column) => ColumnFilters(column));
+    column: $table.otherExtractedMetadataJson,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get lastSeenUtc => $composableBuilder(
-      column: $table.lastSeenUtc, builder: (column) => ColumnFilters(column));
+    column: $table.lastSeenUtc,
+    builder: (column) => ColumnFilters(column),
+  );
 
   $$SdCardsTableFilterComposer get sdCardId {
     final $$SdCardsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.sdCardId,
-        referencedTable: $db.sdCards,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$SdCardsTableFilterComposer(
-              $db: $db,
-              $table: $db.sdCards,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.sdCardId,
+      referencedTable: $db.sdCards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SdCardsTableFilterComposer(
+            $db: $db,
+            $table: $db.sdCards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -9856,51 +11683,65 @@ class $$IndexedPresetFilesTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get relativePath => $composableBuilder(
-      column: $table.relativePath,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.relativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get fileName => $composableBuilder(
-      column: $table.fileName, builder: (column) => ColumnOrderings(column));
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get absolutePathAtScanTime => $composableBuilder(
-      column: $table.absolutePathAtScanTime,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.absolutePathAtScanTime,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get algorithmNameFromPreset => $composableBuilder(
-      column: $table.algorithmNameFromPreset,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.algorithmNameFromPreset,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get notesFromPreset => $composableBuilder(
-      column: $table.notesFromPreset,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.notesFromPreset,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get otherExtractedMetadataJson => $composableBuilder(
-      column: $table.otherExtractedMetadataJson,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.otherExtractedMetadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get lastSeenUtc => $composableBuilder(
-      column: $table.lastSeenUtc, builder: (column) => ColumnOrderings(column));
+    column: $table.lastSeenUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   $$SdCardsTableOrderingComposer get sdCardId {
     final $$SdCardsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.sdCardId,
-        referencedTable: $db.sdCards,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$SdCardsTableOrderingComposer(
-              $db: $db,
-              $table: $db.sdCards,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.sdCardId,
+      referencedTable: $db.sdCards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SdCardsTableOrderingComposer(
+            $db: $db,
+            $table: $db.sdCards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
@@ -9918,62 +11759,82 @@ class $$IndexedPresetFilesTableAnnotationComposer
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get relativePath => $composableBuilder(
-      column: $table.relativePath, builder: (column) => column);
+    column: $table.relativePath,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get fileName =>
       $composableBuilder(column: $table.fileName, builder: (column) => column);
 
   GeneratedColumn<String> get absolutePathAtScanTime => $composableBuilder(
-      column: $table.absolutePathAtScanTime, builder: (column) => column);
+    column: $table.absolutePathAtScanTime,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get algorithmNameFromPreset => $composableBuilder(
-      column: $table.algorithmNameFromPreset, builder: (column) => column);
+    column: $table.algorithmNameFromPreset,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get notesFromPreset => $composableBuilder(
-      column: $table.notesFromPreset, builder: (column) => column);
+    column: $table.notesFromPreset,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get otherExtractedMetadataJson => $composableBuilder(
-      column: $table.otherExtractedMetadataJson, builder: (column) => column);
+    column: $table.otherExtractedMetadataJson,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get lastSeenUtc => $composableBuilder(
-      column: $table.lastSeenUtc, builder: (column) => column);
+    column: $table.lastSeenUtc,
+    builder: (column) => column,
+  );
 
   $$SdCardsTableAnnotationComposer get sdCardId {
     final $$SdCardsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.sdCardId,
-        referencedTable: $db.sdCards,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$SdCardsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.sdCards,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
+      composer: this,
+      getCurrentColumn: (t) => t.sdCardId,
+      referencedTable: $db.sdCards,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SdCardsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sdCards,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return composer;
   }
 }
 
-class $$IndexedPresetFilesTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $IndexedPresetFilesTable,
-    IndexedPresetFileEntry,
-    $$IndexedPresetFilesTableFilterComposer,
-    $$IndexedPresetFilesTableOrderingComposer,
-    $$IndexedPresetFilesTableAnnotationComposer,
-    $$IndexedPresetFilesTableCreateCompanionBuilder,
-    $$IndexedPresetFilesTableUpdateCompanionBuilder,
-    (IndexedPresetFileEntry, $$IndexedPresetFilesTableReferences),
-    IndexedPresetFileEntry,
-    PrefetchHooks Function({bool sdCardId})> {
+class $$IndexedPresetFilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IndexedPresetFilesTable,
+          IndexedPresetFileEntry,
+          $$IndexedPresetFilesTableFilterComposer,
+          $$IndexedPresetFilesTableOrderingComposer,
+          $$IndexedPresetFilesTableAnnotationComposer,
+          $$IndexedPresetFilesTableCreateCompanionBuilder,
+          $$IndexedPresetFilesTableUpdateCompanionBuilder,
+          (IndexedPresetFileEntry, $$IndexedPresetFilesTableReferences),
+          IndexedPresetFileEntry,
+          PrefetchHooks Function({bool sdCardId})
+        > {
   $$IndexedPresetFilesTableTableManager(
-      _$AppDatabase db, $IndexedPresetFilesTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $IndexedPresetFilesTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9982,63 +11843,70 @@ class $$IndexedPresetFilesTableTableManager extends RootTableManager<
               $$IndexedPresetFilesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$IndexedPresetFilesTableAnnotationComposer(
-                  $db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> sdCardId = const Value.absent(),
-            Value<String> relativePath = const Value.absent(),
-            Value<String> fileName = const Value.absent(),
-            Value<String> absolutePathAtScanTime = const Value.absent(),
-            Value<String?> algorithmNameFromPreset = const Value.absent(),
-            Value<String?> notesFromPreset = const Value.absent(),
-            Value<String?> otherExtractedMetadataJson = const Value.absent(),
-            Value<DateTime> lastSeenUtc = const Value.absent(),
-          }) =>
-              IndexedPresetFilesCompanion(
-            id: id,
-            sdCardId: sdCardId,
-            relativePath: relativePath,
-            fileName: fileName,
-            absolutePathAtScanTime: absolutePathAtScanTime,
-            algorithmNameFromPreset: algorithmNameFromPreset,
-            notesFromPreset: notesFromPreset,
-            otherExtractedMetadataJson: otherExtractedMetadataJson,
-            lastSeenUtc: lastSeenUtc,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int sdCardId,
-            required String relativePath,
-            required String fileName,
-            required String absolutePathAtScanTime,
-            Value<String?> algorithmNameFromPreset = const Value.absent(),
-            Value<String?> notesFromPreset = const Value.absent(),
-            Value<String?> otherExtractedMetadataJson = const Value.absent(),
-            required DateTime lastSeenUtc,
-          }) =>
-              IndexedPresetFilesCompanion.insert(
-            id: id,
-            sdCardId: sdCardId,
-            relativePath: relativePath,
-            fileName: fileName,
-            absolutePathAtScanTime: absolutePathAtScanTime,
-            algorithmNameFromPreset: algorithmNameFromPreset,
-            notesFromPreset: notesFromPreset,
-            otherExtractedMetadataJson: otherExtractedMetadataJson,
-            lastSeenUtc: lastSeenUtc,
-          ),
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> sdCardId = const Value.absent(),
+                Value<String> relativePath = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<String> absolutePathAtScanTime = const Value.absent(),
+                Value<String?> algorithmNameFromPreset = const Value.absent(),
+                Value<String?> notesFromPreset = const Value.absent(),
+                Value<String?> otherExtractedMetadataJson =
+                    const Value.absent(),
+                Value<DateTime> lastSeenUtc = const Value.absent(),
+              }) => IndexedPresetFilesCompanion(
+                id: id,
+                sdCardId: sdCardId,
+                relativePath: relativePath,
+                fileName: fileName,
+                absolutePathAtScanTime: absolutePathAtScanTime,
+                algorithmNameFromPreset: algorithmNameFromPreset,
+                notesFromPreset: notesFromPreset,
+                otherExtractedMetadataJson: otherExtractedMetadataJson,
+                lastSeenUtc: lastSeenUtc,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int sdCardId,
+                required String relativePath,
+                required String fileName,
+                required String absolutePathAtScanTime,
+                Value<String?> algorithmNameFromPreset = const Value.absent(),
+                Value<String?> notesFromPreset = const Value.absent(),
+                Value<String?> otherExtractedMetadataJson =
+                    const Value.absent(),
+                required DateTime lastSeenUtc,
+              }) => IndexedPresetFilesCompanion.insert(
+                id: id,
+                sdCardId: sdCardId,
+                relativePath: relativePath,
+                fileName: fileName,
+                absolutePathAtScanTime: absolutePathAtScanTime,
+                algorithmNameFromPreset: algorithmNameFromPreset,
+                notesFromPreset: notesFromPreset,
+                otherExtractedMetadataJson: otherExtractedMetadataJson,
+                lastSeenUtc: lastSeenUtc,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$IndexedPresetFilesTableReferences(db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$IndexedPresetFilesTableReferences(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: ({sdCardId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
+              addJoins:
+                  <
+                    T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -10049,53 +11917,62 @@ class $$IndexedPresetFilesTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic>>(state) {
-                if (sdCardId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.sdCardId,
-                    referencedTable:
-                        $$IndexedPresetFilesTableReferences._sdCardIdTable(db),
-                    referencedColumn: $$IndexedPresetFilesTableReferences
-                        ._sdCardIdTable(db)
-                        .id,
-                  ) as T;
-                }
+                      dynamic
+                    >
+                  >(state) {
+                    if (sdCardId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.sdCardId,
+                                referencedTable:
+                                    $$IndexedPresetFilesTableReferences
+                                        ._sdCardIdTable(db),
+                                referencedColumn:
+                                    $$IndexedPresetFilesTableReferences
+                                        ._sdCardIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
 
-                return state;
-              },
+                    return state;
+                  },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ));
+        ),
+      );
 }
 
-typedef $$IndexedPresetFilesTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $IndexedPresetFilesTable,
-    IndexedPresetFileEntry,
-    $$IndexedPresetFilesTableFilterComposer,
-    $$IndexedPresetFilesTableOrderingComposer,
-    $$IndexedPresetFilesTableAnnotationComposer,
-    $$IndexedPresetFilesTableCreateCompanionBuilder,
-    $$IndexedPresetFilesTableUpdateCompanionBuilder,
-    (IndexedPresetFileEntry, $$IndexedPresetFilesTableReferences),
-    IndexedPresetFileEntry,
-    PrefetchHooks Function({bool sdCardId})>;
-typedef $$MetadataCacheTableCreateCompanionBuilder = MetadataCacheCompanion
-    Function({
-  required String cacheKey,
-  required String cacheValue,
-  Value<int> rowid,
-});
-typedef $$MetadataCacheTableUpdateCompanionBuilder = MetadataCacheCompanion
-    Function({
-  Value<String> cacheKey,
-  Value<String> cacheValue,
-  Value<int> rowid,
-});
+typedef $$IndexedPresetFilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IndexedPresetFilesTable,
+      IndexedPresetFileEntry,
+      $$IndexedPresetFilesTableFilterComposer,
+      $$IndexedPresetFilesTableOrderingComposer,
+      $$IndexedPresetFilesTableAnnotationComposer,
+      $$IndexedPresetFilesTableCreateCompanionBuilder,
+      $$IndexedPresetFilesTableUpdateCompanionBuilder,
+      (IndexedPresetFileEntry, $$IndexedPresetFilesTableReferences),
+      IndexedPresetFileEntry,
+      PrefetchHooks Function({bool sdCardId})
+    >;
+typedef $$MetadataCacheTableCreateCompanionBuilder =
+    MetadataCacheCompanion Function({
+      required String cacheKey,
+      required String cacheValue,
+      Value<int> rowid,
+    });
+typedef $$MetadataCacheTableUpdateCompanionBuilder =
+    MetadataCacheCompanion Function({
+      Value<String> cacheKey,
+      Value<String> cacheValue,
+      Value<int> rowid,
+    });
 
 class $$MetadataCacheTableFilterComposer
     extends Composer<_$AppDatabase, $MetadataCacheTable> {
@@ -10107,10 +11984,14 @@ class $$MetadataCacheTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get cacheKey => $composableBuilder(
-      column: $table.cacheKey, builder: (column) => ColumnFilters(column));
+    column: $table.cacheKey,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get cacheValue => $composableBuilder(
-      column: $table.cacheValue, builder: (column) => ColumnFilters(column));
+    column: $table.cacheValue,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$MetadataCacheTableOrderingComposer
@@ -10123,10 +12004,14 @@ class $$MetadataCacheTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get cacheKey => $composableBuilder(
-      column: $table.cacheKey, builder: (column) => ColumnOrderings(column));
+    column: $table.cacheKey,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get cacheValue => $composableBuilder(
-      column: $table.cacheValue, builder: (column) => ColumnOrderings(column));
+    column: $table.cacheValue,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MetadataCacheTableAnnotationComposer
@@ -10142,26 +12027,36 @@ class $$MetadataCacheTableAnnotationComposer
       $composableBuilder(column: $table.cacheKey, builder: (column) => column);
 
   GeneratedColumn<String> get cacheValue => $composableBuilder(
-      column: $table.cacheValue, builder: (column) => column);
+    column: $table.cacheValue,
+    builder: (column) => column,
+  );
 }
 
-class $$MetadataCacheTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $MetadataCacheTable,
-    MetadataCacheEntry,
-    $$MetadataCacheTableFilterComposer,
-    $$MetadataCacheTableOrderingComposer,
-    $$MetadataCacheTableAnnotationComposer,
-    $$MetadataCacheTableCreateCompanionBuilder,
-    $$MetadataCacheTableUpdateCompanionBuilder,
-    (
-      MetadataCacheEntry,
-      BaseReferences<_$AppDatabase, $MetadataCacheTable, MetadataCacheEntry>
-    ),
-    MetadataCacheEntry,
-    PrefetchHooks Function()> {
+class $$MetadataCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MetadataCacheTable,
+          MetadataCacheEntry,
+          $$MetadataCacheTableFilterComposer,
+          $$MetadataCacheTableOrderingComposer,
+          $$MetadataCacheTableAnnotationComposer,
+          $$MetadataCacheTableCreateCompanionBuilder,
+          $$MetadataCacheTableUpdateCompanionBuilder,
+          (
+            MetadataCacheEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $MetadataCacheTable,
+              MetadataCacheEntry
+            >,
+          ),
+          MetadataCacheEntry,
+          PrefetchHooks Function()
+        > {
   $$MetadataCacheTableTableManager(_$AppDatabase db, $MetadataCacheTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -10170,94 +12065,97 @@ class $$MetadataCacheTableTableManager extends RootTableManager<
               $$MetadataCacheTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$MetadataCacheTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> cacheKey = const Value.absent(),
-            Value<String> cacheValue = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              MetadataCacheCompanion(
-            cacheKey: cacheKey,
-            cacheValue: cacheValue,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String cacheKey,
-            required String cacheValue,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              MetadataCacheCompanion.insert(
-            cacheKey: cacheKey,
-            cacheValue: cacheValue,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> cacheKey = const Value.absent(),
+                Value<String> cacheValue = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MetadataCacheCompanion(
+                cacheKey: cacheKey,
+                cacheValue: cacheValue,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String cacheKey,
+                required String cacheValue,
+                Value<int> rowid = const Value.absent(),
+              }) => MetadataCacheCompanion.insert(
+                cacheKey: cacheKey,
+                cacheValue: cacheValue,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $$MetadataCacheTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $MetadataCacheTable,
-    MetadataCacheEntry,
-    $$MetadataCacheTableFilterComposer,
-    $$MetadataCacheTableOrderingComposer,
-    $$MetadataCacheTableAnnotationComposer,
-    $$MetadataCacheTableCreateCompanionBuilder,
-    $$MetadataCacheTableUpdateCompanionBuilder,
-    (
+typedef $$MetadataCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MetadataCacheTable,
       MetadataCacheEntry,
-      BaseReferences<_$AppDatabase, $MetadataCacheTable, MetadataCacheEntry>
-    ),
-    MetadataCacheEntry,
-    PrefetchHooks Function()>;
-typedef $$PluginInstallationsTableCreateCompanionBuilder
-    = PluginInstallationsCompanion Function({
-  Value<int> id,
-  required String pluginId,
-  required String pluginName,
-  required String pluginVersion,
-  required String pluginType,
-  required String pluginAuthor,
-  Value<DateTime> installedAt,
-  required String installationPath,
-  Value<String> installationStatus,
-  Value<String?> marketplaceMetadata,
-  Value<String?> repositoryUrl,
-  Value<String?> repositoryOwner,
-  Value<String?> repositoryName,
-  Value<int?> fileCount,
-  Value<int?> totalBytes,
-  Value<String?> installationNotes,
-  Value<String?> errorMessage,
-  Value<String?> availableVersion,
-  Value<String> updateAvailable,
-  Value<DateTime?> lastChecked,
-});
-typedef $$PluginInstallationsTableUpdateCompanionBuilder
-    = PluginInstallationsCompanion Function({
-  Value<int> id,
-  Value<String> pluginId,
-  Value<String> pluginName,
-  Value<String> pluginVersion,
-  Value<String> pluginType,
-  Value<String> pluginAuthor,
-  Value<DateTime> installedAt,
-  Value<String> installationPath,
-  Value<String> installationStatus,
-  Value<String?> marketplaceMetadata,
-  Value<String?> repositoryUrl,
-  Value<String?> repositoryOwner,
-  Value<String?> repositoryName,
-  Value<int?> fileCount,
-  Value<int?> totalBytes,
-  Value<String?> installationNotes,
-  Value<String?> errorMessage,
-  Value<String?> availableVersion,
-  Value<String> updateAvailable,
-  Value<DateTime?> lastChecked,
-});
+      $$MetadataCacheTableFilterComposer,
+      $$MetadataCacheTableOrderingComposer,
+      $$MetadataCacheTableAnnotationComposer,
+      $$MetadataCacheTableCreateCompanionBuilder,
+      $$MetadataCacheTableUpdateCompanionBuilder,
+      (
+        MetadataCacheEntry,
+        BaseReferences<_$AppDatabase, $MetadataCacheTable, MetadataCacheEntry>,
+      ),
+      MetadataCacheEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$PluginInstallationsTableCreateCompanionBuilder =
+    PluginInstallationsCompanion Function({
+      Value<int> id,
+      required String pluginId,
+      required String pluginName,
+      required String pluginVersion,
+      required String pluginType,
+      required String pluginAuthor,
+      Value<DateTime> installedAt,
+      required String installationPath,
+      Value<String> installationStatus,
+      Value<String?> marketplaceMetadata,
+      Value<String?> repositoryUrl,
+      Value<String?> repositoryOwner,
+      Value<String?> repositoryName,
+      Value<int?> fileCount,
+      Value<int?> totalBytes,
+      Value<String?> installationNotes,
+      Value<String?> errorMessage,
+      Value<String?> availableVersion,
+      Value<String> updateAvailable,
+      Value<DateTime?> lastChecked,
+    });
+typedef $$PluginInstallationsTableUpdateCompanionBuilder =
+    PluginInstallationsCompanion Function({
+      Value<int> id,
+      Value<String> pluginId,
+      Value<String> pluginName,
+      Value<String> pluginVersion,
+      Value<String> pluginType,
+      Value<String> pluginAuthor,
+      Value<DateTime> installedAt,
+      Value<String> installationPath,
+      Value<String> installationStatus,
+      Value<String?> marketplaceMetadata,
+      Value<String?> repositoryUrl,
+      Value<String?> repositoryOwner,
+      Value<String?> repositoryName,
+      Value<int?> fileCount,
+      Value<int?> totalBytes,
+      Value<String?> installationNotes,
+      Value<String?> errorMessage,
+      Value<String?> availableVersion,
+      Value<String> updateAvailable,
+      Value<DateTime?> lastChecked,
+    });
 
 class $$PluginInstallationsTableFilterComposer
     extends Composer<_$AppDatabase, $PluginInstallationsTable> {
@@ -10269,72 +12167,104 @@ class $$PluginInstallationsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get pluginId => $composableBuilder(
-      column: $table.pluginId, builder: (column) => ColumnFilters(column));
+    column: $table.pluginId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get pluginName => $composableBuilder(
-      column: $table.pluginName, builder: (column) => ColumnFilters(column));
+    column: $table.pluginName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get pluginVersion => $composableBuilder(
-      column: $table.pluginVersion, builder: (column) => ColumnFilters(column));
+    column: $table.pluginVersion,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get pluginType => $composableBuilder(
-      column: $table.pluginType, builder: (column) => ColumnFilters(column));
+    column: $table.pluginType,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get pluginAuthor => $composableBuilder(
-      column: $table.pluginAuthor, builder: (column) => ColumnFilters(column));
+    column: $table.pluginAuthor,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get installedAt => $composableBuilder(
-      column: $table.installedAt, builder: (column) => ColumnFilters(column));
+    column: $table.installedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get installationPath => $composableBuilder(
-      column: $table.installationPath,
-      builder: (column) => ColumnFilters(column));
+    column: $table.installationPath,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get installationStatus => $composableBuilder(
-      column: $table.installationStatus,
-      builder: (column) => ColumnFilters(column));
+    column: $table.installationStatus,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get marketplaceMetadata => $composableBuilder(
-      column: $table.marketplaceMetadata,
-      builder: (column) => ColumnFilters(column));
+    column: $table.marketplaceMetadata,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get repositoryUrl => $composableBuilder(
-      column: $table.repositoryUrl, builder: (column) => ColumnFilters(column));
+    column: $table.repositoryUrl,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get repositoryOwner => $composableBuilder(
-      column: $table.repositoryOwner,
-      builder: (column) => ColumnFilters(column));
+    column: $table.repositoryOwner,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get repositoryName => $composableBuilder(
-      column: $table.repositoryName,
-      builder: (column) => ColumnFilters(column));
+    column: $table.repositoryName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get fileCount => $composableBuilder(
-      column: $table.fileCount, builder: (column) => ColumnFilters(column));
+    column: $table.fileCount,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get totalBytes => $composableBuilder(
-      column: $table.totalBytes, builder: (column) => ColumnFilters(column));
+    column: $table.totalBytes,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get installationNotes => $composableBuilder(
-      column: $table.installationNotes,
-      builder: (column) => ColumnFilters(column));
+    column: $table.installationNotes,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get errorMessage => $composableBuilder(
-      column: $table.errorMessage, builder: (column) => ColumnFilters(column));
+    column: $table.errorMessage,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get availableVersion => $composableBuilder(
-      column: $table.availableVersion,
-      builder: (column) => ColumnFilters(column));
+    column: $table.availableVersion,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get updateAvailable => $composableBuilder(
-      column: $table.updateAvailable,
-      builder: (column) => ColumnFilters(column));
+    column: $table.updateAvailable,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get lastChecked => $composableBuilder(
-      column: $table.lastChecked, builder: (column) => ColumnFilters(column));
+    column: $table.lastChecked,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$PluginInstallationsTableOrderingComposer
@@ -10347,76 +12277,104 @@ class $$PluginInstallationsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get pluginId => $composableBuilder(
-      column: $table.pluginId, builder: (column) => ColumnOrderings(column));
+    column: $table.pluginId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get pluginName => $composableBuilder(
-      column: $table.pluginName, builder: (column) => ColumnOrderings(column));
+    column: $table.pluginName,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get pluginVersion => $composableBuilder(
-      column: $table.pluginVersion,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.pluginVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get pluginType => $composableBuilder(
-      column: $table.pluginType, builder: (column) => ColumnOrderings(column));
+    column: $table.pluginType,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get pluginAuthor => $composableBuilder(
-      column: $table.pluginAuthor,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.pluginAuthor,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get installedAt => $composableBuilder(
-      column: $table.installedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.installedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get installationPath => $composableBuilder(
-      column: $table.installationPath,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.installationPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get installationStatus => $composableBuilder(
-      column: $table.installationStatus,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.installationStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get marketplaceMetadata => $composableBuilder(
-      column: $table.marketplaceMetadata,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.marketplaceMetadata,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get repositoryUrl => $composableBuilder(
-      column: $table.repositoryUrl,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.repositoryUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get repositoryOwner => $composableBuilder(
-      column: $table.repositoryOwner,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.repositoryOwner,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get repositoryName => $composableBuilder(
-      column: $table.repositoryName,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.repositoryName,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get fileCount => $composableBuilder(
-      column: $table.fileCount, builder: (column) => ColumnOrderings(column));
+    column: $table.fileCount,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get totalBytes => $composableBuilder(
-      column: $table.totalBytes, builder: (column) => ColumnOrderings(column));
+    column: $table.totalBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get installationNotes => $composableBuilder(
-      column: $table.installationNotes,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.installationNotes,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get errorMessage => $composableBuilder(
-      column: $table.errorMessage,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.errorMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get availableVersion => $composableBuilder(
-      column: $table.availableVersion,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.availableVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get updateAvailable => $composableBuilder(
-      column: $table.updateAvailable,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.updateAvailable,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get lastChecked => $composableBuilder(
-      column: $table.lastChecked, builder: (column) => ColumnOrderings(column));
+    column: $table.lastChecked,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PluginInstallationsTableAnnotationComposer
@@ -10435,200 +12393,252 @@ class $$PluginInstallationsTableAnnotationComposer
       $composableBuilder(column: $table.pluginId, builder: (column) => column);
 
   GeneratedColumn<String> get pluginName => $composableBuilder(
-      column: $table.pluginName, builder: (column) => column);
+    column: $table.pluginName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get pluginVersion => $composableBuilder(
-      column: $table.pluginVersion, builder: (column) => column);
+    column: $table.pluginVersion,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get pluginType => $composableBuilder(
-      column: $table.pluginType, builder: (column) => column);
+    column: $table.pluginType,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get pluginAuthor => $composableBuilder(
-      column: $table.pluginAuthor, builder: (column) => column);
+    column: $table.pluginAuthor,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get installedAt => $composableBuilder(
-      column: $table.installedAt, builder: (column) => column);
+    column: $table.installedAt,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get installationPath => $composableBuilder(
-      column: $table.installationPath, builder: (column) => column);
+    column: $table.installationPath,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get installationStatus => $composableBuilder(
-      column: $table.installationStatus, builder: (column) => column);
+    column: $table.installationStatus,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get marketplaceMetadata => $composableBuilder(
-      column: $table.marketplaceMetadata, builder: (column) => column);
+    column: $table.marketplaceMetadata,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get repositoryUrl => $composableBuilder(
-      column: $table.repositoryUrl, builder: (column) => column);
+    column: $table.repositoryUrl,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get repositoryOwner => $composableBuilder(
-      column: $table.repositoryOwner, builder: (column) => column);
+    column: $table.repositoryOwner,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get repositoryName => $composableBuilder(
-      column: $table.repositoryName, builder: (column) => column);
+    column: $table.repositoryName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get fileCount =>
       $composableBuilder(column: $table.fileCount, builder: (column) => column);
 
   GeneratedColumn<int> get totalBytes => $composableBuilder(
-      column: $table.totalBytes, builder: (column) => column);
+    column: $table.totalBytes,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get installationNotes => $composableBuilder(
-      column: $table.installationNotes, builder: (column) => column);
+    column: $table.installationNotes,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get errorMessage => $composableBuilder(
-      column: $table.errorMessage, builder: (column) => column);
+    column: $table.errorMessage,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get availableVersion => $composableBuilder(
-      column: $table.availableVersion, builder: (column) => column);
+    column: $table.availableVersion,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get updateAvailable => $composableBuilder(
-      column: $table.updateAvailable, builder: (column) => column);
+    column: $table.updateAvailable,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get lastChecked => $composableBuilder(
-      column: $table.lastChecked, builder: (column) => column);
+    column: $table.lastChecked,
+    builder: (column) => column,
+  );
 }
 
-class $$PluginInstallationsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $PluginInstallationsTable,
-    PluginInstallationEntry,
-    $$PluginInstallationsTableFilterComposer,
-    $$PluginInstallationsTableOrderingComposer,
-    $$PluginInstallationsTableAnnotationComposer,
-    $$PluginInstallationsTableCreateCompanionBuilder,
-    $$PluginInstallationsTableUpdateCompanionBuilder,
-    (
-      PluginInstallationEntry,
-      BaseReferences<_$AppDatabase, $PluginInstallationsTable,
-          PluginInstallationEntry>
-    ),
-    PluginInstallationEntry,
-    PrefetchHooks Function()> {
+class $$PluginInstallationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PluginInstallationsTable,
+          PluginInstallationEntry,
+          $$PluginInstallationsTableFilterComposer,
+          $$PluginInstallationsTableOrderingComposer,
+          $$PluginInstallationsTableAnnotationComposer,
+          $$PluginInstallationsTableCreateCompanionBuilder,
+          $$PluginInstallationsTableUpdateCompanionBuilder,
+          (
+            PluginInstallationEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $PluginInstallationsTable,
+              PluginInstallationEntry
+            >,
+          ),
+          PluginInstallationEntry,
+          PrefetchHooks Function()
+        > {
   $$PluginInstallationsTableTableManager(
-      _$AppDatabase db, $PluginInstallationsTable table)
-      : super(TableManagerState(
+    _$AppDatabase db,
+    $PluginInstallationsTable table,
+  ) : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
               $$PluginInstallationsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
               $$PluginInstallationsTableOrderingComposer(
-                  $db: db, $table: table),
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
               $$PluginInstallationsTableAnnotationComposer(
-                  $db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<String> pluginId = const Value.absent(),
-            Value<String> pluginName = const Value.absent(),
-            Value<String> pluginVersion = const Value.absent(),
-            Value<String> pluginType = const Value.absent(),
-            Value<String> pluginAuthor = const Value.absent(),
-            Value<DateTime> installedAt = const Value.absent(),
-            Value<String> installationPath = const Value.absent(),
-            Value<String> installationStatus = const Value.absent(),
-            Value<String?> marketplaceMetadata = const Value.absent(),
-            Value<String?> repositoryUrl = const Value.absent(),
-            Value<String?> repositoryOwner = const Value.absent(),
-            Value<String?> repositoryName = const Value.absent(),
-            Value<int?> fileCount = const Value.absent(),
-            Value<int?> totalBytes = const Value.absent(),
-            Value<String?> installationNotes = const Value.absent(),
-            Value<String?> errorMessage = const Value.absent(),
-            Value<String?> availableVersion = const Value.absent(),
-            Value<String> updateAvailable = const Value.absent(),
-            Value<DateTime?> lastChecked = const Value.absent(),
-          }) =>
-              PluginInstallationsCompanion(
-            id: id,
-            pluginId: pluginId,
-            pluginName: pluginName,
-            pluginVersion: pluginVersion,
-            pluginType: pluginType,
-            pluginAuthor: pluginAuthor,
-            installedAt: installedAt,
-            installationPath: installationPath,
-            installationStatus: installationStatus,
-            marketplaceMetadata: marketplaceMetadata,
-            repositoryUrl: repositoryUrl,
-            repositoryOwner: repositoryOwner,
-            repositoryName: repositoryName,
-            fileCount: fileCount,
-            totalBytes: totalBytes,
-            installationNotes: installationNotes,
-            errorMessage: errorMessage,
-            availableVersion: availableVersion,
-            updateAvailable: updateAvailable,
-            lastChecked: lastChecked,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String pluginId,
-            required String pluginName,
-            required String pluginVersion,
-            required String pluginType,
-            required String pluginAuthor,
-            Value<DateTime> installedAt = const Value.absent(),
-            required String installationPath,
-            Value<String> installationStatus = const Value.absent(),
-            Value<String?> marketplaceMetadata = const Value.absent(),
-            Value<String?> repositoryUrl = const Value.absent(),
-            Value<String?> repositoryOwner = const Value.absent(),
-            Value<String?> repositoryName = const Value.absent(),
-            Value<int?> fileCount = const Value.absent(),
-            Value<int?> totalBytes = const Value.absent(),
-            Value<String?> installationNotes = const Value.absent(),
-            Value<String?> errorMessage = const Value.absent(),
-            Value<String?> availableVersion = const Value.absent(),
-            Value<String> updateAvailable = const Value.absent(),
-            Value<DateTime?> lastChecked = const Value.absent(),
-          }) =>
-              PluginInstallationsCompanion.insert(
-            id: id,
-            pluginId: pluginId,
-            pluginName: pluginName,
-            pluginVersion: pluginVersion,
-            pluginType: pluginType,
-            pluginAuthor: pluginAuthor,
-            installedAt: installedAt,
-            installationPath: installationPath,
-            installationStatus: installationStatus,
-            marketplaceMetadata: marketplaceMetadata,
-            repositoryUrl: repositoryUrl,
-            repositoryOwner: repositoryOwner,
-            repositoryName: repositoryName,
-            fileCount: fileCount,
-            totalBytes: totalBytes,
-            installationNotes: installationNotes,
-            errorMessage: errorMessage,
-            availableVersion: availableVersion,
-            updateAvailable: updateAvailable,
-            lastChecked: lastChecked,
-          ),
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> pluginId = const Value.absent(),
+                Value<String> pluginName = const Value.absent(),
+                Value<String> pluginVersion = const Value.absent(),
+                Value<String> pluginType = const Value.absent(),
+                Value<String> pluginAuthor = const Value.absent(),
+                Value<DateTime> installedAt = const Value.absent(),
+                Value<String> installationPath = const Value.absent(),
+                Value<String> installationStatus = const Value.absent(),
+                Value<String?> marketplaceMetadata = const Value.absent(),
+                Value<String?> repositoryUrl = const Value.absent(),
+                Value<String?> repositoryOwner = const Value.absent(),
+                Value<String?> repositoryName = const Value.absent(),
+                Value<int?> fileCount = const Value.absent(),
+                Value<int?> totalBytes = const Value.absent(),
+                Value<String?> installationNotes = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<String?> availableVersion = const Value.absent(),
+                Value<String> updateAvailable = const Value.absent(),
+                Value<DateTime?> lastChecked = const Value.absent(),
+              }) => PluginInstallationsCompanion(
+                id: id,
+                pluginId: pluginId,
+                pluginName: pluginName,
+                pluginVersion: pluginVersion,
+                pluginType: pluginType,
+                pluginAuthor: pluginAuthor,
+                installedAt: installedAt,
+                installationPath: installationPath,
+                installationStatus: installationStatus,
+                marketplaceMetadata: marketplaceMetadata,
+                repositoryUrl: repositoryUrl,
+                repositoryOwner: repositoryOwner,
+                repositoryName: repositoryName,
+                fileCount: fileCount,
+                totalBytes: totalBytes,
+                installationNotes: installationNotes,
+                errorMessage: errorMessage,
+                availableVersion: availableVersion,
+                updateAvailable: updateAvailable,
+                lastChecked: lastChecked,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String pluginId,
+                required String pluginName,
+                required String pluginVersion,
+                required String pluginType,
+                required String pluginAuthor,
+                Value<DateTime> installedAt = const Value.absent(),
+                required String installationPath,
+                Value<String> installationStatus = const Value.absent(),
+                Value<String?> marketplaceMetadata = const Value.absent(),
+                Value<String?> repositoryUrl = const Value.absent(),
+                Value<String?> repositoryOwner = const Value.absent(),
+                Value<String?> repositoryName = const Value.absent(),
+                Value<int?> fileCount = const Value.absent(),
+                Value<int?> totalBytes = const Value.absent(),
+                Value<String?> installationNotes = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<String?> availableVersion = const Value.absent(),
+                Value<String> updateAvailable = const Value.absent(),
+                Value<DateTime?> lastChecked = const Value.absent(),
+              }) => PluginInstallationsCompanion.insert(
+                id: id,
+                pluginId: pluginId,
+                pluginName: pluginName,
+                pluginVersion: pluginVersion,
+                pluginType: pluginType,
+                pluginAuthor: pluginAuthor,
+                installedAt: installedAt,
+                installationPath: installationPath,
+                installationStatus: installationStatus,
+                marketplaceMetadata: marketplaceMetadata,
+                repositoryUrl: repositoryUrl,
+                repositoryOwner: repositoryOwner,
+                repositoryName: repositoryName,
+                fileCount: fileCount,
+                totalBytes: totalBytes,
+                installationNotes: installationNotes,
+                errorMessage: errorMessage,
+                availableVersion: availableVersion,
+                updateAvailable: updateAvailable,
+                lastChecked: lastChecked,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $$PluginInstallationsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $PluginInstallationsTable,
-    PluginInstallationEntry,
-    $$PluginInstallationsTableFilterComposer,
-    $$PluginInstallationsTableOrderingComposer,
-    $$PluginInstallationsTableAnnotationComposer,
-    $$PluginInstallationsTableCreateCompanionBuilder,
-    $$PluginInstallationsTableUpdateCompanionBuilder,
-    (
+typedef $$PluginInstallationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PluginInstallationsTable,
       PluginInstallationEntry,
-      BaseReferences<_$AppDatabase, $PluginInstallationsTable,
-          PluginInstallationEntry>
-    ),
-    PluginInstallationEntry,
-    PrefetchHooks Function()>;
+      $$PluginInstallationsTableFilterComposer,
+      $$PluginInstallationsTableOrderingComposer,
+      $$PluginInstallationsTableAnnotationComposer,
+      $$PluginInstallationsTableCreateCompanionBuilder,
+      $$PluginInstallationsTableUpdateCompanionBuilder,
+      (
+        PluginInstallationEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $PluginInstallationsTable,
+          PluginInstallationEntry
+        >,
+      ),
+      PluginInstallationEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10654,9 +12664,11 @@ class $AppDatabaseManager {
   $$PresetParameterValuesTableTableManager get presetParameterValues =>
       $$PresetParameterValuesTableTableManager(_db, _db.presetParameterValues);
   $$PresetParameterStringValuesTableTableManager
-      get presetParameterStringValues =>
-          $$PresetParameterStringValuesTableTableManager(
-              _db, _db.presetParameterStringValues);
+  get presetParameterStringValues =>
+      $$PresetParameterStringValuesTableTableManager(
+        _db,
+        _db.presetParameterStringValues,
+      );
   $$PresetMappingsTableTableManager get presetMappings =>
       $$PresetMappingsTableTableManager(_db, _db.presetMappings);
   $$PresetRoutingsTableTableManager get presetRoutings =>

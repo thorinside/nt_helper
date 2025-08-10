@@ -326,6 +326,12 @@ extension GalleryPluginExtension on GalleryPlugin {
       documentation?.manual != null ||
       documentation?.examples != null;
 
+  /// Check if plugin has README documentation available in repository
+  bool get hasReadmeDocumentation {
+    // Check if there's a repository with owner and name for GitHub README fetching
+    return repository.owner.isNotEmpty && repository.name.isNotEmpty;
+  }
+
   /// Get formatted rating display
   String get formattedRating {
     final rating = metrics?.rating;

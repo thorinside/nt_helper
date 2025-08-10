@@ -7,15 +7,15 @@ part of 'plugin_info.dart';
 // **************************************************************************
 
 _PluginInfo _$PluginInfoFromJson(Map<String, dynamic> json) => _PluginInfo(
-      name: json['name'] as String,
-      path: json['path'] as String,
-      type: $enumDecode(_$PluginTypeEnumMap, json['type']),
-      sizeBytes: (json['sizeBytes'] as num).toInt(),
-      description: json['description'] as String?,
-      lastModified: json['lastModified'] == null
-          ? null
-          : DateTime.parse(json['lastModified'] as String),
-    );
+  name: json['name'] as String,
+  path: json['path'] as String,
+  type: $enumDecode(_$PluginTypeEnumMap, json['type']),
+  sizeBytes: (json['sizeBytes'] as num).toInt(),
+  description: json['description'] as String?,
+  lastModified: json['lastModified'] == null
+      ? null
+      : DateTime.parse(json['lastModified'] as String),
+);
 
 Map<String, dynamic> _$PluginInfoToJson(_PluginInfo instance) =>
     <String, dynamic>{

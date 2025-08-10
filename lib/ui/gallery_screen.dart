@@ -9,6 +9,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/utils/responsive.dart';
 
@@ -82,6 +83,53 @@ class _GalleryViewState extends State<_GalleryView>
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// Open README documentation in browser for a plugin
+  Future<void> _showReadmeDialog(BuildContext context, GalleryPlugin plugin) async {
+    debugPrint('Documentation button pressed for plugin: ${plugin.name}');
+    debugPrint('Repository: ${plugin.repository.owner}/${plugin.repository.name}');
+    
+    try {
+      // Construct the GitHub README URL
+      String readmeUrl = plugin.repository.url;
+      
+      // Ensure it ends with #readme to jump to the README section
+      if (!readmeUrl.contains('#readme')) {
+        readmeUrl = readmeUrl.endsWith('/') 
+            ? '$readmeUrl#readme' 
+            : '$readmeUrl#readme';
+      }
+      
+      debugPrint('Opening README URL: $readmeUrl');
+      
+      final uri = Uri.parse(readmeUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open $readmeUrl'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error opening documentation: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening documentation: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -898,6 +946,30 @@ class _GalleryViewState extends State<_GalleryView>
                                         .withValues(alpha: 0.6),
                                   ),
                             ),
+                          // Small documentation icon button
+                          if (plugin.hasReadmeDocumentation)
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => _showReadmeDialog(parentContext, plugin),
+                                  child: Tooltip(
+                                    message: 'View Documentation',
+                                    child: Icon(
+                                      Icons.description_outlined,
+                                      size: 16,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                       // Version information row
@@ -944,6 +1016,7 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
 
                   const SizedBox(height: 8), // Reduced spacing above button
+
 
                   // Action button at bottom
                   SizedBox(
