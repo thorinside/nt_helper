@@ -11,7 +11,8 @@ _GalleryMetadata _$GalleryMetadataFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       description: json['description'] as String,
       maintainer: GalleryMaintainer.fromJson(
-          json['maintainer'] as Map<String, dynamic>),
+        json['maintainer'] as Map<String, dynamic>,
+      ),
     );
 
 Map<String, dynamic> _$GalleryMetadataToJson(_GalleryMetadata instance) =>
@@ -61,7 +62,8 @@ _PluginAuthor _$PluginAuthorFromJson(Map<String, dynamic> json) =>
       socialLinks: json['socialLinks'] == null
           ? null
           : PluginAuthorSocialLinks.fromJson(
-              json['socialLinks'] as Map<String, dynamic>),
+              json['socialLinks'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$PluginAuthorToJson(_PluginAuthor instance) =>
@@ -75,20 +77,20 @@ Map<String, dynamic> _$PluginAuthorToJson(_PluginAuthor instance) =>
     };
 
 _PluginAuthorSocialLinks _$PluginAuthorSocialLinksFromJson(
-        Map<String, dynamic> json) =>
-    _PluginAuthorSocialLinks(
-      github: json['github'] as String?,
-      twitter: json['twitter'] as String?,
-      discord: json['discord'] as String?,
-    );
+  Map<String, dynamic> json,
+) => _PluginAuthorSocialLinks(
+  github: json['github'] as String?,
+  twitter: json['twitter'] as String?,
+  discord: json['discord'] as String?,
+);
 
 Map<String, dynamic> _$PluginAuthorSocialLinksToJson(
-        _PluginAuthorSocialLinks instance) =>
-    <String, dynamic>{
-      'github': instance.github,
-      'twitter': instance.twitter,
-      'discord': instance.discord,
-    };
+  _PluginAuthorSocialLinks instance,
+) => <String, dynamic>{
+  'github': instance.github,
+  'twitter': instance.twitter,
+  'discord': instance.discord,
+};
 
 _PluginRepository _$PluginRepositoryFromJson(Map<String, dynamic> json) =>
     _PluginRepository(
@@ -147,19 +149,20 @@ _PluginCompatibility _$PluginCompatibilityFromJson(Map<String, dynamic> json) =>
     _PluginCompatibility(
       minFirmwareVersion: json['minFirmwareVersion'] as String?,
       maxFirmwareVersion: json['maxFirmwareVersion'] as String?,
-      requiredFeatures: (json['requiredFeatures'] as List<dynamic>?)
+      requiredFeatures:
+          (json['requiredFeatures'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
     );
 
 Map<String, dynamic> _$PluginCompatibilityToJson(
-        _PluginCompatibility instance) =>
-    <String, dynamic>{
-      'minFirmwareVersion': instance.minFirmwareVersion,
-      'maxFirmwareVersion': instance.maxFirmwareVersion,
-      'requiredFeatures': instance.requiredFeatures,
-    };
+  _PluginCompatibility instance,
+) => <String, dynamic>{
+  'minFirmwareVersion': instance.minFirmwareVersion,
+  'maxFirmwareVersion': instance.maxFirmwareVersion,
+  'requiredFeatures': instance.requiredFeatures,
+};
 
 _PluginScreenshot _$PluginScreenshotFromJson(Map<String, dynamic> json) =>
     _PluginScreenshot(
@@ -183,12 +186,12 @@ _PluginDocumentation _$PluginDocumentationFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$PluginDocumentationToJson(
-        _PluginDocumentation instance) =>
-    <String, dynamic>{
-      'readme': instance.readme,
-      'manual': instance.manual,
-      'examples': instance.examples,
-    };
+  _PluginDocumentation instance,
+) => <String, dynamic>{
+  'readme': instance.readme,
+  'manual': instance.manual,
+  'examples': instance.examples,
+};
 
 _PluginMetrics _$PluginMetricsFromJson(Map<String, dynamic> json) =>
     _PluginMetrics(
@@ -214,26 +217,32 @@ _GalleryPlugin _$GalleryPluginFromJson(Map<String, dynamic> json) =>
       category: json['category'] as String?,
       tags:
           (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-              const [],
+          const [],
       author: json['author'] as String,
-      repository:
-          PluginRepository.fromJson(json['repository'] as Map<String, dynamic>),
-      releases:
-          PluginReleases.fromJson(json['releases'] as Map<String, dynamic>),
+      repository: PluginRepository.fromJson(
+        json['repository'] as Map<String, dynamic>,
+      ),
+      releases: PluginReleases.fromJson(
+        json['releases'] as Map<String, dynamic>,
+      ),
       installation: PluginInstallation.fromJson(
-          json['installation'] as Map<String, dynamic>),
+        json['installation'] as Map<String, dynamic>,
+      ),
       compatibility: json['compatibility'] == null
           ? null
           : PluginCompatibility.fromJson(
-              json['compatibility'] as Map<String, dynamic>),
-      screenshots: (json['screenshots'] as List<dynamic>?)
+              json['compatibility'] as Map<String, dynamic>,
+            ),
+      screenshots:
+          (json['screenshots'] as List<dynamic>?)
               ?.map((e) => PluginScreenshot.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
       documentation: json['documentation'] == null
           ? null
           : PluginDocumentation.fromJson(
-              json['documentation'] as Map<String, dynamic>),
+              json['documentation'] as Map<String, dynamic>,
+            ),
       metrics: json['metrics'] == null
           ? null
           : PluginMetrics.fromJson(json['metrics'] as Map<String, dynamic>),
@@ -277,33 +286,34 @@ const _$GalleryPluginTypeEnumMap = {
 };
 
 _Gallery _$GalleryFromJson(Map<String, dynamic> json) => _Gallery(
-      version: json['version'] as String,
-      lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-      metadata:
-          GalleryMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
-      categories: (json['categories'] as List<dynamic>?)
-              ?.map((e) => PluginCategory.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      authors: (json['authors'] as Map<String, dynamic>?)?.map(
-            (k, e) =>
-                MapEntry(k, PluginAuthor.fromJson(e as Map<String, dynamic>)),
-          ) ??
-          const {},
-      plugins: (json['plugins'] as List<dynamic>?)
-              ?.map((e) => GalleryPlugin.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-    );
+  version: json['version'] as String,
+  lastUpdated: DateTime.parse(json['lastUpdated'] as String),
+  metadata: GalleryMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
+  categories:
+      (json['categories'] as List<dynamic>?)
+          ?.map((e) => PluginCategory.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  authors:
+      (json['authors'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, PluginAuthor.fromJson(e as Map<String, dynamic>)),
+      ) ??
+      const {},
+  plugins:
+      (json['plugins'] as List<dynamic>?)
+          ?.map((e) => GalleryPlugin.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
 
 Map<String, dynamic> _$GalleryToJson(_Gallery instance) => <String, dynamic>{
-      'version': instance.version,
-      'lastUpdated': instance.lastUpdated.toIso8601String(),
-      'metadata': instance.metadata,
-      'categories': instance.categories,
-      'authors': instance.authors,
-      'plugins': instance.plugins,
-    };
+  'version': instance.version,
+  'lastUpdated': instance.lastUpdated.toIso8601String(),
+  'metadata': instance.metadata,
+  'categories': instance.categories,
+  'authors': instance.authors,
+  'plugins': instance.plugins,
+};
 
 _CollectionPlugin _$CollectionPluginFromJson(Map<String, dynamic> json) =>
     _CollectionPlugin(
@@ -332,10 +342,11 @@ _QueuedPlugin _$QueuedPluginFromJson(Map<String, dynamic> json) =>
       isCollection: json['isCollection'] as bool,
       status:
           $enumDecodeNullable(_$QueuedPluginStatusEnumMap, json['status']) ??
-              QueuedPluginStatus.queued,
+          QueuedPluginStatus.queued,
       errorMessage: json['errorMessage'] as String?,
       progress: (json['progress'] as num?)?.toDouble(),
-      selectedPlugins: (json['selectedPlugins'] as List<dynamic>?)
+      selectedPlugins:
+          (json['selectedPlugins'] as List<dynamic>?)
               ?.map((e) => CollectionPlugin.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],

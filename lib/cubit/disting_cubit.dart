@@ -3100,6 +3100,108 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  /// Forces a Lua script reload while preserving all parameter state.
+  /// This is specifically designed for development mode where a script file
+  /// has been modified and needs to be reloaded without losing user settings.
+  ///
+  /// The process: Program=0 (unload) → Program=currentValue (reload) → restore all state
+  Future<void> forceReloadLuaScriptWithStatePreservation(
+    int algorithmIndex,
+    int programParameterNumber,
+    int currentProgramValue,
+  ) async {
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) {
+      throw Exception('Cannot reload script: Disting not synchronized');
+    }
+
+    if (algorithmIndex >= currentState.slots.length) {
+      throw Exception('Algorithm index $algorithmIndex out of range');
+    }
+
+    final currentSlot = currentState.slots[algorithmIndex];
+    final disting = currentState.disting;
+
+    debugPrint(
+        '[DistingCubit] Starting state-preserving Lua script reload for slot $algorithmIndex');
+
+    try {
+      // 1. CAPTURE CURRENT STATE
+      final savedValues = List<ParameterValue>.from(currentSlot.values);
+      final savedMappings = List<Mapping>.from(currentSlot.mappings);
+      final savedValueStrings =
+          List<ParameterValueString>.from(currentSlot.valueStrings);
+      // Note: Routing restoration may require additional research for programmatic setting
+
+      debugPrint(
+          '[DistingCubit] Captured state: ${savedValues.length} values, ${savedMappings.length} mappings, ${savedValueStrings.length} strings');
+
+      // 2. FORCE SCRIPT UNLOAD (Program = 0)
+      debugPrint('[DistingCubit] Unloading current script (Program = 0)');
+      await disting.setParameterValue(
+          algorithmIndex, programParameterNumber, 0);
+      await Future.delayed(
+          const Duration(milliseconds: 200)); // Allow hardware to process
+
+      // 3. RELOAD TARGET SCRIPT (Program = currentProgramValue)
+      debugPrint(
+          '[DistingCubit] Reloading target script (Program = $currentProgramValue)');
+      await disting.setParameterValue(
+          algorithmIndex, programParameterNumber, currentProgramValue);
+      await Future.delayed(
+          const Duration(milliseconds: 300)); // Allow script to initialize
+
+      // 4. RESTORE ALL PARAMETER VALUES (except Program parameter)
+      debugPrint('[DistingCubit] Restoring parameter values...');
+      for (final paramValue in savedValues) {
+        if (paramValue.parameterNumber != programParameterNumber) {
+          await disting.setParameterValue(
+            algorithmIndex,
+            paramValue.parameterNumber,
+            paramValue.value,
+          );
+          // Small delay between parameters to avoid overwhelming hardware
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+      }
+
+      // 5. RESTORE STRING PARAMETERS
+      debugPrint('[DistingCubit] Restoring string parameters...');
+      for (final stringValue in savedValueStrings) {
+        if (stringValue.parameterNumber != programParameterNumber) {
+          await disting.setParameterString(
+            algorithmIndex,
+            stringValue.parameterNumber,
+            stringValue.value,
+          );
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+      }
+
+      // 6. RESTORE MIDI/CV MAPPINGS
+      debugPrint('[DistingCubit] Restoring MIDI/CV mappings...');
+      for (final mapping in savedMappings) {
+        if (mapping.parameterNumber != programParameterNumber) {
+          await disting.requestSetMapping(
+            algorithmIndex,
+            mapping.parameterNumber,
+            mapping.packedMappingData,
+          );
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+      }
+
+      debugPrint(
+          '[DistingCubit] State-preserving Lua script reload completed successfully');
+    } catch (e) {
+      debugPrint('[DistingCubit] Error during state-preserving reload: $e');
+      // On error, refresh the slot to ensure UI is in sync with hardware
+      debugPrint('[DistingCubit] Refreshing slot state due to reload error');
+      await _refreshSlotAfterAnomaly(algorithmIndex);
+      rethrow;
+    }
+  }
+
   /// Backs up all plugins from the Disting NT to a local directory.
   /// Maintains the directory structure (/programs/lua, /programs/three_pot, /programs/plug-ins).
   Future<void> backupPlugins(
@@ -3238,44 +3340,48 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     final disting = requireDisting();
-    
+
     // Find the algorithm by GUID
-    final algorithmIndex = currentState.algorithms
-        .indexWhere((algo) => algo.guid == guid);
-    
+    final algorithmIndex =
+        currentState.algorithms.indexWhere((algo) => algo.guid == guid);
+
     if (algorithmIndex == -1) {
       debugPrint("[LoadPlugin] Algorithm with GUID $guid not found");
       return null;
     }
 
     final algorithm = currentState.algorithms[algorithmIndex];
-    
+
     // Check if it's already loaded
     if (algorithm.isLoaded) {
       debugPrint("[LoadPlugin] Algorithm ${algorithm.name} is already loaded");
       return algorithm;
     }
 
-    debugPrint("[LoadPlugin] Loading plugin: ${algorithm.name} (${algorithm.guid})");
+    debugPrint(
+        "[LoadPlugin] Loading plugin: ${algorithm.name} (${algorithm.guid})");
 
     try {
       // 1. Send load plugin command
       await disting.requestLoadPlugin(guid);
-      
+
       // 2. Request updated info for just this algorithm
       final updatedInfo = await disting.requestAlgorithmInfo(algorithmIndex);
-      
+
       if (updatedInfo != null) {
-        debugPrint("[LoadPlugin] Successfully loaded ${updatedInfo.name} with ${updatedInfo.numSpecifications} specifications");
-        
+        debugPrint(
+            "[LoadPlugin] Successfully loaded ${updatedInfo.name} with ${updatedInfo.numSpecifications} specifications");
+
         // 3. Update only this algorithm in the state
-        final updatedAlgorithms = List<AlgorithmInfo>.from(currentState.algorithms);
+        final updatedAlgorithms =
+            List<AlgorithmInfo>.from(currentState.algorithms);
         updatedAlgorithms[algorithmIndex] = updatedInfo;
-        
+
         emit(currentState.copyWith(algorithms: updatedAlgorithms));
         return updatedInfo;
       } else {
-        debugPrint("[LoadPlugin] Failed to get updated algorithm info for ${algorithm.name}");
+        debugPrint(
+            "[LoadPlugin] Failed to get updated algorithm info for ${algorithm.name}");
         return null;
       }
     } catch (e, stackTrace) {

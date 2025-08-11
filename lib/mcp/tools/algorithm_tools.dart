@@ -15,7 +15,6 @@ class MCPAlgorithmTools {
 
   MCPAlgorithmTools(this._distingCubit);
 
-
   /// MCP Tool: Retrieves full metadata for a specific algorithm.
   /// Parameters:
   ///   - algorithm_guid (string): The unique identifier of the algorithm.
@@ -40,17 +39,18 @@ class MCPAlgorithmTools {
       return jsonEncode(convertToSnakeCaseKeys(resolution.error!));
     }
 
-    final algorithm = _metadataService.getAlgorithmByGuid(resolution.resolvedGuid!);
+    final algorithm =
+        _metadataService.getAlgorithmByGuid(resolution.resolvedGuid!);
     if (algorithm == null) {
-      return jsonEncode(convertToSnakeCaseKeys(
-        MCPUtils.buildError('${MCPConstants.notFoundError}: Algorithm with GUID "${resolution.resolvedGuid!}"', 
-          helpCommand: MCPConstants.getAlgorithmHelp)
-      ));
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+          '${MCPConstants.notFoundError}: Algorithm with GUID "${resolution.resolvedGuid!}"',
+          helpCommand: MCPConstants.getAlgorithmHelp)));
     }
 
     AlgorithmMetadata algoToProcess;
     if (expandFeatures) {
-      final expandedParams = _metadataService.getExpandedParameters(resolution.resolvedGuid!);
+      final expandedParams =
+          _metadataService.getExpandedParameters(resolution.resolvedGuid!);
       algoToProcess = algorithm.copyWith(parameters: expandedParams);
     } else {
       algoToProcess = algorithm;
@@ -84,9 +84,9 @@ class MCPAlgorithmTools {
     // Apply filters
     if (category != null && category.isNotEmpty) {
       algorithms = algorithms
-          .where((alg) => alg.categories
-              .any((cat) => cat.toLowerCase() == category.toLowerCase() ||
-                  MCPUtils.similarity(cat, category) >= 0.7))
+          .where((alg) => alg.categories.any((cat) =>
+              cat.toLowerCase() == category.toLowerCase() ||
+              MCPUtils.similarity(cat, category) >= 0.7))
           .toList();
     }
 

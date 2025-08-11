@@ -43,19 +43,22 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
 
   void _updateFileAction(String targetPath, FileAction action) {
     setState(() {
-      _currentAnalysis = FileConflictDetector.updateFileAction(_currentAnalysis, targetPath, action);
+      _currentAnalysis = FileConflictDetector.updateFileAction(
+          _currentAnalysis, targetPath, action);
     });
   }
 
   void _setActionForConflicts(FileAction action) {
     setState(() {
-      _currentAnalysis = FileConflictDetector.setActionForConflicts(_currentAnalysis, action);
+      _currentAnalysis =
+          FileConflictDetector.setActionForConflicts(_currentAnalysis, action);
     });
   }
 
   void _setActionForAllFiles(FileAction action) {
     setState(() {
-      _currentAnalysis = FileConflictDetector.setActionForAllFiles(_currentAnalysis, action);
+      _currentAnalysis =
+          FileConflictDetector.setActionForAllFiles(_currentAnalysis, action);
     });
   }
 
@@ -90,7 +93,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
               const LinearProgressIndicator(),
               const SizedBox(height: 8),
               Text(
-                _currentFile.isNotEmpty 
+                _currentFile.isNotEmpty
                     ? 'Installing: $_currentFile ($_completedFiles/$_totalFiles)'
                     : 'Preparing installation...',
                 style: const TextStyle(fontSize: 12),
@@ -105,7 +108,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isInstalling || _currentAnalysis.installCount == 0 ? null : _handleInstall,
+          onPressed: _isInstalling || _currentAnalysis.installCount == 0
+              ? null
+              : _handleInstall,
           child: Text('Install ${_currentAnalysis.installCount} Files'),
         ),
       ],
@@ -127,9 +132,10 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
                     children: [
                       Text(
                         _currentAnalysis.presetName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       Text('by ${_currentAnalysis.author}'),
                       Text('Version ${_currentAnalysis.version}'),
@@ -195,13 +201,13 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
 
   Widget _buildFileList() {
     final filesByDirectory = _currentAnalysis.filesByDirectory;
-    
+
     return ListView.builder(
       itemCount: filesByDirectory.length,
       itemBuilder: (context, index) {
         final directory = filesByDirectory.keys.elementAt(index);
         final files = filesByDirectory[directory]!;
-        
+
         return ExpansionTile(
           title: Row(
             children: [
@@ -229,7 +235,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
   Widget _buildFileItem(PackageFile file) {
     final hasConflict = file.hasConflict;
     final willInstall = file.shouldInstall;
-    
+
     return ListTile(
       dense: true,
       leading: CircleAvatar(
@@ -273,13 +279,14 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.check_circle, size: 16),
                   label: const Text('Install'),
-                  onPressed: () => _updateFileAction(file.targetPath, FileAction.install),
+                  onPressed: () =>
+                      _updateFileAction(file.targetPath, FileAction.install),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: willInstall 
-                        ? Theme.of(context).colorScheme.primary 
+                    backgroundColor: willInstall
+                        ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.surface,
-                    foregroundColor: willInstall 
-                        ? Theme.of(context).colorScheme.onPrimary 
+                    foregroundColor: willInstall
+                        ? Theme.of(context).colorScheme.onPrimary
                         : Theme.of(context).colorScheme.onSurface,
                     elevation: willInstall ? 2 : 0,
                     minimumSize: const Size(80, 32),
@@ -289,13 +296,14 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.cancel, size: 16),
                   label: const Text('Skip'),
-                  onPressed: () => _updateFileAction(file.targetPath, FileAction.skip),
+                  onPressed: () =>
+                      _updateFileAction(file.targetPath, FileAction.skip),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: !willInstall 
-                        ? Theme.of(context).colorScheme.error 
+                    backgroundColor: !willInstall
+                        ? Theme.of(context).colorScheme.error
                         : Theme.of(context).colorScheme.surface,
-                    foregroundColor: !willInstall 
-                        ? Theme.of(context).colorScheme.onError 
+                    foregroundColor: !willInstall
+                        ? Theme.of(context).colorScheme.onError
                         : Theme.of(context).colorScheme.onSurface,
                     elevation: !willInstall ? 2 : 0,
                     minimumSize: const Size(80, 32),
@@ -312,13 +320,11 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
 
   Color _getFileStatusColor(PackageFile file) {
     if (file.hasConflict) {
-      return file.shouldInstall 
-          ? Theme.of(context).colorScheme.primary 
+      return file.shouldInstall
+          ? Theme.of(context).colorScheme.primary
           : Theme.of(context).colorScheme.error;
     }
-    return file.shouldInstall 
-        ? Colors.green 
-        : Theme.of(context).disabledColor;
+    return file.shouldInstall ? Colors.green : Theme.of(context).disabledColor;
   }
 
   IconData _getFileStatusIcon(PackageFile file) {
@@ -336,11 +342,11 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       _currentFile = '';
       _errors.clear();
     });
-    
+
     try {
       // Extract file data from package
       final fileData = await _extractFileData();
-      
+
       // Install files using DistingCubit
       await widget.distingCubit.installPackageFiles(
         _currentAnalysis.files,
@@ -363,7 +369,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
           });
         },
       );
-      
+
       setState(() {
         _isInstalling = false;
       });
@@ -375,25 +381,25 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
         // Installation completed successfully
         widget.onInstall?.call();
       }
-      
     } catch (e) {
       setState(() {
         _isInstalling = false;
         _errors.add('Installation failed: $e');
       });
-      
+
       _showErrorDialog();
     }
   }
 
   Future<Map<String, Uint8List>> _extractFileData() async {
     final fileData = <String, Uint8List>{};
-    
+
     try {
       // Use the PresetPackageAnalyzer to extract individual files
       for (final file in _currentAnalysis.files) {
         if (file.shouldInstall) {
-          final data = await PresetPackageAnalyzer.extractFile(widget.packageData, file.relativePath);
+          final data = await PresetPackageAnalyzer.extractFile(
+              widget.packageData, file.relativePath);
           if (data != null) {
             fileData[file.relativePath] = data;
           }
@@ -402,7 +408,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
     } catch (e) {
       throw Exception('Failed to extract files from package: $e');
     }
-    
+
     return fileData;
   }
 
@@ -463,9 +469,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
               Text(
                 'Successfully installed: $_completedFiles of $_totalFiles files',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
             ],
           ),

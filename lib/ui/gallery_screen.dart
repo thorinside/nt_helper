@@ -9,6 +9,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/ui/gallery/gallery_cubit.dart';
 import 'package:nt_helper/ui/widgets/plugin_selection_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
 import 'package:nt_helper/utils/responsive.dart';
 
@@ -82,6 +83,53 @@ class _GalleryViewState extends State<_GalleryView>
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// Open README documentation in browser for a plugin
+  Future<void> _showReadmeDialog(BuildContext context, GalleryPlugin plugin) async {
+    debugPrint('Documentation button pressed for plugin: ${plugin.name}');
+    debugPrint('Repository: ${plugin.repository.owner}/${plugin.repository.name}');
+    
+    try {
+      // Construct the GitHub README URL
+      String readmeUrl = plugin.repository.url;
+      
+      // Ensure it ends with #readme to jump to the README section
+      if (!readmeUrl.contains('#readme')) {
+        readmeUrl = readmeUrl.endsWith('/') 
+            ? '$readmeUrl#readme' 
+            : '$readmeUrl#readme';
+      }
+      
+      debugPrint('Opening README URL: $readmeUrl');
+      
+      final uri = Uri.parse(readmeUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open $readmeUrl'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error opening documentation: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening documentation: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -183,9 +231,41 @@ class _GalleryViewState extends State<_GalleryView>
 
   Widget _buildHeaderActions(GalleryState state) {
     final queueCount = state is GalleryLoaded ? state.queue.length : 0;
+    final updateCount = state is GalleryLoaded
+        ? state.updateInfo.values.where((info) => info.updateAvailable).length
+        : 0;
+    final isRefreshing = state is GalleryLoading;
 
     return Row(
       children: [
+        // Update check button with badge
+        Badge(
+          isLabelVisible: updateCount > 0,
+          label: Text('$updateCount'),
+          child: IconButton(
+            icon: isRefreshing
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
+                : Icon(
+                    updateCount > 0 ? Icons.update : Icons.sync,
+                    color: updateCount > 0 ? Colors.orange : null,
+                  ),
+            onPressed: isRefreshing
+                ? null
+                : () => context.read<GalleryCubit>().refreshUpdates(),
+            tooltip: isRefreshing
+                ? 'Refreshing gallery...'
+                : updateCount > 0
+                    ? 'Updates available ($updateCount) - Tap to refresh'
+                    : 'Refresh gallery',
+          ),
+        ),
         Badge(
           isLabelVisible: queueCount > 0,
           label: Text('$queueCount'),
@@ -305,7 +385,7 @@ class _GalleryViewState extends State<_GalleryView>
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.getScreenPadding(context);
     final filterSpacing = Responsive.getFilterSpacing(context);
-    
+
     return Container(
       padding: padding,
       decoration: BoxDecoration(
@@ -344,7 +424,7 @@ class _GalleryViewState extends State<_GalleryView>
               ),
             ),
             SizedBox(height: filterSpacing),
-            
+
             // Mobile layout: Filters on second line
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -443,25 +523,19 @@ class _GalleryViewState extends State<_GalleryView>
     if (state is! GalleryLoaded || state.gallery.categories.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     return PopupMenuButton<String?>(
       child: Chip(
         avatar: Icon(
           Icons.category,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         label: Text(state.selectedCategory ?? 'Category'),
         deleteIcon: Icon(
           Icons.arrow_drop_down,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         onDeleted: () {},
       ),
@@ -499,10 +573,7 @@ class _GalleryViewState extends State<_GalleryView>
         avatar: Icon(
           Icons.extension,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         label: Text(state is GalleryLoaded
             ? (state.selectedType?.displayName ?? 'Type')
@@ -510,10 +581,7 @@ class _GalleryViewState extends State<_GalleryView>
         deleteIcon: Icon(
           Icons.arrow_drop_down,
           size: 18,
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         onDeleted: () {},
       ),
@@ -544,14 +612,10 @@ class _GalleryViewState extends State<_GalleryView>
         size: 18,
         color: (state is GalleryLoaded && state.showFeaturedOnly)
             ? Theme.of(context).colorScheme.onPrimary
-            : Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.7),
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
       ),
       label: const Text('Featured'),
-      selected:
-          state is GalleryLoaded ? state.showFeaturedOnly : false,
+      selected: state is GalleryLoaded ? state.showFeaturedOnly : false,
       selectedColor: Theme.of(context).colorScheme.primary,
       showCheckmark: false,
       labelStyle: TextStyle(
@@ -572,10 +636,7 @@ class _GalleryViewState extends State<_GalleryView>
       avatar: Icon(
         Icons.clear,
         size: 18,
-        color: Theme.of(context)
-            .colorScheme
-            .onSurface
-            .withValues(alpha: 0.7),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
       ),
       label: const Text('Clear'),
       onPressed: () {
@@ -650,6 +711,11 @@ class _GalleryViewState extends State<_GalleryView>
     final width = MediaQuery.of(context).size.width;
     final isNarrowScreen = width < 375;
 
+    // Get update information for this plugin
+    final updateInfo = state.updateInfo[plugin.id];
+    final hasUpdate = updateInfo?.hasUpdate ?? false;
+    final isInstalled = updateInfo != null;
+
     return SizedBox(
       width: 320,
       height: isNarrowScreen ? null : 305, // Flexible height for narrow screens
@@ -690,6 +756,54 @@ class _GalleryViewState extends State<_GalleryView>
                                 Icons.star,
                                 size: 16,
                                 color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (hasUpdate) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'UPDATE',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (isInstalled && !hasUpdate) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'INSTALLED',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                ),
                               ),
                               const SizedBox(width: 8),
                             ],
@@ -819,22 +933,90 @@ class _GalleryViewState extends State<_GalleryView>
                             ),
                           ] else
                             const Spacer(),
-                          Text(
-                            plugin.formattedRating,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                          if (plugin.formattedLatestVersion.isNotEmpty)
+                            Text(
+                              plugin.formattedLatestVersion,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                            ),
+                          // Small documentation icon button
+                          if (plugin.hasReadmeDocumentation)
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => _showReadmeDialog(parentContext, plugin),
+                                  child: Tooltip(
+                                    message: 'View Documentation',
+                                    child: Icon(
+                                      Icons.description_outlined,
+                                      size: 16,
                                       color: Theme.of(context)
                                           .colorScheme
                                           .onSurface
                                           .withValues(alpha: 0.6),
                                     ),
-                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
+                      // Version information row
+                      if (isInstalled) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                hasUpdate
+                                    ? 'v${updateInfo.installedVersion} → v${updateInfo.availableVersion}'
+                                    : 'v${updateInfo.installedVersion} (up to date)',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: hasUpdate
+                                          ? Colors.orange
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.6),
+                                      fontWeight: hasUpdate
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
 
                   const SizedBox(height: 8), // Reduced spacing above button
+
 
                   // Action button at bottom
                   SizedBox(
@@ -843,27 +1025,65 @@ class _GalleryViewState extends State<_GalleryView>
                       final isInQueue =
                           state.queue.any((q) => q.plugin.id == plugin.id);
 
-                      return ElevatedButton.icon(
-                        onPressed: isInQueue
-                            ? () => parentContext
-                                .read<GalleryCubit>()
-                                .removeFromQueue(plugin.id)
-                            : () async => await parentContext
-                                .read<GalleryCubit>()
-                                .addToQueue(plugin),
-                        icon: Icon(isInQueue
-                            ? Icons.remove_from_queue
-                            : Icons.add_to_queue),
-                        label: Text(isInQueue ? 'Remove' : 'Add to Queue'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isInQueue
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.primary,
-                          foregroundColor: isInQueue
-                              ? Theme.of(context).colorScheme.onError
-                              : Theme.of(context).colorScheme.onPrimary,
-                        ),
-                      );
+                      // Determine button state based on update and queue status
+                      if (isInQueue) {
+                        // Plugin is in queue - show remove button
+                        return ElevatedButton.icon(
+                          onPressed: () => parentContext
+                              .read<GalleryCubit>()
+                              .removeFromQueue(plugin.id),
+                          icon: const Icon(Icons.remove_from_queue),
+                          label: const Text('Remove'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.error,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onError,
+                          ),
+                        );
+                      } else if (hasUpdate) {
+                        // Plugin has update available - show update button
+                        return ElevatedButton.icon(
+                          onPressed: () async => await parentContext
+                              .read<GalleryCubit>()
+                              .addToQueue(plugin),
+                          icon: const Icon(Icons.update),
+                          label: const Text('Update'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                        );
+                      } else if (isInstalled) {
+                        // Plugin is installed and up to date - show installed status
+                        return ElevatedButton.icon(
+                          onPressed:
+                              null, // No action needed - updates are detected automatically
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Installed'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.green,
+                            disabledForegroundColor: Colors.white,
+                          ),
+                        );
+                      } else {
+                        // Plugin not installed - show add to queue button
+                        return ElevatedButton.icon(
+                          onPressed: () async => await parentContext
+                              .read<GalleryCubit>()
+                              .addToQueue(plugin),
+                          icon: const Icon(Icons.add_to_queue),
+                          label: const Text('Add to Queue'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        );
+                      }
                     }(),
                   ),
                 ],

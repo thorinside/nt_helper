@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart' show ParameterPages, RoutingInfo;
+import 'package:nt_helper/domain/disting_nt_sysex.dart'
+    show ParameterPages, RoutingInfo;
 import 'package:nt_helper/ui/synchronized_screen.dart';
 
 class PerformanceScreen extends StatefulWidget {
@@ -95,7 +96,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                         slot: Slot(
                           algorithm: item.algorithm,
                           routing: RoutingInfo.filler(),
-                          pages: ParameterPages(algorithmIndex: item.algorithm.algorithmIndex, pages: []),
+                          pages: ParameterPages(
+                              algorithmIndex: item.algorithm.algorithmIndex,
+                              pages: []),
                           parameters: [item.parameter],
                           values: [item.value],
                           enums: [item.enums],

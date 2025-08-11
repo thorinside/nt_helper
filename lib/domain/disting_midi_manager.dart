@@ -1041,10 +1041,12 @@ class DistingMidiManager implements IDistingMidiManager {
         sysExId: sysExId,
         messageType: DistingNTRespMessageType.respSdStatus,
       ),
-      responseExpectation: ResponseExpectation.none, // Directory create is fire-and-forget
+      responseExpectation:
+          ResponseExpectation.none, // Directory create is fire-and-forget
     );
     // Assume success since directory create doesn't send a response
-    return SdCardStatus(success: true, message: 'Directory create command sent');
+    return SdCardStatus(
+        success: true, message: 'Directory create command sent');
   }
 
   @override

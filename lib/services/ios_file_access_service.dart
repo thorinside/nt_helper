@@ -115,7 +115,8 @@ class IosFileAccessService {
       );
       return fileData;
     } catch (e) {
-      debugPrint('Error reading file $filePathToRead in session $sessionId: $e');
+      debugPrint(
+          'Error reading file $filePathToRead in session $sessionId: $e');
       return null;
     }
   }

@@ -295,7 +295,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
 
   /// Load a plugin to get its full specifications
   void _loadPlugin(String algorithmGuid) async {
-    final algorithm = _allAlgorithms.firstWhereOrNull((algo) => algo.guid == algorithmGuid);
+    final algorithm =
+        _allAlgorithms.firstWhereOrNull((algo) => algo.guid == algorithmGuid);
     if (algorithm == null) return;
 
     // Show loading indicator
@@ -311,34 +312,39 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     try {
       final cubit = context.read<DistingCubit>();
       debugPrint("[AddAlgorithmScreen] Loading plugin: ${algorithm.name}");
-      
+
       final loadedInfo = await cubit.loadPlugin(algorithmGuid);
-      
+
       if (loadedInfo != null && mounted) {
-        debugPrint("[AddAlgorithmScreen] Plugin loaded successfully: ${algorithm.name}");
+        debugPrint(
+            "[AddAlgorithmScreen] Plugin loaded successfully: ${algorithm.name}");
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${loadedInfo.name} loaded with ${loadedInfo.numSpecifications} specifications'),
+            content: Text(
+                '${loadedInfo.name} loaded with ${loadedInfo.numSpecifications} specifications'),
             duration: const Duration(seconds: 2),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Update the algorithm info in our local list
-        final index = _allAlgorithms.indexWhere((algo) => algo.guid == algorithmGuid);
+        final index =
+            _allAlgorithms.indexWhere((algo) => algo.guid == algorithmGuid);
         if (index != -1) {
           setState(() {
             _allAlgorithms[index] = loadedInfo;
             // If this algorithm is currently selected, update the current info too
             if (selectedAlgorithmGuid == algorithmGuid) {
               _currentAlgoInfo = loadedInfo;
-              specValues = loadedInfo.specifications.map((s) => s.defaultValue).toList();
+              specValues =
+                  loadedInfo.specifications.map((s) => s.defaultValue).toList();
             }
           });
         }
       } else if (mounted) {
-        debugPrint("[AddAlgorithmScreen] Plugin load failed: ${algorithm.name}");
+        debugPrint(
+            "[AddAlgorithmScreen] Plugin load failed: ${algorithm.name}");
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -349,7 +355,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         );
       }
     } catch (e) {
-      debugPrint("[AddAlgorithmScreen] Plugin load error for ${algorithm.name}: $e");
+      debugPrint(
+          "[AddAlgorithmScreen] Plugin load error for ${algorithm.name}: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -410,11 +417,14 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('• Long press any algorithm to add/remove from favorites'),
+                      Text(
+                          '• Long press any algorithm to add/remove from favorites'),
                       SizedBox(height: 8),
-                      Text('• Select a plugin to see a "Load Plugin" button if it needs loading'),
+                      Text(
+                          '• Select a plugin to see a "Load Plugin" button if it needs loading'),
                       SizedBox(height: 8),
-                      Text('• Plugins show full specifications only after being loaded'),
+                      Text(
+                          '• Plugins show full specifications only after being loaded'),
                     ],
                   ),
                   actions: [
@@ -826,7 +836,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
           if (index >= specValues!.length) {
             return const SizedBox.shrink();
           }
-          
+
           final textField = TextFormField(
             key: ValueKey('${algorithm.guid}_spec_$index'),
             initialValue: specValues![index].toString(),
@@ -838,8 +848,8 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               hintText: '(${specInfo.min} to ${specInfo.max})',
               border: const OutlineInputBorder(),
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12.0, vertical: 10.0),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
             ),
             keyboardType: TextInputType.number,
             onChanged: isOffline
@@ -847,8 +857,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
                 : (value) {
                     int parsedValue =
                         int.tryParse(value) ?? specInfo.defaultValue;
-                    parsedValue =
-                        parsedValue.clamp(specInfo.min, specInfo.max);
+                    parsedValue = parsedValue.clamp(specInfo.min, specInfo.max);
                     if (index < specValues!.length &&
                         specValues![index] != parsedValue) {
                       setState(() {
@@ -895,7 +904,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
     }
 
     final algorithm = _currentAlgoInfo!;
-    
+
     // Show Load button for unloaded plugins
     if (_needsLoading(algorithm) && !isOffline) {
       return ElevatedButton(
@@ -903,7 +912,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         child: const Text('Load Plugin'),
       );
     }
-    
+
     // Show Add button for loaded algorithms (factory or loaded plugins)
     return ElevatedButton(
       onPressed: _currentAlgoInfo != null && specValues != null

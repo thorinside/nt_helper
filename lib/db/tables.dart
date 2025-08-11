@@ -311,6 +311,14 @@ class PluginInstallations extends Table {
   TextColumn get errorMessage =>
       text().nullable()(); // Error message if installation failed
 
+  // Version tracking for update notifications
+  TextColumn get availableVersion =>
+      text().nullable()(); // Latest version from gallery
+  TextColumn get updateAvailable => text()
+      .withDefault(const Constant('false'))(); // Update flag ('true'/'false')
+  DateTimeColumn get lastChecked =>
+      dateTime().nullable()(); // Last update check timestamp
+
   // Unique constraint to prevent duplicate installations of the same plugin version
   @override
   List<String> get customConstraints => ['UNIQUE (plugin_id, plugin_version)'];

@@ -22,7 +22,6 @@ class MetadataSyncService {
   // Corrected regex (removed extra ^)
   final RegExp _parameterPrefixRegex = RegExp(r"^([0-9]+|A|B|C|D):\s*");
 
-
   /// Fetches all static algorithm metadata from the connected device
   /// by temporarily manipulating a preset, and caches it in the database.
   ///
@@ -38,7 +37,8 @@ class MetadataSyncService {
         onProgress,
     Function(String error)? onError,
     Future<bool> Function(String message)? onContinueRequired,
-    Future<void> Function(String algorithmName, int algorithmIndex)? onCheckpoint,
+    Future<void> Function(String algorithmName, int algorithmIndex)?
+        onCheckpoint,
     int? resumeFromIndex,
     bool Function()? isCancelled,
   }) async {
@@ -82,8 +82,7 @@ class MetadataSyncService {
             const Duration(milliseconds: 500)); // Allow device time
         if (checkCancel()) return;
       } else {
-        reportProgress(
-            "Resuming Sync", "Clearing device preset...");
+        reportProgress("Resuming Sync", "Clearing device preset...");
         await _distingManager.requestNewPreset(); // Clear on device
         await Future.delayed(
             const Duration(milliseconds: 500)); // Allow device time
@@ -196,12 +195,13 @@ class MetadataSyncService {
       algorithmsProcessed = resumeFromIndex ?? 0;
 
       // 3. Process All Algorithms (Community First, then Factory)
-      reportProgress("Processing Algorithms", "Starting algorithm processing...");
-      
+      reportProgress(
+          "Processing Algorithms", "Starting algorithm processing...");
+
       // Separate but keep original order within each type
       final communityAlgorithms = <AlgorithmInfo>[];
       final factoryAlgorithms = <AlgorithmInfo>[];
-      
+
       for (final algoInfo in allAlgorithmInfo) {
         if (algoInfo.isPlugin) {
           communityAlgorithms.add(algoInfo);
@@ -209,11 +209,12 @@ class MetadataSyncService {
           factoryAlgorithms.add(algoInfo);
         }
       }
-      
+
       // Process community first for faster testing, then factory
       final orderedAlgorithms = [...communityAlgorithms, ...factoryAlgorithms];
-      
-      debugPrint("[MetadataSync] Processing ${communityAlgorithms.length} community plugins, then ${factoryAlgorithms.length} factory algorithms.");
+
+      debugPrint(
+          "[MetadataSync] Processing ${communityAlgorithms.length} community plugins, then ${factoryAlgorithms.length} factory algorithms.");
 
       final dbUnits = await metadataDao.getAllUnits();
       final dbUnitStrings = dbUnits.map((u) => u.unitString).toList();
@@ -221,19 +222,19 @@ class MetadataSyncService {
       // 4. Process All Algorithms in Single Loop
       for (int i = 0; i < orderedAlgorithms.length; i++) {
         if (checkCancel()) break;
-        
+
         // Skip if resuming and haven't reached resume point
         if (resumeFromIndex != null && i < resumeFromIndex) {
           algorithmsProcessed++;
           continue;
         }
-        
+
         final algoInfo = orderedAlgorithms[i];
         final mainProgressMsg = algoInfo.name;
-        
+
         // Save checkpoint before processing each algorithm
         await onCheckpoint?.call(algoInfo.name, i);
-        
+
         reportProgress(mainProgressMsg, "Starting...", incrementCount: true);
 
         try {
@@ -242,49 +243,58 @@ class MetadataSyncService {
             reportProgress(mainProgressMsg, "Loading plugin...");
             if (checkCancel()) break;
             await _distingManager.requestLoadPlugin(algoInfo.guid);
-            await Future.delayed(const Duration(milliseconds: 1000)); // Wait for plugin to load
+            await Future.delayed(
+                const Duration(milliseconds: 1000)); // Wait for plugin to load
             if (checkCancel()) break;
           }
 
           // B. Add algorithm with default specs to slot 0
           reportProgress(mainProgressMsg, "Adding to preset...");
           if (checkCancel()) break;
-          final defaultSpecs = algoInfo.specifications.map((s) => s.defaultValue).toList();
+          final defaultSpecs =
+              algoInfo.specifications.map((s) => s.defaultValue).toList();
           await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
-          
+
           // C. Poll until algorithm is added to preset
-          reportProgress(mainProgressMsg, "Waiting for algorithm to be added...");
+          reportProgress(
+              mainProgressMsg, "Waiting for algorithm to be added...");
           if (checkCancel()) break;
-          
+
           var numInPreset = 0;
           var attempts = 0;
-          final maxAttempts = algoInfo.isPlugin ? 15 : 10; // More time for plugins
-          
+          final maxAttempts =
+              algoInfo.isPlugin ? 15 : 10; // More time for plugins
+
           while (numInPreset != 1 && attempts < maxAttempts && !checkCancel()) {
             await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+            numInPreset =
+                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
             attempts++;
-            
+
             if (numInPreset != 1) {
-              debugPrint("[MetadataSync] Waiting for ${algoInfo.name} to be added (attempt $attempts/$maxAttempts, found $numInPreset algorithms)");
+              debugPrint(
+                  "[MetadataSync] Waiting for ${algoInfo.name} to be added (attempt $attempts/$maxAttempts, found $numInPreset algorithms)");
             }
           }
-          
+
           if (checkCancel()) break;
-          
+
           if (numInPreset != 1) {
-            throw Exception("Failed to add algorithm to preset after $attempts attempts (expected 1, found $numInPreset).");
+            throw Exception(
+                "Failed to add algorithm to preset after $attempts attempts (expected 1, found $numInPreset).");
           }
 
           // D. Query the instantiated algorithm parameters
           reportProgress(mainProgressMsg, "Querying parameters...");
           if (checkCancel()) break;
-          
+
           // For community plugins, reload algorithm info after adding
-          final algorithmToQuery = algoInfo.isPlugin 
-              ? (await _distingManager.requestAlgorithmInfo(algoInfo.algorithmIndex) ?? algoInfo)
+          final algorithmToQuery = algoInfo.isPlugin
+              ? (await _distingManager
+                      .requestAlgorithmInfo(algoInfo.algorithmIndex) ??
+                  algoInfo)
               : algoInfo;
-          
+
           await _syncInstantiatedAlgorithmParams(
               metadataDao, algorithmToQuery, unitIdMap, dbUnitStrings);
 
@@ -292,65 +302,75 @@ class MetadataSyncService {
           reportProgress(mainProgressMsg, "Removing from preset...");
           if (checkCancel()) break;
           await _distingManager.requestRemoveAlgorithm(0);
-          
+
           // Poll until algorithm is removed from preset
-          reportProgress(mainProgressMsg, "Waiting for algorithm to be removed...");
+          reportProgress(
+              mainProgressMsg, "Waiting for algorithm to be removed...");
           attempts = 0;
           const maxRemoveAttempts = 8;
-          
-          while (numInPreset != 0 && attempts < maxRemoveAttempts && !checkCancel()) {
+
+          while (numInPreset != 0 &&
+              attempts < maxRemoveAttempts &&
+              !checkCancel()) {
             await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+            numInPreset =
+                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
             attempts++;
-            
+
             if (numInPreset != 0) {
-              debugPrint("[MetadataSync] Waiting for ${algoInfo.name} to be removed (attempt $attempts/$maxRemoveAttempts, found $numInPreset algorithms)");
+              debugPrint(
+                  "[MetadataSync] Waiting for ${algoInfo.name} to be removed (attempt $attempts/$maxRemoveAttempts, found $numInPreset algorithms)");
             }
           }
-          
+
           if (numInPreset != 0) {
-            debugPrint("[MetadataSync] Warning: Failed to remove ${algoInfo.name} cleanly after $attempts attempts (expected 0, found $numInPreset).");
+            debugPrint(
+                "[MetadataSync] Warning: Failed to remove ${algoInfo.name} cleanly after $attempts attempts (expected 0, found $numInPreset).");
           }
 
           reportProgress(mainProgressMsg, "Done.");
-          
         } catch (instantiationError, stackTrace) {
           // Report the main error first
-          final errorMsg = "Error processing ${algoInfo.name}: $instantiationError";
+          final errorMsg =
+              "Error processing ${algoInfo.name}: $instantiationError";
           debugPrint("[MetadataSync] $errorMsg");
           debugPrintStack(stackTrace: stackTrace);
-          
+
           // Check if this is a timeout-related error that requires device reboot
           final errorString = instantiationError.toString();
           final isTimeoutError = errorString.contains('TimeoutException') ||
               errorString.contains('No response after') ||
               instantiationError is TimeoutException;
-          
+
           if (isTimeoutError && onContinueRequired != null) {
             // Timeout detected - prompt for reboot
-            reportProgress(mainProgressMsg, "Timeout detected - requesting device reboot...");
-            
+            reportProgress(mainProgressMsg,
+                "Timeout detected - requesting device reboot...");
+
             final shouldContinue = await onContinueRequired(
                 "Algorithm ${algoInfo.name} failed with timeout errors. This may indicate the device needs a reboot. Please reboot your NT device and wait for it to fully start, then press Continue.");
-            
+
             if (!shouldContinue || checkCancel()) {
               reportProgress(mainProgressMsg, "Sync cancelled by user.");
               return;
             }
-            
+
             reportProgress(mainProgressMsg, "Continuing after reboot...");
             // Clear any potential state issues
             try {
               await _distingManager.requestNewPreset();
               await Future.delayed(const Duration(milliseconds: 500));
-              
+
               // Test communication after reboot
-              final numAlgos = await _distingManager.requestNumberOfAlgorithms();
+              final numAlgos =
+                  await _distingManager.requestNumberOfAlgorithms();
               if (numAlgos == null || numAlgos != totalAlgorithms) {
-                debugPrint("[MetadataSync] Communication test failed after reboot: expected $totalAlgorithms algorithms, got $numAlgos");
+                debugPrint(
+                    "[MetadataSync] Communication test failed after reboot: expected $totalAlgorithms algorithms, got $numAlgos");
               }
             } catch (cleanupError) {
-              debugPrint("[MetadataSync] Cleanup after reboot failed: $cleanupError");
+              debugPrint(
+                  "[MetadataSync] Cleanup after reboot failed: $cleanupError");
             }
           } else {
             onError?.call(errorMsg);
@@ -366,7 +386,8 @@ class MetadataSyncService {
             await (metadataDao.delete(metadataDao.algorithms)
                   ..where((a) => a.guid.equals(algoInfo.guid)))
                 .go();
-            reportProgress(mainProgressMsg, "DB cleared for failed ${algoInfo.name}.");
+            reportProgress(
+                mainProgressMsg, "DB cleared for failed ${algoInfo.name}.");
           } catch (dbClearError) {
             reportProgress(mainProgressMsg, "DB cleanup failed: $dbClearError");
           }
@@ -378,41 +399,47 @@ class MetadataSyncService {
             await Future.delayed(const Duration(milliseconds: 500));
             reportProgress(mainProgressMsg, "Device preset cleared.");
           } catch (presetClearError) {
-            reportProgress(mainProgressMsg, "Device preset clear failed: $presetClearError");
+            reportProgress(mainProgressMsg,
+                "Device preset clear failed: $presetClearError");
           }
         }
       }
 
       // 5. Final pass: Retry algorithms with 0 parameters
       if (!checkCancel()) {
-        reportProgress("Final Verification", "Checking for algorithms with missing parameters...");
-        
+        reportProgress("Final Verification",
+            "Checking for algorithms with missing parameters...");
+
         // Find algorithms with 0 parameters that should have been processed
         final algorithmsWithZeroParams = <AlgorithmInfo>[];
         try {
-          final parameterCounts = await metadataDao.getAlgorithmParameterCounts();
-          
+          final parameterCounts =
+              await metadataDao.getAlgorithmParameterCounts();
+
           for (final algoInfo in orderedAlgorithms) {
             final paramCount = parameterCounts[algoInfo.guid] ?? 0;
             if (paramCount == 0) {
               algorithmsWithZeroParams.add(algoInfo);
-              debugPrint("[MetadataSync] Found algorithm with 0 parameters: ${algoInfo.name} (${algoInfo.guid})");
+              debugPrint(
+                  "[MetadataSync] Found algorithm with 0 parameters: ${algoInfo.name} (${algoInfo.guid})");
             }
           }
         } catch (e) {
           debugPrint("[MetadataSync] Error checking parameter counts: $e");
         }
-        
+
         if (algorithmsWithZeroParams.isNotEmpty && !checkCancel()) {
-          debugPrint("[MetadataSync] Retrying ${algorithmsWithZeroParams.length} algorithms with 0 parameters");
-          reportProgress("Final Verification", "Retrying ${algorithmsWithZeroParams.length} algorithms with missing parameters...");
-          
+          debugPrint(
+              "[MetadataSync] Retrying ${algorithmsWithZeroParams.length} algorithms with 0 parameters");
+          reportProgress("Final Verification",
+              "Retrying ${algorithmsWithZeroParams.length} algorithms with missing parameters...");
+
           for (final algoInfo in algorithmsWithZeroParams) {
             if (checkCancel()) break;
-            
+
             final mainProgressMsg = "${algoInfo.name} (retry)";
             reportProgress(mainProgressMsg, "Starting retry...");
-            
+
             try {
               // A. Load plugin if it's a community plugin that needs loading
               if (algoInfo.isPlugin && !algoInfo.isLoaded) {
@@ -424,70 +451,86 @@ class MetadataSyncService {
 
               // B. Add algorithm with default specs to slot 0
               reportProgress(mainProgressMsg, "Adding to preset...");
-              final defaultSpecs = algoInfo.specifications.map((s) => s.defaultValue).toList();
+              final defaultSpecs =
+                  algoInfo.specifications.map((s) => s.defaultValue).toList();
               await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
-              
+
               // C. Poll until algorithm is added to preset
-              reportProgress(mainProgressMsg, "Waiting for algorithm to be added...");
+              reportProgress(
+                  mainProgressMsg, "Waiting for algorithm to be added...");
               var numInPreset = 0;
               var attempts = 0;
               final maxAttempts = algoInfo.isPlugin ? 15 : 10;
-              
-              while (numInPreset != 1 && attempts < maxAttempts && !checkCancel()) {
+
+              while (numInPreset != 1 &&
+                  attempts < maxAttempts &&
+                  !checkCancel()) {
                 await Future.delayed(const Duration(milliseconds: 500));
-                numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+                numInPreset =
+                    await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
                 attempts++;
               }
-              
+
               if (checkCancel()) break;
-              
+
               if (numInPreset == 1) {
                 // D. Query the instantiated algorithm parameters
-                reportProgress(mainProgressMsg, "Querying parameters (retry)...");
-                
+                reportProgress(
+                    mainProgressMsg, "Querying parameters (retry)...");
+
                 // For community plugins, reload algorithm info after adding
-                final algorithmToQuery = algoInfo.isPlugin 
-                    ? (await _distingManager.requestAlgorithmInfo(algoInfo.algorithmIndex) ?? algoInfo)
+                final algorithmToQuery = algoInfo.isPlugin
+                    ? (await _distingManager
+                            .requestAlgorithmInfo(algoInfo.algorithmIndex) ??
+                        algoInfo)
                     : algoInfo;
-                
+
                 await _syncInstantiatedAlgorithmParams(
                     metadataDao, algorithmToQuery, unitIdMap, dbUnitStrings);
 
                 // E. Remove algorithm from slot 0
                 reportProgress(mainProgressMsg, "Removing from preset...");
                 await _distingManager.requestRemoveAlgorithm(0);
-                
+
                 // Poll until algorithm is removed
                 attempts = 0;
                 const maxRemoveAttempts = 8;
-                
-                while (numInPreset != 0 && attempts < maxRemoveAttempts && !checkCancel()) {
+
+                while (numInPreset != 0 &&
+                    attempts < maxRemoveAttempts &&
+                    !checkCancel()) {
                   await Future.delayed(const Duration(milliseconds: 500));
-                  numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+                  numInPreset =
+                      await _distingManager.requestNumAlgorithmsInPreset() ??
+                          -1;
                   attempts++;
                 }
-                
+
                 reportProgress(mainProgressMsg, "Retry completed.");
-                debugPrint("[MetadataSync] Successfully retried ${algoInfo.name}");
+                debugPrint(
+                    "[MetadataSync] Successfully retried ${algoInfo.name}");
               } else {
-                debugPrint("[MetadataSync] Failed to add ${algoInfo.name} during retry");
+                debugPrint(
+                    "[MetadataSync] Failed to add ${algoInfo.name} during retry");
               }
-              
             } catch (retryError, stackTrace) {
-              debugPrint("[MetadataSync] Retry failed for ${algoInfo.name}: $retryError");
+              debugPrint(
+                  "[MetadataSync] Retry failed for ${algoInfo.name}: $retryError");
               debugPrintStack(stackTrace: stackTrace);
-              
+
               // Clean up if retry fails
               try {
                 await _distingManager.requestNewPreset();
                 await Future.delayed(const Duration(milliseconds: 500));
               } catch (cleanupError) {
-                debugPrint("[MetadataSync] Cleanup after retry failure: $cleanupError");
+                debugPrint(
+                    "[MetadataSync] Cleanup after retry failure: $cleanupError");
               }
             }
           }
         } else {
-          reportProgress("Final Verification", "All algorithms have parameters - verification complete.");
+          reportProgress("Final Verification",
+              "All algorithms have parameters - verification complete.");
         }
       }
 
@@ -668,7 +711,8 @@ class MetadataSyncService {
     }
 
     // Add to preset
-    final defaultSpecs = algoInfo.specifications.map((s) => s.defaultValue).toList();
+    final defaultSpecs =
+        algoInfo.specifications.map((s) => s.defaultValue).toList();
     await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
 
     // Poll until added
@@ -687,8 +731,10 @@ class MetadataSyncService {
     }
 
     // For community plugins, reload algorithm info after adding
-    final algorithmToQuery = algoInfo.isPlugin 
-        ? (await _distingManager.requestAlgorithmInfo(algoInfo.algorithmIndex) ?? algoInfo)
+    final algorithmToQuery = algoInfo.isPlugin
+        ? (await _distingManager
+                .requestAlgorithmInfo(algoInfo.algorithmIndex) ??
+            algoInfo)
         : algoInfo;
 
     // Query parameters
@@ -719,12 +765,13 @@ class MetadataSyncService {
     bool Function()? isCancelled,
   }) async {
     final metadataDao = _database.metadataDao;
-    
+
     void reportProgress(String mainMessage, String subMessage,
         {int processed = 0, int total = 0}) {
       final progress = total == 0 ? 0.0 : processed / total;
       onProgress?.call(progress, processed, total, mainMessage, subMessage);
-      debugPrint("[MetadataSync] Incremental: $processed/$total - $mainMessage - $subMessage");
+      debugPrint(
+          "[MetadataSync] Incremental: $processed/$total - $mainMessage - $subMessage");
     }
 
     // Helper to check cancellation
@@ -740,7 +787,8 @@ class MetadataSyncService {
       if (checkCancel()) return;
 
       // Get current algorithm list from device
-      reportProgress("Checking for New Algorithms", "Getting device algorithm list...");
+      reportProgress(
+          "Checking for New Algorithms", "Getting device algorithm list...");
       final numAlgoTypes = await _distingManager.requestNumberOfAlgorithms();
       if (numAlgoTypes == null || numAlgoTypes == 0) {
         throw Exception("No algorithm types found on device.");
@@ -753,38 +801,46 @@ class MetadataSyncService {
         if (algoInfo != null) {
           deviceAlgorithms.add(algoInfo);
         }
-        reportProgress("Checking for New Algorithms", 
+        reportProgress("Checking for New Algorithms",
             "Found ${deviceAlgorithms.length}/$numAlgoTypes algorithms on device...");
       }
       if (checkCancel()) return;
 
       // Get current algorithm list from database
-      reportProgress("Checking for New Algorithms", "Getting local algorithm list...");
+      reportProgress(
+          "Checking for New Algorithms", "Getting local algorithm list...");
       final localAlgorithms = await metadataDao.getAllAlgorithms();
       final localGuids = localAlgorithms.map((a) => a.guid).toSet();
 
       // Find new algorithms (present on device but not in database)
-      final newAlgorithms = deviceAlgorithms.where((deviceAlgo) => 
-          !localGuids.contains(deviceAlgo.guid)).toList();
+      final newAlgorithms = deviceAlgorithms
+          .where((deviceAlgo) => !localGuids.contains(deviceAlgo.guid))
+          .toList();
 
       if (newAlgorithms.isEmpty) {
-        reportProgress("Incremental Sync Complete", "No new algorithms found.", 
+        reportProgress("Incremental Sync Complete", "No new algorithms found.",
             processed: 0, total: 0);
         return;
       }
 
-      debugPrint("[MetadataSync] Found ${newAlgorithms.length} new algorithms to sync:");
+      debugPrint(
+          "[MetadataSync] Found ${newAlgorithms.length} new algorithms to sync:");
       for (final algo in newAlgorithms) {
         debugPrint("  - ${algo.name} (${algo.guid})");
       }
 
       // Process community plugins first, then factory algorithms
-      final newCommunityAlgorithms = newAlgorithms.where((a) => a.isPlugin).toList();
-      final newFactoryAlgorithms = newAlgorithms.where((a) => !a.isPlugin).toList();
-      final orderedNewAlgorithms = [...newCommunityAlgorithms, ...newFactoryAlgorithms];
+      final newCommunityAlgorithms =
+          newAlgorithms.where((a) => a.isPlugin).toList();
+      final newFactoryAlgorithms =
+          newAlgorithms.where((a) => !a.isPlugin).toList();
+      final orderedNewAlgorithms = [
+        ...newCommunityAlgorithms,
+        ...newFactoryAlgorithms
+      ];
 
       // Sync unit strings if needed (in case new algorithms introduce new units)
-      reportProgress("Syncing Prerequisites", "Updating unit strings...", 
+      reportProgress("Syncing Prerequisites", "Updating unit strings...",
           processed: 0, total: orderedNewAlgorithms.length);
       final unitStrings = await _distingManager.requestUnitStrings() ?? [];
       final unitIdMap = <String, int>{};
@@ -813,22 +869,25 @@ class MetadataSyncService {
       // Process new algorithms
       for (int i = 0; i < orderedNewAlgorithms.length; i++) {
         if (checkCancel()) break;
-        
+
         final algoInfo = orderedNewAlgorithms[i];
         final mainProgressMsg = "${algoInfo.name} (new)";
-        
-        reportProgress(mainProgressMsg, "Starting sync...", 
+
+        reportProgress(mainProgressMsg, "Starting sync...",
             processed: i, total: orderedNewAlgorithms.length);
 
         try {
           // Store basic algorithm info first
-          await metadataDao.upsertAlgorithms([AlgorithmEntry(
-              guid: algoInfo.guid,
-              name: algoInfo.name,
-              numSpecifications: algoInfo.numSpecifications)]);
+          await metadataDao.upsertAlgorithms([
+            AlgorithmEntry(
+                guid: algoInfo.guid,
+                name: algoInfo.name,
+                numSpecifications: algoInfo.numSpecifications)
+          ]);
 
           if (algoInfo.specifications.isNotEmpty) {
-            final specEntries = algoInfo.specifications.asMap().entries.map((entry) {
+            final specEntries =
+                algoInfo.specifications.asMap().entries.map((entry) {
               final index = entry.key;
               final spec = entry.value;
               return SpecificationEntry(
@@ -856,37 +915,43 @@ class MetadataSyncService {
           // Add algorithm with default specs to slot 0
           reportProgress(mainProgressMsg, "Adding to preset...",
               processed: i, total: orderedNewAlgorithms.length);
-          final defaultSpecs = algoInfo.specifications.map((s) => s.defaultValue).toList();
+          final defaultSpecs =
+              algoInfo.specifications.map((s) => s.defaultValue).toList();
           await _distingManager.requestAddAlgorithm(algoInfo, defaultSpecs);
-          
+
           // Poll until algorithm is added to preset
-          reportProgress(mainProgressMsg, "Waiting for algorithm to be added...",
+          reportProgress(
+              mainProgressMsg, "Waiting for algorithm to be added...",
               processed: i, total: orderedNewAlgorithms.length);
           var numInPreset = 0;
           var attempts = 0;
           final maxAttempts = algoInfo.isPlugin ? 15 : 10;
-          
+
           while (numInPreset != 1 && attempts < maxAttempts && !checkCancel()) {
             await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+            numInPreset =
+                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
             attempts++;
           }
-          
+
           if (checkCancel()) break;
-          
+
           if (numInPreset != 1) {
-            throw Exception("Failed to add algorithm to preset after $attempts attempts.");
+            throw Exception(
+                "Failed to add algorithm to preset after $attempts attempts.");
           }
 
           // Query parameters
           reportProgress(mainProgressMsg, "Querying parameters...",
               processed: i, total: orderedNewAlgorithms.length);
-          
+
           // For community plugins, reload algorithm info after adding
-          final algorithmToQuery = algoInfo.isPlugin 
-              ? (await _distingManager.requestAlgorithmInfo(algoInfo.algorithmIndex) ?? algoInfo)
+          final algorithmToQuery = algoInfo.isPlugin
+              ? (await _distingManager
+                      .requestAlgorithmInfo(algoInfo.algorithmIndex) ??
+                  algoInfo)
               : algoInfo;
-          
+
           await _syncInstantiatedAlgorithmParams(
               metadataDao, algorithmToQuery, unitIdMap, dbUnitStrings);
 
@@ -894,25 +959,28 @@ class MetadataSyncService {
           reportProgress(mainProgressMsg, "Removing from preset...",
               processed: i, total: orderedNewAlgorithms.length);
           await _distingManager.requestRemoveAlgorithm(0);
-          
+
           // Poll until algorithm is removed
           attempts = 0;
           const maxRemoveAttempts = 8;
-          
-          while (numInPreset != 0 && attempts < maxRemoveAttempts && !checkCancel()) {
+
+          while (numInPreset != 0 &&
+              attempts < maxRemoveAttempts &&
+              !checkCancel()) {
             await Future.delayed(const Duration(milliseconds: 500));
-            numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
+            numInPreset =
+                await _distingManager.requestNumAlgorithmsInPreset() ?? -1;
             attempts++;
           }
 
           reportProgress(mainProgressMsg, "Completed.",
               processed: i + 1, total: orderedNewAlgorithms.length);
-
         } catch (error, stackTrace) {
-          final errorMsg = "Error syncing new algorithm ${algoInfo.name}: $error";
+          final errorMsg =
+              "Error syncing new algorithm ${algoInfo.name}: $error";
           debugPrint("[MetadataSync] $errorMsg");
           debugPrintStack(stackTrace: stackTrace);
-          
+
           // Clean up on error
           try {
             await metadataDao.clearAlgorithmMetadata(algoInfo.guid);
@@ -921,20 +989,21 @@ class MetadataSyncService {
           } catch (cleanupError) {
             debugPrint("[MetadataSync] Cleanup failed: $cleanupError");
           }
-          
+
           onError?.call(errorMsg);
         }
       }
 
       if (checkCancel()) {
         reportProgress("Incremental Sync Cancelled", "Process stopped by user.",
-            processed: orderedNewAlgorithms.length, total: orderedNewAlgorithms.length);
+            processed: orderedNewAlgorithms.length,
+            total: orderedNewAlgorithms.length);
       } else {
-        reportProgress("Incremental Sync Complete", 
+        reportProgress("Incremental Sync Complete",
             "Synced ${orderedNewAlgorithms.length} new algorithms.",
-            processed: orderedNewAlgorithms.length, total: orderedNewAlgorithms.length);
+            processed: orderedNewAlgorithms.length,
+            total: orderedNewAlgorithms.length);
       }
-
     } catch (e, stackTrace) {
       final errorMsg = "Incremental sync failed: $e";
       debugPrint("[MetadataSync] $errorMsg");

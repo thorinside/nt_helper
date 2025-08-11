@@ -5,12 +5,18 @@ import 'package:http/http.dart' as http;
 import 'package:nt_helper/models/gallery_models.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/plugin_metadata_extractor.dart';
+import 'package:nt_helper/services/plugin_update_checker.dart';
+import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/db/daos/plugin_installations_dao.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 
 /// Service for managing the plugin gallery
 class GalleryService {
   final SettingsService _settingsService;
+  final AppDatabase? _database;
+  PluginUpdateChecker? _updateChecker;
   Gallery? _cachedGallery;
   DateTime? _lastFetch;
   final Duration _cacheTimeout = const Duration(hours: 1);
@@ -22,7 +28,17 @@ class GalleryService {
   /// Constructor with optional database for installation tracking
   GalleryService({
     required SettingsService settingsService,
-  }) : _settingsService = settingsService;
+    AppDatabase? database,
+  })  : _settingsService = settingsService,
+        _database = database {
+    // Initialize update checker if database is available
+    if (_database != null) {
+      _updateChecker = PluginUpdateChecker(
+        database: _database,
+        galleryService: this,
+      );
+    }
+  }
 
   /// Stream of install queue updates
   Stream<List<QueuedPlugin>> get queueStream => _queueController.stream;
@@ -363,25 +379,24 @@ class GalleryService {
         onPluginComplete?.call(queuedPlugin);
 
         // Record successful installation in database
-        // TODO: Implement plugin installation tracking in database
-        // if (_database != null) {
-        //   try {
-        //     final installationPath = _getInstallationPath(queuedPlugin.plugin);
-        //     await _database!.pluginInstallationsDao.recordPluginInstallation(
-        //       plugin: queuedPlugin.plugin,
-        //       installedVersion: queuedPlugin.selectedVersion,
-        //       installationPath: installationPath,
-        //       fileCount: fileCount,
-        //       totalBytes: totalBytes,
-        //       installationNotes: 'Installed via gallery',
-        //     );
-        //     debugPrint(
-        //         'Recorded successful installation of ${queuedPlugin.plugin.name} in database');
-        //   } catch (dbError) {
-        //     debugPrint('Failed to record installation in database: $dbError');
-        //     // Don't fail the installation if database recording fails
-        //   }
-        // }
+        if (_database != null) {
+          try {
+            final installationPath = _getInstallationPath(queuedPlugin.plugin);
+            await _database.pluginInstallationsDao.recordPluginInstallation(
+              plugin: queuedPlugin.plugin,
+              installedVersion: queuedPlugin.selectedVersion,
+              installationPath: installationPath,
+              fileCount: 1, // Default value, can be enhanced later
+              totalBytes: null, // Can be enhanced to track actual bytes
+              installationNotes: 'Installed via gallery',
+            );
+            debugPrint(
+                'Recorded successful installation of ${queuedPlugin.plugin.name} in database');
+          } catch (dbError) {
+            debugPrint('Failed to record installation in database: $dbError');
+            // Don't fail the installation if database recording fails
+          }
+        }
 
         // Remove successfully completed plugin from queue
         removeFromQueue(queuedPlugin.plugin.id);
@@ -392,24 +407,23 @@ class GalleryService {
         onPluginError?.call(queuedPlugin, errorMessage);
 
         // Record failed installation in database
-        // TODO: Implement plugin installation failure tracking in database
-        // if (_database != null) {
-        //   try {
-        //     final installationPath = _getInstallationPath(queuedPlugin.plugin);
-        //     await _database!.pluginInstallationsDao
-        //         .recordPluginInstallationFailure(
-        //       plugin: queuedPlugin.plugin,
-        //       attemptedVersion: queuedPlugin.selectedVersion,
-        //       installationPath: installationPath,
-        //       errorMessage: errorMessage,
-        //     );
-        //     debugPrint(
-        //         'Recorded failed installation of ${queuedPlugin.plugin.name} in database');
-        //   } catch (dbError) {
-        //     debugPrint(
-        //         'Failed to record installation failure in database: $dbError');
-        //   }
-        // }
+        if (_database != null) {
+          try {
+            final installationPath = _getInstallationPath(queuedPlugin.plugin);
+            await _database.pluginInstallationsDao
+                .recordPluginInstallationFailure(
+              plugin: queuedPlugin.plugin,
+              attemptedVersion: queuedPlugin.selectedVersion,
+              installationPath: installationPath,
+              errorMessage: errorMessage,
+            );
+            debugPrint(
+                'Recorded failed installation of ${queuedPlugin.plugin.name} in database');
+          } catch (dbError) {
+            debugPrint(
+                'Failed to record installation failure in database: $dbError');
+          }
+        }
 
         // Keep failed plugin in queue so user can see the error message
         // They can manually remove it if desired
@@ -793,10 +807,145 @@ class GalleryService {
     _queueController.add(List.unmodifiable(_installQueue));
   }
 
+  // --- Plugin Update Methods ---
+
+  /// Check for updates for all installed plugins
+  Future<UpdateCheckResult?> checkAllPluginUpdates(
+      {bool forceCheck = false}) async {
+    return await _updateChecker?.checkAllPluginUpdates(forceCheck: forceCheck);
+  }
+
+  /// Check for updates for a specific plugin
+  Future<PluginUpdateResult?> checkPluginUpdate(String pluginId) async {
+    return await _updateChecker?.checkPluginUpdate(pluginId);
+  }
+
+  /// Get current update status for all installed plugins
+  Future<Map<String, PluginUpdateInfo>?> getUpdateStatus() async {
+    return await _updateChecker?.getUpdateStatus();
+  }
+
+  /// Get plugins that have updates available
+  Future<List<PluginInstallationEntry>?> getPluginsWithUpdates() async {
+    return await _updateChecker?.getPluginsWithUpdates();
+  }
+
+  /// Force refresh all plugin update information
+  Future<UpdateCheckResult?> forceRefreshAllUpdates() async {
+    return await _updateChecker?.forceRefreshAll();
+  }
+
+  /// Check if batch update check is needed
+  bool get needsUpdateCheck => _updateChecker?.needsBatchCheck ?? false;
+
+  /// Get the gallery data (used by update checker)
+  Future<Gallery?> getGalleryData() async {
+    try {
+      return await fetchGallery();
+    } catch (e) {
+      debugPrint('Error fetching gallery data for update checker: $e');
+      return null;
+    }
+  }
+
   /// Invalidate cached gallery data
   void _invalidateCache() {
     _cachedGallery = null;
     _lastFetch = null;
+  }
+
+  /// Get installation path for a plugin
+  String _getInstallationPath(GalleryPlugin plugin) {
+    // Return the target path from the plugin's installation configuration
+    return plugin.installation.targetPath;
+  }
+
+  /// Compare gallery plugins with installed versions and return update info
+  Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(
+      Gallery gallery) async {
+    final Map<String, PluginUpdateInfo> updateInfo = {};
+
+    if (_database == null) {
+      debugPrint('Database not available for version comparison');
+      return updateInfo;
+    }
+
+    try {
+      // Get all installed plugins
+      final installedPlugins =
+          await _database.pluginInstallationsDao.getAllInstalledPlugins();
+
+      for (final galleryPlugin in gallery.plugins) {
+        // Find matching installed plugin(s)
+        final matchingInstalled = installedPlugins
+            .where((installed) => installed.pluginId == galleryPlugin.id)
+            .toList();
+
+        if (matchingInstalled.isEmpty) {
+          // Plugin not installed - no update info needed
+          continue;
+        }
+
+        // Get the latest installed version
+        final latestInstalled = matchingInstalled.reduce(
+            (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b);
+
+        // Get the best available version from gallery channels
+        final availableVersion = _getBestAvailableVersion(galleryPlugin);
+
+        if (availableVersion != null) {
+          // Compare versions
+          final hasUpdate = _compareVersions(
+                  latestInstalled.pluginVersion, availableVersion) <
+              0;
+
+          updateInfo[galleryPlugin.id] = PluginUpdateInfo(
+            pluginId: galleryPlugin.id,
+            pluginName: latestInstalled.pluginName,
+            installedVersion: latestInstalled.pluginVersion,
+            availableVersion: availableVersion,
+            updateAvailable: hasUpdate,
+            lastChecked: DateTime.now(),
+          );
+        }
+      }
+
+      debugPrint(
+          'Version comparison complete: ${updateInfo.length} plugins checked, '
+          '${updateInfo.values.where((info) => info.updateAvailable).length} updates available');
+    } catch (e) {
+      debugPrint('Error comparing plugin versions: $e');
+    }
+
+    return updateInfo;
+  }
+
+  /// Get the best available version from a plugin's release channels
+  String? _getBestAvailableVersion(GalleryPlugin plugin) {
+    // Prefer latest, then stable, then beta
+    if (plugin.releases.latest.isNotEmpty) {
+      return plugin.releases.latest;
+    }
+    if (plugin.releases.stable?.isNotEmpty == true) {
+      return plugin.releases.stable;
+    }
+    if (plugin.releases.beta?.isNotEmpty == true) {
+      return plugin.releases.beta;
+    }
+    return null;
+  }
+
+  /// Compare two version strings (returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2)
+  int _compareVersions(String version1, String version2) {
+    try {
+      // Try semantic version comparison first
+      final v1 = Version.parse(version1.replaceAll(RegExp(r'^v'), ''));
+      final v2 = Version.parse(version2.replaceAll(RegExp(r'^v'), ''));
+      return v1.compareTo(v2);
+    } catch (e) {
+      // Fall back to string comparison if semantic parsing fails
+      return version1.compareTo(version2);
+    }
   }
 
   /// Dispose of resources
@@ -809,7 +958,6 @@ class GalleryService {
     const rawPluginExtensions = {'.o', '.lua', '.3pot'};
     return rawPluginExtensions.contains(extension);
   }
-
 }
 
 /// Exception thrown by gallery operations

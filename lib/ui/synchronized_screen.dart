@@ -1513,22 +1513,23 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 
     // Determine if the unit is BPM
     final bool isBpmUnit = widget.unit?.toUpperCase().contains('BPM') ?? false;
-    
+
     // Check if this parameter should use a specialized file editor
-    final Widget? fileEditor = widget.slot.parameters.length > widget.parameterNumber 
-        ? ParameterEditorRegistry.findEditorFor(
-            slot: widget.slot,
-            parameterInfo: widget.slot.parameters[widget.parameterNumber],
-            parameterNumber: widget.parameterNumber,
-            currentValue: currentValue,
-            onValueChanged: (newValue) {
-              setState(() {
-                currentValue = newValue;
-              });
-              _updateCubitValue(newValue);
-            },
-          )
-        : null;
+    final Widget? fileEditor =
+        widget.slot.parameters.length > widget.parameterNumber
+            ? ParameterEditorRegistry.findEditorFor(
+                slot: widget.slot,
+                parameterInfo: widget.slot.parameters[widget.parameterNumber],
+                parameterNumber: widget.parameterNumber,
+                currentValue: currentValue,
+                onValueChanged: (newValue) {
+                  setState(() {
+                    currentValue = newValue;
+                  });
+                  _updateCubitValue(newValue);
+                },
+              )
+            : null;
 
     debugPrint("${widget.name} isBpmUnit: $isBpmUnit ${widget.unit}");
 
@@ -1617,67 +1618,70 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                               });
                             },
                           )
-                        : fileEditor ?? (_showAlternateEditor
-                            ? Row(
-                                // Alternate +/- editor
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                spacing: 16,
-                                children: [
-                                    OutlinedButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          currentValue = min(
-                                              max(currentValue - 1, widget.min),
-                                              widget.max);
-                                        });
-                                        _updateCubitValue(currentValue);
-                                      },
-                                      child: Text("-"),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          currentValue = min(
-                                              max(currentValue + 1, widget.min),
-                                              widget.max);
-                                        });
-                                        _updateCubitValue(currentValue);
-                                      },
-                                      child: Text("+"),
-                                    )
-                                  ])
-                            : Slider(
-                                // Default Slider editor
-                                value: currentValue.toDouble(),
-                                min: widget.min.toDouble(),
-                                max: widget.max.toDouble(),
-                                divisions: (widget.max - widget.min > 0)
-                                    ? widget.max - widget.min
-                                    : null,
-                                onChangeStart: (value) {
-                                  isChanging = true;
-                                },
-                                onChangeEnd: (value) {
-                                  isChanging = false;
-                                  setState(() {
-                                    currentValue = value.toInt();
-                                    if (widget.isOnOff) {
-                                      isChecked = currentValue == 1;
-                                    }
-                                  });
-                                  _updateCubitValue(currentValue);
-                                },
-                                onChanged: (value) {
-                                  setState(() {
-                                    currentValue = value.toInt();
-                                    if (widget.isOnOff) {
-                                      isChecked = currentValue == 1;
-                                    }
-                                  });
-                                  // Throttle a bit
-                                  onSliderChanged(currentValue);
-                                },
-                              )),
+                        : fileEditor ??
+                            (_showAlternateEditor
+                                ? Row(
+                                    // Alternate +/- editor
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    spacing: 16,
+                                    children: [
+                                        OutlinedButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              currentValue = min(
+                                                  max(currentValue - 1,
+                                                      widget.min),
+                                                  widget.max);
+                                            });
+                                            _updateCubitValue(currentValue);
+                                          },
+                                          child: Text("-"),
+                                        ),
+                                        OutlinedButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              currentValue = min(
+                                                  max(currentValue + 1,
+                                                      widget.min),
+                                                  widget.max);
+                                            });
+                                            _updateCubitValue(currentValue);
+                                          },
+                                          child: Text("+"),
+                                        )
+                                      ])
+                                : Slider(
+                                    // Default Slider editor
+                                    value: currentValue.toDouble(),
+                                    min: widget.min.toDouble(),
+                                    max: widget.max.toDouble(),
+                                    divisions: (widget.max - widget.min > 0)
+                                        ? widget.max - widget.min
+                                        : null,
+                                    onChangeStart: (value) {
+                                      isChanging = true;
+                                    },
+                                    onChangeEnd: (value) {
+                                      isChanging = false;
+                                      setState(() {
+                                        currentValue = value.toInt();
+                                        if (widget.isOnOff) {
+                                          isChecked = currentValue == 1;
+                                        }
+                                      });
+                                      _updateCubitValue(currentValue);
+                                    },
+                                    onChanged: (value) {
+                                      setState(() {
+                                        currentValue = value.toInt();
+                                        if (widget.isOnOff) {
+                                          isChecked = currentValue == 1;
+                                        }
+                                      });
+                                      // Throttle a bit
+                                      onSliderChanged(currentValue);
+                                    },
+                                  )),
                   ),
                 ),
               )),
@@ -1686,7 +1690,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
-              child: isBpmUnit || fileEditor != null // Check if it's the BPM unit or file editor
+              child: isBpmUnit ||
+                      fileEditor !=
+                          null // Check if it's the BPM unit or file editor
                   ? const SizedBox
                       .shrink() // If BPM or file editor, render an empty box to hide default text
                   : widget.isOnOff
@@ -1748,7 +1754,9 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                       ),
                                     )
                                   // Only show unit text if it's NOT BPM, NOT file editor, and unit is present
-                                  : widget.unit != null && !isBpmUnit && fileEditor == null
+                                  : widget.unit != null &&
+                                          !isBpmUnit &&
+                                          fileEditor == null
                                       ? Text(
                                           formatWithUnit(
                                             currentValue,

@@ -76,12 +76,12 @@ class AlgorithmInfoResponse extends SysexResponse {
     // 9) Decode plugin flags (isPlugin and isLoaded) if available
     bool isPlugin = false;
     bool isLoaded = true;
-    
+
     if (offset < data.length) {
       isPlugin = data[offset] != 0;
       offset += 1;
     }
-    
+
     if (offset < data.length) {
       isLoaded = data[offset] != 0;
       offset += 1;
