@@ -678,12 +678,12 @@ class DistingCubit extends Cubit<DistingState> {
 
       // Synchronize device clock with system time
       try {
+        // Use local time for RTC since the device filesystem expects local timestamps
         final now = DateTime.now();
-        final currentUnixTime =
-            now.millisecondsSinceEpoch ~/ 1000 + now.timeZoneOffset.inSeconds;
-        await newDistingManager.requestSetRealTimeClock(currentUnixTime);
+        final localUnixTime = now.millisecondsSinceEpoch ~/ 1000 - now.timeZoneOffset.inSeconds;
+        await newDistingManager.requestSetRealTimeClock(localUnixTime);
         debugPrint(
-            "[DistingCubit] Device clock synchronized to $currentUnixTime (local time adjusted)");
+            "[DistingCubit] Device clock synchronized to local time: $localUnixTime");
       } catch (e) {
         debugPrint("[DistingCubit] Failed to synchronize device clock: $e");
         // Continue with connection even if clock sync fails

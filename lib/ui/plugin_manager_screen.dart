@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/plugin_info.dart';
 import 'package:nt_helper/services/gallery_service.dart';
@@ -884,7 +885,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    return DateFormat.yMd().format(date);
   }
 
   void _showPluginDetails(PluginInfo plugin) {
