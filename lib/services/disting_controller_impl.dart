@@ -3,7 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterValue;
+    show Algorithm, ParameterInfo, ParameterValue, ParameterEnumStrings;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
@@ -286,6 +286,25 @@ class DistingControllerImpl implements DistingController {
     } catch (e) {
       debugPrint('Error fetching CPU usage: ${e.toString()}');
       return null; // Return null on any error
+    }
+  }
+
+  @override
+  Future<ParameterEnumStrings?> getParameterEnumStrings(
+      int slotIndex, int parameterNumber) async {
+    try {
+      final state = _getSynchronizedState();
+      _validateParameterNumber(slotIndex, parameterNumber, state);
+      
+      final slot = state.slots[slotIndex];
+      
+      // Find enum data for this parameter
+      final enums = slot.enums.where((e) => 
+          e.parameterNumber == parameterNumber).firstOrNull;
+      return enums;
+    } catch (e) {
+      debugPrint('Error getting parameter enum strings: $e');
+      return null;
     }
   }
 }

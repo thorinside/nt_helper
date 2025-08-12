@@ -642,6 +642,30 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       },
     );
 
+    server.tool(
+      'get_parameter_enum_values',
+      description: 'Get available enum values for an enum parameter',
+      inputSchemaProperties: {
+        'slot_index': {
+          'type': 'integer',
+          'description': '0-based slot index',
+        },
+        'parameter_number': {
+          'type': 'integer',
+          'description': 'Parameter number (0-based)',
+        },
+        'parameter_name': {
+          'type': 'string',
+          'description': 'Parameter name (alternative to number)',
+        },
+      },
+      callback: ({args, extra}) async {
+        final resultJson = await tools.getParameterEnumValues(args ?? {});
+        return CallToolResult.fromContent(
+            content: [TextContent(text: resultJson)]);
+      },
+    );
+
     // Register additional tools (continuing with existing pattern)
     _registerPresetTools(server, tools);
     _registerMovementTools(server, tools);

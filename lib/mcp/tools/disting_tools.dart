@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math'; // For min, pow functions
 import 'dart:typed_data'; // Added for Uint8List
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:image/image.dart' as img; // For image processing
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show Algorithm, ParameterInfo;
@@ -25,6 +26,43 @@ class DistingTools {
   // Use shared utility
   num _scaleForDisplay(int value, int? powerOfTen) =>
       MCPUtils.scaleForDisplay(value, powerOfTen);
+
+  /// Retrieves enum values for a parameter if it's an enum type
+  Future<List<String>?> _getParameterEnumValues(
+      int slotIndex, int parameterNumber) async {
+    try {
+      // Get algorithm from slot
+      final algorithm = await _controller.getAlgorithmInSlot(slotIndex);
+      if (algorithm == null) return null;
+      
+      // Get enum strings from controller
+      final enumStrings = await _controller.getParameterEnumStrings(
+          slotIndex, parameterNumber);
+      return enumStrings?.values;
+    } catch (e) {
+      debugPrint('Error fetching enum values: $e');
+      return null;
+    }
+  }
+  
+  /// Checks if a parameter is an enum type
+  bool _isEnumParameter(ParameterInfo paramInfo) {
+    return paramInfo.unit == 1;
+  }
+  
+  /// Converts enum string to integer index
+  int? _enumStringToIndex(List<String> enumValues, String value) {
+    final index = enumValues.indexOf(value);
+    return index >= 0 ? index : null;
+  }
+  
+  /// Converts integer index to enum string
+  String? _enumIndexToString(List<String> enumValues, int index) {
+    if (index >= 0 && index < enumValues.length) {
+      return enumValues[index];
+    }
+    return null;
+  }
 
   /// MCP Tool: Gets the entire current preset state.
   /// Parameters: None
@@ -54,7 +92,8 @@ class DistingTools {
             final int? liveRawValue =
                 await _controller.getParameterValue(i, paramIndex);
 
-            parametersJsonList.add({
+            // Build base parameter object
+            final paramData = {
               'parameter_number': paramIndex,
               'name': pInfo.name,
               'min_value':
@@ -67,7 +106,21 @@ class DistingTools {
               'value': liveRawValue != null
                   ? _scaleForDisplay(liveRawValue, pInfo.powerOfTen)
                   : null, // Scaled
-            });
+            };
+
+            // Add enum metadata if this is an enum parameter
+            if (_isEnumParameter(pInfo)) {
+              final enumValues = await _getParameterEnumValues(i, paramIndex);
+              if (enumValues != null) {
+                paramData['is_enum'] = true;
+                paramData['enum_values'] = enumValues;
+                if (liveRawValue != null) {
+                  paramData['enum_value'] = _enumIndexToString(enumValues, liveRawValue);
+                }
+              }
+            }
+
+            parametersJsonList.add(paramData);
           }
 
           slotsJsonList[i] = {
@@ -162,7 +215,7 @@ class DistingTools {
     final int? slotIndex = params['slot_index'] as int?;
     final int? parameterNumberParam = params['parameter_number'] as int?;
     final String? parameterNameParam = params['parameter_name'] as String?;
-    final num? displayValue = params['value'] as num?;
+    final dynamic value = params['value'];  // Can be num or String for enums
 
     // Validate slot index
     final slotError = MCPUtils.validateSlotIndex(slotIndex);
@@ -171,7 +224,7 @@ class DistingTools {
     }
 
     // Validate value parameter
-    final valueError = MCPUtils.validateRequiredParam(displayValue, 'value');
+    final valueError = MCPUtils.validateRequiredParam(value, 'value');
     if (valueError != null) {
       return jsonEncode(convertToSnakeCaseKeys(valueError));
     }
@@ -224,12 +277,42 @@ class DistingTools {
             MCPUtils.buildError('Failed to identify target parameter.')));
       }
 
+      // Handle enum parameter value conversion
       int rawValue;
-      if (paramInfo.powerOfTen > 0) {
-        rawValue = (displayValue! * pow(10, paramInfo.powerOfTen)).round();
+      if (_isEnumParameter(paramInfo)) {
+        if (value is String) {
+          // Convert enum string to index
+          final enumValues = await _getParameterEnumValues(slotIndex, targetParameterNumber);
+          if (enumValues == null) {
+            return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+                'Could not retrieve enum values for parameter ${paramInfo.name}')));
+          }
+          
+          final enumIndex = _enumStringToIndex(enumValues, value);
+          if (enumIndex == null) {
+            return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+                'Invalid enum value "$value" for parameter ${paramInfo.name}. Valid values: ${enumValues.join(", ")}')));
+          }
+          rawValue = enumIndex;
+        } else if (value is num) {
+          // Use numeric value directly
+          rawValue = value.round();
+        } else {
+          return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+              'Enum parameter ${paramInfo.name} requires either a string enum value or numeric index')));
+        }
       } else {
-        rawValue =
-            displayValue!.round(); // Round even if no powerOfTen, to ensure int
+        // Handle non-enum parameters as before
+        if (value is! num) {
+          return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+              'Non-enum parameter ${paramInfo.name} requires a numeric value')));
+        }
+        
+        if (paramInfo.powerOfTen > 0) {
+          rawValue = (value * pow(10, paramInfo.powerOfTen)).round();
+        } else {
+          rawValue = value.round();
+        }
       }
 
       if (rawValue < paramInfo.min || rawValue > paramInfo.max) {
@@ -238,14 +321,14 @@ class DistingTools {
         final effectiveMax =
             _scaleForDisplay(paramInfo.max, paramInfo.powerOfTen);
         return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
-            'Provided value $displayValue (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).')));
+            'Provided value $value (scaled to $rawValue) is out of range for parameter ${paramInfo.name} (effective range: $effectiveMin to $effectiveMax, raw range: ${paramInfo.min} to ${paramInfo.max}).')));
       }
 
       await _controller.updateParameterValue(
           slotIndex, targetParameterNumber, rawValue);
 
       return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
-          'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $displayValue.')));
+          'Parameter ${paramInfo.name} (number $targetParameterNumber) in slot $slotIndex set to $value.')));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -293,14 +376,27 @@ class DistingTools {
       }
       final ParameterInfo paramInfo = paramInfos[parameterNumber];
 
+      final responseData = {
+        'slot_index': slotIndex,
+        'parameter_number': parameterNumber,
+        'parameter_name': paramInfo.name,
+        'value': _scaleForDisplay(
+            liveRawValue, paramInfo.powerOfTen), // Scaled value
+      };
+      
+      // Add enum metadata if applicable
+      if (_isEnumParameter(paramInfo)) {
+        final enumValues = await _getParameterEnumValues(slotIndex, parameterNumber);
+        if (enumValues != null) {
+          responseData['is_enum'] = true;
+          responseData['enum_values'] = enumValues;
+          responseData['enum_value'] = _enumIndexToString(enumValues, liveRawValue) ?? '';
+        }
+      }
+      
       return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
           'Parameter value retrieved successfully',
-          data: {
-            'slot_index': slotIndex,
-            'parameter_number': parameterNumber,
-            'value': _scaleForDisplay(
-                liveRawValue, paramInfo.powerOfTen), // Scaled value
-          })));
+          data: responseData)));
     } catch (e) {
       return jsonEncode(
           convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
@@ -888,7 +984,7 @@ class DistingTools {
         }
 
         final paramMap = param;
-        final num? value = paramMap['value'] as num?;
+        final dynamic value = paramMap['value'];  // Can be num or String for enums
         final int? parameterNumber = paramMap['parameter_number'] as int?;
         final String? parameterName = paramMap['parameter_name'] as String?;
 
@@ -1202,6 +1298,88 @@ class DistingTools {
     } catch (e) {
       return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
           'Error building preset from JSON: ${e.toString()}')));
+    }
+  }
+
+  /// MCP Tool: Gets available enum values for an enum parameter
+  /// Parameters:
+  ///   - slot_index (int, required): The 0-based index of the slot
+  ///   - parameter_number (int, optional): The parameter number
+  ///   - parameter_name (String, optional): The parameter name
+  /// Returns:
+  ///   A JSON string with enum values or an error
+  Future<String> getParameterEnumValues(Map<String, dynamic> params) async {
+    final int? slotIndex = params['slot_index'] as int?;
+    final int? parameterNumber = params['parameter_number'] as int?;
+    final String? parameterName = params['parameter_name'] as String?;
+    
+    // Validate slot index
+    final slotError = MCPUtils.validateSlotIndex(slotIndex);
+    if (slotError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(slotError));
+    }
+    
+    // Validate exactly one of parameter_number or parameter_name
+    final paramError = MCPUtils.validateExactlyOne(
+        params, ['parameter_number', 'parameter_name']);
+    if (paramError != null) {
+      return jsonEncode(convertToSnakeCaseKeys(paramError));
+    }
+    
+    try {
+      // Get parameter info to validate it's an enum
+      final List<ParameterInfo> paramInfos = 
+          await _controller.getParametersForSlot(slotIndex!);
+      
+      // Find target parameter
+      int? targetParamNumber;
+      ParameterInfo? paramInfo;
+      
+      if (parameterNumber != null) {
+        if (parameterNumber >= 0 && parameterNumber < paramInfos.length) {
+          targetParamNumber = parameterNumber;
+          paramInfo = paramInfos[parameterNumber];
+        }
+      } else if (parameterName != null) {
+        // Find by name
+        for (int i = 0; i < paramInfos.length; i++) {
+          if (paramInfos[i].name.toLowerCase() == parameterName.toLowerCase()) {
+            targetParamNumber = i;
+            paramInfo = paramInfos[i];
+            break;
+          }
+        }
+      }
+      
+      if (paramInfo == null || targetParamNumber == null) {
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Parameter not found in slot $slotIndex')));
+      }
+      
+      if (!_isEnumParameter(paramInfo)) {
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Parameter ${paramInfo.name} is not an enum type')));
+      }
+      
+      final enumValues = await _getParameterEnumValues(slotIndex, targetParamNumber);
+      
+      if (enumValues == null || enumValues.isEmpty) {
+        return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
+            'Could not retrieve enum values for parameter ${paramInfo.name}')));
+      }
+      
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildSuccess(
+          'Enum values retrieved successfully',
+          data: {
+            'slot_index': slotIndex,
+            'parameter_number': targetParamNumber,
+            'parameter_name': paramInfo.name,
+            'enum_values': enumValues,
+            'current_value_index': await _controller.getParameterValue(
+                slotIndex, targetParamNumber),
+          })));
+    } catch (e) {
+      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(e.toString())));
     }
   }
 

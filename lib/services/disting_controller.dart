@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo;
+    show Algorithm, ParameterInfo, ParameterEnumStrings;
 import 'package:nt_helper/models/cpu_usage.dart';
 
 /// Abstract interface defining operations to control the Disting state,
@@ -113,4 +113,11 @@ abstract class DistingController {
   /// Returns null if the usage cannot be fetched (e.g., device not connected, MIDI error).
   /// Throws StateError if the Disting is not in a synchronized state.
   Future<CpuUsage?> getCpuUsage();
+
+  /// Get enum strings for a parameter if it's an enum type
+  /// Returns null if the parameter is not an enum or if the slot/parameter is invalid.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index or parameterNumber is invalid.
+  Future<ParameterEnumStrings?> getParameterEnumStrings(
+      int slotIndex, int parameterNumber);
 }
