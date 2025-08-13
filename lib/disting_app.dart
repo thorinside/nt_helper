@@ -9,12 +9,10 @@ import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/ui/sd_card_scanner/sd_card_scanner_page.dart';
 
 class DistingApp extends StatefulWidget {
   const DistingApp({super.key});
 
-  static const String sdCardScannerRoute = '/sd-card-scanner';
 
   @override
   State<DistingApp> createState() => _DistingAppState();
@@ -104,7 +102,6 @@ class _DistingAppState extends State<DistingApp> {
               },
               child: Material(child: DistingPage()),
             ),
-        DistingApp.sdCardScannerRoute: (context) => const SdCardScannerPage(),
       },
     );
   }

@@ -400,6 +400,7 @@ class MCPUtils {
   static Map<String, dynamic> buildError(String message,
       {String? helpCommand}) {
     final error = <String, dynamic>{
+      'success': false,
       'error': message,
     };
     if (helpCommand != null) {
@@ -411,10 +412,14 @@ class MCPUtils {
   /// Builds standardized success response
   static Map<String, dynamic> buildSuccess(String message,
       {Map<String, dynamic>? data}) {
+    final result = <String, dynamic>{
+      'success': true,
+      'message': message,
+    };
     if (data != null) {
-      return data;
+      result.addAll(data);
     }
-    return <String, dynamic>{};
+    return result;
   }
 
   /// Calculates Levenshtein distance for fuzzy matching

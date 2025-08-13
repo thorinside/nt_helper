@@ -8,7 +8,6 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart'
 import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
-import 'package:nt_helper/disting_app.dart'; // Import DistingApp for the route name
 import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
 
 class MetadataSyncPage extends StatelessWidget {
@@ -178,32 +177,6 @@ class MetadataSyncPage extends StatelessWidget {
                                         .read<MetadataSyncCubit>()
                                         .saveCurrentPreset(currentManager)
                                     : null,
-                              );
-                            },
-                          ),
-                          // --- Scan SD Card Button ---
-                          BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                            builder: (metaCtx, metaState) {
-                              // Reuse busy logic or simplify if not dependent on metaState specifics
-                              final isMetaBusy =
-                                  metaState is! ViewingLocalData &&
-                                      metaState is! Idle &&
-                                      metaState is! Failure;
-                              final isDistingBusy = switch (distingState) {
-                                DistingStateSynchronized(loading: final l) => l,
-                                _ => false,
-                              };
-                              final isBusy = isMetaBusy || isDistingBusy;
-
-                              return IconButton(
-                                icon: const Icon(Icons.sd_storage_outlined),
-                                tooltip: 'Scan SD Card Presets',
-                                onPressed: isBusy
-                                    ? null
-                                    : () {
-                                        Navigator.pushNamed(context,
-                                            DistingApp.sdCardScannerRoute);
-                                      },
                               );
                             },
                           ),

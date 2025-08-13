@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/db/database.dart';
-import 'package:collection/collection.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/constants.dart';
@@ -46,10 +45,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   bool _isDragOver = false;
   bool _isInstallingPackage = false;
 
-  // New state for SD Cards and Presets
-  List<SdCardEntry> _scannedCards = [];
-  SdCardEntry? _selectedSdCard;
-  List<IndexedPresetFileEntry> _presetsForSelectedCard = [];
+  // State for live SD card presets
   String? _currentPresetSearchText;
   List<String> _liveSdCardPresets = [];
 
@@ -66,7 +62,6 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
   void initState() {
     super.initState();
     _controller.text = widget.initialName.trim();
-    _loadScannedCards(); // Always load local DB scanned cards
     _fetchLiveSdCardPresets(); // Always attempt to fetch live presets (will check firmware/online internally)
     _loadHistoryFromPrefs(); // Load history for autocomplete
   }
@@ -99,43 +94,6 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     }
   }
 
-  Future<void> _loadScannedCards() async {
-    final cards = await widget.db.sdCardsDao.getAllSdCards();
-    if (mounted) {
-      setState(() {
-        _scannedCards = cards;
-        if (_scannedCards.isNotEmpty) {
-          _selectedSdCard = _scannedCards.first;
-          _loadPresetsForCard(_selectedSdCard!);
-        } else {
-          _selectedSdCard = null;
-          _presetsForSelectedCard = [];
-        }
-      });
-    }
-  }
-
-  Future<void> _loadPresetsForCard(SdCardEntry? card) async {
-    if (card == null) {
-      if (mounted) {
-        setState(() {
-          _presetsForSelectedCard = [];
-          _selectedSdCard = null;
-          _controller.clear(); // Clear preset name when card is unselected
-        });
-      }
-      return;
-    }
-    final presets = await widget.db.indexedPresetFilesDao
-        .getIndexedPresetFilesBySdCardId(card.id);
-    if (mounted) {
-      setState(() {
-        _selectedSdCard = card;
-        _presetsForSelectedCard = presets;
-        _controller.clear(); // Clear preset name when card changes
-      });
-    }
-  }
 
   /// Loads the preset names from SharedPreferences.
   Future<void> _loadHistoryFromPrefs() async {
@@ -202,72 +160,42 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       final trimmed = _controller.text.trim();
       if (trimmed.isEmpty) return;
 
-      // Attempt 1: Match on Live SD Card Scan (if enabled and data available)
-      if (_useLiveSdScan) {
-        // Check against _liveSdCardPresets
-        if (_liveSdCardPresets.contains(trimmed)) {
-          await _addNameToHistory(trimmed);
-          if (!mounted) return; // Add mounted check
-          Navigator.of(context).pop({
-            "sdCardPath": trimmed,
-            "action": action,
-            "displayName": trimmed.split('/').last
-          });
-          return;
-        }
+      // Check for firmware version support
+      final firmwareVersion = widget.distingCubit.state;
+      if (firmwareVersion is! DistingStateSynchronized ||
+          !FirmwareVersion(firmwareVersion.distingVersion).hasSdCardSupport) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Preset loading requires firmware 1.10+ and device connection'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
       }
 
-      // Attempt 2: Match on Currently Selected SD Card (from local DB)
-      if (_selectedSdCard != null) {
-        final presetOnCurrentCard = _presetsForSelectedCard.firstWhereOrNull(
-            (p) => _getDisplayPath(p) == trimmed || p.fileName == trimmed);
-        if (presetOnCurrentCard != null) {
-          String pathForEngine = "/${presetOnCurrentCard.relativePath}";
-          await _addNameToHistory(trimmed);
-          if (!mounted) return; // Add mounted check
-          Navigator.of(context).pop({
-            "sdCardPath": pathForEngine,
-            "action": action,
-            "displayName": trimmed
-          });
-          return;
-        }
-      }
-
-      // Attempt 3: Resolve History Item or General Text Input Across All SD Cards (from local DB)
-      bool isKnownHistoryItem = _history.contains(trimmed);
-
-      for (final cardEntry in _scannedCards) {
-        List<IndexedPresetFileEntry> presetsOnThisCard;
-        if (_selectedSdCard != null && cardEntry.id == _selectedSdCard!.id) {
-          presetsOnThisCard = _presetsForSelectedCard;
-        } else {
-          presetsOnThisCard = await widget.db.indexedPresetFilesDao
-              .getIndexedPresetFilesBySdCardId(cardEntry.id);
-        }
-
-        final matchedPreset = presetsOnThisCard.firstWhereOrNull((p) {
-          if (isKnownHistoryItem && p.fileName == trimmed) {
-            return true;
-          }
-          return _getDisplayPath(p) == trimmed || p.fileName == trimmed;
+      // Use Live SD Card Scan only (firmware 1.10+ with SysEx directory listing)
+      if (_useLiveSdScan && _liveSdCardPresets.contains(trimmed)) {
+        await _addNameToHistory(trimmed);
+        if (!mounted) return; // Add mounted check
+        Navigator.of(context).pop({
+          "sdCardPath": trimmed,
+          "action": action,
+          "displayName": trimmed.split('/').last
         });
-
-        if (matchedPreset != null) {
-          String pathForEngine = "/${matchedPreset.relativePath}";
-          await _addNameToHistory(trimmed);
-          if (!mounted) return; // Add mounted check
-          Navigator.of(context).pop({
-            "sdCardPath": pathForEngine,
-            "action": action,
-            "displayName": trimmed
-          });
-          return;
-        }
+        return;
       }
 
-      debugPrint(
-          "'$trimmed' could not be resolved to a full path on any scanned SD card.");
+      // If not found in live presets, show appropriate message
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              "'$trimmed' not found in current SD card directory. Please verify the preset exists."),
+          backgroundColor: Colors.orange,
+        ),
+      );
     } finally {
       setState(() {
         _isLoading = false; // Always set loading to false
@@ -275,36 +203,16 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     }
   }
 
-  String _getDisplayPath(IndexedPresetFileEntry preset) {
-    if (preset.relativePath.isEmpty) {
-      return preset
-          .fileName; // Should not happen if relativePath includes filename
-    }
-    final segments = preset.relativePath.split('/');
-    if (segments.length > 2) {
-      // Takes the last folder and the filename
-      return "${segments[segments.length - 2]}/${segments.last}";
-    } else {
-      // It's just a filename, or in the root of 'presets'
-      return preset.relativePath;
-    }
-  }
-
   // Helper to get the display string for an option, used by optionsBuilder and for sorting.
-  String _getDisplayStringForOption(Object option) {
-    if (option is IndexedPresetFileEntry) {
-      return _getDisplayPath(option);
-    } else if (option is String) {
-      // Heuristic: If it looks like a file path (contains / and ends with .json),
-      // treat it as a live SD preset path and show only the filename.
-      // Otherwise, assume it's a history item and prefix it.
-      if (option.contains('/') && option.toLowerCase().endsWith('.json')) {
-        return option.split('/').last;
-      } else {
-        return "Recent: $option";
-      }
+  String _getDisplayStringForOption(String option) {
+    // Heuristic: If it looks like a file path (contains / and ends with .json),
+    // treat it as a live SD preset path and show only the filename.
+    // Otherwise, assume it's a history item and prefix it.
+    if (option.contains('/') && option.toLowerCase().endsWith('.json')) {
+      return option.split('/').last;
+    } else {
+      return "Recent: $option";
     }
-    return '';
   }
 
   @override
@@ -377,32 +285,19 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (!_useLiveSdScan && _scannedCards.isNotEmpty)
-          DropdownButtonFormField<SdCardEntry>(
-            decoration: InputDecoration(
-              labelText: 'Select SD Card',
-              border: OutlineInputBorder(),
-            ),
-            value: _selectedSdCard,
-            hint: Text('Select an SD Card'),
-            isExpanded: true,
-            items: _scannedCards.map((SdCardEntry card) {
-              return DropdownMenuItem<SdCardEntry>(
-                value: card,
-                child: Text(card.systemIdentifier ?? card.userLabel),
-              );
-            }).toList(),
-            onChanged: (SdCardEntry? newValue) {
-              _loadPresetsForCard(newValue);
-            },
-          ),
-        if (!_useLiveSdScan && _scannedCards.isEmpty)
+        if (!_useLiveSdScan)
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text('No SD cards scanned yet. Please scan a card first.'),
+            child: Text(
+              'Preset loading requires firmware 1.10+ and device connection for live SD card scanning.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.orange,
+                  ),
+              textAlign: TextAlign.center,
+            ),
           ),
         SizedBox(height: 16),
-        Autocomplete<Object>(
+        Autocomplete<String>(
           initialValue: TextEditingValue(text: _controller.text),
           fieldViewBuilder:
               (context, textEditingController, focusNode, onFieldSubmitted) {
@@ -433,8 +328,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           },
           optionsMaxHeight: 200,
           optionsViewBuilder: (context,
-              AutocompleteOnSelected<Object> onSelected,
-              Iterable<Object> options) {
+              AutocompleteOnSelected<String> onSelected,
+              Iterable<String> options) {
             return Align(
               alignment: Alignment.topLeft,
               child: Material(
@@ -446,7 +341,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
                     shrinkWrap: true,
                     itemCount: options.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final Object option = options.elementAt(index);
+                      final String option = options.elementAt(index);
                       // Use the helper for display text
                       String displayText = _getDisplayStringForOption(option);
                       return InkWell(
@@ -465,96 +360,42 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               ),
             );
           },
-          onSelected: (Object selection) {
-            String textToSet;
-            if (selection is IndexedPresetFileEntry) {
-              textToSet = _getDisplayPath(selection);
-            } else if (selection is String) {
-              // If it's a string, it could be a history item or a live SD path.
-              // For live SD paths, we want the full path, not just the filename.
-              // For history, it's just the name.
-              if (selection.contains('/') &&
-                  selection.toLowerCase().endsWith('.json')) {
-                textToSet = selection;
-              } else {
-                textToSet = selection;
-              }
-            } else {
-              textToSet = '';
-            }
+          onSelected: (String selection) {
             setState(() {
-              _controller.text = textToSet;
-              _currentPresetSearchText = textToSet;
+              _controller.text = selection;
+              _currentPresetSearchText = selection;
             });
           },
           optionsBuilder: (TextEditingValue textEditingValue) {
             _currentPresetSearchText = textEditingValue.text;
             final searchTextLower = textEditingValue.text.toLowerCase();
-            final Set<String> uniqueDisplayTexts =
-                {}; // To prevent duplicates based on display text
-            final List<Object> allPotentialOptions = [];
+            final List<String> suggestions = [];
 
             // Add history items
             for (final historyItem in _history) {
-              allPotentialOptions.add(historyItem);
+              if (searchTextLower.isEmpty ||
+                  historyItem.toLowerCase().contains(searchTextLower)) {
+                suggestions.add(historyItem);
+              }
             }
 
             // Add live SD card presets (if enabled)
             if (_useLiveSdScan) {
               for (final path in _liveSdCardPresets) {
-                allPotentialOptions.add(path);
-              }
-            }
-
-            // Add presets from selected card (from local DB)
-            if (_selectedSdCard != null) {
-              for (final preset in _presetsForSelectedCard) {
-                allPotentialOptions.add(preset);
-              }
-            }
-
-            // Filter and de-duplicate
-            final List<Object> filteredAndUniqueOptions = [];
-            for (final option in allPotentialOptions) {
-              final displayString = _getDisplayStringForOption(option);
-              if (searchTextLower.isEmpty ||
-                  displayString.toLowerCase().contains(searchTextLower)) {
-                // For IndexedPresetFileEntry, also check other fields for a more comprehensive match
-                if (option is IndexedPresetFileEntry) {
-                  final searchText = textEditingValue.text.toLowerCase();
-                  final displayPath = _getDisplayPath(option).toLowerCase();
-                  final matchConditions = (displayPath.contains(searchText) ||
-                      option.fileName.toLowerCase().contains(searchText) ||
-                      option.relativePath.toLowerCase().contains(searchText) ||
-                      (option.algorithmNameFromPreset?.isNotEmpty == true &&
-                          option.algorithmNameFromPreset!
-                              .toLowerCase()
-                              .contains(searchText)) ||
-                      (option.notesFromPreset?.isNotEmpty == true &&
-                          option.notesFromPreset!
-                              .toLowerCase()
-                              .contains(searchText)));
-                  if (!matchConditions && searchTextLower.isNotEmpty) {
-                    continue; // Skip if it doesn't match additional criteria and search text is not empty
-                  }
-                }
-
-                if (uniqueDisplayTexts.add(displayString)) {
-                  filteredAndUniqueOptions.add(option);
+                if (searchTextLower.isEmpty ||
+                    path.toLowerCase().contains(searchTextLower)) {
+                  suggestions.add(path);
                 }
               }
             }
 
-            // Sort the final combined options by their display string
-            filteredAndUniqueOptions.sort((a, b) {
-              final String displayA = _getDisplayStringForOption(a);
-              final String displayB = _getDisplayStringForOption(b);
-              return displayA.toLowerCase().compareTo(displayB.toLowerCase());
-            });
+            // Remove duplicates and sort
+            final uniqueSuggestions = suggestions.toSet().toList();
+            uniqueSuggestions.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-            return filteredAndUniqueOptions;
+            return uniqueSuggestions.take(20).toList();
           },
-          displayStringForOption: (Object option) {
+          displayStringForOption: (String option) {
             return _getDisplayStringForOption(option);
           },
         ),
@@ -608,9 +449,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         Builder(
           builder: (context) {
             final bool canEnableButtons = !_isLoading &&
-                (_useLiveSdScan ||
-                    (_selectedSdCard != null &&
-                        _controller.text.trim().isNotEmpty));
+                _useLiveSdScan &&
+                _controller.text.trim().isNotEmpty;
             return ElevatedButton(
               key: ValueKey('load_preset_dialog_export_button'),
               onPressed: canEnableButtons ? _onExport : null,
@@ -632,9 +472,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       Builder(
         builder: (context) {
           final bool canEnableButtons = !_isLoading &&
-              (_useLiveSdScan ||
-                  (_selectedSdCard != null &&
-                      _controller.text.trim().isNotEmpty));
+              _useLiveSdScan &&
+              _controller.text.trim().isNotEmpty;
           return ElevatedButton(
             key: ValueKey('load_preset_dialog_append_button'),
             onPressed: canEnableButtons ? _onAppend : null,
@@ -645,9 +484,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       Builder(
         builder: (context) {
           final bool canEnableButtons = !_isLoading &&
-              (_useLiveSdScan ||
-                  (_selectedSdCard != null &&
-                      _controller.text.trim().isNotEmpty));
+              _useLiveSdScan &&
+              _controller.text.trim().isNotEmpty;
           return ElevatedButton(
             key: ValueKey('load_preset_dialog_load_button'),
             onPressed: canEnableButtons ? _onLoad : null,
