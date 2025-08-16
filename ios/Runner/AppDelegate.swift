@@ -10,6 +10,7 @@ import Flutter
     GeneratedPluginRegistrant.register(with: self)
     // Register custom plugins
     IosFileAccessPlugin.register(with: self.registrar(forPlugin: "com.example.nt_helper/ios_file_access")!)
+    UsbVideoCapturePlugin.register(with: self.registrar(forPlugin: "com.example.nt_helper/usb_video")!)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }
