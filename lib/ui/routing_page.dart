@@ -1,9 +1,14 @@
 import 'dart:async'; // For Timer
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/ui/routing/routing_table_widget.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/ui/routing/node_routing_widget.dart';
+
+enum RoutingViewMode { table, node }
 
 class RoutingPage extends StatefulWidget {
   // Changed to StatefulWidget
@@ -20,6 +25,7 @@ class _RoutingPageState extends State<RoutingPage> {
   List<RoutingInformation> _routingInformation = [];
   bool _isRealtimeActive = false;
   Timer? _timer;
+  RoutingViewMode _viewMode = RoutingViewMode.table;
 
   @override
   void initState() {
@@ -74,12 +80,29 @@ class _RoutingPageState extends State<RoutingPage> {
     });
   }
 
+  void _toggleViewMode() {
+    setState(() {
+      _viewMode = _viewMode == RoutingViewMode.table 
+          ? RoutingViewMode.node 
+          : RoutingViewMode.table;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Routing Analysis'),
         actions: [
+          IconButton(
+            icon: Icon(
+              _viewMode == RoutingViewMode.table ? Icons.account_tree : Icons.table_chart,
+            ),
+            tooltip: _viewMode == RoutingViewMode.table 
+                ? 'Switch to Node View'
+                : 'Switch to Table View',
+            onPressed: _toggleViewMode,
+          ),
           IconButton(
             icon: Icon(
               _isRealtimeActive ? Icons.sync : Icons.sync_disabled,
@@ -96,17 +119,26 @@ class _RoutingPageState extends State<RoutingPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: RoutingTableWidget(
-                  routing: _routingInformation,
-                  showSignals: true,
-                  showMappings: false,
+          : _viewMode == RoutingViewMode.table
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: RoutingTableWidget(
+                      routing: _routingInformation,
+                      showSignals: true,
+                      showMappings: false,
+                    ),
+                  ),
+                )
+              : BlocProvider(
+                  create: (context) => NodeRoutingCubit(widget.cubit),
+                  child: NodeRoutingWidget(
+                    routing: _routingInformation,
+                    showSignals: true,
+                    showMappings: false,
+                  ),
                 ),
-              ),
-            ),
     );
   }
 }
