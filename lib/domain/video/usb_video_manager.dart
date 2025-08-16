@@ -7,7 +7,9 @@ import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/services/platform_channels/usb_video_channel.dart';
 
 class UsbVideoManager {
-  final UsbVideoChannel _channel = UsbVideoChannel();
+  final UsbVideoChannel _channel;
+  
+  UsbVideoManager({UsbVideoChannel? channel}) : _channel = channel ?? UsbVideoChannel();
   StreamController<VideoStreamState>? _stateController;
   Timer? _recoveryTimer;
   String? _lastConnectedDeviceId;
