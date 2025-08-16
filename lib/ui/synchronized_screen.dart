@@ -20,7 +20,8 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
         Mapping,
         ParameterValueString;
 
-import 'package:nt_helper/ui/widgets/floating_screenshot_overlay.dart';
+import 'package:nt_helper/ui/widgets/floating_video_overlay.dart';
+import 'package:nt_helper/cubit/video_frame_cubit.dart';
 import 'package:nt_helper/ui/widgets/load_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
@@ -655,7 +656,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 children: [Text('Routing'), Icon(Icons.route_rounded)],
               ),
             ),
-            // Screenshot: Disabled by loading OR offline
+            // Video: Disabled by loading OR offline
             PopupMenuItem(
               value: 'screenshot',
               enabled: !widget.loading && !isOffline,
@@ -667,8 +668,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               child: const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Screenshot'),
-                    Icon(Icons.screenshot_monitor_rounded),
+                    Text('Video'),
+                    Icon(Icons.videocam),
                   ]),
             ),
             // Perform: Disabled by loading OR offline
@@ -993,22 +994,26 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   void _showScreenshotOverlay(BuildContext context) {
+    debugPrint('[SynchronizedScreen] _showScreenshotOverlay called');
     final cubit = context.read<DistingCubit>();
+    
+    // Create a VideoFrameCubit for this overlay
+    final videoFrameCubit = VideoFrameCubit();
+    debugPrint('[SynchronizedScreen] Created VideoFrameCubit: $videoFrameCubit');
 
     late OverlayEntry overlayEntry;
 
     overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        bottom: kBottomNavigationBarHeight + 16,
-        right: 16,
-        child: FloatingScreenshotOverlay(
-          overlayEntry: overlayEntry,
-          cubit: cubit,
-        ),
+      builder: (context) => FloatingVideoOverlay(
+        overlayEntry: overlayEntry,
+        cubit: cubit,
+        videoFrameCubit: videoFrameCubit,
       ),
     );
 
+    debugPrint('[SynchronizedScreen] Inserting overlay entry');
     Overlay.of(context).insert(overlayEntry);
+    debugPrint('[SynchronizedScreen] Overlay entry inserted successfully');
   }
 
   Future<void> _handlePresetExport(

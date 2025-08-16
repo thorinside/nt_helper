@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for Clipboard
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/ui/widgets/draggable_resizable_overlay.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 class FloatingScreenshotOverlay extends StatefulWidget {
@@ -23,8 +23,6 @@ class FloatingScreenshotOverlay extends StatefulWidget {
 class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
   Timer? _updateTimer;
   Uint8List? _screenshot;
-  bool _isExpanded = false;
-
   @override
   void initState() {
     super.initState();
@@ -60,12 +58,6 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
     }
   }
 
-  void _toggleSize() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-    });
-  }
-
   Future<void> _copyToClipboard() async {
     if (_screenshot != null) {
       Pasteboard.writeImage(_screenshot);
@@ -77,57 +69,87 @@ class _FloatingScreenshotOverlayState extends State<FloatingScreenshotOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: GestureDetector(
-        onTap: _toggleSize,
-        child: Material(
-          elevation: 8,
+    return DraggableResizableOverlay(
+      overlayEntry: widget.overlayEntry,
+      child: _FloatingScreenshotContent(
+        cubit: widget.cubit,
+        overlayEntry: widget.overlayEntry,
+        screenshot: _screenshot,
+        onCopyToClipboard: _copyToClipboard,
+      ),
+    );
+  }
+}
+
+class _FloatingScreenshotContent extends StatelessWidget {
+  final DistingCubit cubit;
+  final OverlayEntry overlayEntry;
+  final Uint8List? screenshot;
+  final VoidCallback onCopyToClipboard;
+
+  const _FloatingScreenshotContent({
+    required this.cubit,
+    required this.overlayEntry,
+    required this.screenshot,
+    required this.onCopyToClipboard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
+          color: Theme.of(context).colorScheme.surface,
+        ),
+        child: Stack(
+          children: [
+            // Main screenshot content
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: screenshot != null
+                  ? GestureDetector(
+                      onLongPress: onCopyToClipboard,
+                      child: SizedBox.expand(
+                        child: Image.memory(
+                          screenshot!,
+                          fit: BoxFit.cover, // Fill the available space
+                          gaplessPlayback: true,
+                        ),
+                      ),
+                    )
+                  : const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+            ),
+            
+            // Controls positioned on the right side
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(6),
-                  ),
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  iconSize: 16,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 24,
+                  ),
                   onPressed: () {
-                    widget.overlayEntry.remove();
+                    overlayEntry.remove();
                   },
+                  tooltip: 'Close',
                 ),
               ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 100),
-                width: _isExpanded ? 384 : 256,
-                height: _isExpanded ? 112 : 75,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(5),
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  child: _screenshot != null
-                      ? GestureDetector(
-                          onLongPress: _copyToClipboard,
-                          child: Image.memory(
-                            _screenshot!,
-                            fit: BoxFit.fitHeight,
-                            gaplessPlayback: true,
-                          ),
-                        )
-                      : const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

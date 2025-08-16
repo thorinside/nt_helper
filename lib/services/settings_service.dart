@@ -29,6 +29,9 @@ class SettingsService {
   static const String _galleryUrlKey = 'gallery_url';
   static const String _includeCommunityPluginsKey =
       'include_community_plugins_in_presets';
+  static const String _overlayPositionXKey = 'overlay_position_x';
+  static const String _overlayPositionYKey = 'overlay_position_y';
+  static const String _overlaySizeScaleKey = 'overlay_size_scale';
 
   // Default values
   static const int defaultRequestTimeout = 1000;
@@ -39,6 +42,9 @@ class SettingsService {
   static const String defaultGalleryUrl =
       'https://nt-gallery.nosuch.dev/api/gallery.json';
   static const bool defaultIncludeCommunityPlugins = false;
+  static const double defaultOverlayPositionX = -1.0; // -1 means use default positioning
+  static const double defaultOverlayPositionY = -1.0; // -1 means use default positioning
+  static const double defaultOverlaySizeScale = 1.0;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -108,6 +114,33 @@ class SettingsService {
     return await _prefs?.setBool(_includeCommunityPluginsKey, value) ?? false;
   }
 
+  /// Get the overlay X position
+  double get overlayPositionX =>
+      _prefs?.getDouble(_overlayPositionXKey) ?? defaultOverlayPositionX;
+
+  /// Set the overlay X position
+  Future<bool> setOverlayPositionX(double value) async {
+    return await _prefs?.setDouble(_overlayPositionXKey, value) ?? false;
+  }
+
+  /// Get the overlay Y position
+  double get overlayPositionY =>
+      _prefs?.getDouble(_overlayPositionYKey) ?? defaultOverlayPositionY;
+
+  /// Set the overlay Y position
+  Future<bool> setOverlayPositionY(double value) async {
+    return await _prefs?.setDouble(_overlayPositionYKey, value) ?? false;
+  }
+
+  /// Get the overlay size scale
+  double get overlaySizeScale =>
+      _prefs?.getDouble(_overlaySizeScaleKey) ?? defaultOverlaySizeScale;
+
+  /// Set the overlay size scale
+  Future<bool> setOverlaySizeScale(double value) async {
+    return await _prefs?.setDouble(_overlaySizeScaleKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -117,6 +150,9 @@ class SettingsService {
     await setStartPagesCollapsed(defaultStartPagesCollapsed);
     await setGalleryUrl(defaultGalleryUrl);
     await setIncludeCommunityPlugins(defaultIncludeCommunityPlugins);
+    await setOverlayPositionX(defaultOverlayPositionX);
+    await setOverlayPositionY(defaultOverlayPositionY);
+    await setOverlaySizeScale(defaultOverlaySizeScale);
   }
 }
 
