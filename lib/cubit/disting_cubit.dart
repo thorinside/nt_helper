@@ -23,6 +23,8 @@ import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart'; // Add collection package import
+import 'package:nt_helper/domain/video/video_stream_state.dart';
+import 'package:nt_helper/domain/video/usb_video_manager.dart';
 
 part 'disting_cubit.freezed.dart';
 
@@ -90,10 +92,21 @@ class DistingCubit extends Cubit<DistingState> {
   // CPU Usage Streaming
   late final StreamController<CpuUsage> _cpuUsageController;
   Timer? _cpuUsageTimer;
+  StreamSubscription<VideoStreamState>? _videoStateSubscription;
   static const Duration _cpuUsagePollingInterval = Duration(seconds: 10);
 
   /// Stream of CPU usage updates that polls every 10 seconds when listeners are active
   Stream<CpuUsage> get cpuUsageStream => _cpuUsageController.stream;
+  
+  // Video Streaming
+  UsbVideoManager? _videoManager;
+  
+  /// Stream of video state updates from the cubit's state
+  Stream<VideoStreamState?> get videoStreamState => 
+      stream.map((state) => state.maybeWhen(
+        synchronized: (disting, distingVersion, firmwareVersion, presetName, algorithms, slots, unitStrings, inputDevice, outputDevice, loading, offline, screenshot, demo, videoStream) => videoStream,
+        orElse: () => null,
+      ));
 
   // Added: Store last known online connection details
   MidiDevice? _lastOnlineInputDevice;
@@ -110,6 +123,10 @@ class DistingCubit extends Cubit<DistingState> {
     // Dispose CPU usage streaming resources
     _cpuUsageTimer?.cancel();
     _cpuUsageController.close();
+    
+    // Dispose video streaming resources
+    _videoStateSubscription?.cancel();
+    _videoManager?.dispose();
 
     return super.close();
   }
@@ -2909,6 +2926,53 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  /// Starts the USB video stream from the Disting NT device
+  Future<void> startVideoStream() async {
+    debugPrint("[Cubit] startVideoStream called");
+    final currentState = state;
+    debugPrint("[Cubit] Current state type: ${currentState.runtimeType}");
+    if (currentState is! DistingStateSynchronized) {
+      debugPrint("[Cubit] Cannot start video stream: Not in synchronized state.");
+      return;
+    }
+    
+    debugPrint("[Cubit] Synchronized state confirmed, initializing video manager");
+    // Initialize video manager if not already created
+    _videoManager ??= UsbVideoManager();
+    await _videoManager!.initialize();
+    debugPrint("[Cubit] Video manager initialized");
+    
+    // Subscribe to video state changes and update cubit state
+    _videoStateSubscription?.cancel();
+    _videoStateSubscription = _videoManager!.stateStream.listen((videoState) {
+      if (state is DistingStateSynchronized) {
+        final syncState = state as DistingStateSynchronized;
+        emit(syncState.copyWith(videoStream: videoState));
+      }
+    });
+    
+    // Try to auto-connect to Disting NT or any available USB camera
+    await _videoManager!.autoConnect();
+  }
+  
+  /// Stops the USB video stream
+  Future<void> stopVideoStream() async {
+    _videoStateSubscription?.cancel();
+    _videoStateSubscription = null;
+    await _videoManager?.disconnect();
+    
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      emit(currentState.copyWith(videoStream: null));
+    }
+  }
+  
+  /// Gets the current video stream state
+  VideoStreamState? get currentVideoState => _videoManager?.currentState;
+  
+  /// Gets the video manager for direct stream access
+  UsbVideoManager? get videoManager => _videoManager;
+
   // CPU Usage Streaming
   void _startCpuUsagePolling() {
     debugPrint("[Cubit] Starting CPU usage polling...");
@@ -3390,6 +3454,7 @@ class DistingCubit extends Cubit<DistingState> {
       return null;
     }
   }
+
 }
 
 extension DistingCubitGetters on DistingCubit {

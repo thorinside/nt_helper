@@ -58,5 +58,6 @@ sealed class DistingState with _$DistingState {
     @Default(false) bool offline,
     @Default(null) Uint8List? screenshot,
     @Default(false) bool demo,
+    @Default(null) VideoStreamState? videoStream,
   }) = DistingStateSynchronized;
 }

@@ -19,6 +19,9 @@ class MainFlutterWindow: BitsdojoWindow, NSWindowDelegate { // Conforming to NSW
     self.title = ""  // Empty string
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    
+    // Register custom plugins
+    UsbVideoCapturePlugin.register(with: flutterViewController.registrar(forPlugin: "com.example.nt_helper.UsbVideoCapturePlugin"))
 
     // Initialize the MethodChannel
     let registrar = flutterViewController.registrar(forPlugin: "com.nt_helper.app.WindowStatePlugin")

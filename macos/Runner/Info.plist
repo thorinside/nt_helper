@@ -36,5 +36,7 @@
     <string>NO</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access so that you can select your SD Card root directory to index your presets in disk mode.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera to display the Disting NT screen via USB video capture.</string>
 </dict>
 </plist>

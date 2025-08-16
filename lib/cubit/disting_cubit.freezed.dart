@@ -723,13 +723,13 @@ return synchronized(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<MidiDevice> inputDevices,  List<MidiDevice> outputDevices,  bool canWorkOffline)?  selectDevice,TResult Function( IDistingMidiManager disting,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool offline,  bool loading)?  connected,TResult Function( IDistingMidiManager disting,  String distingVersion,  FirmwareVersion firmwareVersion,  String presetName,  List<AlgorithmInfo> algorithms,  List<Slot> slots,  List<String> unitStrings,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool loading,  bool offline,  Uint8List? screenshot,  bool demo)?  synchronized,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<MidiDevice> inputDevices,  List<MidiDevice> outputDevices,  bool canWorkOffline)?  selectDevice,TResult Function( IDistingMidiManager disting,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool offline,  bool loading)?  connected,TResult Function( IDistingMidiManager disting,  String distingVersion,  FirmwareVersion firmwareVersion,  String presetName,  List<AlgorithmInfo> algorithms,  List<Slot> slots,  List<String> unitStrings,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool loading,  bool offline,  Uint8List? screenshot,  bool demo,  VideoStreamState? videoStream)?  synchronized,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DistingStateInitial() when initial != null:
 return initial();case DistingStateSelectDevice() when selectDevice != null:
 return selectDevice(_that.inputDevices,_that.outputDevices,_that.canWorkOffline);case DistingStateConnected() when connected != null:
 return connected(_that.disting,_that.inputDevice,_that.outputDevice,_that.offline,_that.loading);case DistingStateSynchronized() when synchronized != null:
-return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_that.presetName,_that.algorithms,_that.slots,_that.unitStrings,_that.inputDevice,_that.outputDevice,_that.loading,_that.offline,_that.screenshot,_that.demo);case _:
+return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_that.presetName,_that.algorithms,_that.slots,_that.unitStrings,_that.inputDevice,_that.outputDevice,_that.loading,_that.offline,_that.screenshot,_that.demo,_that.videoStream);case _:
   return orElse();
 
 }
@@ -747,13 +747,13 @@ return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<MidiDevice> inputDevices,  List<MidiDevice> outputDevices,  bool canWorkOffline)  selectDevice,required TResult Function( IDistingMidiManager disting,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool offline,  bool loading)  connected,required TResult Function( IDistingMidiManager disting,  String distingVersion,  FirmwareVersion firmwareVersion,  String presetName,  List<AlgorithmInfo> algorithms,  List<Slot> slots,  List<String> unitStrings,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool loading,  bool offline,  Uint8List? screenshot,  bool demo)  synchronized,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<MidiDevice> inputDevices,  List<MidiDevice> outputDevices,  bool canWorkOffline)  selectDevice,required TResult Function( IDistingMidiManager disting,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool offline,  bool loading)  connected,required TResult Function( IDistingMidiManager disting,  String distingVersion,  FirmwareVersion firmwareVersion,  String presetName,  List<AlgorithmInfo> algorithms,  List<Slot> slots,  List<String> unitStrings,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool loading,  bool offline,  Uint8List? screenshot,  bool demo,  VideoStreamState? videoStream)  synchronized,}) {final _that = this;
 switch (_that) {
 case DistingStateInitial():
 return initial();case DistingStateSelectDevice():
 return selectDevice(_that.inputDevices,_that.outputDevices,_that.canWorkOffline);case DistingStateConnected():
 return connected(_that.disting,_that.inputDevice,_that.outputDevice,_that.offline,_that.loading);case DistingStateSynchronized():
-return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_that.presetName,_that.algorithms,_that.slots,_that.unitStrings,_that.inputDevice,_that.outputDevice,_that.loading,_that.offline,_that.screenshot,_that.demo);}
+return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_that.presetName,_that.algorithms,_that.slots,_that.unitStrings,_that.inputDevice,_that.outputDevice,_that.loading,_that.offline,_that.screenshot,_that.demo,_that.videoStream);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -767,13 +767,13 @@ return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<MidiDevice> inputDevices,  List<MidiDevice> outputDevices,  bool canWorkOffline)?  selectDevice,TResult? Function( IDistingMidiManager disting,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool offline,  bool loading)?  connected,TResult? Function( IDistingMidiManager disting,  String distingVersion,  FirmwareVersion firmwareVersion,  String presetName,  List<AlgorithmInfo> algorithms,  List<Slot> slots,  List<String> unitStrings,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool loading,  bool offline,  Uint8List? screenshot,  bool demo)?  synchronized,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<MidiDevice> inputDevices,  List<MidiDevice> outputDevices,  bool canWorkOffline)?  selectDevice,TResult? Function( IDistingMidiManager disting,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool offline,  bool loading)?  connected,TResult? Function( IDistingMidiManager disting,  String distingVersion,  FirmwareVersion firmwareVersion,  String presetName,  List<AlgorithmInfo> algorithms,  List<Slot> slots,  List<String> unitStrings,  MidiDevice? inputDevice,  MidiDevice? outputDevice,  bool loading,  bool offline,  Uint8List? screenshot,  bool demo,  VideoStreamState? videoStream)?  synchronized,}) {final _that = this;
 switch (_that) {
 case DistingStateInitial() when initial != null:
 return initial();case DistingStateSelectDevice() when selectDevice != null:
 return selectDevice(_that.inputDevices,_that.outputDevices,_that.canWorkOffline);case DistingStateConnected() when connected != null:
 return connected(_that.disting,_that.inputDevice,_that.outputDevice,_that.offline,_that.loading);case DistingStateSynchronized() when synchronized != null:
-return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_that.presetName,_that.algorithms,_that.slots,_that.unitStrings,_that.inputDevice,_that.outputDevice,_that.loading,_that.offline,_that.screenshot,_that.demo);case _:
+return synchronized(_that.disting,_that.distingVersion,_that.firmwareVersion,_that.presetName,_that.algorithms,_that.slots,_that.unitStrings,_that.inputDevice,_that.outputDevice,_that.loading,_that.offline,_that.screenshot,_that.demo,_that.videoStream);case _:
   return null;
 
 }
@@ -991,7 +991,7 @@ as bool,
 
 
 class DistingStateSynchronized with DiagnosticableTreeMixin implements DistingState {
-  const DistingStateSynchronized({required this.disting, required this.distingVersion, required this.firmwareVersion, required this.presetName, required final  List<AlgorithmInfo> algorithms, required final  List<Slot> slots, required final  List<String> unitStrings, this.inputDevice = null, this.outputDevice = null, this.loading = false, this.offline = false, this.screenshot = null, this.demo = false}): _algorithms = algorithms,_slots = slots,_unitStrings = unitStrings;
+  const DistingStateSynchronized({required this.disting, required this.distingVersion, required this.firmwareVersion, required this.presetName, required final  List<AlgorithmInfo> algorithms, required final  List<Slot> slots, required final  List<String> unitStrings, this.inputDevice = null, this.outputDevice = null, this.loading = false, this.offline = false, this.screenshot = null, this.demo = false, this.videoStream = null}): _algorithms = algorithms,_slots = slots,_unitStrings = unitStrings;
   
 
  final  IDistingMidiManager disting;
@@ -1025,6 +1025,7 @@ class DistingStateSynchronized with DiagnosticableTreeMixin implements DistingSt
 @JsonKey() final  bool offline;
 @JsonKey() final  Uint8List? screenshot;
 @JsonKey() final  bool demo;
+@JsonKey() final  VideoStreamState? videoStream;
 
 /// Create a copy of DistingState
 /// with the given fields replaced by the non-null parameter values.
@@ -1037,21 +1038,21 @@ $DistingStateSynchronizedCopyWith<DistingStateSynchronized> get copyWith => _$Di
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'DistingState.synchronized'))
-    ..add(DiagnosticsProperty('disting', disting))..add(DiagnosticsProperty('distingVersion', distingVersion))..add(DiagnosticsProperty('firmwareVersion', firmwareVersion))..add(DiagnosticsProperty('presetName', presetName))..add(DiagnosticsProperty('algorithms', algorithms))..add(DiagnosticsProperty('slots', slots))..add(DiagnosticsProperty('unitStrings', unitStrings))..add(DiagnosticsProperty('inputDevice', inputDevice))..add(DiagnosticsProperty('outputDevice', outputDevice))..add(DiagnosticsProperty('loading', loading))..add(DiagnosticsProperty('offline', offline))..add(DiagnosticsProperty('screenshot', screenshot))..add(DiagnosticsProperty('demo', demo));
+    ..add(DiagnosticsProperty('disting', disting))..add(DiagnosticsProperty('distingVersion', distingVersion))..add(DiagnosticsProperty('firmwareVersion', firmwareVersion))..add(DiagnosticsProperty('presetName', presetName))..add(DiagnosticsProperty('algorithms', algorithms))..add(DiagnosticsProperty('slots', slots))..add(DiagnosticsProperty('unitStrings', unitStrings))..add(DiagnosticsProperty('inputDevice', inputDevice))..add(DiagnosticsProperty('outputDevice', outputDevice))..add(DiagnosticsProperty('loading', loading))..add(DiagnosticsProperty('offline', offline))..add(DiagnosticsProperty('screenshot', screenshot))..add(DiagnosticsProperty('demo', demo))..add(DiagnosticsProperty('videoStream', videoStream));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DistingStateSynchronized&&(identical(other.disting, disting) || other.disting == disting)&&(identical(other.distingVersion, distingVersion) || other.distingVersion == distingVersion)&&(identical(other.firmwareVersion, firmwareVersion) || other.firmwareVersion == firmwareVersion)&&(identical(other.presetName, presetName) || other.presetName == presetName)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._slots, _slots)&&const DeepCollectionEquality().equals(other._unitStrings, _unitStrings)&&(identical(other.inputDevice, inputDevice) || other.inputDevice == inputDevice)&&(identical(other.outputDevice, outputDevice) || other.outputDevice == outputDevice)&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.offline, offline) || other.offline == offline)&&const DeepCollectionEquality().equals(other.screenshot, screenshot)&&(identical(other.demo, demo) || other.demo == demo));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DistingStateSynchronized&&(identical(other.disting, disting) || other.disting == disting)&&(identical(other.distingVersion, distingVersion) || other.distingVersion == distingVersion)&&(identical(other.firmwareVersion, firmwareVersion) || other.firmwareVersion == firmwareVersion)&&(identical(other.presetName, presetName) || other.presetName == presetName)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._slots, _slots)&&const DeepCollectionEquality().equals(other._unitStrings, _unitStrings)&&(identical(other.inputDevice, inputDevice) || other.inputDevice == inputDevice)&&(identical(other.outputDevice, outputDevice) || other.outputDevice == outputDevice)&&(identical(other.loading, loading) || other.loading == loading)&&(identical(other.offline, offline) || other.offline == offline)&&const DeepCollectionEquality().equals(other.screenshot, screenshot)&&(identical(other.demo, demo) || other.demo == demo)&&(identical(other.videoStream, videoStream) || other.videoStream == videoStream));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,disting,distingVersion,firmwareVersion,presetName,const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_slots),const DeepCollectionEquality().hash(_unitStrings),inputDevice,outputDevice,loading,offline,const DeepCollectionEquality().hash(screenshot),demo);
+int get hashCode => Object.hash(runtimeType,disting,distingVersion,firmwareVersion,presetName,const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_slots),const DeepCollectionEquality().hash(_unitStrings),inputDevice,outputDevice,loading,offline,const DeepCollectionEquality().hash(screenshot),demo,videoStream);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, firmwareVersion: $firmwareVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, loading: $loading, offline: $offline, screenshot: $screenshot, demo: $demo)';
+  return 'DistingState.synchronized(disting: $disting, distingVersion: $distingVersion, firmwareVersion: $firmwareVersion, presetName: $presetName, algorithms: $algorithms, slots: $slots, unitStrings: $unitStrings, inputDevice: $inputDevice, outputDevice: $outputDevice, loading: $loading, offline: $offline, screenshot: $screenshot, demo: $demo, videoStream: $videoStream)';
 }
 
 
@@ -1062,11 +1063,11 @@ abstract mixin class $DistingStateSynchronizedCopyWith<$Res> implements $Disting
   factory $DistingStateSynchronizedCopyWith(DistingStateSynchronized value, $Res Function(DistingStateSynchronized) _then) = _$DistingStateSynchronizedCopyWithImpl;
 @useResult
 $Res call({
- IDistingMidiManager disting, String distingVersion, FirmwareVersion firmwareVersion, String presetName, List<AlgorithmInfo> algorithms, List<Slot> slots, List<String> unitStrings, MidiDevice? inputDevice, MidiDevice? outputDevice, bool loading, bool offline, Uint8List? screenshot, bool demo
+ IDistingMidiManager disting, String distingVersion, FirmwareVersion firmwareVersion, String presetName, List<AlgorithmInfo> algorithms, List<Slot> slots, List<String> unitStrings, MidiDevice? inputDevice, MidiDevice? outputDevice, bool loading, bool offline, Uint8List? screenshot, bool demo, VideoStreamState? videoStream
 });
 
 
-
+$VideoStreamStateCopyWith<$Res>? get videoStream;
 
 }
 /// @nodoc
@@ -1079,7 +1080,7 @@ class _$DistingStateSynchronizedCopyWithImpl<$Res>
 
 /// Create a copy of DistingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? disting = null,Object? distingVersion = null,Object? firmwareVersion = null,Object? presetName = null,Object? algorithms = null,Object? slots = null,Object? unitStrings = null,Object? inputDevice = freezed,Object? outputDevice = freezed,Object? loading = null,Object? offline = null,Object? screenshot = freezed,Object? demo = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? disting = null,Object? distingVersion = null,Object? firmwareVersion = null,Object? presetName = null,Object? algorithms = null,Object? slots = null,Object? unitStrings = null,Object? inputDevice = freezed,Object? outputDevice = freezed,Object? loading = null,Object? offline = null,Object? screenshot = freezed,Object? demo = null,Object? videoStream = freezed,}) {
   return _then(DistingStateSynchronized(
 disting: null == disting ? _self.disting : disting // ignore: cast_nullable_to_non_nullable
 as IDistingMidiManager,distingVersion: null == distingVersion ? _self.distingVersion : distingVersion // ignore: cast_nullable_to_non_nullable
@@ -1094,11 +1095,24 @@ as MidiDevice?,loading: null == loading ? _self.loading : loading // ignore: cas
 as bool,offline: null == offline ? _self.offline : offline // ignore: cast_nullable_to_non_nullable
 as bool,screenshot: freezed == screenshot ? _self.screenshot : screenshot // ignore: cast_nullable_to_non_nullable
 as Uint8List?,demo: null == demo ? _self.demo : demo // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,videoStream: freezed == videoStream ? _self.videoStream : videoStream // ignore: cast_nullable_to_non_nullable
+as VideoStreamState?,
   ));
 }
 
+/// Create a copy of DistingState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$VideoStreamStateCopyWith<$Res>? get videoStream {
+    if (_self.videoStream == null) {
+    return null;
+  }
 
+  return $VideoStreamStateCopyWith<$Res>(_self.videoStream!, (value) {
+    return _then(_self.copyWith(videoStream: value));
+  });
+}
 }
 
 // dart format on
