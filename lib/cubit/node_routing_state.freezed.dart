@@ -125,12 +125,12 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( Map<int, NodePosition> nodePositions,  List<Connection> connections,  Map<int, PortLayout> portLayouts,  Set<String> connectedPorts,  Map<int, String> algorithmNames,  Map<String, Offset> portPositions,  ConnectionPreview? connectionPreview,  String? hoveredConnectionId,  Set<int>? selectedNodes,  Map<String, bool>? portHoverStates,  String? errorMessage, @Deprecated('Use portLayouts instead')  Map<int, List<AlgorithmPort>>? algorithmPorts)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( Map<int, NodePosition> nodePositions,  List<Connection> connections,  Map<int, PortLayout> portLayouts,  Set<String> connectedPorts,  Map<int, String> algorithmNames,  Map<String, Offset> portPositions,  bool hasUserRepositioned,  ConnectionPreview? connectionPreview,  String? hoveredConnectionId,  Set<int>? selectedNodes,  Map<String, bool>? portHoverStates,  String? errorMessage, @Deprecated('Use portLayouts instead')  Map<int, List<AlgorithmPort>>? algorithmPorts)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NodeRoutingStateInitial() when initial != null:
 return initial();case NodeRoutingStateLoading() when loading != null:
 return loading();case NodeRoutingStateLoaded() when loaded != null:
-return loaded(_that.nodePositions,_that.connections,_that.portLayouts,_that.connectedPorts,_that.algorithmNames,_that.portPositions,_that.connectionPreview,_that.hoveredConnectionId,_that.selectedNodes,_that.portHoverStates,_that.errorMessage,_that.algorithmPorts);case NodeRoutingStateError() when error != null:
+return loaded(_that.nodePositions,_that.connections,_that.portLayouts,_that.connectedPorts,_that.algorithmNames,_that.portPositions,_that.hasUserRepositioned,_that.connectionPreview,_that.hoveredConnectionId,_that.selectedNodes,_that.portHoverStates,_that.errorMessage,_that.algorithmPorts);case NodeRoutingStateError() when error != null:
 return error(_that.message);case _:
   return orElse();
 
@@ -149,12 +149,12 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( Map<int, NodePosition> nodePositions,  List<Connection> connections,  Map<int, PortLayout> portLayouts,  Set<String> connectedPorts,  Map<int, String> algorithmNames,  Map<String, Offset> portPositions,  ConnectionPreview? connectionPreview,  String? hoveredConnectionId,  Set<int>? selectedNodes,  Map<String, bool>? portHoverStates,  String? errorMessage, @Deprecated('Use portLayouts instead')  Map<int, List<AlgorithmPort>>? algorithmPorts)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( Map<int, NodePosition> nodePositions,  List<Connection> connections,  Map<int, PortLayout> portLayouts,  Set<String> connectedPorts,  Map<int, String> algorithmNames,  Map<String, Offset> portPositions,  bool hasUserRepositioned,  ConnectionPreview? connectionPreview,  String? hoveredConnectionId,  Set<int>? selectedNodes,  Map<String, bool>? portHoverStates,  String? errorMessage, @Deprecated('Use portLayouts instead')  Map<int, List<AlgorithmPort>>? algorithmPorts)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case NodeRoutingStateInitial():
 return initial();case NodeRoutingStateLoading():
 return loading();case NodeRoutingStateLoaded():
-return loaded(_that.nodePositions,_that.connections,_that.portLayouts,_that.connectedPorts,_that.algorithmNames,_that.portPositions,_that.connectionPreview,_that.hoveredConnectionId,_that.selectedNodes,_that.portHoverStates,_that.errorMessage,_that.algorithmPorts);case NodeRoutingStateError():
+return loaded(_that.nodePositions,_that.connections,_that.portLayouts,_that.connectedPorts,_that.algorithmNames,_that.portPositions,_that.hasUserRepositioned,_that.connectionPreview,_that.hoveredConnectionId,_that.selectedNodes,_that.portHoverStates,_that.errorMessage,_that.algorithmPorts);case NodeRoutingStateError():
 return error(_that.message);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -169,12 +169,12 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( Map<int, NodePosition> nodePositions,  List<Connection> connections,  Map<int, PortLayout> portLayouts,  Set<String> connectedPorts,  Map<int, String> algorithmNames,  Map<String, Offset> portPositions,  ConnectionPreview? connectionPreview,  String? hoveredConnectionId,  Set<int>? selectedNodes,  Map<String, bool>? portHoverStates,  String? errorMessage, @Deprecated('Use portLayouts instead')  Map<int, List<AlgorithmPort>>? algorithmPorts)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( Map<int, NodePosition> nodePositions,  List<Connection> connections,  Map<int, PortLayout> portLayouts,  Set<String> connectedPorts,  Map<int, String> algorithmNames,  Map<String, Offset> portPositions,  bool hasUserRepositioned,  ConnectionPreview? connectionPreview,  String? hoveredConnectionId,  Set<int>? selectedNodes,  Map<String, bool>? portHoverStates,  String? errorMessage, @Deprecated('Use portLayouts instead')  Map<int, List<AlgorithmPort>>? algorithmPorts)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case NodeRoutingStateInitial() when initial != null:
 return initial();case NodeRoutingStateLoading() when loading != null:
 return loading();case NodeRoutingStateLoaded() when loaded != null:
-return loaded(_that.nodePositions,_that.connections,_that.portLayouts,_that.connectedPorts,_that.algorithmNames,_that.portPositions,_that.connectionPreview,_that.hoveredConnectionId,_that.selectedNodes,_that.portHoverStates,_that.errorMessage,_that.algorithmPorts);case NodeRoutingStateError() when error != null:
+return loaded(_that.nodePositions,_that.connections,_that.portLayouts,_that.connectedPorts,_that.algorithmNames,_that.portPositions,_that.hasUserRepositioned,_that.connectionPreview,_that.hoveredConnectionId,_that.selectedNodes,_that.portHoverStates,_that.errorMessage,_that.algorithmPorts);case NodeRoutingStateError() when error != null:
 return error(_that.message);case _:
   return null;
 
@@ -251,7 +251,7 @@ String toString() {
 
 
 class NodeRoutingStateLoaded implements NodeRoutingState {
-  const NodeRoutingStateLoaded({required final  Map<int, NodePosition> nodePositions, required final  List<Connection> connections, required final  Map<int, PortLayout> portLayouts, required final  Set<String> connectedPorts, required final  Map<int, String> algorithmNames, required final  Map<String, Offset> portPositions, this.connectionPreview, this.hoveredConnectionId, final  Set<int>? selectedNodes, final  Map<String, bool>? portHoverStates, this.errorMessage, @Deprecated('Use portLayouts instead') final  Map<int, List<AlgorithmPort>>? algorithmPorts}): _nodePositions = nodePositions,_connections = connections,_portLayouts = portLayouts,_connectedPorts = connectedPorts,_algorithmNames = algorithmNames,_portPositions = portPositions,_selectedNodes = selectedNodes,_portHoverStates = portHoverStates,_algorithmPorts = algorithmPorts;
+  const NodeRoutingStateLoaded({required final  Map<int, NodePosition> nodePositions, required final  List<Connection> connections, required final  Map<int, PortLayout> portLayouts, required final  Set<String> connectedPorts, required final  Map<int, String> algorithmNames, required final  Map<String, Offset> portPositions, this.hasUserRepositioned = false, this.connectionPreview, this.hoveredConnectionId, final  Set<int>? selectedNodes, final  Map<String, bool>? portHoverStates, this.errorMessage, @Deprecated('Use portLayouts instead') final  Map<int, List<AlgorithmPort>>? algorithmPorts}): _nodePositions = nodePositions,_connections = connections,_portLayouts = portLayouts,_connectedPorts = connectedPorts,_algorithmNames = algorithmNames,_portPositions = portPositions,_selectedNodes = selectedNodes,_portHoverStates = portHoverStates,_algorithmPorts = algorithmPorts;
   
 
  final  Map<int, NodePosition> _nodePositions;
@@ -297,6 +297,7 @@ class NodeRoutingStateLoaded implements NodeRoutingState {
 }
 
 // algorithmIndex_portId -> Offset
+@JsonKey() final  bool hasUserRepositioned;
  final  ConnectionPreview? connectionPreview;
  final  String? hoveredConnectionId;
  final  Set<int>? _selectedNodes;
@@ -339,16 +340,16 @@ $NodeRoutingStateLoadedCopyWith<NodeRoutingStateLoaded> get copyWith => _$NodeRo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeRoutingStateLoaded&&const DeepCollectionEquality().equals(other._nodePositions, _nodePositions)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._portLayouts, _portLayouts)&&const DeepCollectionEquality().equals(other._connectedPorts, _connectedPorts)&&const DeepCollectionEquality().equals(other._algorithmNames, _algorithmNames)&&const DeepCollectionEquality().equals(other._portPositions, _portPositions)&&(identical(other.connectionPreview, connectionPreview) || other.connectionPreview == connectionPreview)&&(identical(other.hoveredConnectionId, hoveredConnectionId) || other.hoveredConnectionId == hoveredConnectionId)&&const DeepCollectionEquality().equals(other._selectedNodes, _selectedNodes)&&const DeepCollectionEquality().equals(other._portHoverStates, _portHoverStates)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&const DeepCollectionEquality().equals(other._algorithmPorts, _algorithmPorts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NodeRoutingStateLoaded&&const DeepCollectionEquality().equals(other._nodePositions, _nodePositions)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._portLayouts, _portLayouts)&&const DeepCollectionEquality().equals(other._connectedPorts, _connectedPorts)&&const DeepCollectionEquality().equals(other._algorithmNames, _algorithmNames)&&const DeepCollectionEquality().equals(other._portPositions, _portPositions)&&(identical(other.hasUserRepositioned, hasUserRepositioned) || other.hasUserRepositioned == hasUserRepositioned)&&(identical(other.connectionPreview, connectionPreview) || other.connectionPreview == connectionPreview)&&(identical(other.hoveredConnectionId, hoveredConnectionId) || other.hoveredConnectionId == hoveredConnectionId)&&const DeepCollectionEquality().equals(other._selectedNodes, _selectedNodes)&&const DeepCollectionEquality().equals(other._portHoverStates, _portHoverStates)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&const DeepCollectionEquality().equals(other._algorithmPorts, _algorithmPorts));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_nodePositions),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_portLayouts),const DeepCollectionEquality().hash(_connectedPorts),const DeepCollectionEquality().hash(_algorithmNames),const DeepCollectionEquality().hash(_portPositions),connectionPreview,hoveredConnectionId,const DeepCollectionEquality().hash(_selectedNodes),const DeepCollectionEquality().hash(_portHoverStates),errorMessage,const DeepCollectionEquality().hash(_algorithmPorts));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_nodePositions),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_portLayouts),const DeepCollectionEquality().hash(_connectedPorts),const DeepCollectionEquality().hash(_algorithmNames),const DeepCollectionEquality().hash(_portPositions),hasUserRepositioned,connectionPreview,hoveredConnectionId,const DeepCollectionEquality().hash(_selectedNodes),const DeepCollectionEquality().hash(_portHoverStates),errorMessage,const DeepCollectionEquality().hash(_algorithmPorts));
 
 @override
 String toString() {
-  return 'NodeRoutingState.loaded(nodePositions: $nodePositions, connections: $connections, portLayouts: $portLayouts, connectedPorts: $connectedPorts, algorithmNames: $algorithmNames, portPositions: $portPositions, connectionPreview: $connectionPreview, hoveredConnectionId: $hoveredConnectionId, selectedNodes: $selectedNodes, portHoverStates: $portHoverStates, errorMessage: $errorMessage, algorithmPorts: $algorithmPorts)';
+  return 'NodeRoutingState.loaded(nodePositions: $nodePositions, connections: $connections, portLayouts: $portLayouts, connectedPorts: $connectedPorts, algorithmNames: $algorithmNames, portPositions: $portPositions, hasUserRepositioned: $hasUserRepositioned, connectionPreview: $connectionPreview, hoveredConnectionId: $hoveredConnectionId, selectedNodes: $selectedNodes, portHoverStates: $portHoverStates, errorMessage: $errorMessage, algorithmPorts: $algorithmPorts)';
 }
 
 
@@ -359,7 +360,7 @@ abstract mixin class $NodeRoutingStateLoadedCopyWith<$Res> implements $NodeRouti
   factory $NodeRoutingStateLoadedCopyWith(NodeRoutingStateLoaded value, $Res Function(NodeRoutingStateLoaded) _then) = _$NodeRoutingStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- Map<int, NodePosition> nodePositions, List<Connection> connections, Map<int, PortLayout> portLayouts, Set<String> connectedPorts, Map<int, String> algorithmNames, Map<String, Offset> portPositions, ConnectionPreview? connectionPreview, String? hoveredConnectionId, Set<int>? selectedNodes, Map<String, bool>? portHoverStates, String? errorMessage,@Deprecated('Use portLayouts instead') Map<int, List<AlgorithmPort>>? algorithmPorts
+ Map<int, NodePosition> nodePositions, List<Connection> connections, Map<int, PortLayout> portLayouts, Set<String> connectedPorts, Map<int, String> algorithmNames, Map<String, Offset> portPositions, bool hasUserRepositioned, ConnectionPreview? connectionPreview, String? hoveredConnectionId, Set<int>? selectedNodes, Map<String, bool>? portHoverStates, String? errorMessage,@Deprecated('Use portLayouts instead') Map<int, List<AlgorithmPort>>? algorithmPorts
 });
 
 
@@ -376,7 +377,7 @@ class _$NodeRoutingStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of NodeRoutingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? nodePositions = null,Object? connections = null,Object? portLayouts = null,Object? connectedPorts = null,Object? algorithmNames = null,Object? portPositions = null,Object? connectionPreview = freezed,Object? hoveredConnectionId = freezed,Object? selectedNodes = freezed,Object? portHoverStates = freezed,Object? errorMessage = freezed,Object? algorithmPorts = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? nodePositions = null,Object? connections = null,Object? portLayouts = null,Object? connectedPorts = null,Object? algorithmNames = null,Object? portPositions = null,Object? hasUserRepositioned = null,Object? connectionPreview = freezed,Object? hoveredConnectionId = freezed,Object? selectedNodes = freezed,Object? portHoverStates = freezed,Object? errorMessage = freezed,Object? algorithmPorts = freezed,}) {
   return _then(NodeRoutingStateLoaded(
 nodePositions: null == nodePositions ? _self._nodePositions : nodePositions // ignore: cast_nullable_to_non_nullable
 as Map<int, NodePosition>,connections: null == connections ? _self._connections : connections // ignore: cast_nullable_to_non_nullable
@@ -384,7 +385,8 @@ as List<Connection>,portLayouts: null == portLayouts ? _self._portLayouts : port
 as Map<int, PortLayout>,connectedPorts: null == connectedPorts ? _self._connectedPorts : connectedPorts // ignore: cast_nullable_to_non_nullable
 as Set<String>,algorithmNames: null == algorithmNames ? _self._algorithmNames : algorithmNames // ignore: cast_nullable_to_non_nullable
 as Map<int, String>,portPositions: null == portPositions ? _self._portPositions : portPositions // ignore: cast_nullable_to_non_nullable
-as Map<String, Offset>,connectionPreview: freezed == connectionPreview ? _self.connectionPreview : connectionPreview // ignore: cast_nullable_to_non_nullable
+as Map<String, Offset>,hasUserRepositioned: null == hasUserRepositioned ? _self.hasUserRepositioned : hasUserRepositioned // ignore: cast_nullable_to_non_nullable
+as bool,connectionPreview: freezed == connectionPreview ? _self.connectionPreview : connectionPreview // ignore: cast_nullable_to_non_nullable
 as ConnectionPreview?,hoveredConnectionId: freezed == hoveredConnectionId ? _self.hoveredConnectionId : hoveredConnectionId // ignore: cast_nullable_to_non_nullable
 as String?,selectedNodes: freezed == selectedNodes ? _self._selectedNodes : selectedNodes // ignore: cast_nullable_to_non_nullable
 as Set<int>?,portHoverStates: freezed == portHoverStates ? _self._portHoverStates : portHoverStates // ignore: cast_nullable_to_non_nullable

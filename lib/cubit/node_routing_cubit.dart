@@ -67,7 +67,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final connections = _interpretRoutingMasks(routing);
       final connectedPorts = _extractConnectedPorts(connections);
 
-      // Calculate initial layout
+      // Calculate layout based on user interaction history
       final algorithmIndices = routing.map((r) => r.algorithmIndex).toList();
       const canvasSize = Size(1600, 1200);
 
@@ -79,13 +79,41 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         ),
       );
 
-      final nodePositions = GraphLayoutService.calculateInitialLayout(
-        algorithmIndices: algorithmIndices,
-        algorithmNames: algorithmNames,
-        algorithmPorts: algorithmPorts,
-        connections: connections,
-        canvasSize: canvasSize,
-      );
+      // Check if user has manually repositioned nodes and preserve state
+      final currentState = state;
+      final Map<int, NodePosition> nodePositions;
+      final bool hasUserRepositioned;
+      
+      if (currentState is NodeRoutingStateLoaded && currentState.hasUserRepositioned) {
+        // Preserve existing positions but update for any new algorithms
+        hasUserRepositioned = true;
+        final existingPositions = currentState.nodePositions;
+        nodePositions = Map<int, NodePosition>.from(existingPositions);
+        
+        // Add positions for any new algorithms using grid layout
+        final newAlgorithms = algorithmIndices.where(
+          (index) => !nodePositions.containsKey(index),
+        ).toList();
+        
+        if (newAlgorithms.isNotEmpty) {
+          final newPositions = GraphLayoutService.calculateGridLayout(
+            algorithmIndices: newAlgorithms,
+            algorithmNames: algorithmNames,
+            algorithmPorts: algorithmPorts,
+            canvasSize: canvasSize,
+          );
+          nodePositions.addAll(newPositions);
+        }
+      } else {
+        // Use grid layout for initial display
+        hasUserRepositioned = false;
+        nodePositions = GraphLayoutService.calculateGridLayout(
+          algorithmIndices: algorithmIndices,
+          algorithmNames: algorithmNames,
+          algorithmPorts: algorithmPorts,
+          canvasSize: canvasSize,
+        );
+      }
 
       // Calculate port positions
       final portPositions = _calculatePortPositions(nodePositions, portLayouts);
@@ -97,7 +125,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           portLayouts: portLayouts,
           connectedPorts: connectedPorts,
           algorithmNames: algorithmNames,
-          portPositions: portPositions
+          portPositions: portPositions,
+          hasUserRepositioned: hasUserRepositioned,
         ),
       );
     } catch (e) {
@@ -127,6 +156,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       emit(currentState.copyWith(
         nodePositions: updatedPositions,
         portPositions: updatedPortPositions,
+        hasUserRepositioned: true,
       ));
 
       // TODO: Persist to settings service

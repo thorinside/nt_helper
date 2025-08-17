@@ -8,7 +8,7 @@ class GraphLayoutService {
   static const double nodeWidth = 200.0;
   static const double nodeHeight = 120.0;
   static const double minSpacing = 50.0;
-  static const double canvasPadding = 100.0;
+  static const double canvasPadding = 50.0;
 
   /// Calculate initial positions for all nodes using hierarchical + force-directed layout
   static Map<int, NodePosition> calculateInitialLayout({
@@ -264,34 +264,79 @@ class GraphLayoutService {
     }
   }
 
-  /// Layout nodes in a simple grid if hierarchical layout fails
-  static Map<int, NodePosition> fallbackGridLayout(
-    List<int> algorithmIndices,
-    Map<int, String> algorithmNames,
-    Map<int, List<AlgorithmPort>> algorithmPorts,
-    Size canvasSize,
-  ) {
+  /// Calculate grid layout with nodes arranged numerically left-to-right, top-to-bottom
+  static Map<int, NodePosition> calculateGridLayout({
+    required List<int> algorithmIndices,
+    required Map<int, String> algorithmNames,
+    required Map<int, List<AlgorithmPort>> algorithmPorts,
+    Size? canvasSize,
+  }) {
     final positions = <int, NodePosition>{};
     
-    // Calculate grid dimensions
-    final nodeCount = algorithmIndices.length;
-    final cols = math.sqrt(nodeCount).ceil();
+    // Use typical screen size if not provided  
+    final effectiveCanvasSize = canvasSize ?? const Size(1600, 1200);
+    
+    // Sort algorithm indices numerically for predictable layout
+    final sortedIndices = List<int>.from(algorithmIndices)..sort();
+    
+    // Calculate optimal grid dimensions
+    final nodeCount = sortedIndices.length;
+    if (nodeCount == 0) return positions;
+    
+    // Calculate grid dimensions - prefer wider grids for better readability
+    final cols = math.max(1, math.sqrt(nodeCount * 1.5).ceil());
     final rows = (nodeCount / cols).ceil();
     
-    final cellWidth = (canvasSize.width - 2 * canvasPadding) / cols;
-    final cellHeight = (canvasSize.height - 2 * canvasPadding) / rows;
+    // Calculate available space for grid
+    final availableWidth = effectiveCanvasSize.width - (2 * canvasPadding);
+    final availableHeight = effectiveCanvasSize.height - (2 * canvasPadding);
     
-    for (int i = 0; i < algorithmIndices.length; i++) {
-      final algorithmIndex = algorithmIndices[i];
+    // Calculate cell dimensions with tight spacing (50px maximum)
+    const maxSpacing = 50.0;
+    final cellWidth = nodeWidth + maxSpacing;
+    final cellHeight = nodeHeight + maxSpacing;
+    
+    // Start grid at top-left with padding
+    final gridStartX = canvasPadding;
+    final gridStartY = canvasPadding;
+    
+    // Calculate node heights first to determine proper row spacing
+    final nodeHeights = <int, double>{};
+    for (final algorithmIndex in sortedIndices) {
+      final ports = algorithmPorts[algorithmIndex] ?? [];
+      final adjustedHeight = math.max(nodeHeight, 60.0 + ports.length * 20.0);
+      nodeHeights[algorithmIndex] = adjustedHeight;
+    }
+    
+    // Group nodes by row and calculate row heights
+    final rowHeights = <int, double>{};
+    for (int row = 0; row < rows; row++) {
+      double maxHeightInRow = 0;
+      for (int col = 0; col < cols; col++) {
+        final index = row * cols + col;
+        if (index < sortedIndices.length) {
+          final algorithmIndex = sortedIndices[index];
+          maxHeightInRow = math.max(maxHeightInRow, nodeHeights[algorithmIndex]!);
+        }
+      }
+      rowHeights[row] = maxHeightInRow;
+    }
+    
+    // Position nodes in grid pattern (left-to-right, top-to-bottom)
+    for (int i = 0; i < sortedIndices.length; i++) {
+      final algorithmIndex = sortedIndices[i];
       final row = i ~/ cols;
       final col = i % cols;
       
-      final x = canvasPadding + col * cellWidth + (cellWidth - nodeWidth) / 2;
-      final y = canvasPadding + row * cellHeight + (cellHeight - nodeHeight) / 2;
+      final x = gridStartX + col * cellWidth;
       
-      // Adjust node height based on port count
-      final ports = algorithmPorts[algorithmIndex] ?? [];
-      final adjustedHeight = math.max(nodeHeight, 60.0 + ports.length * 20.0);
+      // Calculate y position based on previous row heights
+      double y = gridStartY;
+      for (int prevRow = 0; prevRow < row; prevRow++) {
+        y += rowHeights[prevRow]! + maxSpacing;
+      }
+      
+      final adjustedHeight = nodeHeights[algorithmIndex]!;
       
       positions[algorithmIndex] = NodePosition(
         algorithmIndex: algorithmIndex,
@@ -303,5 +348,21 @@ class GraphLayoutService {
     }
     
     return positions;
+  }
+
+  /// Layout nodes in a simple grid if hierarchical layout fails
+  static Map<int, NodePosition> fallbackGridLayout(
+    List<int> algorithmIndices,
+    Map<int, String> algorithmNames,
+    Map<int, List<AlgorithmPort>> algorithmPorts,
+    Size canvasSize,
+  ) {
+    // Use the new calculateGridLayout for consistency
+    return calculateGridLayout(
+      algorithmIndices: algorithmIndices,
+      algorithmNames: algorithmNames,
+      algorithmPorts: algorithmPorts,
+      canvasSize: canvasSize,
+    );
   }
 }
