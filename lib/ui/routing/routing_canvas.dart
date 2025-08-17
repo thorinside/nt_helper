@@ -59,11 +59,15 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   Set<int> _selectedNodes = {};
   Connection? _hoveredConnection;
   final GlobalKey _canvasKey = GlobalKey();
+  bool _finalizingConnection = false; // Prevent double create on pointer up + pan end
 
   @override
   Widget build(BuildContext context) {
     return ClipRect(
-      child: Container(
+      child: Listener(
+        // Fallback: create connection on any pointer up if preview is valid
+        onPointerUp: _handleGlobalPointerUp,
+        child: Container(
         key: _canvasKey,
         width: _canvasSize,
         height: _canvasSize,
@@ -72,10 +76,9 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
           children: [
             // Grid background with gesture detector for empty space (bottom layer)
             GestureDetector(
-              onPanUpdate: _handleCanvasPanUpdate,
-              onPanEnd: _handleCanvasPanEnd,
+              // Only handle taps on empty space for selection; avoid competing pans
               onTapDown: _handleCanvasTapDown,
-              behavior: HitTestBehavior.opaque,  // This will catch events in empty space
+              behavior: HitTestBehavior.opaque,  // Catch events in empty space only
               child: RepaintBoundary(
                 child: CustomPaint(
                   painter: _GridPainter(
@@ -138,12 +141,13 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
             // Connections layer (top layer - drawn last, appears on top)
             RepaintBoundary(
               child: MouseRegion(
+                opaque: false, // Don't block hits to nodes/ports underneath
                 cursor: _hoveredConnection != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
                 onHover: _handleConnectionHover,
                 onExit: (_) => _handleConnectionExit(),
                 child: GestureDetector(
                   onTapDown: _handleConnectionTapDown,
-                  behavior: HitTestBehavior.translucent,
+                  behavior: HitTestBehavior.deferToChild,
                   child: CustomPaint(
                     painter: ConnectionPainter(
                       connections: widget.connections,
@@ -157,6 +161,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -216,6 +221,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     DragStartDetails details,
   ) {
     if (type == PortType.output) {
+      _finalizingConnection = false; // reset for new gesture
       final cubit = context.read<NodeRoutingCubit>();
       
       // Get the actual port position to start from
@@ -278,74 +284,32 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     DragEndDetails details,
   ) async {
     if (type == PortType.output) {
+      if (_finalizingConnection) return; // already handled elsewhere
       final cubit = context.read<NodeRoutingCubit>();
       final currentState = cubit.state;
-      
-      // Check if we have a valid connection preview that can be completed
-      if (currentState is NodeRoutingStateLoaded && 
-          currentState.connectionPreview != null &&
-          currentState.connectionPreview!.isValid &&
-          currentState.connectionPreview!.hoveredTargetAlgorithmIndex != null &&
-          currentState.connectionPreview!.hoveredTargetPortId != null) {
-        
-        // Create the connection (async)
-        await cubit.createConnection(
-          sourceAlgorithmIndex: currentState.connectionPreview!.sourceAlgorithmIndex,
-          sourcePortId: currentState.connectionPreview!.sourcePortId,
-          targetAlgorithmIndex: currentState.connectionPreview!.hoveredTargetAlgorithmIndex!,
-          targetPortId: currentState.connectionPreview!.hoveredTargetPortId!,
-        );
+
+      if (currentState is NodeRoutingStateLoaded &&
+          currentState.connectionPreview != null) {
+        // Snapshot needed data, then clear preview immediately to avoid double-fire
+        final preview = currentState.connectionPreview!;
+        cubit.clearConnectionPreview();
+
+        if (preview.isValid &&
+            preview.hoveredTargetAlgorithmIndex != null &&
+            preview.hoveredTargetPortId != null) {
+          _finalizingConnection = true;
+          await cubit.createConnection(
+            sourceAlgorithmIndex: preview.sourceAlgorithmIndex,
+            sourcePortId: preview.sourcePortId,
+            targetAlgorithmIndex: preview.hoveredTargetAlgorithmIndex!,
+            targetPortId: preview.hoveredTargetPortId!,
+          );
+        }
       }
-      
-      // Always clear connection preview at the end
-      cubit.clearConnectionPreview();
     }
   }
 
 
-  void _handleCanvasPanUpdate(DragUpdateDetails details) {
-    final cubit = context.read<NodeRoutingCubit>();
-    final currentState = cubit.state;
-    
-    if (currentState is NodeRoutingStateLoaded && currentState.connectionPreview != null) {
-      // Use cubit for hit testing
-      final hoveredAlgorithm = cubit.getAlgorithmAtPosition(details.localPosition);
-      final hoveredPort = hoveredAlgorithm != null 
-          ? cubit.getPortAtPosition(details.localPosition, hoveredAlgorithm)
-          : null;
-
-      // Update connection preview through cubit
-      cubit.updateConnectionPreview(
-        details.localPosition,
-        hoveredAlgorithmIndex: hoveredAlgorithm,
-        hoveredPortId: hoveredPort,
-      );
-    }
-  }
-
-  void _handleCanvasPanEnd(DragEndDetails details) {
-    final cubit = context.read<NodeRoutingCubit>();
-    final currentState = cubit.state;
-    
-    // Check if we have a valid connection preview that can be completed
-    if (currentState is NodeRoutingStateLoaded && 
-        currentState.connectionPreview != null &&
-        currentState.connectionPreview!.isValid &&
-        currentState.connectionPreview!.hoveredTargetAlgorithmIndex != null &&
-        currentState.connectionPreview!.hoveredTargetPortId != null) {
-      
-      // Create the connection
-      cubit.createConnection(
-        sourceAlgorithmIndex: currentState.connectionPreview!.sourceAlgorithmIndex,
-        sourcePortId: currentState.connectionPreview!.sourcePortId,
-        targetAlgorithmIndex: currentState.connectionPreview!.hoveredTargetAlgorithmIndex!,
-        targetPortId: currentState.connectionPreview!.hoveredTargetPortId!,
-      );
-    }
-    
-    // Clear connection preview through cubit
-    cubit.clearConnectionPreview();
-  }
 
   void _handleCanvasTapDown(TapDownDetails details) {
     final cubit = context.read<NodeRoutingCubit>();
@@ -365,6 +329,67 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
       _selectedNodes.clear();
     });
     widget.onSelectionChanged?.call();
+  }
+
+  void _handleGlobalPointerUp(PointerUpEvent event) async {
+    final cubit = context.read<NodeRoutingCubit>();
+    final currentState = cubit.state;
+
+    if (currentState is NodeRoutingStateLoaded &&
+        currentState.connectionPreview != null) {
+      if (_finalizingConnection) {
+        // Another handler already finalized this gesture
+        cubit.clearConnectionPreview();
+        return;
+      }
+      // Convert to canvas coordinates and re-hit-test the final target
+      final RenderBox? canvasBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+      if (canvasBox != null) {
+        final canvasPos = canvasBox.globalToLocal(event.position);
+        
+        final hoveredAlg = cubit.getAlgorithmAtPosition(canvasPos);
+        String? hoveredPort = hoveredAlg != null ? cubit.getPortAtPosition(canvasPos, hoveredAlg) : null;
+        
+        // Ensure inferred target is an input port; otherwise ignore
+        if (hoveredAlg != null && hoveredPort != null) {
+          final stateForCheck = cubit.state;
+          if (stateForCheck is NodeRoutingStateLoaded) {
+            final layout = stateForCheck.portLayouts[hoveredAlg];
+            final isInput = layout?.inputPorts.any((p) => (p.id ?? p.name) == hoveredPort) ?? false;
+            if (!isInput) {
+              hoveredPort = null;
+            }
+          }
+        }
+
+        final hasExplicitTarget =
+            currentState.connectionPreview!.hoveredTargetAlgorithmIndex != null &&
+            currentState.connectionPreview!.hoveredTargetPortId != null &&
+            currentState.connectionPreview!.isValid;
+
+        final canInferTarget = hoveredAlg != null && hoveredPort != null;
+
+        if (hasExplicitTarget || canInferTarget) {
+          final targetAlg = hasExplicitTarget
+              ? currentState.connectionPreview!.hoveredTargetAlgorithmIndex!
+              : hoveredAlg!;
+          final targetPort = hasExplicitTarget
+              ? currentState.connectionPreview!.hoveredTargetPortId!
+              : hoveredPort!;
+
+          _finalizingConnection = true;
+          await cubit.createConnection(
+            sourceAlgorithmIndex: currentState.connectionPreview!.sourceAlgorithmIndex,
+            sourcePortId: currentState.connectionPreview!.sourcePortId,
+            targetAlgorithmIndex: targetAlg,
+            targetPortId: targetPort,
+          );
+        }
+      }
+
+      // Always clear preview after pointer up
+      cubit.clearConnectionPreview();
+    }
   }
   
   void _handleMoveAlgorithmUp(int algorithmIndex) {
@@ -444,6 +469,19 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   }
   
   bool _isPointNearBezier(Offset point, Offset start, Offset end, {double tolerance = 10.0}) {
+    // Dead zone radius around ports - don't detect connection clicks near ports
+    // This allows dragging new connections from already-connected ports
+    const double portDeadZoneRadius = 30.0;
+    
+    // Check if click is within dead zone of source or target port
+    final distanceToStart = (point - start).distance;
+    final distanceToEnd = (point - end).distance;
+    
+    if (distanceToStart <= portDeadZoneRadius || distanceToEnd <= portDeadZoneRadius) {
+      // Within dead zone - don't consider this a click on the connection
+      return false;
+    }
+    
     // Sample points along the bezier curve and check distance
     const samples = 20;
     for (int i = 0; i <= samples; i++) {

@@ -21,6 +21,7 @@ import 'package:nt_helper/models/package_file.dart' as _i16;
 import 'package:nt_helper/models/packed_mapping_data.dart' as _i13;
 import 'package:nt_helper/models/plugin_info.dart' as _i15;
 import 'package:nt_helper/models/routing_information.dart' as _i14;
+import 'package:nt_helper/models/sd_card_file_system.dart' as _i18;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -703,4 +704,515 @@ class MockDistingCubit extends _i1.Mock implements _i4.DistingCubit {
     Invocation.method(#onError, [error, stackTrace]),
     returnValueForMissingStub: null,
   );
+}
+
+/// A class which mocks [IDistingMidiManager].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockIDistingMidiManager extends _i1.Mock
+    implements _i3.IDistingMidiManager {
+  MockIDistingMidiManager() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  _i5.Future<int?> requestNumberOfAlgorithms() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestNumberOfAlgorithms, []),
+            returnValue: _i5.Future<int?>.value(),
+          )
+          as _i5.Future<int?>);
+
+  @override
+  _i5.Future<_i12.AlgorithmInfo?> requestAlgorithmInfo(int? index) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestAlgorithmInfo, [index]),
+            returnValue: _i5.Future<_i12.AlgorithmInfo?>.value(),
+          )
+          as _i5.Future<_i12.AlgorithmInfo?>);
+
+  @override
+  _i5.Future<int?> requestNumAlgorithmsInPreset() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestNumAlgorithmsInPreset, []),
+            returnValue: _i5.Future<int?>.value(),
+          )
+          as _i5.Future<int?>);
+
+  @override
+  _i5.Future<String?> requestVersionString() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestVersionString, []),
+            returnValue: _i5.Future<String?>.value(),
+          )
+          as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> requestPresetName() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestPresetName, []),
+            returnValue: _i5.Future<String?>.value(),
+          )
+          as _i5.Future<String?>);
+
+  @override
+  _i5.Future<List<String>?> requestUnitStrings() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestUnitStrings, []),
+            returnValue: _i5.Future<List<String>?>.value(),
+          )
+          as _i5.Future<List<String>?>);
+
+  @override
+  _i5.Future<_i12.NumParameters?> requestNumberOfParameters(
+    int? algorithmIndex,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestNumberOfParameters, [algorithmIndex]),
+            returnValue: _i5.Future<_i12.NumParameters?>.value(),
+          )
+          as _i5.Future<_i12.NumParameters?>);
+
+  @override
+  _i5.Future<_i12.ParameterInfo?> requestParameterInfo(
+    int? algorithmIndex,
+    int? parameterNumber,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestParameterInfo, [
+              algorithmIndex,
+              parameterNumber,
+            ]),
+            returnValue: _i5.Future<_i12.ParameterInfo?>.value(),
+          )
+          as _i5.Future<_i12.ParameterInfo?>);
+
+  @override
+  _i5.Future<_i12.ParameterPages?> requestParameterPages(int? algorithmIndex) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestParameterPages, [algorithmIndex]),
+            returnValue: _i5.Future<_i12.ParameterPages?>.value(),
+          )
+          as _i5.Future<_i12.ParameterPages?>);
+
+  @override
+  _i5.Future<_i12.AllParameterValues?> requestAllParameterValues(
+    int? algorithmIndex,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestAllParameterValues, [algorithmIndex]),
+            returnValue: _i5.Future<_i12.AllParameterValues?>.value(),
+          )
+          as _i5.Future<_i12.AllParameterValues?>);
+
+  @override
+  _i5.Future<_i12.ParameterEnumStrings?> requestParameterEnumStrings(
+    int? algorithmIndex,
+    int? parameterNumber,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestParameterEnumStrings, [
+              algorithmIndex,
+              parameterNumber,
+            ]),
+            returnValue: _i5.Future<_i12.ParameterEnumStrings?>.value(),
+          )
+          as _i5.Future<_i12.ParameterEnumStrings?>);
+
+  @override
+  _i5.Future<_i12.Mapping?> requestMappings(
+    int? algorithmIndex,
+    int? parameterNumber,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestMappings, [
+              algorithmIndex,
+              parameterNumber,
+            ]),
+            returnValue: _i5.Future<_i12.Mapping?>.value(),
+          )
+          as _i5.Future<_i12.Mapping?>);
+
+  @override
+  _i5.Future<_i12.RoutingInfo?> requestRoutingInformation(
+    int? algorithmIndex,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestRoutingInformation, [algorithmIndex]),
+            returnValue: _i5.Future<_i12.RoutingInfo?>.value(),
+          )
+          as _i5.Future<_i12.RoutingInfo?>);
+
+  @override
+  _i5.Future<_i12.ParameterValueString?> requestParameterValueString(
+    int? algorithmIndex,
+    int? parameterNumber,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestParameterValueString, [
+              algorithmIndex,
+              parameterNumber,
+            ]),
+            returnValue: _i5.Future<_i12.ParameterValueString?>.value(),
+          )
+          as _i5.Future<_i12.ParameterValueString?>);
+
+  @override
+  _i5.Future<_i12.ParameterValue?> requestParameterValue(
+    int? algorithmIndex,
+    int? parameterNumber,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestParameterValue, [
+              algorithmIndex,
+              parameterNumber,
+            ]),
+            returnValue: _i5.Future<_i12.ParameterValue?>.value(),
+          )
+          as _i5.Future<_i12.ParameterValue?>);
+
+  @override
+  _i5.Future<_i12.Algorithm?> requestAlgorithmGuid(int? algorithmIndex) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestAlgorithmGuid, [algorithmIndex]),
+            returnValue: _i5.Future<_i12.Algorithm?>.value(),
+          )
+          as _i5.Future<_i12.Algorithm?>);
+
+  @override
+  _i5.Future<_i9.Uint8List?> encodeTakeScreenshot() =>
+      (super.noSuchMethod(
+            Invocation.method(#encodeTakeScreenshot, []),
+            returnValue: _i5.Future<_i9.Uint8List?>.value(),
+          )
+          as _i5.Future<_i9.Uint8List?>);
+
+  @override
+  _i5.Future<_i6.CpuUsage?> requestCpuUsage() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestCpuUsage, []),
+            returnValue: _i5.Future<_i6.CpuUsage?>.value(),
+          )
+          as _i5.Future<_i6.CpuUsage?>);
+
+  @override
+  _i5.Future<void> requestWake() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestWake, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setParameterValue(
+    int? algorithmIndex,
+    int? parameterNumber,
+    int? value,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#setParameterValue, [
+              algorithmIndex,
+              parameterNumber,
+              value,
+            ]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setParameterString(
+    int? algorithmIndex,
+    int? parameterNumber,
+    String? value,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#setParameterString, [
+              algorithmIndex,
+              parameterNumber,
+              value,
+            ]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestAddAlgorithm(
+    _i12.AlgorithmInfo? algorithm,
+    List<int>? specifications,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestAddAlgorithm, [
+              algorithm,
+              specifications,
+            ]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestRemoveAlgorithm(int? algorithmIndex) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestRemoveAlgorithm, [algorithmIndex]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestLoadPlugin(String? guid) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestLoadPlugin, [guid]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSetFocus(int? algorithmIndex, int? parameterNumber) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSetFocus, [
+              algorithmIndex,
+              parameterNumber,
+            ]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSetPresetName(String? newName) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSetPresetName, [newName]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSavePreset({int? option}) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSavePreset, [], {#option: option}),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestMoveAlgorithmUp(int? algorithmIndex) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestMoveAlgorithmUp, [algorithmIndex]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestMoveAlgorithmDown(int? algorithmIndex) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestMoveAlgorithmDown, [algorithmIndex]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestNewPreset() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestNewPreset, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestLoadPreset(String? name, bool? append) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestLoadPreset, [name, append]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSetMapping(
+    int? algorithmIndex,
+    int? parameterNumber,
+    _i13.PackedMappingData? data,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSetMapping, [
+              algorithmIndex,
+              parameterNumber,
+              data,
+            ]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSendSlotName(int? algorithmIndex, String? newName) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSendSlotName, [algorithmIndex, newName]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSetDisplayMode(_i12.DisplayMode? displayMode) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSetDisplayMode, [displayMode]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestSetRealTimeClock(int? unixTimeSeconds) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSetRealTimeClock, [unixTimeSeconds]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i11.FullPresetDetails?> requestCurrentPresetDetails() =>
+      (super.noSuchMethod(
+            Invocation.method(#requestCurrentPresetDetails, []),
+            returnValue: _i5.Future<_i11.FullPresetDetails?>.value(),
+          )
+          as _i5.Future<_i11.FullPresetDetails?>);
+
+  @override
+  _i5.Future<String?> executeLua(String? luaScript) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeLua, [luaScript]),
+            returnValue: _i5.Future<String?>.value(),
+          )
+          as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> installLua(int? algorithmIndex, String? luaScript) =>
+      (super.noSuchMethod(
+            Invocation.method(#installLua, [algorithmIndex, luaScript]),
+            returnValue: _i5.Future<String?>.value(),
+          )
+          as _i5.Future<String?>);
+
+  @override
+  _i5.Future<_i18.DirectoryListing?> requestDirectoryListing(String? path) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestDirectoryListing, [path]),
+            returnValue: _i5.Future<_i18.DirectoryListing?>.value(),
+          )
+          as _i5.Future<_i18.DirectoryListing?>);
+
+  @override
+  _i5.Future<_i9.Uint8List?> requestFileDownload(String? path) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestFileDownload, [path]),
+            returnValue: _i5.Future<_i9.Uint8List?>.value(),
+          )
+          as _i5.Future<_i9.Uint8List?>);
+
+  @override
+  _i5.Future<_i18.SdCardStatus?> requestFileDelete(String? path) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestFileDelete, [path]),
+            returnValue: _i5.Future<_i18.SdCardStatus?>.value(),
+          )
+          as _i5.Future<_i18.SdCardStatus?>);
+
+  @override
+  _i5.Future<_i18.SdCardStatus?> requestFileRename(
+    String? fromPath,
+    String? toPath,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestFileRename, [fromPath, toPath]),
+            returnValue: _i5.Future<_i18.SdCardStatus?>.value(),
+          )
+          as _i5.Future<_i18.SdCardStatus?>);
+
+  @override
+  _i5.Future<_i18.SdCardStatus?> requestFileUpload(
+    String? path,
+    _i9.Uint8List? data,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestFileUpload, [path, data]),
+            returnValue: _i5.Future<_i18.SdCardStatus?>.value(),
+          )
+          as _i5.Future<_i18.SdCardStatus?>);
+
+  @override
+  _i5.Future<_i18.SdCardStatus?> requestFileUploadChunk(
+    String? path,
+    _i9.Uint8List? data,
+    int? position, {
+    bool? createAlways = false,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #requestFileUploadChunk,
+              [path, data, position],
+              {#createAlways: createAlways},
+            ),
+            returnValue: _i5.Future<_i18.SdCardStatus?>.value(),
+          )
+          as _i5.Future<_i18.SdCardStatus?>);
+
+  @override
+  _i5.Future<_i18.SdCardStatus?> requestDirectoryCreate(String? path) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestDirectoryCreate, [path]),
+            returnValue: _i5.Future<_i18.SdCardStatus?>.value(),
+          )
+          as _i5.Future<_i18.SdCardStatus?>);
+
+  @override
+  _i5.Future<void> requestSclFile(String? filePath) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestSclFile, [filePath]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> requestKbmFile(String? filePath) =>
+      (super.noSuchMethod(
+            Invocation.method(#requestKbmFile, [filePath]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> backupPlugins(
+    String? backupDirectory, {
+    void Function(double, String)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #backupPlugins,
+              [backupDirectory],
+              {#onProgress: onProgress},
+            ),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 }

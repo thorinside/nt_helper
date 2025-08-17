@@ -33,6 +33,25 @@ class ConnectionPainter extends CustomPainter {
     }
   }
 
+  // Make the painter hit-testable only near actual connection lines
+  @override
+  bool? hitTest(Offset position) {
+    // Check established connections first
+    for (final connection in connections) {
+      final sourceKey = '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
+      final targetKey = '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
+      final start = portPositions[sourceKey];
+      final end = portPositions[targetKey];
+      if (start == null || end == null) continue;
+      if (_isPointNearBezier(position, start, end, tolerance: 10.0)) {
+        return true;
+      }
+    }
+
+    // Optionally, consider preview path as hit-testable (not necessary for taps)
+    return false;
+  }
+
   void _drawConnection(
     Canvas canvas,
     Connection connection, {
@@ -182,6 +201,52 @@ class ConnectionPainter extends CustomPainter {
     }
 
     return path;
+  }
+
+  // Simple proximity test against our bezier path by sampling points
+  bool _isPointNearBezier(Offset point, Offset start, Offset end, {double tolerance = 10.0}) {
+    // Dead zone radius around ports - don't detect connection clicks near ports
+    // This allows dragging new connections from already-connected ports
+    const double portDeadZoneRadius = 30.0;
+    
+    // Check if click is within dead zone of source or target port
+    final distanceToStart = (point - start).distance;
+    final distanceToEnd = (point - end).distance;
+    
+    if (distanceToStart <= portDeadZoneRadius || distanceToEnd <= portDeadZoneRadius) {
+      // Within dead zone - don't consider this a click on the connection
+      return false;
+    }
+    
+    const samples = 20;
+    for (int i = 0; i <= samples; i++) {
+      final t = i / samples;
+      final p = _bezierPointAt(t, start, end);
+      if ((point - p).distance <= tolerance) return true;
+    }
+    return false;
+  }
+
+  Offset _bezierPointAt(double t, Offset start, Offset end) {
+    final distance = (end - start).distance;
+    final controlStrength = math.min(distance * 0.4, 100.0);
+
+    late Offset cp1; 
+    late Offset cp2;
+    if ((end.dx - start.dx).abs() > (end.dy - start.dy).abs()) {
+      cp1 = Offset(start.dx + controlStrength, start.dy);
+      cp2 = Offset(end.dx - controlStrength, end.dy);
+    } else {
+      final midY = (start.dy + end.dy) / 2;
+      cp1 = Offset(start.dx + controlStrength * 0.3, midY);
+      cp2 = Offset(end.dx - controlStrength * 0.3, midY);
+    }
+
+    final u = 1 - t;
+    return start * (u * u * u) +
+        cp1 * (3 * u * u * t) +
+        cp2 * (3 * u * t * t) +
+        end * (t * t * t);
   }
 
   void _drawArrowHead(

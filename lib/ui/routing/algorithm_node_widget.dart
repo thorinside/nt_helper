@@ -67,20 +67,39 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool _shouldHandlePan = true;
 
   void _onPanStart(DragStartDetails details) {
-    // Don't handle pan if it starts on a port area
-    // Ports are 16x16 with some margin, check if we're in the port columns
-    const portColumnWidth = 40.0; // Approximate width of port column
-    
-    if (details.localPosition.dx < portColumnWidth || 
-        details.localPosition.dx > widget.nodePosition.width - portColumnWidth) {
-      _shouldHandlePan = false;
-      return;
+    final dx = details.localPosition.dx;
+    final dy = details.localPosition.dy;
+
+    // Exclude header arrow buttons (allow clicks/drags on them without moving node)
+    // Header is at the top with height = headerHeight. Two buttons on right.
+    const headerHeight = AlgorithmNodeWidget.headerHeight;
+    const headerButtonWidth = AlgorithmNodeWidget.headerButtonHeight; // Square buttons
+    const horizontalPadding = AlgorithmNodeWidget.horizontalPadding;
+
+    // If we're within header area, only block pan when starting on the buttons area
+    if (dy <= headerHeight) {
+      final rightButtonsStartX = widget.nodePosition.width - horizontalPadding - (2 * headerButtonWidth);
+      final rightEdgeX = widget.nodePosition.width;
+      final onHeaderButtons = dx >= rightButtonsStartX && dx <= rightEdgeX;
+      _shouldHandlePan = !onHeaderButtons;
+    } else {
+      // In ports/body area, block pan only when starting directly over port widgets
+      // Ports are 16x16 circles flush to left/right with small padding.
+      const portSize = AlgorithmNodeWidget.portWidgetSize;
+      const portHitSlop = 6.0; // a little extra to match visual
+      const leftPortCenterX = horizontalPadding + (portSize / 2);
+      final rightPortCenterX = widget.nodePosition.width - horizontalPadding - (portSize / 2);
+
+      final onLeftPortColumn = (dx - leftPortCenterX).abs() <= (portSize / 2 + portHitSlop);
+      final onRightPortColumn = (dx - rightPortCenterX).abs() <= (portSize / 2 + portHitSlop);
+      _shouldHandlePan = !(onLeftPortColumn || onRightPortColumn);
     }
-    
-    _shouldHandlePan = true;
-    setState(() {
-      _isDragging = true;
-    });
+
+    if (_shouldHandlePan) {
+      setState(() {
+        _isDragging = true;
+      });
+    }
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
@@ -266,8 +285,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                   port: port,
                   type: type,
                   isConnected: isConnected,
-                  onConnectionStart: () =>
-                      widget.onPortConnectionStart?.call(portId, type),
+                  onConnectionStart: null,
                   onConnectionEnd: () =>
                       widget.onPortConnectionEnd?.call(portId, type),
                   onPanStart: (details) =>
@@ -308,8 +326,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                   port: port,
                   type: type,
                   isConnected: isConnected,
-                  onConnectionStart: () =>
-                      widget.onPortConnectionStart?.call(portId, type),
+                  onConnectionStart: null,
                   onConnectionEnd: () =>
                       widget.onPortConnectionEnd?.call(portId, type),
                   onPanStart: (details) =>

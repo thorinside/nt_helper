@@ -260,6 +260,12 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       // The optimistic parameter updates will trigger state changes in DistingCubit
       // Our subscription to DistingCubit will automatically call _updateFromDistingState
       // which will re-interpret the connections and update the visual state
+      
+      // Force a refresh to ensure we have the latest state
+      final latestState = _distingCubit.state;
+      if (latestState is DistingStateSynchronized) {
+        _updateFromDistingState(latestState);
+      }
 
       // Clear any error message on success
       emit(currentState.copyWith(errorMessage: null));
@@ -322,7 +328,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
     
+    debugPrint('[NodeRoutingCubit] ========================================');
     debugPrint('[NodeRoutingCubit] Updating from hardware routing change');
+    debugPrint('[NodeRoutingCubit] Number of slots: ${distingState.slots.length}');
     
     // Build routing information from the current hardware state
     final routingInfoList = <RoutingInformation>[];
@@ -336,21 +344,34 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         algorithmName: slot.algorithm.name,
         routingInfo: const [], // Empty routing info, not used for connection detection
       ));
+      debugPrint('[NodeRoutingCubit] Slot $i: ${slot.algorithm.name} (${slot.algorithm.guid})');
     }
     
     // Re-extract port layouts for the new algorithm positions
     final newPortLayouts = _extractPortLayouts(routingInfoList);
     
+    // Log port layout details
+    for (final entry in newPortLayouts.entries) {
+      final layout = entry.value;
+      debugPrint('[NodeRoutingCubit] Algorithm ${entry.key} ports: ${layout.inputPorts.length} inputs, ${layout.outputPorts.length} outputs');
+    }
+    
     // Re-extract connections from the updated hardware state
     final newConnections = _interpretRoutingMasks(routingInfoList);
     final newConnectedPorts = _extractConnectedPorts(newConnections);
     
-    debugPrint('[NodeRoutingCubit] Found ${newConnections.length} connections after hardware update');
+    debugPrint('[NodeRoutingCubit] *** CONNECTIONS FOUND: ${newConnections.length} ***');
     
-    // Debug: log each connection found
+    // Debug: log each connection found with more detail
     for (final conn in newConnections) {
-      debugPrint('[NodeRoutingCubit] Connection: ${conn.sourceAlgorithmIndex}:${conn.sourcePortId} -> ${conn.targetAlgorithmIndex}:${conn.targetPortId} (bus ${conn.assignedBus})');
+      debugPrint('[NodeRoutingCubit] Connection: Alg${conn.sourceAlgorithmIndex}:"${conn.sourcePortId}" -> Alg${conn.targetAlgorithmIndex}:"${conn.targetPortId}" (bus ${conn.assignedBus})');
     }
+    
+    if (newConnections.isEmpty) {
+      debugPrint('[NodeRoutingCubit] WARNING: No connections found! Check bus parameter detection.');
+    }
+    
+    debugPrint('[NodeRoutingCubit] ========================================');
     
     // Update node positions to match new algorithm indices
     // Try to preserve relative positions when algorithms are reordered
@@ -495,11 +516,19 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           ),
         );
 
-        debugPrint('[NodeRoutingCubit] Algorithm $algorithmIndex parameter "${param.name}" defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
+        // Check if this is a bus parameter (enum type with bus range)
+        final isBusParameter = param.unit == 1 && param.max >= 28;
+        
+        debugPrint('[NodeRoutingCubit] Algorithm $algorithmIndex parameter "${param.name}" unit=${param.unit} max=${param.max} defaultValue=${param.defaultValue} currentValue=${paramValue.value} isBusParameter=$isBusParameter');
+
+        // Skip if not a bus parameter
+        if (!isBusParameter) {
+          continue;
+        }
 
         // Skip if current value is 0 (None/not connected)
         if (paramValue.value == 0) {
-          debugPrint('[NodeRoutingCubit] Skipping parameter "${param.name}" (value=0, not connected)');
+          debugPrint('[NodeRoutingCubit] Skipping bus parameter "${param.name}" (value=0, not connected)');
           continue;
         }
 
@@ -512,17 +541,34 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           isOutputParam = true;
         } else if (param.defaultValue >= 1 && param.defaultValue <= 12) {
           isInputParam = true;
-        } else if (param.defaultValue == 0) {
-          // Parameter defaults to "None" - determine type from name
+        } else {
+          // Parameter defaults to "None" or other - determine type from name
           final nameLower = param.name.toLowerCase();
-          if (nameLower.contains('output') || nameLower.contains('send') || nameLower.contains('main')) {
+          if (nameLower.contains('output') || nameLower.contains('send') || 
+              nameLower.contains('main out') || nameLower.contains('aux')) {
             isOutputParam = true;
           } else if (nameLower.contains('input') || nameLower.contains('receive') || 
                      nameLower.contains('pitch') || nameLower.contains('wave') ||
                      nameLower.contains('formant') || nameLower.contains('clock') ||
                      nameLower.contains('reset') || nameLower.contains('step') ||
-                     nameLower.contains('gate') || nameLower.contains('v/oct')) {
+                     nameLower.contains('gate') || nameLower.contains('v/oct') ||
+                     nameLower.contains('sync') || nameLower.contains('trigger')) {
             isInputParam = true;
+          } else {
+            // If we can't determine from name, check the current value range
+            // Outputs typically use 13-28, inputs use 1-12 or 21-28
+            if (paramValue.value >= 13 && paramValue.value <= 20) {
+              isOutputParam = true;
+            } else if (paramValue.value >= 1 && paramValue.value <= 12) {
+              isInputParam = true;
+            } else if (paramValue.value >= 21 && paramValue.value <= 28) {
+              // Aux buses can be either, check name more carefully
+              if (nameLower.endsWith(' out') || nameLower.startsWith('out')) {
+                isOutputParam = true;
+              } else {
+                isInputParam = true;
+              }
+            }
           }
         }
         

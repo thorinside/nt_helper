@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/connection.dart';
 
 class AutoRoutingService {
@@ -15,36 +16,35 @@ class AutoRoutingService {
     required String targetPortId,
     required List<Connection> existingConnections,
   }) async {
-    // Check if there's already a connection from the same source output
-    // If so, reuse that bus for signal splitting
-    debugPrint('[AutoRoutingService] Checking for existing connections from source $sourceAlgorithmIndex:$sourcePortId');
-    debugPrint('[AutoRoutingService] Existing connections: ${existingConnections.length}');
-    
-    for (final conn in existingConnections) {
-      debugPrint('[AutoRoutingService]   - ${conn.sourceAlgorithmIndex}:${conn.sourcePortId} -> ${conn.targetAlgorithmIndex}:${conn.targetPortId} (bus ${conn.assignedBus})');
-    }
-    
-    final existingConnectionFromSameSource = existingConnections.firstWhere(
-      (conn) => 
-        conn.sourceAlgorithmIndex == sourceAlgorithmIndex &&
-        conn.sourcePortId == sourcePortId,
-      orElse: () => const Connection(
-        id: '',
-        sourceAlgorithmIndex: -1,
-        sourcePortId: '',
-        targetAlgorithmIndex: -1,
-        targetPortId: '',
-        assignedBus: -1,
-        replaceMode: false,
-      ),
+    // Get source parameter number and its current value
+    final sourceParamNumber = _findParameterNumberForPort(
+      sourceAlgorithmIndex, 
+      sourcePortId, 
+      isOutput: true,
     );
+    final currentSourceBus = _getParameterValue(sourceAlgorithmIndex, sourceParamNumber);
     
-    final assignedBus = existingConnectionFromSameSource.assignedBus != -1
-        ? existingConnectionFromSameSource.assignedBus  // Reuse existing bus
-        : findAvailableAuxBus(existingConnections);     // Find new bus
-    
-    debugPrint('[AutoRoutingService] Existing connection from same source: bus ${existingConnectionFromSameSource.assignedBus}');
-    debugPrint('[AutoRoutingService] Assigned bus: $assignedBus');
+    // Simple rules:
+    // 1. If source is not connected (value 0 or null), assign first non-conflicting aux bus
+    // 2. If source is connected (has a value), use that value for the target
+    int assignedBus;
+    if (currentSourceBus != null && currentSourceBus > 0) {
+      // Source is already connected - use its bus value
+      assignedBus = currentSourceBus;
+      debugPrint('[AutoRoutingService] Source parameter #$sourceParamNumber has value $assignedBus, using it for connection');
+    } else if (targetAlgorithmIndex == -1 && targetPortId.startsWith('output_')) {
+      // Special case: External output connection - use the appropriate Output bus
+      final outputNum = int.tryParse(targetPortId.replaceAll('output_', '')) ?? 1;
+      assignedBus = 12 + outputNum; // Output buses are 13-20 (Output 1-8)
+      debugPrint('[AutoRoutingService] External output connection, using Output bus $assignedBus');
+    } else {
+      // Source not connected - assign first available aux bus
+      assignedBus = _findAvailableAuxBusConsideringState(existingConnections);
+      debugPrint('[AutoRoutingService] Source not connected, assigning new bus $assignedBus');
+    }
+
+    debugPrint(
+        '[AutoRoutingService] Final bus assignment: $assignedBus for connection $sourceAlgorithmIndex:$sourcePortId -> $targetAlgorithmIndex:$targetPortId');
     
     // Default to replace mode (can be enhanced based on algorithm types)
     final replaceMode = true;
@@ -55,48 +55,44 @@ class AutoRoutingService {
     // Generate edge label
     final edgeLabel = _generateEdgeLabel(assignedBus, replaceMode);
     
-    // Find the actual parameter numbers from the current state
-    final sourceParamNumber = _findParameterNumberForPort(
-      sourceAlgorithmIndex, 
-      sourcePortId, 
-      isOutput: true,
-    );
-    final targetParamNumber = _findParameterNumberForPort(
-      targetAlgorithmIndex, 
-      targetPortId, 
-      isOutput: false,
-    );
+    // Find parameter numbers - already done above for source
+    // Handle external outputs (targetAlgorithmIndex = -1)
+    final targetParamNumber = targetAlgorithmIndex >= 0 
+        ? _findParameterNumberForPort(
+            targetAlgorithmIndex, 
+            targetPortId, 
+            isOutput: false,
+          )
+        : -1; // External output doesn't have a parameter number
     
     debugPrint('[AutoRoutingService] Assigning bus $assignedBus: source param #$sourceParamNumber, target param #$targetParamNumber');
     
     // Create parameter updates with actual parameter numbers
     final parameterUpdates = <ParameterUpdate>[];
-    
-    // Only update the source output bus if this is the first connection from this source
-    // (i.e., we just assigned a new bus, not reusing an existing one)
-    if (existingConnectionFromSameSource.assignedBus == -1) {
-      debugPrint('[AutoRoutingService] First connection from this source, setting output bus to $assignedBus');
-      parameterUpdates.add(
-        ParameterUpdate(
-          algorithmIndex: sourceAlgorithmIndex,
-          parameterId: _inferOutputBusParameterId(sourcePortId),
-          parameterNumber: sourceParamNumber,
-          value: assignedBus,
-        ),
-      );
-    } else {
-      debugPrint('[AutoRoutingService] Reusing existing bus $assignedBus from source, NOT updating source output');
-    }
-    
-    // Always update the target input bus
+
+    // Always set source output to the bus
+    debugPrint('[AutoRoutingService] Setting source output bus to $assignedBus');
     parameterUpdates.add(
       ParameterUpdate(
-        algorithmIndex: targetAlgorithmIndex,
-        parameterId: _inferInputBusParameterId(targetPortId),
-        parameterNumber: targetParamNumber,
+        algorithmIndex: sourceAlgorithmIndex,
+        parameterId: _inferOutputBusParameterId(sourcePortId),
+        parameterNumber: sourceParamNumber,
         value: assignedBus,
       ),
     );
+    
+    // Only set target input if it's an internal connection (not external output)
+    if (targetAlgorithmIndex >= 0) {
+      debugPrint('[AutoRoutingService] Setting target input bus to $assignedBus');
+      parameterUpdates.add(
+        ParameterUpdate(
+          algorithmIndex: targetAlgorithmIndex,
+          parameterId: _inferInputBusParameterId(targetPortId),
+          parameterNumber: targetParamNumber,
+          value: assignedBus,
+        ),
+      );
+    }
 
     return BusAssignment(
       connectionId: connectionId,
@@ -123,8 +119,8 @@ class AutoRoutingService {
       }
     }
     
-    // If aux buses full, try unused output buses (13-24)
-    for (int bus = 13; bus <= 24; bus++) {
+    // If aux buses full, try unused output buses (13-20 => O1-O8)
+    for (int bus = 13; bus <= 20; bus++) {
       if (!usedBuses.contains(bus)) {
         return bus;
       }
@@ -139,6 +135,94 @@ class AutoRoutingService {
     
     throw InsufficientBusesException('All buses are in use');
   }
+
+  // Prefer using current state to avoid races where existingConnections isn't up to date
+  int _findAvailableAuxBusConsideringStateWithSet(Set<int> preferredUsed) {
+    final used = _collectUsedOutputBusesFromState()..addAll(preferredUsed);
+
+    // Aux buses first (21-28)
+    for (int bus = 21; bus <= 28; bus++) {
+      if (!used.contains(bus)) return bus;
+    }
+    // Then output buses (13-20 => O1-O8)
+    for (int bus = 13; bus <= 20; bus++) {
+      if (!used.contains(bus)) return bus;
+    }
+    // Finally input buses (1-12)
+    for (int bus = 1; bus <= 12; bus++) {
+      if (!used.contains(bus)) return bus;
+    }
+    throw InsufficientBusesException('All buses are in use');
+  }
+
+  int _findAvailableAuxBusConsideringState(List<Connection> existingConnections) {
+    return _findAvailableAuxBusConsideringStateWithSet(
+      existingConnections.map((c) => c.assignedBus).toSet(),
+    );
+  }
+
+  /// Get the current value of a parameter from the preset state
+  int? _getParameterValue(int algorithmIndex, int parameterNumber) {
+    final distingState = _cubit.state;
+    
+    if (distingState is! DistingStateSynchronized) {
+      return null;
+    }
+    
+    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+      return null;
+    }
+    
+    final slot = distingState.slots[algorithmIndex];
+    
+    // Simply find the parameter value by its number
+    final val = slot.values.firstWhere(
+      (v) => v.parameterNumber == parameterNumber,
+      orElse: () => ParameterValue.filler(),
+    );
+    
+    if (val.value > 0) {
+      debugPrint('[AutoRoutingService] Parameter #$parameterNumber in algorithm $algorithmIndex has value ${val.value}');
+      return val.value;
+    }
+    
+    return null;
+  }
+  
+  // Collect ALL buses currently in use (both inputs and outputs)
+  Set<int> _collectUsedOutputBusesFromState() {
+    final used = <int>{};
+    final s = _cubit.state;
+    if (s is! DistingStateSynchronized) return used;
+    final units = s.unitStrings;
+    
+    // Check ALL slots for ANY bus parameters that are set
+    for (final slot in s.slots) {
+      for (final param in slot.parameters) {
+        // Check if this is a bus parameter
+        final unit = param.getUnitString(units) ?? '';
+        final isBusParam = unit == 'bus' || (param.unit == 1 && param.max >= 28);
+        
+        if (!isBusParam) continue;
+        
+        // Get current value for this parameter
+        final val = slot.values.firstWhere(
+          (v) => v.parameterNumber == param.parameterNumber,
+          orElse: () => ParameterValue.filler(),
+        );
+        
+        // If it has a non-zero value, that bus is in use
+        if (val.value > 0) {
+          used.add(val.value);
+          debugPrint('[AutoRoutingService] Bus ${val.value} is in use by parameter "${param.name}"');
+        }
+      }
+    }
+    
+    debugPrint('[AutoRoutingService] Total buses in use: ${used.length} - ${used.toList()..sort()}');
+    return used;
+  }
+
 
   /// Apply bus parameter updates for a connection
   Future<void> updateBusParameters(List<ParameterUpdate> updates) async {
@@ -213,11 +297,15 @@ class AutoRoutingService {
     }
     
     final slot = distingState.slots[algorithmIndex];
+    final units = distingState.unitStrings;
+    
+    debugPrint('[AutoRoutingService] Finding parameter for port "$portId" (isOutput=$isOutput) in algorithm $algorithmIndex');
     
     // Convert portId back to a parameter name pattern
     // The portId is sanitized (e.g., "output" or "l_input")
     // We need to find parameters whose sanitized names match
     
+    // First pass: exact match with sanitized name AND matching input/output type
     for (final param in slot.parameters) {
       // Sanitize the parameter name the same way PortExtractionService does
       final sanitizedParamName = param.name
@@ -227,54 +315,131 @@ class AutoRoutingService {
           .replaceAll(RegExp(r'^_|_$'), '');
       
       if (sanitizedParamName == portId) {
-        debugPrint('[AutoRoutingService] Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
-        return param.parameterNumber;
+        // Check if this is a bus parameter
+        final unit = param.getUnitString(units) ?? '';
+        final isBusParam = unit == 'bus' || (param.unit == 1 && param.max >= 28);
+        
+        if (!isBusParam) continue;
+        
+        // For exact matches, also verify it matches the expected input/output type
+        // Output parameters typically have default values >= 13 (Output buses start at 13)
+        // Input parameters typically have default values <= 12 or 0
+        final isParamOutput = param.defaultValue >= 13 && param.defaultValue <= 28;
+        final isParamInput = param.defaultValue >= 0 && param.defaultValue <= 12;
+        
+        if (isOutput && isParamOutput) {
+          debugPrint('[AutoRoutingService] Exact match OUTPUT: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+          return param.parameterNumber;
+        } else if (!isOutput && isParamInput) {
+          debugPrint('[AutoRoutingService] Exact match INPUT: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+          return param.parameterNumber;
+        }
+        // If type doesn't match, continue searching
       }
     }
     
-    // If exact match not found, try partial matching based on common patterns
+    // Second pass: find bus parameters and match by type
     for (final param in slot.parameters) {
-      final nameLower = param.name.toLowerCase();
+      // Check if this is a bus parameter
+      final unit = param.getUnitString(units) ?? '';
+      final isBusParam = unit == 'bus' || (param.unit == 1 && param.max >= 28);
       
+      if (!isBusParam) continue;
+      
+      final nameLower = param.name.toLowerCase();
+      final sanitizedParamName = param.name
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]'), '_')
+          .replaceAll(RegExp(r'_+'), '_')
+          .replaceAll(RegExp(r'^_|_$'), '');
+      
+      // Check if this parameter matches the type we're looking for
       if (isOutput) {
         // Looking for output parameters
-        if (portId.contains('output') && nameLower.contains('output')) {
-          debugPrint('[AutoRoutingService] Found output parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
-          return param.parameterNumber;
-        }
-        if (portId.contains('main') && nameLower.contains('main')) {
-          debugPrint('[AutoRoutingService] Found main output parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
-          return param.parameterNumber;
+        final isOutputParam = nameLower.contains('output') || 
+                             nameLower.contains('send') ||
+                             nameLower.contains('main out') ||
+                             nameLower.contains('aux') ||
+                             param.defaultValue >= 13 && param.defaultValue <= 28;
+        
+        if (isOutputParam) {
+          // Check for partial match
+          if (portId.contains('output') && sanitizedParamName.contains('output')) {
+            debugPrint('[AutoRoutingService] Partial match: Found output parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+            return param.parameterNumber;
+          }
+          if (portId.contains('main') && sanitizedParamName.contains('main')) {
+            debugPrint('[AutoRoutingService] Partial match: Found main output parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+            return param.parameterNumber;
+          }
+          // If only one output parameter exists, use it
+          final outputParams = slot.parameters.where((p) {
+            final pUnit = p.getUnitString(units) ?? '';
+            final pNameLower = p.name.toLowerCase();
+            return (pUnit == 'bus' || (p.unit == 1 && p.max >= 28)) &&
+                   (pNameLower.contains('output') || pNameLower.contains('send') || 
+                    pNameLower.contains('main out') || pNameLower.contains('aux'));
+          }).toList();
+          
+          if (outputParams.length == 1) {
+            debugPrint('[AutoRoutingService] Single output: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+            return param.parameterNumber;
+          }
         }
       } else {
         // Looking for input parameters
-        if (portId.contains('input') && nameLower.contains('input')) {
-          // Try to match more specific inputs first (e.g., "l_input" matches "L Input")
-          if (portId.startsWith('l_') && nameLower.startsWith('l ')) {
-            debugPrint('[AutoRoutingService] Found L input parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+        final isInputParam = nameLower.contains('input') || 
+                            nameLower.contains('receive') ||
+                            nameLower.contains('pitch') ||
+                            nameLower.contains('wave') ||
+                            nameLower.contains('clock') ||
+                            nameLower.contains('gate') ||
+                            nameLower.contains('v/oct') ||
+                            param.defaultValue >= 1 && param.defaultValue <= 12;
+        
+        if (isInputParam) {
+          // Check for partial match
+          if (portId.contains('input') && sanitizedParamName.contains('input')) {
+            // Try to match more specific inputs first
+            if (portId.startsWith('l_') && sanitizedParamName.startsWith('l_')) {
+              debugPrint('[AutoRoutingService] Partial match: Found L input parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+              return param.parameterNumber;
+            }
+            if (portId.startsWith('r_') && sanitizedParamName.startsWith('r_')) {
+              debugPrint('[AutoRoutingService] Partial match: Found R input parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+              return param.parameterNumber;
+            }
+            // Generic input match
+            debugPrint('[AutoRoutingService] Partial match: Found input parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
             return param.parameterNumber;
           }
-          if (portId.startsWith('r_') && nameLower.startsWith('r ')) {
-            debugPrint('[AutoRoutingService] Found R input parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+          // Check for specific parameter names
+          if (portId.contains('pitch') && sanitizedParamName.contains('pitch')) {
+            debugPrint('[AutoRoutingService] Partial match: Found pitch parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
             return param.parameterNumber;
           }
-          // Generic input match
-          debugPrint('[AutoRoutingService] Found input parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
-          return param.parameterNumber;
-        }
-        // Check for specific parameter names that are inputs
-        if (portId.contains('pitch') && nameLower.contains('pitch')) {
-          debugPrint('[AutoRoutingService] Found pitch parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
-          return param.parameterNumber;
-        }
-        if (portId.contains('wave') && nameLower.contains('wave')) {
-          debugPrint('[AutoRoutingService] Found wave parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
-          return param.parameterNumber;
+          if (portId.contains('wave') && sanitizedParamName.contains('wave')) {
+            debugPrint('[AutoRoutingService] Partial match: Found wave parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+            return param.parameterNumber;
+          }
+          // If only one input parameter exists, use it
+          final inputParams = slot.parameters.where((p) {
+            final pUnit = p.getUnitString(units) ?? '';
+            final pNameLower = p.name.toLowerCase();
+            return (pUnit == 'bus' || (p.unit == 1 && p.max >= 28)) &&
+                   (pNameLower.contains('input') || pNameLower.contains('receive') ||
+                    pNameLower.contains('pitch') || pNameLower.contains('wave'));
+          }).toList();
+          
+          if (inputParams.length == 1) {
+            debugPrint('[AutoRoutingService] Single input: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"');
+            return param.parameterNumber;
+          }
         }
       }
     }
     
-    debugPrint('[AutoRoutingService] No parameter found for port "$portId", using fallback');
+    debugPrint('[AutoRoutingService] WARNING: No parameter found for port "$portId" in algorithm $algorithmIndex, using fallback');
     return isOutput ? 0 : 1; // Fallback
   }
 }
@@ -319,7 +484,7 @@ class InsufficientBusesException implements Exception {
 }
 
 extension AutoRoutingServiceExtensions on AutoRoutingService {
-  /// Remove a connection by clearing the target input parameter
+  /// Remove a connection by clearing both the source output and target input parameters
   Future<void> removeConnection({
     required int sourceAlgorithmIndex,
     required String sourcePortId,
@@ -327,26 +492,39 @@ extension AutoRoutingServiceExtensions on AutoRoutingService {
     required String targetPortId,
   }) async {
     debugPrint('[AutoRoutingService] Removing connection from $sourceAlgorithmIndex:$sourcePortId to $targetAlgorithmIndex:$targetPortId');
-    
-    // Find the parameter number for the target input port
+
+    // Find the parameter numbers for both ports
     final targetParamNumber = _findParameterNumberForPort(
       targetAlgorithmIndex,
       targetPortId,
       isOutput: false,
     );
+
+    final sourceParamNumber = _findParameterNumberForPort(
+      sourceAlgorithmIndex,
+      sourcePortId,
+      isOutput: true,
+    );
+
+    // Clear BOTH the source output and target input to None (0)
+    // Since each bus is exclusive to one connection, we can safely clear both
     
-    // Set the target input parameter to 0 (None) to disconnect it
+    // Clear target input
     await _cubit.updateParameterValue(
       algorithmIndex: targetAlgorithmIndex,
       parameterNumber: targetParamNumber,
-      value: 0, // 0 = None/disconnected
+      value: 0,
       userIsChangingTheValue: true,
     );
-    
     debugPrint('[AutoRoutingService] Cleared input parameter #$targetParamNumber on algorithm $targetAlgorithmIndex');
-    
-    // Note: We don't clear the source output parameter because it might be
-    // connected to other inputs (signal splitting). The hardware will handle
-    // cleaning up unused buses automatically.
+
+    // Clear source output
+    await _cubit.updateParameterValue(
+      algorithmIndex: sourceAlgorithmIndex,
+      parameterNumber: sourceParamNumber,
+      value: 0,
+      userIsChangingTheValue: true,
+    );
+    debugPrint('[AutoRoutingService] Cleared output parameter #$sourceParamNumber on algorithm $sourceAlgorithmIndex');
   }
 }

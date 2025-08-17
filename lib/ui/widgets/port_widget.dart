@@ -37,6 +37,12 @@ class PortWidget extends StatefulWidget {
 
 class _PortWidgetState extends State<PortWidget> {
   bool _isPressed = false;
+  bool _isDragging = false;
+  Offset? _dragStartPosition;
+  
+  // Dead zone threshold - minimum distance to drag before starting a connection
+  // This prevents accidental connection starts when trying to tap on the port
+  static const double _dragThreshold = 10.0;
 
   @override
   Widget build(BuildContext context) {
@@ -44,32 +50,64 @@ class _PortWidgetState extends State<PortWidget> {
       onPanStart: (details) {
         setState(() {
           _isPressed = true;
+          _dragStartPosition = details.localPosition;
+          _isDragging = false;
         });
-        if (widget.type == PortType.output) {
-          widget.onConnectionStart?.call();
-          widget.onPanStart?.call(details);
-        }
       },
       onPanUpdate: (details) {
         if (widget.type == PortType.output) {
-          widget.onPanUpdate?.call(details);
+          // Check if we've moved beyond the threshold
+          if (!_isDragging && _dragStartPosition != null) {
+            final distance = (details.localPosition - _dragStartPosition!).distance;
+            if (distance > _dragThreshold) {
+              // Start the connection only after moving beyond threshold
+              setState(() {
+                _isDragging = true;
+              });
+              widget.onConnectionStart?.call();
+              // Create a synthetic pan start at the original position
+              final syntheticStart = DragStartDetails(
+                localPosition: _dragStartPosition!,
+                globalPosition: details.globalPosition - (details.localPosition - _dragStartPosition!),
+              );
+              widget.onPanStart?.call(syntheticStart);
+            }
+          }
+          
+          // Continue updating if we're dragging
+          if (_isDragging) {
+            widget.onPanUpdate?.call(details);
+          }
         }
       },
       onPanEnd: (details) {
         setState(() {
           _isPressed = false;
         });
+        
         if (widget.type == PortType.input) {
           widget.onConnectionEnd?.call();
         }
-        if (widget.type == PortType.output) {
+        
+        if (widget.type == PortType.output && _isDragging) {
+          // Only trigger pan end if we were actually dragging
           widget.onPanEnd?.call(details);
         }
+        
+        setState(() {
+          _isDragging = false;
+          _dragStartPosition = null;
+        });
       },
       onTapDown: (_) {
         setState(() {
           _isPressed = true;
         });
+      },
+      onTap: () {
+        // For now, taps on ports don't do anything
+        // Connection creation requires dragging beyond the threshold
+        // Connection removal is handled through the connection lines themselves
       },
       onTapUp: (_) {
         setState(() {
@@ -79,6 +117,8 @@ class _PortWidgetState extends State<PortWidget> {
       onTapCancel: () {
         setState(() {
           _isPressed = false;
+          _isDragging = false;
+          _dragStartPosition = null;
         });
       },
       child: Container(
