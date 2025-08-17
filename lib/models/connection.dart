@@ -25,11 +25,16 @@ extension ConnectionHelpers on Connection {
   // Helper to generate edge label
   String getEdgeLabel() {
     final busType = assignedBus <= 12 ? 'I' : 
-                   assignedBus <= 24 ? 'O' : 'A';
+                   assignedBus <= 20 ? 'O' : 'A';
     final busNum = assignedBus <= 12 ? assignedBus :
-                   assignedBus <= 24 ? assignedBus - 12 :
+                   assignedBus <= 20 ? assignedBus - 12 :
                    assignedBus - 20;
-    final mode = replaceMode ? 'R' : 'A';
-    return '$busType$busNum $mode';
+    // Omit mode for now since replace/add logic needs to check actual output mode parameters
+    return '$busType$busNum';
   }
+  
+  /// Check if this connection violates execution order
+  /// Source must come before target in slot order for signal flow to work
+  /// (Disting NT processes algorithms in slot order)
+  bool get violatesExecutionOrder => sourceAlgorithmIndex >= targetAlgorithmIndex;
 }

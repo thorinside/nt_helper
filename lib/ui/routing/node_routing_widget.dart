@@ -36,10 +36,8 @@ class NodeRoutingWidget extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NodeRoutingCubit>().initializeFromRouting(routing);
     });
-    
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
+
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildLoading() {
@@ -72,11 +70,17 @@ class NodeRoutingWidget extends StatelessWidget {
     return RoutingCanvas(
       nodePositions: state.nodePositions,
       algorithmNames: state.algorithmNames,
-      algorithmPorts: state.algorithmPorts,
+      portLayouts: state.portLayouts,
       connections: state.connections,
       connectedPorts: state.connectedPorts,
+      portPositions: state.portPositions,
+      connectionPreview: state.connectionPreview,
+      hoveredConnectionId: state.hoveredConnectionId,
       onNodePositionChanged: (algorithmIndex, position) {
-        context.read<NodeRoutingCubit>().updateNodePosition(algorithmIndex, position);
+        context.read<NodeRoutingCubit>().updateNodePosition(
+          algorithmIndex,
+          position,
+        );
       },
       onConnectionCreated: (connection) {
         context.read<NodeRoutingCubit>().createConnection(
@@ -100,11 +104,7 @@ class NodeRoutingWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
           Text(
             'Error loading node routing:',

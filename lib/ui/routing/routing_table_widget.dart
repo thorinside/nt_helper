@@ -120,9 +120,7 @@ class RoutingTableWidget extends StatelessWidget {
             verticalInside: BorderSide(color: Colors.grey.shade300),
             horizontalInside: BorderSide(color: Colors.grey.shade300),
           ),
-          columnWidths: const {
-            0: IntrinsicColumnWidth(),
-          },
+          columnWidths: const {0: IntrinsicColumnWidth()},
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: pinnedColumnRows,
         ),
@@ -159,8 +157,9 @@ class RoutingTableWidget extends StatelessWidget {
   Widget _buildHeaderCell(String text) {
     return Container(
       alignment: Alignment.center,
-      width:
-          (text == 'Algorithm') ? null : _cellWidth, // Pinned col can auto-size
+      width: (text == 'Algorithm')
+          ? null
+          : _cellWidth, // Pinned col can auto-size
       height: _cellHeight,
       padding: (text == 'Algorithm')
           ? const EdgeInsets.symmetric(horizontal: 4)

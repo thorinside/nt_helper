@@ -148,12 +148,20 @@ class RoutingValidator {
     final sourceName = source.name.toLowerCase();
     final targetName = target.name.toLowerCase();
 
+    // Specific type matching
     if (sourceName.contains('audio') && targetName.contains('audio')) return true;
     if (sourceName.contains('cv') && (targetName.contains('cv') || targetName.contains('modulation'))) return true;
     if (sourceName.contains('gate') && (targetName.contains('gate') || targetName.contains('trigger'))) return true;
     if (sourceName.contains('signal') && targetName.contains('signal')) return true;
-
-    return false;
+    
+    // Generic port compatibility - most algorithm outputs can connect to most inputs
+    // This handles cases like "Output" -> "Input", "1:Output" -> "L Input", etc.
+    if (sourceName.contains('output') && targetName.contains('input')) return true;
+    if (sourceName.contains('out') && targetName.contains('in')) return true;
+    
+    // Allow generic port connections for modular synthesis flexibility
+    // In modular synthesis, most outputs can connect to most inputs
+    return true;
   }
 
   static bool _wouldCreateCycle(

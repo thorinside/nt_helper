@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/models/routing_information.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/ui/routing/routing_table_widget.dart';
 import 'package:nt_helper/ui/routing/node_routing_widget.dart';
 
@@ -132,7 +133,7 @@ class _RoutingPageState extends State<RoutingPage> {
                   ),
                 )
               : BlocProvider(
-                  create: (context) => NodeRoutingCubit(widget.cubit),
+                  create: (context) => NodeRoutingCubit(widget.cubit, AlgorithmMetadataService()),
                   child: NodeRoutingWidget(
                     routing: _routingInformation,
                     showSignals: true,

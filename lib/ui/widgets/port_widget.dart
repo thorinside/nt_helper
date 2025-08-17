@@ -3,11 +3,18 @@ import 'package:nt_helper/models/algorithm_port.dart';
 
 enum PortType { input, output }
 
+typedef PortPanStartCallback = void Function(DragStartDetails details);
+typedef PortPanUpdateCallback = void Function(DragUpdateDetails details);
+typedef PortPanEndCallback = void Function(DragEndDetails details);
+
 class PortWidget extends StatefulWidget {
   final AlgorithmPort port;
   final PortType type;
   final VoidCallback? onConnectionStart;
   final VoidCallback? onConnectionEnd;
+  final PortPanStartCallback? onPanStart;
+  final PortPanUpdateCallback? onPanUpdate;
+  final PortPanEndCallback? onPanEnd;
   final bool isHovered;
   final bool isConnected;
 
@@ -17,6 +24,9 @@ class PortWidget extends StatefulWidget {
     required this.type,
     this.onConnectionStart,
     this.onConnectionEnd,
+    this.onPanStart,
+    this.onPanUpdate,
+    this.onPanEnd,
     this.isHovered = false,
     this.isConnected = false,
   });
@@ -31,20 +41,29 @@ class _PortWidgetState extends State<PortWidget> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onPanStart: (_) {
+      onPanStart: (details) {
         setState(() {
           _isPressed = true;
         });
         if (widget.type == PortType.output) {
           widget.onConnectionStart?.call();
+          widget.onPanStart?.call(details);
         }
       },
-      onPanEnd: (_) {
+      onPanUpdate: (details) {
+        if (widget.type == PortType.output) {
+          widget.onPanUpdate?.call(details);
+        }
+      },
+      onPanEnd: (details) {
         setState(() {
           _isPressed = false;
         });
         if (widget.type == PortType.input) {
           widget.onConnectionEnd?.call();
+        }
+        if (widget.type == PortType.output) {
+          widget.onPanEnd?.call(details);
         }
       },
       onTapDown: (_) {

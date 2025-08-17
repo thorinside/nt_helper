@@ -1,20 +1,18 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/connection.dart';
-import 'package:nt_helper/models/node_position.dart';
+import 'package:nt_helper/models/connection_preview.dart';
 
 class ConnectionPainter extends CustomPainter {
   final List<Connection> connections;
-  final Map<int, NodePosition> nodePositions;
-  final Connection? previewConnection;
-  final Offset? previewTargetPosition;
+  final Map<String, Offset> portPositions; // algorithmIndex_portId -> Offset
+  final ConnectionPreview? connectionPreview;
   final String? hoveredConnectionId;
 
   ConnectionPainter({
     required this.connections,
-    required this.nodePositions,
-    this.previewConnection,
-    this.previewTargetPosition,
+    required this.portPositions,
+    this.connectionPreview,
     this.hoveredConnectionId,
   });
 
@@ -22,31 +20,45 @@ class ConnectionPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Draw all established connections
     for (final connection in connections) {
-      _drawConnection(canvas, connection, isHovered: connection.id == hoveredConnectionId);
+      _drawConnection(
+        canvas,
+        connection,
+        isHovered: connection.id == hoveredConnectionId,
+      );
     }
 
     // Draw preview connection if dragging
-    if (previewConnection != null && previewTargetPosition != null) {
-      _drawPreviewConnection(canvas, previewConnection!, previewTargetPosition!);
+    if (connectionPreview != null) {
+      _drawPreviewConnection(canvas, connectionPreview!);
     }
   }
 
-  void _drawConnection(Canvas canvas, Connection connection, {bool isHovered = false}) {
-    final sourcePos = _getPortPosition(connection.sourceAlgorithmIndex, connection.sourcePortId, isOutput: true);
-    final targetPos = _getPortPosition(connection.targetAlgorithmIndex, connection.targetPortId, isOutput: false);
+  void _drawConnection(
+    Canvas canvas,
+    Connection connection, {
+    bool isHovered = false,
+  }) {
+    final sourceKey = '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
+    final targetKey = '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
+    
+    final sourcePos = portPositions[sourceKey];
+    final targetPos = portPositions[targetKey];
 
     if (sourcePos == null || targetPos == null) return;
 
     final paint = Paint()
-      ..strokeWidth = isHovered ? 3.0 : 2.0
+      ..strokeWidth = isHovered ? 4.0 : 2.0  // Thicker when hovered
       ..style = PaintingStyle.stroke;
 
-    // Color based on validity and hover state
-    if (!connection.isValid) {
+    // Color based on execution order and validity (not hover state)
+    if (connection.violatesExecutionOrder) {
+      // Invalid execution order - signal won't reach target
       paint.color = Colors.red.withValues(alpha: 0.8);
-    } else if (isHovered) {
-      paint.color = Colors.white.withValues(alpha: 0.9);
+    } else if (!connection.isValid) {
+      // Other validation issues
+      paint.color = Colors.orange.withValues(alpha: 0.8);
     } else {
+      // Valid connection - same color whether hovered or not
       paint.color = Colors.green.withValues(alpha: 0.7);
     }
 
@@ -62,44 +74,126 @@ class ConnectionPainter extends CustomPainter {
     _drawEdgeLabel(canvas, sourcePos, targetPos, edgeLabel);
   }
 
-  void _drawPreviewConnection(Canvas canvas, Connection connection, Offset targetPosition) {
-    final sourcePos = _getPortPosition(connection.sourceAlgorithmIndex, connection.sourcePortId, isOutput: true);
-    
-    if (sourcePos == null) return;
+  void _drawPreviewConnection(
+    Canvas canvas,
+    ConnectionPreview connectionPreview,
+  ) {
+    final sourceKey = '${connectionPreview.sourceAlgorithmIndex}_${connectionPreview.sourcePortId}';
+    final sourcePos = portPositions[sourceKey];
+
+    if (sourcePos == null) {
+      debugPrint('[ConnectionPainter] No source position for $sourceKey');
+      return;
+    }
+
+    debugPrint('[ConnectionPainter] Drawing preview from $sourcePos to ${connectionPreview.cursorPosition}');
+
+    // Color based on validity and execution order
+    Color previewColor;
+    if (connectionPreview.violatesExecutionOrder) {
+      // Invalid due to execution order
+      previewColor = Colors.red.withValues(alpha: 0.7);
+    } else if (connectionPreview.isValid) {
+      // Valid connection
+      previewColor = Colors.green.withValues(alpha: 0.7);
+    } else {
+      // Invalid for other reasons (or no target)
+      previewColor = Colors.orange.withValues(alpha: 0.7);
+    }
 
     final paint = Paint()
-      ..color = Colors.blue.withValues(alpha: 0.6)
+      ..color = previewColor
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
-    // Dashed line for preview
-    // Note: PathEffect may not be available in all Flutter versions
-    // Alternative approach: draw dashed line manually or use different visual indicator
+    final path = _createBezierPath(sourcePos, connectionPreview.cursorPosition);
 
-    final path = _createBezierPath(sourcePos, targetPosition);
-    canvas.drawPath(path, paint);
+    // Draw dashed line for preview
+    _drawDashedPath(canvas, path, paint, dashArray: [8, 4]);
+  }
+
+  /// Draw a dashed path by sampling points along the path
+  void _drawDashedPath(
+    Canvas canvas,
+    Path path,
+    Paint paint, {
+    required List<double> dashArray,
+  }) {
+    final metrics = path.computeMetrics().first;
+    double distance = 0.0;
+    bool draw = true;
+    int dashIndex = 0;
+
+    while (distance < metrics.length) {
+      final currentDashLength = dashArray[dashIndex % dashArray.length];
+      final nextDistance = math.min(
+        distance + currentDashLength,
+        metrics.length,
+      );
+
+      if (draw) {
+        final startTangent = metrics.getTangentForOffset(distance);
+        final endTangent = metrics.getTangentForOffset(nextDistance);
+
+        if (startTangent != null && endTangent != null) {
+          final dashPath = Path();
+          dashPath.moveTo(startTangent.position.dx, startTangent.position.dy);
+
+          // Sample points along the curve for smooth dashed lines
+          const sampleCount = 8;
+          for (int i = 1; i <= sampleCount; i++) {
+            final t = distance + (nextDistance - distance) * (i / sampleCount);
+            final tangent = metrics.getTangentForOffset(t);
+            if (tangent != null) {
+              dashPath.lineTo(tangent.position.dx, tangent.position.dy);
+            }
+          }
+
+          canvas.drawPath(dashPath, paint);
+        }
+      }
+
+      distance = nextDistance;
+      draw = !draw;
+      dashIndex++;
+    }
   }
 
   Path _createBezierPath(Offset start, Offset end) {
     final path = Path();
     path.moveTo(start.dx, start.dy);
 
-    // Calculate control points for smooth horizontal emphasis
-    final dx = (end.dx - start.dx).abs();
-    final controlPointOffset = math.max(50.0, dx * 0.5);
-    
-    final cp1 = Offset(start.dx + controlPointOffset, start.dy);
-    final cp2 = Offset(end.dx - controlPointOffset, end.dy);
+    // Calculate adaptive control points based on distance and direction
+    final distance = (end - start).distance;
+    final controlStrength = math.min(distance * 0.4, 100.0);
 
-    path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, end.dx, end.dy);
+    // Different curves for horizontal vs vertical routing
+    if ((end.dx - start.dx).abs() > (end.dy - start.dy).abs()) {
+      // Horizontal-dominant: smooth S-curve
+      final cp1 = Offset(start.dx + controlStrength, start.dy);
+      final cp2 = Offset(end.dx - controlStrength, end.dy);
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, end.dx, end.dy);
+    } else {
+      // Vertical: use midpoint control for better aesthetics
+      final midY = (start.dy + end.dy) / 2;
+      final cp1 = Offset(start.dx + controlStrength * 0.3, midY);
+      final cp2 = Offset(end.dx - controlStrength * 0.3, midY);
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, end.dx, end.dy);
+    }
+
     return path;
   }
 
-  void _drawArrowHead(Canvas canvas, Offset target, Path connectionPath, Color color) {
+  void _drawArrowHead(
+    Canvas canvas,
+    Offset target,
+    Path connectionPath,
+    Color color,
+  ) {
     // Calculate arrow direction from path tangent
     final metrics = connectionPath.computeMetrics().first;
     final tangent = metrics.getTangentForOffset(metrics.length - 5);
-    
+
     if (tangent == null) return;
 
     final angle = math.atan2(tangent.vector.dy, tangent.vector.dx);
@@ -116,7 +210,7 @@ class ConnectionPainter extends CustomPainter {
       target.dx - arrowLength * math.cos(angle - arrowAngle),
       target.dy - arrowLength * math.sin(angle - arrowAngle),
     );
-    
+
     final arrowPoint2 = Offset(
       target.dx - arrowLength * math.cos(angle + arrowAngle),
       target.dy - arrowLength * math.sin(angle + arrowAngle),
@@ -127,14 +221,14 @@ class ConnectionPainter extends CustomPainter {
       ..moveTo(arrowPoint1.dx, arrowPoint1.dy)
       ..lineTo(target.dx, target.dy)
       ..lineTo(arrowPoint2.dx, arrowPoint2.dy);
-    
+
     canvas.drawPath(arrowPath, arrowPaint);
   }
 
   void _drawEdgeLabel(Canvas canvas, Offset start, Offset end, String label) {
     // Calculate midpoint of bezier curve
     final midPoint = _calculateBezierMidpoint(start, end);
-    
+
     final textPainter = TextPainter(
       text: TextSpan(
         text: label,
@@ -146,25 +240,25 @@ class ConnectionPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
     );
-    
+
     textPainter.layout();
-    
+
     // Draw background for label
     final labelRect = Rect.fromCenter(
       center: midPoint,
       width: textPainter.width + 6,
       height: textPainter.height + 2,
     );
-    
+
     final labelPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawRRect(
       RRect.fromRectAndRadius(labelRect, const Radius.circular(3)),
       labelPaint,
     );
-    
+
     // Draw text
     textPainter.paint(
       canvas,
@@ -179,48 +273,25 @@ class ConnectionPainter extends CustomPainter {
     // Calculate midpoint of bezier curve (t = 0.5)
     final dx = (end.dx - start.dx).abs();
     final controlPointOffset = math.max(50.0, dx * 0.5);
-    
+
     final cp1 = Offset(start.dx + controlPointOffset, start.dy);
     final cp2 = Offset(end.dx - controlPointOffset, end.dy);
 
     // Bezier curve at t = 0.5
     const t = 0.5;
     const u = 1 - t;
-    
-    return start * (u * u * u) + 
-           cp1 * (3 * u * u * t) + 
-           cp2 * (3 * u * t * t) + 
-           end * (t * t * t);
-  }
 
-  Offset? _getPortPosition(int algorithmIndex, String portId, {required bool isOutput}) {
-    final nodePos = nodePositions[algorithmIndex];
-    if (nodePos == null) return null;
-
-    // Simplified port position calculation
-    // In a real implementation, this would query the actual port layout
-    const portOffset = 8.0; // Half of port widget width
-    const headerHeight = 30.0;
-    const portSpacing = 18.0;
-    
-    // Mock port index (in real implementation, find actual port index)
-    final portIndex = portId.hashCode % 4; // Simplified for demo
-    
-    final portY = nodePos.y + headerHeight + (portIndex * portSpacing) + portOffset;
-    
-    if (isOutput) {
-      return Offset(nodePos.x + nodePos.width, portY);
-    } else {
-      return Offset(nodePos.x, portY);
-    }
+    return start * (u * u * u) +
+        cp1 * (3 * u * u * t) +
+        cp2 * (3 * u * t * t) +
+        end * (t * t * t);
   }
 
   @override
   bool shouldRepaint(ConnectionPainter oldDelegate) {
     return connections != oldDelegate.connections ||
-           nodePositions != oldDelegate.nodePositions ||
-           previewConnection != oldDelegate.previewConnection ||
-           previewTargetPosition != oldDelegate.previewTargetPosition ||
-           hoveredConnectionId != oldDelegate.hoveredConnectionId;
+        portPositions != oldDelegate.portPositions ||
+        connectionPreview != oldDelegate.connectionPreview ||
+        hoveredConnectionId != oldDelegate.hoveredConnectionId;
   }
 }
