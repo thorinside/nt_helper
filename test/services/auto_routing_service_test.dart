@@ -83,19 +83,35 @@ void main() {
                 routing: RoutingInfo(algorithmIndex: 1, routingInfo: []),
                 pages: ParameterPages(algorithmIndex: 1, pages: []),
                 parameters: [
-                  // V/Oct output parameter (simplified)
+                  // V/Oct input parameter
+                  ParameterInfo(
+                    algorithmIndex: 1,
+                    parameterNumber: 30,
+                    name: 'V/Oct',
+                    min: 0,
+                    max: 28,
+                    defaultValue: 1, // Input 1 - this makes it an INPUT
+                    unit: 1, // enum/bus type
+                    powerOfTen: 0,
+                  ),
+                  // V/Oct output parameter
                   ParameterInfo(
                     algorithmIndex: 1,
                     parameterNumber: 31,
                     name: 'V/Oct',
                     min: 0,
                     max: 28,
-                    defaultValue: 16,
+                    defaultValue: 16, // Output 4 - this makes it an OUTPUT
                     unit: 1, // enum/bus type
                     powerOfTen: 0,
                   ),
                 ],
                 values: [
+                  ParameterValue(
+                    algorithmIndex: 1,
+                    parameterNumber: 30,
+                    value: 1, // Input 1
+                  ),
                   ParameterValue(
                     algorithmIndex: 1,
                     parameterNumber: 31,
@@ -128,7 +144,7 @@ void main() {
         // Create connection: Lua V/Oct (already set to Output 4) -> VCO Pitch Input
         var result = await service.assignBusForConnection(
           sourceAlgorithmIndex: 1, // Lua Script
-          sourcePortId: 'v_oct', // V/Oct output
+          sourcePortId: '31', // V/Oct output parameter #31
           targetAlgorithmIndex: 2, // VCO
           targetPortId: 'pitch_input',
           existingConnections: existingConnections,
@@ -139,6 +155,112 @@ void main() {
         
         // Edge label should indicate it's an Output bus
         expect(result.edgeLabel, equals('O4 R')); // Output 4 Replace mode
+      });
+      
+      test('should correctly disambiguate V/Oct input vs output with same names', () async {
+        // Set up the mock state for this test
+        when(mockCubit.state).thenReturn(
+          DistingState.synchronized(
+            disting: mockDisting,
+            distingVersion: '',
+            firmwareVersion: FirmwareVersion('1.0.0'),
+            presetName: 'Test',
+            algorithms: [],
+            unitStrings: [],
+            slots: [
+              // Slot 0 - empty
+              Slot(
+                algorithm: Algorithm(algorithmIndex: 0, guid: '', name: ''),
+                routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
+                pages: ParameterPages(algorithmIndex: 0, pages: []),
+                parameters: [],
+                values: [],
+                enums: [],
+                mappings: [],
+                valueStrings: [],
+              ),
+              // Slot 1 - Lua Script with both V/Oct parameters
+              Slot(
+                algorithm: Algorithm(algorithmIndex: 1, guid: 'lua ', name: 'Lua Script'),
+                routing: RoutingInfo(algorithmIndex: 1, routingInfo: []),
+                pages: ParameterPages(algorithmIndex: 1, pages: []),
+                parameters: [
+                  // V/Oct input parameter
+                  ParameterInfo(
+                    algorithmIndex: 1,
+                    parameterNumber: 30,
+                    name: 'V/Oct',
+                    min: 0,
+                    max: 28,
+                    defaultValue: 1, // Input 1
+                    unit: 1,
+                    powerOfTen: 0,
+                  ),
+                  // V/Oct output parameter
+                  ParameterInfo(
+                    algorithmIndex: 1,
+                    parameterNumber: 31,
+                    name: 'V/Oct',
+                    min: 0,
+                    max: 28,
+                    defaultValue: 16, // Output 4
+                    unit: 1,
+                    powerOfTen: 0,
+                  ),
+                ],
+                values: [
+                  ParameterValue(
+                    algorithmIndex: 1,
+                    parameterNumber: 30,
+                    value: 0, // Not connected
+                  ),
+                  ParameterValue(
+                    algorithmIndex: 1,
+                    parameterNumber: 31,
+                    value: 16, // Set to Output 4
+                  ),
+                ],
+                enums: [],
+                mappings: [],
+                valueStrings: [],
+              ),
+              // Slot 2 - VCO for target
+              Slot(
+                algorithm: Algorithm(algorithmIndex: 2, guid: 'vco ', name: 'VCO'),
+                routing: RoutingInfo(algorithmIndex: 2, routingInfo: []),
+                pages: ParameterPages(algorithmIndex: 2, pages: []),
+                parameters: [],
+                values: [],
+                enums: [],
+                mappings: [],
+                valueStrings: [],
+              ),
+            ],
+          ),
+        );
+        // Test connecting TO a V/Oct input (should find parameter #30, not #31)
+        var result = await service.assignBusForConnection(
+          sourceAlgorithmIndex: -2, // Physical input
+          sourcePortId: 'physical_input_4',
+          targetAlgorithmIndex: 1, // Lua Script
+          targetPortId: '30', // Parameter #30 is the INPUT V/Oct
+          existingConnections: [],
+        );
+        
+        // Should use Input 4 (bus 4) for physical connection
+        expect(result.sourceBus, equals(4)); // Input 4
+        
+        // Test connecting FROM a V/Oct output (should find parameter #31, not #30)
+        result = await service.assignBusForConnection(
+          sourceAlgorithmIndex: 1, // Lua Script  
+          sourcePortId: '31', // Parameter #31 is the OUTPUT V/Oct
+          targetAlgorithmIndex: 2, // VCO
+          targetPortId: 'pitch_input',
+          existingConnections: [],
+        );
+        
+        // Should detect and use Output 4 (bus 16)
+        expect(result.sourceBus, equals(16)); // Output 4
       });
       
       test('should prefer Output buses when source is already using one', () async {
@@ -162,7 +284,7 @@ void main() {
         // Now connect V/Oct which is also going to an Output
         var result = await service.assignBusForConnection(
           sourceAlgorithmIndex: 1,
-          sourcePortId: 'v_oct_output',
+          sourcePortId: '31', // V/Oct output parameter
           targetAlgorithmIndex: -1, // External output
           targetPortId: 'output_4', 
           existingConnections: existingConnections,
@@ -175,7 +297,7 @@ void main() {
         existingConnections.add(Connection(
           id: 'lua_voct_out',
           sourceAlgorithmIndex: 1,
-          sourcePortId: 'v_oct_output',
+          sourcePortId: '31', // V/Oct output parameter
           targetAlgorithmIndex: -1,
           targetPortId: 'output_4',
           assignedBus: 16,
@@ -186,7 +308,7 @@ void main() {
         // Connect from same source to VCO input - should reuse Output 4 bus
         result = await service.assignBusForConnection(
           sourceAlgorithmIndex: 1,
-          sourcePortId: 'v_oct_output',
+          sourcePortId: '31', // V/Oct output parameter
           targetAlgorithmIndex: 2,
           targetPortId: 'pitch_input',
           existingConnections: existingConnections,

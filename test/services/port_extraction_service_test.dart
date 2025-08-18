@@ -177,12 +177,14 @@ void main() {
         // Act
         final result = service.extractPorts(algorithmGuid);
 
-        // Assert
-        expect(result.inputPorts, hasLength(1));
-        expect(result.outputPorts, hasLength(2));
-        expect(result.inputPorts[0].name, equals('Input Bus'));
+        // Assert - Based on bus values:
+        // Input Bus (value 1) = INPUT
+        // Output Bus (value 13) = OUTPUT 
+        // Send Output (value 21) = AUX (treated as INPUT)
+        expect(result.inputPorts, hasLength(2)); // Input Bus + Send Output
+        expect(result.outputPorts, hasLength(1)); // Output Bus only
+        expect(result.inputPorts.map((p) => p.name), containsAll(['Input Bus', 'Send Output']));
         expect(result.outputPorts[0].name, equals('Output Bus'));
-        expect(result.outputPorts[1].name, equals('Send Output'));
       });
 
       test('should extract ports from parameters with type=bus', () {
@@ -375,9 +377,14 @@ void main() {
         // Act
         final result = service.extractPorts(algorithmGuid);
 
-        // Assert
-        expect(result.inputPorts, isEmpty);
-        expect(result.outputPorts, hasLength(3));
+        // Assert - Based on bus values:
+        // Main Out (value 13) = OUTPUT
+        // Send Bus (value 21) = AUX (treated as INPUT)
+        // Out Channel (value 14) = OUTPUT
+        expect(result.inputPorts, hasLength(1)); // Send Bus (AUX)
+        expect(result.outputPorts, hasLength(2)); // Main Out + Out Channel
+        expect(result.inputPorts[0].name, equals('Send Bus'));
+        expect(result.outputPorts.map((p) => p.name), containsAll(['Audio Output', 'Out Channel']));
       });
     });
 

@@ -273,9 +273,6 @@ class GraphLayoutService {
   }) {
     final positions = <int, NodePosition>{};
     
-    // Use typical screen size if not provided  
-    final effectiveCanvasSize = canvasSize ?? const Size(1600, 1200);
-    
     // Sort algorithm indices numerically for predictable layout
     final sortedIndices = List<int>.from(algorithmIndices)..sort();
     
@@ -287,14 +284,9 @@ class GraphLayoutService {
     final cols = math.max(1, math.sqrt(nodeCount * 1.5).ceil());
     final rows = (nodeCount / cols).ceil();
     
-    // Calculate available space for grid
-    final availableWidth = effectiveCanvasSize.width - (2 * canvasPadding);
-    final availableHeight = effectiveCanvasSize.height - (2 * canvasPadding);
-    
     // Calculate cell dimensions with tight spacing (50px maximum)
     const maxSpacing = 50.0;
     final cellWidth = nodeWidth + maxSpacing;
-    final cellHeight = nodeHeight + maxSpacing;
     
     // Start grid at top-left with padding
     final gridStartX = canvasPadding;

@@ -246,83 +246,113 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
     debugPrint('[NodeRoutingCubit] Creating connection: $sourceAlgorithmIndex/$sourcePortId -> $targetAlgorithmIndex/$targetPortId');
 
-    try {
-      // Create connection object for validation
-      final connection = Connection(
-        id: '${sourceAlgorithmIndex}_${sourcePortId}_${targetAlgorithmIndex}_$targetPortId',
-        sourceAlgorithmIndex: sourceAlgorithmIndex,
-        sourcePortId: sourcePortId,
-        targetAlgorithmIndex: targetAlgorithmIndex,
-        targetPortId: targetPortId,
-        assignedBus: 21, // Will be assigned by auto-routing service
-        replaceMode: true,
-        isValid: true,
-      );
+    // Generate connection ID
+    final connectionId = '${sourceAlgorithmIndex}_${sourcePortId}_${targetAlgorithmIndex}_$targetPortId';
+    
+    // Create optimistic connection
+    final optimisticConnection = Connection(
+      id: connectionId,
+      sourceAlgorithmIndex: sourceAlgorithmIndex,
+      sourcePortId: sourcePortId,
+      targetAlgorithmIndex: targetAlgorithmIndex,
+      targetPortId: targetPortId,
+      assignedBus: 21, // Temporary, will be assigned by service
+      replaceMode: true,
+      isValid: true,
+    );
 
-      // Validate connection
-      // Convert portLayouts to algorithmPorts format for validator
-      final algorithmPorts = <int, List<AlgorithmPort>>{};
-      for (final entry in currentState.portLayouts.entries) {
-        algorithmPorts[entry.key] = [
-          ...entry.value.inputPorts,
-          ...entry.value.outputPorts,
-        ];
-      }
-      
-      // Add physical node ports for validation
-      _addPhysicalNodePortsForValidation(algorithmPorts);
-      
-      final validationResult = RoutingValidator.validateConnection(
-        proposedConnection: connection,
-        existingConnections: currentState.connections,
-        algorithmPorts: algorithmPorts,
-      );
-
-      if (!validationResult.isValid) {
-        emit(
-          currentState.copyWith(
-            errorMessage:
-                'Connection validation failed: ${validationResult.errors.join(', ')}',
-          ),
-        );
-        return;
-      }
-
-      // Assign bus and update hardware
-      final busAssignment = await _autoRoutingService.assignBusForConnection(
-        sourceAlgorithmIndex: sourceAlgorithmIndex,
-        sourcePortId: sourcePortId,
-        targetAlgorithmIndex: targetAlgorithmIndex,
-        targetPortId: targetPortId,
-        existingConnections: currentState.connections,
-      );
-
-      debugPrint('[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, parameters: ${busAssignment.parameterUpdates.length}');
-
-      // Apply parameter updates to hardware using optimistic update pattern
-      await _autoRoutingService.updateBusParameters(
-        busAssignment.parameterUpdates,
-      );
-
-      debugPrint('Connection created: ${busAssignment.edgeLabel}');
-      
-      // The optimistic parameter updates will trigger state changes in DistingCubit
-      // Our subscription to DistingCubit will automatically call _updateFromDistingState
-      // which will re-interpret the connections and update the visual state
-      
-      // Force a refresh to ensure we have the latest state
-      final latestState = _distingCubit.state;
-      if (latestState is DistingStateSynchronized) {
-        _updateFromDistingState(latestState);
-      }
-
-      // Clear any error message on success
-      emit(currentState.copyWith(errorMessage: null));
-    } catch (e) {
-      emit(
-        currentState.copyWith(errorMessage: 'Failed to create connection: $e'),
-      );
+    // Validate locally first
+    // Convert portLayouts to algorithmPorts format for validator
+    final algorithmPorts = <int, List<AlgorithmPort>>{};
+    for (final entry in currentState.portLayouts.entries) {
+      algorithmPorts[entry.key] = [
+        ...entry.value.inputPorts,
+        ...entry.value.outputPorts,
+      ];
     }
+    
+    // Add physical node ports for validation
+    _addPhysicalNodePortsForValidation(algorithmPorts);
+    
+    final validationResult = RoutingValidator.validateConnection(
+      proposedConnection: optimisticConnection,
+      existingConnections: currentState.connections,
+      algorithmPorts: algorithmPorts,
+    );
+
+    if (!validationResult.isValid) {
+      emit(currentState.copyWith(
+        errorMessage: 'Connection validation failed: ${validationResult.errors.join(', ')}',
+      ));
+      return;
+    }
+
+    // OPTIMISTIC UPDATE - Add connection immediately
+    emit(currentState.copyWith(
+      connections: [...currentState.connections, optimisticConnection],
+      pendingConnections: {...currentState.pendingConnections, connectionId},
+      connectedPorts: _extractConnectedPorts([...currentState.connections, optimisticConnection]),
+      operationTimestamps: {...currentState.operationTimestamps, connectionId: DateTime.now()},
+      errorMessage: null,
+    ));
+
+    debugPrint('[NodeRoutingCubit] Optimistic connection added: $connectionId');
+
+    // Hardware update in background
+    _autoRoutingService.assignBusForConnection(
+      sourceAlgorithmIndex: sourceAlgorithmIndex,
+      sourcePortId: sourcePortId,
+      targetAlgorithmIndex: targetAlgorithmIndex,
+      targetPortId: targetPortId,
+      existingConnections: currentState.connections,
+    ).then((busAssignment) async {
+      debugPrint('[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, parameters: ${busAssignment.parameterUpdates.length}');
+      
+      // Update with actual bus assignment
+      await _autoRoutingService.updateBusParameters(busAssignment.parameterUpdates);
+      
+      // Mark as confirmed
+      final confirmedState = state;
+      if (confirmedState is NodeRoutingStateLoaded) {
+        final updatedConnections = confirmedState.connections.map((c) {
+          if (c.id == connectionId) {
+            return c.copyWith(
+              assignedBus: busAssignment.sourceBus,
+              edgeLabel: busAssignment.edgeLabel,
+            );
+          }
+          return c;
+        }).toList();
+        
+        final updatedTimestamps = Map<String, DateTime>.from(confirmedState.operationTimestamps);
+        updatedTimestamps.remove(connectionId);
+        
+        emit(confirmedState.copyWith(
+          connections: updatedConnections,
+          pendingConnections: confirmedState.pendingConnections.difference({connectionId}),
+          operationTimestamps: updatedTimestamps,
+        ));
+        
+        debugPrint('[NodeRoutingCubit] Connection confirmed: $connectionId');
+      }
+    }).catchError((error) {
+      // Rollback on failure
+      debugPrint('[NodeRoutingCubit] Connection failed: $connectionId - $error');
+      final errorState = state;
+      if (errorState is NodeRoutingStateLoaded) {
+        final updatedTimestamps = Map<String, DateTime>.from(errorState.operationTimestamps);
+        updatedTimestamps.remove(connectionId);
+        
+        emit(errorState.copyWith(
+          connections: errorState.connections.where((c) => c.id != connectionId).toList(),
+          pendingConnections: errorState.pendingConnections.difference({connectionId}),
+          failedConnections: {...errorState.failedConnections, connectionId},
+          connectedPorts: _extractConnectedPorts(errorState.connections.where((c) => c.id != connectionId).toList()),
+          operationTimestamps: updatedTimestamps,
+          errorMessage: 'Failed to create connection: $error',
+        ));
+      }
+    });
   }
 
   /// Remove a connection
@@ -724,9 +754,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
         debugPrint('[NodeRoutingCubit] *** FOUND CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm ${input.algorithmIndex} "${input.paramName}" (bus ${output.busValue}) ***');
 
-        // Extract clean port names from parameter names
-        final sourcePortId = _extractPortNameFromParameter(output.paramName);
-        final targetPortId = _extractPortNameFromParameter(input.paramName);
+        // Use parameter numbers as port IDs for uniqueness
+        final sourcePortId = output.paramNumber.toString();
+        final targetPortId = input.paramNumber.toString();
 
         connections.add(
           Connection(
@@ -754,55 +784,15 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     List<RoutingInformation> routingInfoList,
     {required bool isInput}
   ) {
-    final distingState = _distingCubit.state;
-    if (distingState is! DistingStateSynchronized) {
-      // Fallback to parameter name sanitization
-      return _extractPortNameFromParameter('param_$parameterNumber');
-    }
-
-    if (algorithmIndex >= distingState.slots.length) {
-      return _extractPortNameFromParameter('param_$parameterNumber');
-    }
-
-    final slot = distingState.slots[algorithmIndex];
+    // Port IDs are now parameter numbers as strings to ensure uniqueness
+    // This matches what PortExtractionService does
+    final portId = parameterNumber.toString();
     
-    // Find the parameter with the matching parameter number
-    final param = slot.parameters.firstWhere(
-      (p) => p.parameterNumber == parameterNumber,
-      orElse: () => ParameterInfo.filler(),
-    );
-
-    if (param.parameterNumber == -1) {
-      // Parameter not found, use fallback
-      return _extractPortNameFromParameter('param_$parameterNumber');
-    }
-
-    // Get the port ID from PortExtractionService logic
-    final portId = _sanitizePortId(param.name);
-    
-    debugPrint('[NodeRoutingCubit] Found port ID "$portId" for parameter ${param.parameterNumber}: "${param.name}"');
+    debugPrint('[NodeRoutingCubit] Using port ID "$portId" for parameter #$parameterNumber');
     
     return portId;
   }
 
-  /// Sanitize port ID using same logic as PortExtractionService
-  String _sanitizePortId(String name) {
-    return name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-  }
-
-  /// Extract clean port name from parameter name - using same logic as PortExtractionService
-  String _extractPortNameFromParameter(String paramName) {
-    // Use same sanitization logic as PortExtractionService._sanitizePortId
-    return paramName
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-  }
 
 
   /// Extract connected ports from connections

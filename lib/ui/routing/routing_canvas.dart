@@ -29,6 +29,8 @@ class RoutingCanvas extends StatefulWidget {
   final Map<String, Offset> portPositions;
   final ConnectionPreview? connectionPreview;
   final String? hoveredConnectionId;
+  final Set<String> pendingConnections;
+  final Set<String> failedConnections;
   final NodePositionCallback? onNodePositionChanged;
   final ConnectionCallback? onConnectionCreated;
   final ConnectionCallback? onConnectionRemoved;
@@ -44,6 +46,8 @@ class RoutingCanvas extends StatefulWidget {
     this.connectedPorts = const {},
     this.connectionPreview,
     this.hoveredConnectionId,
+    this.pendingConnections = const {},
+    this.failedConnections = const {},
     this.onNodePositionChanged,
     this.onConnectionCreated,
     this.onConnectionRemoved,
@@ -197,6 +201,8 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                       portPositions: widget.portPositions,
                       connectionPreview: widget.connectionPreview,
                       hoveredConnectionId: _hoveredConnection?.id,
+                      pendingConnections: widget.pendingConnections,
+                      failedConnections: widget.failedConnections,
                     ),
                     size: const Size(_canvasSize, _canvasSize),
                   ),

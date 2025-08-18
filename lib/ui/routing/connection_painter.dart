@@ -8,22 +8,31 @@ class ConnectionPainter extends CustomPainter {
   final Map<String, Offset> portPositions; // algorithmIndex_portId -> Offset
   final ConnectionPreview? connectionPreview;
   final String? hoveredConnectionId;
+  final Set<String> pendingConnections;
+  final Set<String> failedConnections;
 
   ConnectionPainter({
     required this.connections,
     required this.portPositions,
     this.connectionPreview,
     this.hoveredConnectionId,
+    this.pendingConnections = const {},
+    this.failedConnections = const {},
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     // Draw all established connections
     for (final connection in connections) {
+      final isPending = pendingConnections.contains(connection.id);
+      final isFailed = failedConnections.contains(connection.id);
+      
       _drawConnection(
         canvas,
         connection,
         isHovered: connection.id == hoveredConnectionId,
+        isPending: isPending,
+        isFailed: isFailed,
       );
     }
 
@@ -56,6 +65,8 @@ class ConnectionPainter extends CustomPainter {
     Canvas canvas,
     Connection connection, {
     bool isHovered = false,
+    bool isPending = false,
+    bool isFailed = false,
   }) {
     final sourceKey = '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
     final targetKey = '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
@@ -71,11 +82,20 @@ class ConnectionPainter extends CustomPainter {
     debugPrint('[ConnectionPainter] Drawing connection: $sourceKey->$targetKey');
 
     final paint = Paint()
-      ..strokeWidth = isHovered ? 4.0 : 2.0  // Thicker when hovered
+      ..strokeWidth = isPending ? 2.0 : (isHovered ? 4.0 : 3.0)  // Thinner for pending
       ..style = PaintingStyle.stroke;
 
-    // Color based on execution order and validity (not hover state)
-    if (connection.violatesExecutionOrder) {
+    // Set dash pattern for pending connections
+    if (isPending) {
+      paint.strokeWidth = 2.0;
+    }
+
+    // Color based on connection state, execution order and validity
+    if (isFailed) {
+      paint.color = Colors.red.withValues(alpha: 1.0);
+    } else if (isPending) {
+      paint.color = Colors.grey.withValues(alpha: 0.6);
+    } else if (connection.violatesExecutionOrder) {
       // Invalid execution order - signal won't reach target
       paint.color = Colors.red.withValues(alpha: 0.8);
     } else if (!connection.isValid) {
@@ -88,7 +108,13 @@ class ConnectionPainter extends CustomPainter {
 
     // Create bezier path
     final path = _createBezierPath(sourcePos, targetPos);
-    canvas.drawPath(path, paint);
+    
+    // Draw dashed line for pending connections
+    if (isPending) {
+      _drawDashedPath(canvas, path, paint, dashArray: [5.0, 5.0]);
+    } else {
+      canvas.drawPath(path, paint);
+    }
 
     // Draw arrow head
     _drawArrowHead(canvas, targetPos, path, paint.color);
@@ -357,11 +383,14 @@ class ConnectionPainter extends CustomPainter {
         end * (t * t * t);
   }
 
+
   @override
   bool shouldRepaint(ConnectionPainter oldDelegate) {
     return connections != oldDelegate.connections ||
         portPositions != oldDelegate.portPositions ||
         connectionPreview != oldDelegate.connectionPreview ||
-        hoveredConnectionId != oldDelegate.hoveredConnectionId;
+        hoveredConnectionId != oldDelegate.hoveredConnectionId ||
+        pendingConnections != oldDelegate.pendingConnections ||
+        failedConnections != oldDelegate.failedConnections;
   }
 }

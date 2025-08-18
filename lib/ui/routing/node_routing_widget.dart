@@ -76,6 +76,8 @@ class NodeRoutingWidget extends StatelessWidget {
       portPositions: state.portPositions,
       connectionPreview: state.connectionPreview,
       hoveredConnectionId: state.hoveredConnectionId,
+      pendingConnections: state.pendingConnections,
+      failedConnections: state.failedConnections,
       onNodePositionChanged: (algorithmIndex, position) {
         context.read<NodeRoutingCubit>().updateNodePosition(
           algorithmIndex,

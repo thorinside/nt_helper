@@ -38,9 +38,8 @@ class PortExtractionService {
         orElse: () => ParameterValue.filler(),
       );
 
-      // Check if this parameter represents a bus connection
       if (_isBusParameter(paramInfo, paramValue)) {
-        final portId = _sanitizePortId(paramInfo.name);
+        final portId = paramInfo.parameterNumber.toString();
         final port = AlgorithmPort(
           id: portId,
           name: paramInfo.name,
@@ -48,15 +47,19 @@ class PortExtractionService {
           busIdRef: paramInfo.name,
         );
 
-        if (_isInputParameterFromSlot(paramInfo)) {
+        final isInput = _isInputParameterFromSlot(paramInfo);
+        final isOutput = _isOutputParameterFromSlot(paramInfo);
+        
+        debugPrint('🔍 [PortExtractionService] Parameter "${paramInfo.name}" defaultValue=${paramInfo.defaultValue} -> isInput=$isInput, isOutput=$isOutput');
+        
+        if (isInput) {
           inputPorts.add(port);
-          debugPrint('[PortExtractionService] Added input port: ${paramInfo.name}');
-        } else if (_isOutputParameterFromSlot(paramInfo)) {
+          debugPrint('✅ [PortExtractionService] Added INPUT port: ${paramInfo.name}');
+        } else if (isOutput) {
           outputPorts.add(port);
-          debugPrint('[PortExtractionService] Added output port: ${paramInfo.name}');
+          debugPrint('✅ [PortExtractionService] Added OUTPUT port: ${paramInfo.name}');
         }
 
-        // Store bus assignment
         if (paramValue.value > 0) {
           busAssignments[portId] = paramValue.value;
         }
@@ -219,6 +222,21 @@ class PortExtractionService {
   }
 
   bool _isInputParameter(AlgorithmParameter param) {
+    // Primary check: Use defaultValue if available (same as slot-based logic)
+    if (param.defaultValue != null) {
+      final defaultValue = param.defaultValue as num;
+      // Input buses: 1-12, Aux buses: 21-28 (can be used as inputs)
+      if ((defaultValue >= 1 && defaultValue <= 12) ||
+          (defaultValue >= 21 && defaultValue <= 28)) {
+        return true;
+      }
+      // Output buses: 13-20
+      if (defaultValue >= 13 && defaultValue <= 20) {
+        return false;
+      }
+    }
+    
+    // Fallback: name-based classification for static parameters without defaultValue
     final nameLower = param.name.toLowerCase();
     
     // Check explicit output indicators first to avoid misclassification
@@ -237,6 +255,21 @@ class PortExtractionService {
   }
 
   bool _isOutputParameter(AlgorithmParameter param) {
+    // Primary check: Use defaultValue if available (same as slot-based logic)
+    if (param.defaultValue != null) {
+      final defaultValue = param.defaultValue as num;
+      // Output buses: 13-20
+      if (defaultValue >= 13 && defaultValue <= 20) {
+        return true;
+      }
+      // Input buses: 1-12, Aux buses: 21-28
+      if ((defaultValue >= 1 && defaultValue <= 12) ||
+          (defaultValue >= 21 && defaultValue <= 28)) {
+        return false;
+      }
+    }
+    
+    // Fallback: name-based classification for static parameters without defaultValue
     final nameLower = param.name.toLowerCase();
     return nameLower.contains('output') ||
         nameLower.contains('out ') ||
@@ -349,11 +382,4 @@ class PortExtractionService {
     return false;
   }
 
-  String _sanitizePortId(String name) {
-    return name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-  }
 }

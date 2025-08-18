@@ -27,6 +27,9 @@ sealed class NodeRoutingState with _$NodeRoutingState {
     Set<int>? selectedNodes,
     Map<String, bool>? portHoverStates, // portId -> isHovered
     String? errorMessage,
+    @Default({}) Set<String> pendingConnections, // Connection IDs being created
+    @Default({}) Set<String> failedConnections, // Connection IDs that failed
+    @Default({}) Map<String, DateTime> operationTimestamps, // For timeout tracking
     @Deprecated('Use portLayouts instead') Map<int, List<AlgorithmPort>>? algorithmPorts,
   }) = NodeRoutingStateLoaded;
   

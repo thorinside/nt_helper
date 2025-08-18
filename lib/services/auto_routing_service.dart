@@ -428,11 +428,21 @@ class AutoRoutingService {
       '[AutoRoutingService] Finding parameter for port "$portId" (isOutput=$isOutput) in algorithm $algorithmIndex',
     );
 
-    // Convert portId back to a parameter name pattern
-    // The portId is sanitized (e.g., "output" or "l_input")
-    // We need to find parameters whose sanitized names match
+    final paramNumber = int.tryParse(portId);
+    if (paramNumber != null) {
+      final param = slot.parameters.firstWhere(
+        (p) => p.parameterNumber == paramNumber,
+        orElse: () => slot.parameters.first,
+      );
+      debugPrint(
+        '[AutoRoutingService] Found parameter by number: #$paramNumber "${param.name}"',
+      );
+      return paramNumber;
+    }
 
     // First pass: exact match with sanitized name AND matching input/output type
+    int? fallbackParamNumber;
+    
     for (final param in slot.parameters) {
       // Sanitize the parameter name the same way PortExtractionService does
       final sanitizedParamName = param.name
@@ -449,27 +459,36 @@ class AutoRoutingService {
 
         if (!isBusParam) continue;
 
-        // For exact matches, also verify it matches the expected input/output type
-        // Output parameters typically have default values >= 13 (Output buses start at 13)
-        // Input parameters typically have default values <= 12 or 0
-        final isParamOutput =
-            param.defaultValue >= 13 && param.defaultValue <= 28;
-        final isParamInput =
-            param.defaultValue >= 0 && param.defaultValue <= 12;
-
-        if (isOutput && isParamOutput) {
+        // For exact matches with duplicate names, prefer the parameter that matches the expected type
+        // but still allow fallback if no type-matched parameter is found
+        final isParamOutput = param.defaultValue >= 13 && param.defaultValue <= 20;
+        final isParamInput = (param.defaultValue >= 1 && param.defaultValue <= 12) ||
+                             (param.defaultValue >= 21 && param.defaultValue <= 28);
+        
+        // If this parameter matches the expected type, use it immediately
+        if ((isOutput && isParamOutput) || (!isOutput && isParamInput)) {
           debugPrint(
-            '[AutoRoutingService] Exact match OUTPUT: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"',
-          );
-          return param.parameterNumber;
-        } else if (!isOutput && isParamInput) {
-          debugPrint(
-            '[AutoRoutingService] Exact match INPUT: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId"',
+            '[AutoRoutingService] Exact match with correct type: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId" (${isOutput ? "OUTPUT" : "INPUT"})',
           );
           return param.parameterNumber;
         }
-        // If type doesn't match, continue searching
+        
+        // Store this as a potential fallback if no type-matched parameter is found
+        if (fallbackParamNumber == null) {
+          fallbackParamNumber = param.parameterNumber;
+          debugPrint(
+            '[AutoRoutingService] Storing fallback: parameter "${param.name}" (#${param.parameterNumber}) for port "$portId" (expected ${isOutput ? "OUTPUT" : "INPUT"}, found ${isParamOutput ? "OUTPUT" : isParamInput ? "INPUT" : "UNKNOWN"})',
+          );
+        }
       }
+    }
+    
+    // If we found an exact name match but wrong type, use it as a fallback
+    if (fallbackParamNumber != null) {
+      debugPrint(
+        '[AutoRoutingService] Using fallback parameter #$fallbackParamNumber for port "$portId"',
+      );
+      return fallbackParamNumber;
     }
 
     // Second pass: find bus parameters and match by type
@@ -495,7 +514,7 @@ class AutoRoutingService {
             nameLower.contains('send') ||
             nameLower.contains('main out') ||
             nameLower.contains('aux') ||
-            param.defaultValue >= 13 && param.defaultValue <= 28;
+            param.defaultValue >= 13 && param.defaultValue <= 20;
 
         if (isOutputParam) {
           // Check for partial match
@@ -540,7 +559,8 @@ class AutoRoutingService {
             nameLower.contains('clock') ||
             nameLower.contains('gate') ||
             nameLower.contains('v/oct') ||
-            param.defaultValue >= 1 && param.defaultValue <= 12;
+            (param.defaultValue >= 1 && param.defaultValue <= 12) ||
+            (param.defaultValue >= 21 && param.defaultValue <= 28);
 
         if (isInputParam) {
           // Check for partial match
