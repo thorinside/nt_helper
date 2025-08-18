@@ -10,6 +10,8 @@ import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/models/port_layout.dart';
 import 'package:nt_helper/ui/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/routing/connection_painter.dart';
+import 'package:nt_helper/ui/routing/physical_input_node_widget.dart';
+import 'package:nt_helper/ui/routing/physical_output_node_widget.dart';
 import 'package:nt_helper/ui/widgets/port_widget.dart';
 
 typedef NodePositionCallback =
@@ -63,6 +65,9 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
 
   @override
   Widget build(BuildContext context) {
+    // Update physical output node position based on screen width
+    NodeRoutingCubit.updatePhysicalOutputPosition(MediaQuery.of(context).size.width);
+    
     return ClipRect(
       child: Listener(
         // Fallback: create connection on any pointer up if preview is valid
@@ -137,6 +142,44 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                     _handlePortPanEnd(algorithmIndex, portId, type, details),
               );
             }),
+
+            // Physical input node (fixed position on left)
+            Positioned(
+              left: 50.0,
+              top: 100.0,
+              child: PhysicalInputNodeWidget(
+                connectedPorts: widget.connectedPorts,
+                onPortConnectionStart: (portId, type) =>
+                    _handlePortConnectionStart(-2, portId, type),
+                onPortConnectionEnd: (portId, type) =>
+                    _handlePortConnectionEnd(-2, portId, type),
+                onPortPanStart: (portId, type, details) =>
+                    _handlePortPanStart(-2, portId, type, details),
+                onPortPanUpdate: (portId, type, details) =>
+                    _handlePortPanUpdate(-2, portId, type, details),
+                onPortPanEnd: (portId, type, details) =>
+                    _handlePortPanEnd(-2, portId, type, details),
+              ),
+            ),
+
+            // Physical output node (50px from right edge of screen)
+            Positioned(
+              left: NodeRoutingCubit.physicalOutputNodeX,
+              top: 100.0,
+              child: PhysicalOutputNodeWidget(
+                connectedPorts: widget.connectedPorts,
+                onPortConnectionStart: (portId, type) =>
+                    _handlePortConnectionStart(-3, portId, type),
+                onPortConnectionEnd: (portId, type) =>
+                    _handlePortConnectionEnd(-3, portId, type),
+                onPortPanStart: (portId, type, details) =>
+                    _handlePortPanStart(-3, portId, type, details),
+                onPortPanUpdate: (portId, type, details) =>
+                    _handlePortPanUpdate(-3, portId, type, details),
+                onPortPanEnd: (portId, type, details) =>
+                    _handlePortPanEnd(-3, portId, type, details),
+              ),
+            ),
 
             // Connections layer (top layer - drawn last, appears on top)
             RepaintBoundary(

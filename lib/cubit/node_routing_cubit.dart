@@ -24,6 +24,16 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   late final PortExtractionService _portExtractionService;
   StreamSubscription<DistingState>? _distingSubscription;
 
+  // Physical node constants - updated to match widget changes
+  static const double physicalInputNodeX = 50.0;
+  static double physicalOutputNodeX = 800.0; // Will be updated dynamically
+  static const double physicalNodeY = 100.0;
+  static const double physicalNodeWidth = 80.0; // Narrower
+  static const double physicalInputNodeHeight = 28.0 + (6.0 * 2) + (12 * 20.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
+  static const double physicalOutputNodeHeight = 28.0 + (6.0 * 2) + (8 * 20.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
+  static const int physicalInputAlgorithmIndex = -2;
+  static const int physicalOutputAlgorithmIndex = -3;
+
   NodeRoutingCubit(this._distingCubit, this._algorithmMetadataService)
     : super(const NodeRoutingState.initial()) {
     _autoRoutingService = AutoRoutingService(_distingCubit);
@@ -197,8 +207,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             )
           : false;
       
-      // Check execution order violation
-      final violatesOrder = hoveredAlgorithmIndex != null
+      // Check execution order violation (skip for physical nodes)
+      final violatesOrder = hoveredAlgorithmIndex != null && 
+                            !_isPhysicalNode(currentState.connectionPreview!.sourceAlgorithmIndex) &&
+                            !_isPhysicalNode(hoveredAlgorithmIndex)
           ? currentState.connectionPreview!.sourceAlgorithmIndex >= hoveredAlgorithmIndex
           : false;
 
@@ -232,6 +244,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
 
+    debugPrint('[NodeRoutingCubit] Creating connection: $sourceAlgorithmIndex/$sourcePortId -> $targetAlgorithmIndex/$targetPortId');
+
     try {
       // Create connection object for validation
       final connection = Connection(
@@ -254,6 +268,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           ...entry.value.outputPorts,
         ];
       }
+      
+      // Add physical node ports for validation
+      _addPhysicalNodePortsForValidation(algorithmPorts);
       
       final validationResult = RoutingValidator.validateConnection(
         proposedConnection: connection,
@@ -279,6 +296,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         targetPortId: targetPortId,
         existingConnections: currentState.connections,
       );
+
+      debugPrint('[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, parameters: ${busAssignment.parameterUpdates.length}');
 
       // Apply parameter updates to hardware using optimistic update pattern
       await _autoRoutingService.updateBusParameters(
@@ -524,8 +543,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     debugPrint('[NodeRoutingCubit] Finding connections by matching parameter values');
 
     // Find all output parameters and their values
-    final outputParams = <({int algorithmIndex, String paramName, int busValue})>[];
-    final inputParams = <({int algorithmIndex, String paramName, int busValue})>[];
+    final outputParams = <({int algorithmIndex, String paramName, int paramNumber, int busValue})>[];
+    final inputParams = <({int algorithmIndex, String paramName, int paramNumber, int busValue})>[];
 
     for (final routing in routingInfoList) {
       final algorithmIndex = routing.algorithmIndex;
@@ -607,17 +626,19 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           outputParams.add((
             algorithmIndex: algorithmIndex,
             paramName: param.name,
+            paramNumber: param.parameterNumber,
             busValue: paramValue.value,
           ));
-          debugPrint('[NodeRoutingCubit] Found OUTPUT parameter: Algorithm $algorithmIndex "${param.name}" defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
+          debugPrint('[NodeRoutingCubit] Found OUTPUT parameter: Algorithm $algorithmIndex "${param.name}" paramNumber=${param.parameterNumber} defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
         } else if (isInputParam) {
           // Input parameter (can receive signals)
           inputParams.add((
             algorithmIndex: algorithmIndex,
             paramName: param.name,
+            paramNumber: param.parameterNumber,
             busValue: paramValue.value,
           ));
-          debugPrint('[NodeRoutingCubit] Found INPUT parameter: Algorithm $algorithmIndex "${param.name}" defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
+          debugPrint('[NodeRoutingCubit] Found INPUT parameter: Algorithm $algorithmIndex "${param.name}" paramNumber=${param.parameterNumber} defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
         }
       }
     }
@@ -632,6 +653,67 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     debugPrint('[NodeRoutingCubit] INPUT parameters found:');
     for (final input in inputParams) {
       debugPrint('  - Algorithm ${input.algorithmIndex}: "${input.paramName}" -> Bus ${input.busValue}');
+    }
+    
+    // Detect physical I/O connections
+    debugPrint('[NodeRoutingCubit] Detecting physical I/O connections...');
+    
+    // Physical input connections (buses 1-12)
+    for (final input in inputParams) {
+      if (input.busValue >= 1 && input.busValue <= 12) {
+        final physicalInputNumber = input.busValue;
+        final sourcePortId = 'physical_input_$physicalInputNumber';
+        final targetPortId = _findPortIdForParameter(
+          input.algorithmIndex, 
+          input.paramNumber, 
+          routingInfoList, 
+          isInput: true,
+        );
+        
+        debugPrint('[NodeRoutingCubit] *** FOUND PHYSICAL INPUT CONNECTION: I$physicalInputNumber -> Algorithm ${input.algorithmIndex} "${input.paramName}" (bus ${input.busValue}) ***');
+        
+        connections.add(
+          Connection(
+            id: '${physicalInputAlgorithmIndex}_${sourcePortId}_${input.algorithmIndex}_$targetPortId',
+            sourceAlgorithmIndex: physicalInputAlgorithmIndex,
+            sourcePortId: sourcePortId,
+            targetAlgorithmIndex: input.algorithmIndex,
+            targetPortId: targetPortId,
+            assignedBus: input.busValue,
+            replaceMode: true,
+            isValid: true,
+          ),
+        );
+      }
+    }
+    
+    // Physical output connections (buses 13-20)
+    for (final output in outputParams) {
+      if (output.busValue >= 13 && output.busValue <= 20) {
+        final physicalOutputNumber = output.busValue - 12; // Bus 13 = O1, Bus 14 = O2, etc.
+        final sourcePortId = _findPortIdForParameter(
+          output.algorithmIndex, 
+          output.paramNumber, 
+          routingInfoList, 
+          isInput: false,
+        );
+        final targetPortId = 'physical_output_$physicalOutputNumber';
+        
+        debugPrint('[NodeRoutingCubit] *** FOUND PHYSICAL OUTPUT CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> O$physicalOutputNumber (bus ${output.busValue}) ***');
+        
+        connections.add(
+          Connection(
+            id: '${output.algorithmIndex}_${sourcePortId}_${physicalOutputAlgorithmIndex}_$targetPortId',
+            sourceAlgorithmIndex: output.algorithmIndex,
+            sourcePortId: sourcePortId,
+            targetAlgorithmIndex: physicalOutputAlgorithmIndex,
+            targetPortId: targetPortId,
+            assignedBus: output.busValue,
+            replaceMode: true,
+            isValid: true,
+          ),
+        );
+      }
     }
     
     // Match output parameters with input parameters that have the same bus value
@@ -663,6 +745,53 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
     debugPrint('[NodeRoutingCubit] Created ${connections.length} connections total');
     return connections;
+  }
+
+  /// Find the correct port ID for a given parameter number
+  String _findPortIdForParameter(
+    int algorithmIndex,
+    int parameterNumber,
+    List<RoutingInformation> routingInfoList,
+    {required bool isInput}
+  ) {
+    final distingState = _distingCubit.state;
+    if (distingState is! DistingStateSynchronized) {
+      // Fallback to parameter name sanitization
+      return _extractPortNameFromParameter('param_$parameterNumber');
+    }
+
+    if (algorithmIndex >= distingState.slots.length) {
+      return _extractPortNameFromParameter('param_$parameterNumber');
+    }
+
+    final slot = distingState.slots[algorithmIndex];
+    
+    // Find the parameter with the matching parameter number
+    final param = slot.parameters.firstWhere(
+      (p) => p.parameterNumber == parameterNumber,
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    if (param.parameterNumber == -1) {
+      // Parameter not found, use fallback
+      return _extractPortNameFromParameter('param_$parameterNumber');
+    }
+
+    // Get the port ID from PortExtractionService logic
+    final portId = _sanitizePortId(param.name);
+    
+    debugPrint('[NodeRoutingCubit] Found port ID "$portId" for parameter ${param.parameterNumber}: "${param.name}"');
+    
+    return portId;
+  }
+
+  /// Sanitize port ID using same logic as PortExtractionService
+  String _sanitizePortId(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
   }
 
   /// Extract clean port name from parameter name - using same logic as PortExtractionService
@@ -755,6 +884,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       }
     }
 
+    // Add physical node port positions
+    _addPhysicalNodePortPositions(portPositions);
+
     return portPositions;
   }
 
@@ -772,23 +904,49 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       return false;
     }
 
-    // Check if target port exists and is an input port
-    final targetLayout = portLayouts[targetAlgorithmIndex];
-    if (targetLayout == null) return false;
-
-    final targetPortExists = targetLayout.inputPorts.any(
-      (port) => (port.id ?? port.name) == targetPortId,
-    );
-    if (!targetPortExists) return false;
-
-    // Check if source port exists and is an output port
-    final sourceLayout = portLayouts[sourceAlgorithmIndex];
-    if (sourceLayout == null) return false;
-
-    final sourcePortExists = sourceLayout.outputPorts.any(
-      (port) => (port.id ?? port.name) == sourcePortId,
-    );
+    // Handle physical nodes - they don't appear in portLayouts
+    bool sourcePortExists = false;
+    bool targetPortExists = false;
+    
+    // Validate source port
+    if (sourceAlgorithmIndex == physicalInputAlgorithmIndex) {
+      // Physical input ports (I1-I12)
+      sourcePortExists = sourcePortId.startsWith('physical_input_') &&
+          _isValidPhysicalInputPortId(sourcePortId);
+    } else if (sourceAlgorithmIndex == physicalOutputAlgorithmIndex) {
+      // Physical output ports (O1-O8) - these act as bidirectional
+      sourcePortExists = sourcePortId.startsWith('physical_output_') &&
+          _isValidPhysicalOutputPortId(sourcePortId);
+    } else {
+      // Algorithm node source port
+      final sourceLayout = portLayouts[sourceAlgorithmIndex];
+      if (sourceLayout == null) return false;
+      sourcePortExists = sourceLayout.outputPorts.any(
+        (port) => (port.id ?? port.name) == sourcePortId,
+      );
+    }
+    
     if (!sourcePortExists) return false;
+
+    // Validate target port
+    if (targetAlgorithmIndex == physicalInputAlgorithmIndex) {
+      // Physical input ports (I1-I12) - these act as bidirectional
+      targetPortExists = targetPortId.startsWith('physical_input_') &&
+          _isValidPhysicalInputPortId(targetPortId);
+    } else if (targetAlgorithmIndex == physicalOutputAlgorithmIndex) {
+      // Physical output ports (O1-O8)
+      targetPortExists = targetPortId.startsWith('physical_output_') &&
+          _isValidPhysicalOutputPortId(targetPortId);
+    } else {
+      // Algorithm node target port
+      final targetLayout = portLayouts[targetAlgorithmIndex];
+      if (targetLayout == null) return false;
+      targetPortExists = targetLayout.inputPorts.any(
+        (port) => (port.id ?? port.name) == targetPortId,
+      );
+    }
+    
+    if (!targetPortExists) return false;
 
     // Check if connection already exists
     final existingConnection = existingConnections.any(
@@ -807,6 +965,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return null;
 
+    // Handle physical nodes
+    if (algorithmIndex == physicalInputAlgorithmIndex) {
+      return _getPhysicalInputPortAtPosition(position);
+    } else if (algorithmIndex == physicalOutputAlgorithmIndex) {
+      return _getPhysicalOutputPortAtPosition(position);
+    }
+
+    // Handle algorithm nodes
     final portLayout = currentState.portLayouts[algorithmIndex];
     if (portLayout == null) return null;
 
@@ -839,6 +1005,29 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return null;
 
+    // Check physical input node first
+    final physicalInputRect = Rect.fromLTWH(
+      physicalInputNodeX,
+      physicalNodeY,
+      physicalNodeWidth,
+      physicalInputNodeHeight,
+    );
+    if (physicalInputRect.contains(position)) {
+      return physicalInputAlgorithmIndex;
+    }
+
+    // Check physical output node
+    final physicalOutputRect = Rect.fromLTWH(
+      physicalOutputNodeX,
+      physicalNodeY,
+      physicalNodeWidth,
+      physicalOutputNodeHeight,
+    );
+    if (physicalOutputRect.contains(position)) {
+      return physicalOutputAlgorithmIndex;
+    }
+
+    // Check algorithm nodes
     for (final entry in currentState.nodePositions.entries) {
       final algorithmIndex = entry.key;
       final nodePos = entry.value;
@@ -866,6 +1055,175 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   /// Move algorithm down one slot (delegate to DistingCubit)
   Future<void> moveAlgorithmDown(int algorithmIndex) async {
     await _distingCubit.moveAlgorithmDown(algorithmIndex);
+  }
+
+  /// Get physical input port at position
+  String? _getPhysicalInputPortAtPosition(Offset position) {
+    const headerHeight = 28.0;
+    const portRowHeight = 20.0;
+    const verticalPadding = 4.0;
+    const portSize = 16.0;
+    
+    // Check if position is within physical input node bounds
+    final nodeRect = Rect.fromLTWH(
+      physicalInputNodeX,
+      physicalNodeY,
+      physicalNodeWidth,
+      physicalInputNodeHeight,
+    );
+    
+    if (!nodeRect.contains(position)) return null;
+    
+    // Calculate which jack was hit
+    final relativeY = position.dy - physicalNodeY - headerHeight - verticalPadding;
+    if (relativeY < 0) return null;
+    
+    final jackIndex = (relativeY / portRowHeight).floor();
+    if (jackIndex < 0 || jackIndex >= 12) return null;
+    
+    // Check if position is within the centered port widget area
+    final jackY = physicalNodeY + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
+    final portX = physicalInputNodeX + (physicalNodeWidth / 2); // Centered horizontally
+    
+    final portRect = Rect.fromCenter(
+      center: Offset(portX, jackY),
+      width: portSize,
+      height: portSize,
+    );
+    
+    if (portRect.contains(position)) {
+      return 'physical_input_${jackIndex + 1}';
+    }
+    
+    return null;
+  }
+
+  /// Get physical output port at position
+  String? _getPhysicalOutputPortAtPosition(Offset position) {
+    const headerHeight = 28.0;
+    const portRowHeight = 20.0;
+    const verticalPadding = 4.0;
+    const portSize = 16.0;
+    
+    // Check if position is within physical output node bounds
+    final nodeRect = Rect.fromLTWH(
+      physicalOutputNodeX,
+      physicalNodeY,
+      physicalNodeWidth,
+      physicalOutputNodeHeight,
+    );
+    
+    if (!nodeRect.contains(position)) return null;
+    
+    // Calculate which jack was hit
+    final relativeY = position.dy - physicalNodeY - headerHeight - verticalPadding;
+    if (relativeY < 0) return null;
+    
+    final jackIndex = (relativeY / portRowHeight).floor();
+    if (jackIndex < 0 || jackIndex >= 8) return null;
+    
+    // Check if position is within the centered port widget area
+    final jackY = physicalNodeY + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
+    final portX = physicalOutputNodeX + (physicalNodeWidth / 2); // Centered horizontally
+    
+    final portRect = Rect.fromCenter(
+      center: Offset(portX, jackY),
+      width: portSize,
+      height: portSize,
+    );
+    
+    if (portRect.contains(position)) {
+      return 'physical_output_${jackIndex + 1}';
+    }
+    
+    return null;
+  }
+
+  /// Validate physical input port ID (I1-I12)
+  bool _isValidPhysicalInputPortId(String portId) {
+    final match = RegExp(r'^physical_input_(\d+)$').firstMatch(portId);
+    if (match == null) return false;
+    
+    final jackNumber = int.tryParse(match.group(1) ?? '');
+    return jackNumber != null && jackNumber >= 1 && jackNumber <= 12;
+  }
+
+  /// Validate physical output port ID (O1-O8)
+  bool _isValidPhysicalOutputPortId(String portId) {
+    final match = RegExp(r'^physical_output_(\d+)$').firstMatch(portId);
+    if (match == null) return false;
+    
+    final jackNumber = int.tryParse(match.group(1) ?? '');
+    return jackNumber != null && jackNumber >= 1 && jackNumber <= 8;
+  }
+
+  /// Check if algorithm index is a physical node
+  bool _isPhysicalNode(int algorithmIndex) {
+    return algorithmIndex == physicalInputAlgorithmIndex || 
+           algorithmIndex == physicalOutputAlgorithmIndex;
+  }
+
+  /// Add physical node ports for validation
+  void _addPhysicalNodePortsForValidation(Map<int, List<AlgorithmPort>> algorithmPorts) {
+    // Physical input node ports (I1-I12) - treat as output ports for dragging
+    final physicalInputPorts = <AlgorithmPort>[];
+    for (int i = 1; i <= 12; i++) {
+      physicalInputPorts.add(AlgorithmPort(
+        id: 'physical_input_$i',
+        name: 'I$i',
+        description: 'Physical input jack $i',
+      ));
+    }
+    algorithmPorts[physicalInputAlgorithmIndex] = physicalInputPorts;
+    
+    // Physical output node ports (O1-O8) - treat as input ports for dropping
+    final physicalOutputPorts = <AlgorithmPort>[];
+    for (int i = 1; i <= 8; i++) {
+      physicalOutputPorts.add(AlgorithmPort(
+        id: 'physical_output_$i',
+        name: 'O$i',
+        description: 'Physical output jack $i',
+      ));
+    }
+    algorithmPorts[physicalOutputAlgorithmIndex] = physicalOutputPorts;
+  }
+
+  /// Update physical output node position based on screen width
+  static void updatePhysicalOutputPosition(double screenWidth) {
+    physicalOutputNodeX = screenWidth - physicalNodeWidth - 50.0;
+  }
+
+  /// Add port positions for physical nodes (not in nodePositions map)
+  void _addPhysicalNodePortPositions(Map<String, Offset> portPositions) {
+    // Physical node constants (must match widget definitions)
+    const headerHeight = 28.0;
+    const portRowHeight = 20.0;
+    const verticalPadding = 4.0;
+    
+    // Physical input node (I1-I12)
+    for (int i = 1; i <= 12; i++) {
+      final portId = 'physical_input_$i';
+      final portKey = '${physicalInputAlgorithmIndex}_$portId';
+      
+      final jackY = physicalNodeY + headerHeight + verticalPadding + 
+                   ((i - 1) * portRowHeight) + (portRowHeight / 2);
+      final portX = physicalInputNodeX + (physicalNodeWidth / 2); // Centered
+      
+      portPositions[portKey] = Offset(portX, jackY);
+    }
+    
+    // Physical output node (O1-O8)  
+    for (int i = 1; i <= 8; i++) {
+      final portId = 'physical_output_$i';
+      final portKey = '${physicalOutputAlgorithmIndex}_$portId';
+      
+      final jackY = physicalNodeY + headerHeight + verticalPadding + 
+                   ((i - 1) * portRowHeight) + (portRowHeight / 2);
+      
+      final portX = physicalOutputNodeX + (physicalNodeWidth / 2); // Centered
+      
+      portPositions[portKey] = Offset(portX, jackY);
+    }
   }
 
   @override

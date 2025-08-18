@@ -63,7 +63,12 @@ class ConnectionPainter extends CustomPainter {
     final sourcePos = portPositions[sourceKey];
     final targetPos = portPositions[targetKey];
 
-    if (sourcePos == null || targetPos == null) return;
+    if (sourcePos == null || targetPos == null) {
+      debugPrint('[ConnectionPainter] Missing port positions: source=$sourceKey->$sourcePos, target=$targetKey->$targetPos');
+      return;
+    }
+    
+    debugPrint('[ConnectionPainter] Drawing connection: $sourceKey->$targetKey');
 
     final paint = Paint()
       ..strokeWidth = isHovered ? 4.0 : 2.0  // Thicker when hovered

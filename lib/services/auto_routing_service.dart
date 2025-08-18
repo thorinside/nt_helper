@@ -16,31 +16,60 @@ class AutoRoutingService {
     required String targetPortId,
     required List<Connection> existingConnections,
   }) async {
-    // Get source parameter number and its current value
-    final sourceParamNumber = _findParameterNumberForPort(
-      sourceAlgorithmIndex, 
-      sourcePortId, 
-      isOutput: true,
-    );
-    final currentSourceBus = _getParameterValue(sourceAlgorithmIndex, sourceParamNumber);
-    
-    // Simple rules:
-    // 1. If source is not connected (value 0 or null), assign first non-conflicting aux bus
-    // 2. If source is connected (has a value), use that value for the target
+    // Physical I/O connections use fixed bus assignments
     int assignedBus;
-    if (currentSourceBus != null && currentSourceBus > 0) {
-      // Source is already connected - use its bus value
-      assignedBus = currentSourceBus;
-      debugPrint('[AutoRoutingService] Source parameter #$sourceParamNumber has value $assignedBus, using it for connection');
-    } else if (targetAlgorithmIndex == -1 && targetPortId.startsWith('output_')) {
-      // Special case: External output connection - use the appropriate Output bus
-      final outputNum = int.tryParse(targetPortId.replaceAll('output_', '')) ?? 1;
-      assignedBus = 12 + outputNum; // Output buses are 13-20 (Output 1-8)
-      debugPrint('[AutoRoutingService] External output connection, using Output bus $assignedBus');
-    } else {
-      // Source not connected - assign first available aux bus
-      assignedBus = _findAvailableAuxBusConsideringState(existingConnections);
-      debugPrint('[AutoRoutingService] Source not connected, assigning new bus $assignedBus');
+    
+    // Handle physical input as source (I1-I12 → buses 1-12)
+    if (sourceAlgorithmIndex == -2) {
+      final inputNumber = int.tryParse(sourcePortId.replaceAll('physical_input_', '')) ?? 1;
+      assignedBus = inputNumber; // Buses 1-12
+      debugPrint('[AutoRoutingService] Physical input I$inputNumber connection, using fixed bus $assignedBus');
+    }
+    // Handle physical output as target (O1-O8 → buses 13-20)
+    else if (targetAlgorithmIndex == -3) {
+      final outputNumber = int.tryParse(targetPortId.replaceAll('physical_output_', '')) ?? 1;
+      assignedBus = 12 + outputNumber; // Buses 13-20
+      debugPrint('[AutoRoutingService] Physical output O$outputNumber connection, using fixed bus $assignedBus');
+    }
+    // Handle algorithm output to physical input (bidirectional)
+    else if (targetAlgorithmIndex == -2) {
+      final inputNumber = int.tryParse(targetPortId.replaceAll('physical_input_', '')) ?? 1;
+      assignedBus = inputNumber; // Buses 1-12
+      debugPrint('[AutoRoutingService] Algorithm to physical input I$inputNumber connection, using fixed bus $assignedBus');
+    }
+    // Handle physical output as source (bidirectional)
+    else if (sourceAlgorithmIndex == -3) {
+      final outputNumber = int.tryParse(sourcePortId.replaceAll('physical_output_', '')) ?? 1;
+      assignedBus = 12 + outputNumber; // Buses 13-20
+      debugPrint('[AutoRoutingService] Physical output O$outputNumber as source connection, using fixed bus $assignedBus');
+    }
+    // Standard algorithm-to-algorithm connections
+    else {
+      // Get source parameter number and its current value
+      final sourceParamNumber = _findParameterNumberForPort(
+        sourceAlgorithmIndex, 
+        sourcePortId, 
+        isOutput: true,
+      );
+      final currentSourceBus = _getParameterValue(sourceAlgorithmIndex, sourceParamNumber);
+      
+      // Simple rules:
+      // 1. If source is not connected (value 0 or null), assign first non-conflicting aux bus
+      // 2. If source is connected (has a value), use that value for the target
+      if (currentSourceBus != null && currentSourceBus > 0) {
+        // Source is already connected - use its bus value
+        assignedBus = currentSourceBus;
+        debugPrint('[AutoRoutingService] Source parameter #$sourceParamNumber has value $assignedBus, using it for connection');
+      } else if (targetAlgorithmIndex == -1 && targetPortId.startsWith('output_')) {
+        // Special case: External output connection - use the appropriate Output bus
+        final outputNum = int.tryParse(targetPortId.replaceAll('output_', '')) ?? 1;
+        assignedBus = 12 + outputNum; // Output buses are 13-20 (Output 1-8)
+        debugPrint('[AutoRoutingService] External output connection, using Output bus $assignedBus');
+      } else {
+        // Source not connected - assign first available aux bus
+        assignedBus = _findAvailableAuxBusConsideringState(existingConnections);
+        debugPrint('[AutoRoutingService] Source not connected, assigning new bus $assignedBus');
+      }
     }
 
     debugPrint(
@@ -55,43 +84,56 @@ class AutoRoutingService {
     // Generate edge label
     final edgeLabel = _generateEdgeLabel(assignedBus, replaceMode);
     
-    // Find parameter numbers - already done above for source
-    // Handle external outputs (targetAlgorithmIndex = -1)
-    final targetParamNumber = targetAlgorithmIndex >= 0 
-        ? _findParameterNumberForPort(
-            targetAlgorithmIndex, 
-            targetPortId, 
-            isOutput: false,
-          )
-        : -1; // External output doesn't have a parameter number
-    
-    debugPrint('[AutoRoutingService] Assigning bus $assignedBus: source param #$sourceParamNumber, target param #$targetParamNumber');
-    
-    // Create parameter updates with actual parameter numbers
+    // Create parameter updates - skip for physical I/O connections
     final parameterUpdates = <ParameterUpdate>[];
-
-    // Always set source output to the bus
-    debugPrint('[AutoRoutingService] Setting source output bus to $assignedBus');
-    parameterUpdates.add(
-      ParameterUpdate(
-        algorithmIndex: sourceAlgorithmIndex,
-        parameterId: _inferOutputBusParameterId(sourcePortId),
-        parameterNumber: sourceParamNumber,
-        value: assignedBus,
-      ),
-    );
     
-    // Only set target input if it's an internal connection (not external output)
-    if (targetAlgorithmIndex >= 0) {
-      debugPrint('[AutoRoutingService] Setting target input bus to $assignedBus');
+    // Physical I/O connections don't need parameter updates (hardware-fixed buses)
+    final isPhysicalConnection = sourceAlgorithmIndex == -2 || sourceAlgorithmIndex == -3 || 
+                                targetAlgorithmIndex == -2 || targetAlgorithmIndex == -3;
+    
+    if (!isPhysicalConnection) {
+      // Find parameter numbers for algorithm connections
+      final sourceParamNumber = _findParameterNumberForPort(
+        sourceAlgorithmIndex, 
+        sourcePortId, 
+        isOutput: true,
+      );
+      
+      final targetParamNumber = targetAlgorithmIndex >= 0 
+          ? _findParameterNumberForPort(
+              targetAlgorithmIndex, 
+              targetPortId, 
+              isOutput: false,
+            )
+          : -1; // External output doesn't have a parameter number
+      
+      debugPrint('[AutoRoutingService] Assigning bus $assignedBus: source param #$sourceParamNumber, target param #$targetParamNumber');
+
+      // Set source output to the bus
+      debugPrint('[AutoRoutingService] Setting source output bus to $assignedBus');
       parameterUpdates.add(
         ParameterUpdate(
-          algorithmIndex: targetAlgorithmIndex,
-          parameterId: _inferInputBusParameterId(targetPortId),
-          parameterNumber: targetParamNumber,
+          algorithmIndex: sourceAlgorithmIndex,
+          parameterId: _inferOutputBusParameterId(sourcePortId),
+          parameterNumber: sourceParamNumber,
           value: assignedBus,
         ),
       );
+      
+      // Only set target input if it's an internal connection (not external output)
+      if (targetAlgorithmIndex >= 0) {
+        debugPrint('[AutoRoutingService] Setting target input bus to $assignedBus');
+        parameterUpdates.add(
+          ParameterUpdate(
+            algorithmIndex: targetAlgorithmIndex,
+            parameterId: _inferInputBusParameterId(targetPortId),
+            parameterNumber: targetParamNumber,
+            value: assignedBus,
+          ),
+        );
+      }
+    } else {
+      debugPrint('[AutoRoutingService] Physical I/O connection detected - skipping parameter updates (using hardware-fixed bus $assignedBus)');
     }
 
     return BusAssignment(
