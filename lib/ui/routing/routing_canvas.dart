@@ -69,14 +69,27 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   ConnectionPainter? _connectionPainter;
   final GlobalKey _canvasKey = GlobalKey();
   bool _finalizingConnection = false; // Prevent double create on pointer up + pan end
+  double? _lastScreenWidth; // Track screen width changes
   
   // Platform detection for mobile interactions
   bool get isMobile => Platform.isAndroid || Platform.isIOS;
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Check if screen width changed and update cubit
+    if (_lastScreenWidth != screenWidth) {
+      _lastScreenWidth = screenWidth;
+      // Use post-frame callback to avoid calling setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final cubit = context.read<NodeRoutingCubit>();
+        cubit.updateScreenWidth(screenWidth);
+      });
+    }
+    
     // Update physical output node position based on screen width
-    NodeRoutingCubit.updatePhysicalOutputPosition(MediaQuery.of(context).size.width);
+    NodeRoutingCubit.updatePhysicalOutputPosition(screenWidth);
     
     return ClipRect(
       child: Listener(

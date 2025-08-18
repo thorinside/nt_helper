@@ -1263,6 +1263,24 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   static void updatePhysicalOutputPosition(double screenWidth) {
     physicalOutputNodeX = screenWidth - physicalNodeWidth - 50.0;
   }
+  
+  /// Update port positions when screen width changes
+  void updateScreenWidth(double screenWidth) {
+    final currentState = state;
+    if (currentState is! NodeRoutingStateLoaded) return;
+    
+    // Update static position
+    updatePhysicalOutputPosition(screenWidth);
+    
+    // Recalculate physical node port positions
+    final updatedPortPositions = Map<String, Offset>.from(currentState.portPositions);
+    _addPhysicalNodePortPositions(updatedPortPositions);
+    
+    // Emit updated state with new port positions
+    emit(currentState.copyWith(portPositions: updatedPortPositions));
+    
+    debugPrint('[NodeRoutingCubit] Updated physical output positions for screen width: $screenWidth');
+  }
 
   /// Add port positions for physical nodes (not in nodePositions map)
   void _addPhysicalNodePortPositions(Map<String, Offset> portPositions) {
