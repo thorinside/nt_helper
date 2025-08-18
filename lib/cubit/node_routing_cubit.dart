@@ -1348,7 +1348,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentMode = connection.replaceMode ? 1 : 0;
     final newMode = currentMode == 0 ? 1 : 0;
     
-    debugPrint('[NodeRoutingCubit] Toggling mode for connection $connectionId: $currentMode -> $newMode');
+    debugPrint('[NodeRoutingCubit] Toggling mode for connection $connectionId: ${currentMode == 1 ? 'Replace (R)' : 'Add'} -> ${newMode == 1 ? 'Replace (R)' : 'Add'}');
     
     // Optimistic update - immediate UI change
     final updatedConnection = connection.copyWith(
@@ -1499,7 +1499,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             replaceMode: actualMode,  // 1 = Replace, 0 = Add
           ));
           
-          debugPrint('[NodeRoutingCubit] Loaded mode for connection ${connection.id}: ${actualMode ? 'Replace' : 'Add'}');
+          debugPrint('[NodeRoutingCubit] Loaded mode for connection ${connection.id}: ${actualMode ? 'Replace (R)' : 'Add'}');
         } else {
           updatedConnections.add(connection);
         }

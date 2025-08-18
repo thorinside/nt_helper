@@ -348,9 +348,9 @@ class ConnectionPainter extends CustomPainter {
 
     // Check if this connection supports mode toggle (not physical I/O)
     final hasMode = connection.sourceAlgorithmIndex >= 0;
-    final displayLabel = hasMode 
-        ? '$label (${connection.replaceMode ? 'R' : 'A'})'
-        : label;
+    final displayLabel = hasMode && connection.replaceMode
+        ? '$label (R)'  // Only show indicator for Replace mode
+        : label;        // Show plain label for Add mode and physical I/O
     
     // Check hover state
     final labelId = 'connection_${connection.id}_mode';
@@ -390,7 +390,7 @@ class ConnectionPainter extends CustomPainter {
         ? (connection.replaceMode 
           ? Colors.blue.withValues(alpha: isHovered ? 0.9 : 0.7)    // Replace = blue
           : Colors.black.withValues(alpha: isHovered ? 0.9 : 0.7))  // Add = black
-        : Colors.black.withValues(alpha: 0.7);  // No mode = black
+        : Colors.black.withValues(alpha: 0.7);  // Physical I/O = black
 
     final labelRect = Rect.fromCenter(
       center: midPoint,
