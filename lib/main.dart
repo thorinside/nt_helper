@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/util/in_app_logger.dart';
@@ -18,6 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final database = AppDatabase();
   await SettingsService().init();
+  await NodePositionsPersistenceService().init();
   await AlgorithmMetadataService().initialize(database);
 
   runApp(

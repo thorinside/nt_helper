@@ -12,8 +12,9 @@ import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/models/port_layout.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/auto_routing_service.dart';
+import 'package:nt_helper/services/node_positions_persistence_service.dart';
 
-@GenerateMocks([DistingCubit, AlgorithmMetadataService, AutoRoutingService, IDistingMidiManager])
+@GenerateMocks([DistingCubit, AlgorithmMetadataService, AutoRoutingService, IDistingMidiManager, NodePositionsPersistenceService])
 import 'node_routing_cubit_test.mocks.dart';
 
 void main() {
@@ -37,14 +38,20 @@ void main() {
   group('NodeRoutingCubit - Optimistic Updates', () {
     late MockDistingCubit mockDistingCubit;
     late MockAlgorithmMetadataService mockAlgorithmMetadataService;
+    late MockNodePositionsPersistenceService mockPersistenceService;
     late NodeRoutingCubit nodeRoutingCubit;
 
     setUp(() {
       mockDistingCubit = MockDistingCubit();
       mockAlgorithmMetadataService = MockAlgorithmMetadataService();
+      mockPersistenceService = MockNodePositionsPersistenceService();
       
       // Auto routing service is created in the constructor
       // For testing, we'll test the behavior at the state level
+      
+      // Setup persistence service mock
+      when(mockPersistenceService.loadPositions(any)).thenAnswer((_) async => <int, NodePosition>{});
+      when(mockPersistenceService.savePositions(any, any)).thenAnswer((_) async {});
       
       // Setup default state
       when(mockDistingCubit.stream).thenAnswer((_) => Stream.empty());
@@ -61,7 +68,7 @@ void main() {
       );
       
       // Initialize the cubit after mocking
-      nodeRoutingCubit = NodeRoutingCubit(mockDistingCubit, mockAlgorithmMetadataService);
+      nodeRoutingCubit = NodeRoutingCubit(mockDistingCubit, mockAlgorithmMetadataService, mockPersistenceService);
     });
 
     tearDown(() {

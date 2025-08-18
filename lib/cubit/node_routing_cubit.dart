@@ -15,12 +15,14 @@ import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/auto_routing_service.dart';
 import 'package:nt_helper/services/graph_layout_service.dart';
+import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/port_extraction_service.dart';
 import 'package:nt_helper/util/routing_validator.dart';
 
 class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   final DistingCubit _distingCubit;
   final AlgorithmMetadataService _algorithmMetadataService;
+  final NodePositionsPersistenceService _persistenceService;
   late final AutoRoutingService _autoRoutingService;
   late final PortExtractionService _portExtractionService;
   StreamSubscription<DistingState>? _distingSubscription;
@@ -38,7 +40,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   static const int physicalInputAlgorithmIndex = -2;
   static const int physicalOutputAlgorithmIndex = -3;
 
-  NodeRoutingCubit(this._distingCubit, this._algorithmMetadataService)
+  NodeRoutingCubit(this._distingCubit, this._algorithmMetadataService, this._persistenceService)
     : super(const NodeRoutingState.initial()) {
     _autoRoutingService = AutoRoutingService(_distingCubit);
     _portExtractionService = PortExtractionService(_algorithmMetadataService);
@@ -64,7 +66,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   }
 
   /// Initialize the node routing view with routing information
-  void initializeFromRouting(List<RoutingInformation> routing) {
+  Future<void> initializeFromRouting(List<RoutingInformation> routing) async {
     emit(const NodeRoutingState.loading());
 
     try {
@@ -93,12 +95,39 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         ),
       );
 
+      // Load saved positions if available
+      final presetName = _distingCubit.state.maybeMap(
+        orElse: () => 'default',
+        synchronized: (s) => s.presetName,
+      );
+      
+      final savedPositions = await _persistenceService.loadPositions(presetName);
+      
       // Check if user has manually repositioned nodes and preserve state
       final currentState = state;
       final Map<int, NodePosition> nodePositions;
       final bool hasUserRepositioned;
       
-      if (currentState is NodeRoutingStateLoaded && currentState.hasUserRepositioned) {
+      if (savedPositions.isNotEmpty) {
+        // Use saved positions
+        hasUserRepositioned = true;
+        nodePositions = Map<int, NodePosition>.from(savedPositions);
+        
+        // Add positions for any new algorithms not in saved data
+        final newAlgorithms = algorithmIndices.where(
+          (index) => !nodePositions.containsKey(index),
+        ).toList();
+        
+        if (newAlgorithms.isNotEmpty) {
+          final newPositions = GraphLayoutService.calculateGridLayout(
+            algorithmIndices: newAlgorithms,
+            algorithmNames: algorithmNames,
+            algorithmPorts: algorithmPorts,
+            canvasSize: canvasSize,
+          );
+          nodePositions.addAll(newPositions);
+        }
+      } else if (currentState is NodeRoutingStateLoaded && currentState.hasUserRepositioned) {
         // Preserve existing positions but update for any new algorithms
         hasUserRepositioned = true;
         final existingPositions = currentState.nodePositions;
@@ -153,7 +182,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   }
 
   /// Update node position and recalculate port positions
-  void updateNodePosition(int algorithmIndex, NodePosition newPosition) {
+  Future<void> updateNodePosition(int algorithmIndex, NodePosition newPosition) async {
     final currentState = state;
     if (currentState is NodeRoutingStateLoaded) {
       final updatedPositions = Map<int, NodePosition>.from(
@@ -173,11 +202,67 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         hasUserRepositioned: true,
       ));
 
-      // TODO: Persist to settings service
+      // Save positions to persistence service (debounced)
+      final presetName = _distingCubit.state.maybeMap(
+        orElse: () => 'default',
+        synchronized: (s) => s.presetName,
+      );
+      
+      await _persistenceService.savePositions(presetName, updatedPositions);
+      
       debugPrint(
         'Node position updated for algorithm $algorithmIndex: (${newPosition.x}, ${newPosition.y})',
       );
     }
+  }
+
+  /// Reset node positions to default grid layout
+  Future<void> resetToDefaultLayout() async {
+    final currentState = state;
+    if (currentState is! NodeRoutingStateLoaded) return;
+
+    // Get current preset name
+    final presetName = _distingCubit.state.maybeMap(
+      orElse: () => 'default',
+      synchronized: (s) => s.presetName,
+    );
+
+    // Clear saved positions
+    await _persistenceService.clearPositions(presetName);
+
+    // Recalculate grid layout
+    final algorithmIndices = currentState.nodePositions.keys.toList();
+    const canvasSize = Size(1600, 1200);
+
+    // Convert portLayouts to algorithmPorts format for GraphLayoutService
+    final algorithmPorts = currentState.portLayouts.map(
+      (index, layout) => MapEntry(
+        index, 
+        [...layout.inputPorts, ...layout.outputPorts],
+      ),
+    );
+
+    final defaultPositions = GraphLayoutService.calculateGridLayout(
+      algorithmIndices: algorithmIndices,
+      algorithmNames: currentState.algorithmNames,
+      algorithmPorts: algorithmPorts,
+      canvasSize: canvasSize,
+    );
+
+    // Recalculate port positions
+    final updatedPortPositions = _calculatePortPositions(
+      defaultPositions, 
+      currentState.portLayouts,
+    );
+
+    // Emit updated state with default layout
+    emit(currentState.copyWith(
+      nodePositions: defaultPositions,
+      portPositions: updatedPortPositions,
+      hasUserRepositioned: false,
+    ));
+
+    debugPrint('Node positions reset to default grid layout for preset: $presetName');
   }
 
   /// Start connection preview
