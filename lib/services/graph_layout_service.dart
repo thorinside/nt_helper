@@ -357,4 +357,109 @@ class GraphLayoutService {
       canvasSize: canvasSize,
     );
   }
+
+  /// Find a non-overlapping position for a new algorithm node
+  static NodePosition findNonOverlappingPosition({
+    required Map<int, NodePosition> existingPositions,
+    required int algorithmIndex,
+    required List<AlgorithmPort> algorithmPorts,
+    Offset? preferredCenter,
+  }) {
+    // Calculate node height based on port count
+    final adjustedHeight = math.max(nodeHeight, 60.0 + algorithmPorts.length * 20.0);
+    
+    final center = preferredCenter ?? const Offset(800, 400);  // Canvas center
+    double radius = 0;
+    double angle = 0;
+    
+    // Spiral search starting from center
+    while (radius < 1000) {
+      final x = center.dx + radius * math.cos(angle);
+      final y = center.dy + radius * math.sin(angle);
+      
+      final testPos = NodePosition(
+        algorithmIndex: algorithmIndex,
+        x: x - nodeWidth / 2,
+        y: y - nodeHeight / 2,
+        width: nodeWidth,
+        height: adjustedHeight,
+      );
+      
+      if (!hasOverlap(testPos, existingPositions, minSpacing)) {
+        return testPos;
+      }
+      
+      angle += 0.5;  // Radians
+      radius += 20 * angle / (2 * math.pi);  // Spiral outward
+    }
+    
+    // Fallback to grid position if spiral fails
+    return _findGridPosition(existingPositions, algorithmIndex, adjustedHeight);
+  }
+
+  /// Check if a node position overlaps with any existing nodes
+  static bool hasOverlap(
+    NodePosition testPosition,
+    Map<int, NodePosition> existingPositions,
+    double spacing,
+  ) {
+    final testRect = Rect.fromLTWH(
+      testPosition.x - spacing,
+      testPosition.y - spacing,
+      testPosition.width + spacing * 2,
+      testPosition.height + spacing * 2,
+    );
+
+    for (final existingPos in existingPositions.values) {
+      final existingRect = Rect.fromLTWH(
+        existingPos.x - spacing,
+        existingPos.y - spacing,
+        existingPos.width + spacing * 2,
+        existingPos.height + spacing * 2,
+      );
+
+      if (testRect.overlaps(existingRect)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Find grid position as fallback when spiral search fails
+  static NodePosition _findGridPosition(
+    Map<int, NodePosition> existingPositions,
+    int algorithmIndex,
+    double nodeHeight,
+  ) {
+    // Find the next available grid position
+    const cellWidth = nodeWidth + minSpacing;
+    final cellHeight = nodeHeight + minSpacing;
+    
+    int row = 0;
+    int col = 0;
+    
+    while (true) {
+      final x = canvasPadding + col * cellWidth;
+      final y = canvasPadding + row * cellHeight;
+      
+      final testPos = NodePosition(
+        algorithmIndex: algorithmIndex,
+        x: x,
+        y: y,
+        width: nodeWidth,
+        height: nodeHeight,
+      );
+      
+      if (!hasOverlap(testPos, existingPositions, minSpacing)) {
+        return testPos;
+      }
+      
+      col++;
+      if (col > 6) {  // Maximum 7 columns before wrapping
+        col = 0;
+        row++;
+      }
+    }
+  }
 }

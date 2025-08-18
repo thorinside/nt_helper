@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_state.dart';
@@ -17,6 +16,7 @@ import 'package:nt_helper/services/auto_routing_service.dart';
 import 'package:nt_helper/services/graph_layout_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/port_extraction_service.dart';
+import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/util/routing_validator.dart';
 
 class NodeRoutingCubit extends Cubit<NodeRoutingState> {
@@ -26,6 +26,50 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   late final AutoRoutingService _autoRoutingService;
   late final PortExtractionService _portExtractionService;
   StreamSubscription<DistingState>? _distingSubscription;
+  
+  /// Proxy method to handle algorithm addition via DistingCubit
+  Future<void> addAlgorithmViaDialog(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: _distingCubit,
+          child: const AddAlgorithmScreen(),
+        ),
+      ),
+    );
+
+    if (result != null && result is Map) {
+      final algorithmInfo = result['algorithm'] as AlgorithmInfo;
+      final specValues = result['specValues'] as List<int>;
+      
+      // Add algorithm to the main cubit first
+      await _distingCubit.onAlgorithmSelected(algorithmInfo, specValues);
+      
+      // Find the algorithm index - it should be the last one added
+      final distingState = _distingCubit.state;
+      if (distingState is DistingStateSynchronized) {
+        final algorithmIndex = distingState.slots.length - 1;
+        final algorithmName = algorithmInfo.name;
+        
+        // For now, create empty port list - the actual port extraction 
+        // will be handled when the state updates from the main cubit
+        final algorithmPorts = <AlgorithmPort>[];
+        
+        // Update node routing with the new algorithm
+        await handleAlgorithmAdded(
+          algorithmIndex: algorithmIndex,
+          algorithmName: algorithmName,
+          algorithmPorts: algorithmPorts,
+        );
+      }
+    }
+  }
+
+  /// Proxy method to handle algorithm deletion via DistingCubit
+  void removeAlgorithm(int algorithmIndex) {
+    _distingCubit.onRemoveAlgorithm(algorithmIndex);
+  }
   
   // Mode toggle functionality
   Timer? _toggleDebounceTimer;
@@ -1643,6 +1687,58 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       }
     }
     debugPrint('[NodeRoutingCubit] ====================================');
+  }
+
+  /// Handle adding a new algorithm to the routing canvas
+  Future<void> handleAlgorithmAdded({
+    required int algorithmIndex,
+    required String algorithmName,
+    required List<AlgorithmPort> algorithmPorts,
+  }) async {
+    final currentState = state;
+    if (currentState is! NodeRoutingStateLoaded) return;
+
+    // Find non-overlapping position for the new algorithm
+    final newPosition = GraphLayoutService.findNonOverlappingPosition(
+      existingPositions: currentState.nodePositions,
+      algorithmIndex: algorithmIndex,
+      algorithmPorts: algorithmPorts,
+    );
+
+    // Update node positions map
+    final updatedNodePositions = Map<int, NodePosition>.from(currentState.nodePositions);
+    updatedNodePositions[algorithmIndex] = newPosition;
+
+    // Update algorithm names map
+    final updatedAlgorithmNames = Map<int, String>.from(currentState.algorithmNames);
+    updatedAlgorithmNames[algorithmIndex] = algorithmName;
+
+    // Create port layout for the new algorithm
+    // Note: algorithmPorts parameter should already be separated into input/output lists
+    // or we need to get the port layout from the PortExtractionService
+    final portLayout = PortLayout(
+      inputPorts: algorithmPorts,  // For now, treat all as input ports
+      outputPorts: [],  // This should be properly separated based on actual port types
+    );
+
+    // Update port layouts map
+    final updatedPortLayouts = Map<int, PortLayout>.from(currentState.portLayouts);
+    updatedPortLayouts[algorithmIndex] = portLayout;
+
+    // Persist positions
+    final presetName = _distingCubit.state.maybeMap(
+      orElse: () => 'default',
+      synchronized: (s) => s.presetName,
+    );
+    await _persistenceService.savePositions(presetName, updatedNodePositions);
+
+    // Emit updated state
+    emit(currentState.copyWith(
+      nodePositions: updatedNodePositions,
+      algorithmNames: updatedAlgorithmNames,
+      portLayouts: updatedPortLayouts,
+      hasUserRepositioned: true,
+    ));
   }
   
   @override

@@ -31,6 +31,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final bool canMoveDown;
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
+  final VoidCallback? onDelete;
   final PositionChangedCallback? onPositionChanged;
   final PortConnectionCallback? onPortConnectionStart;
   final PortConnectionCallback? onPortConnectionEnd;
@@ -50,6 +51,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.canMoveDown = true,
     this.onMoveUp,
     this.onMoveDown,
+    this.onDelete,
     this.onPositionChanged,
     this.onPortConnectionStart,
     this.onPortConnectionEnd,
@@ -218,6 +220,38 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                           tooltip: 'Move algorithm down',
                         ),
                       ),
+                      // Overflow menu
+                      if (widget.onDelete != null)
+                        SizedBox(
+                          width: AlgorithmNodeWidget.headerButtonHeight,
+                          height: AlgorithmNodeWidget.headerButtonHeight,
+                          child: PopupMenuButton<String>(
+                            padding: EdgeInsets.zero,
+                            iconSize: 16,
+                            icon: Icon(
+                              Icons.more_vert,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            tooltip: 'Algorithm options',
+                            onSelected: (value) {
+                              if (value == 'delete') {
+                                widget.onDelete?.call();
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_forever_rounded, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Delete Algorithm'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

@@ -147,6 +147,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                 canMoveDown: canMoveDown,
                 onMoveUp: canMoveUp ? () => _handleMoveAlgorithmUp(algorithmIndex) : null,
                 onMoveDown: canMoveDown ? () => _handleMoveAlgorithmDown(algorithmIndex) : null,
+                onDelete: () => _handleDeleteAlgorithm(algorithmIndex),
                 onPositionChanged: (newPosition) {
                   widget.onNodePositionChanged?.call(
                     algorithmIndex,
@@ -229,6 +230,17 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                     size: const Size(_canvasSize, _canvasSize),
                   ),
                 ),
+              ),
+            ),
+
+            // FloatingActionButton for adding algorithms
+            Positioned(
+              right: 16.0,
+              bottom: 16.0,
+              child: FloatingActionButton.small(
+                tooltip: "Add Algorithm to Preset",
+                onPressed: _handleAddAlgorithm,
+                child: Icon(Icons.add_circle_rounded),
               ),
             ),
           ],
@@ -635,6 +647,18 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
       final cubit = context.read<NodeRoutingCubit>();
       cubit.toggleConnectionMode(connectionId);
     }
+  }
+
+  /// Handle FAB tap to add algorithm
+  Future<void> _handleAddAlgorithm() async {
+    final nodeRoutingCubit = context.read<NodeRoutingCubit>();
+    await nodeRoutingCubit.addAlgorithmViaDialog(context);
+  }
+
+  /// Handle delete algorithm action
+  void _handleDeleteAlgorithm(int algorithmIndex) {
+    final nodeRoutingCubit = context.read<NodeRoutingCubit>();
+    nodeRoutingCubit.removeAlgorithm(algorithmIndex);
   }
 
 }
