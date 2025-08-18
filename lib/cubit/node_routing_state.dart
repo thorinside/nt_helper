@@ -24,6 +24,7 @@ sealed class NodeRoutingState with _$NodeRoutingState {
     @Default(false) bool hasUserRepositioned,
     ConnectionPreview? connectionPreview,
     String? hoveredConnectionId,
+    String? hoveredLabelId, // Currently hovered label ID for mode toggle
     Set<int>? selectedNodes,
     Map<String, bool>? portHoverStates, // portId -> isHovered
     String? errorMessage,

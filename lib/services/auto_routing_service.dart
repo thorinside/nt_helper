@@ -123,8 +123,9 @@ class AutoRoutingService {
       '[AutoRoutingService] Final bus assignment: $assignedBus for connection $sourceAlgorithmIndex:$sourcePortId -> $targetAlgorithmIndex:$targetPortId',
     );
 
-    // Default to replace mode (can be enhanced based on algorithm types)
-    final replaceMode = true;
+    // Default to Add mode (can be enhanced based on algorithm types)
+    // The actual mode will be determined by loadConnectionModes
+    final replaceMode = false;
 
     // Generate connection ID
     final connectionId =

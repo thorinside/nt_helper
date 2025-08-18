@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -64,8 +65,13 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
 
   Set<int> _selectedNodes = {};
   Connection? _hoveredConnection;
+  String? _hoveredLabelId;
+  ConnectionPainter? _connectionPainter;
   final GlobalKey _canvasKey = GlobalKey();
   bool _finalizingConnection = false; // Prevent double create on pointer up + pan end
+  
+  // Platform detection for mobile interactions
+  bool get isMobile => Platform.isAndroid || Platform.isIOS;
 
   @override
   Widget build(BuildContext context) {
@@ -189,18 +195,21 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
             RepaintBoundary(
               child: MouseRegion(
                 opaque: false, // Don't block hits to nodes/ports underneath
-                cursor: _hoveredConnection != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-                onHover: _handleConnectionHover,
-                onExit: (_) => _handleConnectionExit(),
+                cursor: isMobile ? SystemMouseCursors.basic
+                  : (_hoveredLabelId != null ? SystemMouseCursors.click 
+                    : (_hoveredConnection != null ? SystemMouseCursors.click : SystemMouseCursors.basic)),
+                onHover: isMobile ? null : _handleConnectionHover,
+                onExit: isMobile ? null : (_) => _handleConnectionExit(),
                 child: GestureDetector(
                   onTapDown: _handleConnectionTapDown,
                   behavior: HitTestBehavior.deferToChild,
                   child: CustomPaint(
-                    painter: ConnectionPainter(
+                    painter: _connectionPainter = ConnectionPainter(
                       connections: widget.connections,
                       portPositions: widget.portPositions,
                       connectionPreview: widget.connectionPreview,
                       hoveredConnectionId: _hoveredConnection?.id,
+                      hoveredLabelId: _hoveredLabelId,
                       pendingConnections: widget.pendingConnections,
                       failedConnections: widget.failedConnections,
                     ),
@@ -252,7 +261,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
         targetAlgorithmIndex: algorithmIndex,
         targetPortId: portId,
         assignedBus: 21, // Will be assigned by auto-routing service
-        replaceMode: true,
+        replaceMode: false, // Default to Add mode, will be updated by loadConnectionModes
         isValid: true,
       );
 
@@ -453,23 +462,52 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   
   void _handleConnectionHover(PointerEvent event) {
     final hoveredConnection = _getConnectionAtPosition(event.localPosition);
-    if (hoveredConnection != _hoveredConnection) {
+    
+    // Check for label hover using painter hit boxes
+    String? hoveredLabelId;
+    if (_connectionPainter != null) {
+      hoveredLabelId = _connectionPainter!.getLabelAtPosition(event.localPosition);
+    }
+    
+    if (hoveredConnection != _hoveredConnection || hoveredLabelId != _hoveredLabelId) {
       setState(() {
         _hoveredConnection = hoveredConnection;
+        _hoveredLabelId = hoveredLabelId;
       });
+      
+      // Update cubit state for label hover
+      final cubit = context.read<NodeRoutingCubit>();
+      cubit.updateLabelHover(hoveredLabelId);
     }
   }
   
   void _handleConnectionExit() {
-    if (_hoveredConnection != null) {
+    if (_hoveredConnection != null || _hoveredLabelId != null) {
       setState(() {
         _hoveredConnection = null;
+        _hoveredLabelId = null;
       });
+      
+      // Clear label hover state in cubit
+      final cubit = context.read<NodeRoutingCubit>();
+      cubit.updateLabelHover(null);
     }
   }
   
   void _handleConnectionTapDown(TapDownDetails details) {
-    // Find which connection was clicked
+    // First check for label click (higher priority)
+    String? clickedLabelId;
+    if (_connectionPainter != null) {
+      clickedLabelId = _connectionPainter!.getLabelAtPosition(details.localPosition);
+    }
+    
+    if (clickedLabelId != null) {
+      // Handle label click for mode toggle
+      _handleLabelClick(clickedLabelId);
+      return;
+    }
+    
+    // Find which connection was clicked (fallback to connection removal)
     final clickedConnection = _getConnectionAtPosition(details.localPosition);
     if (clickedConnection != null) {
       // Show confirmation dialog
@@ -568,6 +606,22 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
            cp1 * (3 * u * u * t) +
            cp2 * (3 * u * t * t) +
            end * (t * t * t);
+  }
+  
+  /// Handle label click for mode toggle
+  void _handleLabelClick(String labelId) {
+    // Parse label ID to determine which connection was clicked
+    if (labelId.startsWith('connection_') && labelId.endsWith('_mode')) {
+      final connectionId = labelId
+        .replaceFirst('connection_', '')
+        .replaceFirst('_mode', '');
+      
+      debugPrint('[RoutingCanvas] Label clicked: $labelId -> connectionId: $connectionId');
+      
+      // Toggle the mode for this connection
+      final cubit = context.read<NodeRoutingCubit>();
+      cubit.toggleConnectionMode(connectionId);
+    }
   }
 
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +24,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   late final AutoRoutingService _autoRoutingService;
   late final PortExtractionService _portExtractionService;
   StreamSubscription<DistingState>? _distingSubscription;
+  
+  // Mode toggle functionality
+  Timer? _toggleDebounceTimer;
 
   // Physical node constants - updated to match widget changes
   static const double physicalInputNodeX = 50.0;
@@ -257,7 +261,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       targetAlgorithmIndex: targetAlgorithmIndex,
       targetPortId: targetPortId,
       assignedBus: 21, // Temporary, will be assigned by service
-      replaceMode: true,
+      replaceMode: false, // Default to Add mode, will be updated by loadConnectionModes
       isValid: true,
     );
 
@@ -334,6 +338,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         ));
         
         debugPrint('[NodeRoutingCubit] Connection confirmed: $connectionId');
+        
+        // Load actual connection modes after connection is confirmed
+        loadConnectionModes();
       }
     }).catchError((error) {
       // Rollback on failure
@@ -502,6 +509,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       connectedPorts: newConnectedPorts,
       portPositions: newPortPositions,
     ));
+    
+    // Load actual connection modes from parameters after state is updated
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadConnectionModes();
+    });
   }
 
   /// Extract port layouts from routing information using actual algorithm metadata
@@ -710,7 +722,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             targetAlgorithmIndex: input.algorithmIndex,
             targetPortId: targetPortId,
             assignedBus: input.busValue,
-            replaceMode: true,
+            replaceMode: false, // Physical I/O typically uses Add mode
             isValid: true,
           ),
         );
@@ -739,7 +751,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             targetAlgorithmIndex: physicalOutputAlgorithmIndex,
             targetPortId: targetPortId,
             assignedBus: output.busValue,
-            replaceMode: true,
+            replaceMode: false, // Physical I/O typically uses Add mode
             isValid: true,
           ),
         );
@@ -758,6 +770,12 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         final sourcePortId = output.paramNumber.toString();
         final targetPortId = input.paramNumber.toString();
 
+        // Read actual mode from parameter value if available
+        final actualMode = _getOutputModeFromParameter(
+          output.algorithmIndex,
+          output.paramNumber,
+        );
+        
         connections.add(
           Connection(
             id: 'param_${output.algorithmIndex}_${input.algorithmIndex}_${output.busValue}',
@@ -766,7 +784,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             targetAlgorithmIndex: input.algorithmIndex,
             targetPortId: targetPortId,
             assignedBus: output.busValue,
-            replaceMode: true,
+            replaceMode: actualMode, // Use actual parameter value
             isValid: true,
           ),
         );
@@ -775,6 +793,69 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
     debugPrint('[NodeRoutingCubit] Created ${connections.length} connections total');
     return connections;
+  }
+
+  /// Get the actual output mode from parameter value
+  bool _getOutputModeFromParameter(int algorithmIndex, int parameterNumber) {
+    final distingState = _distingCubit.state;
+    if (distingState is! DistingStateSynchronized) return false; // Default to Add
+    
+    if (algorithmIndex >= distingState.slots.length) return false;
+    
+    final slot = distingState.slots[algorithmIndex];
+    
+    // Find the base parameter
+    final baseParam = slot.parameters.firstWhereOrNull(
+      (p) => p.parameterNumber == parameterNumber,
+    );
+    
+    if (baseParam != null) {
+      // Look for corresponding mode parameter
+      final modeParamName = '${baseParam.name} mode';
+      final modeParam = slot.parameters.firstWhereOrNull(
+        (p) => p.name.toLowerCase() == modeParamName.toLowerCase(),
+      );
+      
+      if (modeParam != null) {
+        // Get the actual parameter value
+        final paramValue = slot.values.firstWhereOrNull(
+          (v) => v.parameterNumber == modeParam.parameterNumber,
+        );
+        
+        if (paramValue != null) {
+          final isReplace = paramValue.value == 1;
+          debugPrint('[NodeRoutingCubit] Output mode for "${baseParam.name}": ${isReplace ? 'Replace' : 'Add'} (param value: ${paramValue.value})');
+          return isReplace;
+        }
+      }
+    }
+    
+    // Fallback: check if this looks like an output parameter with mode
+    final allModeParams = slot.parameters.where((p) => 
+      p.name.toLowerCase().endsWith(' mode') && 
+      (p.name.toLowerCase().contains('output') || 
+       p.name.toLowerCase().contains('out') || 
+       p.name.toLowerCase().contains('send'))
+    ).toList();
+    
+    if (allModeParams.isNotEmpty) {
+      // If there's only one mode parameter, use it
+      if (allModeParams.length == 1) {
+        final modeParam = allModeParams.first;
+        final paramValue = slot.values.firstWhereOrNull(
+          (v) => v.parameterNumber == modeParam.parameterNumber,
+        );
+        
+        if (paramValue != null) {
+          final isReplace = paramValue.value == 1;
+          debugPrint('[NodeRoutingCubit] Fallback mode for algorithm $algorithmIndex: ${isReplace ? 'Replace' : 'Add'} (param "${modeParam.name}" = ${paramValue.value})');
+          return isReplace;
+        }
+      }
+    }
+    
+    debugPrint('[NodeRoutingCubit] No mode parameter found for algorithm $algorithmIndex param $parameterNumber, defaulting to Add');
+    return false; // Default to Add mode
   }
 
   /// Find the correct port ID for a given parameter number
@@ -1216,8 +1297,254 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
   }
 
+  /// Update hover state for connection labels
+  void updateLabelHover(String? hoveredLabelId) {
+    final currentState = state;
+    if (currentState is NodeRoutingStateLoaded) {
+      emit(currentState.copyWith(hoveredLabelId: hoveredLabelId));
+    }
+  }
+
+  /// Toggle connection mode with optimistic update and debounce
+  Future<void> toggleConnectionMode(String connectionId) async {
+    // Cancel previous debounce timer
+    _toggleDebounceTimer?.cancel();
+    
+    // Debounce rapid clicks (500ms)
+    _toggleDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      await _performModeToggle(connectionId);
+    });
+  }
+
+  /// Perform the actual mode toggle with optimistic update
+  Future<void> _performModeToggle(String connectionId) async {
+    final currentState = state;
+    if (currentState is! NodeRoutingStateLoaded) return;
+
+    final connection = currentState.connections.firstWhereOrNull((c) => c.id == connectionId);
+    if (connection == null) {
+      debugPrint('[NodeRoutingCubit] Connection not found: $connectionId');
+      return;
+    }
+    
+    // Skip physical I/O connections (negative algorithmIndex)
+    if (connection.sourceAlgorithmIndex < 0) {
+      debugPrint('[NodeRoutingCubit] Physical I/O connections do not have mode parameters');
+      return;
+    }
+    
+    // Find mode parameter
+    final modeParamNumber = _findModeParameterForOutput(
+      connection.sourceAlgorithmIndex,
+      connection.sourcePortId,
+    );
+    
+    if (modeParamNumber == null) {
+      debugPrint('[NodeRoutingCubit] No mode parameter found for connection $connectionId');
+      return;
+    }
+    
+    // Calculate new mode
+    final currentMode = connection.replaceMode ? 1 : 0;
+    final newMode = currentMode == 0 ? 1 : 0;
+    
+    debugPrint('[NodeRoutingCubit] Toggling mode for connection $connectionId: $currentMode -> $newMode');
+    
+    // Optimistic update - immediate UI change
+    final updatedConnection = connection.copyWith(
+      replaceMode: newMode == 1,
+    );
+    
+    final updatedConnections = currentState.connections.map((c) => 
+      c.id == connectionId ? updatedConnection : c
+    ).toList();
+    
+    emit(currentState.copyWith(connections: updatedConnections));
+    
+    try {
+      // Queue hardware update
+      await _distingCubit.updateParameterValue(
+        algorithmIndex: connection.sourceAlgorithmIndex,
+        parameterNumber: modeParamNumber,
+        value: newMode,
+        userIsChangingTheValue: true,
+      );
+      
+      debugPrint('[NodeRoutingCubit] Mode toggle successful for connection $connectionId');
+    } catch (error) {
+      // Revert on failure
+      debugPrint('[NodeRoutingCubit] Mode toggle failed, reverting: $error');
+      final revertState = state;
+      if (revertState is NodeRoutingStateLoaded) {
+        final revertedConnections = revertState.connections.map((c) => 
+          c.id == connectionId ? connection : c  // Revert to original
+        ).toList();
+        
+        emit(revertState.copyWith(connections: revertedConnections));
+      }
+    }
+  }
+
+  /// Find the mode parameter number for a given output
+  int? _findModeParameterForOutput(int algorithmIndex, String portId) {
+    final distingState = _distingCubit.state;
+    if (distingState is! DistingStateSynchronized) return null;
+    
+    if (algorithmIndex >= distingState.slots.length) return null;
+    
+    final slot = distingState.slots[algorithmIndex];
+    
+    // First try to find the parameter by port ID directly (parameter number as string)
+    final portParamNumber = int.tryParse(portId);
+    if (portParamNumber != null) {
+      // Find the base parameter for this port
+      final baseParam = slot.parameters.firstWhereOrNull(
+        (p) => p.parameterNumber == portParamNumber,
+      );
+      
+      if (baseParam != null) {
+        // Look for a mode parameter with name pattern: baseParam.name + " mode"
+        final modeParamName = '${baseParam.name} mode';
+        final modeParam = slot.parameters.firstWhereOrNull(
+          (p) => p.name.toLowerCase() == modeParamName.toLowerCase(),
+        );
+        
+        if (modeParam != null) {
+          debugPrint('[NodeRoutingCubit] Found mode parameter: "${modeParam.name}" (${modeParam.parameterNumber}) for output "${baseParam.name}"');
+          return modeParam.parameterNumber;
+        }
+      }
+    }
+    
+    // More flexible fallback: find mode parameters for outputs
+    // First try exact patterns
+    for (final param in slot.parameters) {
+      final nameLower = param.name.toLowerCase();
+      if (nameLower.endsWith(' mode') && 
+          (nameLower.contains('output') || nameLower.contains('out') || nameLower.contains('send'))) {
+        debugPrint('[NodeRoutingCubit] Found mode parameter by pattern: "${param.name}" (${param.parameterNumber})');
+        return param.parameterNumber;
+      }
+    }
+    
+    // Even more flexible: any parameter with 'mode' that might be related to outputs
+    final modeParams = slot.parameters.where((p) => 
+      p.name.toLowerCase().contains('mode') && 
+      p.unit == 1 && // Enum parameter
+      p.max == 1      // Binary choice (0/1)
+    ).toList();
+    
+    if (modeParams.length == 1) {
+      // If there's only one mode parameter, it's likely the one we want
+      final modeParam = modeParams.first;
+      debugPrint('[NodeRoutingCubit] Found single mode parameter: "${modeParam.name}" (${modeParam.parameterNumber})');
+      return modeParam.parameterNumber;
+    } else if (modeParams.length > 1) {
+      // Multiple mode parameters - try to find the one most likely to be output-related
+      for (final param in modeParams) {
+        final nameLower = param.name.toLowerCase();
+        if (nameLower.contains('out') || nameLower.contains('send') || nameLower.contains('main')) {
+          debugPrint('[NodeRoutingCubit] Found likely output mode parameter: "${param.name}" (${param.parameterNumber})');
+          return param.parameterNumber;
+        }
+      }
+      
+      // If still no match, use the first one and log it
+      final firstMode = modeParams.first;
+      debugPrint('[NodeRoutingCubit] Using first mode parameter as fallback: "${firstMode.name}" (${firstMode.parameterNumber})');
+      return firstMode.parameterNumber;
+    }
+    
+    debugPrint('[NodeRoutingCubit] No mode parameter found for algorithm $algorithmIndex, port $portId');
+    return null;
+  }
+
+  /// Load connection modes from parameter values (source of truth)
+  Future<void> loadConnectionModes() async {
+    final currentState = state;
+    if (currentState is! NodeRoutingStateLoaded) return;
+    
+    final distingState = _distingCubit.state;
+    if (distingState is! DistingStateSynchronized) return;
+    
+    debugPrint('[NodeRoutingCubit] Loading connection modes from parameter values');
+    
+    final updatedConnections = <Connection>[];
+    
+    for (final connection in currentState.connections) {
+      // Skip physical I/O connections
+      if (connection.sourceAlgorithmIndex < 0) {
+        updatedConnections.add(connection);
+        continue;
+      }
+      
+      // Find mode parameter for this connection
+      final modeParamNumber = _findModeParameterForOutput(
+        connection.sourceAlgorithmIndex,
+        connection.sourcePortId,
+      );
+      
+      if (modeParamNumber != null && connection.sourceAlgorithmIndex < distingState.slots.length) {
+        // Read actual value from slot parameters (source of truth)
+        final slot = distingState.slots[connection.sourceAlgorithmIndex];
+        final paramValue = slot.values.firstWhereOrNull(
+          (v) => v.parameterNumber == modeParamNumber,
+        );
+        
+        if (paramValue != null) {
+          // Update connection with actual mode
+          final actualMode = paramValue.value == 1;
+          
+          updatedConnections.add(connection.copyWith(
+            replaceMode: actualMode,  // 1 = Replace, 0 = Add
+          ));
+          
+          debugPrint('[NodeRoutingCubit] Loaded mode for connection ${connection.id}: ${actualMode ? 'Replace' : 'Add'}');
+        } else {
+          updatedConnections.add(connection);
+        }
+      } else {
+        updatedConnections.add(connection);
+      }
+    }
+    
+    emit(currentState.copyWith(connections: updatedConnections));
+    debugPrint('[NodeRoutingCubit] Connection modes loaded from parameters');
+  }
+  
+  /// Debug helper to show all algorithm parameters with mode-related info
+  void debugPrintModeParameters() {
+    final distingState = _distingCubit.state;
+    if (distingState is! DistingStateSynchronized) {
+      debugPrint('[NodeRoutingCubit] Not synchronized, cannot show parameters');
+      return;
+    }
+    
+    debugPrint('[NodeRoutingCubit] ======== MODE PARAMETER DEBUG ========');
+    for (int i = 0; i < distingState.slots.length; i++) {
+      final slot = distingState.slots[i];
+      debugPrint('[NodeRoutingCubit] Algorithm $i: ${slot.algorithm.name}');
+      
+      final modeParams = slot.parameters.where((p) => 
+        p.name.toLowerCase().contains('mode')
+      ).toList();
+      
+      if (modeParams.isNotEmpty) {
+        debugPrint('[NodeRoutingCubit]   Mode parameters:');
+        for (final param in modeParams) {
+          final value = slot.values.firstWhereOrNull((v) => v.parameterNumber == param.parameterNumber);
+          debugPrint('[NodeRoutingCubit]     ${param.parameterNumber}: "${param.name}" = ${value?.value ?? 'NO_VALUE'} (${param.unit == 1 ? 'ENUM' : 'OTHER'}, range: ${param.min}-${param.max})');
+        }
+      } else {
+        debugPrint('[NodeRoutingCubit]   No mode parameters found');
+      }
+    }
+    debugPrint('[NodeRoutingCubit] ====================================');
+  }
+  
   @override
   Future<void> close() {
+    _toggleDebounceTimer?.cancel();
     _distingSubscription?.cancel();
     return super.close();
   }

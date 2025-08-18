@@ -3,6 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/models/connection.dart';
 import 'package:nt_helper/models/connection_preview.dart';
 
+/// Hit box for clickable labels
+class LabelHitBox {
+  final String id;
+  final Rect bounds;
+  final Offset center;
+  
+  LabelHitBox({
+    required this.id,
+    required this.bounds,
+    required this.center,
+  });
+}
+
 class ConnectionPainter extends CustomPainter {
   final List<Connection> connections;
   final Map<String, Offset> portPositions; // algorithmIndex_portId -> Offset
@@ -10,6 +23,10 @@ class ConnectionPainter extends CustomPainter {
   final String? hoveredConnectionId;
   final Set<String> pendingConnections;
   final Set<String> failedConnections;
+  final String? hoveredLabelId;
+  
+  // Hit boxes for clickable labels, cleared and repopulated each paint cycle
+  final List<LabelHitBox> labelHitBoxes = [];
 
   ConnectionPainter({
     required this.connections,
@@ -18,10 +35,14 @@ class ConnectionPainter extends CustomPainter {
     this.hoveredConnectionId,
     this.pendingConnections = const {},
     this.failedConnections = const {},
+    this.hoveredLabelId,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Clear hit boxes for this paint cycle
+    labelHitBoxes.clear();
+    
     // Draw all established connections
     for (final connection in connections) {
       final isPending = pendingConnections.contains(connection.id);
@@ -121,7 +142,7 @@ class ConnectionPainter extends CustomPainter {
 
     // Draw edge label at midpoint
     final edgeLabel = connection.edgeLabel ?? connection.getEdgeLabel();
-    _drawEdgeLabel(canvas, sourcePos, targetPos, edgeLabel);
+    _drawEdgeLabel(canvas, sourcePos, targetPos, edgeLabel, connection);
   }
 
   void _drawPreviewConnection(
@@ -321,16 +342,26 @@ class ConnectionPainter extends CustomPainter {
     canvas.drawPath(arrowPath, arrowPaint);
   }
 
-  void _drawEdgeLabel(Canvas canvas, Offset start, Offset end, String label) {
+  void _drawEdgeLabel(Canvas canvas, Offset start, Offset end, String label, Connection connection) {
     // Calculate midpoint of bezier curve
     final midPoint = _calculateBezierMidpoint(start, end);
 
+    // Check if this connection supports mode toggle (not physical I/O)
+    final hasMode = connection.sourceAlgorithmIndex >= 0;
+    final displayLabel = hasMode 
+        ? '$label (${connection.replaceMode ? 'R' : 'A'})'
+        : label;
+    
+    // Check hover state
+    final labelId = 'connection_${connection.id}_mode';
+    final isHovered = hoveredLabelId == labelId;
+
     final textPainter = TextPainter(
       text: TextSpan(
-        text: label,
-        style: const TextStyle(
+        text: displayLabel,
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: isHovered ? 12 : 10, // 10px normal, 12px hover
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -338,16 +369,37 @@ class ConnectionPainter extends CustomPainter {
     );
 
     textPainter.layout();
+    final textSize = textPainter.size;
+    
+    // Record hit box for click detection (only for connections with modes)
+    if (hasMode) {
+      const padding = 6.0;
+      labelHitBoxes.add(LabelHitBox(
+        id: labelId,
+        bounds: Rect.fromCenter(
+          center: midPoint,
+          width: textSize.width + padding * 2,
+          height: textSize.height + padding * 2,
+        ),
+        center: midPoint,
+      ));
+    }
 
-    // Draw background for label
+    // Draw background with mode-specific color
+    final backgroundColor = hasMode
+        ? (connection.replaceMode 
+          ? Colors.blue.withValues(alpha: isHovered ? 0.9 : 0.7)    // Replace = blue
+          : Colors.black.withValues(alpha: isHovered ? 0.9 : 0.7))  // Add = black
+        : Colors.black.withValues(alpha: 0.7);  // No mode = black
+
     final labelRect = Rect.fromCenter(
       center: midPoint,
-      width: textPainter.width + 6,
-      height: textPainter.height + 2,
+      width: textSize.width + 6,
+      height: textSize.height + 2,
     );
 
     final labelPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.8)
+      ..color = backgroundColor
       ..style = PaintingStyle.fill;
 
     canvas.drawRRect(
@@ -359,8 +411,8 @@ class ConnectionPainter extends CustomPainter {
     textPainter.paint(
       canvas,
       Offset(
-        midPoint.dx - textPainter.width / 2,
-        midPoint.dy - textPainter.height / 2,
+        midPoint.dx - textSize.width / 2,
+        midPoint.dy - textSize.height / 2,
       ),
     );
   }
@@ -384,6 +436,16 @@ class ConnectionPainter extends CustomPainter {
   }
 
 
+  /// Get label at position for hit testing
+  String? getLabelAtPosition(Offset position) {
+    for (final hitBox in labelHitBoxes) {
+      if (hitBox.bounds.contains(position)) {
+        return hitBox.id;
+      }
+    }
+    return null;
+  }
+  
   @override
   bool shouldRepaint(ConnectionPainter oldDelegate) {
     return connections != oldDelegate.connections ||
@@ -391,6 +453,7 @@ class ConnectionPainter extends CustomPainter {
         connectionPreview != oldDelegate.connectionPreview ||
         hoveredConnectionId != oldDelegate.hoveredConnectionId ||
         pendingConnections != oldDelegate.pendingConnections ||
-        failedConnections != oldDelegate.failedConnections;
+        failedConnections != oldDelegate.failedConnections ||
+        hoveredLabelId != oldDelegate.hoveredLabelId;
   }
 }
