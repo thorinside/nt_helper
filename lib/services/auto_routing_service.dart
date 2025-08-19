@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/connection.dart';
+import 'package:nt_helper/models/tidy_result.dart';
 
 class AutoRoutingService {
   final DistingCubit _cubit;
@@ -627,6 +628,145 @@ class AutoRoutingService {
       '[AutoRoutingService] WARNING: No parameter found for port "$portId" in algorithm $algorithmIndex, using fallback',
     );
     return isOutput ? 0 : 1; // Fallback
+  }
+
+  /// Apply tidy optimization result to hardware
+  Future<void> applyTidyResult(TidyResult tidyResult) async {
+    if (!tidyResult.success) {
+      throw ArgumentError('Cannot apply failed tidy result: ${tidyResult.errorMessage}');
+    }
+
+    final distingState = _cubit.state;
+    if (distingState is! DistingStateSynchronized) {
+      throw Exception('Hardware not synchronized - cannot apply tidy result');
+    }
+
+    // Skip hardware updates in offline mode
+    if (distingState.offline) {
+      debugPrint('[AutoRoutingService] Offline mode - skipping hardware sync for tidy result');
+      return;
+    }
+
+    if (tidyResult.changes.isEmpty) {
+      debugPrint('[AutoRoutingService] No changes to apply from tidy result');
+      return;
+    }
+
+    debugPrint('[AutoRoutingService] Applying ${tidyResult.changes.length} tidy optimizations to hardware');
+
+    // Apply each change to the hardware
+    final updateFutures = <Future>[];
+    
+    for (final change in tidyResult.changes.values) {
+      try {
+        // Find the connection in the optimized set to get algorithm indices
+        final connection = tidyResult.optimizedConnections
+            .firstWhere((c) => c.id == change.connectionId);
+        
+        // Update source algorithm parameters if needed
+        if (connection.sourceAlgorithmIndex >= 0) {
+          if (change.oldBus != change.newBus) {
+            // Bus changed - update output bus parameter
+            final sourceParamNumber = _findParameterNumberForPort(
+              connection.sourceAlgorithmIndex,
+              connection.sourcePortId,
+              isOutput: true,
+            );
+            
+            if (sourceParamNumber >= 0) {
+              updateFutures.add(
+                _cubit.updateParameterValue(
+                  algorithmIndex: connection.sourceAlgorithmIndex,
+                  parameterNumber: sourceParamNumber,
+                  value: change.newBus,
+                  userIsChangingTheValue: true,
+                ),
+              );
+              
+              debugPrint('[AutoRoutingService] Updated source algorithm ${connection.sourceAlgorithmIndex} param $sourceParamNumber to bus ${change.newBus}');
+            }
+          }
+          
+          if (change.oldReplaceMode != change.newReplaceMode) {
+            // Replace mode changed - update replace mode parameter
+            final replaceModeParam = _findReplaceModeParameter(connection.sourceAlgorithmIndex);
+            if (replaceModeParam >= 0) {
+              updateFutures.add(
+                _cubit.updateParameterValue(
+                  algorithmIndex: connection.sourceAlgorithmIndex,
+                  parameterNumber: replaceModeParam,
+                  value: change.newReplaceMode ? 1 : 0,
+                  userIsChangingTheValue: true,
+                ),
+              );
+              
+              debugPrint('[AutoRoutingService] Updated source algorithm ${connection.sourceAlgorithmIndex} replace mode to ${change.newReplaceMode}');
+            }
+          }
+        }
+        
+        // Update target algorithm parameters if needed
+        if (connection.targetAlgorithmIndex >= 0) {
+          if (change.oldBus != change.newBus) {
+            // Bus changed - update input bus parameter
+            final targetParamNumber = _findParameterNumberForPort(
+              connection.targetAlgorithmIndex,
+              connection.targetPortId,
+              isOutput: false,
+            );
+            
+            if (targetParamNumber >= 0) {
+              updateFutures.add(
+                _cubit.updateParameterValue(
+                  algorithmIndex: connection.targetAlgorithmIndex,
+                  parameterNumber: targetParamNumber,
+                  value: change.newBus,
+                  userIsChangingTheValue: true,
+                ),
+              );
+              
+              debugPrint('[AutoRoutingService] Updated target algorithm ${connection.targetAlgorithmIndex} param $targetParamNumber to bus ${change.newBus}');
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AutoRoutingService] Failed to apply change ${change.connectionId}: $e');
+        rethrow;
+      }
+    }
+
+    // Wait for all parameter updates to complete
+    try {
+      await Future.wait(updateFutures);
+      debugPrint('[AutoRoutingService] Successfully applied all tidy optimizations to hardware');
+    } catch (e) {
+      debugPrint('[AutoRoutingService] Failed to apply tidy optimizations: $e');
+      throw Exception('Hardware sync failed during tidy optimization: $e');
+    }
+  }
+
+  /// Find replace mode parameter for an algorithm
+  int _findReplaceModeParameter(int algorithmIndex) {
+    final distingState = _cubit.state;
+    if (distingState is! DistingStateSynchronized) return -1;
+    
+    if (algorithmIndex >= distingState.slots.length) return -1;
+    
+    final slot = distingState.slots[algorithmIndex];
+    final units = distingState.unitStrings;
+    
+    // Look for a parameter that controls replace mode
+    for (final param in slot.parameters) {
+      final paramName = param.name.toLowerCase();
+      final unit = param.getUnitString(units) ?? '';
+      
+      if ((paramName.contains('replace') || paramName.contains('mode')) &&
+          (unit == 'mode' || (param.min == 0 && param.max == 1))) {
+        return param.parameterNumber;
+      }
+    }
+    
+    return -1; // No replace mode parameter found
   }
 }
 

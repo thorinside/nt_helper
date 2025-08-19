@@ -34,8 +34,8 @@ import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
-import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/cubit/node_routing_cubit.dart';
+import 'package:nt_helper/cubit/node_routing_state.dart';
 import 'package:nt_helper/ui/routing/node_routing_widget.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
@@ -276,14 +276,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Widget _buildRoutingCanvas() {
-    return BlocProvider(
-      create: (_) => NodeRoutingCubit(
-        context.read<DistingCubit>(),
-        AlgorithmMetadataService(),
-        NodePositionsPersistenceService(),
-      )..initialize(),
-      child: const NodeRoutingWidget(),
-    );
+    // NodeRoutingCubit is now provided at the app level
+    return const NodeRoutingWidget();
   }
 
   BottomAppBar _buildBottomAppBar() {
@@ -472,98 +466,173 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   List<Widget> _buildAppBarActions(DistingCubit cubit) {
+    final isOffline = switch (cubit.state) {
+      DistingStateSynchronized(offline: final o) => o,
+      _ => false,
+    };
+    
     return [
       // Refresh: Only disabled by loading OR offline
-      Builder(builder: (ctx) {
-        final isOffline = switch (cubit.state) {
-          DistingStateSynchronized(offline: final o) => o,
-          _ => false,
-        };
-        return IconButton(
-          icon: Icon(Icons.refresh_rounded),
-          tooltip: 'Refresh',
-          onPressed: widget.loading || isOffline // <-- Updated condition
-              ? null
-              : () {
-                  cubit.refresh();
-                },
-        );
-      }),
+      IconButton(
+        icon: Icon(Icons.refresh_rounded),
+        tooltip: 'Refresh',
+        onPressed: widget.loading || isOffline
+            ? null
+            : () {
+                cubit.refresh();
+              },
+      ),
       // Wake: Disabled by loading OR offline
+      IconButton(
+        icon: Icon(Icons.alarm_on_rounded),
+        tooltip: "Wake",
+        onPressed: widget.loading || isOffline
+            ? null
+            : () {
+                cubit.requireDisting().requestWake();
+              },
+      ),
+      // Mode-specific actions with AnimatedSwitcher
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 100),
+        child: _buildModeSpecificActions(cubit),
+      ),
+      // Overflow menu
+      _buildOverflowMenu(cubit),
+    ];
+  }
+  
+  Widget _buildModeSpecificActions(DistingCubit cubit) {
+    return Row(
+      key: ValueKey(_currentMode), // Important for AnimatedSwitcher
+      mainAxisSize: MainAxisSize.min,
+      children: _currentMode == EditMode.parameters 
+        ? _buildParameterModeActions(cubit)
+        : _buildRoutingModeActions(),
+    );
+  }
+  
+  List<Widget> _buildParameterModeActions(DistingCubit cubit) {
+    return [
+      // Move Up
       Builder(builder: (ctx) {
-        final isOffline = switch (cubit.state) {
-          DistingStateSynchronized(offline: final o) => o,
-          _ => false,
-        };
         return IconButton(
-          icon: Icon(Icons.alarm_on_rounded),
-          tooltip: "Wake",
-          onPressed: widget.loading || isOffline
+          icon: const Icon(Icons.arrow_upward_rounded),
+          tooltip: 'Move Algorithm Up',
+          onPressed: widget.loading
               ? null
-              : () {
-                  cubit.requireDisting().requestWake();
+              : () async {
+                  final newIndex = await cubit.moveAlgorithmUp(_selectedIndex);
+                  setState(() {
+                    _selectedIndex = newIndex;
+                  });
+                  _tabController.animateTo(newIndex);
                 },
         );
       }),
-      // Move Up: Only disabled by loading, hidden in routing mode
-      if (_currentMode == EditMode.parameters)
-        Builder(builder: (ctx) {
-          return IconButton(
-            icon: const Icon(Icons.arrow_upward_rounded),
-            tooltip: 'Move Algorithm Up',
-            onPressed: widget.loading
-                ? null
-                : () async {
-                    final newIndex = await cubit.moveAlgorithmUp(_selectedIndex);
+      // Move Down
+      Builder(builder: (ctx) {
+        return IconButton(
+          icon: const Icon(Icons.arrow_downward_rounded),
+          tooltip: 'Move Algorithm Down',
+          onPressed: widget.loading
+              ? null
+              : () async {
+                  final currentState = cubit.state;
+                  int slotCount = 0;
+                  if (currentState is DistingStateSynchronized) {
+                    slotCount = currentState.slots.length;
+                  }
+                  if (_selectedIndex < slotCount - 1) {
+                    final newIndex = await cubit.moveAlgorithmDown(_selectedIndex);
                     setState(() {
                       _selectedIndex = newIndex;
                     });
                     _tabController.animateTo(newIndex);
-                  },
-          );
-        }),
-      // Move Down: Only disabled by loading, hidden in routing mode
-      if (_currentMode == EditMode.parameters)
-        Builder(builder: (ctx) {
+                  }
+                },
+        );
+      }),
+      // Remove Algorithm
+      Builder(builder: (ctx) {
+        return IconButton(
+          icon: const Icon(Icons.delete_forever_rounded),
+          tooltip: 'Remove Algorithm',
+          onPressed: widget.loading
+              ? null
+              : () async {
+                  cubit.onRemoveAlgorithm(_selectedIndex);
+                });
+      }),
+    ];
+  }
+  
+  List<Widget> _buildRoutingModeActions() {
+    return [
+      // Tidy Routing
+      BlocBuilder<NodeRoutingCubit, NodeRoutingState>(
+        builder: (context, state) {
+          final nodeRoutingCubit = context.read<NodeRoutingCubit>();
+          final distingCubit = context.read<DistingCubit>();
+          final canTidy = nodeRoutingCubit.canPerformTidy;
+          final isOptimizing = state is NodeRoutingStateOptimizing;
+          final isOffline = switch (distingCubit.state) {
+            DistingStateSynchronized(offline: final o) => o,
+            _ => false,
+          };
+          
           return IconButton(
-            icon: const Icon(Icons.arrow_downward_rounded),
-            tooltip: 'Move Algorithm Down',
-            onPressed: widget.loading
-                ? null
-                : () async {
-                    final currentState = cubit.state;
-                    int slotCount = 0;
-                    if (currentState is DistingStateSynchronized) {
-                      slotCount = currentState.slots.length;
+            icon: isOptimizing 
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.auto_fix_high),
+            tooltip: 'Tidy Routing - Optimize bus usage',
+            onPressed: widget.loading || isOffline || isOptimizing || !canTidy
+              ? null
+              : () async {
+                  // Debug: Log current state before attempting tidy
+                  debugPrint('[TidyButton] NodeRoutingCubit state: ${nodeRoutingCubit.state.runtimeType}');
+                  debugPrint('[TidyButton] canTidy: $canTidy');
+                  debugPrint('[TidyButton] isOptimizing: $isOptimizing');
+                  final result = await nodeRoutingCubit.performTidy();
+                  if (context.mounted) {
+                    final messenger = ScaffoldMessenger.of(context);
+                    if (result.success) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Routing optimized! ${result.busesFreed} buses freed.',
+                          ),
+                          backgroundColor: Colors.green.shade600,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Optimization failed: ${result.errorMessage}',
+                          ),
+                          backgroundColor: Colors.red.shade600,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
                     }
-                    if (_selectedIndex < slotCount - 1) {
-                      final newIndex =
-                          await cubit.moveAlgorithmDown(_selectedIndex);
-                      setState(() {
-                        _selectedIndex = newIndex;
-                      });
-                      _tabController.animateTo(newIndex);
-                    }
-                  },
+                  }
+                },
           );
-        }),
-      // Remove Algorithm: Only disabled by loading, hidden in routing mode
-      if (_currentMode == EditMode.parameters)
-        Builder(
-          builder: (ctx) {
-            return IconButton(
-                icon: const Icon(Icons.delete_forever_rounded),
-                tooltip: 'Remove Algorithm',
-                onPressed: widget.loading
-                    ? null
-                    : () async {
-                        cubit.onRemoveAlgorithm(_selectedIndex);
-                      });
-          },
-        ),
-      PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert),
-        itemBuilder: (popupCtx) {
+        },
+      ),
+    ];
+  }
+  
+  Widget _buildOverflowMenu(DistingCubit cubit) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
+      itemBuilder: (popupCtx) {
           // Get offline status here for menu items that need it
           final isOffline = switch (cubit.state) {
             DistingStateSynchronized(offline: final o) => o,
@@ -926,8 +995,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             ),
           ];
         },
-      ),
-    ];
+    );
   }
 
   Padding _buildPresetInfoEditor(BuildContext context) {

@@ -12,7 +12,9 @@ import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/models/port_layout.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/auto_routing_service.dart';
+import 'package:nt_helper/services/bus_tidy_optimizer.dart';
 import 'package:nt_helper/services/graph_layout_service.dart';
+import 'package:nt_helper/models/tidy_result.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/port_extraction_service.dart';
 import 'package:nt_helper/ui/add_algorithm_screen.dart';
@@ -24,7 +26,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   final NodePositionsPersistenceService _persistenceService;
   late final AutoRoutingService _autoRoutingService;
   late final PortExtractionService _portExtractionService;
+  late final BusTidyOptimizer _busTidyOptimizer;
   StreamSubscription<DistingState>? _distingSubscription;
+  bool _isOptimizing = false;
   
   /// Proxy method to handle algorithm addition via DistingCubit
   Future<void> addAlgorithmViaDialog(BuildContext context) async {
@@ -83,10 +87,15 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   static const int physicalInputAlgorithmIndex = -2;
   static const int physicalOutputAlgorithmIndex = -3;
 
-  NodeRoutingCubit(this._distingCubit, this._algorithmMetadataService, this._persistenceService)
-    : super(const NodeRoutingState.initial()) {
+  NodeRoutingCubit(
+    this._distingCubit, 
+    this._algorithmMetadataService, 
+    this._persistenceService, {
+    BusTidyOptimizer? busTidyOptimizer, // For testing
+  }) : super(const NodeRoutingState.initial()) {
     _autoRoutingService = AutoRoutingService(_distingCubit);
     _portExtractionService = PortExtractionService(_algorithmMetadataService);
+    _busTidyOptimizer = busTidyOptimizer ?? BusTidyOptimizer(this, _autoRoutingService);
     _subscribeToDistingChanges();
   }
 
@@ -1700,6 +1709,66 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       portLayouts: updatedPortLayouts,
       hasUserRepositioned: true,
     ));
+  }
+
+  // ==================== TIDY OPTIMIZATION METHODS ====================
+
+  /// Check if tidy operation can be performed
+  bool get canPerformTidy {
+    return state is NodeRoutingStateLoaded && !_isOptimizing;
+  }
+
+  /// Perform bus tidy optimization
+  Future<TidyResult> performTidy() async {
+    // Check for concurrent operations first
+    if (_isOptimizing) {
+      return TidyResult.failed('Tidy operation already in progress - concurrent operations not allowed');
+    }
+    
+    // Check state validity
+    if (state is! NodeRoutingStateLoaded) {
+      return TidyResult.failed('Cannot perform tidy: invalid state');
+    }
+
+    // Preserve the loaded state before changing to optimizing
+    final originalLoadedState = state as NodeRoutingStateLoaded;
+    
+    _isOptimizing = true;
+    
+    try {
+      // Emit optimizing state
+      emit(const NodeRoutingState.optimizing());
+      
+      // Perform optimization with the preserved state
+      final result = await _busTidyOptimizer.tidyConnections(originalLoadedState);
+      
+      if (result.success) {
+        // Apply changes to hardware if optimization was successful
+        try {
+          await _autoRoutingService.applyTidyResult(result);
+          debugPrint('[NodeRoutingCubit] Successfully applied tidy result to hardware');
+        } catch (e) {
+          debugPrint('[NodeRoutingCubit] Failed to apply tidy result to hardware: $e');
+          // Continue with state update - the optimization worked, just hardware sync failed
+        }
+        
+        // Update state with optimized connections
+        final newTotalBusesFreed = originalLoadedState.totalBusesFreed + result.busesFreed;
+        
+        emit(originalLoadedState.copyWith(
+          connections: result.optimizedConnections,
+          lastTidyResult: result,
+          totalBusesFreed: newTotalBusesFreed,
+        ));
+      } else {
+        // Restore the loaded state on failure
+        emit(originalLoadedState);
+      }
+      
+      return result;
+    } finally {
+      _isOptimizing = false;
+    }
   }
   
   @override

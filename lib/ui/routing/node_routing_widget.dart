@@ -33,6 +33,7 @@ class NodeRoutingWidget extends StatelessWidget {
           return switch (state) {
             NodeRoutingStateInitial() => _buildInitializing(context),
             NodeRoutingStateLoading() => _buildLoading(),
+            NodeRoutingStateOptimizing() => _buildOptimizing(),
             NodeRoutingStateLoaded() => _buildLoaded(context, state),
             NodeRoutingStateError() => _buildError(context, state),
           };
@@ -53,6 +54,19 @@ class NodeRoutingWidget extends StatelessWidget {
           CircularProgressIndicator(),
           SizedBox(height: 16),
           Text('Initializing node layout...'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptimizing() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Optimizing bus routing...'),
         ],
       ),
     );

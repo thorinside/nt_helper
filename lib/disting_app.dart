@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
+import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/synchronized_screen.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
@@ -89,17 +92,31 @@ class _DistingAppState extends State<DistingApp> {
       // Follow system settings
       initialRoute: '/',
       routes: {
-        '/': (context) => BlocProvider(
-              create: (context) {
-                // Get the AppDatabase instance from the context
-                final database = context.read<AppDatabase>();
+        '/': (context) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (context) {
+                    // Get the AppDatabase instance from the context
+                    final database = context.read<AppDatabase>();
 
-                // Create DistingCubit and pass the database instance
-                final cubit = DistingCubit(database); // Pass database here
-                cubit
-                    .initialize(); // Load settings and auto-connect if possible
-                return cubit;
-              },
+                    // Create DistingCubit and pass the database instance
+                    final cubit = DistingCubit(database); // Pass database here
+                    cubit
+                        .initialize(); // Load settings and auto-connect if possible
+                    return cubit;
+                  },
+                ),
+                BlocProvider(
+                  create: (context) {
+                    final distingCubit = context.read<DistingCubit>();
+                    return NodeRoutingCubit(
+                      distingCubit,
+                      AlgorithmMetadataService(),
+                      NodePositionsPersistenceService(),
+                    )..initialize();
+                  },
+                ),
+              ],
               child: Material(child: DistingPage()),
             ),
       },
