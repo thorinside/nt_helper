@@ -12,15 +12,32 @@ class NodeRoutingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NodeRoutingCubit, NodeRoutingState>(
-      builder: (context, state) {
-        return switch (state) {
-          NodeRoutingStateInitial() => _buildInitializing(context),
-          NodeRoutingStateLoading() => _buildLoading(),
-          NodeRoutingStateLoaded() => _buildLoaded(context, state),
-          NodeRoutingStateError() => _buildError(context, state),
-        };
+    return BlocListener<NodeRoutingCubit, NodeRoutingState>(
+      listener: (context, state) {
+        // Show error snackbar and clear error from state
+        if (state is NodeRoutingStateLoaded && state.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage!),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Clear the error message to prevent repeated showing
+          context.read<NodeRoutingCubit>().clearError();
+        }
       },
+      child: BlocBuilder<NodeRoutingCubit, NodeRoutingState>(
+        builder: (context, state) {
+          return switch (state) {
+            NodeRoutingStateInitial() => _buildInitializing(context),
+            NodeRoutingStateLoading() => _buildLoading(),
+            NodeRoutingStateLoaded() => _buildLoaded(context, state),
+            NodeRoutingStateError() => _buildError(context, state),
+          };
+        },
+      ),
     );
   }
 
@@ -42,18 +59,6 @@ class NodeRoutingWidget extends StatelessWidget {
   }
 
   Widget _buildLoaded(BuildContext context, NodeRoutingStateLoaded state) {
-    // Show error snackbar if there's an error message
-    if (state.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.errorMessage!),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      });
-    }
 
     return RoutingCanvas(
       nodePositions: state.nodePositions,

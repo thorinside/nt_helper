@@ -160,9 +160,13 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final bool hasUserRepositioned;
       
       if (savedPositions.isNotEmpty) {
-        // Use saved positions
+        // Use saved positions but recalculate heights to ensure accuracy
         hasUserRepositioned = true;
-        nodePositions = Map<int, NodePosition>.from(savedPositions);
+        nodePositions = savedPositions.map((index, position) {
+          final portLayout = portLayouts[index] ?? const PortLayout(inputPorts: [], outputPorts: []);
+          final adjustedHeight = GraphLayoutService.calculateNodeHeight(portLayout);
+          return MapEntry(index, position.copyWith(height: adjustedHeight));
+        });
         
         // Add positions for any new algorithms not in saved data
         final newAlgorithms = algorithmIndices.where(
@@ -179,10 +183,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           nodePositions.addAll(newPositions);
         }
       } else if (currentState is NodeRoutingStateLoaded && currentState.hasUserRepositioned) {
-        // Preserve existing positions but update for any new algorithms
+        // Preserve existing positions but recalculate heights and update for any new algorithms
         hasUserRepositioned = true;
         final existingPositions = currentState.nodePositions;
-        nodePositions = Map<int, NodePosition>.from(existingPositions);
+        nodePositions = existingPositions.map((index, position) {
+          final portLayout = portLayouts[index] ?? const PortLayout(inputPorts: [], outputPorts: []);
+          final adjustedHeight = GraphLayoutService.calculateNodeHeight(portLayout);
+          return MapEntry(index, position.copyWith(height: adjustedHeight));
+        });
         
         // Add positions for any new algorithms using grid layout
         final newAlgorithms = algorithmIndices.where(
@@ -285,18 +293,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final algorithmIndices = currentState.nodePositions.keys.toList();
     const canvasSize = Size(1600, 1200);
 
-    // Convert portLayouts to algorithmPorts format for GraphLayoutService
-    final algorithmPorts = currentState.portLayouts.map(
-      (index, layout) => MapEntry(
-        index, 
-        [...layout.inputPorts, ...layout.outputPorts],
-      ),
-    );
-
-    final defaultPositions = GraphLayoutService.calculateGridLayout(
+    // Use new method that accepts PortLayouts directly for accurate height calculation
+    final defaultPositions = GraphLayoutService.calculateGridLayoutWithPortLayouts(
       algorithmIndices: algorithmIndices,
       algorithmNames: currentState.algorithmNames,
-      algorithmPorts: algorithmPorts,
+      portLayouts: currentState.portLayouts,
       canvasSize: canvasSize,
     );
 
@@ -1706,5 +1707,13 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     _toggleDebounceTimer?.cancel();
     _distingSubscription?.cancel();
     return super.close();
+  }
+
+  /// Clear error message from state
+  void clearError() {
+    final currentState = state;
+    if (currentState is NodeRoutingStateLoaded && currentState.errorMessage != null) {
+      emit(currentState.copyWith(errorMessage: null));
+    }
   }
 }

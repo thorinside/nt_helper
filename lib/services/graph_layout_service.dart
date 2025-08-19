@@ -3,12 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/models/algorithm_port.dart';
 import 'package:nt_helper/models/connection.dart';
 import 'package:nt_helper/models/node_position.dart';
+import 'package:nt_helper/models/port_layout.dart';
+import 'package:nt_helper/ui/routing/algorithm_node_widget.dart';
 
 class GraphLayoutService {
   static const double nodeWidth = 200.0;
   static const double nodeHeight = 120.0;
   static const double minSpacing = 50.0;
   static const double canvasPadding = 50.0;
+
+  /// Calculate accurate node height using PortLayout data
+  static double calculateNodeHeight(PortLayout portLayout) {
+    final maxPortsInColumn = math.max(
+      portLayout.inputPorts.length,
+      portLayout.outputPorts.length,
+    );
+    // Add small buffer (4px) to prevent rounding issues and minor overflows
+    return math.max(
+      nodeHeight,
+      AlgorithmNodeWidget.headerHeight + 
+      (maxPortsInColumn * AlgorithmNodeWidget.portRowHeight) + 
+      (AlgorithmNodeWidget.portsVerticalPadding * 2) + 4.0,
+    );
+  }
 
   /// Calculate initial positions for all nodes using hierarchical + force-directed layout
   static Map<int, NodePosition> calculateInitialLayout({
@@ -75,9 +92,18 @@ class GraphLayoutService {
         final algorithmIndex = nodesInLayer[i];
         final y = canvasPadding + (i + 1) * nodeSpacing;
 
-        // Adjust node height based on port count
+        // Adjust node height based on port count using actual widget constants
         final ports = algorithmPorts[algorithmIndex] ?? [];
-        final adjustedHeight = math.max(nodeHeight, 60.0 + ports.length * 20.0);
+        // Since ports list combines input+output, we need to assume even distribution
+        // for height calculation. This is a conservative estimate.
+        final totalPorts = ports.length;
+        final estimatedMaxPortsPerColumn = (totalPorts / 2).ceil();
+        final adjustedHeight = math.max(
+          nodeHeight,
+          AlgorithmNodeWidget.headerHeight + 
+          (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) + 
+          (AlgorithmNodeWidget.portsVerticalPadding * 2),
+        );
 
         positions[algorithmIndex] = NodePosition(
           algorithmIndex: algorithmIndex,
@@ -296,8 +322,94 @@ class GraphLayoutService {
     final nodeHeights = <int, double>{};
     for (final algorithmIndex in sortedIndices) {
       final ports = algorithmPorts[algorithmIndex] ?? [];
-      final adjustedHeight = math.max(nodeHeight, 60.0 + ports.length * 20.0);
+      // Since ports list combines input+output, we need to assume even distribution
+      // for height calculation. This is a conservative estimate.
+      final totalPorts = ports.length;
+      final estimatedMaxPortsPerColumn = (totalPorts / 2).ceil();
+      final adjustedHeight = math.max(
+        nodeHeight,
+        AlgorithmNodeWidget.headerHeight + 
+        (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) + 
+        (AlgorithmNodeWidget.portsVerticalPadding * 2),
+      );
       nodeHeights[algorithmIndex] = adjustedHeight;
+    }
+    
+    // Group nodes by row and calculate row heights
+    final rowHeights = <int, double>{};
+    for (int row = 0; row < rows; row++) {
+      double maxHeightInRow = 0;
+      for (int col = 0; col < cols; col++) {
+        final index = row * cols + col;
+        if (index < sortedIndices.length) {
+          final algorithmIndex = sortedIndices[index];
+          maxHeightInRow = math.max(maxHeightInRow, nodeHeights[algorithmIndex]!);
+        }
+      }
+      rowHeights[row] = maxHeightInRow;
+    }
+    
+    // Position nodes in grid pattern (left-to-right, top-to-bottom)
+    for (int i = 0; i < sortedIndices.length; i++) {
+      final algorithmIndex = sortedIndices[i];
+      final row = i ~/ cols;
+      final col = i % cols;
+      
+      final x = gridStartX + col * cellWidth;
+      
+      // Calculate y position based on previous row heights
+      double y = gridStartY;
+      for (int prevRow = 0; prevRow < row; prevRow++) {
+        y += rowHeights[prevRow]! + maxSpacing;
+      }
+      
+      final adjustedHeight = nodeHeights[algorithmIndex]!;
+      
+      positions[algorithmIndex] = NodePosition(
+        algorithmIndex: algorithmIndex,
+        x: x,
+        y: y,
+        width: nodeWidth,
+        height: adjustedHeight,
+      );
+    }
+    
+    return positions;
+  }
+
+  /// Calculate grid layout using accurate PortLayout data
+  static Map<int, NodePosition> calculateGridLayoutWithPortLayouts({
+    required List<int> algorithmIndices,
+    required Map<int, String> algorithmNames,
+    required Map<int, PortLayout> portLayouts,
+    Size? canvasSize,
+  }) {
+    final positions = <int, NodePosition>{};
+    
+    // Sort algorithm indices numerically for predictable layout
+    final sortedIndices = List<int>.from(algorithmIndices)..sort();
+    
+    // Calculate optimal grid dimensions
+    final nodeCount = sortedIndices.length;
+    if (nodeCount == 0) return positions;
+    
+    // Calculate grid dimensions - prefer wider grids for better readability
+    final cols = math.max(1, math.sqrt(nodeCount * 1.5).ceil());
+    final rows = (nodeCount / cols).ceil();
+    
+    // Calculate cell dimensions with tight spacing (50px maximum)
+    const maxSpacing = 50.0;
+    final cellWidth = nodeWidth + maxSpacing;
+    
+    // Start grid at top-left with padding
+    final gridStartX = canvasPadding;
+    final gridStartY = canvasPadding;
+    
+    // Calculate node heights first to determine proper row spacing
+    final nodeHeights = <int, double>{};
+    for (final algorithmIndex in sortedIndices) {
+      final portLayout = portLayouts[algorithmIndex] ?? const PortLayout(inputPorts: [], outputPorts: []);
+      nodeHeights[algorithmIndex] = calculateNodeHeight(portLayout);
     }
     
     // Group nodes by row and calculate row heights
@@ -365,8 +477,17 @@ class GraphLayoutService {
     required List<AlgorithmPort> algorithmPorts,
     Offset? preferredCenter,
   }) {
-    // Calculate node height based on port count
-    final adjustedHeight = math.max(nodeHeight, 60.0 + algorithmPorts.length * 20.0);
+    // Calculate node height based on port count using actual widget constants
+    // Since ports list combines input+output, we need to assume even distribution
+    // for height calculation. This is a conservative estimate.
+    final totalPorts = algorithmPorts.length;
+    final estimatedMaxPortsPerColumn = (totalPorts / 2).ceil();
+    final adjustedHeight = math.max(
+      nodeHeight,
+      AlgorithmNodeWidget.headerHeight + 
+      (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) + 
+      (AlgorithmNodeWidget.portsVerticalPadding * 2),
+    );
     
     final center = preferredCenter ?? const Offset(800, 400);  // Canvas center
     double radius = 0;

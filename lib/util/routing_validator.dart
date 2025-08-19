@@ -47,10 +47,16 @@ class RoutingValidator {
       }
     }
 
-    // Check 4: Bus availability
-    final busesInUse = _countBusesInUse(existingConnections);
-    if (busesInUse >= 8 && !_canShareBus(proposedConnection, existingConnections)) {
-      errors.add('No available auxiliary buses');
+    // Check 4: Bus availability (only for algorithm-to-algorithm connections)
+    // Physical nodes (negative indices) use dedicated I/O busses, not AUX busses
+    final isPhysicalConnection = proposedConnection.sourceAlgorithmIndex < 0 || 
+                                proposedConnection.targetAlgorithmIndex < 0;
+    
+    if (!isPhysicalConnection) {
+      final busesInUse = _countBusesInUse(existingConnections);
+      if (busesInUse >= 8 && !_canShareBus(proposedConnection, existingConnections)) {
+        errors.add('No available auxiliary buses');
+      }
     }
 
     // Check 5: Duplicate connection
