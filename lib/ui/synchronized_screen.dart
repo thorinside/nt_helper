@@ -34,6 +34,9 @@ import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/services/node_positions_persistence_service.dart';
+import 'package:nt_helper/cubit/node_routing_cubit.dart';
+import 'package:nt_helper/ui/routing/node_routing_widget.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
@@ -47,6 +50,8 @@ import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+
+enum EditMode { parameters, routing }
 
 class SynchronizedScreen extends StatefulWidget {
   final List<Slot> slots;
@@ -78,6 +83,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     with TickerProviderStateMixin {
   late int _selectedIndex;
   late TabController _tabController;
+  EditMode _currentMode = EditMode.parameters;
 
   @override
   void initState() {
@@ -152,6 +158,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
@@ -162,7 +169,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       return Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(context, isWideScreen),
-        body: _buildWideScreenBody(),
+        body: IndexedStack(
+          index: _currentMode == EditMode.parameters ? 0 : 1,
+          children: [
+            _buildWideScreenBody(),
+            _buildRoutingCanvas(),
+          ],
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
         bottomNavigationBar: _buildBottomAppBar(),
@@ -172,7 +185,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       return Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(context, isWideScreen),
-        body: _buildBody(),
+        body: IndexedStack(
+          index: _currentMode == EditMode.parameters ? 0 : 1,
+          children: [
+            _buildBody(),
+            _buildRoutingCanvas(),
+          ],
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
         bottomNavigationBar: _buildBottomAppBar(),
@@ -256,12 +275,54 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     });
   }
 
+  Widget _buildRoutingCanvas() {
+    return BlocProvider(
+      create: (_) => NodeRoutingCubit(
+        context.read<DistingCubit>(),
+        AlgorithmMetadataService(),
+        NodePositionsPersistenceService(),
+      )..initialize(),
+      child: const NodeRoutingWidget(),
+    );
+  }
+
   BottomAppBar _buildBottomAppBar() {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
 
     return BottomAppBar(
       child: Row(
         children: [
+          // Left side - Mode switcher
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: SegmentedButton<EditMode>(
+              segments: [
+                ButtonSegment(
+                  value: EditMode.parameters,
+                  label: isWideScreen ? const Text('Parameters') : null,
+                  icon: const Icon(Icons.tune),
+                ),
+                ButtonSegment(
+                  value: EditMode.routing,
+                  label: isWideScreen ? const Text('Routing') : null,
+                  icon: const Icon(Icons.account_tree),
+                ),
+              ],
+              selected: {_currentMode},
+              onSelectionChanged: (Set<EditMode> modes) {
+                setState(() {
+                  _currentMode = modes.first;
+                });
+              },
+              style: ButtonStyle(
+                // Material 3 styling for prominence
+                visualDensity: VisualDensity.comfortable,
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 24),
+          
           Builder(builder: (context) {
             final isOffline = switch (context.watch<DistingCubit>().state) {
               DistingStateSynchronized(offline: final o) => o,
@@ -328,9 +389,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               );
             }
           }),
-          SizedBox.fromSize(
-            size: Size.fromWidth(24),
-          ),
+          
+          const Spacer(),
+          
           // MCP server status indicator (desktop only)
           if (Platform.isMacOS || Platform.isWindows)
             ChangeNotifierProvider.value(
@@ -350,6 +411,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             const SizedBox(width: 16),
             const CpuMonitorWidget(),
           ],
+          // Spacer for FAB so it doesn't cover the version/CPU info
+          const SizedBox(width: 80),
         ],
       ),
     );
@@ -391,21 +454,17 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       notificationPredicate: (ScrollNotification notification) =>
           notification.depth == 1,
       bottom: PreferredSize(
-        preferredSize: Size.fromHeight(isWideScreen ? 40.0 : 66.0),
+        preferredSize: const Size.fromHeight(66.0), // Consistent height for both modes
         child: Column(
           children: [
             _buildPresetInfoEditor(context), // The preset info
-            // Only show TabBar on narrow screens
-            if (!isWideScreen)
-              Row(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: _buildTabBar(context),
-                  ),
-                ],
-              ),
+            // Always reserve space for tab bar to prevent jumping
+            SizedBox(
+              height: 26.0,
+              child: !isWideScreen && _currentMode == EditMode.parameters
+                  ? _buildTabBar(context)
+                  : null,
+            ),
           ],
         ),
       ),
@@ -446,59 +505,62 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 },
         );
       }),
-      // Move Up: Only disabled by loading
-      Builder(builder: (ctx) {
-        return IconButton(
-          icon: const Icon(Icons.arrow_upward_rounded),
-          tooltip: 'Move Algorithm Up',
-          onPressed: widget.loading
-              ? null
-              : () async {
-                  final newIndex = await cubit.moveAlgorithmUp(_selectedIndex);
-                  setState(() {
-                    _selectedIndex = newIndex;
-                  });
-                  _tabController.animateTo(newIndex);
-                },
-        );
-      }),
-      // Move Down: Only disabled by loading
-      Builder(builder: (ctx) {
-        return IconButton(
-          icon: const Icon(Icons.arrow_downward_rounded),
-          tooltip: 'Move Algorithm Down',
-          onPressed: widget.loading
-              ? null
-              : () async {
-                  final currentState = cubit.state;
-                  int slotCount = 0;
-                  if (currentState is DistingStateSynchronized) {
-                    slotCount = currentState.slots.length;
-                  }
-                  if (_selectedIndex < slotCount - 1) {
-                    final newIndex =
-                        await cubit.moveAlgorithmDown(_selectedIndex);
+      // Move Up: Only disabled by loading, hidden in routing mode
+      if (_currentMode == EditMode.parameters)
+        Builder(builder: (ctx) {
+          return IconButton(
+            icon: const Icon(Icons.arrow_upward_rounded),
+            tooltip: 'Move Algorithm Up',
+            onPressed: widget.loading
+                ? null
+                : () async {
+                    final newIndex = await cubit.moveAlgorithmUp(_selectedIndex);
                     setState(() {
                       _selectedIndex = newIndex;
                     });
                     _tabController.animateTo(newIndex);
-                  }
-                },
-        );
-      }),
-      // Remove Algorithm: Only disabled by loading
-      Builder(
-        builder: (ctx) {
+                  },
+          );
+        }),
+      // Move Down: Only disabled by loading, hidden in routing mode
+      if (_currentMode == EditMode.parameters)
+        Builder(builder: (ctx) {
           return IconButton(
-              icon: const Icon(Icons.delete_forever_rounded),
-              tooltip: 'Remove Algorithm',
-              onPressed: widget.loading
-                  ? null
-                  : () async {
-                      cubit.onRemoveAlgorithm(_selectedIndex);
-                    });
-        },
-      ),
+            icon: const Icon(Icons.arrow_downward_rounded),
+            tooltip: 'Move Algorithm Down',
+            onPressed: widget.loading
+                ? null
+                : () async {
+                    final currentState = cubit.state;
+                    int slotCount = 0;
+                    if (currentState is DistingStateSynchronized) {
+                      slotCount = currentState.slots.length;
+                    }
+                    if (_selectedIndex < slotCount - 1) {
+                      final newIndex =
+                          await cubit.moveAlgorithmDown(_selectedIndex);
+                      setState(() {
+                        _selectedIndex = newIndex;
+                      });
+                      _tabController.animateTo(newIndex);
+                    }
+                  },
+          );
+        }),
+      // Remove Algorithm: Only disabled by loading, hidden in routing mode
+      if (_currentMode == EditMode.parameters)
+        Builder(
+          builder: (ctx) {
+            return IconButton(
+                icon: const Icon(Icons.delete_forever_rounded),
+                tooltip: 'Remove Algorithm',
+                onPressed: widget.loading
+                    ? null
+                    : () async {
+                        cubit.onRemoveAlgorithm(_selectedIndex);
+                      });
+          },
+        ),
       PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert),
         itemBuilder: (popupCtx) {
@@ -926,7 +988,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ),
               ],
             ),
-          )
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );

@@ -233,15 +233,13 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
               ),
             ),
 
-            // FloatingActionButton for adding algorithms
+            // Spacer to prevent content from being hidden by FAB
             Positioned(
-              right: 16.0,
-              bottom: 16.0,
-              child: FloatingActionButton.small(
-                tooltip: "Add Algorithm to Preset",
-                onPressed: _handleAddAlgorithm,
-                child: Icon(Icons.add_circle_rounded),
-              ),
+              right: 0,
+              bottom: 0,
+              width: 80,
+              height: 80,
+              child: Container(), // Invisible spacer
             ),
           ],
         ),
@@ -649,11 +647,6 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     }
   }
 
-  /// Handle FAB tap to add algorithm
-  Future<void> _handleAddAlgorithm() async {
-    final nodeRoutingCubit = context.read<NodeRoutingCubit>();
-    await nodeRoutingCubit.addAlgorithmViaDialog(context);
-  }
 
   /// Handle delete algorithm action
   void _handleDeleteAlgorithm(int algorithmIndex) {

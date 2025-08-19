@@ -2,19 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_state.dart';
-import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/ui/routing/routing_canvas.dart';
 
 class NodeRoutingWidget extends StatelessWidget {
-  final List<RoutingInformation> routing;
-  final bool showSignals;
-  final bool showMappings;
 
   const NodeRoutingWidget({
     super.key,
-    required this.routing,
-    this.showSignals = true,
-    this.showMappings = false,
   });
 
   @override
@@ -32,11 +25,6 @@ class NodeRoutingWidget extends StatelessWidget {
   }
 
   Widget _buildInitializing(BuildContext context) {
-    // Trigger initialization when widget is first built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NodeRoutingCubit>().initializeFromRouting(routing);
-    });
-
     return const Center(child: CircularProgressIndicator());
   }
 
@@ -121,7 +109,7 @@ class NodeRoutingWidget extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              context.read<NodeRoutingCubit>().initializeFromRouting(routing);
+              context.read<NodeRoutingCubit>().initialize();
             },
             child: const Text('Retry'),
           ),

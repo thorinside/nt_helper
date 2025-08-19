@@ -10,7 +10,6 @@ import 'package:nt_helper/models/connection.dart';
 import 'package:nt_helper/models/connection_preview.dart';
 import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/models/port_layout.dart';
-import 'package:nt_helper/models/routing_information.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/auto_routing_service.dart';
 import 'package:nt_helper/services/graph_layout_service.dart';
@@ -109,26 +108,37 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
   }
 
-  /// Initialize the node routing view with routing information
-  Future<void> initializeFromRouting(List<RoutingInformation> routing) async {
+  /// Initialize the node routing view directly from DistingCubit state
+  Future<void> initialize() async {
     emit(const NodeRoutingState.loading());
 
     try {
-      // Extract algorithm information
-      final algorithmNames = <int, String>{};
-      for (final info in routing) {
-        algorithmNames[info.algorithmIndex] = info.algorithmName;
+      final distingState = _distingCubit.state;
+      if (distingState is! DistingStateSynchronized) {
+        emit(const NodeRoutingState.error(
+          message: 'DistingCubit is not synchronized',
+        ));
+        return;
       }
 
-      // Extract algorithm port layouts
-      final portLayouts = _extractPortLayouts(routing);
+      // Extract algorithm information directly from slots
+      final algorithmNames = <int, String>{};
+      final algorithmIndices = <int>[];
+      
+      for (int i = 0; i < distingState.slots.length; i++) {
+        final slot = distingState.slots[i];
+        algorithmNames[i] = slot.algorithm.name;
+        algorithmIndices.add(i);
+      }
 
-      // Convert routing masks to visual connections
-      final connections = _interpretRoutingMasks(routing);
+      // Extract algorithm port layouts directly from slots
+      final portLayouts = _extractPortLayoutsFromSlots(distingState.slots);
+
+      // Convert hardware state to visual connections
+      final connections = _interpretRoutingFromSlots(distingState.slots);
       final connectedPorts = _extractConnectedPorts(connections);
 
       // Calculate layout based on user interaction history
-      final algorithmIndices = routing.map((r) => r.algorithmIndex).toList();
       const canvasSize = Size(1600, 1200);
 
       // Convert portLayouts to algorithmPorts format for GraphLayoutService
@@ -140,10 +150,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       );
 
       // Load saved positions if available
-      final presetName = _distingCubit.state.maybeMap(
-        orElse: () => 'default',
-        synchronized: (s) => s.presetName,
-      );
+      final presetName = distingState.presetName;
       
       final savedPositions = await _persistenceService.loadPositions(presetName);
       
@@ -547,23 +554,17 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     debugPrint('[NodeRoutingCubit] Updating from hardware routing change');
     debugPrint('[NodeRoutingCubit] Number of slots: ${distingState.slots.length}');
     
-    // Build routing information from the current hardware state
-    final routingInfoList = <RoutingInformation>[];
+    // Extract algorithm information directly from slots
     final algorithmNames = <int, String>{};
     
     for (int i = 0; i < distingState.slots.length; i++) {
       final slot = distingState.slots[i];
       algorithmNames[i] = slot.algorithm.name;
-      routingInfoList.add(RoutingInformation(
-        algorithmIndex: i,
-        algorithmName: slot.algorithm.name,
-        routingInfo: const [], // Empty routing info, not used for connection detection
-      ));
       debugPrint('[NodeRoutingCubit] Slot $i: ${slot.algorithm.name} (${slot.algorithm.guid})');
     }
     
     // Re-extract port layouts for the new algorithm positions
-    final newPortLayouts = _extractPortLayouts(routingInfoList);
+    final newPortLayouts = _extractPortLayoutsFromSlots(distingState.slots);
     
     // Log port layout details
     for (final entry in newPortLayouts.entries) {
@@ -572,7 +573,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
     
     // Re-extract connections from the updated hardware state
-    final newConnections = _interpretRoutingMasks(routingInfoList);
+    final newConnections = _interpretRoutingFromSlots(distingState.slots);
     final newConnectedPorts = _extractConnectedPorts(newConnections);
     
     debugPrint('[NodeRoutingCubit] *** CONNECTIONS FOUND: ${newConnections.length} ***');
@@ -645,71 +646,36 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     });
   }
 
-  /// Extract port layouts from routing information using actual algorithm metadata
-  Map<int, PortLayout> _extractPortLayouts(
-    List<RoutingInformation> routing,
+  /// Extract port layouts directly from slots using actual algorithm metadata
+  Map<int, PortLayout> _extractPortLayoutsFromSlots(
+    List<Slot> slots,
   ) {
     final portLayouts = <int, PortLayout>{};
-    final distingState = _distingCubit.state;
 
-    if (distingState is DistingStateSynchronized) {
-      for (final info in routing) {
-        final algorithmIndex = info.algorithmIndex;
+    for (int i = 0; i < slots.length; i++) {
+      final slot = slots[i];
+      final algorithmGuid = slot.algorithm.guid;
 
-        // Get algorithm data from the slot
-        if (algorithmIndex < distingState.slots.length) {
-          final slot = distingState.slots[algorithmIndex];
-          final algorithmGuid = slot.algorithm.guid;
+      debugPrint('[NodeRoutingCubit] Extracting ports for algorithm $i: "$algorithmGuid"');
 
-          debugPrint('[NodeRoutingCubit] Extracting ports for algorithm $algorithmIndex: "$algorithmGuid"');
+      // Extract ports using PortExtractionService with live parameter data
+      final portInfo = _portExtractionService.extractPortsFromSlot(slot);
 
-          // Extract ports using PortExtractionService with live parameter data
-          final portInfo = _portExtractionService.extractPortsFromSlot(slot);
-
-          portLayouts[algorithmIndex] = PortLayout(
-            inputPorts: portInfo.inputPorts,
-            outputPorts: portInfo.outputPorts,
-          );
-        } else {
-          // Fallback for invalid algorithm index
-          portLayouts[algorithmIndex] = _getDefaultPortLayout();
-        }
-      }
-    } else {
-      // Fallback when not synchronized
-      for (final info in routing) {
-        portLayouts[info.algorithmIndex] = _getDefaultPortLayout();
-      }
+      portLayouts[i] = PortLayout(
+        inputPorts: portInfo.inputPorts,
+        outputPorts: portInfo.outputPorts,
+      );
     }
 
     return portLayouts;
   }
 
-  /// Get default port layout for fallback scenarios
-  PortLayout _getDefaultPortLayout() {
-    return const PortLayout(
-      inputPorts: [
-        AlgorithmPort(id: 'input_1', name: 'Input 1', busIdRef: 'input_bus'),
-        AlgorithmPort(id: 'input_2', name: 'Input 2', busIdRef: 'input_bus_2'),
-      ],
-      outputPorts: [
-        AlgorithmPort(id: 'output_1', name: 'Output 1', busIdRef: 'output_bus'),
-        AlgorithmPort(id: 'output_2', name: 'Output 2', busIdRef: 'output_bus_2'),
-      ],
-    );
-  }
 
   /// Find connections by matching parameter values across algorithms
-  List<Connection> _interpretRoutingMasks(
-    List<RoutingInformation> routingInfoList,
+  List<Connection> _interpretRoutingFromSlots(
+    List<Slot> slots,
   ) {
     final connections = <Connection>[];
-    final distingState = _distingCubit.state;
-
-    if (distingState is! DistingStateSynchronized) {
-      debugPrint('[NodeRoutingCubit] Not synchronized, no connections');
-      return connections;
-    }
 
     debugPrint('[NodeRoutingCubit] Finding connections by matching parameter values');
 
@@ -717,11 +683,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final outputParams = <({int algorithmIndex, String paramName, int paramNumber, int busValue})>[];
     final inputParams = <({int algorithmIndex, String paramName, int paramNumber, int busValue})>[];
 
-    for (final routing in routingInfoList) {
-      final algorithmIndex = routing.algorithmIndex;
-      if (algorithmIndex >= distingState.slots.length) continue;
-
-      final slot = distingState.slots[algorithmIndex];
+    for (int algorithmIndex = 0; algorithmIndex < slots.length; algorithmIndex++) {
+      final slot = slots[algorithmIndex];
       debugPrint('[NodeRoutingCubit] Analyzing algorithm $algorithmIndex parameters');
 
       // Check each parameter to see if it's an output or input bus assignment
@@ -837,7 +800,6 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         final targetPortId = _findPortIdForParameter(
           input.algorithmIndex, 
           input.paramNumber, 
-          routingInfoList, 
           isInput: true,
         );
         
@@ -865,7 +827,6 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         final sourcePortId = _findPortIdForParameter(
           output.algorithmIndex, 
           output.paramNumber, 
-          routingInfoList, 
           isInput: false,
         );
         final targetPortId = 'physical_output_$physicalOutputNumber';
@@ -991,7 +952,6 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   String _findPortIdForParameter(
     int algorithmIndex,
     int parameterNumber,
-    List<RoutingInformation> routingInfoList,
     {required bool isInput}
   ) {
     // Port IDs are now parameter numbers as strings to ensure uniqueness
