@@ -136,7 +136,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       
       for (int i = 0; i < distingState.slots.length; i++) {
         final slot = distingState.slots[i];
-        algorithmNames[i] = slot.algorithm.name;
+        final algorithmName = _enhanceAlgorithmNameWithIdentifier(slot);
+        algorithmNames[i] = algorithmName;
         algorithmIndices.add(i);
       }
 
@@ -569,8 +570,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     
     for (int i = 0; i < distingState.slots.length; i++) {
       final slot = distingState.slots[i];
-      algorithmNames[i] = slot.algorithm.name;
-      debugPrint('[NodeRoutingCubit] Slot $i: ${slot.algorithm.name} (${slot.algorithm.guid})');
+      final algorithmName = _enhanceAlgorithmNameWithIdentifier(slot);
+      algorithmNames[i] = algorithmName;
+      debugPrint('[NodeRoutingCubit] Slot $i: $algorithmName (${slot.algorithm.guid})');
     }
     
     // Re-extract port layouts for the new algorithm positions
@@ -725,43 +727,37 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           continue;
         }
 
-        // Determine if this parameter is an input or output based on defaultValue and name
+        // Determine if this parameter is an input or output using simple rules
         bool isOutputParam = false;
         bool isInputParam = false;
         
-        // Check defaultValue first (preferred method)
-        if (param.defaultValue >= 13 && param.defaultValue <= 28) {
-          isOutputParam = true;
-        } else if (param.defaultValue >= 1 && param.defaultValue <= 12) {
-          isInputParam = true;
+        // Special handling for Feedback algorithms
+        final algorithmGuid = slot.algorithm.guid;
+        final nameLower = param.name.toLowerCase();
+        
+        if (algorithmGuid == 'fbtx') {
+          // Feedback Send: should only have input parameters, never outputs
+          isInputParam = nameLower.contains('input');
+          isOutputParam = false;
+        } else if (algorithmGuid == 'fbrx') {
+          // Feedback Receive: should only have output parameters, never inputs
+          isOutputParam = nameLower.contains('output');
+          isInputParam = false;
         } else {
-          // Parameter defaults to "None" or other - determine type from name
-          final nameLower = param.name.toLowerCase();
-          if (nameLower.contains('output') || nameLower.contains('send') || 
-              nameLower.contains('main out') || nameLower.contains('aux')) {
+          // Regular algorithms: use standard classification
+          // Check parameter name for semantic hints first
+          if (nameLower.contains('output')) {
             isOutputParam = true;
-          } else if (nameLower.contains('input') || nameLower.contains('receive') || 
-                     nameLower.contains('pitch') || nameLower.contains('wave') ||
-                     nameLower.contains('formant') || nameLower.contains('clock') ||
-                     nameLower.contains('reset') || nameLower.contains('step') ||
-                     nameLower.contains('gate') || nameLower.contains('v/oct') ||
-                     nameLower.contains('sync') || nameLower.contains('trigger')) {
+          } else if (nameLower.contains('input')) {
             isInputParam = true;
           } else {
-            // If we can't determine from name, check the current value range
-            // Outputs typically use 13-28, inputs use 1-12 or 21-28
-            if (paramValue.value >= 13 && paramValue.value <= 20) {
-              isOutputParam = true;
-            } else if (paramValue.value >= 1 && paramValue.value <= 12) {
-              isInputParam = true;
-            } else if (paramValue.value >= 21 && paramValue.value <= 28) {
-              // Aux buses can be either, check name more carefully
-              if (nameLower.endsWith(' out') || nameLower.startsWith('out')) {
-                isOutputParam = true;
-              } else {
-                isInputParam = true;
-              }
+            // Fall back to defaultValue ranges only if no semantic hints
+            if (param.defaultValue >= 13 && param.defaultValue <= 20) {
+              isOutputParam = true; // Output buses
+            } else if (param.defaultValue >= 1 && param.defaultValue <= 12) {
+              isInputParam = true; // Input buses
             }
+            // Note: Aux buses (21-28) are not classified by defaultValue alone
           }
         }
         
@@ -892,7 +888,12 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
 
     debugPrint('[NodeRoutingCubit] Created ${connections.length} connections total');
-    return connections;
+    
+    // Apply bus sharing validation to remove invalidated connections
+    final validatedConnections = _validateBusSharing(connections);
+    debugPrint('[NodeRoutingCubit] After validation: ${validatedConnections.length} connections remain');
+    
+    return validatedConnections;
   }
 
   /// Get the actual output mode from parameter value
@@ -1520,21 +1521,50 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       );
       
       if (baseParam != null) {
+        debugPrint('[NodeRoutingCubit] Base parameter found: "${baseParam.name}" (${baseParam.parameterNumber})');
+        
         // Look for a mode parameter with name pattern: baseParam.name + " mode"
         final modeParamName = '${baseParam.name} mode';
         final modeParam = slot.parameters.firstWhereOrNull(
           (p) => p.name.toLowerCase() == modeParamName.toLowerCase(),
         );
         
+        debugPrint('[NodeRoutingCubit] Looking for exact mode parameter: "$modeParamName"');
+        debugPrint('[NodeRoutingCubit] Available mode parameters: ${slot.parameters.where((p) => p.name.toLowerCase().contains('mode')).map((p) => '"${p.name}" (${p.parameterNumber})').join(', ')}');
+        
         if (modeParam != null) {
           debugPrint('[NodeRoutingCubit] Found mode parameter: "${modeParam.name}" (${modeParam.parameterNumber}) for output "${baseParam.name}"');
           return modeParam.parameterNumber;
+        } else {
+          debugPrint('[NodeRoutingCubit] Exact mode parameter "$modeParamName" not found');
         }
       }
     }
     
     // More flexible fallback: find mode parameters for outputs
-    // First try exact patterns
+    // First try exact patterns but be more specific about matching
+    debugPrint('[NodeRoutingCubit] Fallback: searching for mode parameters in slot $algorithmIndex for portId "$portId"');
+    
+    // Try to match based on port parameter name patterns
+    if (portParamNumber != null) {
+      final allParams = slot.parameters.toList();
+      for (int i = 0; i < allParams.length; i++) {
+        final param = allParams[i];
+        if (param.parameterNumber == portParamNumber) {
+          // Found the base parameter, look for the next parameter that's a mode
+          if (i + 1 < allParams.length) {
+            final nextParam = allParams[i + 1];
+            if (nextParam.name.toLowerCase().endsWith(' mode') && 
+                nextParam.unit == 1 && nextParam.max == 1) {
+              debugPrint('[NodeRoutingCubit] Found adjacent mode parameter: "${nextParam.name}" (${nextParam.parameterNumber}) for port parameter "${param.name}"');
+              return nextParam.parameterNumber;
+            }
+          }
+          break;
+        }
+      }
+    }
+    
     for (final param in slot.parameters) {
       final nameLower = param.name.toLowerCase();
       if (nameLower.endsWith(' mode') && 
@@ -1584,7 +1614,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final distingState = _distingCubit.state;
     if (distingState is! DistingStateSynchronized) return;
     
-    debugPrint('[NodeRoutingCubit] Loading connection modes from parameter values');
+    debugPrint('[NodeRoutingCubit] ========== LOADING CONNECTION MODES ==========');
+    debugPrint('[NodeRoutingCubit] Processing ${currentState.connections.length} connections');
     
     final updatedConnections = <Connection>[];
     
@@ -1594,6 +1625,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         updatedConnections.add(connection);
         continue;
       }
+      
+      debugPrint('[NodeRoutingCubit] Processing connection ${connection.id} from slot ${connection.sourceAlgorithmIndex}, port ${connection.sourcePortId}');
       
       // Find mode parameter for this connection
       final modeParamNumber = _findModeParameterForOutput(
@@ -1616,19 +1649,155 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             replaceMode: actualMode,  // 1 = Replace, 0 = Add
           ));
           
-          debugPrint('[NodeRoutingCubit] Loaded mode for connection ${connection.id}: ${actualMode ? 'Replace (R)' : 'Add'}');
+          debugPrint('[NodeRoutingCubit] ✅ Updated connection ${connection.id}: mode=${actualMode ? 'Replace (R)' : 'Add'} (param #$modeParamNumber = ${paramValue.value})');
         } else {
           updatedConnections.add(connection);
+          debugPrint('[NodeRoutingCubit] ⚠️ Mode parameter #$modeParamNumber not found in slot values for connection ${connection.id}');
         }
       } else {
         updatedConnections.add(connection);
+        debugPrint('[NodeRoutingCubit] ⚠️ No mode parameter found for connection ${connection.id}');
       }
     }
     
-    emit(currentState.copyWith(connections: updatedConnections));
-    debugPrint('[NodeRoutingCubit] Connection modes loaded from parameters');
+    // Validate bus sharing after loading connection modes
+    debugPrint('[NodeRoutingCubit] Running bus sharing validation...');
+    final validatedConnections = _validateBusSharing(updatedConnections);
+    
+    emit(currentState.copyWith(connections: validatedConnections));
+    debugPrint('[NodeRoutingCubit] ========== CONNECTION MODES COMPLETE: ${currentState.connections.length} -> ${validatedConnections.length} connections ==========');
+  }
+
+  /// Validate bus sharing for connections based on replace mode sessions and execution order
+  List<Connection> _validateBusSharing(List<Connection> connections) {
+    debugPrint('[NodeRoutingCubit] Validating bus sharing for ${connections.length} connections');
+    
+    // Group connections by assigned bus
+    final connectionsByBus = <int, List<Connection>>{};
+    for (final connection in connections) {
+      connectionsByBus.putIfAbsent(connection.assignedBus, () => []).add(connection);
+    }
+    
+    final validConnections = <Connection>[];
+    
+    for (final entry in connectionsByBus.entries) {
+      final bus = entry.key;
+      final connectionsOnBus = entry.value;
+      
+      if (connectionsOnBus.length == 1) {
+        // Single connection on bus - include if execution order is valid
+        final connection = connectionsOnBus.first;
+        if (!connection.violatesExecutionOrder) {
+          validConnections.add(connection.copyWith(isValid: true));
+          debugPrint('[NodeRoutingCubit] Bus $bus: Single connection ${connection.id} - VALID');
+        } else {
+          debugPrint('[NodeRoutingCubit] Bus $bus: Single connection ${connection.id} - REMOVED (exec order violation)');
+        }
+        continue;
+      }
+      
+      // Multiple connections on same bus - validate using session-based logic
+      final sessionValidConnections = _validateBusConnections(bus, connectionsOnBus);
+      validConnections.addAll(sessionValidConnections);
+    }
+    
+    debugPrint('[NodeRoutingCubit] Bus sharing validation complete: ${connections.length} -> ${validConnections.length} connections');
+    return validConnections;
+  }
+
+  /// Validate connections on a single bus using session-based Replace mode logic
+  List<Connection> _validateBusConnections(int bus, List<Connection> connectionsOnBus) {
+    debugPrint('[NodeRoutingCubit] Bus $bus: Validating ${connectionsOnBus.length} connections with session logic');
+    
+    // Log all connections on this bus for debugging
+    for (final conn in connectionsOnBus) {
+      debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${conn.id} from slot ${conn.sourceAlgorithmIndex} - replaceMode: ${conn.replaceMode}');
+    }
+    
+    // Sort all connections by source algorithm execution order
+    final sortedConnections = List<Connection>.from(connectionsOnBus);
+    sortedConnections.sort((a, b) => a.sourceAlgorithmIndex.compareTo(b.sourceAlgorithmIndex));
+    
+    // Remove execution order violations first
+    final validOrderConnections = sortedConnections
+        .where((conn) => !conn.violatesExecutionOrder)
+        .toList();
+    
+    debugPrint('[NodeRoutingCubit] Bus $bus: ${validOrderConnections.length} connections with valid execution order');
+    
+    // Find Replace mode boundaries to determine which connections are valid
+    final validConnections = <Connection>[];
+    int? lastReplaceSlot;
+    
+    // Find the last (highest slot number) Replace mode connection
+    for (final connection in validOrderConnections.reversed) {
+      if (connection.replaceMode) {
+        lastReplaceSlot = connection.sourceAlgorithmIndex;
+        debugPrint('[NodeRoutingCubit] Bus $bus: Found last Replace mode at slot $lastReplaceSlot');
+        break;
+      }
+    }
+    
+    if (lastReplaceSlot != null) {
+      // There's a Replace mode - apply session-based validation
+      debugPrint('[NodeRoutingCubit] Bus $bus: Applying Replace mode boundary at slot $lastReplaceSlot');
+      for (final connection in validOrderConnections) {
+        if (connection.sourceAlgorithmIndex >= lastReplaceSlot) {
+          // This connection is from the replacing session - always keep
+          validConnections.add(connection.copyWith(isValid: true));
+          debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} - KEPT (replace session)');
+        } else {
+          // This connection is from before the replace boundary
+          // Only remove if it's a cross-session connection (target is after the replace boundary)
+          if (connection.targetAlgorithmIndex > lastReplaceSlot) {
+            // Cross-session connection - remove it
+            debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} to slot ${connection.targetAlgorithmIndex} - REMOVED (cross-session, replaced by slot $lastReplaceSlot)');
+          } else {
+            // Intra-session connection (both source and target before replace boundary) - keep it
+            validConnections.add(connection.copyWith(isValid: true));
+            debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} to slot ${connection.targetAlgorithmIndex} - KEPT (intra-session before replace)');
+          }
+        }
+      }
+    } else {
+      // No Replace mode - keep all Add mode connections
+      debugPrint('[NodeRoutingCubit] Bus $bus: No Replace mode found, keeping all connections');
+      for (final connection in validOrderConnections) {
+        validConnections.add(connection.copyWith(isValid: true));
+        debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} - KEPT (all add mode)');
+      }
+    }
+    
+    debugPrint('[NodeRoutingCubit] Bus $bus: Session validation complete: ${connectionsOnBus.length} -> ${validConnections.length} connections');
+    return validConnections;
   }
   
+  /// Enhance algorithm name with identifier for Feedback algorithms
+  String _enhanceAlgorithmNameWithIdentifier(Slot slot) {
+    final baseName = slot.algorithm.name;
+    final guid = slot.algorithm.guid;
+    
+    // Check if this is a Feedback algorithm
+    if (guid == 'fbtx' || guid == 'fbrx') {
+      // Look for Identifier parameter to display
+      final identifierParam = slot.parameters.firstWhereOrNull(
+        (p) => p.name.toLowerCase().contains('identifier') || p.name.toLowerCase().contains('id'),
+      );
+      
+      if (identifierParam != null) {
+        final paramValue = slot.values.firstWhereOrNull(
+          (v) => v.parameterNumber == identifierParam.parameterNumber,
+        );
+        
+        if (paramValue != null && paramValue.value > 0) {
+          return '$baseName (${paramValue.value})';
+        }
+      }
+    }
+    
+    return baseName;
+  }
+
   /// Debug helper to show all algorithm parameters with mode-related info
   void debugPrintModeParameters() {
     final distingState = _distingCubit.state;

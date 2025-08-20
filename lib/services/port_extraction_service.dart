@@ -47,8 +47,8 @@ class PortExtractionService {
           busIdRef: paramInfo.name,
         );
 
-        final isInput = _isInputParameterFromSlot(paramInfo);
-        final isOutput = _isOutputParameterFromSlot(paramInfo);
+        final isInput = _isInputParameterFromSlot(paramInfo, slot.algorithm.guid);
+        final isOutput = _isOutputParameterFromSlot(paramInfo, slot.algorithm.guid);
         
         debugPrint('🔍 [PortExtractionService] Parameter "${paramInfo.name}" defaultValue=${paramInfo.defaultValue} -> isInput=$isInput, isOutput=$isOutput');
         
@@ -222,62 +222,46 @@ class PortExtractionService {
   }
 
   bool _isInputParameter(AlgorithmParameter param) {
-    // Primary check: Use defaultValue if available (same as slot-based logic)
+    // 1) Check parameter name for semantic hints
+    final nameLower = param.name.toLowerCase();
+    if (nameLower.contains('input')) {
+      return true;
+    }
+    if (nameLower.contains('output')) {
+      return false; // It's an output, not input
+    }
+    
+    // 2) Fall back to defaultValue ranges
     if (param.defaultValue != null) {
       final defaultValue = param.defaultValue as num;
-      // Input buses: 1-12, Aux buses: 21-28 (can be used as inputs)
       if ((defaultValue >= 1 && defaultValue <= 12) ||
           (defaultValue >= 21 && defaultValue <= 28)) {
         return true;
       }
-      // Output buses: 13-20
-      if (defaultValue >= 13 && defaultValue <= 20) {
-        return false;
-      }
     }
     
-    // Fallback: name-based classification for static parameters without defaultValue
-    final nameLower = param.name.toLowerCase();
-    
-    // Check explicit output indicators first to avoid misclassification
-    if (nameLower.contains('output') || 
-        nameLower.contains('send') ||
-        nameLower.contains('main') && nameLower.contains('out')) {
-      return false;
-    }
-    
-    return nameLower.contains('input') ||
-        nameLower.contains('in ') ||
-        nameLower.contains('receive') ||
-        (param.scope?.contains('routing') == true &&
-            param.max != null &&
-            (param.max as num) <= 12);
+    return false;
   }
 
   bool _isOutputParameter(AlgorithmParameter param) {
-    // Primary check: Use defaultValue if available (same as slot-based logic)
+    // 1) Check parameter name for semantic hints
+    final nameLower = param.name.toLowerCase();
+    if (nameLower.contains('output')) {
+      return true;
+    }
+    if (nameLower.contains('input')) {
+      return false; // It's an input, not output
+    }
+    
+    // 2) Fall back to defaultValue ranges
     if (param.defaultValue != null) {
       final defaultValue = param.defaultValue as num;
-      // Output buses: 13-20
       if (defaultValue >= 13 && defaultValue <= 20) {
         return true;
       }
-      // Input buses: 1-12, Aux buses: 21-28
-      if ((defaultValue >= 1 && defaultValue <= 12) ||
-          (defaultValue >= 21 && defaultValue <= 28)) {
-        return false;
-      }
     }
     
-    // Fallback: name-based classification for static parameters without defaultValue
-    final nameLower = param.name.toLowerCase();
-    return nameLower.contains('output') ||
-        nameLower.contains('out ') ||
-        nameLower.contains('send') ||
-        (nameLower.contains('main') && !nameLower.contains('input')) ||
-        (param.scope?.contains('routing') == true &&
-            param.min != null &&
-            (param.min as num) >= 13);
+    return false;
   }
 
   AlgorithmPortInfo _createDefaultPorts() {
@@ -303,11 +287,15 @@ class PortExtractionService {
     );
   }
 
-  /// Check if a parameter represents a bus connection by looking at its enum values
+  /// Check if a parameter represents a bus connection
   bool _isBusParameter(ParameterInfo paramInfo, ParameterValue paramValue) {
-    final name = paramInfo.name.toLowerCase();
+    // Primary check: proper bus parameter has min 0 or 1 and max 28
+    if ((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max == 28) {
+      return true;
+    }
     
-    // Check for common bus parameter patterns
+    // Secondary check: look for bus parameter name patterns with reasonable range
+    final name = paramInfo.name.toLowerCase();
     if (name.contains('input') || 
         name.contains('output') || 
         name.contains('bus') ||
@@ -324,7 +312,7 @@ class PortExtractionService {
         name.contains('wave') ||
         name.contains('velocity')) {
       
-      // Additional check: parameter should have reasonable bus range (0-28)
+      // Must have reasonable bus range (0-28)
       if (paramInfo.max >= 28 && paramInfo.min <= 28) {
         return true;
       }
@@ -333,50 +321,50 @@ class PortExtractionService {
     return false;
   }
 
-  bool _isInputParameterFromSlot(ParameterInfo paramInfo) {
-    // Primary check: Use defaultValue to determine if this is an input bus parameter
-    // Input buses: 1-12, Aux buses: 21-28 (can be used as inputs)
-    if (paramInfo.defaultValue >= 1 && paramInfo.defaultValue <= 12) {
-      return true;
-    }
-    if (paramInfo.defaultValue >= 21 && paramInfo.defaultValue <= 28) {
-      return true;
+  bool _isInputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid]) {
+    // 1) Check if this is a bus parameter (min 0 or 1, max 28)
+    if (!((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max == 28)) {
+      return false;
     }
     
-    // Fallback: Check for enum parameters (unit=1) with input names
-    if (paramInfo.unit == 1 && paramInfo.max >= 28) {
-      final nameLower = paramInfo.name.toLowerCase();
-      if (nameLower.contains('input') ||
-          nameLower.contains(' in') ||
-          nameLower.contains('receive') ||
-          (nameLower.contains('clock') && !nameLower.contains('output')) ||
-          (nameLower.contains('reset') && !nameLower.contains('output')) ||
-          (nameLower.contains('pitch') && !nameLower.contains('output')) ||
-          (nameLower.contains('formant') && !nameLower.contains('output')) ||
-          (nameLower.contains('wave') && !nameLower.contains('output')) ||
-          (nameLower.contains('step') && !nameLower.contains('output'))) {
-        return true;
-      }
+    // 2) Check parameter name for semantic hints
+    final nameLower = paramInfo.name.toLowerCase();
+    if (nameLower.contains('input')) {
+      return true;
+    }
+    if (nameLower.contains('output')) {
+      return false; // It's an output, not input
+    }
+    
+    // 3) Fall back to defaultValue ranges
+    if (paramInfo.defaultValue >= 1 && paramInfo.defaultValue <= 12) {
+      return true; // Input buses
+    }
+    if (paramInfo.defaultValue >= 21 && paramInfo.defaultValue <= 28) {
+      return true; // Aux buses (also inputs)
     }
     
     return false;
   }
 
-  bool _isOutputParameterFromSlot(ParameterInfo paramInfo) {
-    // Primary check: Use defaultValue to determine if this is an output bus parameter
-    // Output buses: 13-20
-    if (paramInfo.defaultValue >= 13 && paramInfo.defaultValue <= 20) {
-      return true;
+  bool _isOutputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid]) {
+    // 1) Check if this is a bus parameter (min 0 or 1, max 28)
+    if (!((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max == 28)) {
+      return false;
     }
     
-    // Fallback: Check for enum parameters (unit=1) with output names
-    if (paramInfo.unit == 1 && paramInfo.max >= 28) {
-      final nameLower = paramInfo.name.toLowerCase();
-      if (nameLower.contains('output') ||
-          nameLower.contains(' out') ||
-          nameLower.contains('send')) {
-        return true;
-      }
+    // 2) Check parameter name for semantic hints
+    final nameLower = paramInfo.name.toLowerCase();
+    if (nameLower.contains('output')) {
+      return true;
+    }
+    if (nameLower.contains('input')) {
+      return false; // It's an input, not output
+    }
+    
+    // 3) Fall back to defaultValue ranges
+    if (paramInfo.defaultValue >= 13 && paramInfo.defaultValue <= 20) {
+      return true; // Output buses
     }
     
     return false;
