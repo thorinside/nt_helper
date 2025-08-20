@@ -73,8 +73,12 @@ class NodeRoutingWidget extends StatelessWidget {
   }
 
   Widget _buildLoaded(BuildContext context, NodeRoutingStateLoaded state) {
-
-    return RoutingCanvas(
+    // Wrap the canvas to allow it to expand beyond the viewport
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: RoutingCanvas(
       nodePositions: state.nodePositions,
       algorithmNames: state.algorithmNames,
       portLayouts: state.portLayouts,
@@ -105,6 +109,8 @@ class NodeRoutingWidget extends StatelessWidget {
       onSelectionChanged: () {
         // Handle selection changes if needed
       },
+        ),
+      ),
     );
   }
 
