@@ -218,9 +218,18 @@ class McpServerService extends ChangeNotifier {
       if (sessionId != null && _transports.containsKey(sessionId)) {
         // Reuse existing transport
         transport = _transports[sessionId]!;
-      } else if (sessionId == null && _isInitializeRequest(body)) {
+        debugPrint('[MCP] Using existing transport for session $sessionId');
+      } else if (_isInitializeRequest(body)) {
         // New initialization request - create transport and server
-        transport = await _createNewTransport();
+        if (sessionId != null) {
+          // Client provided a session ID - use it for the new transport
+          transport = await _createNewTransport(sessionId: sessionId);
+          debugPrint('[MCP] Creating new transport with client-provided session ID: $sessionId');
+        } else {
+          // No session ID provided - generate one
+          transport = await _createNewTransport();
+          debugPrint('[MCP] Creating new transport with generated session ID');
+        }
 
         // Ensure session is fully initialized before proceeding
         await Future.delayed(const Duration(milliseconds: 1));
@@ -229,10 +238,15 @@ class McpServerService extends ChangeNotifier {
         await transport.handleRequest(request, body);
         return; // Already handled
       } else {
-        // Invalid request - no session ID or not initialization request
-        _sendErrorResponse(request, HttpStatus.badRequest,
-            'Bad Request: No valid session ID provided');
-        return;
+        // Non-initialization request with unknown session ID - create a new session
+        if (sessionId != null) {
+          debugPrint('[MCP] Unknown session ID $sessionId, creating new transport');
+          transport = await _createNewTransport(sessionId: sessionId);
+        } else {
+          _sendErrorResponse(request, HttpStatus.badRequest,
+              'Bad Request: No session ID provided for non-initialization request');
+          return;
+        }
       }
 
       // Handle the request with existing transport
@@ -247,10 +261,23 @@ class McpServerService extends ChangeNotifier {
   /// Handle GET requests for SSE streams
   Future<void> _handleGetRequest(HttpRequest request) async {
     final sessionId = request.headers.value('mcp-session-id');
-    if (sessionId == null || !_transports.containsKey(sessionId)) {
+    if (sessionId == null) {
       _sendErrorResponse(
-          request, HttpStatus.badRequest, 'Invalid or missing session ID');
+          request, HttpStatus.badRequest, 'Missing session ID for SSE stream');
       return;
+    }
+    
+    // If session doesn't exist, create a new transport for it
+    if (!_transports.containsKey(sessionId)) {
+      debugPrint('[MCP] Creating new transport for unknown session ID: $sessionId');
+      try {
+        await _createNewTransport(sessionId: sessionId);
+      } catch (e) {
+        debugPrint('[MCP] Failed to create transport for session $sessionId: $e');
+        _sendErrorResponse(
+            request, HttpStatus.internalServerError, 'Failed to create session');
+        return;
+      }
     }
 
     // Check for Last-Event-ID header for resumability
@@ -268,9 +295,9 @@ class McpServerService extends ChangeNotifier {
   /// Handle DELETE requests for session termination
   Future<void> _handleDeleteRequest(HttpRequest request) async {
     final sessionId = request.headers.value('mcp-session-id');
-    if (sessionId == null || !_transports.containsKey(sessionId)) {
+    if (sessionId == null) {
       _sendErrorResponse(
-          request, HttpStatus.badRequest, 'Invalid or missing session ID');
+          request, HttpStatus.badRequest, 'Missing session ID for termination');
       return;
     }
 
@@ -278,8 +305,17 @@ class McpServerService extends ChangeNotifier {
         '[MCP] Received session termination request for session $sessionId');
 
     try {
-      final transport = _transports[sessionId]!;
-      await transport.handleRequest(request);
+      if (_transports.containsKey(sessionId)) {
+        final transport = _transports[sessionId]!;
+        await transport.handleRequest(request);
+      } else {
+        // Session doesn't exist - just return OK since it's already "terminated"
+        debugPrint('[MCP] Session $sessionId already terminated or never existed');
+        request.response.statusCode = HttpStatus.ok;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({'status': 'ok', 'message': 'Session already terminated'}));
+        await request.response.close();
+      }
     } catch (e, s) {
       debugPrint('[MCP] Error handling DELETE request: $e\n$s');
       _sendErrorResponse(request, HttpStatus.internalServerError,
@@ -1323,7 +1359,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
   }
 
   /// Create a new transport and connect server following example pattern
-  Future<StreamableHTTPServerTransport> _createNewTransport() async {
+  Future<StreamableHTTPServerTransport> _createNewTransport({String? sessionId}) async {
     StreamableHTTPServerTransport? transport;
     McpServer? server;
 
@@ -1333,13 +1369,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     // Create new transport with event store for resumability
     transport = StreamableHTTPServerTransport(
       options: StreamableHTTPServerTransportOptions(
-        sessionIdGenerator: () => generateUUID(),
+        sessionIdGenerator: sessionId != null ? () => sessionId : () => generateUUID(),
         eventStore: InMemoryEventStore(),
-        onsessioninitialized: (sessionId) {
+        onsessioninitialized: (initializedSessionId) {
           // Store both transport and server by session ID when session is initialized
-          debugPrint('[MCP] Session initialized with ID: $sessionId');
-          _transports[sessionId] = transport!;
-          _servers[sessionId] = server!;
+          debugPrint('[MCP] Session initialized with ID: $initializedSessionId');
+          _transports[initializedSessionId] = transport!;
+          _servers[initializedSessionId] = server!;
         },
       ),
     );
