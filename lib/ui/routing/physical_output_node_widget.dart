@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/models/algorithm_port.dart';
+import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/ui/widgets/port_widget.dart';
 
 typedef PortConnectionCallback = void Function(String portId, PortType type);
 typedef PortPanCallback = void Function(String portId, PortType type, DragStartDetails details);
 typedef PortPanUpdateCallback = void Function(String portId, PortType type, DragUpdateDetails details);
 typedef PortPanEndCallback = void Function(String portId, PortType type, DragEndDetails details);
+typedef NodePositionCallback = void Function(NodePosition position);
 
 class PhysicalOutputNodeWidget extends StatelessWidget {
   // Layout constants - narrower than algorithm nodes  
@@ -22,43 +24,51 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
   static const double headerPadding = 6.0; // vertical padding inside header
   static const double totalHeight = headerHeight + (headerPadding * 2) + (jackCount * portRowHeight) + (verticalPadding * 2) + bottomPadding;
 
+  final NodePosition nodePosition;
   final Set<String> connectedPorts;
   final PortConnectionCallback? onPortConnectionStart;
   final PortConnectionCallback? onPortConnectionEnd;
   final PortPanCallback? onPortPanStart;
   final PortPanUpdateCallback? onPortPanUpdate;
   final PortPanEndCallback? onPortPanEnd;
+  final NodePositionCallback? onPositionChanged;
 
   const PhysicalOutputNodeWidget({
     super.key,
+    required this.nodePosition,
     this.connectedPorts = const {},
     this.onPortConnectionStart,
     this.onPortConnectionEnd,
     this.onPortPanStart,
     this.onPortPanUpdate,
     this.onPortPanEnd,
+    this.onPositionChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: nodeWidth,
-      height: totalHeight,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
-          width: 1.0,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onPanStart: _handlePanStart,
+      onPanUpdate: _handlePanUpdate,
+      onPanEnd: _handlePanEnd,
+      child: Container(
+        width: nodeWidth,
+        height: totalHeight,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1.0,
           ),
-        ],
-      ),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       child: Column(
         children: [
           // Header
@@ -108,7 +118,28 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
           const SizedBox(height: bottomPadding),
         ],
       ),
+    ),
     );
+  }
+
+  void _handlePanStart(DragStartDetails details) {
+    // Drag started - no immediate action needed
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    // Update node position based on drag delta
+    final newPosition = NodePosition(
+      x: nodePosition.x + details.delta.dx,
+      y: nodePosition.y + details.delta.dy,
+      width: nodePosition.width,
+      height: nodePosition.height,
+      algorithmIndex: nodePosition.algorithmIndex,
+    );
+    onPositionChanged?.call(newPosition);
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    // Drag ended - no cleanup needed
   }
 
   Widget _buildJackRow(BuildContext context, int jackNumber) {

@@ -60,8 +60,9 @@ class RoutingCanvas extends StatefulWidget {
 }
 
 class _RoutingCanvasState extends State<RoutingCanvas> {
-  static const double _canvasSize = 5000.0;
+  static const double _baseCanvasSize = 3000.0; // Base size for initial canvas
   static const double _gridSpacing = 50.0;
+  static const double _canvasExpansion = 1000.0; // How much to expand when needed
 
   Set<int> _selectedNodes = {};
   Connection? _hoveredConnection;
@@ -71,12 +72,75 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   bool _finalizingConnection = false; // Prevent double create on pointer up + pan end
   double? _lastScreenWidth; // Track screen width changes
   
+  // Canvas panning and dynamic sizing state
+  Offset _canvasOffset = Offset.zero;
+  bool _isPanning = false;
+  Size _canvasSize = const Size(_baseCanvasSize, _baseCanvasSize);
+  
   // Platform detection for mobile interactions
   bool get isMobile => Platform.isAndroid || Platform.isIOS;
+  
+  /// Calculate required canvas bounds based on node positions and panning offset
+  Size _calculateRequiredCanvasBounds() {
+    final cubit = context.read<NodeRoutingCubit>();
+    final state = cubit.state;
+    
+    // Base canvas size that grows with panning
+    final basePanExpansion = math.max(_canvasOffset.dx.abs(), _canvasOffset.dy.abs()) + _canvasExpansion;
+    double requiredWidth = _baseCanvasSize + basePanExpansion;
+    double requiredHeight = _baseCanvasSize + basePanExpansion;
+    
+    if (state is NodeRoutingStateLoaded) {
+      // Get the furthest extents of all nodes
+      double maxX = requiredWidth, maxY = requiredHeight;
+      
+      // Check algorithm nodes
+      for (final position in state.nodePositions.values) {
+        maxX = math.max(maxX, position.x + position.width + _canvasExpansion);
+        maxY = math.max(maxY, position.y + position.height + _canvasExpansion);
+      }
+      
+      // Check physical output node
+      final physicalOutputPosition = state.physicalOutputPosition ?? const NodePosition(
+        x: 700.0, y: 100.0, width: 80.0, height: 188.0, algorithmIndex: -3,
+      );
+      maxX = math.max(maxX, physicalOutputPosition.x + physicalOutputPosition.width + _canvasExpansion);
+      maxY = math.max(maxY, physicalOutputPosition.y + physicalOutputPosition.height + _canvasExpansion);
+      
+      requiredWidth = math.max(requiredWidth, maxX);
+      requiredHeight = math.max(requiredHeight, maxY);
+    }
+    
+    return Size(requiredWidth, requiredHeight);
+  }
+  
+  /// Update canvas size if needed
+  void _updateCanvasSizeIfNeeded() {
+    final requiredSize = _calculateRequiredCanvasBounds();
+    
+    if (requiredSize.width > _canvasSize.width || requiredSize.height > _canvasSize.height) {
+      final newSize = Size(
+        math.max(_canvasSize.width, requiredSize.width),
+        math.max(_canvasSize.height, requiredSize.height),
+      );
+      
+      debugPrint('[RoutingCanvas] Expanding canvas from ${_canvasSize.width.toInt()}x${_canvasSize.height.toInt()} to ${newSize.width.toInt()}x${newSize.height.toInt()}');
+      debugPrint('[RoutingCanvas] Pan offset: $_canvasOffset');
+      
+      setState(() {
+        _canvasSize = newSize;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Update canvas size based on current state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateCanvasSizeIfNeeded();
+    });
     
     // Check if screen width changed and update cubit
     if (_lastScreenWidth != screenWidth) {
@@ -89,7 +153,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     }
     
     // Update physical output node position based on screen width
-    NodeRoutingCubit.updatePhysicalOutputPosition(screenWidth);
+    NodeRoutingCubit.updatePhysicalOutputPositionStatic(screenWidth);
     
     return ClipRect(
       child: Listener(
@@ -97,17 +161,22 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
         onPointerUp: _handleGlobalPointerUp,
         child: Container(
         key: _canvasKey,
-        width: _canvasSize,
-        height: _canvasSize,
+        width: _canvasSize.width,
+        height: _canvasSize.height,
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        child: Stack(
-          children: [
-            // Grid background with gesture detector for empty space (bottom layer)
-            GestureDetector(
-              // Only handle taps on empty space for selection; avoid competing pans
-              onTapDown: _handleCanvasTapDown,
-              behavior: HitTestBehavior.opaque,  // Catch events in empty space only
-              child: RepaintBoundary(
+        child: Transform.translate(
+          offset: _canvasOffset,
+          child: Stack(
+            children: [
+              // Grid background with gesture detector for empty space (bottom layer)
+              GestureDetector(
+                // Handle taps and pan gestures on empty space
+                onTapDown: _handleCanvasTapDown,
+                onPanStart: _handleCanvasPanStart,
+                onPanUpdate: _handleCanvasPanUpdate,
+                onPanEnd: _handleCanvasPanEnd,
+                behavior: HitTestBehavior.opaque,  // Catch events in empty space only
+                child: RepaintBoundary(
                 child: CustomPaint(
                   painter: _GridPainter(
                     spacing: _gridSpacing,
@@ -115,7 +184,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                       context,
                     ).colorScheme.outline.withValues(alpha: 0.2),
                   ),
-                  size: const Size(_canvasSize, _canvasSize),
+                  size: _canvasSize,
                 ),
               ),
             ),
@@ -186,23 +255,44 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
               ),
             ),
 
-            // Physical output node (50px from right edge of screen)
-            Positioned(
-              left: NodeRoutingCubit.physicalOutputNodeX,
-              top: 100.0,
-              child: PhysicalOutputNodeWidget(
-                connectedPorts: widget.connectedPorts,
-                onPortConnectionStart: (portId, type) =>
-                    _handlePortConnectionStart(-3, portId, type),
-                onPortConnectionEnd: (portId, type) =>
-                    _handlePortConnectionEnd(-3, portId, type),
-                onPortPanStart: (portId, type, details) =>
-                    _handlePortPanStart(-3, portId, type, details),
-                onPortPanUpdate: (portId, type, details) =>
-                    _handlePortPanUpdate(-3, portId, type, details),
-                onPortPanEnd: (portId, type, details) =>
-                    _handlePortPanEnd(-3, portId, type, details),
-              ),
+            // Physical output node (dynamic position)
+            BlocBuilder<NodeRoutingCubit, NodeRoutingState>(
+              builder: (context, state) {
+                if (state is! NodeRoutingStateLoaded) {
+                  return const SizedBox.shrink();
+                }
+                
+                // Use helper to get position with fallback
+                final physicalOutputPosition = state.physicalOutputPosition ?? const NodePosition(
+                  x: 700.0, // Default fallback
+                  y: 100.0,
+                  width: 80.0,
+                  height: 188.0,
+                  algorithmIndex: -3,
+                );
+                
+                return Positioned(
+                  left: physicalOutputPosition.x,
+                  top: physicalOutputPosition.y,
+                  child: PhysicalOutputNodeWidget(
+                    nodePosition: physicalOutputPosition,
+                    connectedPorts: widget.connectedPorts,
+                    onPositionChanged: (newPosition) {
+                      context.read<NodeRoutingCubit>().updatePhysicalOutputPosition(newPosition);
+                    },
+                    onPortConnectionStart: (portId, type) =>
+                        _handlePortConnectionStart(-3, portId, type),
+                    onPortConnectionEnd: (portId, type) =>
+                        _handlePortConnectionEnd(-3, portId, type),
+                    onPortPanStart: (portId, type, details) =>
+                        _handlePortPanStart(-3, portId, type, details),
+                    onPortPanUpdate: (portId, type, details) =>
+                        _handlePortPanUpdate(-3, portId, type, details),
+                    onPortPanEnd: (portId, type, details) =>
+                        _handlePortPanEnd(-3, portId, type, details),
+                  ),
+                );
+              },
             ),
 
             // Connections layer (top layer - drawn last, appears on top)
@@ -227,7 +317,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                       pendingConnections: widget.pendingConnections,
                       failedConnections: widget.failedConnections,
                     ),
-                    size: const Size(_canvasSize, _canvasSize),
+                    size: _canvasSize,
                   ),
                 ),
               ),
@@ -242,6 +332,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
               child: Container(), // Invisible spacer
             ),
           ],
+        ),
         ),
         ),
       ),
@@ -340,17 +431,19 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
         }
         
         final canvasPosition = canvasBox.globalToLocal(details.globalPosition);
-        debugPrint('[RoutingCanvas] Pan update: global=${details.globalPosition}, canvas=$canvasPosition');
+        // Adjust for canvas panning offset
+        final adjustedPosition = canvasPosition - _canvasOffset;
+        debugPrint('[RoutingCanvas] Pan update: global=${details.globalPosition}, canvas=$canvasPosition, adjusted=$adjustedPosition');
         
-        // Use cubit for hit testing with canvas coordinates
-        final hoveredAlgorithm = cubit.getAlgorithmAtPosition(canvasPosition);
+        // Use cubit for hit testing with adjusted coordinates
+        final hoveredAlgorithm = cubit.getAlgorithmAtPosition(adjustedPosition);
         final hoveredPort = hoveredAlgorithm != null 
-            ? cubit.getPortAtPosition(canvasPosition, hoveredAlgorithm)
+            ? cubit.getPortAtPosition(adjustedPosition, hoveredAlgorithm)
             : null;
 
         // Update connection preview through cubit
         cubit.updateConnectionPreview(
-          canvasPosition,
+          adjustedPosition,
           hoveredAlgorithmIndex: hoveredAlgorithm,
           hoveredPortId: hoveredPort,
         );
@@ -393,10 +486,16 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
 
 
   void _handleCanvasTapDown(TapDownDetails details) {
+    // Don't handle taps if we're panning
+    if (_isPanning) return;
+    
     final cubit = context.read<NodeRoutingCubit>();
     
+    // Convert local position to account for canvas offset
+    final adjustedPosition = details.localPosition - _canvasOffset;
+    
     // Check if tapping on a node using cubit hit testing
-    final tappedNode = cubit.getAlgorithmAtPosition(details.localPosition);
+    final tappedNode = cubit.getAlgorithmAtPosition(adjustedPosition);
     if (tappedNode != null) {
       setState(() {
         _selectedNodes = {tappedNode};
@@ -410,6 +509,39 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
       _selectedNodes.clear();
     });
     widget.onSelectionChanged?.call();
+  }
+
+  void _handleCanvasPanStart(DragStartDetails details) {
+    final cubit = context.read<NodeRoutingCubit>();
+    
+    // Convert local position to account for canvas offset
+    final adjustedPosition = details.localPosition - _canvasOffset;
+    
+    // Check if starting pan on a node - if so, don't start canvas pan
+    final nodeAtPosition = cubit.getAlgorithmAtPosition(adjustedPosition);
+    if (nodeAtPosition != null) {
+      _isPanning = false;
+      return;
+    }
+    
+    // Starting pan on empty space
+    _isPanning = true;
+  }
+
+  void _handleCanvasPanUpdate(DragUpdateDetails details) {
+    if (!_isPanning) return;
+    
+    setState(() {
+      // Update offset without strict boundary constraints
+      _canvasOffset += details.delta;
+      
+      // Update canvas size if needed to accommodate new panned area
+      _updateCanvasSizeIfNeeded();
+    });
+  }
+
+  void _handleCanvasPanEnd(DragEndDetails details) {
+    _isPanning = false;
   }
 
   void _handleGlobalPointerUp(PointerUpEvent event) async {
@@ -427,9 +559,10 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
       final RenderBox? canvasBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
       if (canvasBox != null) {
         final canvasPos = canvasBox.globalToLocal(event.position);
+        final adjustedPos = canvasPos - _canvasOffset;
         
-        final hoveredAlg = cubit.getAlgorithmAtPosition(canvasPos);
-        String? hoveredPort = hoveredAlg != null ? cubit.getPortAtPosition(canvasPos, hoveredAlg) : null;
+        final hoveredAlg = cubit.getAlgorithmAtPosition(adjustedPos);
+        String? hoveredPort = hoveredAlg != null ? cubit.getPortAtPosition(adjustedPos, hoveredAlg) : null;
         
         // Ensure inferred target is an input port; otherwise ignore
         if (hoveredAlg != null && hoveredPort != null) {

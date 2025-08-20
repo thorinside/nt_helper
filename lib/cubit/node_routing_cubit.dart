@@ -230,6 +230,17 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       // Calculate port positions
       final portPositions = _calculatePortPositions(nodePositions, portLayouts);
 
+      // Calculate initial physical output position
+      final screenWidth = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width / 
+                         WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+      final physicalOutputPosition = NodePosition(
+        x: screenWidth - physicalNodeWidth - 50.0,
+        y: physicalNodeY,
+        width: physicalNodeWidth,
+        height: physicalOutputNodeHeight,
+        algorithmIndex: physicalOutputAlgorithmIndex,
+      );
+
       emit(
         NodeRoutingState.loaded(
           nodePositions: nodePositions,
@@ -238,6 +249,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           connectedPorts: connectedPorts,
           algorithmNames: algorithmNames,
           portPositions: portPositions,
+          physicalOutputPosition: physicalOutputPosition,
           hasUserRepositioned: hasUserRepositioned,
         ),
       );
@@ -650,6 +662,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       connections: newConnections,
       connectedPorts: newConnectedPorts,
       portPositions: newPortPositions,
+      // physicalOutputPosition is preserved from existing state
     ));
     
     // Load actual connection modes from parameters after state is updated
@@ -1188,8 +1201,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
 
     // Check physical output node
+    final outputX = currentState is NodeRoutingStateLoaded 
+        ? _getPhysicalOutputPosition(currentState).x 
+        : physicalOutputNodeX;
     final physicalOutputRect = Rect.fromLTWH(
-      physicalOutputNodeX,
+      outputX,
       physicalNodeY,
       physicalNodeWidth,
       physicalOutputNodeHeight,
@@ -1276,9 +1292,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const verticalPadding = 4.0;
     const portSize = 16.0;
     
+    final currentState = state;
+    final outputX = currentState is NodeRoutingStateLoaded 
+        ? _getPhysicalOutputPosition(currentState).x 
+        : physicalOutputNodeX;
+    
     // Check if position is within physical output node bounds
     final nodeRect = Rect.fromLTWH(
-      physicalOutputNodeX,
+      outputX,
       physicalNodeY,
       physicalNodeWidth,
       physicalOutputNodeHeight,
@@ -1295,7 +1316,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     
     // Check if position is within the centered port widget area
     final jackY = physicalNodeY + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
-    final portX = physicalOutputNodeX + (physicalNodeWidth / 2); // Centered horizontally
+    final portX = outputX + (physicalNodeWidth / 2); // Centered horizontally
     
     final portRect = Rect.fromCenter(
       center: Offset(portX, jackY),
@@ -1359,31 +1380,98 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     algorithmPorts[physicalOutputAlgorithmIndex] = physicalOutputPorts;
   }
 
-  /// Update physical output node position based on screen width
-  static void updatePhysicalOutputPosition(double screenWidth) {
+  /// Update physical output node position based on screen width (static method for backward compatibility)
+  static void updatePhysicalOutputPositionStatic(double screenWidth) {
     physicalOutputNodeX = screenWidth - physicalNodeWidth - 50.0;
   }
   
+  /// Get physical output position with fallback to default
+  NodePosition _getPhysicalOutputPosition(NodeRoutingStateLoaded state) {
+    return state.physicalOutputPosition ?? NodePosition(
+      x: physicalOutputNodeX,
+      y: physicalNodeY,
+      width: physicalNodeWidth,
+      height: physicalOutputNodeHeight,
+      algorithmIndex: physicalOutputAlgorithmIndex,
+    );
+  }
+
+  /// Update physical output node position
+  Future<void> updatePhysicalOutputPosition(NodePosition newPosition) async {
+    final currentState = state;
+    if (currentState is NodeRoutingStateLoaded) {
+      // Recalculate port positions with updated physical output position
+      final updatedPortPositions = Map<String, Offset>.from(currentState.portPositions);
+      
+      // Update static variable for backward compatibility
+      physicalOutputNodeX = newPosition.x;
+      
+      // Recalculate physical node port positions
+      _addPhysicalNodePortPositions(updatedPortPositions);
+
+      emit(currentState.copyWith(
+        physicalOutputPosition: newPosition,
+        portPositions: updatedPortPositions,
+      ));
+
+      // Save position to persistence service if needed
+      final presetName = _distingCubit.state.maybeMap(
+        orElse: () => 'default',
+        synchronized: (s) => s.presetName,
+      );
+      
+      // Save with special index for physical output
+      final positionsToSave = Map<int, NodePosition>.from(currentState.nodePositions);
+      positionsToSave[physicalOutputAlgorithmIndex] = newPosition;
+      await _persistenceService.savePositions(presetName, positionsToSave);
+      
+      debugPrint(
+        'Physical output position updated: (${newPosition.x}, ${newPosition.y})',
+      );
+    }
+  }
+
   /// Update port positions when screen width changes
   void updateScreenWidth(double screenWidth) {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
     
+    // Update physical output position based on screen width if it hasn't been manually positioned
+    final currentPhysicalOutputPosition = _getPhysicalOutputPosition(currentState);
+    final currentOutputX = currentPhysicalOutputPosition.x;
+    final expectedX = screenWidth - physicalNodeWidth - 50.0;
+    
+    // Only update if the position seems to be the default calculated position
+    if ((currentOutputX - expectedX).abs() > 10.0) {
+      // User has manually positioned it, don't auto-update
+      debugPrint('[NodeRoutingCubit] Physical output manually positioned, preserving position');
+      return;
+    }
+    
+    final newOutputPosition = currentPhysicalOutputPosition.copyWith(
+      x: expectedX,
+    );
+    
     // Update static position
-    updatePhysicalOutputPosition(screenWidth);
+    physicalOutputNodeX = expectedX;
     
     // Recalculate physical node port positions
     final updatedPortPositions = Map<String, Offset>.from(currentState.portPositions);
     _addPhysicalNodePortPositions(updatedPortPositions);
     
-    // Emit updated state with new port positions
-    emit(currentState.copyWith(portPositions: updatedPortPositions));
+    // Emit updated state with new positions
+    emit(currentState.copyWith(
+      physicalOutputPosition: newOutputPosition,
+      portPositions: updatedPortPositions,
+    ));
     
     debugPrint('[NodeRoutingCubit] Updated physical output positions for screen width: $screenWidth');
   }
 
   /// Add port positions for physical nodes (not in nodePositions map)
   void _addPhysicalNodePortPositions(Map<String, Offset> portPositions) {
+    final currentState = state;
+    
     // Physical node constants (must match widget definitions)
     const headerHeight = 28.0;
     const portRowHeight = 20.0;
@@ -1409,7 +1497,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final jackY = physicalNodeY + headerHeight + verticalPadding + 
                    ((i - 1) * portRowHeight) + (portRowHeight / 2);
       
-      final portX = physicalOutputNodeX + (physicalNodeWidth / 2); // Centered
+      // Use dynamic position from state if available, otherwise fall back to static
+      final outputX = currentState is NodeRoutingStateLoaded 
+          ? _getPhysicalOutputPosition(currentState).x 
+          : physicalOutputNodeX;
+      final portX = outputX + (physicalNodeWidth / 2); // Centered
       
       portPositions[portKey] = Offset(portX, jackY);
     }

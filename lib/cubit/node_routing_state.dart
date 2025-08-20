@@ -24,6 +24,7 @@ sealed class NodeRoutingState with _$NodeRoutingState {
     required Set<String> connectedPorts,
     required Map<int, String> algorithmNames,
     required Map<String, Offset> portPositions, // algorithmIndex_portId -> Offset
+    NodePosition? physicalOutputPosition, // Position of the physical output node
     @Default(false) bool hasUserRepositioned,
     ConnectionPreview? connectionPreview,
     String? hoveredConnectionId,
