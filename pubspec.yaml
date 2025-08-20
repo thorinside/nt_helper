@@ -53,6 +53,7 @@ dependencies:
     git: https://github.com/thorinside/mcp_dart
   collection: ^1.18.0
   uuid: ^4.5.1
+  crypto: ^3.0.5
 
   # Drift dependencies
   drift: ^2.26.1
