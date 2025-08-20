@@ -9,15 +9,13 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
-import 'dart:typed_data';
 import 'dart:math' as math;
-import 'package:uuid/uuid.dart';
 import 'package:crypto/crypto.dart';
 
 /// Generate a unique session ID with secure random number generator
 String generateUUID() {
   // Try multiple approaches to get secure randomness
-  math.Random? rng;
+  late math.Random rng;
   
   try {
     // First try: Use Dart's secure random
@@ -47,7 +45,16 @@ String generateUUID() {
     }
   }
   
-  return const Uuid().v4(options: {'rng': rng});
+  // Create a custom UUID v4 with our secure RNG
+  final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
+  
+  // Set version (4) and variant bits according to RFC 4122
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;  // Version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;  // Variant bits
+  
+  // Convert to UUID format
+  final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
 /// Simplified MCP server service using StreamableHTTPServerTransport

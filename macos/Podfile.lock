@@ -98,7 +98,7 @@ SPEC CHECKSUMS:
   desktop_drop: 248706031734554504f939cab1ad4c5fbc9c9c72
   file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   flutter_midi_command: c7517347a1acc8e4c7d4e9fa9809b3e87bbfd2b8
-  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   pasteboard: 278d8100149f940fb795d6b3a74f0720c890ecb7
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564

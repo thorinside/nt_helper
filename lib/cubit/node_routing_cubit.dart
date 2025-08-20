@@ -1201,9 +1201,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
 
     // Check physical output node
-    final outputX = currentState is NodeRoutingStateLoaded 
-        ? _getPhysicalOutputPosition(currentState).x 
-        : physicalOutputNodeX;
+    final outputX = _getPhysicalOutputPosition(currentState).x;
     final physicalOutputRect = Rect.fromLTWH(
       outputX,
       physicalNodeY,

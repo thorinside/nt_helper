@@ -17,14 +17,6 @@ import 'package:nt_helper/services/node_positions_persistence_service.dart';
 @GenerateMocks([DistingCubit, AlgorithmMetadataService, AutoRoutingService, IDistingMidiManager, NodePositionsPersistenceService])
 import 'node_routing_cubit_test.mocks.dart';
 
-// Test helper for consistent physical output position
-const NodePosition _defaultPhysicalOutputPosition = NodePosition(
-  x: 700.0,
-  y: 100.0,
-  width: 80.0,
-  height: 188.0,
-  algorithmIndex: -3,
-);
 
 void main() {
   setUpAll(() {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
@@ -126,24 +127,24 @@ void main() {
         portPositions: const {},
       ));
 
-      print('\n=== TEST: Starting optimization ===');
-      print('Original connections: ${connections.length}');
+      debugPrint('\n=== TEST: Starting optimization ===');
+      debugPrint('Original connections: ${connections.length}');
       final auxBuses = connections
           .where((c) => c.assignedBus >= 21 && c.assignedBus <= 28)
           .map((c) => c.assignedBus)
           .toSet()
           .toList()..sort();
-      print('Original Aux buses in use: $auxBuses');
+      debugPrint('Original Aux buses in use: $auxBuses');
       
       final result = await optimizer.tidyConnections();
 
       // Debug output
-      print('\n=== TEST: Optimization complete ===');
-      print('Result success: ${result.success}');
-      print('Buses freed: ${result.busesFreed}');
-      print('Changes: ${result.changes.length}');
+      debugPrint('\n=== TEST: Optimization complete ===');
+      debugPrint('Result success: ${result.success}');
+      debugPrint('Buses freed: ${result.busesFreed}');
+      debugPrint('Changes: ${result.changes.length}');
       for (final change in result.changes.values) {
-        print('  ${change.connectionId}: bus ${change.oldBus} -> ${change.newBus}, replace: ${change.oldReplaceMode} -> ${change.newReplaceMode}');
+        debugPrint('  ${change.connectionId}: bus ${change.oldBus} -> ${change.newBus}, replace: ${change.oldReplaceMode} -> ${change.newReplaceMode}');
       }
       
       expect(result.success, isTrue);
@@ -160,8 +161,8 @@ void main() {
           .map((c) => c.assignedBus)
           .toSet();
       
-      print('Original Aux buses: $originalBuses');
-      print('Optimized Aux buses: $optimizedBuses');
+      debugPrint('Original Aux buses: $originalBuses');
+      debugPrint('Optimized Aux buses: $optimizedBuses');
       
       expect(optimizedBuses.length, lessThan(originalBuses.length),
         reason: 'Should use fewer Aux buses after optimization');
