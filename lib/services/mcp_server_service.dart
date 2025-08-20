@@ -9,10 +9,46 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/mcp/tools/disting_tools.dart';
 import 'package:nt_helper/services/disting_controller_impl.dart';
+import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
+import 'package:crypto/crypto.dart';
 
-/// Generate a unique session ID
-String generateUUID() => const Uuid().v4();
+/// Generate a unique session ID with secure random number generator
+String generateUUID() {
+  // Try multiple approaches to get secure randomness
+  math.Random? rng;
+  
+  try {
+    // First try: Use Dart's secure random
+    rng = math.Random.secure();
+    debugPrint('[MCP] Using secure random number generator');
+  } catch (e) {
+    try {
+      // Second try: Create entropy using crypto package and timestamp
+      final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+      final processId = DateTime.now().millisecondsSinceEpoch & 0xFFFF;
+      final entropy = sha256.convert('$timestamp-$processId'.codeUnits).bytes;
+      final seed = entropy.fold<int>(0, (prev, byte) => prev ^ (byte << (prev % 24)));
+      rng = math.Random(seed);
+      debugPrint('[MCP] Using crypto-enhanced random: $e');
+    } catch (e2) {
+      try {
+        // Third try: Simple timestamp seed
+        final timestamp = DateTime.now().microsecondsSinceEpoch;
+        final seed = timestamp ^ (timestamp >> 32);
+        rng = math.Random(seed);
+        debugPrint('[MCP] Using timestamp-seeded random: $e2');
+      } catch (e3) {
+        // Final fallback: Regular random
+        rng = math.Random();
+        debugPrint('[MCP] Using regular random as final fallback: $e3');
+      }
+    }
+  }
+  
+  return const Uuid().v4(options: {'rng': rng});
+}
 
 /// Simplified MCP server service using StreamableHTTPServerTransport
 /// for automatic session management, connection persistence, and health monitoring.
