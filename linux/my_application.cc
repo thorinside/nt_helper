@@ -8,6 +8,11 @@
 #include "flutter/generated_plugin_registrant.h"
 #include <bitsdojo_window_linux/bitsdojo_window_plugin.h>
 
+// Declare the USB video capture plugin registration function
+extern "C" {
+  void usb_video_capture_plugin_register_with_registrar(FlPluginRegistrar* registrar);
+}
+
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
@@ -60,6 +65,11 @@ static void my_application_activate(GApplication* application) {
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  
+  // Register the USB video capture plugin
+  g_autoptr(FlPluginRegistrar) usb_video_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(FL_PLUGIN_REGISTRY(view), "UsbVideoCapturePlugin");
+  usb_video_capture_plugin_register_with_registrar(usb_video_registrar);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
