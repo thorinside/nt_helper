@@ -1165,6 +1165,7 @@ class DistingCubit extends Cubit<DistingState> {
             parameterNumber: parameterNumber,
             value: value,
             needsStringUpdate: needsStringUpdate,
+            isRealTimeUpdate: userIsChangingTheValue,
           );
 
           if (userIsChangingTheValue) {
