@@ -1872,6 +1872,13 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                             )
                           : widget.name.toLowerCase().contains("note")
                               ? Text(midiNoteToNoteString(currentValue))
+                              : widget.name.toLowerCase().contains("midi channel")
+                                  ? Text(
+                                      currentValue == 0 ? "None" : currentValue.toString(),
+                                      style: widescreen
+                                          ? textTheme.labelLarge
+                                          : textTheme.labelSmall,
+                                    )
                               : widget.displayString != null
                                   ? GestureDetector(
                                       onLongPress: () => setState(() {
