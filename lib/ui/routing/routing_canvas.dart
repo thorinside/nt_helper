@@ -22,6 +22,8 @@ typedef PortConnectionCallback =
     void Function(int algorithmIndex, String portId, PortType type);
 
 class RoutingCanvas extends StatefulWidget {
+  final ScrollController? horizontalScrollController;
+  final ScrollController? verticalScrollController;
   final Map<int, NodePosition> nodePositions;
   final Map<int, String> algorithmNames;
   final Map<int, PortLayout> portLayouts;
@@ -39,6 +41,8 @@ class RoutingCanvas extends StatefulWidget {
 
   const RoutingCanvas({
     super.key,
+    this.horizontalScrollController,
+    this.verticalScrollController,
     required this.nodePositions,
     required this.algorithmNames,
     required this.portLayouts,
@@ -74,6 +78,10 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   
   // Canvas dynamic sizing state
   Size _canvasSize = const Size(_baseCanvasSize, _baseCanvasSize);
+  
+  // Background panning state
+  bool _isPanningCanvas = false;
+  Offset? _lastPanPosition;
   
   // Platform detection for mobile interactions
   bool get isMobile => Platform.isAndroid || Platform.isIOS;
@@ -170,8 +178,11 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
             children: [
               // Grid background with gesture detector for empty space (bottom layer)
               GestureDetector(
-                // Handle taps on empty space (panning now handled by ScrollView)
+                // Handle taps and panning on empty space
                 onTapDown: _handleCanvasTapDown,
+                onPanStart: _handleCanvasPanStart,
+                onPanUpdate: _handleCanvasPanUpdate,
+                onPanEnd: _handleCanvasPanEnd,
                 behavior: HitTestBehavior.opaque,  // Catch events in empty space only
                 child: RepaintBoundary(
                 child: CustomPaint(
@@ -500,6 +511,120 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
       _selectedNodes.clear();
     });
     widget.onSelectionChanged?.call();
+  }
+
+  void _handleCanvasPanStart(DragStartDetails details) {
+    // Check if we're starting a pan on empty canvas (not on a node)
+    final cubit = context.read<NodeRoutingCubit>();
+    final nodeAtPosition = cubit.getAlgorithmAtPosition(details.localPosition);
+    
+    if (nodeAtPosition == null) {
+      // Starting pan on empty canvas - enable canvas panning
+      setState(() {
+        _isPanningCanvas = true;
+        _lastPanPosition = details.globalPosition;
+      });
+      
+      debugPrint('[RoutingCanvas] Pan start at global: ${details.globalPosition}, local: ${details.localPosition}');
+    }
+  }
+
+  void _handleCanvasPanUpdate(DragUpdateDetails details) {
+    if (!_isPanningCanvas || _lastPanPosition == null) return;
+    
+    // Calculate delta from last position for more accurate tracking
+    final globalDelta = details.globalPosition - _lastPanPosition!;
+    
+    debugPrint('[RoutingCanvas] Pan update - globalDelta: $globalDelta, details.delta: ${details.delta}');
+    
+    // Update scroll positions based on global delta
+    // Note: We invert the delta because dragging right should scroll left
+    if (widget.horizontalScrollController != null && widget.horizontalScrollController!.hasClients) {
+      final currentOffset = widget.horizontalScrollController!.offset;
+      final newOffset = currentOffset - globalDelta.dx; // Invert: drag right = scroll left
+      
+      // Use animateTo for smoother scrolling on some platforms, but jumpTo for immediate response
+      widget.horizontalScrollController!.jumpTo(
+        newOffset.clamp(
+          widget.horizontalScrollController!.position.minScrollExtent,
+          widget.horizontalScrollController!.position.maxScrollExtent,
+        ),
+      );
+    }
+    
+    if (widget.verticalScrollController != null && widget.verticalScrollController!.hasClients) {
+      final currentOffset = widget.verticalScrollController!.offset;
+      final newOffset = currentOffset - globalDelta.dy; // Invert: drag down = scroll up
+      
+      widget.verticalScrollController!.jumpTo(
+        newOffset.clamp(
+          widget.verticalScrollController!.position.minScrollExtent,
+          widget.verticalScrollController!.position.maxScrollExtent,
+        ),
+      );
+    }
+    
+    // Update last position for next frame
+    _lastPanPosition = details.globalPosition;
+  }
+
+  void _handleCanvasPanEnd(DragEndDetails details) {
+    debugPrint('[RoutingCanvas] Pan end with velocity: ${details.velocity}');
+    
+    setState(() {
+      _isPanningCanvas = false;
+      _lastPanPosition = null;
+    });
+    
+    // Optional: Add momentum scrolling based on velocity
+    if (details.velocity.pixelsPerSecond.distance > 100) {
+      _applyMomentum(details.velocity);
+    }
+  }
+  
+  void _applyMomentum(Velocity velocity) {
+    // Apply a small amount of momentum for a more natural feel
+    const double friction = 0.95;
+    const int frames = 20;
+    double velocityX = -velocity.pixelsPerSecond.dx / 10; // Inverted and scaled down
+    double velocityY = -velocity.pixelsPerSecond.dy / 10;
+    
+    int frame = 0;
+    void animateFrame() {
+      if (frame >= frames || (!_isPanningCanvas && frame > 0)) return;
+      
+      if (widget.horizontalScrollController != null && widget.horizontalScrollController!.hasClients) {
+        final currentOffset = widget.horizontalScrollController!.offset;
+        final newOffset = currentOffset + velocityX;
+        widget.horizontalScrollController!.jumpTo(
+          newOffset.clamp(
+            widget.horizontalScrollController!.position.minScrollExtent,
+            widget.horizontalScrollController!.position.maxScrollExtent,
+          ),
+        );
+      }
+      
+      if (widget.verticalScrollController != null && widget.verticalScrollController!.hasClients) {
+        final currentOffset = widget.verticalScrollController!.offset;
+        final newOffset = currentOffset + velocityY;
+        widget.verticalScrollController!.jumpTo(
+          newOffset.clamp(
+            widget.verticalScrollController!.position.minScrollExtent,
+            widget.verticalScrollController!.position.maxScrollExtent,
+          ),
+        );
+      }
+      
+      velocityX *= friction;
+      velocityY *= friction;
+      frame++;
+      
+      if (velocityX.abs() > 0.5 || velocityY.abs() > 0.5) {
+        Future.delayed(const Duration(milliseconds: 16), animateFrame);
+      }
+    }
+    
+    animateFrame();
   }
 
 

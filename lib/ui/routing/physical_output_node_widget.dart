@@ -9,7 +9,7 @@ typedef PortPanUpdateCallback = void Function(String portId, PortType type, Drag
 typedef PortPanEndCallback = void Function(String portId, PortType type, DragEndDetails details);
 typedef NodePositionCallback = void Function(NodePosition position);
 
-class PhysicalOutputNodeWidget extends StatelessWidget {
+class PhysicalOutputNodeWidget extends StatefulWidget {
   // Layout constants - narrower than algorithm nodes  
   static const double nodeWidth = 80.0;
   static const double headerHeight = 28.0;
@@ -46,14 +46,22 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
   });
 
   @override
+  State<PhysicalOutputNodeWidget> createState() => _PhysicalOutputNodeWidgetState();
+}
+
+class _PhysicalOutputNodeWidgetState extends State<PhysicalOutputNodeWidget> {
+  Offset? _dragStartGlobalPosition;
+  NodePosition? _dragStartNodePosition;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onPanStart: _handlePanStart,
       onPanUpdate: _handlePanUpdate,
       onPanEnd: _handlePanEnd,
       child: Container(
-        width: nodeWidth,
-        height: totalHeight,
+        width: PhysicalOutputNodeWidget.nodeWidth,
+        height: PhysicalOutputNodeWidget.totalHeight,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border.all(
@@ -74,10 +82,10 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
           // Header
           Container(
             width: double.infinity,
-            height: headerHeight,
+            height: PhysicalOutputNodeWidget.headerHeight,
             padding: const EdgeInsets.symmetric(
               horizontal: 4.0,
-              vertical: headerPadding,
+              vertical: PhysicalOutputNodeWidget.headerPadding,
             ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -103,19 +111,19 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 4.0,
-              vertical: verticalPadding,
+              vertical: PhysicalOutputNodeWidget.verticalPadding,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: List.generate(
-                jackCount,
+                PhysicalOutputNodeWidget.jackCount,
                 (index) => _buildJackRow(context, index + 1),
               ),
             ),
           ),
 
           // Bottom padding
-          const SizedBox(height: bottomPadding),
+          const SizedBox(height: PhysicalOutputNodeWidget.bottomPadding),
         ],
       ),
     ),
@@ -123,28 +131,35 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
   }
 
   void _handlePanStart(DragStartDetails details) {
-    // Drag started - no immediate action needed
+    // Store initial positions for accurate tracking
+    _dragStartGlobalPosition = details.globalPosition;
+    _dragStartNodePosition = widget.nodePosition;
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    // Update node position based on drag delta
+    if (_dragStartGlobalPosition == null || _dragStartNodePosition == null) return;
+    
+    // Calculate new position based on global coordinates for accurate tracking
+    final globalDelta = details.globalPosition - _dragStartGlobalPosition!;
     final newPosition = NodePosition(
-      x: nodePosition.x + details.delta.dx,
-      y: nodePosition.y + details.delta.dy,
-      width: nodePosition.width,
-      height: nodePosition.height,
-      algorithmIndex: nodePosition.algorithmIndex,
+      x: _dragStartNodePosition!.x + globalDelta.dx,
+      y: _dragStartNodePosition!.y + globalDelta.dy,
+      width: widget.nodePosition.width,
+      height: widget.nodePosition.height,
+      algorithmIndex: widget.nodePosition.algorithmIndex,
     );
-    onPositionChanged?.call(newPosition);
+    widget.onPositionChanged?.call(newPosition);
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    // Drag ended - no cleanup needed
+    // Clear stored positions
+    _dragStartGlobalPosition = null;
+    _dragStartNodePosition = null;
   }
 
   Widget _buildJackRow(BuildContext context, int jackNumber) {
     final portId = 'physical_output_$jackNumber';
-    final isConnected = connectedPorts.contains('${algorithmIndex}_$portId');
+    final isConnected = widget.connectedPorts.contains('${PhysicalOutputNodeWidget.algorithmIndex}_$portId');
     
     final port = AlgorithmPort(
       id: portId,
@@ -152,7 +167,7 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
     );
 
     return SizedBox(
-      height: portRowHeight,
+      height: PhysicalOutputNodeWidget.portRowHeight,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 0),
       child: Row(
@@ -176,11 +191,11 @@ class PhysicalOutputNodeWidget extends StatelessWidget {
             port: port,
             type: PortType.output, // Allow dragging FROM this port
             isConnected: isConnected,
-            onConnectionStart: () => onPortConnectionStart?.call(portId, PortType.output),
-            onConnectionEnd: () => onPortConnectionEnd?.call(portId, PortType.input),
-            onPanStart: (details) => onPortPanStart?.call(portId, PortType.output, details),
-            onPanUpdate: (details) => onPortPanUpdate?.call(portId, PortType.output, details),
-            onPanEnd: (details) => onPortPanEnd?.call(portId, PortType.output, details),
+            onConnectionStart: () => widget.onPortConnectionStart?.call(portId, PortType.output),
+            onConnectionEnd: () => widget.onPortConnectionEnd?.call(portId, PortType.input),
+            onPanStart: (details) => widget.onPortPanStart?.call(portId, PortType.output, details),
+            onPanUpdate: (details) => widget.onPortPanUpdate?.call(portId, PortType.output, details),
+            onPanEnd: (details) => widget.onPortPanEnd?.call(portId, PortType.output, details),
           ),
           // Right spacer (same as left for centering)
           const Expanded(child: SizedBox()),

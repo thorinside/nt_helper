@@ -67,6 +67,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
 class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool _isDragging = false;
   bool _shouldHandlePan = true;
+  Offset? _dragStartGlobalPosition;
+  NodePosition? _dragStartNodePosition;
 
   void _onPanStart(DragStartDetails details) {
     final dx = details.localPosition.dx;
@@ -100,17 +102,20 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     if (_shouldHandlePan) {
       setState(() {
         _isDragging = true;
+        _dragStartGlobalPosition = details.globalPosition;
+        _dragStartNodePosition = widget.nodePosition;
       });
     }
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (!_shouldHandlePan) return;
+    if (!_shouldHandlePan || _dragStartGlobalPosition == null || _dragStartNodePosition == null) return;
     
-    // Calculate new position and immediately delegate to cubit
-    final newPosition = widget.nodePosition.copyWith(
-      x: widget.nodePosition.x + details.delta.dx,
-      y: widget.nodePosition.y + details.delta.dy,
+    // Calculate new position based on global coordinates for accurate tracking
+    final globalDelta = details.globalPosition - _dragStartGlobalPosition!;
+    final newPosition = _dragStartNodePosition!.copyWith(
+      x: _dragStartNodePosition!.x + globalDelta.dx,
+      y: _dragStartNodePosition!.y + globalDelta.dy,
     );
     widget.onPositionChanged?.call(newPosition);
   }
@@ -119,6 +124,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     _shouldHandlePan = true; // Reset for next gesture
     setState(() {
       _isDragging = false;
+      _dragStartGlobalPosition = null;
+      _dragStartNodePosition = null;
     });
   }
 

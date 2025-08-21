@@ -4,11 +4,26 @@ import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_state.dart';
 import 'package:nt_helper/ui/routing/routing_canvas.dart';
 
-class NodeRoutingWidget extends StatelessWidget {
+class NodeRoutingWidget extends StatefulWidget {
 
   const NodeRoutingWidget({
     super.key,
   });
+
+  @override
+  State<NodeRoutingWidget> createState() => _NodeRoutingWidgetState();
+}
+
+class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
+  final ScrollController _horizontalScrollController = ScrollController();
+  final ScrollController _verticalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    _verticalScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +90,16 @@ class NodeRoutingWidget extends StatelessWidget {
   Widget _buildLoaded(BuildContext context, NodeRoutingStateLoaded state) {
     // Wrap the canvas to allow it to expand beyond the viewport
     return SingleChildScrollView(
+      controller: _horizontalScrollController,
+      physics: const NeverScrollableScrollPhysics(), // Disable gesture scrolling
       scrollDirection: Axis.horizontal,
       child: SingleChildScrollView(
+        controller: _verticalScrollController,
+        physics: const NeverScrollableScrollPhysics(), // Disable gesture scrolling
         scrollDirection: Axis.vertical,
         child: RoutingCanvas(
+      horizontalScrollController: _horizontalScrollController,
+      verticalScrollController: _verticalScrollController,
       nodePositions: state.nodePositions,
       algorithmNames: state.algorithmNames,
       portLayouts: state.portLayouts,
