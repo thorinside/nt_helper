@@ -62,6 +62,10 @@ class ParameterUpdateQueue {
   Timer? _processTimer;
   bool _disposed = false;
 
+  // Throttling for immediate string updates
+  final Map<String, DateTime> _lastStringUpdateTime = {};
+  static const Duration _stringUpdateThrottle = Duration(milliseconds: 100);
+
   // Statistics for debugging
   int _totalUpdatesReceived = 0;
   int _totalUpdatesSent = 0;
@@ -78,6 +82,7 @@ class ParameterUpdateQueue {
     required int parameterNumber,
     required int value,
     required bool needsStringUpdate,
+    bool isRealTimeUpdate = false,
   }) {
     if (_disposed) return;
 
@@ -103,6 +108,11 @@ class ParameterUpdateQueue {
     debugPrint(
         '[ParameterQueue] Queued: $update (pending: ${_pendingUpdates.length})');
 
+    // For real-time updates during slider movement, request string update immediately
+    if (isRealTimeUpdate && needsStringUpdate) {
+      _requestStringUpdateImmediately(algorithmIndex, parameterNumber);
+    }
+
     _scheduleProcessing();
   }
 
@@ -117,6 +127,7 @@ class ParameterUpdateQueue {
   /// Clear all pending updates
   void clear() {
     _pendingUpdates.clear();
+    _lastStringUpdateTime.clear();
     _processTimer?.cancel();
     _processTimer = null;
   }
@@ -125,6 +136,7 @@ class ParameterUpdateQueue {
     _disposed = true;
     _processTimer?.cancel();
     _pendingUpdates.clear();
+    _lastStringUpdateTime.clear();
   }
 
   // ---------------------------------------------------------------------------
@@ -137,6 +149,40 @@ class ParameterUpdateQueue {
     // Cancel any existing timer and schedule processing
     _processTimer?.cancel();
     _processTimer = Timer(processingInterval, _processNext);
+  }
+
+  /// Request parameter string update immediately for real-time feedback
+  void _requestStringUpdateImmediately(int algorithmIndex, int parameterNumber) async {
+    final key = '$algorithmIndex:$parameterNumber';
+    final now = DateTime.now();
+    
+    // Throttle immediate string updates to avoid overwhelming MIDI
+    final lastUpdate = _lastStringUpdateTime[key];
+    if (lastUpdate != null && now.difference(lastUpdate) < _stringUpdateThrottle) {
+      debugPrint('[ParameterQueue] Throttling immediate string update for $key');
+      return;
+    }
+    
+    _lastStringUpdateTime[key] = now;
+    
+    try {
+      debugPrint('[ParameterQueue] Requesting immediate string update for $key');
+      final parameterString = await _midiManager.requestParameterValueString(
+        algorithmIndex,
+        parameterNumber,
+      );
+      if (parameterString != null) {
+        debugPrint('[ParameterQueue] Immediate string update: "${parameterString.value}"');
+        onParameterStringUpdated?.call(
+          algorithmIndex,
+          parameterNumber,
+          parameterString.value,
+        );
+      }
+    } catch (e) {
+      debugPrint('[ParameterQueue] Failed immediate string update for $key: $e');
+      // Don't propagate errors for immediate updates
+    }
   }
 
   Future<void> _processNext() async {
