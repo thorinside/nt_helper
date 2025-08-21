@@ -96,6 +96,15 @@ jobs:
           echo "Provisioning profiles in that folder:"
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
+      - name: Install iOS Simulator Runtime
+        run: |
+          echo "Available Xcode simulators:"
+          xcrun simctl list runtimes
+          echo "Installing iOS simulator runtime if needed..."
+          # This should install the iOS runtime for the current Xcode version
+          xcodebuild -downloadPlatform iOS || true
+          echo "Available simulators after install attempt:"
+          xcrun simctl list runtimes
 
       - name: Flutter build IPA
         run: |

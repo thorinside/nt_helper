@@ -663,44 +663,55 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
               return StatefulBuilder(
                 builder: (context, setStateDialog) => AlertDialog(
                   title: const Text('Select Plugin Type'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioListTile<String>(
-                        value: _pluginTypeAll,
-                        groupValue: tempSelected,
-                        title: const Text('All Plugins'),
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            tempSelected = value!;
-                          });
-                        },
-                      ),
-                      RadioListTile<String>(
-                        value: _pluginTypeFactory,
-                        groupValue: tempSelected,
-                        title: const Text('Factory'),
-                        subtitle:
-                            const Text('Algorithms with all lowercase GUIDs'),
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            tempSelected = value!;
-                          });
-                        },
-                      ),
-                      RadioListTile<String>(
-                        value: _pluginTypeCommunity,
-                        groupValue: tempSelected,
-                        title: const Text('Community'),
-                        subtitle: const Text(
-                            'Algorithms with uppercase characters in GUID'),
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            tempSelected = value!;
-                          });
-                        },
-                      ),
-                    ],
+                  content: RadioGroup<String>(
+                    groupValue: tempSelected,
+                    onChanged: (value) {
+                      setStateDialog(() {
+                        tempSelected = value!;
+                      });
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: Radio<String>(
+                            value: _pluginTypeAll,
+                          ),
+                          title: const Text('All Plugins'),
+                          onTap: () {
+                            setStateDialog(() {
+                              tempSelected = _pluginTypeAll;
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: Radio<String>(
+                            value: _pluginTypeFactory,
+                          ),
+                          title: const Text('Factory'),
+                          subtitle:
+                              const Text('Algorithms with all lowercase GUIDs'),
+                          onTap: () {
+                            setStateDialog(() {
+                              tempSelected = _pluginTypeFactory;
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: Radio<String>(
+                            value: _pluginTypeCommunity,
+                          ),
+                          title: const Text('Community'),
+                          subtitle: const Text(
+                              'Algorithms with uppercase characters in GUID'),
+                          onTap: () {
+                            setStateDialog(() {
+                              tempSelected = _pluginTypeCommunity;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   actions: [
                     TextButton(
