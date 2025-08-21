@@ -281,7 +281,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   BottomAppBar _buildBottomAppBar() {
-    bool isWideScreen = MediaQuery.of(context).size.width > 900;
+    final screenWidth = MediaQuery.of(context).size.width;
+    bool isWideScreen = screenWidth > 900;
+    bool isSmallScreen = screenWidth <= 360;
 
     return BottomAppBar(
       child: Row(
@@ -397,9 +399,10 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               ),
             ),
           const SizedBox(width: 8),
-          DistingVersion(
-              distingVersion: widget.distingVersion,
-              requiredVersion: Constants.requiredDistingVersion),
+          if (!isSmallScreen)
+            DistingVersion(
+                distingVersion: widget.distingVersion,
+                requiredVersion: Constants.requiredDistingVersion),
           // CPU Monitor Widget - only in wide-screen mode
           if (isWideScreen) ...[
             const SizedBox(width: 16),
