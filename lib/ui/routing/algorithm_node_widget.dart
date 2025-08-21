@@ -133,7 +133,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         onPanEnd: _onPanEnd,
         child: Container(
           width: widget.nodePosition.width,
-          height: widget.nodePosition.height,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             border: Border.all(
@@ -257,8 +256,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                 ),
 
                 // Ports area
-                Expanded(
-                  child: Padding(
+                Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AlgorithmNodeWidget.horizontalPadding,
                       vertical: AlgorithmNodeWidget.portsVerticalPadding,
@@ -295,7 +293,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                         ),
                       ],
                     ),
-                  ),
                 ),
               ],
             ),
