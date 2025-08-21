@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -169,6 +170,8 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     return Listener(
       // Fallback: create connection on any pointer up if preview is valid
       onPointerUp: _handleGlobalPointerUp,
+      // Enable Apple Pencil hover detection for iPad
+      onPointerHover: _handlePointerHover,
       child: Container(
         key: _canvasKey,
         width: _canvasSize.width,
@@ -733,6 +736,38 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     }
   }
   
+  /// Handle Apple Pencil hover events
+  void _handlePointerHover(PointerEvent event) {
+    // Only handle stylus/pencil hover events, not finger touch or mouse
+    if (event.kind == PointerDeviceKind.stylus) {
+      // Convert global coordinates to canvas-local coordinates
+      final RenderBox? canvasBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+      if (canvasBox != null) {
+        final localPosition = canvasBox.globalToLocal(event.position);
+        
+        // Use the same hover logic as mouse hover
+        final hoveredConnection = _getConnectionAtPosition(localPosition);
+        
+        // Check for label hover using painter hit boxes
+        String? hoveredLabelId;
+        if (_connectionPainter != null) {
+          hoveredLabelId = _connectionPainter!.getLabelAtPosition(localPosition);
+        }
+        
+        if (hoveredConnection != _hoveredConnection || hoveredLabelId != _hoveredLabelId) {
+          setState(() {
+            _hoveredConnection = hoveredConnection;
+            _hoveredLabelId = hoveredLabelId;
+          });
+          
+          // Update cubit state for label hover
+          final cubit = context.read<NodeRoutingCubit>();
+          cubit.updateLabelHover(hoveredLabelId);
+        }
+      }
+    }
+  }
+  
   void _handleConnectionTapDown(TapDownDetails details) {
     // First check for label click (higher priority)
     String? clickedLabelId;
@@ -787,7 +822,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
       if (sourcePos == null || targetPos == null) continue;
       
       // Check if click is near the bezier curve
-      if (_isPointNearBezier(position, sourcePos, targetPos, tolerance: 10.0)) {
+      if (_isPointNearBezier(position, sourcePos, targetPos, tolerance: 15.0)) { // Increased for mobile
         return connection;
       }
     }

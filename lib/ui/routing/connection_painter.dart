@@ -73,7 +73,7 @@ class ConnectionPainter extends CustomPainter {
       final start = portPositions[sourceKey];
       final end = portPositions[targetKey];
       if (start == null || end == null) continue;
-      if (_isPointNearBezier(position, start, end, tolerance: 10.0)) {
+      if (_isPointNearBezier(position, start, end, tolerance: 15.0)) { // Increased for mobile
         return true;
       }
     }
@@ -103,7 +103,7 @@ class ConnectionPainter extends CustomPainter {
     debugPrint('[ConnectionPainter] Drawing connection: $sourceKey->$targetKey');
 
     final paint = Paint()
-      ..strokeWidth = isPending ? 2.0 : (isHovered ? 4.0 : 3.0)  // Thinner for pending
+      ..strokeWidth = isPending ? 2.0 : (isHovered ? 5.0 : 3.0)
       ..style = PaintingStyle.stroke;
 
     // Set dash pattern for pending connections
@@ -373,13 +373,13 @@ class ConnectionPainter extends CustomPainter {
     
     // Record hit box for click detection (only for connections with modes)
     if (hasMode) {
-      const padding = 6.0;
+      const padding = 16.0; // Increased for better mobile/Apple Pencil targeting (44pt recommended minimum)
       labelHitBoxes.add(LabelHitBox(
         id: labelId,
         bounds: Rect.fromCenter(
           center: midPoint,
-          width: textSize.width + padding * 2,
-          height: textSize.height + padding * 2,
+          width: math.max(textSize.width + padding * 2, 44.0), // Minimum 44pt tap target
+          height: math.max(textSize.height + padding * 2, 44.0), // Minimum 44pt tap target
         ),
         center: midPoint,
       ));
@@ -394,8 +394,8 @@ class ConnectionPainter extends CustomPainter {
 
     final labelRect = Rect.fromCenter(
       center: midPoint,
-      width: textSize.width + 6,
-      height: textSize.height + 2,
+      width: textSize.width + 8, // Slightly larger for better visual feedback
+      height: textSize.height + 4,
     );
 
     final labelPaint = Paint()
