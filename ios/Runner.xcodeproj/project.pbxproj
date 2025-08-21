@@ -17,6 +17,7 @@
 		D0D02FB609B9BA49A2EE26A4 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E9F214C2C2264A4A32CA746 /* Pods_RunnerTests.framework */; };
 		F8C3FC577E65825FA125CCCF /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A10A61849489F853A71102 /* Pods_Runner.framework */; };
 		FD223FAF2DE6C7FE009E00C1 /* IosFileAccessPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD56D15C2DE51B05003776D8 /* IosFileAccessPlugin.swift */; };
+		FD224FB02DE6C8FF009E00C2 /* UsbVideoCapturePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD57D16D2DE51C06003776D9 /* UsbVideoCapturePlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +68,7 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EB9DDF555E0E68A883D33555 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		FD56D15C2DE51B05003776D8 /* IosFileAccessPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IosFileAccessPlugin.swift; path = Runner/IosFileAccessPlugin.swift; sourceTree = "<group>"; };
+		FD57D16D2DE51C06003776D9 /* UsbVideoCapturePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UsbVideoCapturePlugin.swift; path = Runner/UsbVideoCapturePlugin.swift; sourceTree = "<group>"; };
 		FDC556BE2DE79EC4008C0C94 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -122,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				FD56D15C2DE51B05003776D8 /* IosFileAccessPlugin.swift */,
+				FD57D16D2DE51C06003776D9 /* UsbVideoCapturePlugin.swift */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
@@ -382,6 +385,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FD223FAF2DE6C7FE009E00C1 /* IosFileAccessPlugin.swift in Sources */,
+				FD224FB02DE6C8FF009E00C2 /* UsbVideoCapturePlugin.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
