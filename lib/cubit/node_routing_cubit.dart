@@ -1492,14 +1492,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final portId = 'physical_output_$i';
       final portKey = '${physicalOutputAlgorithmIndex}_$portId';
       
-      final jackY = physicalNodeY + headerHeight + verticalPadding + 
-                   ((i - 1) * portRowHeight) + (portRowHeight / 2);
-      
       // Use dynamic position from state if available, otherwise fall back to static
-      final outputX = currentState is NodeRoutingStateLoaded 
-          ? _getPhysicalOutputPosition(currentState).x 
-          : physicalOutputNodeX;
-      final portX = outputX + (physicalNodeWidth / 2); // Centered
+      final outputPosition = currentState is NodeRoutingStateLoaded 
+          ? _getPhysicalOutputPosition(currentState)
+          : NodePosition(x: physicalOutputNodeX, y: physicalNodeY, width: physicalNodeWidth, height: 188.0, algorithmIndex: physicalOutputAlgorithmIndex);
+      
+      final jackY = outputPosition.y + headerHeight + verticalPadding + 
+                   ((i - 1) * portRowHeight) + (portRowHeight / 2);
+      final portX = outputPosition.x + (physicalNodeWidth / 2); // Centered
       
       portPositions[portKey] = Offset(portX, jackY);
     }
