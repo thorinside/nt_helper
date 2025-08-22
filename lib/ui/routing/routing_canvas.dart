@@ -1,7 +1,7 @@
 import 'dart:io' show Platform;
 import 'dart:math' as math;
-import 'dart:ui' show PointerDeviceKind;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/node_routing_cubit.dart';
@@ -86,6 +86,26 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   
   // Platform detection for mobile interactions
   bool get isMobile => Platform.isAndroid || Platform.isIOS;
+  
+  // Apple Pencil hover detection using PointerRouter
+  late final PointerRoute _pencilHoverRoute;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Set up Apple Pencil hover detection via PointerRouter
+    // This is necessary because Flutter's Listener.onPointerHover may not trigger for stylus
+    _pencilHoverRoute = _handleGlobalPointerEvent;
+    GestureBinding.instance.pointerRouter.addGlobalRoute(_pencilHoverRoute);
+  }
+  
+  @override
+  void dispose() {
+    // Clean up the global pointer route
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(_pencilHoverRoute);
+    super.dispose();
+  }
   
   /// Calculate required canvas bounds based on node positions
   Size _calculateRequiredCanvasBounds() {
@@ -765,6 +785,50 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
           cubit.updateLabelHover(hoveredLabelId);
         }
       }
+    }
+  }
+  
+  /// Handle Apple Pencil hover events via PointerRouter
+  /// This is a more reliable method for stylus hover detection
+  void _handleGlobalPointerEvent(PointerEvent event) {
+    // Only handle Apple Pencil/stylus hover events
+    if (event.kind != PointerDeviceKind.stylus) return;
+    
+    // Only handle hover events (when stylus is above screen but not touching)
+    if (event is! PointerHoverEvent) return;
+    
+    // Check if the event is within our canvas widget bounds
+    final RenderBox? canvasBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+    if (canvasBox == null) return;
+    
+    // Convert global coordinates to canvas-local coordinates
+    final localPosition = canvasBox.globalToLocal(event.position);
+    
+    // Check if hover position is within our canvas bounds
+    final canvasSize = canvasBox.size;
+    if (localPosition.dx < 0 || localPosition.dy < 0 || 
+        localPosition.dx > canvasSize.width || localPosition.dy > canvasSize.height) {
+      return;
+    }
+    
+    // Use the same hover logic as mouse hover
+    final hoveredConnection = _getConnectionAtPosition(localPosition);
+    
+    // Check for label hover using painter hit boxes
+    String? hoveredLabelId;
+    if (_connectionPainter != null) {
+      hoveredLabelId = _connectionPainter!.getLabelAtPosition(localPosition);
+    }
+    
+    if (hoveredConnection != _hoveredConnection || hoveredLabelId != _hoveredLabelId) {
+      setState(() {
+        _hoveredConnection = hoveredConnection;
+        _hoveredLabelId = hoveredLabelId;
+      });
+      
+      // Update cubit state for label hover
+      final cubit = context.read<NodeRoutingCubit>();
+      cubit.updateLabelHover(hoveredLabelId);
     }
   }
   
