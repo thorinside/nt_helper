@@ -337,8 +337,8 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                 cursor: isMobile ? SystemMouseCursors.basic
                   : (_hoveredLabelId != null ? SystemMouseCursors.click 
                     : (_hoveredConnection != null ? SystemMouseCursors.click : SystemMouseCursors.basic)),
-                onHover: isMobile ? null : _handleConnectionHover,
-                onExit: isMobile ? null : (_) => _handleConnectionExit(),
+                onHover: _handleConnectionHover,
+                onExit: (_) => _handleConnectionExit(),
                 child: GestureDetector(
                   onTapDown: _handleConnectionTapDown,
                   behavior: HitTestBehavior.deferToChild,
@@ -756,10 +756,10 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
     }
   }
   
-  /// Handle Apple Pencil hover events
+  /// Handle Apple Pencil and other stylus hover events
   void _handlePointerHover(PointerEvent event) {
-    // Only handle stylus/pencil hover events, not finger touch or mouse
-    if (event.kind == PointerDeviceKind.stylus) {
+    // Stylus hover appears as mouse events, not stylus events
+    if (event.kind == PointerDeviceKind.mouse) {
       // Convert global coordinates to canvas-local coordinates
       final RenderBox? canvasBox = _canvasKey.currentContext?.findRenderObject() as RenderBox?;
       if (canvasBox != null) {
@@ -791,8 +791,8 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
   /// Handle Apple Pencil hover events via PointerRouter
   /// This is a more reliable method for stylus hover detection
   void _handleGlobalPointerEvent(PointerEvent event) {
-    // Only handle Apple Pencil/stylus hover events
-    if (event.kind != PointerDeviceKind.stylus) return;
+    // Only handle stylus hover events (which appear as mouse events)
+    if (event.kind != PointerDeviceKind.mouse) return;
     
     // Only handle hover events (when stylus is above screen but not touching)
     if (event is! PointerHoverEvent) return;
