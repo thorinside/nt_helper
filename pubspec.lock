@@ -455,12 +455,13 @@ packages:
     source: hosted
     version: "0.5.3"
   flutter_midi_command_linux:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: flutter_midi_command_linux
-      sha256: c4d6dcf136fd4718aa827c201446f935f2752e37b702ed712373c675cbdbb0d0
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: HEAD
+      resolved-ref: af9089dc874434874dc1fb2f50618cda0bfa489a
+      url: "https://github.com/thorinside/flutter_midi_command_linux.git"
+    source: git
     version: "0.3.0"
   flutter_midi_command_platform_interface:
     dependency: transitive
