@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -429,13 +430,27 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
   List<PopupMenuEntry<String>> _buildMappingMenuItems() {
     final mappings = widget.algorithmMappings;
-    if (mappings == null || mappings.isEmpty) return [];
+    final slots = widget.allSlots;
+    final algorithmIndex = widget.algorithmIndex;
+    
+    if (mappings == null || mappings.isEmpty || slots == null || algorithmIndex == null) return [];
 
     return mappings
         .where((mapping) => mapping.packedMappingData.isMapped())
         .map((mapping) {
           final icon = _getMappingIcon(mapping.packedMappingData);
-          final paramName = 'Param ${mapping.parameterNumber}';
+          
+          // Get the parameter name from the slot's parameter info
+          String paramName = 'Param ${mapping.parameterNumber}'; // fallback
+          if (algorithmIndex < slots.length) {
+            final slot = slots[algorithmIndex];
+            final parameter = slot.parameters.firstWhereOrNull(
+              (param) => param.parameterNumber == mapping.parameterNumber,
+            );
+            if (parameter != null && parameter.name.isNotEmpty) {
+              paramName = parameter.name;
+            }
+          }
 
           return PopupMenuItem<String>(
             value: '$mappingPrefix${mapping.parameterNumber}',
