@@ -77,6 +77,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
 }
 
 class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
+  static const String mappingPrefix = 'mapping_';
+  
   bool _isDragging = false;
   bool _shouldHandlePan = true;
   Offset? _dragStartGlobalPosition;
@@ -85,7 +87,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool get _hasMappings {
     final mappings = widget.algorithmMappings;
     if (mappings == null || mappings.isEmpty) return false;
-    return mappings.any((mapping) => mapping.packedMappingData.isMapped());
+    return mappings.where((mapping) => mapping.packedMappingData.isMapped()).isNotEmpty;
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -204,7 +206,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                           padding: const EdgeInsets.only(right: 4),
                           child: Icon(
                             Icons.map_sharp,
-                            color: Colors.green,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 14,
                           ),
                         ),
@@ -270,8 +272,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                             onSelected: (value) {
                               if (value == 'delete') {
                                 widget.onDelete?.call();
-                              } else if (value.startsWith('mapping_')) {
-                                final paramNumber = int.parse(value.substring(8));
+                              } else if (value.startsWith(mappingPrefix)) {
+                                final paramNumber = int.parse(value.substring(mappingPrefix.length));
                                 _showMappingEditor(context, paramNumber);
                               }
                             },
@@ -282,7 +284,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                                   enabled: false, // This is a header
                                   child: Row(
                                     children: [
-                                      Icon(Icons.map_sharp, size: 18, color: Colors.green),
+                                      Icon(Icons.map_sharp, size: 18, color: Theme.of(context).colorScheme.primary),
                                       SizedBox(width: 8),
                                       Text('Mappings', style: TextStyle(fontWeight: FontWeight.bold)),
                                     ],
@@ -436,7 +438,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           final paramName = 'Param ${mapping.parameterNumber}';
 
           return PopupMenuItem<String>(
-            value: 'mapping_${mapping.parameterNumber}',
+            value: '$mappingPrefix${mapping.parameterNumber}',
             child: Row(
               children: [
                 Icon(icon, size: 18),
@@ -471,7 +473,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     final mapping = mappings.firstWhere(
       (m) => m.parameterNumber == parameterNumber,
       orElse: () => Mapping(
-        algorithmIndex: widget.algorithmIndex ?? 0,
+        algorithmIndex: widget.algorithmIndex!,  // Already null-checked above
         parameterNumber: parameterNumber,
         packedMappingData: PackedMappingData.filler(),
       ),
