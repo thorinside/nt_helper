@@ -1206,10 +1206,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     }
 
     // Check physical output node
-    final outputX = _getPhysicalOutputPosition(currentState).x;
+    final outputPosition = _getPhysicalOutputPosition(currentState);
     final physicalOutputRect = Rect.fromLTWH(
-      outputX,
-      physicalNodeY,
+      outputPosition.x,
+      outputPosition.y,
       physicalNodeWidth,
       physicalOutputNodeHeight,
     );
@@ -1296,14 +1296,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const portSize = 24.0;
     
     final currentState = state;
-    final outputX = currentState is NodeRoutingStateLoaded 
-        ? _getPhysicalOutputPosition(currentState).x 
-        : physicalOutputNodeX;
+    final outputPosition = currentState is NodeRoutingStateLoaded 
+        ? _getPhysicalOutputPosition(currentState)
+        : NodePosition(x: physicalOutputNodeX, y: physicalNodeY, width: physicalNodeWidth, height: physicalOutputNodeHeight, algorithmIndex: physicalOutputAlgorithmIndex);
     
     // Check if position is within physical output node bounds
     final nodeRect = Rect.fromLTWH(
-      outputX,
-      physicalNodeY,
+      outputPosition.x,
+      outputPosition.y,
       physicalNodeWidth,
       physicalOutputNodeHeight,
     );
@@ -1311,15 +1311,15 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     if (!nodeRect.contains(position)) return null;
     
     // Calculate which jack was hit
-    final relativeY = position.dy - physicalNodeY - headerHeight - verticalPadding;
+    final relativeY = position.dy - outputPosition.y - headerHeight - verticalPadding;
     if (relativeY < 0) return null;
     
     final jackIndex = (relativeY / portRowHeight).floor();
     if (jackIndex < 0 || jackIndex >= 8) return null;
     
     // Check if position is within the centered port widget area
-    final jackY = physicalNodeY + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
-    final portX = outputX + (physicalNodeWidth / 2); // Centered horizontally
+    final jackY = outputPosition.y + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
+    final portX = outputPosition.x + (physicalNodeWidth / 2); // Centered horizontally
     
     final portRect = Rect.fromCenter(
       center: Offset(portX, jackY),
