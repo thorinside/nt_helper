@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_state.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/routing/routing_canvas.dart';
 
 class NodeRoutingWidget extends StatefulWidget {
@@ -88,6 +90,22 @@ class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
   }
 
   Widget _buildLoaded(BuildContext context, NodeRoutingStateLoaded state) {
+    // Get mapping data from DistingCubit
+    final distingState = context.read<DistingCubit>().state;
+    Map<int, List<Mapping>>? algorithmMappings;
+    List<Slot>? allSlots;
+    
+    if (distingState is DistingStateSynchronized) {
+      allSlots = distingState.slots;
+      algorithmMappings = <int, List<Mapping>>{};
+      
+      // Group mappings by algorithm index
+      for (int i = 0; i < allSlots.length; i++) {
+        final slot = allSlots[i];
+        algorithmMappings[i] = slot.mappings;
+      }
+    }
+
     // Wrap the canvas to allow it to expand beyond the viewport
     return SingleChildScrollView(
       controller: _horizontalScrollController,
@@ -110,6 +128,8 @@ class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
       hoveredConnectionId: state.hoveredConnectionId,
       pendingConnections: state.pendingConnections,
       failedConnections: state.failedConnections,
+      algorithmMappings: algorithmMappings,
+      allSlots: allSlots,
       onNodePositionChanged: (algorithmIndex, position) {
         context.read<NodeRoutingCubit>().updateNodePosition(
           algorithmIndex,

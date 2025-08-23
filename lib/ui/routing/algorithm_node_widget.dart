@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/algorithm_port.dart';
 import 'package:nt_helper/models/node_position.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
+import 'package:nt_helper/ui/synchronized_screen.dart';
 import 'package:nt_helper/ui/widgets/port_widget.dart';
 
 typedef PositionChangedCallback = void Function(NodePosition position);
@@ -38,6 +44,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final PortPanCallback? onPortPanStart;
   final PortPanUpdateCallback? onPortPanUpdate;
   final PortPanEndCallback? onPortPanEnd;
+  final int? algorithmIndex;
+  final List<Mapping>? algorithmMappings;
+  final List<Slot>? allSlots;
 
   const AlgorithmNodeWidget({
     super.key,
@@ -58,6 +67,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onPortPanStart,
     this.onPortPanUpdate,
     this.onPortPanEnd,
+    this.algorithmIndex,
+    this.algorithmMappings,
+    this.allSlots,
   });
 
   @override
@@ -69,6 +81,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool _shouldHandlePan = true;
   Offset? _dragStartGlobalPosition;
   NodePosition? _dragStartNodePosition;
+
+  bool get _hasMappings {
+    final mappings = widget.algorithmMappings;
+    if (mappings == null || mappings.isEmpty) return false;
+    return mappings.any((mapping) => mapping.packedMappingData.isMapped());
+  }
 
   void _onPanStart(DragStartDetails details) {
     final dx = details.localPosition.dx;
@@ -180,6 +198,16 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                   ),
                   child: Row(
                     children: [
+                      // Green mapping indicator if mappings exist
+                      if (_hasMappings)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(
+                            Icons.map_sharp,
+                            color: Colors.green,
+                            size: 14,
+                          ),
+                        ),
                       Expanded(
                         child: Text(
                           '${widget.nodePosition.algorithmIndex + 1}. ${widget.algorithmName}',
@@ -242,9 +270,27 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                             onSelected: (value) {
                               if (value == 'delete') {
                                 widget.onDelete?.call();
+                              } else if (value.startsWith('mapping_')) {
+                                final paramNumber = int.parse(value.substring(8));
+                                _showMappingEditor(context, paramNumber);
                               }
                             },
                             itemBuilder: (context) => [
+                              // Mappings submenu if mappings exist
+                              if (_hasMappings) ...[
+                                PopupMenuItem(
+                                  enabled: false, // This is a header
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.map_sharp, size: 18, color: Colors.green),
+                                      SizedBox(width: 8),
+                                      Text('Mappings', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                                ..._buildMappingMenuItems(),
+                                PopupMenuDivider(),
+                              ],
                               PopupMenuItem(
                                 value: 'delete',
                                 child: Row(
@@ -377,5 +423,79 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               ],
       ),
     );
+  }
+
+  List<PopupMenuEntry<String>> _buildMappingMenuItems() {
+    final mappings = widget.algorithmMappings;
+    if (mappings == null || mappings.isEmpty) return [];
+
+    return mappings
+        .where((mapping) => mapping.packedMappingData.isMapped())
+        .map((mapping) {
+          final icon = _getMappingIcon(mapping.packedMappingData);
+          final paramName = 'Param ${mapping.parameterNumber}';
+
+          return PopupMenuItem<String>(
+            value: 'mapping_${mapping.parameterNumber}',
+            child: Row(
+              children: [
+                Icon(icon, size: 18),
+                SizedBox(width: 8),
+                Text(paramName),
+              ],
+            ),
+          );
+        }).toList();
+  }
+
+  IconData _getMappingIcon(PackedMappingData data) {
+    if (data.isMidiEnabled) {
+      return Icons.piano; // 🎹 for MIDI
+    } else if (data.isI2cEnabled) {
+      return Icons.cable; // 🔌 for I2C
+    } else if (data.cvInput != 0) {
+      return Icons.sensors; // 📡 for CV
+    }
+    return Icons.map_sharp; // Default map icon
+  }
+
+  void _showMappingEditor(BuildContext context, int parameterNumber) async {
+    final mappings = widget.algorithmMappings;
+    final slots = widget.allSlots;
+    
+    if (mappings == null || slots == null) {
+      debugPrint('Missing mapping data or slots for editing');
+      return;
+    }
+
+    final mapping = mappings.firstWhere(
+      (m) => m.parameterNumber == parameterNumber,
+      orElse: () => Mapping(
+        algorithmIndex: widget.algorithmIndex ?? 0,
+        parameterNumber: parameterNumber,
+        packedMappingData: PackedMappingData.filler(),
+      ),
+    );
+
+    final cubit = context.read<DistingCubit>();
+    final midiCubit = context.read<MidiListenerCubit>();
+    
+    final updatedData = await showModalBottomSheet<PackedMappingData>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => MappingEditorBottomSheet(
+        myMidiCubit: midiCubit,
+        data: mapping.packedMappingData,
+        slots: slots,
+      ),
+    );
+
+    if (updatedData != null && widget.algorithmIndex != null) {
+      cubit.saveMapping(
+        widget.algorithmIndex!,
+        parameterNumber,
+        updatedData,
+      );
+    }
   }
 }
