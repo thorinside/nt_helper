@@ -4,8 +4,10 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_cubit.dart';
 import 'package:nt_helper/cubit/node_routing_state.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/connection.dart';
 import 'package:nt_helper/models/connection_preview.dart';
 import 'package:nt_helper/models/node_position.dart';
@@ -39,6 +41,8 @@ class RoutingCanvas extends StatefulWidget {
   final ConnectionCallback? onConnectionCreated;
   final ConnectionCallback? onConnectionRemoved;
   final VoidCallback? onSelectionChanged;
+  final Map<int, List<Mapping>>? algorithmMappings;
+  final List<Slot>? allSlots;
 
   const RoutingCanvas({
     super.key,
@@ -58,6 +62,8 @@ class RoutingCanvas extends StatefulWidget {
     this.onConnectionCreated,
     this.onConnectionRemoved,
     this.onSelectionChanged,
+    this.algorithmMappings,
+    this.allSlots,
   });
 
   @override
@@ -256,6 +262,9 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                   // Update canvas size to accommodate new node position
                   _updateCanvasSizeIfNeeded();
                 },
+                algorithmIndex: algorithmIndex,
+                algorithmMappings: widget.algorithmMappings?[algorithmIndex],
+                allSlots: widget.allSlots,
                 onPortConnectionStart: (portId, type) =>
                     _handlePortConnectionStart(algorithmIndex, portId, type),
                 onPortConnectionEnd: (portId, type) =>
