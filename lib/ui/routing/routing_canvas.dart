@@ -35,6 +35,7 @@ class RoutingCanvas extends StatefulWidget {
   final String? hoveredConnectionId;
   final Set<String> pendingConnections;
   final Set<String> failedConnections;
+  final Map<int, List<dynamic>> algorithmMappings; // algorithmIndex -> List<Mapping>
   final NodePositionCallback? onNodePositionChanged;
   final ConnectionCallback? onConnectionCreated;
   final ConnectionCallback? onConnectionRemoved;
@@ -54,6 +55,7 @@ class RoutingCanvas extends StatefulWidget {
     this.hoveredConnectionId,
     this.pendingConnections = const {},
     this.failedConnections = const {},
+    this.algorithmMappings = const {},
     this.onNodePositionChanged,
     this.onConnectionCreated,
     this.onConnectionRemoved,
@@ -245,6 +247,7 @@ class _RoutingCanvasState extends State<RoutingCanvas> {
                 connectedPorts: widget.connectedPorts,
                 canMoveUp: canMoveUp,
                 canMoveDown: canMoveDown,
+                mappings: widget.algorithmMappings[algorithmIndex] ?? [],
                 onMoveUp: canMoveUp ? () => _handleMoveAlgorithmUp(algorithmIndex) : null,
                 onMoveDown: canMoveDown ? () => _handleMoveAlgorithmDown(algorithmIndex) : null,
                 onDelete: () => _handleDeleteAlgorithm(algorithmIndex),

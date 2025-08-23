@@ -6,6 +6,7 @@ import 'package:nt_helper/models/connection_preview.dart';
 import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/models/port_layout.dart';
 import 'package:nt_helper/models/tidy_result.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 part 'node_routing_state.freezed.dart';
 
@@ -24,6 +25,7 @@ sealed class NodeRoutingState with _$NodeRoutingState {
     required Set<String> connectedPorts,
     required Map<int, String> algorithmNames,
     required Map<String, Offset> portPositions, // algorithmIndex_portId -> Offset
+    @Default({}) Map<int, List<Mapping>> algorithmMappings, // algorithmIndex -> List<Mapping>
     NodePosition? physicalOutputPosition, // Position of the physical output node
     @Default(false) bool hasUserRepositioned,
     ConnectionPreview? connectionPreview,

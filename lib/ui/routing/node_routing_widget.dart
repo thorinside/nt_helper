@@ -110,6 +110,7 @@ class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
       hoveredConnectionId: state.hoveredConnectionId,
       pendingConnections: state.pendingConnections,
       failedConnections: state.failedConnections,
+      algorithmMappings: const {}, // TODO: Connect real mapping data from DistingCubit
       onNodePositionChanged: (algorithmIndex, position) {
         context.read<NodeRoutingCubit>().updateNodePosition(
           algorithmIndex,

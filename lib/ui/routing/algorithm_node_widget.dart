@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/models/algorithm_port.dart';
 import 'package:nt_helper/models/node_position.dart';
 import 'package:nt_helper/ui/widgets/port_widget.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/packed_mapping_data.dart';
 
 typedef PositionChangedCallback = void Function(NodePosition position);
 typedef PortConnectionCallback = void Function(String portId, PortType type);
@@ -29,6 +31,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final Set<String> connectedPorts;
   final bool canMoveUp;
   final bool canMoveDown;
+  final List<dynamic> mappings; // List of Mapping objects
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final VoidCallback? onDelete;
@@ -49,6 +52,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.connectedPorts = const {},
     this.canMoveUp = true,
     this.canMoveDown = true,
+    this.mappings = const [],
     this.onMoveUp,
     this.onMoveDown,
     this.onDelete,
@@ -180,6 +184,16 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                   ),
                   child: Row(
                     children: [
+                      // Mapping indicator icon
+                      if (_hasMappedParameters())
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4.0),
+                          child: Icon(
+                            Icons.map_sharp,
+                            size: 12,
+                            color: Colors.green,
+                          ),
+                        ),
                       Expanded(
                         child: Text(
                           '${widget.nodePosition.algorithmIndex + 1}. ${widget.algorithmName}',
@@ -242,20 +256,70 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                             onSelected: (value) {
                               if (value == 'delete') {
                                 widget.onDelete?.call();
+                              } else if (value.startsWith('mapping_')) {
+                                // Handle mapping selection - extract parameter number
+                                final parameterNumber = int.tryParse(value.replaceFirst('mapping_', ''));
+                                if (parameterNumber != null) {
+                                  _showMappingEditor(context, parameterNumber);
+                                }
                               }
                             },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete_forever_rounded, size: 18),
-                                    SizedBox(width: 8),
-                                    Text('Delete Algorithm'),
-                                  ],
+                            itemBuilder: (context) {
+                              final items = <PopupMenuEntry<String>>[];
+                              
+                              // Add mappings submenu if there are mapped parameters
+                              if (_hasMappedParameters()) {
+                                items.add(
+                                  PopupMenuItem(
+                                    enabled: false, // This acts as a submenu header
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.map_sharp, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Mappings', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                                
+                                // Add individual mapped parameters
+                                for (final mapping in _getMappedParameters()) {
+                                  final icon = _getMappingIcon(mapping.packedMappingData);
+                                  items.add(
+                                    PopupMenuItem(
+                                      value: 'mapping_${mapping.parameterNumber}',
+                                      child: Row(
+                                        children: [
+                                          SizedBox(width: 8), // Indent for submenu item
+                                          Icon(icon, size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Parameter ${mapping.parameterNumber}'),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                
+                                // Add divider before delete option
+                                items.add(const PopupMenuDivider());
+                              }
+                              
+                              // Add delete option
+                              items.add(
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_forever_rounded, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Delete Algorithm'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              );
+                              
+                              return items;
+                            },
                           ),
                         ),
                     ],
@@ -305,6 +369,63 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Check if this algorithm has any mapped parameters
+  bool _hasMappedParameters() {
+    for (final mapping in widget.mappings) {
+      if (mapping is Mapping && mapping.packedMappingData.isMapped()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Get mapped parameters for display in submenu
+  List<Mapping> _getMappedParameters() {
+    return widget.mappings
+        .whereType<Mapping>()
+        .where((mapping) => mapping.packedMappingData.isMapped())
+        .toList();
+  }
+
+  /// Get mapping icon based on mapping types
+  IconData _getMappingIcon(PackedMappingData data) {
+    if (data.cvInput > 0 || data.source > 0) {
+      return Icons.settings_input_antenna; // CV icon
+    } else if (data.isMidiEnabled) {
+      return Icons.piano; // MIDI icon  
+    } else if (data.isI2cEnabled) {
+      return Icons.router; // I2C icon
+    }
+    return Icons.map_sharp; // Fallback
+  }
+
+  /// Show the mapping editor for a specific parameter
+  void _showMappingEditor(BuildContext context, int parameterNumber) {
+    // Find the mapping for this parameter
+    final mapping = widget.mappings
+        .whereType<Mapping>()
+        .firstWhere(
+          (m) => m.parameterNumber == parameterNumber,
+          orElse: () => Mapping.filler(),
+        );
+    
+    // Here we would typically show the PackedMappingDataEditor bottom sheet
+    // For now, show a simple dialog indicating the feature is connected
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Mapping'),
+        content: Text('Mapping editor for algorithm ${widget.nodePosition.algorithmIndex + 1}, parameter $parameterNumber would open here.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
       ),
     );
   }
