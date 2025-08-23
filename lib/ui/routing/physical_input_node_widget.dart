@@ -11,9 +11,9 @@ class PhysicalInputNodeWidget extends StatelessWidget {
   // Layout constants - narrower than algorithm nodes
   static const double nodeWidth = 80.0;
   static const double headerHeight = 28.0;
-  static const double portRowHeight = 20.0;
+  static const double portRowHeight = 28.0;
   static const double verticalPadding = 4.0;
-  static const double portWidgetSize = 16.0;
+  static const double portWidgetSize = 24.0;
   static const int jackCount = 12;
   static const int algorithmIndex = -2; // Special index for physical inputs
   

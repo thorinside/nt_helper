@@ -82,8 +82,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   static double physicalOutputNodeX = 800.0; // Will be updated dynamically
   static const double physicalNodeY = 100.0;
   static const double physicalNodeWidth = 80.0; // Narrower
-  static const double physicalInputNodeHeight = 28.0 + (6.0 * 2) + (12 * 20.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
-  static const double physicalOutputNodeHeight = 28.0 + (6.0 * 2) + (8 * 20.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
+  static const double physicalInputNodeHeight = 28.0 + (6.0 * 2) + (12 * 28.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
+  static const double physicalOutputNodeHeight = 28.0 + (6.0 * 2) + (8 * 28.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
   static const int physicalInputAlgorithmIndex = -2;
   static const int physicalOutputAlgorithmIndex = -3;
 
@@ -633,19 +633,24 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final newIndex = entry.key;
       final name = entry.value;
       
+      // Calculate proper height based on port layout
+      final portLayout = newPortLayouts[newIndex] ?? const PortLayout(inputPorts: [], outputPorts: []);
+      final adjustedHeight = GraphLayoutService.calculateNodeHeight(portLayout);
+      
       if (nameToPosition.containsKey(name)) {
-        // Found the same algorithm, update its index in the position
+        // Found the same algorithm, update its index and height in the position
         final oldPos = nameToPosition[name]!;
         newNodePositions[newIndex] = oldPos.copyWith(
           algorithmIndex: newIndex,
+          height: adjustedHeight,
         );
       } else {
-        // New algorithm or couldn't match, use default position
+        // New algorithm or couldn't match, use default position with correct height
         newNodePositions[newIndex] = NodePosition(
           x: 100.0 + (newIndex % 3) * 300,
           y: 100.0 + (newIndex ~/ 3) * 200,
           width: 250,
-          height: 150,
+          height: adjustedHeight,
           algorithmIndex: newIndex,
         );
       }
@@ -1017,8 +1022,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const headerHeight = 36.0; // Header with buttons
     const horizontalPadding = 8.0;
     const verticalPadding = 4.0;
-    const portWidgetSize = 16.0;
-    const portVerticalMargin = 2.0;
+    const portWidgetSize = 24.0;
+    const portVerticalMargin = 4.0;
     const portRowPadding = 1.0;
     const rowHeight = portWidgetSize + (portVerticalMargin * 2) + (portRowPadding * 2);
 
@@ -1167,8 +1172,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final portPosition = currentState.portPositions[portKey];
       
       if (portPosition != null) {
-        // Check if position is within port bounds (16x16 centered on position)
-        const portSize = 16.0;
+        // Check if position is within port bounds (24x24 centered on position)
+        const portSize = 24.0;
         final portRect = Rect.fromCenter(
           center: portPosition,
           width: portSize,
@@ -1245,9 +1250,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   /// Get physical input port at position
   String? _getPhysicalInputPortAtPosition(Offset position) {
     const headerHeight = 28.0;
-    const portRowHeight = 20.0;
+    const portRowHeight = 28.0;
     const verticalPadding = 4.0;
-    const portSize = 16.0;
+    const portSize = 24.0;
     
     // Check if position is within physical input node bounds
     final nodeRect = Rect.fromLTWH(
@@ -1286,9 +1291,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   /// Get physical output port at position
   String? _getPhysicalOutputPortAtPosition(Offset position) {
     const headerHeight = 28.0;
-    const portRowHeight = 20.0;
+    const portRowHeight = 28.0;
     const verticalPadding = 4.0;
-    const portSize = 16.0;
+    const portSize = 24.0;
     
     final currentState = state;
     final outputX = currentState is NodeRoutingStateLoaded 
@@ -1472,7 +1477,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     
     // Physical node constants (must match widget definitions)
     const headerHeight = 28.0;
-    const portRowHeight = 20.0;
+    const portRowHeight = 28.0;
     const verticalPadding = 4.0;
     
     // Physical input node (I1-I12)

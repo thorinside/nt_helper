@@ -16,8 +16,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
   static const double headerHeight = headerVerticalPadding * 2 + headerButtonHeight;
   static const double horizontalPadding = 8.0;
   static const double portsVerticalPadding = 4.0;
-  static const double portWidgetSize = 16.0;
-  static const double portVerticalMargin = 2.0;
+  static const double portWidgetSize = 24.0;
+  static const double portVerticalMargin = 4.0;
   static const double portRowPadding = 1.0;
   static const double portRowHeight = portWidgetSize + (portVerticalMargin * 2) + (portRowPadding * 2);
   
@@ -88,7 +88,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       _shouldHandlePan = !onHeaderButtons;
     } else {
       // In ports/body area, block pan only when starting directly over port widgets
-      // Ports are 16x16 circles flush to left/right with small padding.
+      // Ports are 24x24 circles flush to left/right with small padding.
       const portSize = AlgorithmNodeWidget.portWidgetSize;
       const portHitSlop = 6.0; // a little extra to match visual
       const leftPortCenterX = horizontalPadding + (portSize / 2);

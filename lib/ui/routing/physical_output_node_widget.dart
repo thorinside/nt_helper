@@ -13,9 +13,9 @@ class PhysicalOutputNodeWidget extends StatefulWidget {
   // Layout constants - narrower than algorithm nodes  
   static const double nodeWidth = 80.0;
   static const double headerHeight = 28.0;
-  static const double portRowHeight = 20.0;
+  static const double portRowHeight = 28.0;
   static const double verticalPadding = 4.0;
-  static const double portWidgetSize = 16.0;
+  static const double portWidgetSize = 24.0;
   static const int jackCount = 8;
   static const int algorithmIndex = -3; // Special index for physical outputs
   

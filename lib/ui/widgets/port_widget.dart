@@ -122,9 +122,9 @@ class _PortWidgetState extends State<PortWidget> {
         });
       },
       child: Container(
-        width: 16,
-        height: 16,
-        margin: const EdgeInsets.symmetric(vertical: 2),
+        width: 24,
+        height: 24,
+        margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: _getPortColor(),
