@@ -29,6 +29,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   late final BusTidyOptimizer _busTidyOptimizer;
   StreamSubscription<DistingState>? _distingSubscription;
   bool _isOptimizing = false;
+  bool _isUpdatingFromDistingState = false;
+  Timer? _loadConnectionModesDebouncer;
+  int _lastProcessedSlotCount = -1;
+  String _lastProcessedPresetName = '';
   
   /// Proxy method to handle algorithm addition via DistingCubit
   Future<void> addAlgorithmViaDialog(BuildContext context) async {
@@ -102,8 +106,26 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   void _subscribeToDistingChanges() {
     _distingSubscription = _distingCubit.stream.listen((distingState) {
       if (distingState is DistingStateSynchronized) {
-        // Convert hardware routing data to visual representation
-        _updateFromDistingState(distingState);
+        // Check if this is a meaningful change before updating
+        final slotCount = distingState.slots.length;
+        final presetName = distingState.presetName;
+        
+        // Skip if we're already processing or if nothing significant changed
+        if (_isUpdatingFromDistingState) {
+          debugPrint('[NodeRoutingCubit] Skipping update - already processing');
+          return;
+        }
+        
+        // Only update if slots or preset changed
+        if (slotCount != _lastProcessedSlotCount || presetName != _lastProcessedPresetName) {
+          _lastProcessedSlotCount = slotCount;
+          _lastProcessedPresetName = presetName;
+          // Convert hardware routing data to visual representation
+          _updateFromDistingState(distingState);
+        } else {
+          // Just load connection modes if needed (debounced)
+          _scheduleLoadConnectionModes();
+        }
       }
     });
     
@@ -112,7 +134,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     if (currentDistingState is DistingStateSynchronized) {
       // Use a post-frame callback to avoid updating during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _updateFromDistingState(currentDistingState);
+        if (!_isUpdatingFromDistingState) {
+          _lastProcessedSlotCount = currentDistingState.slots.length;
+          _lastProcessedPresetName = currentDistingState.presetName;
+          _updateFromDistingState(currentDistingState);
+        }
       });
     }
   }
@@ -573,6 +599,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
     
+    // Prevent recursive updates
+    if (_isUpdatingFromDistingState) {
+      debugPrint('[NodeRoutingCubit] Already updating from DistingState, skipping');
+      return;
+    }
+    
+    _isUpdatingFromDistingState = true;
+    
     debugPrint('[NodeRoutingCubit] ========================================');
     debugPrint('[NodeRoutingCubit] Updating from hardware routing change');
     debugPrint('[NodeRoutingCubit] Number of slots: ${distingState.slots.length}');
@@ -670,10 +704,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       // physicalOutputPosition is preserved from existing state
     ));
     
-    // Load actual connection modes from parameters after state is updated
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadConnectionModes();
-    });
+    // Reset the update flag
+    _isUpdatingFromDistingState = false;
+    
+    // Schedule connection modes loading (debounced)
+    _scheduleLoadConnectionModes();
   }
 
   /// Extract port layouts directly from slots using actual algorithm metadata
@@ -1701,6 +1736,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     return null;
   }
 
+  /// Schedule loading of connection modes (debounced to prevent rapid updates)
+  void _scheduleLoadConnectionModes() {
+    _loadConnectionModesDebouncer?.cancel();
+    _loadConnectionModesDebouncer = Timer(const Duration(milliseconds: 300), () {
+      loadConnectionModes();
+    });
+  }
+  
   /// Load connection modes from parameter values (source of truth)
   Future<void> loadConnectionModes() async {
     final currentState = state;
@@ -2038,6 +2081,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   @override
   Future<void> close() {
     _toggleDebounceTimer?.cancel();
+    _loadConnectionModesDebouncer?.cancel();
     _distingSubscription?.cancel();
     return super.close();
   }

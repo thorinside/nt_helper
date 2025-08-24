@@ -283,6 +283,7 @@ class AlgorithmInfo {
   final List<Specification> specifications;
   final bool isPlugin;
   final bool isLoaded;
+  final String? filename; // Path to the algorithm file (for plugins)
 
   AlgorithmInfo(
       {required this.algorithmIndex,
@@ -290,7 +291,8 @@ class AlgorithmInfo {
       required this.guid,
       required this.specifications,
       this.isPlugin = false,
-      this.isLoaded = true});
+      this.isLoaded = true,
+      this.filename});
 
   int get numSpecifications {
     return specifications.length;
@@ -298,7 +300,7 @@ class AlgorithmInfo {
 
   @override
   String toString() {
-    return "AlgorithmInfo: name=$name, guid=$guid, specs=$specifications, isPlugin=$isPlugin, isLoaded=$isLoaded";
+    return "AlgorithmInfo: name=$name, guid=$guid, specs=$specifications, isPlugin=$isPlugin, isLoaded=$isLoaded, filename=$filename";
   }
 }
 

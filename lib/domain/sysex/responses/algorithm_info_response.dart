@@ -87,7 +87,15 @@ class AlgorithmInfoResponse extends SysexResponse {
       offset += 1;
     }
 
-    // 10) Build and return the final AlgorithmInfo object.
+    // 10) Decode the filename/path (null-terminated ASCII) if available
+    String? filename;
+    if (offset < data.length) {
+      final filenameStr = decodeNullTerminatedAscii(data, offset);
+      offset = filenameStr.nextOffset;
+      filename = filenameStr.value.isNotEmpty ? filenameStr.value : null;
+    }
+
+    // 11) Build and return the final AlgorithmInfo object.
     return AlgorithmInfo(
       algorithmIndex: algorithmIndex,
       guid: guid,
@@ -95,6 +103,7 @@ class AlgorithmInfoResponse extends SysexResponse {
       name: algorithmName,
       isPlugin: isPlugin,
       isLoaded: isLoaded,
+      filename: filename,
     );
   }
 }
