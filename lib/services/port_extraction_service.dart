@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -39,6 +40,12 @@ class PortExtractionService {
       );
 
       if (_isBusParameter(paramInfo, paramValue)) {
+        // Skip gate input parameters for poly algorithms - they'll be handled specially
+        if (_isPolyAlgorithm(slot.algorithm.guid) && _isGateInputParameter(paramInfo)) {
+          debugPrint('🔍 [PortExtractionService] Skipping gate input parameter "${paramInfo.name}" for poly algorithm');
+          continue;
+        }
+
         final portId = paramInfo.parameterNumber.toString();
         final port = AlgorithmPort(
           id: portId,
@@ -64,6 +71,13 @@ class PortExtractionService {
           busAssignments[portId] = paramValue.value;
         }
       }
+    }
+
+    // Special handling for poly algorithms with gate+CV patterns
+    if (_isPolyAlgorithm(slot.algorithm.guid)) {
+      final polyPorts = _extractPolyInputPorts(slot);
+      inputPorts.addAll(polyPorts);
+      debugPrint('[PortExtractionService] Added ${polyPorts.length} poly input ports');
     }
 
     // Fallback to static metadata if no live parameters found
@@ -289,8 +303,9 @@ class PortExtractionService {
 
   /// Check if a parameter represents a bus connection
   bool _isBusParameter(ParameterInfo paramInfo, ParameterValue paramValue) {
-    // Primary check: proper bus parameter has min 0 or 1 and max 28
-    if ((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max == 28) {
+    // Primary check: proper bus parameter has min 0 or 1 and max 27-28
+    // Some algorithms (like poly) use max 27 to reserve space for CV inputs
+    if ((paramInfo.min == 0 || paramInfo.min == 1) && (paramInfo.max >= 27 && paramInfo.max <= 28)) {
       return true;
     }
     
@@ -312,8 +327,8 @@ class PortExtractionService {
         name.contains('wave') ||
         name.contains('velocity')) {
       
-      // Must have reasonable bus range (0-28)
-      if (paramInfo.max >= 28 && paramInfo.min <= 28) {
+      // Must have reasonable bus range (0-27 to 0-28)
+      if (paramInfo.max >= 27 && paramInfo.min <= 28) {
         return true;
       }
     }
@@ -322,8 +337,8 @@ class PortExtractionService {
   }
 
   bool _isInputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid]) {
-    // 1) Check if this is a bus parameter (min 0 or 1, max 28)
-    if (!((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max == 28)) {
+    // 1) Check if this is a bus parameter (min 0 or 1, max 27-28)
+    if (!((paramInfo.min == 0 || paramInfo.min == 1) && (paramInfo.max >= 27 && paramInfo.max <= 28))) {
       return false;
     }
     
@@ -348,8 +363,8 @@ class PortExtractionService {
   }
 
   bool _isOutputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid]) {
-    // 1) Check if this is a bus parameter (min 0 or 1, max 28)
-    if (!((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max == 28)) {
+    // 1) Check if this is a bus parameter (min 0 or 1, max 27-28)
+    if (!((paramInfo.min == 0 || paramInfo.min == 1) && (paramInfo.max >= 27 && paramInfo.max <= 28))) {
       return false;
     }
     
@@ -368,6 +383,99 @@ class PortExtractionService {
     }
     
     return false;
+  }
+
+  /// Check if algorithm uses poly input patterns (gate + CV count)
+  bool _isPolyAlgorithm(String algorithmGuid) {
+    // Known poly algorithms that use gate+CV patterns
+    return algorithmGuid == 'pyfm'; // Poly FM
+    // TODO: Add other poly algorithms as discovered
+  }
+
+  /// Check if a parameter is a gate input parameter for poly algorithms
+  bool _isGateInputParameter(ParameterInfo paramInfo) {
+    return paramInfo.name.toLowerCase().contains('gate input');
+  }
+
+  /// Extract poly input ports for algorithms with gate+CV patterns
+  List<AlgorithmPort> _extractPolyInputPorts(Slot slot) {
+    final polyPorts = <AlgorithmPort>[];
+    
+    debugPrint('[PortExtractionService] Extracting poly input ports for ${slot.algorithm.name}');
+    
+    // Look for gate input parameters (pattern: "N:Gate input N")
+    final gateParams = slot.parameters.where((param) => 
+      param.name.toLowerCase().contains('gate input') && 
+      _isBusParameter(param, slot.values.firstWhere(
+        (v) => v.parameterNumber == param.parameterNumber,
+        orElse: () => ParameterValue.filler(),
+      ))
+    ).toList();
+    
+    for (final gateParam in gateParams) {
+      final gateValue = slot.values.firstWhere(
+        (v) => v.parameterNumber == gateParam.parameterNumber,
+        orElse: () => ParameterValue.filler(),
+      );
+      
+      // Only create ports for active gates (not set to "None"/bus 0)
+      if (gateValue.value > 0) {
+        final gateNumber = _extractGateNumber(gateParam.name);
+        
+        // Create the gate input port
+        final gatePortId = '${gateParam.parameterNumber}';
+        final gatePort = AlgorithmPort(
+          id: gatePortId,
+          name: 'Gate $gateNumber',
+          description: 'Gate input $gateNumber',
+          busIdRef: gateParam.name,
+        );
+        polyPorts.add(gatePort);
+        
+        debugPrint('[PortExtractionService] Added gate port: Gate $gateNumber (param ${gateParam.parameterNumber}, bus ${gateValue.value})');
+        
+        // Find corresponding CV count parameter
+        final cvCountParam = _findCvCountParameter(slot, gateNumber);
+        if (cvCountParam != null) {
+          final cvCountValue = slot.values.firstWhere(
+            (v) => v.parameterNumber == cvCountParam.parameterNumber,
+            orElse: () => ParameterValue.filler(),
+          );
+          
+          // Create CV input ports based on count
+          final cvCount = cvCountValue.value;
+          for (int i = 1; i <= cvCount; i++) {
+            final cvPortId = '${gateParam.parameterNumber}_cv_$i';
+            final cvPort = AlgorithmPort(
+              id: cvPortId,
+              name: 'Gate $gateNumber CV $i',
+              description: 'CV input $i for gate $gateNumber',
+              busIdRef: '${gateParam.name}_cv_$i',
+            );
+            polyPorts.add(cvPort);
+            
+            debugPrint('[PortExtractionService] Added CV port: Gate $gateNumber CV $i');
+          }
+        }
+      }
+    }
+    
+    return polyPorts;
+  }
+
+  /// Extract gate number from parameter name (e.g., "1:Gate input 3" -> 3)
+  int _extractGateNumber(String paramName) {
+    final match = RegExp(r'gate input (\d+)', caseSensitive: false).firstMatch(paramName);
+    if (match != null) {
+      return int.tryParse(match.group(1) ?? '1') ?? 1;
+    }
+    return 1; // Default fallback
+  }
+
+  /// Find CV count parameter for a given gate number
+  ParameterInfo? _findCvCountParameter(Slot slot, int gateNumber) {
+    return slot.parameters.firstWhereOrNull((param) =>
+      param.name.toLowerCase().contains('gate $gateNumber cv count'));
   }
 
 }

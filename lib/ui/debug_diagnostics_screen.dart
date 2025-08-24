@@ -103,9 +103,11 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
       
       if (Platform.isAndroid || Platform.isIOS) {
         // Use share on mobile platforms
-        await Share.share(
-          textReport,
-          subject: 'SysEx Diagnostics Report - ${_currentReport!.timestamp}',
+        await SharePlus.instance.share(
+          ShareParams(
+            text: textReport,
+            subject: 'SysEx Diagnostics Report - ${_currentReport!.timestamp}',
+          ),
         );
       } else {
         // Save to file on desktop platforms
