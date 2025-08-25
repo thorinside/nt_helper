@@ -583,8 +583,8 @@ class PortExtractionService {
         portName = 'Audio Input';
         portId = '${audioInputParam.parameterNumber}';
       } else if (width == 2) {
-        portName = i == 0 ? 'Audio Input L' : 'Audio Input R';
-        portId = '${audioInputParam.parameterNumber}_${i == 0 ? 'L' : 'R'}';
+        portName = i == 0 ? 'Audio Input R' : 'Audio Input L';
+        portId = '${audioInputParam.parameterNumber}_${i == 0 ? 'R' : 'L'}';
       } else {
         portName = 'Audio Input ${i + 1}';
         portId = '${audioInputParam.parameterNumber}_${i + 1}';
