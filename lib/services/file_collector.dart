@@ -14,8 +14,9 @@ class FileCollector {
   FileCollector(this.fileSystem, this.database);
 
   Future<List<CollectedFile>> collectDependencies(
-      PresetDependencies dependencies,
-      {PackageConfig? config}) async {
+    PresetDependencies dependencies, {
+    PackageConfig? config,
+  }) async {
     final List<CollectedFile> files = [];
     final List<String> warnings = [];
     const maxFileSize = 50 * 1024 * 1024; // 50MB limit per file
@@ -27,7 +28,8 @@ class FileCollector {
         (await fileSystem.readFile(wavetablePath))?.let((bytes) {
           if (bytes.length > maxFileSize) {
             warnings.add(
-                'Skipping large wavetable: $wavetable.wav (${_formatBytes(bytes.length)})');
+              'Skipping large wavetable: $wavetable.wav (${_formatBytes(bytes.length)})',
+            );
           }
           files.add(CollectedFile(wavetablePath, bytes));
         });
@@ -38,11 +40,21 @@ class FileCollector {
 
     // Collect sample folders
     await _collectFolder(
-        dependencies.sampleFolders, 'samples', files, warnings, maxFileSize);
+      dependencies.sampleFolders,
+      'samples',
+      files,
+      warnings,
+      maxFileSize,
+    );
 
     // Collect multisample folders
-    await _collectFolder(dependencies.multisampleFolders, 'multisamples', files,
-        warnings, maxFileSize);
+    await _collectFolder(
+      dependencies.multisampleFolders,
+      'multisamples',
+      files,
+      warnings,
+      maxFileSize,
+    );
 
     // Collect FM bank files
     for (final bank in dependencies.fmBanks) {
@@ -95,11 +107,13 @@ class FileCollector {
             });
           } catch (e) {
             warnings.add(
-                'Error reading community plugin $pluginGuid at $pluginPath: $e');
+              'Error reading community plugin $pluginGuid at $pluginPath: $e',
+            );
           }
         } else {
           warnings.add(
-              'Community plugin $pluginGuid not found locally. File path not available in database.');
+            'Community plugin $pluginGuid not found locally. File path not available in database.',
+          );
         }
       }
     }
@@ -112,19 +126,27 @@ class FileCollector {
     return files;
   }
 
-  Future<void> _collectFolder(Set<String> folders, String basePath,
-      List<CollectedFile> files, List<String> warnings, int maxFileSize) async {
+  Future<void> _collectFolder(
+    Set<String> folders,
+    String basePath,
+    List<CollectedFile> files,
+    List<String> warnings,
+    int maxFileSize,
+  ) async {
     for (final folder in folders) {
       final folderPath = '$basePath/$folder';
       try {
-        final folderFiles =
-            await fileSystem.listFiles(folderPath, recursive: true);
+        final folderFiles = await fileSystem.listFiles(
+          folderPath,
+          recursive: true,
+        );
         for (final filePath in folderFiles) {
           if (_isAudioFile(filePath)) {
             (await fileSystem.readFile(filePath))?.let((bytes) {
               if (bytes.length > maxFileSize) {
                 warnings.add(
-                    'Skipping large file: $filePath (${_formatBytes(bytes.length)})');
+                  'Skipping large file: $filePath (${_formatBytes(bytes.length)})',
+                );
               }
               files.add(CollectedFile(filePath, bytes));
             });

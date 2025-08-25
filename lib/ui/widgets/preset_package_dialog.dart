@@ -53,8 +53,9 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
 
     try {
       // Load and parse preset JSON directly
-      final presetBytes =
-          await widget.fileSystem.readFile(widget.presetFilePath);
+      final presetBytes = await widget.fileSystem.readFile(
+        widget.presetFilePath,
+      );
       if (presetBytes == null) throw Exception('Preset file not found');
 
       final presetJson = utf8.decode(presetBytes);
@@ -65,9 +66,9 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error analyzing preset: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error analyzing preset: $e')));
     } finally {
       setState(() => isAnalyzing = false);
     }
@@ -81,8 +82,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
     final navigator = Navigator.of(context);
 
     try {
-      final presetName =
-          widget.presetFilePath.split('/').last.replaceAll('.json', '');
+      final presetName = widget.presetFilePath
+          .split('/')
+          .last
+          .replaceAll('.json', '');
       final outputPath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Preset Package',
         fileName: '${presetName}_package.zip',
@@ -91,8 +94,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
       );
 
       if (outputPath != null) {
-        final packageCreator =
-            PackageCreator(widget.fileSystem, widget.database);
+        final packageCreator = PackageCreator(
+          widget.fileSystem,
+          widget.database,
+        );
         final packageBytes = await packageCreator.createPackage(
           presetFilePath: widget.presetFilePath,
           config: config,
@@ -142,9 +147,11 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               const SizedBox(height: 16),
               const Center(child: CircularProgressIndicator()),
               const SizedBox(height: 8),
-              Text(_status,
-                  style: const TextStyle(fontSize: 12),
-                  textAlign: TextAlign.center),
+              Text(
+                _status,
+                style: const TextStyle(fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
             ],
           ],
         ),
@@ -155,13 +162,15 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed:
-              dependencies != null && !isPackaging ? _createPackage : null,
+          onPressed: dependencies != null && !isPackaging
+              ? _createPackage
+              : null,
           child: isPackaging
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Create Package'),
         ),
       ],
@@ -177,8 +186,10 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Dependencies:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Dependencies:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             if (dependencies!.wavetables.isNotEmpty)
               Text('Wavetables: ${dependencies!.wavetables.length}'),
@@ -186,23 +197,30 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               Text('Sample folders: ${dependencies!.sampleFolders.length}'),
             if (dependencies!.multisampleFolders.isNotEmpty)
               Text(
-                  'Multisample folders: ${dependencies!.multisampleFolders.length}'),
+                'Multisample folders: ${dependencies!.multisampleFolders.length}',
+              ),
             if (dependencies!.fmBanks.isNotEmpty)
               Text('FM banks: ${dependencies!.fmBanks.length}'),
             if (dependencies!.threePotPrograms.isNotEmpty)
               Text(
-                  'Three Pot programs: ${dependencies!.threePotPrograms.length}'),
+                'Three Pot programs: ${dependencies!.threePotPrograms.length}',
+              ),
             if (dependencies!.luaScripts.isNotEmpty)
               Text('Lua scripts: ${dependencies!.luaScripts.length}'),
             if (dependencies!.communityPlugins.isNotEmpty) ...[
               Text(
-                  'Community plugins: ${dependencies!.communityPlugins.length}'),
+                'Community plugins: ${dependencies!.communityPlugins.length}',
+              ),
               if (config.includeCommunityPlugins)
-                const Text('✓ Will be included in package',
-                    style: TextStyle(color: Colors.green, fontSize: 12))
+                const Text(
+                  '✓ Will be included in package',
+                  style: TextStyle(color: Colors.green, fontSize: 12),
+                )
               else
-                const Text('⚠️ Requires manual installation',
-                    style: TextStyle(color: Colors.orange, fontSize: 12)),
+                const Text(
+                  '⚠️ Requires manual installation',
+                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                ),
             ],
             if (dependencies!.isEmpty) const Text('No dependencies found'),
           ],
@@ -218,35 +236,41 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Package Options:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Package Options:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             CheckboxListTile(
               title: const Text('Include Wavetables'),
               value: config.includeWavetables,
               onChanged: (value) => setState(
-                  () => config = config.copyWith(includeWavetables: value)),
+                () => config = config.copyWith(includeWavetables: value),
+              ),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include Samples & Multisamples'),
               value: config.includeSamples,
               onChanged: (value) => setState(
-                  () => config = config.copyWith(includeSamples: value)),
+                () => config = config.copyWith(includeSamples: value),
+              ),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include FM Banks'),
               value: config.includeFMBanks,
               onChanged: (value) => setState(
-                  () => config = config.copyWith(includeFMBanks: value)),
+                () => config = config.copyWith(includeFMBanks: value),
+              ),
               dense: true,
             ),
             CheckboxListTile(
               title: const Text('Include Three Pot Programs'),
               value: config.includeThreePot,
               onChanged: (value) => setState(
-                  () => config = config.copyWith(includeThreePot: value)),
+                () => config = config.copyWith(includeThreePot: value),
+              ),
               dense: true,
             ),
             CheckboxListTile(
@@ -260,18 +284,23 @@ class _PresetPackageDialogState extends State<PresetPackageDialog> {
               title: const Text('Include README'),
               value: config.includeReadme,
               onChanged: (value) => setState(
-                  () => config = config.copyWith(includeReadme: value)),
+                () => config = config.copyWith(includeReadme: value),
+              ),
               dense: true,
             ),
             if (dependencies?.hasCommunityPlugins == true)
               CheckboxListTile(
                 title: const Text('Include Community Plugins'),
                 subtitle: const Text(
-                    'Package community plugins with preset (default: false)'),
+                  'Package community plugins with preset (default: false)',
+                ),
                 value: config.includeCommunityPlugins,
                 onChanged: (value) {
-                  setState(() =>
-                      config = config.copyWith(includeCommunityPlugins: value));
+                  setState(
+                    () => config = config.copyWith(
+                      includeCommunityPlugins: value,
+                    ),
+                  );
                   // Save preference for future exports
                   SettingsService().setIncludeCommunityPlugins(value ?? false);
                 },

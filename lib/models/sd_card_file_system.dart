@@ -7,12 +7,13 @@ class DirectoryEntry {
   final int time;
   final int size;
 
-  DirectoryEntry(
-      {required this.name,
-      required this.attributes,
-      required this.date,
-      required this.time,
-      required this.size});
+  DirectoryEntry({
+    required this.name,
+    required this.attributes,
+    required this.date,
+    required this.time,
+    required this.size,
+  });
 
   bool get isDirectory => (attributes & 0x10) != 0;
 }

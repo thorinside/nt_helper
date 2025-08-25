@@ -12,7 +12,8 @@ class FileConflictDetector {
   /// Check for file conflicts between package files and existing SD card files
   Future<PackageAnalysis> detectConflicts(PackageAnalysis analysis) async {
     debugPrint(
-        '[ConflictDetector] Starting conflict detection for ${analysis.totalFiles} files');
+      '[ConflictDetector] Starting conflict detection for ${analysis.totalFiles} files',
+    );
 
     if (!analysis.isValid) {
       return analysis;
@@ -21,7 +22,8 @@ class FileConflictDetector {
     final state = distingCubit.state;
     if (state is! DistingStateSynchronized || state.offline) {
       debugPrint(
-          '[ConflictDetector] Cannot detect conflicts: Not synchronized or offline');
+        '[ConflictDetector] Cannot detect conflicts: Not synchronized or offline',
+      );
       // Return analysis without conflict detection
       return analysis;
     }
@@ -51,14 +53,16 @@ class FileConflictDetector {
 
           if (hasConflict) {
             debugPrint(
-                '[ConflictDetector] Conflict detected: ${file.targetPath}');
+              '[ConflictDetector] Conflict detected: ${file.targetPath}',
+            );
           }
         }
       }
 
       final conflictCount = updatedFiles.where((f) => f.hasConflict).length;
       debugPrint(
-          '[ConflictDetector] Conflict detection complete: $conflictCount conflicts found');
+        '[ConflictDetector] Conflict detection complete: $conflictCount conflicts found',
+      );
 
       return analysis.copyWith(files: updatedFiles);
     } catch (e, stackTrace) {
@@ -91,14 +95,17 @@ class FileConflictDetector {
           }
         }
         debugPrint(
-            '[ConflictDetector] Found ${files.length} files in $directoryPath');
+          '[ConflictDetector] Found ${files.length} files in $directoryPath',
+        );
       } else {
         debugPrint(
-            '[ConflictDetector] Directory not found or empty: $directoryPath');
+          '[ConflictDetector] Directory not found or empty: $directoryPath',
+        );
       }
     } catch (e) {
       debugPrint(
-          '[ConflictDetector] Error listing directory $directoryPath: $e');
+        '[ConflictDetector] Error listing directory $directoryPath: $e',
+      );
       // Don't throw - just return empty set to avoid blocking installation
     }
 
@@ -116,7 +123,8 @@ class FileConflictDetector {
       return existingFiles.contains(filename);
     } catch (e) {
       debugPrint(
-          '[ConflictDetector] Error checking file existence: $filePath - $e');
+        '[ConflictDetector] Error checking file existence: $filePath - $e',
+      );
       return false;
     }
   }
@@ -137,7 +145,10 @@ class FileConflictDetector {
 
   /// Update file action for a specific file in the analysis
   static PackageAnalysis updateFileAction(
-      PackageAnalysis analysis, String targetPath, FileAction action) {
+    PackageAnalysis analysis,
+    String targetPath,
+    FileAction action,
+  ) {
     final updatedFiles = analysis.files.map((file) {
       if (file.targetPath == targetPath) {
         return file.copyWith(action: action);
@@ -150,7 +161,9 @@ class FileConflictDetector {
 
   /// Set action for all conflicting files
   static PackageAnalysis setActionForConflicts(
-      PackageAnalysis analysis, FileAction action) {
+    PackageAnalysis analysis,
+    FileAction action,
+  ) {
     final updatedFiles = analysis.files.map((file) {
       if (file.hasConflict) {
         return file.copyWith(action: action);
@@ -163,7 +176,9 @@ class FileConflictDetector {
 
   /// Set action for all files
   static PackageAnalysis setActionForAllFiles(
-      PackageAnalysis analysis, FileAction action) {
+    PackageAnalysis analysis,
+    FileAction action,
+  ) {
     final updatedFiles = analysis.files.map((file) {
       return file.copyWith(action: action);
     }).toList();

@@ -96,10 +96,14 @@ void main() {
       // Should throw exception due to unsynchronized state
       expect(
         () => autoRoutingService.applyTidyResult(tidyResult),
-        throwsA(allOf(
-          isA<Exception>(),
-          predicate<Exception>((e) => e.toString().contains('Hardware not synchronized')),
-        )),
+        throwsA(
+          allOf(
+            isA<Exception>(),
+            predicate<Exception>(
+              (e) => e.toString().contains('Hardware not synchronized'),
+            ),
+          ),
+        ),
       );
     });
   });

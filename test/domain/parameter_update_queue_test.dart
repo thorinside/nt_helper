@@ -24,14 +24,20 @@ void main() {
         queue = ParameterUpdateQueue(midiManager: mockMidiManager);
 
         // Verify the optimized timing values from the PRP
-        expect(queue.processingInterval, equals(const Duration(milliseconds: 5)));
-        expect(queue.operationInterval, equals(const Duration(milliseconds: 25)));
+        expect(
+          queue.processingInterval,
+          equals(const Duration(milliseconds: 5)),
+        );
+        expect(
+          queue.operationInterval,
+          equals(const Duration(milliseconds: 25)),
+        );
       });
 
       test('should accept custom timing intervals', () {
         const customProcessingInterval = Duration(milliseconds: 10);
         const customOperationInterval = Duration(milliseconds: 50);
-        
+
         queue = ParameterUpdateQueue(
           midiManager: mockMidiManager,
           processingInterval: customProcessingInterval,
@@ -42,17 +48,20 @@ void main() {
         expect(queue.operationInterval, equals(customOperationInterval));
       });
 
-      test('should validate optimized intervals are faster than old defaults', () {
-        queue = ParameterUpdateQueue(midiManager: mockMidiManager);
+      test(
+        'should validate optimized intervals are faster than old defaults',
+        () {
+          queue = ParameterUpdateQueue(midiManager: mockMidiManager);
 
-        // Old defaults were 10ms processing, 50ms operation
-        const oldProcessingInterval = Duration(milliseconds: 10);
-        const oldOperationInterval = Duration(milliseconds: 50);
+          // Old defaults were 10ms processing, 50ms operation
+          const oldProcessingInterval = Duration(milliseconds: 10);
+          const oldOperationInterval = Duration(milliseconds: 50);
 
-        // New optimized values should be faster
-        expect(queue.processingInterval, lessThan(oldProcessingInterval));
-        expect(queue.operationInterval, lessThan(oldOperationInterval));
-      });
+          // New optimized values should be faster
+          expect(queue.processingInterval, lessThan(oldProcessingInterval));
+          expect(queue.operationInterval, lessThan(oldOperationInterval));
+        },
+      );
     });
 
     group('basic functionality', () {
@@ -65,8 +74,14 @@ void main() {
         );
 
         // Should create successfully with callback
-        expect(queue.processingInterval, equals(const Duration(milliseconds: 5)));
-        expect(queue.operationInterval, equals(const Duration(milliseconds: 25)));
+        expect(
+          queue.processingInterval,
+          equals(const Duration(milliseconds: 5)),
+        );
+        expect(
+          queue.operationInterval,
+          equals(const Duration(milliseconds: 25)),
+        );
       });
 
       test('should work without callback parameter', () {
@@ -76,27 +91,36 @@ void main() {
         );
 
         // Should create successfully without callback
-        expect(queue.processingInterval, equals(const Duration(milliseconds: 5)));
-        expect(queue.operationInterval, equals(const Duration(milliseconds: 25)));
+        expect(
+          queue.processingInterval,
+          equals(const Duration(milliseconds: 5)),
+        );
+        expect(
+          queue.operationInterval,
+          equals(const Duration(milliseconds: 25)),
+        );
       });
 
       test('should handle dispose correctly', () {
         queue = ParameterUpdateQueue(midiManager: mockMidiManager);
-        
+
         // Should not throw when disposing
         expect(() => queue.dispose(), returnsNormally);
       });
 
       test('should handle updateParameter calls', () {
         queue = ParameterUpdateQueue(midiManager: mockMidiManager);
-        
+
         // Should not throw when updating parameters
-        expect(() => queue.updateParameter(
-          algorithmIndex: 1,
-          parameterNumber: 31,
-          value: 100,
-          needsStringUpdate: true,
-        ), returnsNormally);
+        expect(
+          () => queue.updateParameter(
+            algorithmIndex: 1,
+            parameterNumber: 31,
+            value: 100,
+            needsStringUpdate: true,
+          ),
+          returnsNormally,
+        );
       });
     });
   });

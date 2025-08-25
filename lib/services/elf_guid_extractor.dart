@@ -57,7 +57,9 @@ class ElfGuidExtractor {
 
   /// Extract plugin GUID from ELF bytes
   static Future<PluginGuid> extractGuidFromBytes(
-      Uint8List bytes, String fileName) async {
+    Uint8List bytes,
+    String fileName,
+  ) async {
     try {
       // Parse the ELF file from bytes
       final reader = ElfReader.fromBytes(bytes);
@@ -102,7 +104,8 @@ class ElfGuidExtractor {
       final sectionIndex = factorySymbol.shndx;
       if (sectionIndex >= reader.sections.length) {
         throw GuidExtractionException(
-            'Invalid section index for factory symbol');
+          'Invalid section index for factory symbol',
+        );
       }
 
       final section = reader.sections[sectionIndex];
@@ -128,8 +131,9 @@ class ElfGuidExtractor {
       // Extract the GUID as a 32-bit little-endian integer
       // The _NT_factory struct starts with: uint32_t guid;
       final guidBytes = sectionData.sublist(offset, offset + 4);
-      final rawGuid = ByteData.sublistView(Uint8List.fromList(guidBytes))
-          .getUint32(0, Endian.little);
+      final rawGuid = ByteData.sublistView(
+        Uint8List.fromList(guidBytes),
+      ).getUint32(0, Endian.little);
 
       // Convert to string representation
       final guidString = _guidFromU32(rawGuid);
@@ -137,7 +141,8 @@ class ElfGuidExtractor {
       // Validate that we got a reasonable GUID (4 ASCII characters)
       if (guidString.length != 4) {
         throw GuidExtractionException(
-            'GUID must be exactly 4 characters, got: $guidString');
+          'GUID must be exactly 4 characters, got: $guidString',
+        );
       }
 
       debugPrint('Extracted GUID "$guidString" from $fileName');
@@ -146,26 +151,32 @@ class ElfGuidExtractor {
     } catch (e) {
       if (e is GuidExtractionException) rethrow;
       throw GuidExtractionException(
-          'Failed to extract GUID from $fileName: $e');
+        'Failed to extract GUID from $fileName: $e',
+      );
     }
   }
 
   /// Scan a directory for .o files and extract GUIDs using PresetFileSystem
   /// Returns a Map of GUID -> relative file path
   static Future<Map<String, String>> scanPluginDirectory(
-      PresetFileSystem fileSystem, String directoryPath) async {
+    PresetFileSystem fileSystem,
+    String directoryPath,
+  ) async {
     final result = <String, String>{};
 
     try {
       debugPrint('Scanning plugin directory: $directoryPath');
 
       // List all files in the plugin directory
-      final allFiles =
-          await fileSystem.listFiles(directoryPath, recursive: true);
+      final allFiles = await fileSystem.listFiles(
+        directoryPath,
+        recursive: true,
+      );
 
       // Filter for .o files
-      final pluginFiles =
-          allFiles.where((path) => path.endsWith('.o')).toList();
+      final pluginFiles = allFiles
+          .where((path) => path.endsWith('.o'))
+          .toList();
 
       debugPrint('Found ${pluginFiles.length} .o files to process');
 
@@ -185,7 +196,8 @@ class ElfGuidExtractor {
           result[pluginGuid.guid] = filePath;
 
           debugPrint(
-              'Found ${pluginGuid.isCommunityPlugin ? 'community' : 'factory'} plugin: ${pluginGuid.guid} -> $filePath');
+            'Found ${pluginGuid.isCommunityPlugin ? 'community' : 'factory'} plugin: ${pluginGuid.guid} -> $filePath',
+          );
         } catch (e) {
           debugPrint('Failed to extract GUID from $filePath: $e');
           // Continue processing other files
@@ -193,7 +205,8 @@ class ElfGuidExtractor {
       }
 
       debugPrint(
-          'Plugin scan complete. Found ${result.length} plugins with GUIDs');
+        'Plugin scan complete. Found ${result.length} plugins with GUIDs',
+      );
     } catch (e) {
       debugPrint('Error scanning plugin directory $directoryPath: $e');
     }

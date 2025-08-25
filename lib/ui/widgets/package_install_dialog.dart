@@ -44,21 +44,28 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
   void _updateFileAction(String targetPath, FileAction action) {
     setState(() {
       _currentAnalysis = FileConflictDetector.updateFileAction(
-          _currentAnalysis, targetPath, action);
+        _currentAnalysis,
+        targetPath,
+        action,
+      );
     });
   }
 
   void _setActionForConflicts(FileAction action) {
     setState(() {
-      _currentAnalysis =
-          FileConflictDetector.setActionForConflicts(_currentAnalysis, action);
+      _currentAnalysis = FileConflictDetector.setActionForConflicts(
+        _currentAnalysis,
+        action,
+      );
     });
   }
 
   void _setActionForAllFiles(FileAction action) {
     setState(() {
-      _currentAnalysis =
-          FileConflictDetector.setActionForAllFiles(_currentAnalysis, action);
+      _currentAnalysis = FileConflictDetector.setActionForAllFiles(
+        _currentAnalysis,
+        action,
+      );
     });
   }
 
@@ -132,10 +139,8 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
                     children: [
                       Text(
                         _currentAnalysis.presetName,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text('by ${_currentAnalysis.author}'),
                       Text('Version ${_currentAnalysis.version}'),
@@ -170,10 +175,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
 
     return Row(
       children: [
-        Text(
-          'Bulk actions:',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text('Bulk actions:', style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(width: 8),
         Wrap(
           spacing: 8,
@@ -241,11 +243,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       leading: CircleAvatar(
         radius: 12,
         backgroundColor: _getFileStatusColor(file),
-        child: Icon(
-          _getFileStatusIcon(file),
-          size: 16,
-          color: Colors.white,
-        ),
+        child: Icon(_getFileStatusIcon(file), size: 16, color: Colors.white),
       ),
       title: Text(
         file.filename,
@@ -257,10 +255,7 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            file.targetPath,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(file.targetPath, style: Theme.of(context).textTheme.bodySmall),
           if (hasConflict)
             Text(
               'File exists on SD card',
@@ -399,7 +394,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
       for (final file in _currentAnalysis.files) {
         if (file.shouldInstall) {
           final data = await PresetPackageAnalyzer.extractFile(
-              widget.packageData, file.relativePath);
+            widget.packageData,
+            file.relativePath,
+          );
           if (data != null) {
             fileData[file.relativePath] = data;
           }
@@ -469,9 +466,9 @@ class _PackageInstallDialogState extends State<PackageInstallDialog> {
               Text(
                 'Successfully installed: $_completedFiles of $_totalFiles files',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

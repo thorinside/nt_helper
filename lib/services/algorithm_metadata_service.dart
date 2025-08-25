@@ -29,7 +29,8 @@ class AlgorithmMetadataService {
 
     _isInitialized = true;
     debugPrint(
-        'AlgorithmMetadataService initialized with a total of ${_algorithms.length} algorithms (from JSON and DB) and ${_features.length} features.');
+      'AlgorithmMetadataService initialized with a total of ${_algorithms.length} algorithms (from JSON and DB) and ${_features.length} features.',
+    );
   }
 
   Future<void> _loadAlgorithms() async {
@@ -37,8 +38,10 @@ class AlgorithmMetadataService {
     final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
     final algorithmFiles = manifestMap.keys
-        .where((path) =>
-            path.startsWith('docs/algorithms/') && path.endsWith('.json'))
+        .where(
+          (path) =>
+              path.startsWith('docs/algorithms/') && path.endsWith('.json'),
+        )
         .toList();
 
     debugPrint('Found ${algorithmFiles.length} algorithm files in manifest.');
@@ -61,8 +64,9 @@ class AlgorithmMetadataService {
     final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
     final featureFiles = manifestMap.keys
-        .where((path) =>
-            path.startsWith('docs/features/') && path.endsWith('.json'))
+        .where(
+          (path) => path.startsWith('docs/features/') && path.endsWith('.json'),
+        )
         .toList();
 
     debugPrint('Found ${featureFiles.length} feature files in manifest.');
@@ -82,12 +86,13 @@ class AlgorithmMetadataService {
 
   Future<void> _mergeSyncedAlgorithms(AppDatabase database) async {
     final metadataDao = database.metadataDao;
-    final List<AlgorithmEntry> syncedEntries =
-        await metadataDao.getAllAlgorithms();
+    final List<AlgorithmEntry> syncedEntries = await metadataDao
+        .getAllAlgorithms();
     int mergedCount = 0;
 
     debugPrint(
-        '[AlgorithmMetadataService] Found ${syncedEntries.length} algorithm entries in local DB for potential merging.');
+      '[AlgorithmMetadataService] Found ${syncedEntries.length} algorithm entries in local DB for potential merging.',
+    );
 
     for (final entry in syncedEntries) {
       if (!_algorithms.containsKey(entry.guid)) {
@@ -106,10 +111,12 @@ class AlgorithmMetadataService {
     }
     if (mergedCount > 0) {
       debugPrint(
-          '[AlgorithmMetadataService] Successfully merged $mergedCount new algorithms from the local database.');
+        '[AlgorithmMetadataService] Successfully merged $mergedCount new algorithms from the local database.',
+      );
     } else {
       debugPrint(
-          '[AlgorithmMetadataService] No new algorithms from local DB to merge (all already present in JSON or DB empty).');
+        '[AlgorithmMetadataService] No new algorithms from local DB to merge (all already present in JSON or DB empty).',
+      );
     }
   }
 
@@ -134,8 +141,10 @@ class AlgorithmMetadataService {
     _ensureInitialized();
     final lowerCategory = category.toLowerCase();
     return _algorithms.values
-        .where((alg) =>
-            alg.categories.any((cat) => cat.toLowerCase() == lowerCategory))
+        .where(
+          (alg) =>
+              alg.categories.any((cat) => cat.toLowerCase() == lowerCategory),
+        )
         .toList();
   }
 
@@ -144,9 +153,11 @@ class AlgorithmMetadataService {
     _ensureInitialized();
     final lowerQuery = query.toLowerCase();
     return _algorithms.values
-        .where((alg) =>
-            alg.name.toLowerCase().contains(lowerQuery) ||
-            alg.description.toLowerCase().contains(lowerQuery))
+        .where(
+          (alg) =>
+              alg.name.toLowerCase().contains(lowerQuery) ||
+              alg.description.toLowerCase().contains(lowerQuery),
+        )
         .toList();
   }
 
@@ -177,7 +188,8 @@ class AlgorithmMetadataService {
         }
       } else {
         debugPrint(
-            'Warning: Feature with guid $featureGuid not found for algorithm ${algorithm.guid}');
+          'Warning: Feature with guid $featureGuid not found for algorithm ${algorithm.guid}',
+        );
       }
     }
     return combinedParams.values.toList();
@@ -188,7 +200,8 @@ class AlgorithmMetadataService {
   void _ensureInitialized() {
     if (!_isInitialized) {
       throw Exception(
-          'AlgorithmMetadataService not initialized. Call initialize(database) first.');
+        'AlgorithmMetadataService not initialized. Call initialize(database) first.',
+      );
     }
   }
 }

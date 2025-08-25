@@ -34,33 +34,39 @@ void main() {
     });
 
     group('savePositions', () {
-      test('should save positions as JSON string after debounce delay', () async {
-        // Arrange
-        const presetName = 'test_preset';
-        final positions = {
-          0: const NodePosition(algorithmIndex: 0, x: 100.0, y: 200.0),
-          1: const NodePosition(algorithmIndex: 1, x: 300.0, y: 400.0),
-        };
-        final expectedKey = 'node_positions_$presetName';
+      test(
+        'should save positions as JSON string after debounce delay',
+        () async {
+          // Arrange
+          const presetName = 'test_preset';
+          final positions = {
+            0: const NodePosition(algorithmIndex: 0, x: 100.0, y: 200.0),
+            1: const NodePosition(algorithmIndex: 1, x: 300.0, y: 400.0),
+          };
+          final expectedKey = 'node_positions_$presetName';
 
-        when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
+          when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
 
-        // Act
-        await service.savePositions(presetName, positions);
+          // Act
+          await service.savePositions(presetName, positions);
 
-        // Wait for debounce delay
-        await Future.delayed(const Duration(milliseconds: 600));
+          // Wait for debounce delay
+          await Future.delayed(const Duration(milliseconds: 600));
 
-        // Assert
-        final capturedArgs = verify(mockPrefs.setString(captureAny, captureAny)).captured;
-        expect(capturedArgs[0], equals(expectedKey));
-        
-        final savedData = jsonDecode(capturedArgs[1] as String) as Map<String, dynamic>;
-        expect(savedData.keys, containsAll(['0', '1']));
-        expect(savedData['0']['algorithmIndex'], equals(0));
-        expect(savedData['0']['x'], equals(100.0));
-        expect(savedData['0']['y'], equals(200.0));
-      });
+          // Assert
+          final capturedArgs = verify(
+            mockPrefs.setString(captureAny, captureAny),
+          ).captured;
+          expect(capturedArgs[0], equals(expectedKey));
+
+          final savedData =
+              jsonDecode(capturedArgs[1] as String) as Map<String, dynamic>;
+          expect(savedData.keys, containsAll(['0', '1']));
+          expect(savedData['0']['algorithmIndex'], equals(0));
+          expect(savedData['0']['x'], equals(100.0));
+          expect(savedData['0']['y'], equals(200.0));
+        },
+      );
 
       test('should handle save errors gracefully', () async {
         // Arrange
@@ -74,9 +80,15 @@ void main() {
       test('should debounce multiple rapid saves', () async {
         // Arrange
         const presetName = 'test_preset';
-        final positions1 = {0: const NodePosition(algorithmIndex: 0, x: 100.0, y: 200.0)};
-        final positions2 = {0: const NodePosition(algorithmIndex: 0, x: 150.0, y: 250.0)};
-        final positions3 = {0: const NodePosition(algorithmIndex: 0, x: 200.0, y: 300.0)};
+        final positions1 = {
+          0: const NodePosition(algorithmIndex: 0, x: 100.0, y: 200.0),
+        };
+        final positions2 = {
+          0: const NodePosition(algorithmIndex: 0, x: 150.0, y: 250.0),
+        };
+        final positions3 = {
+          0: const NodePosition(algorithmIndex: 0, x: 200.0, y: 300.0),
+        };
 
         when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
 
@@ -99,10 +111,22 @@ void main() {
         const presetName = 'test_preset';
         final expectedKey = 'node_positions_$presetName';
         final testData = {
-          '0': {'algorithmIndex': 0, 'x': 100.0, 'y': 200.0, 'width': 250.0, 'height': 150.0},
-          '1': {'algorithmIndex': 1, 'x': 300.0, 'y': 400.0, 'width': 250.0, 'height': 150.0},
+          '0': {
+            'algorithmIndex': 0,
+            'x': 100.0,
+            'y': 200.0,
+            'width': 250.0,
+            'height': 150.0,
+          },
+          '1': {
+            'algorithmIndex': 1,
+            'x': 300.0,
+            'y': 400.0,
+            'width': 250.0,
+            'height': 150.0,
+          },
         };
-        
+
         when(mockPrefs.getString(expectedKey)).thenReturn(jsonEncode(testData));
 
         // Act
@@ -129,16 +153,19 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('should return empty map and handle corrupted data gracefully', () async {
-        // Arrange
-        when(mockPrefs.getString(any)).thenReturn('invalid json');
+      test(
+        'should return empty map and handle corrupted data gracefully',
+        () async {
+          // Arrange
+          when(mockPrefs.getString(any)).thenReturn('invalid json');
 
-        // Act
-        final result = await service.loadPositions('test_preset');
+          // Act
+          final result = await service.loadPositions('test_preset');
 
-        // Assert
-        expect(result, isEmpty);
-      });
+          // Assert
+          expect(result, isEmpty);
+        },
+      );
 
       test('should handle SharedPreferences errors gracefully', () async {
         // Arrange
@@ -157,7 +184,7 @@ void main() {
         // Arrange
         const presetName = 'test_preset';
         final expectedKey = 'node_positions_$presetName';
-        
+
         when(mockPrefs.remove(expectedKey)).thenAnswer((_) async => true);
 
         // Act
@@ -177,37 +204,60 @@ void main() {
     });
 
     group('JSON serialization', () {
-      test('should correctly convert integer keys to strings and back', () async {
-        // Arrange
-        const presetName = 'test_preset';
-        final originalPositions = {
-          0: const NodePosition(algorithmIndex: 0, x: 100.0, y: 200.0),
-          5: const NodePosition(algorithmIndex: 5, x: 300.0, y: 400.0),
-          10: const NodePosition(algorithmIndex: 10, x: 500.0, y: 600.0),
-        };
+      test(
+        'should correctly convert integer keys to strings and back',
+        () async {
+          // Arrange
+          const presetName = 'test_preset';
+          final originalPositions = {
+            0: const NodePosition(algorithmIndex: 0, x: 100.0, y: 200.0),
+            5: const NodePosition(algorithmIndex: 5, x: 300.0, y: 400.0),
+            10: const NodePosition(algorithmIndex: 10, x: 500.0, y: 600.0),
+          };
 
-        when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
+          when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
 
-        // Act - save 
-        await service.savePositions(presetName, originalPositions);
-        await Future.delayed(const Duration(milliseconds: 600)); // Wait for debounce
-        
-        // Setup mock to return saved data for loading
-        final testData = {
-          '0': {'algorithmIndex': 0, 'x': 100.0, 'y': 200.0, 'width': 200.0, 'height': 100.0},
-          '5': {'algorithmIndex': 5, 'x': 300.0, 'y': 400.0, 'width': 200.0, 'height': 100.0},
-          '10': {'algorithmIndex': 10, 'x': 500.0, 'y': 600.0, 'width': 200.0, 'height': 100.0},
-        };
-        when(mockPrefs.getString(any)).thenReturn(jsonEncode(testData));
-        
-        final loadedPositions = await service.loadPositions(presetName);
+          // Act - save
+          await service.savePositions(presetName, originalPositions);
+          await Future.delayed(
+            const Duration(milliseconds: 600),
+          ); // Wait for debounce
 
-        // Assert - keys should be converted back to integers
-        expect(loadedPositions.keys, containsAll([0, 5, 10]));
-        expect(loadedPositions[0]?.x, equals(100.0));
-        expect(loadedPositions[5]?.x, equals(300.0));
-        expect(loadedPositions[10]?.x, equals(500.0));
-      });
+          // Setup mock to return saved data for loading
+          final testData = {
+            '0': {
+              'algorithmIndex': 0,
+              'x': 100.0,
+              'y': 200.0,
+              'width': 200.0,
+              'height': 100.0,
+            },
+            '5': {
+              'algorithmIndex': 5,
+              'x': 300.0,
+              'y': 400.0,
+              'width': 200.0,
+              'height': 100.0,
+            },
+            '10': {
+              'algorithmIndex': 10,
+              'x': 500.0,
+              'y': 600.0,
+              'width': 200.0,
+              'height': 100.0,
+            },
+          };
+          when(mockPrefs.getString(any)).thenReturn(jsonEncode(testData));
+
+          final loadedPositions = await service.loadPositions(presetName);
+
+          // Assert - keys should be converted back to integers
+          expect(loadedPositions.keys, containsAll([0, 5, 10]));
+          expect(loadedPositions[0]?.x, equals(100.0));
+          expect(loadedPositions[5]?.x, equals(300.0));
+          expect(loadedPositions[10]?.x, equals(500.0));
+        },
+      );
     });
 
     group('singleton behavior', () {

@@ -13,13 +13,12 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Get expanded parameters once to use for check and for the card itself.
-    final expandedParams =
-        AlgorithmMetadataService().getExpandedParameters(metadata.guid);
+    final expandedParams = AlgorithmMetadataService().getExpandedParameters(
+      metadata.guid,
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(metadata.name),
-      ),
+      appBar: AppBar(title: Text(metadata.name)),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
@@ -44,7 +43,7 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           if (metadata.features.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildFeaturesCard(context),
-          ]
+          ],
         ],
       ),
     );
@@ -135,8 +134,10 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Specifications',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Specifications',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const Divider(),
             ...metadata.specifications.map((spec) => _buildSpecTile(spec)),
           ],
@@ -168,7 +169,9 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
   }
 
   Widget _buildParametersCard(
-      BuildContext context, List<AlgorithmParameter> expandedParams) {
+    BuildContext context,
+    List<AlgorithmParameter> expandedParams,
+  ) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -178,16 +181,24 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           children: [
             Text('Parameters', style: Theme.of(context).textTheme.titleLarge),
             const Divider(),
-            ...expandedParams.map((param) => _buildParameterTile(context, param,
-                isLast: param == expandedParams.last)),
+            ...expandedParams.map(
+              (param) => _buildParameterTile(
+                context,
+                param,
+                isLast: param == expandedParams.last,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildParameterTile(BuildContext context, AlgorithmParameter param,
-      {bool isLast = false}) {
+  Widget _buildParameterTile(
+    BuildContext context,
+    AlgorithmParameter param, {
+    bool isLast = false,
+  }) {
     final details = <String>[];
     if (param.type != null) details.add('Type: ${param.type}');
     if (param.unit != null) details.add('Unit: ${param.unit}');
@@ -205,20 +216,28 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
           Text(param.name, style: Theme.of(context).textTheme.titleMedium),
           if (param.description != null) ...[
             const SizedBox(height: 4),
-            Text(param.description!,
-                style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              param.description!,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
           if (details.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(details.join('  •  '),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              details.join('  •  '),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
           if (param.enumValues != null && param.enumValues!.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text('Values: ${param.enumValues!.join(', ')}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              'Values: ${param.enumValues!.join(', ')}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
           if (!isLast) const Divider(height: 24),
         ],
@@ -237,8 +256,9 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
             Text('Features', style: Theme.of(context).textTheme.titleLarge),
             const Divider(),
             ...metadata.features.map((featureGuid) {
-              final feature =
-                  AlgorithmMetadataService().getFeatureByGuid(featureGuid);
+              final feature = AlgorithmMetadataService().getFeatureByGuid(
+                featureGuid,
+              );
               if (feature == null) {
                 return ListTile(title: Text('Unknown Feature: $featureGuid'));
               }
@@ -258,14 +278,20 @@ class AlgorithmDocumentationScreen extends StatelessWidget {
                         Text(feature.description ?? ''),
                         const SizedBox(height: 16),
                         if (feature.parameters.isNotEmpty)
-                          Text('Parameters from this feature:',
-                              style: Theme.of(context).textTheme.titleMedium),
-                        ...feature.parameters.map((p) => _buildParameterTile(
-                            context, p,
-                            isLast: p == feature.parameters.last)),
+                          Text(
+                            'Parameters from this feature:',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ...feature.parameters.map(
+                          (p) => _buildParameterTile(
+                            context,
+                            p,
+                            isLast: p == feature.parameters.last,
+                          ),
+                        ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               );
             }),

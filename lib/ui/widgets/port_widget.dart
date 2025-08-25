@@ -39,7 +39,7 @@ class _PortWidgetState extends State<PortWidget> {
   bool _isPressed = false;
   bool _isDragging = false;
   Offset? _dragStartPosition;
-  
+
   // Dead zone threshold - minimum distance to drag before starting a connection
   // This prevents accidental connection starts when trying to tap on the port
   static const double _dragThreshold = 10.0;
@@ -58,7 +58,8 @@ class _PortWidgetState extends State<PortWidget> {
         if (widget.type == PortType.output) {
           // Check if we've moved beyond the threshold
           if (!_isDragging && _dragStartPosition != null) {
-            final distance = (details.localPosition - _dragStartPosition!).distance;
+            final distance =
+                (details.localPosition - _dragStartPosition!).distance;
             if (distance > _dragThreshold) {
               // Start the connection only after moving beyond threshold
               setState(() {
@@ -68,12 +69,14 @@ class _PortWidgetState extends State<PortWidget> {
               // Create a synthetic pan start at the original position
               final syntheticStart = DragStartDetails(
                 localPosition: _dragStartPosition!,
-                globalPosition: details.globalPosition - (details.localPosition - _dragStartPosition!),
+                globalPosition:
+                    details.globalPosition -
+                    (details.localPosition - _dragStartPosition!),
               );
               widget.onPanStart?.call(syntheticStart);
             }
           }
-          
+
           // Continue updating if we're dragging
           if (_isDragging) {
             widget.onPanUpdate?.call(details);
@@ -84,16 +87,16 @@ class _PortWidgetState extends State<PortWidget> {
         setState(() {
           _isPressed = false;
         });
-        
+
         if (widget.type == PortType.input) {
           widget.onConnectionEnd?.call();
         }
-        
+
         if (widget.type == PortType.output && _isDragging) {
           // Only trigger pan end if we were actually dragging
           widget.onPanEnd?.call(details);
         }
-        
+
         setState(() {
           _isDragging = false;
           _dragStartPosition = null;
@@ -149,8 +152,8 @@ class _PortWidgetState extends State<PortWidget> {
             height: widget.isConnected ? 8 : 6,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: widget.isConnected 
-                  ? Colors.white 
+              color: widget.isConnected
+                  ? Colors.white
                   : Colors.white.withValues(alpha: 0.7),
             ),
           ),
@@ -161,7 +164,7 @@ class _PortWidgetState extends State<PortWidget> {
 
   Color _getPortColor() {
     final baseColor = _getPortTypeColor();
-    
+
     if (_isPressed) {
       return baseColor.withValues(alpha: 0.8);
     } else if (widget.isHovered) {
@@ -176,7 +179,7 @@ class _PortWidgetState extends State<PortWidget> {
   Color _getPortTypeColor() {
     // Color code by signal type based on port name
     final portName = widget.port.name.toLowerCase();
-    
+
     if (portName.contains('audio') || portName.contains('signal')) {
       return Colors.blue;
     } else if (portName.contains('cv') || portName.contains('control')) {

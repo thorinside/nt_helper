@@ -10,10 +10,7 @@ import 'package:share_plus/share_plus.dart';
 class DebugDiagnosticsScreen extends StatefulWidget {
   final DistingCubit distingCubit;
 
-  const DebugDiagnosticsScreen({
-    super.key,
-    required this.distingCubit,
-  });
+  const DebugDiagnosticsScreen({super.key, required this.distingCubit});
 
   @override
   State<DebugDiagnosticsScreen> createState() => _DebugDiagnosticsScreenState();
@@ -34,14 +31,14 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
     final currentState = widget.distingCubit.state;
     if (currentState is DistingStateSynchronized && !currentState.offline) {
       _diagnosticsService = SysExDiagnosticsService(
-        widget.distingCubit.requireDisting()
+        widget.distingCubit.requireDisting(),
       );
     }
   }
 
   Future<void> _runDiagnostics() async {
     if (_diagnosticsService == null) return;
-    
+
     setState(() {
       _isRunning = true;
       _cancelled = false;
@@ -54,7 +51,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
       // Wake device first
       await widget.distingCubit.requireDisting().requestWake();
       await Future.delayed(const Duration(milliseconds: 200));
-      
+
       final report = await _diagnosticsService!.runFullDiagnostics(
         repetitions: _repetitions,
         onProgress: (progress, currentTest) {
@@ -76,9 +73,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Diagnostics failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Diagnostics failed: $e')));
       }
     } finally {
       if (mounted) {
@@ -100,7 +97,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
 
     try {
       final textReport = _currentReport!.generateTextReport();
-      
+
       if (Platform.isAndroid || Platform.isIOS) {
         // Use share on mobile platforms
         await SharePlus.instance.share(
@@ -113,12 +110,12 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         // Save to file on desktop platforms
         final directory = await getApplicationDocumentsDirectory();
         final timestamp = _currentReport!.timestamp
-          .toIso8601String()
-          .replaceAll(':', '-')
-          .split('.')[0]; // Remove milliseconds and colons
+            .toIso8601String()
+            .replaceAll(':', '-')
+            .split('.')[0]; // Remove milliseconds and colons
         final file = File('${directory.path}/sysex_diagnostics_$timestamp.txt');
         await file.writeAsString(textReport);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Report saved to: ${file.path}')),
@@ -127,22 +124,22 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to export report: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to export report: $e')));
       }
     }
   }
 
   void _copyReportToClipboard() {
     if (_currentReport == null) return;
-    
+
     final textReport = _currentReport!.generateTextReport();
     Clipboard.setData(ClipboardData(text: textReport));
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report copied to clipboard')),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Report copied to clipboard')));
   }
 
   @override
@@ -157,7 +154,8 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
     }
 
     final currentState = widget.distingCubit.state;
-    final isOffline = currentState is DistingStateSynchronized && currentState.offline;
+    final isOffline =
+        currentState is DistingStateSynchronized && currentState.offline;
 
     if (isOffline || _diagnosticsService == null) {
       return Scaffold(
@@ -182,19 +180,19 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
       appBar: AppBar(
         title: const Text('Debug Diagnostics'),
         actions: _currentReport != null && !_isRunning
-          ? [
-              IconButton(
-                icon: const Icon(Icons.copy),
-                tooltip: 'Copy to Clipboard',
-                onPressed: _copyReportToClipboard,
-              ),
-              IconButton(
-                icon: const Icon(Icons.share),
-                tooltip: 'Export Report',
-                onPressed: _exportReport,
-              ),
-            ]
-          : null,
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  tooltip: 'Copy to Clipboard',
+                  onPressed: _copyReportToClipboard,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  tooltip: 'Export Report',
+                  onPressed: _exportReport,
+                ),
+              ]
+            : null,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -209,7 +207,10 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
                   children: [
                     const Text(
                       'SysEx Command Diagnostics',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -222,19 +223,23 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
                         const SizedBox(width: 8),
                         DropdownButton<int>(
                           value: _repetitions,
-                          items: [3, 5, 10, 20].map((value) => 
-                            DropdownMenuItem(
-                              value: value, 
-                              child: Text('$value')
-                            )
-                          ).toList(),
-                          onChanged: _isRunning ? null : (value) {
-                            if (value != null) {
-                              setState(() {
-                                _repetitions = value;
-                              });
-                            }
-                          },
+                          items: [3, 5, 10, 20]
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text('$value'),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _isRunning
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _repetitions = value;
+                                    });
+                                  }
+                                },
                         ),
                       ],
                     ),
@@ -266,7 +271,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
                       LinearProgressIndicator(value: _progress),
                       const SizedBox(height: 8),
                       Text('Current: $_currentTest'),
-                      Text('Progress: ${(_progress * 100).toStringAsFixed(1)}%'),
+                      Text(
+                        'Progress: ${(_progress * 100).toStringAsFixed(1)}%',
+                      ),
                     ],
                   ],
                 ),
@@ -274,9 +281,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
             ),
             const SizedBox(height: 16),
             if (_currentReport != null) ...[
-              Expanded(
-                child: _buildReportView(_currentReport!),
-              ),
+              Expanded(child: _buildReportView(_currentReport!)),
             ],
           ],
         ),
@@ -343,8 +348,11 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
         children: [
           _buildSummaryItem('Total Tests', '${report.totalTests}', Colors.blue),
           _buildSummaryItem('Passed', '${report.passedTests}', Colors.green),
-          _buildSummaryItem('Failed', '${report.failedTests}', 
-            report.failedTests > 0 ? Colors.red : Colors.grey),
+          _buildSummaryItem(
+            'Failed',
+            '${report.failedTests}',
+            report.failedTests > 0 ? Colors.red : Colors.grey,
+          ),
         ],
       ),
     );
@@ -368,7 +376,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
 
   Widget _buildIssuesTab(DiagnosticsReport report) {
     final problematicTests = report.worstPerformingTests;
-    
+
     if (problematicTests.isEmpty) {
       return const Center(
         child: Column(
@@ -397,7 +405,9 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Success Rate: ${(test.successRate * 100).toStringAsFixed(1)}%'),
+                Text(
+                  'Success Rate: ${(test.successRate * 100).toStringAsFixed(1)}%',
+                ),
                 Text('Avg Response: ${test.avgDuration.toStringAsFixed(1)}ms'),
                 if (test.uniqueErrors.isNotEmpty)
                   Text('Errors: ${test.uniqueErrors.join(', ')}'),
@@ -411,7 +421,7 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
 
   Widget _buildPerformanceTab(DiagnosticsReport report) {
     final slowestTests = report.slowestTests.take(10).toList();
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
       itemCount: slowestTests.length,
@@ -424,8 +434,10 @@ class _DebugDiagnosticsScreenState extends State<DebugDiagnosticsScreen> {
               child: Text('${index + 1}'),
             ),
             title: Text(test.testName),
-            subtitle: Text('${test.avgDuration.toStringAsFixed(1)}ms avg '
-                          '(${test.minDuration}-${test.maxDuration}ms range)'),
+            subtitle: Text(
+              '${test.avgDuration.toStringAsFixed(1)}ms avg '
+              '(${test.minDuration}-${test.maxDuration}ms range)',
+            ),
             trailing: Text(
               '${(test.successRate * 100).toStringAsFixed(0)}%',
               style: TextStyle(

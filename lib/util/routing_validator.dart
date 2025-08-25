@@ -31,7 +31,9 @@ class RoutingValidator {
 
     if (sourcePort != null && targetPort != null) {
       if (!_arePortsCompatible(sourcePort, targetPort)) {
-        errors.add('Incompatible port types: ${sourcePort.name} to ${targetPort.name}');
+        errors.add(
+          'Incompatible port types: ${sourcePort.name} to ${targetPort.name}',
+        );
       }
     }
 
@@ -42,19 +44,22 @@ class RoutingValidator {
 
     // Check 3: Processing order constraint
     if (_isModulationConnection(targetPort)) {
-      if (proposedConnection.sourceAlgorithmIndex > proposedConnection.targetAlgorithmIndex) {
+      if (proposedConnection.sourceAlgorithmIndex >
+          proposedConnection.targetAlgorithmIndex) {
         errors.add('Modulation source must be in earlier slot than target');
       }
     }
 
     // Check 4: Bus availability (only for algorithm-to-algorithm connections)
     // Physical nodes (negative indices) use dedicated I/O busses, not AUX busses
-    final isPhysicalConnection = proposedConnection.sourceAlgorithmIndex < 0 || 
-                                proposedConnection.targetAlgorithmIndex < 0;
-    
+    final isPhysicalConnection =
+        proposedConnection.sourceAlgorithmIndex < 0 ||
+        proposedConnection.targetAlgorithmIndex < 0;
+
     if (!isPhysicalConnection) {
       final busesInUse = _countBusesInUse(existingConnections);
-      if (busesInUse >= 8 && !_canShareBus(proposedConnection, existingConnections)) {
+      if (busesInUse >= 8 &&
+          !_canShareBus(proposedConnection, existingConnections)) {
         errors.add('No available auxiliary buses');
       }
     }
@@ -70,7 +75,8 @@ class RoutingValidator {
     }
 
     // Check 7: Self-connection
-    if (proposedConnection.sourceAlgorithmIndex == proposedConnection.targetAlgorithmIndex) {
+    if (proposedConnection.sourceAlgorithmIndex ==
+        proposedConnection.targetAlgorithmIndex) {
       errors.add('Cannot connect algorithm to itself');
     }
 
@@ -96,7 +102,9 @@ class RoutingValidator {
     } catch (e) {
       if (e is CycleDetectedException) {
         errors.add('Circular dependency detected in routing graph');
-        final cyclePath = TopologicalSort.findCyclePath(_buildAdjacencyList(connections));
+        final cyclePath = TopologicalSort.findCyclePath(
+          _buildAdjacencyList(connections),
+        );
         if (cyclePath != null) {
           errors.add('Cycle path: ${cyclePath.join(' -> ')}');
         }
@@ -106,20 +114,24 @@ class RoutingValidator {
     // Check bus usage
     final busUsage = <int, int>{};
     for (final connection in connections) {
-      busUsage[connection.assignedBus] = (busUsage[connection.assignedBus] ?? 0) + 1;
+      busUsage[connection.assignedBus] =
+          (busUsage[connection.assignedBus] ?? 0) + 1;
     }
 
     // Warn about overused buses
     for (final entry in busUsage.entries) {
-      if (entry.value > 4) { // Arbitrary threshold
-        warnings.add('Bus ${entry.key} has ${entry.value} connections - may cause signal conflicts');
+      if (entry.value > 4) {
+        // Arbitrary threshold
+        warnings.add(
+          'Bus ${entry.key} has ${entry.value} connections - may cause signal conflicts',
+        );
       }
     }
 
     // Check for orphaned outputs
     final outputAlgorithms = <int>{};
     final inputAlgorithms = <int>{};
-    
+
     for (final connection in connections) {
       outputAlgorithms.add(connection.sourceAlgorithmIndex);
       inputAlgorithms.add(connection.targetAlgorithmIndex);
@@ -127,7 +139,9 @@ class RoutingValidator {
 
     final orphanedOutputs = outputAlgorithms.difference(inputAlgorithms);
     if (orphanedOutputs.isNotEmpty) {
-      warnings.add('Algorithms with no downstream connections: ${orphanedOutputs.join(', ')}');
+      warnings.add(
+        'Algorithms with no downstream connections: ${orphanedOutputs.join(', ')}',
+      );
     }
 
     return GraphValidationResult(
@@ -150,21 +164,28 @@ class RoutingValidator {
     // Audio outputs can connect to audio inputs
     // CV outputs can connect to CV inputs or modulation inputs
     // Gate outputs can connect to gate/trigger inputs
-    
+
     final sourceName = source.name.toLowerCase();
     final targetName = target.name.toLowerCase();
 
     // Specific type matching
-    if (sourceName.contains('audio') && targetName.contains('audio')) return true;
-    if (sourceName.contains('cv') && (targetName.contains('cv') || targetName.contains('modulation'))) return true;
-    if (sourceName.contains('gate') && (targetName.contains('gate') || targetName.contains('trigger'))) return true;
-    if (sourceName.contains('signal') && targetName.contains('signal')) return true;
-    
+    if (sourceName.contains('audio') && targetName.contains('audio'))
+      return true;
+    if (sourceName.contains('cv') &&
+        (targetName.contains('cv') || targetName.contains('modulation')))
+      return true;
+    if (sourceName.contains('gate') &&
+        (targetName.contains('gate') || targetName.contains('trigger')))
+      return true;
+    if (sourceName.contains('signal') && targetName.contains('signal'))
+      return true;
+
     // Generic port compatibility - most algorithm outputs can connect to most inputs
     // This handles cases like "Output" -> "Input", "1:Output" -> "L Input", etc.
-    if (sourceName.contains('output') && targetName.contains('input')) return true;
+    if (sourceName.contains('output') && targetName.contains('input'))
+      return true;
     if (sourceName.contains('out') && targetName.contains('in')) return true;
-    
+
     // Allow generic port connections for modular synthesis flexibility
     // In modular synthesis, most outputs can connect to most inputs
     return true;
@@ -175,8 +196,11 @@ class RoutingValidator {
     List<Connection> existingConnections,
   ) {
     // Build adjacency list including proposed connection
-    final adjacencyList = _buildAdjacencyList([...existingConnections, proposedConnection]);
-    
+    final adjacencyList = _buildAdjacencyList([
+      ...existingConnections,
+      proposedConnection,
+    ]);
+
     try {
       TopologicalSort.topologicalSort(adjacencyList);
       return false;
@@ -187,22 +211,22 @@ class RoutingValidator {
 
   static Map<int, Set<int>> _buildAdjacencyList(List<Connection> connections) {
     final graph = <int, Set<int>>{};
-    
+
     for (final conn in connections) {
       graph[conn.sourceAlgorithmIndex] ??= <int>{};
       graph[conn.targetAlgorithmIndex] ??= <int>{};
       graph[conn.sourceAlgorithmIndex]!.add(conn.targetAlgorithmIndex);
     }
-    
+
     return graph;
   }
 
   static bool _isModulationConnection(AlgorithmPort? targetPort) {
     if (targetPort == null) return false;
     final portName = targetPort.name.toLowerCase();
-    return portName.contains('cv') || 
-           portName.contains('modulation') || 
-           portName.contains('control');
+    return portName.contains('cv') ||
+        portName.contains('modulation') ||
+        portName.contains('control');
   }
 
   static int _countBusesInUse(List<Connection> connections) {
@@ -215,33 +239,49 @@ class RoutingValidator {
     return busesInUse.length;
   }
 
-  static bool _canShareBus(Connection proposedConnection, List<Connection> existingConnections) {
+  static bool _canShareBus(
+    Connection proposedConnection,
+    List<Connection> existingConnections,
+  ) {
     // Check if any existing connection has the same source - can share bus
-    return existingConnections.any((conn) => 
-      conn.sourceAlgorithmIndex == proposedConnection.sourceAlgorithmIndex &&
-      conn.sourcePortId == proposedConnection.sourcePortId
+    return existingConnections.any(
+      (conn) =>
+          conn.sourceAlgorithmIndex ==
+              proposedConnection.sourceAlgorithmIndex &&
+          conn.sourcePortId == proposedConnection.sourcePortId,
     );
   }
 
-  static bool _isDuplicateConnection(Connection proposedConnection, List<Connection> existingConnections) {
-    return existingConnections.any((conn) =>
-      conn.sourceAlgorithmIndex == proposedConnection.sourceAlgorithmIndex &&
-      conn.sourcePortId == proposedConnection.sourcePortId &&
-      conn.targetAlgorithmIndex == proposedConnection.targetAlgorithmIndex &&
-      conn.targetPortId == proposedConnection.targetPortId
+  static bool _isDuplicateConnection(
+    Connection proposedConnection,
+    List<Connection> existingConnections,
+  ) {
+    return existingConnections.any(
+      (conn) =>
+          conn.sourceAlgorithmIndex ==
+              proposedConnection.sourceAlgorithmIndex &&
+          conn.sourcePortId == proposedConnection.sourcePortId &&
+          conn.targetAlgorithmIndex ==
+              proposedConnection.targetAlgorithmIndex &&
+          conn.targetPortId == proposedConnection.targetPortId,
     );
   }
 
-  static bool _isTargetAlreadyConnected(Connection proposedConnection, List<Connection> existingConnections) {
-    return existingConnections.any((conn) =>
-      conn.targetAlgorithmIndex == proposedConnection.targetAlgorithmIndex &&
-      conn.targetPortId == proposedConnection.targetPortId
+  static bool _isTargetAlreadyConnected(
+    Connection proposedConnection,
+    List<Connection> existingConnections,
+  ) {
+    return existingConnections.any(
+      (conn) =>
+          conn.targetAlgorithmIndex ==
+              proposedConnection.targetAlgorithmIndex &&
+          conn.targetPortId == proposedConnection.targetPortId,
     );
   }
 
   static List<String> _suggestOptimizations(List<Connection> connections) {
     final suggestions = <String>[];
-    
+
     // Find opportunities for bus sharing
     final sourceGroups = <String, List<Connection>>{};
     for (final conn in connections) {
@@ -249,16 +289,18 @@ class RoutingValidator {
       sourceGroups[key] ??= [];
       sourceGroups[key]!.add(conn);
     }
-    
+
     for (final entry in sourceGroups.entries) {
       if (entry.value.length > 1) {
         final uniqueBuses = entry.value.map((c) => c.assignedBus).toSet();
         if (uniqueBuses.length > 1) {
-          suggestions.add('Source ${entry.key} could share a single bus for all targets');
+          suggestions.add(
+            'Source ${entry.key} could share a single bus for all targets',
+          );
         }
       }
     }
-    
+
     return suggestions;
   }
 }

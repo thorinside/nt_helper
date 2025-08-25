@@ -9,8 +9,10 @@ class RequestAlgorithmGuidMessage extends SysexMessage
   @override
   final int algorithmIndex;
 
-  RequestAlgorithmGuidMessage(
-      {required super.sysExId, required this.algorithmIndex});
+  RequestAlgorithmGuidMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+  });
 
   @override
   Uint8List encode() {

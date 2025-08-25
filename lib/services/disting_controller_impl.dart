@@ -22,7 +22,8 @@ class DistingControllerImpl implements DistingController {
       return state;
     } else {
       throw StateError(
-          'Disting is not in a synchronized state. Current state: ${state.runtimeType}');
+        'Disting is not in a synchronized state. Current state: ${state.runtimeType}',
+      );
     }
   }
 
@@ -35,20 +36,25 @@ class DistingControllerImpl implements DistingController {
   void _validateSlotIndex(int index) {
     if (index < 0 || index >= maxSlots) {
       throw ArgumentError(
-          'Invalid slot index: $index. Must be between 0 and ${maxSlots - 1}.');
+        'Invalid slot index: $index. Must be between 0 and ${maxSlots - 1}.',
+      );
     }
   }
 
   /// Helper to validate a parameter number within a slot.
   void _validateParameterNumber(
-      int slotIndex, int parameterNumber, DistingStateSynchronized state) {
+    int slotIndex,
+    int parameterNumber,
+    DistingStateSynchronized state,
+  ) {
     _validateSlotIndex(slotIndex);
 
     final Slot slotData = state.slots[slotIndex];
 
     if (parameterNumber < 0 || parameterNumber >= slotData.parameters.length) {
       throw ArgumentError(
-          'Invalid parameter index: $parameterNumber for slot $slotIndex. Algorithm "${slotData.algorithm.name}" has ${slotData.parameters.length} parameters (0 to ${slotData.parameters.length - 1}).');
+        'Invalid parameter index: $parameterNumber for slot $slotIndex. Algorithm "${slotData.algorithm.name}" has ${slotData.parameters.length} parameters (0 to ${slotData.parameters.length - 1}).',
+      );
     }
   }
 
@@ -81,15 +87,18 @@ class DistingControllerImpl implements DistingController {
   @override
   Future<void> addAlgorithm(Algorithm algorithm) async {
     final state = _getSynchronizedState();
-    final algorithmInfo = state.algorithms
-        .firstWhereOrNull((info) => info.guid == algorithm.guid);
+    final algorithmInfo = state.algorithms.firstWhereOrNull(
+      (info) => info.guid == algorithm.guid,
+    );
 
     if (algorithmInfo == null) {
       throw ArgumentError(
-          'Algorithm with GUID ${algorithm.guid} not found in the list of available algorithms.');
+        'Algorithm with GUID ${algorithm.guid} not found in the list of available algorithms.',
+      );
     }
-    final specs =
-        algorithmInfo.specifications.map((s) => s.defaultValue).toList();
+    final specs = algorithmInfo.specifications
+        .map((s) => s.defaultValue)
+        .toList();
     await _distingCubit.onAlgorithmSelected(algorithmInfo, specs);
   }
 
@@ -116,7 +125,10 @@ class DistingControllerImpl implements DistingController {
 
   @override
   Future<void> updateParameterValue(
-      int slotIndex, int parameterNumber, dynamic value) async {
+    int slotIndex,
+    int parameterNumber,
+    dynamic value,
+  ) async {
     final state = _getSynchronizedState();
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
@@ -129,37 +141,45 @@ class DistingControllerImpl implements DistingController {
     } else if (value is double) {
       intValue = value.round();
     } else if (value is String) {
-      intValue = int.tryParse(value) ??
+      intValue =
+          int.tryParse(value) ??
           (throw ArgumentError('Cannot parse String "$value" to int.'));
     } else {
       throw ArgumentError(
-          'Invalid value type: ${value.runtimeType}. Expected int, double, or parsable String.');
+        'Invalid value type: ${value.runtimeType}. Expected int, double, or parsable String.',
+      );
     }
 
     if (intValue < paramInfo.min || intValue > paramInfo.max) {
       throw ArgumentError(
-          'Value $intValue for parameter "${paramInfo.name}" (index $parameterNumber) in slot $slotIndex is out of range (min: ${paramInfo.min}, max: ${paramInfo.max}).');
+        'Value $intValue for parameter "${paramInfo.name}" (index $parameterNumber) in slot $slotIndex is out of range (min: ${paramInfo.min}, max: ${paramInfo.max}).',
+      );
     }
 
     await _distingCubit.updateParameterValue(
-        algorithmIndex: slotData.algorithm.algorithmIndex,
-        parameterNumber: parameterNumber,
-        value: intValue,
-        userIsChangingTheValue: false);
+      algorithmIndex: slotData.algorithm.algorithmIndex,
+      parameterNumber: parameterNumber,
+      value: intValue,
+      userIsChangingTheValue: false,
+    );
   }
 
   @override
   Future<void> updateParameterString(
-      int slotIndex, int parameterNumber, String value) async {
+    int slotIndex,
+    int parameterNumber,
+    String value,
+  ) async {
     final state = _getSynchronizedState();
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
     final Slot slotData = state.slots[slotIndex];
 
     await _distingCubit.updateParameterString(
-        algorithmIndex: slotData.algorithm.algorithmIndex,
-        parameterNumber: parameterNumber,
-        value: value);
+      algorithmIndex: slotData.algorithm.algorithmIndex,
+      parameterNumber: parameterNumber,
+      value: value,
+    );
   }
 
   @override
@@ -188,14 +208,17 @@ class DistingControllerImpl implements DistingController {
       return paramValueResponse?.value;
     } catch (e) {
       debugPrint(
-          'Error fetching parameter value for slot $slotIndex, param $parameterNumber (algoIndex $actualAlgorithmIndex): $e');
+        'Error fetching parameter value for slot $slotIndex, param $parameterNumber (algoIndex $actualAlgorithmIndex): $e',
+      );
       return null;
     }
   }
 
   @override
   Future<String?> getParameterStringValue(
-      int slotIndex, int parameterNumber) async {
+    int slotIndex,
+    int parameterNumber,
+  ) async {
     final state = _getSynchronizedState();
     _validateParameterNumber(slotIndex, parameterNumber, state);
 
@@ -212,7 +235,8 @@ class DistingControllerImpl implements DistingController {
       return null;
     } catch (e) {
       debugPrint(
-          'Error fetching parameter string value for slot $slotIndex, param $parameterNumber: $e');
+        'Error fetching parameter string value for slot $slotIndex, param $parameterNumber: $e',
+      );
       return null;
     }
   }
@@ -291,16 +315,19 @@ class DistingControllerImpl implements DistingController {
 
   @override
   Future<ParameterEnumStrings?> getParameterEnumStrings(
-      int slotIndex, int parameterNumber) async {
+    int slotIndex,
+    int parameterNumber,
+  ) async {
     try {
       final state = _getSynchronizedState();
       _validateParameterNumber(slotIndex, parameterNumber, state);
-      
+
       final slot = state.slots[slotIndex];
-      
+
       // Find enum data for this parameter
-      final enums = slot.enums.where((e) => 
-          e.parameterNumber == parameterNumber).firstOrNull;
+      final enums = slot.enums
+          .where((e) => e.parameterNumber == parameterNumber)
+          .firstOrNull;
       return enums;
     } catch (e) {
       debugPrint('Error getting parameter enum strings: $e');

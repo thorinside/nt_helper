@@ -40,20 +40,12 @@ class _RenamePresetDialogState extends State<RenamePresetDialog> {
       title: const Text('Rename Preset'),
       content: TextField(
         controller: _controller,
-        decoration: const InputDecoration(
-          labelText: 'Preset Name',
-        ),
+        decoration: const InputDecoration(labelText: 'Preset Name'),
         autofocus: true,
       ),
       actions: [
-        TextButton(
-          onPressed: _onCancel,
-          child: const Text('CANCEL'),
-        ),
-        ElevatedButton(
-          onPressed: _onConfirm,
-          child: const Text('OK'),
-        ),
+        TextButton(onPressed: _onCancel, child: const Text('CANCEL')),
+        ElevatedButton(onPressed: _onConfirm, child: const Text('OK')),
       ],
     );
   }

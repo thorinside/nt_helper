@@ -4,10 +4,7 @@ import 'package:nt_helper/domain/sysex/sysex_message.dart';
 class RequestFileDownloadMessage extends SysexMessage {
   final String path;
 
-  RequestFileDownloadMessage({
-    required super.sysExId,
-    required this.path,
-  });
+  RequestFileDownloadMessage({required super.sysExId, required this.path});
 
   @override
   Uint8List encode() {

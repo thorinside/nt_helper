@@ -14,11 +14,12 @@ class SetCVMappingMessage extends SysexMessage
   final int parameterNumber;
   final PackedMappingData data;
 
-  SetCVMappingMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.data});
+  SetCVMappingMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.data,
+  });
 
   @override
   Uint8List encode() {

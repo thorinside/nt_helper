@@ -8,10 +8,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class RequestFileDeleteMessage extends SysexMessage {
   final String path;
 
-  RequestFileDeleteMessage({
-    required super.sysExId,
-    required this.path,
-  });
+  RequestFileDeleteMessage({required super.sysExId, required this.path});
 
   @override
   Uint8List encode() {

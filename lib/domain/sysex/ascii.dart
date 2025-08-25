@@ -20,7 +20,8 @@ ParseResult decodeNullTerminatedAscii(Uint8List bytes, int start) {
   // --- Debug Print: Log the sublist before decoding ---
   final bytesToDecode = bytes.sublist(start, i);
   debugPrint(
-      "[decodeNullTerminatedAscii] Decoding sublist (start=$start, end=$i): ${bytesToDecode.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}");
+    "[decodeNullTerminatedAscii] Decoding sublist (start=$start, end=$i): ${bytesToDecode.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}",
+  );
   // --- End Debug Print ---
 
   // Decode the substring from [start .. i).

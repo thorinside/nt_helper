@@ -26,14 +26,16 @@ void main() {
 
     test('should not optimize empty connections', () async {
       // Mock empty state
-      when(mockCubit.state).thenReturn(const NodeRoutingState.loaded(
-        nodePositions: {},
-        connections: [],
-        portLayouts: {},
-        connectedPorts: {},
-        algorithmNames: {},
-        portPositions: {},
-      ));
+      when(mockCubit.state).thenReturn(
+        const NodeRoutingState.loaded(
+          nodePositions: {},
+          connections: [],
+          portLayouts: {},
+          connectedPorts: {},
+          algorithmNames: {},
+          portPositions: {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -55,14 +57,16 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: singleConnection,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: singleConnection,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -95,20 +99,22 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
       expect(result.success, isTrue);
       expect(result.changes, isNotEmpty);
-      
+
       // Should optimize to use Replace mode for bus reuse
       final firstChange = result.changes.values.first;
       expect(firstChange.newReplaceMode, isTrue);
@@ -136,14 +142,16 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -195,14 +203,16 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -212,24 +222,29 @@ void main() {
 
     test('should handle cascade replacements', () async {
       // Scenario where multiple Replace modes can cascade to free buses
-      final connections = List.generate(5, (i) => Connection(
-        id: 'chain_$i',
-        sourceAlgorithmIndex: i,
-        sourcePortId: 'out',
-        targetAlgorithmIndex: i + 1,
-        targetPortId: 'in',
-        assignedBus: 21 + i,
-        replaceMode: false,
-      ));
+      final connections = List.generate(
+        5,
+        (i) => Connection(
+          id: 'chain_$i',
+          sourceAlgorithmIndex: i,
+          sourcePortId: 'out',
+          targetAlgorithmIndex: i + 1,
+          targetPortId: 'in',
+          assignedBus: 21 + i,
+          replaceMode: false,
+        ),
+      );
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -251,14 +266,16 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -290,23 +307,26 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
       expect(result.success, isTrue);
-      
+
       // Fan-out scenario (same source, different targets) should be safely optimizable
       // One of the connections on bus 21 should get Replace mode enabled
-      final bus21Changes = result.changes.values
-          .where((c) => c.oldBus == 21 && c.newReplaceMode == true);
+      final bus21Changes = result.changes.values.where(
+        (c) => c.oldBus == 21 && c.newReplaceMode == true,
+      );
       expect(bus21Changes, isNotEmpty); // Should find optimization opportunity
     });
   });
@@ -324,24 +344,29 @@ void main() {
 
     test('should handle all buses exhausted', () async {
       // Create connections using all 28 buses
-      final connections = List.generate(28, (i) => Connection(
-        id: 'bus_$i',
-        sourceAlgorithmIndex: i,
-        sourcePortId: 'out',
-        targetAlgorithmIndex: i + 1,
-        targetPortId: 'in',
-        assignedBus: i + 1, // Buses 1-28
-        replaceMode: false,
-      ));
+      final connections = List.generate(
+        28,
+        (i) => Connection(
+          id: 'bus_$i',
+          sourceAlgorithmIndex: i,
+          sourcePortId: 'out',
+          targetAlgorithmIndex: i + 1,
+          targetPortId: 'in',
+          assignedBus: i + 1, // Buses 1-28
+          replaceMode: false,
+        ),
+      );
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -373,14 +398,16 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -412,14 +439,16 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -430,24 +459,29 @@ void main() {
 
     test('should handle 32 algorithm maximum', () async {
       // Test with maximum number of algorithms
-      final connections = List.generate(31, (i) => Connection(
-        id: 'max_$i',
-        sourceAlgorithmIndex: i,
-        sourcePortId: 'out',
-        targetAlgorithmIndex: i + 1,
-        targetPortId: 'in',
-        assignedBus: 21 + (i % 8), // Cycle through AUX buses
-        replaceMode: false,
-      ));
+      final connections = List.generate(
+        31,
+        (i) => Connection(
+          id: 'max_$i',
+          sourceAlgorithmIndex: i,
+          sourcePortId: 'out',
+          targetAlgorithmIndex: i + 1,
+          targetPortId: 'in',
+          assignedBus: 21 + (i % 8), // Cycle through AUX buses
+          replaceMode: false,
+        ),
+      );
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
@@ -480,21 +514,25 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
       expect(result.success, isTrue);
       // All original connections should be preserved or improved
-      expect(result.optimizedConnections.length, 
-             greaterThanOrEqualTo(result.originalConnections.length));
+      expect(
+        result.optimizedConnections.length,
+        greaterThanOrEqualTo(result.originalConnections.length),
+      );
     });
 
     test('should never create execution order violations', () async {
@@ -510,23 +548,28 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final result = await optimizer.tidyConnections();
 
       expect(result.success, isTrue);
-      
+
       // All optimized connections should maintain valid execution order
       for (final conn in result.optimizedConnections) {
         if (conn.sourceAlgorithmIndex >= 0 && conn.targetAlgorithmIndex >= 0) {
-          expect(conn.sourceAlgorithmIndex, lessThan(conn.targetAlgorithmIndex));
+          expect(
+            conn.sourceAlgorithmIndex,
+            lessThan(conn.targetAlgorithmIndex),
+          );
         }
       }
     });
@@ -545,18 +588,21 @@ void main() {
         ),
       ];
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       // Simulate failure in routing service
-      when(mockRoutingService.applyTidyResult(any))
-          .thenThrow(Exception('Hardware communication failed'));
+      when(
+        mockRoutingService.applyTidyResult(any),
+      ).thenThrow(Exception('Hardware communication failed'));
 
       final result = await optimizer.tidyConnections();
 
@@ -579,14 +625,16 @@ void main() {
     test('should complete in <500ms for 20 connections', () async {
       final connections = _generateComplexPreset(connectionCount: 20);
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final stopwatch = Stopwatch()..start();
       final result = await optimizer.tidyConnections();
@@ -599,14 +647,16 @@ void main() {
     test('should complete in <1s for 50 connections', () async {
       final connections = _generateComplexPreset(connectionCount: 50);
 
-      when(mockCubit.state).thenReturn(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      when(mockCubit.state).thenReturn(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final stopwatch = Stopwatch()..start();
       final result = await optimizer.tidyConnections();
@@ -647,9 +697,9 @@ void main() {
     });
 
     test('should handle error cubit state', () async {
-      when(mockCubit.state).thenReturn(const NodeRoutingState.error(
-        message: 'Test error',
-      ));
+      when(
+        mockCubit.state,
+      ).thenReturn(const NodeRoutingState.error(message: 'Test error'));
 
       final result = await optimizer.tidyConnections();
 
@@ -662,18 +712,20 @@ void main() {
 /// Helper function to generate complex preset for performance testing
 List<Connection> _generateComplexPreset({required int connectionCount}) {
   final connections = <Connection>[];
-  
+
   for (int i = 0; i < connectionCount; i++) {
-    connections.add(Connection(
-      id: 'perf_test_$i',
-      sourceAlgorithmIndex: i % 16, // Cycle through slots
-      sourcePortId: 'out_${i % 4}',
-      targetAlgorithmIndex: (i + 1) % 16,
-      targetPortId: 'in_${i % 4}',
-      assignedBus: 21 + (i % 8), // Cycle through AUX buses
-      replaceMode: i % 3 == 0, // Vary replace mode
-    ));
+    connections.add(
+      Connection(
+        id: 'perf_test_$i',
+        sourceAlgorithmIndex: i % 16, // Cycle through slots
+        sourcePortId: 'out_${i % 4}',
+        targetAlgorithmIndex: (i + 1) % 16,
+        targetPortId: 'in_${i % 4}',
+        assignedBus: 21 + (i % 8), // Cycle through AUX buses
+        replaceMode: i % 3 == 0, // Vary replace mode
+      ),
+    );
   }
-  
+
   return connections;
 }

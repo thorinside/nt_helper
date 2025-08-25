@@ -14,11 +14,12 @@ class SetI2CMappingMessage extends SysexMessage
   final int parameterNumber;
   final PackedMappingData data;
 
-  SetI2CMappingMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.data});
+  SetI2CMappingMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.data,
+  });
 
   @override
   Uint8List encode() {

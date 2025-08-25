@@ -21,9 +21,10 @@ class GraphLayoutService {
     // Add small buffer (4px) to prevent rounding issues and minor overflows
     return math.max(
       nodeHeight,
-      AlgorithmNodeWidget.headerHeight + 
-      (maxPortsInColumn * AlgorithmNodeWidget.portRowHeight) + 
-      (AlgorithmNodeWidget.portsVerticalPadding * 2) + 4.0,
+      AlgorithmNodeWidget.headerHeight +
+          (maxPortsInColumn * AlgorithmNodeWidget.portRowHeight) +
+          (AlgorithmNodeWidget.portsVerticalPadding * 2) +
+          4.0,
     );
   }
 
@@ -75,7 +76,7 @@ class GraphLayoutService {
     }
 
     // Position nodes layer by layer
-    final layerSpacing = maxLayer > 0 
+    final layerSpacing = maxLayer > 0
         ? (canvasSize.width - 2 * canvasPadding) / (maxLayer + 1)
         : canvasSize.width / 2;
 
@@ -100,9 +101,9 @@ class GraphLayoutService {
         final estimatedMaxPortsPerColumn = (totalPorts / 2).ceil();
         final adjustedHeight = math.max(
           nodeHeight,
-          AlgorithmNodeWidget.headerHeight + 
-          (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) + 
-          (AlgorithmNodeWidget.portsVerticalPadding * 2),
+          AlgorithmNodeWidget.headerHeight +
+              (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) +
+              (AlgorithmNodeWidget.portsVerticalPadding * 2),
         );
 
         positions[algorithmIndex] = NodePosition(
@@ -194,10 +195,10 @@ class GraphLayoutService {
             const idealDistance = 250.0;
             final force = delta / distance * (distance - idealDistance) * 0.01;
 
-            forces[conn.sourceAlgorithmIndex] = 
-              forces[conn.sourceAlgorithmIndex]! + force;
-            forces[conn.targetAlgorithmIndex] = 
-              forces[conn.targetAlgorithmIndex]! - force;
+            forces[conn.sourceAlgorithmIndex] =
+                forces[conn.sourceAlgorithmIndex]! + force;
+            forces[conn.targetAlgorithmIndex] =
+                forces[conn.targetAlgorithmIndex]! - force;
           }
         }
       }
@@ -223,10 +224,10 @@ class GraphLayoutService {
 
           final repulsion = delta / distance * (5000.0 / (distance * distance));
 
-          forces[node1.algorithmIndex] = 
-            forces[node1.algorithmIndex]! - repulsion;
-          forces[node2.algorithmIndex] = 
-            forces[node2.algorithmIndex]! + repulsion;
+          forces[node1.algorithmIndex] =
+              forces[node1.algorithmIndex]! - repulsion;
+          forces[node2.algorithmIndex] =
+              forces[node2.algorithmIndex]! + repulsion;
         }
       }
 
@@ -260,9 +261,17 @@ class GraphLayoutService {
           final node2 = nodeList[j];
 
           final rect1 = Rect.fromLTWH(
-            node1.x, node1.y, node1.width, node1.height);
+            node1.x,
+            node1.y,
+            node1.width,
+            node1.height,
+          );
           final rect2 = Rect.fromLTWH(
-            node2.x, node2.y, node2.width, node2.height);
+            node2.x,
+            node2.y,
+            node2.width,
+            node2.height,
+          );
 
           if (rect1.overlaps(rect2)) {
             hasOverlaps = true;
@@ -298,26 +307,26 @@ class GraphLayoutService {
     Size? canvasSize,
   }) {
     final positions = <int, NodePosition>{};
-    
+
     // Sort algorithm indices numerically for predictable layout
     final sortedIndices = List<int>.from(algorithmIndices)..sort();
-    
+
     // Calculate optimal grid dimensions
     final nodeCount = sortedIndices.length;
     if (nodeCount == 0) return positions;
-    
+
     // Calculate grid dimensions - prefer wider grids for better readability
     final cols = math.max(1, math.sqrt(nodeCount * 1.5).ceil());
     final rows = (nodeCount / cols).ceil();
-    
+
     // Calculate cell dimensions with tight spacing (50px maximum)
     const maxSpacing = 50.0;
     final cellWidth = nodeWidth + maxSpacing;
-    
+
     // Start grid at top-left with padding
     final gridStartX = canvasPadding;
     final gridStartY = canvasPadding;
-    
+
     // Calculate node heights first to determine proper row spacing
     final nodeHeights = <int, double>{};
     for (final algorithmIndex in sortedIndices) {
@@ -328,13 +337,13 @@ class GraphLayoutService {
       final estimatedMaxPortsPerColumn = (totalPorts / 2).ceil();
       final adjustedHeight = math.max(
         nodeHeight,
-        AlgorithmNodeWidget.headerHeight + 
-        (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) + 
-        (AlgorithmNodeWidget.portsVerticalPadding * 2),
+        AlgorithmNodeWidget.headerHeight +
+            (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) +
+            (AlgorithmNodeWidget.portsVerticalPadding * 2),
       );
       nodeHeights[algorithmIndex] = adjustedHeight;
     }
-    
+
     // Group nodes by row and calculate row heights
     final rowHeights = <int, double>{};
     for (int row = 0; row < rows; row++) {
@@ -343,28 +352,31 @@ class GraphLayoutService {
         final index = row * cols + col;
         if (index < sortedIndices.length) {
           final algorithmIndex = sortedIndices[index];
-          maxHeightInRow = math.max(maxHeightInRow, nodeHeights[algorithmIndex]!);
+          maxHeightInRow = math.max(
+            maxHeightInRow,
+            nodeHeights[algorithmIndex]!,
+          );
         }
       }
       rowHeights[row] = maxHeightInRow;
     }
-    
+
     // Position nodes in grid pattern (left-to-right, top-to-bottom)
     for (int i = 0; i < sortedIndices.length; i++) {
       final algorithmIndex = sortedIndices[i];
       final row = i ~/ cols;
       final col = i % cols;
-      
+
       final x = gridStartX + col * cellWidth;
-      
+
       // Calculate y position based on previous row heights
       double y = gridStartY;
       for (int prevRow = 0; prevRow < row; prevRow++) {
         y += rowHeights[prevRow]! + maxSpacing;
       }
-      
+
       final adjustedHeight = nodeHeights[algorithmIndex]!;
-      
+
       positions[algorithmIndex] = NodePosition(
         algorithmIndex: algorithmIndex,
         x: x,
@@ -373,7 +385,7 @@ class GraphLayoutService {
         height: adjustedHeight,
       );
     }
-    
+
     return positions;
   }
 
@@ -385,33 +397,35 @@ class GraphLayoutService {
     Size? canvasSize,
   }) {
     final positions = <int, NodePosition>{};
-    
+
     // Sort algorithm indices numerically for predictable layout
     final sortedIndices = List<int>.from(algorithmIndices)..sort();
-    
+
     // Calculate optimal grid dimensions
     final nodeCount = sortedIndices.length;
     if (nodeCount == 0) return positions;
-    
+
     // Calculate grid dimensions - prefer wider grids for better readability
     final cols = math.max(1, math.sqrt(nodeCount * 1.5).ceil());
     final rows = (nodeCount / cols).ceil();
-    
+
     // Calculate cell dimensions with tight spacing (50px maximum)
     const maxSpacing = 50.0;
     final cellWidth = nodeWidth + maxSpacing;
-    
+
     // Start grid at top-left with padding
     final gridStartX = canvasPadding;
     final gridStartY = canvasPadding;
-    
+
     // Calculate node heights first to determine proper row spacing
     final nodeHeights = <int, double>{};
     for (final algorithmIndex in sortedIndices) {
-      final portLayout = portLayouts[algorithmIndex] ?? const PortLayout(inputPorts: [], outputPorts: []);
+      final portLayout =
+          portLayouts[algorithmIndex] ??
+          const PortLayout(inputPorts: [], outputPorts: []);
       nodeHeights[algorithmIndex] = calculateNodeHeight(portLayout);
     }
-    
+
     // Group nodes by row and calculate row heights
     final rowHeights = <int, double>{};
     for (int row = 0; row < rows; row++) {
@@ -420,28 +434,31 @@ class GraphLayoutService {
         final index = row * cols + col;
         if (index < sortedIndices.length) {
           final algorithmIndex = sortedIndices[index];
-          maxHeightInRow = math.max(maxHeightInRow, nodeHeights[algorithmIndex]!);
+          maxHeightInRow = math.max(
+            maxHeightInRow,
+            nodeHeights[algorithmIndex]!,
+          );
         }
       }
       rowHeights[row] = maxHeightInRow;
     }
-    
+
     // Position nodes in grid pattern (left-to-right, top-to-bottom)
     for (int i = 0; i < sortedIndices.length; i++) {
       final algorithmIndex = sortedIndices[i];
       final row = i ~/ cols;
       final col = i % cols;
-      
+
       final x = gridStartX + col * cellWidth;
-      
+
       // Calculate y position based on previous row heights
       double y = gridStartY;
       for (int prevRow = 0; prevRow < row; prevRow++) {
         y += rowHeights[prevRow]! + maxSpacing;
       }
-      
+
       final adjustedHeight = nodeHeights[algorithmIndex]!;
-      
+
       positions[algorithmIndex] = NodePosition(
         algorithmIndex: algorithmIndex,
         x: x,
@@ -450,7 +467,7 @@ class GraphLayoutService {
         height: adjustedHeight,
       );
     }
-    
+
     return positions;
   }
 
@@ -484,20 +501,20 @@ class GraphLayoutService {
     final estimatedMaxPortsPerColumn = (totalPorts / 2).ceil();
     final adjustedHeight = math.max(
       nodeHeight,
-      AlgorithmNodeWidget.headerHeight + 
-      (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) + 
-      (AlgorithmNodeWidget.portsVerticalPadding * 2),
+      AlgorithmNodeWidget.headerHeight +
+          (estimatedMaxPortsPerColumn * AlgorithmNodeWidget.portRowHeight) +
+          (AlgorithmNodeWidget.portsVerticalPadding * 2),
     );
-    
-    final center = preferredCenter ?? const Offset(800, 400);  // Canvas center
+
+    final center = preferredCenter ?? const Offset(800, 400); // Canvas center
     double radius = 0;
     double angle = 0;
-    
+
     // Spiral search starting from center
     while (radius < 1000) {
       final x = center.dx + radius * math.cos(angle);
       final y = center.dy + radius * math.sin(angle);
-      
+
       final testPos = NodePosition(
         algorithmIndex: algorithmIndex,
         x: x - nodeWidth / 2,
@@ -505,15 +522,15 @@ class GraphLayoutService {
         width: nodeWidth,
         height: adjustedHeight,
       );
-      
+
       if (!hasOverlap(testPos, existingPositions, minSpacing)) {
         return testPos;
       }
-      
-      angle += 0.5;  // Radians
-      radius += 20 * angle / (2 * math.pi);  // Spiral outward
+
+      angle += 0.5; // Radians
+      radius += 20 * angle / (2 * math.pi); // Spiral outward
     }
-    
+
     // Fallback to grid position if spiral fails
     return _findGridPosition(existingPositions, algorithmIndex, adjustedHeight);
   }
@@ -556,14 +573,14 @@ class GraphLayoutService {
     // Find the next available grid position
     const cellWidth = nodeWidth + minSpacing;
     final cellHeight = nodeHeight + minSpacing;
-    
+
     int row = 0;
     int col = 0;
-    
+
     while (true) {
       final x = canvasPadding + col * cellWidth;
       final y = canvasPadding + row * cellHeight;
-      
+
       final testPos = NodePosition(
         algorithmIndex: algorithmIndex,
         x: x,
@@ -571,13 +588,14 @@ class GraphLayoutService {
         width: nodeWidth,
         height: nodeHeight,
       );
-      
+
       if (!hasOverlap(testPos, existingPositions, minSpacing)) {
         return testPos;
       }
-      
+
       col++;
-      if (col > 6) {  // Maximum 7 columns before wrapping
+      if (col > 6) {
+        // Maximum 7 columns before wrapping
         col = 0;
         row++;
       }

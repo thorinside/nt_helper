@@ -354,8 +354,9 @@ extension GalleryPluginExtension on GalleryPlugin {
     if (version.isEmpty) return '';
 
     // Check if version follows semantic version format (numbers and dots with optional 'v' prefix)
-    final cleanVersion =
-        version.startsWith('v') ? version.substring(1) : version;
+    final cleanVersion = version.startsWith('v')
+        ? version.substring(1)
+        : version;
     final semverPattern = RegExp(r'^\d+(\.\d+)*(\.\d+)*$');
 
     if (!semverPattern.hasMatch(cleanVersion)) {
@@ -393,18 +394,18 @@ Future<bool> isActualCollection(
   Future<List<int>> Function(GalleryPlugin, String) downloadArchive,
 ) async {
   try {
-// Download and analyze the archive
+    // Download and analyze the archive
     final archiveBytes = await downloadArchive(plugin, plugin.releases.latest);
     final installableCount =
         await PluginMetadataExtractor.countInstallablePlugins(
-      archiveBytes,
-      plugin,
-    );
+          archiveBytes,
+          plugin,
+        );
 
-// A true collection has more than 1 installable plugin
+    // A true collection has more than 1 installable plugin
     return installableCount > 1;
   } catch (e) {
-// If we can't check, fall back to the heuristic
+    // If we can't check, fall back to the heuristic
     return false;
   }
 }

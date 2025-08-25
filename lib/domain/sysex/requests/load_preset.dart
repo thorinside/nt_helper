@@ -10,8 +10,11 @@ class LoadPresetMessage extends SysexMessage {
   final String presetName;
   final bool append;
 
-  LoadPresetMessage(
-      {required super.sysExId, required this.presetName, required this.append});
+  LoadPresetMessage({
+    required super.sysExId,
+    required this.presetName,
+    required this.append,
+  });
 
   @override
   Uint8List encode() {

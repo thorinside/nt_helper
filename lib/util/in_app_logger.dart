@@ -14,8 +14,10 @@ class InAppLogger extends ChangeNotifier {
   void log(String message) {
     if (!_isRecording) return;
 
-    final timestamp =
-        DateTime.now().toIso8601String().substring(11, 23); // HH:mm:ss.SSS
+    final timestamp = DateTime.now().toIso8601String().substring(
+      11,
+      23,
+    ); // HH:mm:ss.SSS
     _logs.add('[$timestamp] $message');
     if (_logs.length > 500) {
       // Keep a reasonable limit

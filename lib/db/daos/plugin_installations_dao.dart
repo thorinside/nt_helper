@@ -17,20 +17,23 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
 
   /// Get installed plugins by type
   Future<List<PluginInstallationEntry>> getInstalledPluginsByType(
-          String type) =>
-      (select(pluginInstallations)..where((tbl) => tbl.pluginType.equals(type)))
-          .get();
+    String type,
+  ) => (select(
+    pluginInstallations,
+  )..where((tbl) => tbl.pluginType.equals(type))).get();
 
   /// Get installed plugins by status
   Future<List<PluginInstallationEntry>> getInstalledPluginsByStatus(
-          String status) =>
-      (select(pluginInstallations)
-            ..where((tbl) => tbl.installationStatus.equals(status)))
-          .get();
+    String status,
+  ) => (select(
+    pluginInstallations,
+  )..where((tbl) => tbl.installationStatus.equals(status))).get();
 
   /// Get a specific installed plugin by plugin ID and version
   Future<PluginInstallationEntry?> getInstalledPlugin(
-          String pluginId, String version) =>
+    String pluginId,
+    String version,
+  ) =>
       (select(pluginInstallations)
             ..where((tbl) => tbl.pluginId.equals(pluginId))
             ..where((tbl) => tbl.pluginVersion.equals(version)))
@@ -57,7 +60,8 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
 
   /// Get the latest installed version of a plugin
   Future<PluginInstallationEntry?> getLatestInstalledVersion(
-      String pluginId) async {
+    String pluginId,
+  ) async {
     final versions = await getPluginVersions(pluginId);
     return versions
         .where((plugin) => plugin.installationStatus == 'completed')
@@ -92,10 +96,9 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
       installationNotes: Value(installationNotes),
     );
 
-    return into(pluginInstallations).insert(
-      companion,
-      mode: InsertMode.insertOrReplace,
-    );
+    return into(
+      pluginInstallations,
+    ).insert(companion, mode: InsertMode.insertOrReplace);
   }
 
   /// Record a failed plugin installation
@@ -126,22 +129,21 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
       errorMessage: Value(errorMessage),
     );
 
-    return into(pluginInstallations).insert(
-      companion,
-      mode: InsertMode.insertOrReplace,
-    );
+    return into(
+      pluginInstallations,
+    ).insert(companion, mode: InsertMode.insertOrReplace);
   }
 
   /// Update installation status
   Future<bool> updateInstallationStatus(
-      int installationId, String newStatus) async {
+    int installationId,
+    String newStatus,
+  ) async {
     final update = this.update(pluginInstallations)
       ..where((tbl) => tbl.id.equals(installationId));
 
     final rowsAffected = await update.write(
-      PluginInstallationsCompanion(
-        installationStatus: Value(newStatus),
-      ),
+      PluginInstallationsCompanion(installationStatus: Value(newStatus)),
     );
 
     return rowsAffected > 0;
@@ -155,26 +157,29 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
           .go();
 
   /// Remove all installation records for a plugin
-  Future<int> removeAllPluginVersions(String pluginId) =>
-      (delete(pluginInstallations)
-            ..where((tbl) => tbl.pluginId.equals(pluginId)))
-          .go();
+  Future<int> removeAllPluginVersions(String pluginId) => (delete(
+    pluginInstallations,
+  )..where((tbl) => tbl.pluginId.equals(pluginId))).go();
 
   /// Get installation statistics
   Future<Map<String, int>> getInstallationStats() async {
-    final total = await (selectOnly(pluginInstallations)
-          ..addColumns([pluginInstallations.id.count()]))
-        .getSingle();
+    final total = await (selectOnly(
+      pluginInstallations,
+    )..addColumns([pluginInstallations.id.count()])).getSingle();
 
-    final completed = await (selectOnly(pluginInstallations)
-          ..addColumns([pluginInstallations.id.count()])
-          ..where(pluginInstallations.installationStatus.equals('completed')))
-        .getSingle();
+    final completed =
+        await (selectOnly(pluginInstallations)
+              ..addColumns([pluginInstallations.id.count()])
+              ..where(
+                pluginInstallations.installationStatus.equals('completed'),
+              ))
+            .getSingle();
 
-    final failed = await (selectOnly(pluginInstallations)
-          ..addColumns([pluginInstallations.id.count()])
-          ..where(pluginInstallations.installationStatus.equals('failed')))
-        .getSingle();
+    final failed =
+        await (selectOnly(pluginInstallations)
+              ..addColumns([pluginInstallations.id.count()])
+              ..where(pluginInstallations.installationStatus.equals('failed')))
+            .getSingle();
 
     return {
       'total': total.read(pluginInstallations.id.count()) ?? 0,
@@ -231,9 +236,11 @@ class PluginInstallationsDao extends DatabaseAccessor<AppDatabase>
 
     return (select(pluginInstallations)
           ..where((tbl) => tbl.installationStatus.equals('completed'))
-          ..where((tbl) =>
-              tbl.lastChecked.isNull() |
-              tbl.lastChecked.isSmallerThanValue(oneHourAgo))
+          ..where(
+            (tbl) =>
+                tbl.lastChecked.isNull() |
+                tbl.lastChecked.isSmallerThanValue(oneHourAgo),
+          )
           ..orderBy([(tbl) => OrderingTerm.asc(tbl.lastChecked)]))
         .get();
   }

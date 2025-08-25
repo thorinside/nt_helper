@@ -12,8 +12,7 @@ part 'gallery_state.dart';
 class GalleryCubit extends Cubit<GalleryState> {
   final GalleryService _galleryService;
 
-  GalleryCubit(this._galleryService) 
-    : super(const GalleryState.initial()) {
+  GalleryCubit(this._galleryService) : super(const GalleryState.initial()) {
     // Listen to queue changes from the service
     _galleryService.queueStream.listen((queue) {
       if (state is GalleryLoaded) {
@@ -33,20 +32,23 @@ class GalleryCubit extends Cubit<GalleryState> {
       final queue = _galleryService.installQueue;
 
       // Compare gallery plugins with installed versions immediately
-      final updateInfo =
-          await _galleryService.compareWithInstalledVersions(gallery);
+      final updateInfo = await _galleryService.compareWithInstalledVersions(
+        gallery,
+      );
 
-      emit(GalleryState.loaded(
-        gallery: gallery,
-        filteredPlugins: gallery.plugins,
-        queue: queue,
-        selectedCategory: null,
-        selectedType: null,
-        showFeaturedOnly: false,
-        showVerifiedOnly: false,
-        searchQuery: '',
-        updateInfo: updateInfo,
-      ));
+      emit(
+        GalleryState.loaded(
+          gallery: gallery,
+          filteredPlugins: gallery.plugins,
+          queue: queue,
+          selectedCategory: null,
+          selectedType: null,
+          showFeaturedOnly: false,
+          showVerifiedOnly: false,
+          searchQuery: '',
+          updateInfo: updateInfo,
+        ),
+      );
     } catch (e) {
       emit(GalleryState.error(e.toString()));
     }
@@ -77,28 +79,32 @@ class GalleryCubit extends Cubit<GalleryState> {
       verified: newVerified ? true : null,
     );
 
-    emit(currentState.copyWith(
-      filteredPlugins: filteredPlugins,
-      searchQuery: newSearchQuery,
-      selectedCategory: newCategory,
-      selectedType: newType,
-      showFeaturedOnly: newFeatured,
-      showVerifiedOnly: newVerified,
-    ));
+    emit(
+      currentState.copyWith(
+        filteredPlugins: filteredPlugins,
+        searchQuery: newSearchQuery,
+        selectedCategory: newCategory,
+        selectedType: newType,
+        showFeaturedOnly: newFeatured,
+        showVerifiedOnly: newVerified,
+      ),
+    );
   }
 
   void clearFilters() {
     final currentState = state;
     if (currentState is! GalleryLoaded) return;
 
-    emit(currentState.copyWith(
-      filteredPlugins: currentState.gallery.plugins,
-      searchQuery: '',
-      selectedCategory: null,
-      selectedType: null,
-      showFeaturedOnly: false,
-      showVerifiedOnly: false,
-    ));
+    emit(
+      currentState.copyWith(
+        filteredPlugins: currentState.gallery.plugins,
+        searchQuery: '',
+        selectedCategory: null,
+        selectedType: null,
+        showFeaturedOnly: false,
+        showVerifiedOnly: false,
+      ),
+    );
   }
 
   Future<void> addToQueue(GalleryPlugin plugin) async {
@@ -117,9 +123,12 @@ class GalleryCubit extends Cubit<GalleryState> {
   }
 
   Future<void> installQueue({
-    required Function(String fileName, Uint8List fileData,
-            {Function(double)? onProgress})
-        distingInstallPlugin,
+    required Function(
+      String fileName,
+      Uint8List fileData, {
+      Function(double)? onProgress,
+    })
+    distingInstallPlugin,
   }) async {
     final currentState = state;
     if (currentState is! GalleryLoaded) return;
@@ -143,7 +152,9 @@ class GalleryCubit extends Cubit<GalleryState> {
   }
 
   void updateQueuedPluginSelection(
-      String pluginId, List<CollectionPlugin> selectedPlugins) {
+    String pluginId,
+    List<CollectionPlugin> selectedPlugins,
+  ) {
     _galleryService.updateQueuedPluginSelection(pluginId, selectedPlugins);
     // State will be updated automatically via the stream listener
   }
@@ -187,6 +198,4 @@ class GalleryCubit extends Cubit<GalleryState> {
   // --- README Documentation Methods ---
 
   /// Check if README documentation is available for a plugin
-
-
 }

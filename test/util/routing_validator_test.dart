@@ -137,7 +137,10 @@ void main() {
       );
 
       expect(result.isValid, false);
-      expect(result.errors, contains('Connection would create circular dependency'));
+      expect(
+        result.errors,
+        contains('Connection would create circular dependency'),
+      );
     });
 
     test('should detect duplicate connection', () {
@@ -247,8 +250,10 @@ void main() {
       );
 
       expect(result.isValid, false);
-      expect(result.errors, 
-        contains('Circular dependency detected in routing graph'));
+      expect(
+        result.errors,
+        contains('Circular dependency detected in routing graph'),
+      );
     });
   });
 }

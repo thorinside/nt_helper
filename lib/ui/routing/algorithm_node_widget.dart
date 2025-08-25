@@ -12,22 +12,27 @@ import 'package:nt_helper/ui/widgets/port_widget.dart';
 
 typedef PositionChangedCallback = void Function(NodePosition position);
 typedef PortConnectionCallback = void Function(String portId, PortType type);
-typedef PortPanCallback = void Function(String portId, PortType type, DragStartDetails details);
-typedef PortPanUpdateCallback = void Function(String portId, PortType type, DragUpdateDetails details);
-typedef PortPanEndCallback = void Function(String portId, PortType type, DragEndDetails details);
+typedef PortPanCallback =
+    void Function(String portId, PortType type, DragStartDetails details);
+typedef PortPanUpdateCallback =
+    void Function(String portId, PortType type, DragUpdateDetails details);
+typedef PortPanEndCallback =
+    void Function(String portId, PortType type, DragEndDetails details);
 
 class AlgorithmNodeWidget extends StatefulWidget {
   // Layout constants
   static const double headerVerticalPadding = 6.0;
   static const double headerButtonHeight = 24.0;
-  static const double headerHeight = headerVerticalPadding * 2 + headerButtonHeight;
+  static const double headerHeight =
+      headerVerticalPadding * 2 + headerButtonHeight;
   static const double horizontalPadding = 8.0;
   static const double portsVerticalPadding = 4.0;
   static const double portWidgetSize = 24.0;
   static const double portVerticalMargin = 4.0;
   static const double portRowPadding = 1.0;
-  static const double portRowHeight = portWidgetSize + (portVerticalMargin * 2) + (portRowPadding * 2);
-  
+  static const double portRowHeight =
+      portWidgetSize + (portVerticalMargin * 2) + (portRowPadding * 2);
+
   final NodePosition nodePosition;
   final String algorithmName;
   final List<AlgorithmPort> inputPorts;
@@ -79,7 +84,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
 
 class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   static const String mappingPrefix = 'mapping_';
-  
+
   bool _isDragging = false;
   bool _shouldHandlePan = true;
   Offset? _dragStartGlobalPosition;
@@ -88,7 +93,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool get _hasMappings {
     final mappings = widget.algorithmMappings;
     if (mappings == null || mappings.isEmpty) return false;
-    return mappings.where((mapping) => mapping.packedMappingData.isMapped()).isNotEmpty;
+    return mappings
+        .where((mapping) => mapping.packedMappingData.isMapped())
+        .isNotEmpty;
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -98,12 +105,16 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     // Exclude header arrow buttons (allow clicks/drags on them without moving node)
     // Header is at the top with height = headerHeight. Two buttons on right.
     const headerHeight = AlgorithmNodeWidget.headerHeight;
-    const headerButtonWidth = AlgorithmNodeWidget.headerButtonHeight; // Square buttons
+    const headerButtonWidth =
+        AlgorithmNodeWidget.headerButtonHeight; // Square buttons
     const horizontalPadding = AlgorithmNodeWidget.horizontalPadding;
 
     // If we're within header area, only block pan when starting on the buttons area
     if (dy <= headerHeight) {
-      final rightButtonsStartX = widget.nodePosition.width - horizontalPadding - (2 * headerButtonWidth);
+      final rightButtonsStartX =
+          widget.nodePosition.width -
+          horizontalPadding -
+          (2 * headerButtonWidth);
       final rightEdgeX = widget.nodePosition.width;
       final onHeaderButtons = dx >= rightButtonsStartX && dx <= rightEdgeX;
       _shouldHandlePan = !onHeaderButtons;
@@ -113,10 +124,13 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       const portSize = AlgorithmNodeWidget.portWidgetSize;
       const portHitSlop = 6.0; // a little extra to match visual
       const leftPortCenterX = horizontalPadding + (portSize / 2);
-      final rightPortCenterX = widget.nodePosition.width - horizontalPadding - (portSize / 2);
+      final rightPortCenterX =
+          widget.nodePosition.width - horizontalPadding - (portSize / 2);
 
-      final onLeftPortColumn = (dx - leftPortCenterX).abs() <= (portSize / 2 + portHitSlop);
-      final onRightPortColumn = (dx - rightPortCenterX).abs() <= (portSize / 2 + portHitSlop);
+      final onLeftPortColumn =
+          (dx - leftPortCenterX).abs() <= (portSize / 2 + portHitSlop);
+      final onRightPortColumn =
+          (dx - rightPortCenterX).abs() <= (portSize / 2 + portHitSlop);
       _shouldHandlePan = !(onLeftPortColumn || onRightPortColumn);
     }
 
@@ -130,8 +144,11 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (!_shouldHandlePan || _dragStartGlobalPosition == null || _dragStartNodePosition == null) return;
-    
+    if (!_shouldHandlePan ||
+        _dragStartGlobalPosition == null ||
+        _dragStartNodePosition == null)
+      return;
+
     // Calculate new position based on global coordinates for accurate tracking
     final globalDelta = details.globalPosition - _dragStartGlobalPosition!;
     final newPosition = _dragStartNodePosition!.copyWith(
@@ -234,7 +251,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                             Icons.arrow_upward,
                             color: widget.canMoveUp
                                 ? Theme.of(context).colorScheme.onSurface
-                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.3),
                           ),
                           onPressed: widget.canMoveUp ? widget.onMoveUp : null,
                           tooltip: 'Move algorithm up',
@@ -251,9 +269,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                             Icons.arrow_downward,
                             color: widget.canMoveDown
                                 ? Theme.of(context).colorScheme.onSurface
-                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.3),
                           ),
-                          onPressed: widget.canMoveDown ? widget.onMoveDown : null,
+                          onPressed: widget.canMoveDown
+                              ? widget.onMoveDown
+                              : null,
                           tooltip: 'Move algorithm down',
                         ),
                       ),
@@ -274,7 +295,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                               if (value == 'delete') {
                                 widget.onDelete?.call();
                               } else if (value.startsWith(mappingPrefix)) {
-                                final paramNumber = int.parse(value.substring(mappingPrefix.length));
+                                final paramNumber = int.parse(
+                                  value.substring(mappingPrefix.length),
+                                );
                                 _showMappingEditor(context, paramNumber);
                               }
                             },
@@ -285,9 +308,20 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                                   enabled: false, // This is a header
                                   child: Row(
                                     children: [
-                                      Icon(Icons.map_sharp, size: 18, color: Theme.of(context).colorScheme.primary),
+                                      Icon(
+                                        Icons.map_sharp,
+                                        size: 18,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
                                       SizedBox(width: 8),
-                                      Text('Mappings', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      Text(
+                                        'Mappings',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -298,7 +332,10 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_forever_rounded, size: 18),
+                                    Icon(
+                                      Icons.delete_forever_rounded,
+                                      size: 18,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('Delete Algorithm'),
                                   ],
@@ -313,42 +350,41 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
                 // Ports area
                 Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AlgorithmNodeWidget.horizontalPadding,
-                      vertical: AlgorithmNodeWidget.portsVerticalPadding,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Input ports
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: widget.inputPorts
-                                .map(
-                                  (port) => _buildPortRow(port, PortType.input),
-                                )
-                                .toList(),
-                          ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AlgorithmNodeWidget.horizontalPadding,
+                    vertical: AlgorithmNodeWidget.portsVerticalPadding,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Input ports
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: widget.inputPorts
+                              .map(
+                                (port) => _buildPortRow(port, PortType.input),
+                              )
+                              .toList(),
                         ),
+                      ),
 
-                        // Spacer
-                        const SizedBox(width: 8),
+                      // Spacer
+                      const SizedBox(width: 8),
 
-                        // Output ports
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: widget.outputPorts
-                                .map(
-                                  (port) =>
-                                      _buildPortRow(port, PortType.output),
-                                )
-                                .toList(),
-                          ),
+                      // Output ports
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: widget.outputPorts
+                              .map(
+                                (port) => _buildPortRow(port, PortType.output),
+                              )
+                              .toList(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -432,14 +468,18 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     final mappings = widget.algorithmMappings;
     final slots = widget.allSlots;
     final algorithmIndex = widget.algorithmIndex;
-    
-    if (mappings == null || mappings.isEmpty || slots == null || algorithmIndex == null) return [];
+
+    if (mappings == null ||
+        mappings.isEmpty ||
+        slots == null ||
+        algorithmIndex == null)
+      return [];
 
     return mappings
         .where((mapping) => mapping.packedMappingData.isMapped())
         .map((mapping) {
           final icon = _getMappingIcon(mapping.packedMappingData);
-          
+
           // Get the parameter name from the slot's parameter info
           String paramName = 'Param ${mapping.parameterNumber}'; // fallback
           if (algorithmIndex < slots.length) {
@@ -462,7 +502,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               ],
             ),
           );
-        }).toList();
+        })
+        .toList();
   }
 
   IconData _getMappingIcon(PackedMappingData data) {
@@ -479,7 +520,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   void _showMappingEditor(BuildContext context, int parameterNumber) async {
     final mappings = widget.algorithmMappings;
     final slots = widget.allSlots;
-    
+
     if (mappings == null || slots == null) {
       debugPrint('Missing mapping data or slots for editing');
       return;
@@ -488,7 +529,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     final mapping = mappings.firstWhere(
       (m) => m.parameterNumber == parameterNumber,
       orElse: () => Mapping(
-        algorithmIndex: widget.algorithmIndex!,  // Already null-checked above
+        algorithmIndex: widget.algorithmIndex!, // Already null-checked above
         parameterNumber: parameterNumber,
         packedMappingData: PackedMappingData.filler(),
       ),
@@ -496,7 +537,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
     final cubit = context.read<DistingCubit>();
     final midiCubit = context.read<MidiListenerCubit>();
-    
+
     final updatedData = await showModalBottomSheet<PackedMappingData>(
       context: context,
       isScrollControlled: true,
@@ -508,11 +549,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     );
 
     if (updatedData != null && widget.algorithmIndex != null) {
-      cubit.saveMapping(
-        widget.algorithmIndex!,
-        parameterNumber,
-        updatedData,
-      );
+      cubit.saveMapping(widget.algorithmIndex!, parameterNumber, updatedData);
     }
   }
 }

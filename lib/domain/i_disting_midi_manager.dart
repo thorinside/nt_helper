@@ -23,30 +23,46 @@ abstract class IDistingMidiManager {
   Future<List<String>?> requestUnitStrings();
   Future<NumParameters?> requestNumberOfParameters(int algorithmIndex);
   Future<ParameterInfo?> requestParameterInfo(
-      int algorithmIndex, int parameterNumber);
+    int algorithmIndex,
+    int parameterNumber,
+  );
   Future<ParameterPages?> requestParameterPages(int algorithmIndex);
   Future<AllParameterValues?> requestAllParameterValues(int algorithmIndex);
   Future<ParameterEnumStrings?> requestParameterEnumStrings(
-      int algorithmIndex, int parameterNumber);
+    int algorithmIndex,
+    int parameterNumber,
+  );
   Future<Mapping?> requestMappings(int algorithmIndex, int parameterNumber);
   Future<RoutingInfo?> requestRoutingInformation(int algorithmIndex);
   Future<ParameterValueString?> requestParameterValueString(
-      int algorithmIndex, int parameterNumber);
+    int algorithmIndex,
+    int parameterNumber,
+  );
   Future<ParameterValue?> requestParameterValue(
-      int algorithmIndex, int parameterNumber);
+    int algorithmIndex,
+    int parameterNumber,
+  );
   Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex);
   Future<Uint8List?>
-      encodeTakeScreenshot(); // Assuming this belongs here, might need adjustment
+  encodeTakeScreenshot(); // Assuming this belongs here, might need adjustment
   Future<CpuUsage?> requestCpuUsage();
 
   // Actions (may return Future<void> or void)
   Future<void> requestWake();
   Future<void> setParameterValue(
-      int algorithmIndex, int parameterNumber, int value);
+    int algorithmIndex,
+    int parameterNumber,
+    int value,
+  );
   Future<void> setParameterString(
-      int algorithmIndex, int parameterNumber, String value);
+    int algorithmIndex,
+    int parameterNumber,
+    String value,
+  );
   Future<void> requestAddAlgorithm(
-      AlgorithmInfo algorithm, List<int> specifications);
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  );
   Future<void> requestRemoveAlgorithm(int algorithmIndex);
   Future<void> requestLoadPlugin(String guid);
   Future<void> requestSetFocus(int algorithmIndex, int parameterNumber);
@@ -57,7 +73,10 @@ abstract class IDistingMidiManager {
   Future<void> requestNewPreset();
   Future<void> requestLoadPreset(String name, bool append);
   Future<void> requestSetMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data);
+    int algorithmIndex,
+    int parameterNumber,
+    PackedMappingData data,
+  );
   Future<void> requestSendSlotName(int algorithmIndex, String newName);
   Future<void> requestSetDisplayMode(DisplayMode displayMode);
   Future<void> requestSetRealTimeClock(int unixTimeSeconds);
@@ -74,8 +93,11 @@ abstract class IDistingMidiManager {
   Future<SdCardStatus?> requestFileRename(String fromPath, String toPath);
   Future<SdCardStatus?> requestFileUpload(String path, Uint8List data);
   Future<SdCardStatus?> requestFileUploadChunk(
-      String path, Uint8List data, int position,
-      {bool createAlways = false});
+    String path,
+    Uint8List data,
+    int position, {
+    bool createAlways = false,
+  });
   Future<SdCardStatus?> requestDirectoryCreate(String path);
 
   // Scala/Tuning Operations
@@ -83,6 +105,8 @@ abstract class IDistingMidiManager {
   Future<void> requestKbmFile(String filePath);
 
   // Backup Operations
-  Future<void> backupPlugins(String backupDirectory,
-      {void Function(double progress, String currentFile)? onProgress});
+  Future<void> backupPlugins(
+    String backupDirectory, {
+    void Function(double progress, String currentFile)? onProgress,
+  });
 }

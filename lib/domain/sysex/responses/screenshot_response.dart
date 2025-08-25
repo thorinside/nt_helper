@@ -19,8 +19,10 @@ class ScreenshotResponse extends SysexResponse {
       const int newHeight = height + 2 * borderWidth;
 
       // Create a new image with the border dimensions
-      final img.Image borderedImage =
-          img.Image(width: newWidth, height: newHeight);
+      final img.Image borderedImage = img.Image(
+        width: newWidth,
+        height: newHeight,
+      );
 
       // Fill the entire image with a border color (e.g., black)
       final img.Color borderColor = img.ColorFloat16.rgb(0, 0, 0); // Black
@@ -39,8 +41,10 @@ class ScreenshotResponse extends SysexResponse {
           int pixelIndex = y * width + x;
           if (pixelIndex < data.length) {
             double v = data[pixelIndex].toDouble();
-            v = pow(v * 0.066666666666667, 0.45)
-                .toDouble(); // Apply gamma correction
+            v = pow(
+              v * 0.066666666666667,
+              0.45,
+            ).toDouble(); // Apply gamma correction
             v = pow(v, 0.45).toDouble(); // Apply gamma correction again
             v = v * 255; // Scale to 0–255
             int intensity = v.clamp(0, 255).toInt();
@@ -55,7 +59,10 @@ class ScreenshotResponse extends SysexResponse {
         for (int x = 0; x < width; x++) {
           img.Pixel originalPixel = image.getPixel(x, y);
           borderedImage.setPixel(
-              x + borderWidth, y + borderWidth, originalPixel);
+            x + borderWidth,
+            y + borderWidth,
+            originalPixel,
+          );
         }
       }
 

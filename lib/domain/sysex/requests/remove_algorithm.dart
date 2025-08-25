@@ -8,8 +8,10 @@ class RemoveAlgorithmMessage extends SysexMessage implements HasAlgorithmIndex {
   @override
   final int algorithmIndex;
 
-  RemoveAlgorithmMessage(
-      {required super.sysExId, required this.algorithmIndex});
+  RemoveAlgorithmMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+  });
 
   @override
   Uint8List encode() {

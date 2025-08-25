@@ -29,8 +29,8 @@ class GalleryService {
   GalleryService({
     required SettingsService settingsService,
     AppDatabase? database,
-  })  : _settingsService = settingsService,
-        _database = database {
+  }) : _settingsService = settingsService,
+       _database = database {
     // Initialize update checker if database is available
     if (_database != null) {
       _updateChecker = PluginUpdateChecker(
@@ -68,14 +68,16 @@ class GalleryService {
       final url = galleryUrl;
       debugPrint('Loading gallery from: $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Disting-NT-Helper/1.0',
-          'Cache-Control': 'no-cache',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'Disting-NT-Helper/1.0',
+              'Cache-Control': 'no-cache',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       debugPrint('Response status: ${response.statusCode}');
       debugPrint('Response headers: ${response.headers}');
@@ -84,7 +86,8 @@ class GalleryService {
       if (response.statusCode == 200) {
         debugPrint('Response body length: ${response.body.length}');
         debugPrint(
-            'Response body preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+          'Response body preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}',
+        );
 
         // Check if the response looks like HTML (Google Drive error page)
         if (response.body.trim().startsWith('<')) {
@@ -100,7 +103,8 @@ class GalleryService {
         debugPrint('  Version: ${jsonData['version']}');
         debugPrint('  Plugins: ${(jsonData['plugins'] as List?)?.length ?? 0}');
         debugPrint(
-            '  Categories: ${(jsonData['categories'] as List?)?.length ?? 0}');
+          '  Categories: ${(jsonData['categories'] as List?)?.length ?? 0}',
+        );
 
         final gallery = Gallery.fromJson(jsonData);
 
@@ -166,11 +170,14 @@ class GalleryService {
   }
 
   /// Add plugin to install queue with metadata extraction
-  Future<void> addToQueue(GalleryPlugin plugin,
-      {String version = 'latest'}) async {
+  Future<void> addToQueue(
+    GalleryPlugin plugin, {
+    String version = 'latest',
+  }) async {
     // Check if already in queue
-    final existingIndex =
-        _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+    final existingIndex = _installQueue.indexWhere(
+      (q) => q.plugin.id == plugin.id,
+    );
 
     QueuedPlugin queuedPlugin;
 
@@ -185,8 +192,10 @@ class GalleryService {
       _installQueue[existingIndex] = queuedPlugin;
     } else {
       // Add new entry
-      final bool isCollection =
-          await isActualCollection(plugin, downloadPluginArchive);
+      final bool isCollection = await isActualCollection(
+        plugin,
+        downloadPluginArchive,
+      );
       queuedPlugin = QueuedPlugin(
         plugin: plugin,
         selectedVersion: version,
@@ -211,13 +220,15 @@ class GalleryService {
       if (queuedPlugin.selectedPlugins.isNotEmpty ||
           !queuedPlugin.isCollection) {
         debugPrint(
-            'Plugin ${plugin.name} already processed or not a collection');
+          'Plugin ${plugin.name} already processed or not a collection',
+        );
         return;
       }
 
       // Update status to analyzing
-      final queueIndex =
-          _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+      final queueIndex = _installQueue.indexWhere(
+        (q) => q.plugin.id == plugin.id,
+      );
       if (queueIndex >= 0) {
         _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
           status: QueuedPluginStatus.analyzing,
@@ -226,8 +237,10 @@ class GalleryService {
       }
 
       // Download the plugin archive
-      final archiveBytes =
-          await downloadPluginArchive(plugin, queuedPlugin.selectedVersion);
+      final archiveBytes = await downloadPluginArchive(
+        plugin,
+        queuedPlugin.selectedVersion,
+      );
 
       // Count installable plugins to determine if it's a collection
       final pluginCount = await PluginMetadataExtractor.countInstallablePlugins(
@@ -242,9 +255,9 @@ class GalleryService {
         debugPrint('Extracting collection plugins for ${plugin.name}');
         final collectionPlugins =
             await PluginMetadataExtractor.extractPluginsFromArchive(
-          archiveBytes,
-          plugin,
-        );
+              archiveBytes,
+              plugin,
+            );
 
         // Filter to only include installable plugins (.o, .lua, .3pot files)
         final installablePlugins = collectionPlugins
@@ -253,8 +266,9 @@ class GalleryService {
             .toList();
 
         // Update the queued plugin with the collection data
-        final queueIndex =
-            _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+        final queueIndex = _installQueue.indexWhere(
+          (q) => q.plugin.id == plugin.id,
+        );
         if (queueIndex >= 0) {
           _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
             selectedPlugins: installablePlugins,
@@ -262,13 +276,15 @@ class GalleryService {
           );
           _notifyQueueChanged();
           debugPrint(
-              'Updated ${plugin.name} with ${installablePlugins.length} collection plugins (all selected by default)');
+            'Updated ${plugin.name} with ${installablePlugins.length} collection plugins (all selected by default)',
+          );
         }
       } else {
         debugPrint('Plugin ${plugin.name} is a singular plugin');
         // Reset status back to queued for singular plugins
-        final queueIndex =
-            _installQueue.indexWhere((q) => q.plugin.id == plugin.id);
+        final queueIndex = _installQueue.indexWhere(
+          (q) => q.plugin.id == plugin.id,
+        );
         if (queueIndex >= 0) {
           _installQueue[queueIndex] = _installQueue[queueIndex].copyWith(
             status: QueuedPluginStatus.queued,
@@ -278,7 +294,8 @@ class GalleryService {
       }
     } catch (e) {
       debugPrint(
-          'Failed to extract metadata for ${queuedPlugin.plugin.name}: $e');
+        'Failed to extract metadata for ${queuedPlugin.plugin.name}: $e',
+      );
       // Don't fail the queue operation if metadata extraction fails
       // The plugin will be treated as a singular plugin
     }
@@ -312,9 +329,12 @@ class GalleryService {
 
   /// Update selected plugins for a queued plugin collection
   void updateQueuedPluginSelection(
-      String pluginId, List<CollectionPlugin> selectedPlugins) {
+    String pluginId,
+    List<CollectionPlugin> selectedPlugins,
+  ) {
     debugPrint(
-        '[GalleryService] Updating plugin selection for $pluginId: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} selected');
+      '[GalleryService] Updating plugin selection for $pluginId: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} selected',
+    );
     final index = _installQueue.indexWhere((q) => q.plugin.id == pluginId);
     if (index >= 0) {
       _installQueue[index] = _installQueue[index].copyWith(
@@ -329,7 +349,9 @@ class GalleryService {
 
   /// Download plugin archive for a specific version
   Future<List<int>> downloadPluginArchive(
-      GalleryPlugin plugin, String version) async {
+    GalleryPlugin plugin,
+    String version,
+  ) async {
     final release = plugin.getVersionTag(version);
     final downloadUrl = await _getDownloadUrl(plugin, release);
 
@@ -347,9 +369,12 @@ class GalleryService {
 
   /// Install all plugins in the queue using Disting upload functionality
   Future<void> installQueuedPlugins({
-    required Function(String fileName, Uint8List fileData,
-            {Function(double)? onProgress})
-        distingInstallPlugin,
+    required Function(
+      String fileName,
+      Uint8List fileData, {
+      Function(double)? onProgress,
+    })
+    distingInstallPlugin,
     Function(QueuedPlugin)? onPluginStart,
     Function(QueuedPlugin, double)? onProgress,
     Function(QueuedPlugin)? onPluginComplete,
@@ -374,8 +399,10 @@ class GalleryService {
           },
         );
 
-        _updateQueuedPlugin(queuedPlugin.plugin.id,
-            status: QueuedPluginStatus.completed);
+        _updateQueuedPlugin(
+          queuedPlugin.plugin.id,
+          status: QueuedPluginStatus.completed,
+        );
         onPluginComplete?.call(queuedPlugin);
 
         // Record successful installation in database
@@ -391,7 +418,8 @@ class GalleryService {
               installationNotes: 'Installed via gallery',
             );
             debugPrint(
-                'Recorded successful installation of ${queuedPlugin.plugin.name} in database');
+              'Recorded successful installation of ${queuedPlugin.plugin.name} in database',
+            );
           } catch (dbError) {
             debugPrint('Failed to record installation in database: $dbError');
             // Don't fail the installation if database recording fails
@@ -402,8 +430,11 @@ class GalleryService {
         removeFromQueue(queuedPlugin.plugin.id);
       } catch (e) {
         final errorMessage = e.toString();
-        _updateQueuedPlugin(queuedPlugin.plugin.id,
-            status: QueuedPluginStatus.failed, errorMessage: errorMessage);
+        _updateQueuedPlugin(
+          queuedPlugin.plugin.id,
+          status: QueuedPluginStatus.failed,
+          errorMessage: errorMessage,
+        );
         onPluginError?.call(queuedPlugin, errorMessage);
 
         // Record failed installation in database
@@ -412,16 +443,18 @@ class GalleryService {
             final installationPath = _getInstallationPath(queuedPlugin.plugin);
             await _database.pluginInstallationsDao
                 .recordPluginInstallationFailure(
-              plugin: queuedPlugin.plugin,
-              attemptedVersion: queuedPlugin.selectedVersion,
-              installationPath: installationPath,
-              errorMessage: errorMessage,
-            );
+                  plugin: queuedPlugin.plugin,
+                  attemptedVersion: queuedPlugin.selectedVersion,
+                  installationPath: installationPath,
+                  errorMessage: errorMessage,
+                );
             debugPrint(
-                'Recorded failed installation of ${queuedPlugin.plugin.name} in database');
+              'Recorded failed installation of ${queuedPlugin.plugin.name} in database',
+            );
           } catch (dbError) {
             debugPrint(
-                'Failed to record installation failure in database: $dbError');
+              'Failed to record installation failure in database: $dbError',
+            );
           }
         }
 
@@ -434,9 +467,12 @@ class GalleryService {
   /// Install a single plugin using Disting upload functionality
   Future<void> _installSinglePluginViaDisting(
     QueuedPlugin queuedPlugin,
-    Function(String fileName, Uint8List fileData,
-            {Function(double)? onProgress})
-        distingInstallPlugin, {
+    Function(
+      String fileName,
+      Uint8List fileData, {
+      Function(double)? onProgress,
+    })
+    distingInstallPlugin, {
     Function(QueuedPlugin, double)? onProgress,
     Function(int, int)? onInstallationDetails,
   }) async {
@@ -444,22 +480,25 @@ class GalleryService {
     final version = plugin.getVersionTag(queuedPlugin.selectedVersion);
 
     debugPrint(
-        'Installing ${plugin.name} v$version from ${plugin.repository.owner}/${plugin.repository.name}');
+      'Installing ${plugin.name} v$version from ${plugin.repository.owner}/${plugin.repository.name}',
+    );
 
     // Update status to downloading
-    _updateQueuedPlugin(plugin.id,
-        status: QueuedPluginStatus.downloading, progress: 0.0);
+    _updateQueuedPlugin(
+      plugin.id,
+      status: QueuedPluginStatus.downloading,
+      progress: 0.0,
+    );
 
     // Download the release file
     final downloadUrl = await _getDownloadUrl(plugin, version);
-    final fileBytes = await _downloadWithProgress(
-      downloadUrl,
-      (progress) {
-        _updateQueuedPlugin(plugin.id,
-            progress: progress * 0.6); // 60% for download
-        onProgress?.call(queuedPlugin, progress * 0.6);
-      },
-    );
+    final fileBytes = await _downloadWithProgress(downloadUrl, (progress) {
+      _updateQueuedPlugin(
+        plugin.id,
+        progress: progress * 0.6,
+      ); // 60% for download
+      onProgress?.call(queuedPlugin, progress * 0.6);
+    });
 
     // Determine file type from download URL
     final downloadUri = Uri.parse(downloadUrl);
@@ -472,12 +511,18 @@ class GalleryService {
 
     if (fileExtension == '.zip') {
       // Update status to extracting for zip files
-      _updateQueuedPlugin(plugin.id,
-          status: QueuedPluginStatus.extracting, progress: 0.6);
+      _updateQueuedPlugin(
+        plugin.id,
+        status: QueuedPluginStatus.extracting,
+        progress: 0.6,
+      );
 
       // Extract the zip archive
-      filesToInstall =
-          await _extractArchive(fileBytes, plugin, queuedPlugin: queuedPlugin);
+      filesToInstall = await _extractArchive(
+        fileBytes,
+        plugin,
+        queuedPlugin: queuedPlugin,
+      );
     } else if (_isRawPluginFile(fileExtension)) {
       // Handle raw plugin files (.o, .lua, .3pot)
       debugPrint('Processing raw plugin file: $fileName');
@@ -486,20 +531,28 @@ class GalleryService {
       filesToInstall = [MapEntry(fileName, fileBytes)];
     } else {
       throw GalleryException(
-          'Unsupported file type: $fileExtension. Supported types are: .zip, .o, .lua, .3pot');
+        'Unsupported file type: $fileExtension. Supported types are: .zip, .o, .lua, .3pot',
+      );
     }
 
     // Update status to installing
-    _updateQueuedPlugin(plugin.id,
-        status: QueuedPluginStatus.installing, progress: 0.8);
+    _updateQueuedPlugin(
+      plugin.id,
+      status: QueuedPluginStatus.installing,
+      progress: 0.8,
+    );
 
     // Install files using Disting upload functionality
-    await _installFilesViaDisting(filesToInstall, plugin, distingInstallPlugin,
-        (uploadProgress) {
-      final totalProgress = 0.8 + (uploadProgress * 0.2); // 20% for upload
-      _updateQueuedPlugin(plugin.id, progress: totalProgress);
-      onProgress?.call(queuedPlugin, totalProgress);
-    });
+    await _installFilesViaDisting(
+      filesToInstall,
+      plugin,
+      distingInstallPlugin,
+      (uploadProgress) {
+        final totalProgress = 0.8 + (uploadProgress * 0.2); // 20% for upload
+        _updateQueuedPlugin(plugin.id, progress: totalProgress);
+        onProgress?.call(queuedPlugin, totalProgress);
+      },
+    );
 
     // Update progress to complete
     _updateQueuedPlugin(plugin.id, progress: 1.0);
@@ -521,13 +574,15 @@ class GalleryService {
     if (plugin.installation.downloadUrl != null &&
         plugin.installation.downloadUrl!.isNotEmpty) {
       debugPrint(
-          'Using direct downloadUrl: ${plugin.installation.downloadUrl}');
+        'Using direct downloadUrl: ${plugin.installation.downloadUrl}',
+      );
       return plugin.installation.downloadUrl!;
     }
 
     // Priority 2: Fall back to GitHub API release asset discovery
     debugPrint(
-        'Falling back to GitHub API for ${repo.owner}/${repo.name} v$version');
+      'Falling back to GitHub API for ${repo.owner}/${repo.name} v$version',
+    );
 
     // Get release with assets
     final apiUrl =
@@ -572,19 +627,22 @@ class GalleryService {
             return assetUrl;
           } else {
             throw GalleryException(
-                'Release has no plugin assets - only source code found');
+              'Release has no plugin assets - only source code found',
+            );
           }
         } else {
           throw GalleryException('Release has no assets');
         }
       } else {
         throw GalleryException(
-            'Release $version not found for ${repo.owner}/${repo.name}');
+          'Release $version not found for ${repo.owner}/${repo.name}',
+        );
       }
     } catch (e) {
       if (e is GalleryException) rethrow;
       throw GalleryException(
-          'Failed to fetch release $version for ${repo.owner}/${repo.name}: $e');
+        'Failed to fetch release $version for ${repo.owner}/${repo.name}: $e',
+      );
     }
   }
 
@@ -600,7 +658,8 @@ class GalleryService {
 
     if (response.statusCode != 200) {
       throw GalleryException(
-          'Download failed: HTTP ${response.statusCode} for URL: $url');
+        'Download failed: HTTP ${response.statusCode} for URL: $url',
+      );
     }
 
     final contentLength = response.contentLength;
@@ -639,7 +698,8 @@ class GalleryService {
         debugPrint('Using extract pattern: ${installation.extractPattern}');
       } catch (e) {
         debugPrint(
-            'Invalid extract pattern ${installation.extractPattern}: $e');
+          'Invalid extract pattern ${installation.extractPattern}: $e',
+        );
         // Continue without pattern filtering if regex is invalid
       }
     }
@@ -682,7 +742,8 @@ class GalleryService {
             !extractRegex.hasMatch(originalFilePath) &&
             !extractRegex.hasMatch(originalFileNameOnly)) {
           debugPrint(
-              'Skipping file (does not match extract pattern): ${file.name}');
+            'Skipping file (does not match extract pattern): ${file.name}',
+          );
           continue;
         }
       }
@@ -708,7 +769,8 @@ class GalleryService {
 
     if (extractedFiles.isEmpty) {
       throw GalleryException(
-          'No plugin files found in archive for ${plugin.name}. Extract pattern: ${installation.extractPattern ?? "none"}');
+        'No plugin files found in archive for ${plugin.name}. Extract pattern: ${installation.extractPattern ?? "none"}',
+      );
     }
 
     return extractedFiles;
@@ -718,13 +780,17 @@ class GalleryService {
   Future<void> _installFilesViaDisting(
     List<MapEntry<String, List<int>>> files,
     GalleryPlugin plugin,
-    Function(String fileName, Uint8List fileData,
-            {Function(double)? onProgress})
-        distingInstallPlugin,
+    Function(
+      String fileName,
+      Uint8List fileData, {
+      Function(double)? onProgress,
+    })
+    distingInstallPlugin,
     Function(double)? onProgress,
   ) async {
     debugPrint(
-        'Installing ${files.length} files for ${plugin.name} via Disting upload');
+      'Installing ${files.length} files for ${plugin.name} via Disting upload',
+    );
 
     int filesProcessed = 0;
 
@@ -739,7 +805,8 @@ class GalleryService {
         // Try to upload with directory structure first (if path contains directories)
         if (relativePath.contains('/') && relativePath != fileName) {
           debugPrint(
-              'Attempting upload with directory structure: $relativePath');
+            'Attempting upload with directory structure: $relativePath',
+          );
           try {
             await distingInstallPlugin(
               relativePath,
@@ -781,7 +848,8 @@ class GalleryService {
     }
 
     debugPrint(
-        'Successfully uploaded ${files.length} files for ${plugin.name}');
+      'Successfully uploaded ${files.length} files for ${plugin.name}',
+    );
   }
 
   /// Update a queued plugin's status
@@ -810,8 +878,9 @@ class GalleryService {
   // --- Plugin Update Methods ---
 
   /// Check for updates for all installed plugins
-  Future<UpdateCheckResult?> checkAllPluginUpdates(
-      {bool forceCheck = false}) async {
+  Future<UpdateCheckResult?> checkAllPluginUpdates({
+    bool forceCheck = false,
+  }) async {
     return await _updateChecker?.checkAllPluginUpdates(forceCheck: forceCheck);
   }
 
@@ -862,7 +931,8 @@ class GalleryService {
 
   /// Compare gallery plugins with installed versions and return update info
   Future<Map<String, PluginUpdateInfo>> compareWithInstalledVersions(
-      Gallery gallery) async {
+    Gallery gallery,
+  ) async {
     final Map<String, PluginUpdateInfo> updateInfo = {};
 
     if (_database == null) {
@@ -872,8 +942,8 @@ class GalleryService {
 
     try {
       // Get all installed plugins
-      final installedPlugins =
-          await _database.pluginInstallationsDao.getAllInstalledPlugins();
+      final installedPlugins = await _database.pluginInstallationsDao
+          .getAllInstalledPlugins();
 
       for (final galleryPlugin in gallery.plugins) {
         // Find matching installed plugin(s)
@@ -888,15 +958,19 @@ class GalleryService {
 
         // Get the latest installed version
         final latestInstalled = matchingInstalled.reduce(
-            (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b);
+          (a, b) => a.pluginVersion.compareTo(b.pluginVersion) > 0 ? a : b,
+        );
 
         // Get the best available version from gallery channels
         final availableVersion = _getBestAvailableVersion(galleryPlugin);
 
         if (availableVersion != null) {
           // Compare versions
-          final hasUpdate = _compareVersions(
-                  latestInstalled.pluginVersion, availableVersion) <
+          final hasUpdate =
+              _compareVersions(
+                latestInstalled.pluginVersion,
+                availableVersion,
+              ) <
               0;
 
           updateInfo[galleryPlugin.id] = PluginUpdateInfo(
@@ -911,8 +985,9 @@ class GalleryService {
       }
 
       debugPrint(
-          'Version comparison complete: ${updateInfo.length} plugins checked, '
-          '${updateInfo.values.where((info) => info.updateAvailable).length} updates available');
+        'Version comparison complete: ${updateInfo.length} plugins checked, '
+        '${updateInfo.values.where((info) => info.updateAvailable).length} updates available',
+      );
     } catch (e) {
       debugPrint('Error comparing plugin versions: $e');
     }

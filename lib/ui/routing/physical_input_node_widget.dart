@@ -3,9 +3,12 @@ import 'package:nt_helper/models/algorithm_port.dart';
 import 'package:nt_helper/ui/widgets/port_widget.dart';
 
 typedef PortConnectionCallback = void Function(String portId, PortType type);
-typedef PortPanCallback = void Function(String portId, PortType type, DragStartDetails details);
-typedef PortPanUpdateCallback = void Function(String portId, PortType type, DragUpdateDetails details);
-typedef PortPanEndCallback = void Function(String portId, PortType type, DragEndDetails details);
+typedef PortPanCallback =
+    void Function(String portId, PortType type, DragStartDetails details);
+typedef PortPanUpdateCallback =
+    void Function(String portId, PortType type, DragUpdateDetails details);
+typedef PortPanEndCallback =
+    void Function(String portId, PortType type, DragEndDetails details);
 
 class PhysicalInputNodeWidget extends StatelessWidget {
   // Layout constants - narrower than algorithm nodes
@@ -16,11 +19,16 @@ class PhysicalInputNodeWidget extends StatelessWidget {
   static const double portWidgetSize = 24.0;
   static const int jackCount = 12;
   static const int algorithmIndex = -2; // Special index for physical inputs
-  
+
   // Calculate exact content height with bottom padding
   static const double bottomPadding = 12.0;
   static const double headerPadding = 6.0; // vertical padding inside header
-  static const double totalHeight = headerHeight + (headerPadding * 2) + (jackCount * portRowHeight) + (verticalPadding * 2) + bottomPadding;
+  static const double totalHeight =
+      headerHeight +
+      (headerPadding * 2) +
+      (jackCount * portRowHeight) +
+      (verticalPadding * 2) +
+      bottomPadding;
 
   final Set<String> connectedPorts;
   final PortConnectionCallback? onPortConnectionStart;
@@ -114,46 +122,48 @@ class PhysicalInputNodeWidget extends StatelessWidget {
   Widget _buildJackRow(BuildContext context, int jackNumber) {
     final portId = 'physical_input_$jackNumber';
     final isConnected = connectedPorts.contains('${algorithmIndex}_$portId');
-    
-    final port = AlgorithmPort(
-      id: portId,
-      name: 'I$jackNumber',
-    );
+
+    final port = AlgorithmPort(id: portId, name: 'I$jackNumber');
 
     return SizedBox(
       height: portRowHeight,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 0),
-      child: Row(
-        children: [
-          // Left label
-          Expanded(
-            child: Text(
-              'I$jackNumber',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 9,
-                fontWeight: FontWeight.w500,
+        child: Row(
+          children: [
+            // Left label
+            Expanded(
+              child: Text(
+                'I$jackNumber',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
             ),
-          ),
-          // Centered port widget (bidirectional - always acts as output for dragging)
-          PortWidget(
-            port: port,
-            type: PortType.output, // Allow dragging FROM this port
-            isConnected: isConnected,
-            onConnectionStart: () => onPortConnectionStart?.call(portId, PortType.output),
-            onConnectionEnd: () => onPortConnectionEnd?.call(portId, PortType.input),
-            onPanStart: (details) => onPortPanStart?.call(portId, PortType.output, details),
-            onPanUpdate: (details) => onPortPanUpdate?.call(portId, PortType.output, details),
-            onPanEnd: (details) => onPortPanEnd?.call(portId, PortType.output, details),
-          ),
-          // Right spacer (same as left for centering)
-          const Expanded(child: SizedBox()),
-        ],
+            // Centered port widget (bidirectional - always acts as output for dragging)
+            PortWidget(
+              port: port,
+              type: PortType.output, // Allow dragging FROM this port
+              isConnected: isConnected,
+              onConnectionStart: () =>
+                  onPortConnectionStart?.call(portId, PortType.output),
+              onConnectionEnd: () =>
+                  onPortConnectionEnd?.call(portId, PortType.input),
+              onPanStart: (details) =>
+                  onPortPanStart?.call(portId, PortType.output, details),
+              onPanUpdate: (details) =>
+                  onPortPanUpdate?.call(portId, PortType.output, details),
+              onPanEnd: (details) =>
+                  onPortPanEnd?.call(portId, PortType.output, details),
+            ),
+            // Right spacer (same as left for centering)
+            const Expanded(child: SizedBox()),
+          ],
         ),
       ),
     );

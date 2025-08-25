@@ -89,10 +89,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   void initState() {
     super.initState();
     _selectedIndex = 0;
-    _tabController = TabController(
-      length: widget.slots.length,
-      vsync: this,
-    );
+    _tabController = TabController(length: widget.slots.length, vsync: this);
     _tabController.addListener(_handleTabSelection);
 
     // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
@@ -133,10 +130,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     super.didUpdateWidget(oldWidget);
     if (widget.slots.length != oldWidget.slots.length) {
       _tabController.dispose();
-      _tabController = TabController(
-        length: widget.slots.length,
-        vsync: this,
-      );
+      _tabController = TabController(length: widget.slots.length, vsync: this);
       _tabController.addListener(_handleTabSelection);
       // Clamp selectedIndex into valid range [0, slots.length-1] (or 0 if no slots).
       final int maxIndex = widget.slots.isEmpty ? 0 : widget.slots.length - 1;
@@ -158,7 +152,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     bool isWideScreen = MediaQuery.of(context).size.width > 900;
@@ -171,10 +164,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         appBar: _buildAppBar(context, isWideScreen),
         body: IndexedStack(
           index: _currentMode == EditMode.parameters ? 0 : 1,
-          children: [
-            _buildWideScreenBody(),
-            _buildRoutingCanvas(),
-          ],
+          children: [_buildWideScreenBody(), _buildRoutingCanvas()],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
@@ -187,10 +177,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         appBar: _buildAppBar(context, isWideScreen),
         body: IndexedStack(
           index: _currentMode == EditMode.parameters ? 0 : 1,
-          children: [
-            _buildBody(),
-            _buildRoutingCanvas(),
-          ],
+          children: [_buildBody(), _buildRoutingCanvas()],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
@@ -250,29 +237,33 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Widget _buildFloatingActionButton() {
-    return Builder(builder: (context) {
-      return FloatingActionButton.small(
-        tooltip: "Add Algorithm to Preset",
-        onPressed: () async {
-          final cubit = context.read<DistingCubit>();
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BlocProvider.value(
-                  value: cubit, child: const AddAlgorithmScreen()),
-            ),
-          );
-
-          if (result != null && result is Map) {
-            await cubit.onAlgorithmSelected(
-              result['algorithm'],
-              result['specValues'],
+    return Builder(
+      builder: (context) {
+        return FloatingActionButton.small(
+          tooltip: "Add Algorithm to Preset",
+          onPressed: () async {
+            final cubit = context.read<DistingCubit>();
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlocProvider.value(
+                  value: cubit,
+                  child: const AddAlgorithmScreen(),
+                ),
+              ),
             );
-          }
-        },
-        child: Icon(Icons.add_circle_rounded),
-      );
-    });
+
+            if (result != null && result is Map) {
+              await cubit.onAlgorithmSelected(
+                result['algorithm'],
+                result['specValues'],
+              );
+            }
+          },
+          child: Icon(Icons.add_circle_rounded),
+        );
+      },
+    );
   }
 
   Widget _buildRoutingCanvas() {
@@ -316,78 +307,80 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               ),
             ),
           ),
-          
-          const SizedBox(width: 24),
-          
-          Builder(builder: (context) {
-            final isOffline = switch (context.watch<DistingCubit>().state) {
-              DistingStateSynchronized(offline: final o) => o,
-              _ => false,
-            };
 
-            if (isOffline) {
-              // Show "Offline Data" button when offline
-              return IconButton(
-                tooltip: "Offline Data",
-                icon: const Icon(Icons.sync_alt_rounded),
-                onPressed: () {
-                  final distingCubit = context.read<DistingCubit>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          MetadataSyncPage(distingCubit: distingCubit),
+          const SizedBox(width: 24),
+
+          Builder(
+            builder: (context) {
+              final isOffline = switch (context.watch<DistingCubit>().state) {
+                DistingStateSynchronized(offline: final o) => o,
+                _ => false,
+              };
+
+              if (isOffline) {
+                // Show "Offline Data" button when offline
+                return IconButton(
+                  tooltip: "Offline Data",
+                  icon: const Icon(Icons.sync_alt_rounded),
+                  onPressed: () {
+                    final distingCubit = context.read<DistingCubit>();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MetadataSyncPage(distingCubit: distingCubit),
+                      ),
+                    );
+                  },
+                );
+              } else {
+                // Show regular view mode buttons when online
+                return Row(
+                  children: [
+                    IconButton(
+                      tooltip: "Parameter View",
+                      onPressed: () {
+                        context.read<DistingCubit>().setDisplayMode(
+                          DisplayMode.parameters,
+                        );
+                      },
+                      icon: Icon(Icons.list_alt_rounded),
                     ),
-                  );
-                },
-              );
-            } else {
-              // Show regular view mode buttons when online
-              return Row(
-                children: [
-                  IconButton(
-                    tooltip: "Parameter View",
-                    onPressed: () {
-                      context
-                          .read<DistingCubit>()
-                          .setDisplayMode(DisplayMode.parameters);
-                    },
-                    icon: Icon(Icons.list_alt_rounded),
-                  ),
-                  IconButton(
-                    tooltip: "Algorithm UI",
-                    onPressed: () {
-                      context
-                          .read<DistingCubit>()
-                          .setDisplayMode(DisplayMode.algorithmUI);
-                    },
-                    icon: Icon(Icons.line_axis_rounded),
-                  ),
-                  IconButton(
-                    tooltip: "Overview UI",
-                    onPressed: () {
-                      context
-                          .read<DistingCubit>()
-                          .setDisplayMode(DisplayMode.overview);
-                    },
-                    icon: Icon(Icons.line_weight_rounded),
-                  ),
-                  IconButton(
-                    tooltip: "Overview VU Meters",
-                    onPressed: () {
-                      context
-                          .read<DistingCubit>()
-                          .setDisplayMode(DisplayMode.overviewVUs);
-                    },
-                    icon: Icon(Icons.leaderboard_rounded),
-                  ),
-                ],
-              );
-            }
-          }),
-          
+                    IconButton(
+                      tooltip: "Algorithm UI",
+                      onPressed: () {
+                        context.read<DistingCubit>().setDisplayMode(
+                          DisplayMode.algorithmUI,
+                        );
+                      },
+                      icon: Icon(Icons.line_axis_rounded),
+                    ),
+                    IconButton(
+                      tooltip: "Overview UI",
+                      onPressed: () {
+                        context.read<DistingCubit>().setDisplayMode(
+                          DisplayMode.overview,
+                        );
+                      },
+                      icon: Icon(Icons.line_weight_rounded),
+                    ),
+                    IconButton(
+                      tooltip: "Overview VU Meters",
+                      onPressed: () {
+                        context.read<DistingCubit>().setDisplayMode(
+                          DisplayMode.overviewVUs,
+                        );
+                      },
+                      icon: Icon(Icons.leaderboard_rounded),
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+
           const Spacer(),
-          
+
           // MCP server status indicator (desktop only)
           if (Platform.isMacOS || Platform.isWindows)
             ChangeNotifierProvider.value(
@@ -401,8 +394,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           const SizedBox(width: 8),
           if (!isSmallScreen)
             DistingVersion(
-                distingVersion: widget.distingVersion,
-                requiredVersion: Constants.requiredDistingVersion),
+              distingVersion: widget.distingVersion,
+              requiredVersion: Constants.requiredDistingVersion,
+            ),
           // CPU Monitor Widget - only in wide-screen mode
           if (isWideScreen) ...[
             const SizedBox(width: 16),
@@ -451,7 +445,9 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       notificationPredicate: (ScrollNotification notification) =>
           notification.depth == 1,
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(66.0), // Consistent height for both modes
+        preferredSize: const Size.fromHeight(
+          66.0,
+        ), // Consistent height for both modes
         child: Column(
           children: [
             _buildPresetInfoEditor(context), // The preset info
@@ -473,7 +469,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       DistingStateSynchronized(offline: final o) => o,
       _ => false,
     };
-    
+
     return [
       // Refresh: Only disabled by loading OR offline
       IconButton(
@@ -504,72 +500,83 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       _buildOverflowMenu(cubit),
     ];
   }
-  
+
   Widget _buildModeSpecificActions(DistingCubit cubit) {
     return Row(
       key: ValueKey(_currentMode), // Important for AnimatedSwitcher
       mainAxisSize: MainAxisSize.min,
-      children: _currentMode == EditMode.parameters 
-        ? _buildParameterModeActions(cubit)
-        : _buildRoutingModeActions(),
+      children: _currentMode == EditMode.parameters
+          ? _buildParameterModeActions(cubit)
+          : _buildRoutingModeActions(),
     );
   }
-  
+
   List<Widget> _buildParameterModeActions(DistingCubit cubit) {
     return [
       // Move Up
-      Builder(builder: (ctx) {
-        return IconButton(
-          icon: const Icon(Icons.arrow_upward_rounded),
-          tooltip: 'Move Algorithm Up',
-          onPressed: widget.loading
-              ? null
-              : () async {
-                  final newIndex = await cubit.moveAlgorithmUp(_selectedIndex);
-                  setState(() {
-                    _selectedIndex = newIndex;
-                  });
-                  _tabController.animateTo(newIndex);
-                },
-        );
-      }),
-      // Move Down
-      Builder(builder: (ctx) {
-        return IconButton(
-          icon: const Icon(Icons.arrow_downward_rounded),
-          tooltip: 'Move Algorithm Down',
-          onPressed: widget.loading
-              ? null
-              : () async {
-                  final currentState = cubit.state;
-                  int slotCount = 0;
-                  if (currentState is DistingStateSynchronized) {
-                    slotCount = currentState.slots.length;
-                  }
-                  if (_selectedIndex < slotCount - 1) {
-                    final newIndex = await cubit.moveAlgorithmDown(_selectedIndex);
+      Builder(
+        builder: (ctx) {
+          return IconButton(
+            icon: const Icon(Icons.arrow_upward_rounded),
+            tooltip: 'Move Algorithm Up',
+            onPressed: widget.loading
+                ? null
+                : () async {
+                    final newIndex = await cubit.moveAlgorithmUp(
+                      _selectedIndex,
+                    );
                     setState(() {
                       _selectedIndex = newIndex;
                     });
                     _tabController.animateTo(newIndex);
-                  }
-                },
-        );
-      }),
+                  },
+          );
+        },
+      ),
+      // Move Down
+      Builder(
+        builder: (ctx) {
+          return IconButton(
+            icon: const Icon(Icons.arrow_downward_rounded),
+            tooltip: 'Move Algorithm Down',
+            onPressed: widget.loading
+                ? null
+                : () async {
+                    final currentState = cubit.state;
+                    int slotCount = 0;
+                    if (currentState is DistingStateSynchronized) {
+                      slotCount = currentState.slots.length;
+                    }
+                    if (_selectedIndex < slotCount - 1) {
+                      final newIndex = await cubit.moveAlgorithmDown(
+                        _selectedIndex,
+                      );
+                      setState(() {
+                        _selectedIndex = newIndex;
+                      });
+                      _tabController.animateTo(newIndex);
+                    }
+                  },
+          );
+        },
+      ),
       // Remove Algorithm
-      Builder(builder: (ctx) {
-        return IconButton(
-          icon: const Icon(Icons.delete_forever_rounded),
-          tooltip: 'Remove Algorithm',
-          onPressed: widget.loading
-              ? null
-              : () async {
-                  cubit.onRemoveAlgorithm(_selectedIndex);
-                });
-      }),
+      Builder(
+        builder: (ctx) {
+          return IconButton(
+            icon: const Icon(Icons.delete_forever_rounded),
+            tooltip: 'Remove Algorithm',
+            onPressed: widget.loading
+                ? null
+                : () async {
+                    cubit.onRemoveAlgorithm(_selectedIndex);
+                  },
+          );
+        },
+      ),
     ];
   }
-  
+
   List<Widget> _buildRoutingModeActions() {
     return [
       // Tidy Routing
@@ -583,421 +590,429 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             DistingStateSynchronized(offline: final o) => o,
             _ => false,
           };
-          
+
           return IconButton(
-            icon: isOptimizing 
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.auto_fix_high),
+            icon: isOptimizing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_fix_high),
             tooltip: 'Tidy Routing - Optimize bus usage',
             onPressed: widget.loading || isOffline || isOptimizing || !canTidy
-              ? null
-              : () async {
-                  // Debug: Log current state before attempting tidy
-                  debugPrint('[TidyButton] NodeRoutingCubit state: ${nodeRoutingCubit.state.runtimeType}');
-                  debugPrint('[TidyButton] canTidy: $canTidy');
-                  debugPrint('[TidyButton] isOptimizing: $isOptimizing');
-                  final result = await nodeRoutingCubit.performTidy();
-                  if (context.mounted) {
-                    final messenger = ScaffoldMessenger.of(context);
-                    if (result.success) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Routing optimized! ${result.busesFreed} buses freed.',
+                ? null
+                : () async {
+                    // Debug: Log current state before attempting tidy
+                    debugPrint(
+                      '[TidyButton] NodeRoutingCubit state: ${nodeRoutingCubit.state.runtimeType}',
+                    );
+                    debugPrint('[TidyButton] canTidy: $canTidy');
+                    debugPrint('[TidyButton] isOptimizing: $isOptimizing');
+                    final result = await nodeRoutingCubit.performTidy();
+                    if (context.mounted) {
+                      final messenger = ScaffoldMessenger.of(context);
+                      if (result.success) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Routing optimized! ${result.busesFreed} buses freed.',
+                            ),
+                            backgroundColor: Colors.green.shade600,
+                            duration: const Duration(seconds: 3),
                           ),
-                          backgroundColor: Colors.green.shade600,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    } else {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Optimization failed: ${result.errorMessage}',
+                        );
+                      } else {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Optimization failed: ${result.errorMessage}',
+                            ),
+                            backgroundColor: Colors.red.shade600,
+                            duration: const Duration(seconds: 4),
                           ),
-                          backgroundColor: Colors.red.shade600,
-                          duration: const Duration(seconds: 4),
-                        ),
-                      );
+                        );
+                      }
                     }
-                  }
-                },
+                  },
           );
         },
       ),
     ];
   }
-  
+
   Widget _buildOverflowMenu(DistingCubit cubit) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       itemBuilder: (popupCtx) {
-          // Get offline status here for menu items that need it
-          final isOffline = switch (cubit.state) {
-            DistingStateSynchronized(offline: final o) => o,
-            _ => false,
-          };
-          return [
-            PopupMenuItem(
-              value: "load",
-              enabled: !widget.loading && !isOffline,
-              onTap: widget.loading || isOffline
-                  ? null
-                  : () async {
-                      final currentState = cubit.state;
-                      if (currentState is DistingStateSynchronized) {
-                        var presetInfo = await showDialog(
-                          context: popupCtx,
-                          builder: (context) => LoadPresetDialog(
-                            initialName: "",
-                            db: cubit.database,
-                            distingCubit: cubit,
-                          ),
-                        );
-                        if (presetInfo != null && presetInfo is Map) {
-                          final sdCardPath = presetInfo['sdCardPath'];
-                          final action = presetInfo['action'] as PresetAction?;
-                          if (sdCardPath != null &&
-                              sdCardPath.isNotEmpty &&
-                              action != null) {
-                            switch (action) {
-                              case PresetAction.load:
-                                cubit.loadPreset(sdCardPath, false);
-                                break;
-                              case PresetAction.append:
-                                cubit.loadPreset(sdCardPath, true);
-                                break;
-                              case PresetAction.export:
-                                if (!mounted) return;
-                                await _handlePresetExport(
-                                    context, sdCardPath, cubit);
-                                break;
-                            }
-                          }
-                        }
-                      }
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Load Preset'),
-                    Icon(Icons.file_upload_rounded)
-                  ]),
-            ),
-            PopupMenuItem(
-              value: "new",
-              enabled: !widget.loading,
-              onTap: widget.loading
-                  ? null
-                  : () async {
-                      final currentState = cubit.state;
-                      bool hasAlgorithms = false;
-
-                      if (currentState is DistingStateSynchronized) {
-                        hasAlgorithms = currentState.slots.isNotEmpty;
-                      }
-
-                      if (hasAlgorithms) {
-                        // Show confirmation dialog
-                        final result = await showDialog<String>(
-                          context:
-                              popupCtx, // Use the context from the PopupMenuItem
-                          builder: (dialogContext) => AlertDialog(
-                            title: const Text('Create New Preset?'),
-                            content: const Text(
-                                'The current preset has algorithms. Creating a new preset will clear them.\n\nWould you like to save the current preset first?'),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('Cancel'),
-                                onPressed: () {
-                                  Navigator.of(dialogContext).pop('cancel');
-                                },
-                              ),
-                              TextButton(
-                                child: const Text('Discard & New'),
-                                onPressed: () {
-                                  Navigator.of(dialogContext)
-                                      .pop('new_discard');
-                                },
-                              ),
-                              TextButton(
-                                child: const Text('Save First & New'),
-                                onPressed: () {
-                                  Navigator.of(dialogContext)
-                                      .pop('save_first_new');
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-
-                        if (result == 'new_discard') {
-                          cubit.newPreset();
-                        } else if (result == 'save_first_new') {
-                          cubit.requireDisting().requestSavePreset();
-                          // It's generally okay to call newPreset() immediately after
-                          // requestSavePreset() for MIDI operations. The device handles
-                          // commands sequentially.
-                          cubit.newPreset();
-                        }
-                        // If 'cancel' or dialog dismissed, do nothing.
-                      } else {
-                        // No algorithms, proceed directly
-                        cubit.newPreset();
-                      }
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('New Preset'),
-                    Icon(Icons.fiber_new_rounded)
-                  ]),
-            ),
-            PopupMenuItem(
-              value: "save",
-              enabled: !widget.loading,
-              onTap: widget.loading
-                  ? null
-                  : () {
-                      cubit.requireDisting().requestSavePreset();
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Save Preset'),
-                    Icon(Icons.save_alt_rounded)
-                  ]),
-            ),
-            // Routing: Disabled by loading OR offline
-            PopupMenuItem(
-              value: 'routing',
-              enabled: !widget.loading && !isOffline,
-              onTap: widget.loading || isOffline
-                  ? null
-                  : () async {
-                      Navigator.push(
-                        popupCtx,
-                        MaterialPageRoute(
-                            builder: (_) => RoutingPage(cubit: cubit)),
-                      );
-                    },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Routing'), Icon(Icons.route_rounded)],
-              ),
-            ),
-            // Video: Disabled by loading OR offline
-            PopupMenuItem(
-              value: 'screenshot',
-              enabled: !widget.loading && !isOffline,
-              onTap: widget.loading || isOffline
-                  ? null
-                  : () {
-                      _showScreenshotOverlay(popupCtx);
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Video'),
-                    Icon(Icons.videocam),
-                  ]),
-            ),
-            // Perform: Disabled by loading OR offline
-            PopupMenuItem(
-              value: 'perform',
-              enabled: !widget.loading && !isOffline,
-              onTap: widget.loading || isOffline
-                  ? null
-                  : () {
-                      final midiListener = popupCtx.read<MidiListenerCubit>();
-                      Navigator.push(
-                        popupCtx,
-                        MaterialPageRoute(
-                          builder: (_) => MultiBlocProvider(
-                            providers: [
-                              BlocProvider.value(value: cubit),
-                              BlocProvider.value(value: midiListener),
-                            ],
-                            child: PerformanceScreen(units: widget.units),
-                          ),
-                        ),
-                      );
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Perform'),
-                    Icon(Icons.library_music),
-                  ]),
-            ),
-            // Plugin Manager: Always enabled
-            PopupMenuItem(
-              value: 'plugin_manager',
-              enabled: !widget.loading,
-              onTap: widget.loading
-                  ? null
-                  : () {
-                      final distingCubit = popupCtx.read<DistingCubit>();
-                      Navigator.push(
-                        popupCtx,
-                        MaterialPageRoute(
-                          builder: (_) => PluginManagerScreen(
-                            distingCubit: distingCubit,
-                            database: distingCubit.database,
-                          ),
-                        ),
-                      );
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Plugin Manager'),
-                    Icon(Icons.extension_rounded),
-                  ]),
-            ),
-            // Switch Devices: Only disabled by loading (Fix context usage)
-            PopupMenuItem(
-              value: 'Switch Devices',
-              enabled: !widget.loading,
-              onTap: widget.loading
-                  ? null
-                  : () {
-                      popupCtx.read<DistingCubit>().goOnline();
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [Text('Switch'), Icon(Icons.login_rounded)]),
-            ),
-            // Settings: Only disabled by loading
-            PopupMenuItem(
-              value: 'Settings',
-              enabled: !widget.loading,
-              onTap: widget.loading
-                  ? null
-                  : () async {
-                      // Original call to show the dialog
-                      final result = await popupCtx.showSettingsDialog();
-
-                      // Logic copied and adapted from _DistingPageState._handleSettingsDialog
-                      if (result == true && popupCtx.mounted) {
-                        // Ensure context is still valid
-                        final settings = SettingsService();
-                        final mcpInstance = McpServerService.instance;
-                        final bool isMcpEnabledAfterDialog =
-                            settings.mcpEnabled;
-                        final bool isServerStillRunningBeforeAction =
-                            mcpInstance.isRunning;
-
-                        debugPrint(
-                            "[SyncScreenSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction");
-
-                        if (Platform.isMacOS || Platform.isWindows) {
-                          if (isMcpEnabledAfterDialog) {
-                            if (!isServerStillRunningBeforeAction) {
-                              debugPrint(
-                                  "[SyncScreenSettings] MCP Setting is ON, Server is OFF. Attempting to START server.");
-                              await mcpInstance.start().catchError((e) {
-                                debugPrint(
-                                    '[SyncScreenSettings] Error starting MCP Server: $e');
-                              });
-                              debugPrint(
-                                  "[SyncScreenSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}");
-                            } else {
-                              debugPrint(
-                                  "[SyncScreenSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}");
-                            }
-                          } else {
-                            // MCP Setting is OFF
-                            if (isServerStillRunningBeforeAction) {
-                              debugPrint(
-                                  "[SyncScreenSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.");
-                              await mcpInstance.stop().catchError((e) {
-                                debugPrint(
-                                    '[SyncScreenSettings] Error stopping MCP Server: $e');
-                              });
-                              debugPrint(
-                                  "[SyncScreenSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}");
-                            } else {
-                              debugPrint(
-                                  "[SyncScreenSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}");
-                            }
-                          }
-                        } else {
-                          debugPrint(
-                              "[SyncScreenSettings] Not on MacOS/Windows. No MCP server action taken.");
-                        }
-                      } else {
-                        debugPrint(
-                            "[SyncScreenSettings] Settings dialog cancelled or no changes saved. No MCP server action taken.");
-                      }
-                    },
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [Text('Settings'), Icon(Icons.settings)]),
-            ),
-            // Sync Metadata: Only disabled by loading
-            PopupMenuItem(
-              value: 'sync_metadata',
-              enabled: !widget.loading,
-              onTap: widget.loading
-                  ? null
-                  : () {
-                      final distingCubit = popupCtx.read<DistingCubit>();
-                      Navigator.push(
-                        popupCtx,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              MetadataSyncPage(distingCubit: distingCubit),
-                        ),
-                      );
-                    },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [Text('Offline Data'), Icon(Icons.sync_alt_rounded)],
-              ),
-            ),
-            // About: Always enabled (Fix context usage for Theme)
-            PopupMenuItem(
-              value: 'about',
-              enabled: true,
-              onTap: widget.loading
-                  ? null
-                  : () async {
-                      final info = await PackageInfo.fromPlatform();
-                      if (!popupCtx.mounted) return;
-                      showDialog<String>(
+        // Get offline status here for menu items that need it
+        final isOffline = switch (cubit.state) {
+          DistingStateSynchronized(offline: final o) => o,
+          _ => false,
+        };
+        return [
+          PopupMenuItem(
+            value: "load",
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () async {
+                    final currentState = cubit.state;
+                    if (currentState is DistingStateSynchronized) {
+                      var presetInfo = await showDialog(
                         context: popupCtx,
-                        builder: (dialogCtx) => AboutDialog(
-                          applicationName: "NT Helper",
-                          applicationVersion:
-                              "${info.version} (${info.buildNumber})",
-                          applicationLegalese:
-                              "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Column(
-                                children: [
-                                  Text(
-                                      "Disting Firmware: ${widget.distingVersion}",
-                                      style: Theme.of(dialogCtx)
-                                          .textTheme
-                                          .bodySmall),
-                                ],
-                              ),
+                        builder: (context) => LoadPresetDialog(
+                          initialName: "",
+                          db: cubit.database,
+                          distingCubit: cubit,
+                        ),
+                      );
+                      if (presetInfo != null && presetInfo is Map) {
+                        final sdCardPath = presetInfo['sdCardPath'];
+                        final action = presetInfo['action'] as PresetAction?;
+                        if (sdCardPath != null &&
+                            sdCardPath.isNotEmpty &&
+                            action != null) {
+                          switch (action) {
+                            case PresetAction.load:
+                              cubit.loadPreset(sdCardPath, false);
+                              break;
+                            case PresetAction.append:
+                              cubit.loadPreset(sdCardPath, true);
+                              break;
+                            case PresetAction.export:
+                              if (!mounted) return;
+                              await _handlePresetExport(
+                                context,
+                                sdCardPath,
+                                cubit,
+                              );
+                              break;
+                          }
+                        }
+                      }
+                    }
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Load Preset'), Icon(Icons.file_upload_rounded)],
+            ),
+          ),
+          PopupMenuItem(
+            value: "new",
+            enabled: !widget.loading,
+            onTap: widget.loading
+                ? null
+                : () async {
+                    final currentState = cubit.state;
+                    bool hasAlgorithms = false;
+
+                    if (currentState is DistingStateSynchronized) {
+                      hasAlgorithms = currentState.slots.isNotEmpty;
+                    }
+
+                    if (hasAlgorithms) {
+                      // Show confirmation dialog
+                      final result = await showDialog<String>(
+                        context:
+                            popupCtx, // Use the context from the PopupMenuItem
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Create New Preset?'),
+                          content: const Text(
+                            'The current preset has algorithms. Creating a new preset will clear them.\n\nWould you like to save the current preset first?',
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              child: const Text('Cancel'),
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop('cancel');
+                              },
+                            ),
+                            TextButton(
+                              child: const Text('Discard & New'),
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop('new_discard');
+                              },
+                            ),
+                            TextButton(
+                              child: const Text('Save First & New'),
+                              onPressed: () {
+                                Navigator.of(
+                                  dialogContext,
+                                ).pop('save_first_new');
+                              },
                             ),
                           ],
                         ),
                       );
-                    },
-              child: Text('About'),
+
+                      if (result == 'new_discard') {
+                        cubit.newPreset();
+                      } else if (result == 'save_first_new') {
+                        cubit.requireDisting().requestSavePreset();
+                        // It's generally okay to call newPreset() immediately after
+                        // requestSavePreset() for MIDI operations. The device handles
+                        // commands sequentially.
+                        cubit.newPreset();
+                      }
+                      // If 'cancel' or dialog dismissed, do nothing.
+                    } else {
+                      // No algorithms, proceed directly
+                      cubit.newPreset();
+                    }
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('New Preset'), Icon(Icons.fiber_new_rounded)],
             ),
-          ];
-        },
+          ),
+          PopupMenuItem(
+            value: "save",
+            enabled: !widget.loading,
+            onTap: widget.loading
+                ? null
+                : () {
+                    cubit.requireDisting().requestSavePreset();
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Save Preset'), Icon(Icons.save_alt_rounded)],
+            ),
+          ),
+          // Routing: Disabled by loading OR offline
+          PopupMenuItem(
+            value: 'routing',
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () async {
+                    Navigator.push(
+                      popupCtx,
+                      MaterialPageRoute(
+                        builder: (_) => RoutingPage(cubit: cubit),
+                      ),
+                    );
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Routing'), Icon(Icons.route_rounded)],
+            ),
+          ),
+          // Video: Disabled by loading OR offline
+          PopupMenuItem(
+            value: 'screenshot',
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () {
+                    _showScreenshotOverlay(popupCtx);
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Video'), Icon(Icons.videocam)],
+            ),
+          ),
+          // Perform: Disabled by loading OR offline
+          PopupMenuItem(
+            value: 'perform',
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () {
+                    final midiListener = popupCtx.read<MidiListenerCubit>();
+                    Navigator.push(
+                      popupCtx,
+                      MaterialPageRoute(
+                        builder: (_) => MultiBlocProvider(
+                          providers: [
+                            BlocProvider.value(value: cubit),
+                            BlocProvider.value(value: midiListener),
+                          ],
+                          child: PerformanceScreen(units: widget.units),
+                        ),
+                      ),
+                    );
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Perform'), Icon(Icons.library_music)],
+            ),
+          ),
+          // Plugin Manager: Always enabled
+          PopupMenuItem(
+            value: 'plugin_manager',
+            enabled: !widget.loading,
+            onTap: widget.loading
+                ? null
+                : () {
+                    final distingCubit = popupCtx.read<DistingCubit>();
+                    Navigator.push(
+                      popupCtx,
+                      MaterialPageRoute(
+                        builder: (_) => PluginManagerScreen(
+                          distingCubit: distingCubit,
+                          database: distingCubit.database,
+                        ),
+                      ),
+                    );
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Plugin Manager'), Icon(Icons.extension_rounded)],
+            ),
+          ),
+          // Switch Devices: Only disabled by loading (Fix context usage)
+          PopupMenuItem(
+            value: 'Switch Devices',
+            enabled: !widget.loading,
+            onTap: widget.loading
+                ? null
+                : () {
+                    popupCtx.read<DistingCubit>().goOnline();
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Switch'), Icon(Icons.login_rounded)],
+            ),
+          ),
+          // Settings: Only disabled by loading
+          PopupMenuItem(
+            value: 'Settings',
+            enabled: !widget.loading,
+            onTap: widget.loading
+                ? null
+                : () async {
+                    // Original call to show the dialog
+                    final result = await popupCtx.showSettingsDialog();
+
+                    // Logic copied and adapted from _DistingPageState._handleSettingsDialog
+                    if (result == true && popupCtx.mounted) {
+                      // Ensure context is still valid
+                      final settings = SettingsService();
+                      final mcpInstance = McpServerService.instance;
+                      final bool isMcpEnabledAfterDialog = settings.mcpEnabled;
+                      final bool isServerStillRunningBeforeAction =
+                          mcpInstance.isRunning;
+
+                      debugPrint(
+                        "[SyncScreenSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction",
+                      );
+
+                      if (Platform.isMacOS || Platform.isWindows) {
+                        if (isMcpEnabledAfterDialog) {
+                          if (!isServerStillRunningBeforeAction) {
+                            debugPrint(
+                              "[SyncScreenSettings] MCP Setting is ON, Server is OFF. Attempting to START server.",
+                            );
+                            await mcpInstance.start().catchError((e) {
+                              debugPrint(
+                                '[SyncScreenSettings] Error starting MCP Server: $e',
+                              );
+                            });
+                            debugPrint(
+                              "[SyncScreenSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}",
+                            );
+                          } else {
+                            debugPrint(
+                              "[SyncScreenSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}",
+                            );
+                          }
+                        } else {
+                          // MCP Setting is OFF
+                          if (isServerStillRunningBeforeAction) {
+                            debugPrint(
+                              "[SyncScreenSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.",
+                            );
+                            await mcpInstance.stop().catchError((e) {
+                              debugPrint(
+                                '[SyncScreenSettings] Error stopping MCP Server: $e',
+                              );
+                            });
+                            debugPrint(
+                              "[SyncScreenSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}",
+                            );
+                          } else {
+                            debugPrint(
+                              "[SyncScreenSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}",
+                            );
+                          }
+                        }
+                      } else {
+                        debugPrint(
+                          "[SyncScreenSettings] Not on MacOS/Windows. No MCP server action taken.",
+                        );
+                      }
+                    } else {
+                      debugPrint(
+                        "[SyncScreenSettings] Settings dialog cancelled or no changes saved. No MCP server action taken.",
+                      );
+                    }
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Settings'), Icon(Icons.settings)],
+            ),
+          ),
+          // Sync Metadata: Only disabled by loading
+          PopupMenuItem(
+            value: 'sync_metadata',
+            enabled: !widget.loading,
+            onTap: widget.loading
+                ? null
+                : () {
+                    final distingCubit = popupCtx.read<DistingCubit>();
+                    Navigator.push(
+                      popupCtx,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MetadataSyncPage(distingCubit: distingCubit),
+                      ),
+                    );
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Offline Data'), Icon(Icons.sync_alt_rounded)],
+            ),
+          ),
+          // About: Always enabled (Fix context usage for Theme)
+          PopupMenuItem(
+            value: 'about',
+            enabled: true,
+            onTap: widget.loading
+                ? null
+                : () async {
+                    final info = await PackageInfo.fromPlatform();
+                    if (!popupCtx.mounted) return;
+                    showDialog<String>(
+                      context: popupCtx,
+                      builder: (dialogCtx) => AboutDialog(
+                        applicationName: "NT Helper",
+                        applicationVersion:
+                            "${info.version} (${info.buildNumber})",
+                        applicationLegalese:
+                            "Written by Neal Sanche (Thorinside), 2025, No Rights Reserved.",
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "Disting Firmware: ${widget.distingVersion}",
+                                  style: Theme.of(
+                                    dialogCtx,
+                                  ).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+            child: Text('About'),
+          ),
+        ];
+      },
     );
   }
 
@@ -1013,9 +1028,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
               final newName = await showDialog<String>(
                 context: context,
-                builder: (context) => RenamePresetDialog(
-                  initialName: widget.presetName,
-                ),
+                builder: (context) =>
+                    RenamePresetDialog(initialName: widget.presetName),
               );
 
               if (newName != null &&
@@ -1033,20 +1047,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       TextSpan(
                         text: 'Preset:\u2007',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              fontWeight:
-                                  FontWeight.bold, // Make 'Preset: ' bold
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          fontWeight: FontWeight.bold, // Make 'Preset: ' bold
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       TextSpan(
                         text: widget.presetName.trim(),
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -1071,57 +1080,53 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       builder: (context, state) {
         return switch (state) {
           DistingStateSynchronized(slots: final syncState) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicatorAnimation: TabIndicatorAnimation.elastic,
-                indicatorWeight: 1,
-                enableFeedback: true,
-                dividerHeight: 0,
-                tabs: List<Widget>.generate(syncState.length, (index) {
-                  final slot = syncState[index];
-                  // Use slot.algorithm.name directly (includes custom name)
-                  final displayName = slot.algorithm.name;
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorAnimation: TabIndicatorAnimation.elastic,
+              indicatorWeight: 1,
+              enableFeedback: true,
+              dividerHeight: 0,
+              tabs: List<Widget>.generate(syncState.length, (index) {
+                final slot = syncState[index];
+                // Use slot.algorithm.name directly (includes custom name)
+                final displayName = slot.algorithm.name;
 
-                  return GestureDetector(
-                    onDoubleTap: () async {
-                      var cubit = context.read<DistingCubit>();
-                      cubit.disting()?.let(
-                        (manager) {
-                          manager.requestSetFocus(index, 0);
-                          manager
-                              .requestSetDisplayMode(DisplayMode.algorithmUI);
-                        },
-                      );
-                      if (SettingsService().hapticsEnabled) {
-                        Haptics.vibrate(HapticsType.medium);
-                      }
-                    },
-                    onLongPress: () async {
-                      var cubit = context.read<DistingCubit>();
-                      // Use the current displayName for the dialog initial value
-                      final newName = await showDialog<String>(
-                        context: context,
-                        builder: (dialogCtx) => RenameSlotDialog(
-                          initialName: displayName,
-                        ),
-                      );
+                return GestureDetector(
+                  onDoubleTap: () async {
+                    var cubit = context.read<DistingCubit>();
+                    cubit.disting()?.let((manager) {
+                      manager.requestSetFocus(index, 0);
+                      manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                    });
+                    if (SettingsService().hapticsEnabled) {
+                      Haptics.vibrate(HapticsType.medium);
+                    }
+                  },
+                  onLongPress: () async {
+                    var cubit = context.read<DistingCubit>();
+                    // Use the current displayName for the dialog initial value
+                    final newName = await showDialog<String>(
+                      context: context,
+                      builder: (dialogCtx) =>
+                          RenameSlotDialog(initialName: displayName),
+                    );
 
-                      if (newName != null && newName != displayName) {
-                        // Use slot index directly (algorithmIndex on Algorithm is different)
-                        cubit.renameSlot(index, newName);
-                      }
-                    },
-                    // Display the correct name in the Tab
-                    child: Tab(text: displayName),
-                  );
-                }),
-              ),
+                    if (newName != null && newName != displayName) {
+                      // Use slot index directly (algorithmIndex on Algorithm is different)
+                      cubit.renameSlot(index, newName);
+                    }
+                  },
+                  // Display the correct name in the Tab
+                  child: Tab(text: displayName),
+                );
+              }),
             ),
-          _ => const Center(child: Text("Loading slots..."))
+          ),
+          _ => const Center(child: Text("Loading slots...")),
         };
       },
     );
@@ -1130,10 +1135,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   void _showScreenshotOverlay(BuildContext context) {
     debugPrint('[SynchronizedScreen] _showScreenshotOverlay called');
     final cubit = context.read<DistingCubit>();
-    
+
     // Create a VideoFrameCubit for this overlay
     final videoFrameCubit = VideoFrameCubit();
-    debugPrint('[SynchronizedScreen] Created VideoFrameCubit: $videoFrameCubit');
+    debugPrint(
+      '[SynchronizedScreen] Created VideoFrameCubit: $videoFrameCubit',
+    );
 
     late OverlayEntry overlayEntry;
 
@@ -1151,13 +1158,18 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Future<void> _handlePresetExport(
-      BuildContext context, sdCardPath, DistingCubit cubit) async {
+    BuildContext context,
+    sdCardPath,
+    DistingCubit cubit,
+  ) async {
     showDialog<void>(
-        context: context,
-        builder: (context) => PresetPackageDialog(
-            presetFilePath: sdCardPath,
-            fileSystem: PresetFileSystemImpl(cubit.requireDisting()),
-            database: cubit.database));
+      context: context,
+      builder: (context) => PresetPackageDialog(
+        presetFilePath: sdCardPath,
+        fileSystem: PresetFileSystemImpl(cubit.requireDisting()),
+        database: cubit.database,
+      ),
+    );
   }
 }
 
@@ -1180,55 +1192,54 @@ class AlgorithmListView extends StatelessWidget {
       builder: (context, state) {
         return switch (state) {
           DistingStateSynchronized(slots: final _) => ListView.builder(
-              padding: const EdgeInsets.only(top: 8.0),
-              itemCount: slots.length,
-              itemBuilder: (context, index) {
-                final slot = slots[index];
-                final displayName = slot.algorithm.name;
+            padding: const EdgeInsets.only(top: 8.0),
+            itemCount: slots.length,
+            itemBuilder: (context, index) {
+              final slot = slots[index];
+              final displayName = slot.algorithm.name;
 
-                return GestureDetector(
-                  onDoubleTap: () async {
+              return GestureDetector(
+                onDoubleTap: () async {
+                  var cubit = context.read<DistingCubit>();
+                  cubit.disting()?.let((manager) {
+                    manager.requestSetFocus(index, 0);
+                    manager.requestSetDisplayMode(DisplayMode.algorithmUI);
+                  });
+                  if (SettingsService().hapticsEnabled) {
+                    Haptics.vibrate(HapticsType.medium);
+                  }
+                },
+                child: ListTile(
+                  title: Text(
+                    displayName,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                  selected: index == selectedIndex,
+                  selectedTileColor: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer,
+                  selectedColor: Theme.of(
+                    context,
+                  ).colorScheme.onSecondaryContainer,
+                  onTap: () => onSelectionChanged(index),
+                  onLongPress: () async {
                     var cubit = context.read<DistingCubit>();
-                    cubit.disting()?.let(
-                      (manager) {
-                        manager.requestSetFocus(index, 0);
-                        manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-                      },
+                    final newName = await showDialog<String>(
+                      context: context,
+                      builder: (dialogCtx) =>
+                          RenameSlotDialog(initialName: displayName),
                     );
-                    if (SettingsService().hapticsEnabled) {
-                      Haptics.vibrate(HapticsType.medium);
+
+                    if (newName != null && newName != displayName) {
+                      cubit.renameSlot(index, newName);
                     }
                   },
-                  child: ListTile(
-                    title: Text(
-                      displayName,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                    ),
-                    selected: index == selectedIndex,
-                    selectedTileColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
-                    selectedColor:
-                        Theme.of(context).colorScheme.onSecondaryContainer,
-                    onTap: () => onSelectionChanged(index),
-                    onLongPress: () async {
-                      var cubit = context.read<DistingCubit>();
-                      final newName = await showDialog<String>(
-                        context: context,
-                        builder: (dialogCtx) => RenameSlotDialog(
-                          initialName: displayName,
-                        ),
-                      );
-
-                      if (newName != null && newName != displayName) {
-                        cubit.renameSlot(index, newName);
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
-          _ => const Center(child: Text("Loading slots..."))
+                ),
+              );
+            },
+          ),
+          _ => const Center(child: Text("Loading slots...")),
         };
       },
     );
@@ -1247,17 +1258,21 @@ class DistingVersion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNotSupported =
-        !FirmwareVersion(distingVersion).isSupported(requiredVersion);
+    final isNotSupported = !FirmwareVersion(
+      distingVersion,
+    ).isSupported(requiredVersion);
     return Tooltip(
-      message:
-          isNotSupported ? "nt_helper requires at least $requiredVersion" : "",
-      child: Text(distingVersion,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: isNotSupported
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              )),
+      message: isNotSupported
+          ? "nt_helper requires at least $requiredVersion"
+          : "",
+      child: Text(
+        distingVersion,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: isNotSupported
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }
@@ -1267,11 +1282,12 @@ class SlotDetailView extends StatefulWidget {
   final List<String> units;
   final FirmwareVersion firmwareVersion;
 
-  const SlotDetailView(
-      {super.key,
-      required this.slot,
-      required this.units,
-      required this.firmwareVersion});
+  const SlotDetailView({
+    super.key,
+    required this.slot,
+    required this.units,
+    required this.firmwareVersion,
+  });
 
   @override
   State<SlotDetailView> createState() => _SlotDetailViewState();
@@ -1287,8 +1303,10 @@ class _SlotDetailViewState extends State<SlotDetailView>
     super.build(context);
 
     // Provide a full replacement view
-    final view =
-        AlgorithmViewRegistry.findViewFor(widget.slot, widget.firmwareVersion);
+    final view = AlgorithmViewRegistry.findViewFor(
+      widget.slot,
+      widget.firmwareVersion,
+    );
     if (view != null) return view;
 
     // Create a set of list sections for the parameters of the
@@ -1328,8 +1346,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   @override
   void initState() {
     super.initState();
-    _tileControllers =
-        List.generate(widget.pages.pages.length, (_) => ExpansibleController());
+    _tileControllers = List.generate(
+      widget.pages.pages.length,
+      (_) => ExpansibleController(),
+    );
     _isCollapsed = SettingsService().startPagesCollapsed;
   }
 
@@ -1350,28 +1370,28 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       ),
       child: ExpansionTileTheme(
         data: ExpansionTileThemeData(
-          shape: RoundedRectangleBorder(
-            side: BorderSide.none,
-          ),
+          shape: RoundedRectangleBorder(side: BorderSide.none),
         ),
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                Tooltip(
-                  message: _isCollapsed ? 'Expand all' : 'Collapse all',
-                  child: IconButton.filledTonal(
-                    onPressed: () {
-                      _collapseAllTiles();
-                    },
-                    enableFeedback: true,
-                    icon: _isCollapsed
-                        ? Icon(Icons.keyboard_double_arrow_down_sharp)
-                        : Icon(Icons.keyboard_double_arrow_up_sharp),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Tooltip(
+                    message: _isCollapsed ? 'Expand all' : 'Collapse all',
+                    child: IconButton.filledTonal(
+                      onPressed: () {
+                        _collapseAllTiles();
+                      },
+                      enableFeedback: true,
+                      icon: _isCollapsed
+                          ? Icon(Icons.keyboard_double_arrow_down_sharp)
+                          : Icon(Icons.keyboard_double_arrow_up_sharp),
+                    ),
                   ),
-                ),
-                PopupMenuButton<String>(
+                  PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     itemBuilder: (context) {
                       final metadata = AlgorithmMetadataService()
@@ -1387,7 +1407,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       AlgorithmDocumentationScreen(
-                                          metadata: metadata),
+                                        metadata: metadata,
+                                      ),
                                 ),
                               );
                             },
@@ -1395,7 +1416,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text('Show Help'),
-                                Icon(Icons.help_outline_rounded)
+                                Icon(Icons.help_outline_rounded),
                               ],
                             ),
                           ),
@@ -1407,17 +1428,20 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                               context: context,
                               initialCvInput: 0,
                               onReset: (outputIndex) {
-                                context
-                                    .read<DistingCubit>()
-                                    .resetOutputs(widget.slot, outputIndex);
+                                context.read<DistingCubit>().resetOutputs(
+                                  widget.slot,
+                                  outputIndex,
+                                );
                               },
                             );
                           },
                           child: const Text('Reset Outputs'),
                         ),
                       ];
-                    }),
-              ]),
+                    },
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: ListView.builder(
@@ -1430,31 +1454,34 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     initiallyExpanded: !_isCollapsed,
                     controller: _tileControllers.elementAt(index),
                     title: Text(page.name),
-                    children: page.parameters.map(
-                      (parameterNumber) {
-                        final value =
-                            widget.slot.values.elementAt(parameterNumber);
-                        final enumStrings =
-                            widget.slot.enums.elementAt(parameterNumber);
-                        final mapping = widget.slot.mappings
-                            .elementAtOrNull(parameterNumber);
-                        final valueString =
-                            widget.slot.valueStrings.elementAt(parameterNumber);
-                        var parameterInfo =
-                            widget.slot.parameters.elementAt(parameterNumber);
-                        final unit = parameterInfo.getUnitString(widget.units);
+                    children: page.parameters.map((parameterNumber) {
+                      final value = widget.slot.values.elementAt(
+                        parameterNumber,
+                      );
+                      final enumStrings = widget.slot.enums.elementAt(
+                        parameterNumber,
+                      );
+                      final mapping = widget.slot.mappings.elementAtOrNull(
+                        parameterNumber,
+                      );
+                      final valueString = widget.slot.valueStrings.elementAt(
+                        parameterNumber,
+                      );
+                      var parameterInfo = widget.slot.parameters.elementAt(
+                        parameterNumber,
+                      );
+                      final unit = parameterInfo.getUnitString(widget.units);
 
-                        return ParameterEditorView(
-                          slot: widget.slot,
-                          parameterInfo: parameterInfo,
-                          value: value,
-                          enumStrings: enumStrings,
-                          mapping: mapping,
-                          valueString: valueString,
-                          unit: unit,
-                        );
-                      },
-                    ).toList(),
+                      return ParameterEditorView(
+                        slot: widget.slot,
+                        parameterInfo: parameterInfo,
+                        value: value,
+                        enumStrings: enumStrings,
+                        mapping: mapping,
+                        valueString: valueString,
+                        unit: unit,
+                      );
+                    }).toList(),
                   );
                 },
               ),
@@ -1470,11 +1497,7 @@ class ParameterListView extends StatelessWidget {
   final Slot slot;
   final List<String> units;
 
-  const ParameterListView({
-    super.key,
-    required this.slot,
-    required this.units,
-  });
+  const ParameterListView({super.key, required this.slot, required this.units});
 
   @override
   Widget build(BuildContext context) {
@@ -1526,27 +1549,27 @@ class ParameterEditorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ParameterViewRow(
-        name: parameterInfo.name,
-        min: parameterInfo.min,
-        max: parameterInfo.max,
-        algorithmIndex: parameterInfo.algorithmIndex,
-        parameterNumber: parameterInfo.parameterNumber,
-        powerOfTen: parameterInfo.powerOfTen,
-        defaultValue: parameterInfo.defaultValue,
-        displayString: valueString.value.isNotEmpty ? valueString.value : null,
-        dropdownItems:
-            enumStrings.values.isNotEmpty ? enumStrings.values : null,
-        isOnOff: (enumStrings.values.isNotEmpty &&
-            enumStrings.values[0] == "Off" &&
-            enumStrings.values[1] == "On"),
-        initialValue: (value.value >= parameterInfo.min &&
-                value.value <= parameterInfo.max)
-            ? value.value
-            : parameterInfo.defaultValue,
-        unit: unit,
-        mappingData: mapping?.packedMappingData,
-        slot: slot,
-      );
+    name: parameterInfo.name,
+    min: parameterInfo.min,
+    max: parameterInfo.max,
+    algorithmIndex: parameterInfo.algorithmIndex,
+    parameterNumber: parameterInfo.parameterNumber,
+    powerOfTen: parameterInfo.powerOfTen,
+    defaultValue: parameterInfo.defaultValue,
+    displayString: valueString.value.isNotEmpty ? valueString.value : null,
+    dropdownItems: enumStrings.values.isNotEmpty ? enumStrings.values : null,
+    isOnOff:
+        (enumStrings.values.isNotEmpty &&
+        enumStrings.values[0] == "Off" &&
+        enumStrings.values[1] == "On"),
+    initialValue:
+        (value.value >= parameterInfo.min && value.value <= parameterInfo.max)
+        ? value.value
+        : parameterInfo.defaultValue,
+    unit: unit,
+    mappingData: mapping?.packedMappingData,
+    slot: slot,
+  );
 }
 
 class ParameterViewRow extends StatefulWidget {
@@ -1555,7 +1578,7 @@ class ParameterViewRow extends StatefulWidget {
   final int max;
   final int defaultValue;
   final String?
-      displayString; // For additional display string instead of dropdown
+  displayString; // For additional display string instead of dropdown
   final String? unit;
   final int powerOfTen;
   final List<String>? dropdownItems; // For enums as a dropdown
@@ -1619,12 +1642,13 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
   void _updateCubitValue(int value) {
     // Send updated value to the Cubit
     context.read<DistingCubit>().updateParameterValue(
-          algorithmIndex: widget.algorithmIndex,
-          parameterNumber: widget.parameterNumber,
-          value: value,
-          userIsChangingTheValue:
-              widget.displayString?.isNotEmpty == true ? false : isChanging,
-        );
+      algorithmIndex: widget.algorithmIndex,
+      parameterNumber: widget.parameterNumber,
+      value: value,
+      userIsChangingTheValue: widget.displayString?.isNotEmpty == true
+          ? false
+          : isChanging,
+    );
   }
 
   DateTime? _lastSent;
@@ -1656,19 +1680,19 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
     // Check if this parameter should use a specialized file editor
     final Widget? fileEditor =
         widget.slot.parameters.length > widget.parameterNumber
-            ? ParameterEditorRegistry.findEditorFor(
-                slot: widget.slot,
-                parameterInfo: widget.slot.parameters[widget.parameterNumber],
-                parameterNumber: widget.parameterNumber,
-                currentValue: currentValue,
-                onValueChanged: (newValue) {
-                  setState(() {
-                    currentValue = newValue;
-                  });
-                  _updateCubitValue(newValue);
-                },
-              )
-            : null;
+        ? ParameterEditorRegistry.findEditorFor(
+            slot: widget.slot,
+            parameterInfo: widget.slot.parameters[widget.parameterNumber],
+            parameterNumber: widget.parameterNumber,
+            currentValue: currentValue,
+            onValueChanged: (newValue) {
+              setState(() {
+                currentValue = newValue;
+              });
+              _updateCubitValue(newValue);
+            },
+          )
+        : null;
 
     debugPrint("${widget.name} isBpmUnit: $isBpmUnit ${widget.unit}");
 
@@ -1685,18 +1709,16 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             child: GestureDetector(
               onDoubleTap: () async {
                 var cubit = context.read<DistingCubit>();
-                cubit.disting()?.let(
-                  (manager) {
-                    manager.requestSetFocus(
-                      widget.algorithmIndex,
-                      widget.parameterNumber,
-                    );
-                    manager.requestSetDisplayMode(DisplayMode.parameters);
-                    if (SettingsService().hapticsEnabled) {
-                      Haptics.vibrate(HapticsType.medium);
-                    }
-                  },
-                );
+                cubit.disting()?.let((manager) {
+                  manager.requestSetFocus(
+                    widget.algorithmIndex,
+                    widget.parameterNumber,
+                  );
+                  manager.requestSetDisplayMode(DisplayMode.parameters);
+                  if (SettingsService().hapticsEnabled) {
+                    Haptics.vibrate(HapticsType.medium);
+                  }
+                });
               },
               onLongPress: () {
                 // Get the manager from the cubit
@@ -1716,79 +1738,82 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                 maxLines: 3,
                 softWrap: false,
                 textAlign: TextAlign.start,
-                style:
-                    widescreen ? textTheme.titleMedium : textTheme.labelMedium,
+                style: widescreen
+                    ? textTheme.titleMedium
+                    : textTheme.labelMedium,
               ),
             ),
           ),
 
           // Slider column
           Expanded(
-              flex: widescreen ? 8 : 6, // Decreased flex
-              // Proportionally larger space for the slider
-              child: GestureDetector(
-                onDoubleTap: () => isBpmUnit ||
-                        fileEditor != null ||
-                        _showAlternateEditor // Do not allow double tap to change editor for BPM, file editor, or if alternate is already shown
-                    ? {}
-                    : setState(() {
-                        currentValue = widget.defaultValue;
-                        _updateCubitValue(currentValue);
-                      }),
-                child: AnimatedSwitcher(
-                  duration: Duration(milliseconds: 150),
-                  child: SizedBox(
-                    height: 45,
-                    child: isBpmUnit
-                        ? BpmEditorWidget(
-                            initialValue: currentValue,
-                            min: widget.min,
-                            max: widget.max,
-                            powerOfTen: widget.powerOfTen,
-                            onChanged: (newBpm) {
-                              setState(() {
-                                currentValue = newBpm;
-                              });
-                              _updateCubitValue(newBpm);
-                            },
-                            onEditingStatusChanged: (isEditing) {
-                              setState(() {
-                                isChanging = isEditing;
-                              });
-                            },
-                          )
-                        : fileEditor ??
+            flex: widescreen ? 8 : 6, // Decreased flex
+            // Proportionally larger space for the slider
+            child: GestureDetector(
+              onDoubleTap: () =>
+                  isBpmUnit ||
+                      fileEditor != null ||
+                      _showAlternateEditor // Do not allow double tap to change editor for BPM, file editor, or if alternate is already shown
+                  ? {}
+                  : setState(() {
+                      currentValue = widget.defaultValue;
+                      _updateCubitValue(currentValue);
+                    }),
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: 150),
+                child: SizedBox(
+                  height: 45,
+                  child: isBpmUnit
+                      ? BpmEditorWidget(
+                          initialValue: currentValue,
+                          min: widget.min,
+                          max: widget.max,
+                          powerOfTen: widget.powerOfTen,
+                          onChanged: (newBpm) {
+                            setState(() {
+                              currentValue = newBpm;
+                            });
+                            _updateCubitValue(newBpm);
+                          },
+                          onEditingStatusChanged: (isEditing) {
+                            setState(() {
+                              isChanging = isEditing;
+                            });
+                          },
+                        )
+                      : fileEditor ??
                             (_showAlternateEditor
                                 ? Row(
                                     // Alternate +/- editor
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     spacing: 16,
                                     children: [
-                                        OutlinedButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              currentValue = min(
-                                                  max(currentValue - 1,
-                                                      widget.min),
-                                                  widget.max);
-                                            });
-                                            _updateCubitValue(currentValue);
-                                          },
-                                          child: Text("-"),
-                                        ),
-                                        OutlinedButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              currentValue = min(
-                                                  max(currentValue + 1,
-                                                      widget.min),
-                                                  widget.max);
-                                            });
-                                            _updateCubitValue(currentValue);
-                                          },
-                                          child: Text("+"),
-                                        )
-                                      ])
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            currentValue = min(
+                                              max(currentValue - 1, widget.min),
+                                              widget.max,
+                                            );
+                                          });
+                                          _updateCubitValue(currentValue);
+                                        },
+                                        child: Text("-"),
+                                      ),
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            currentValue = min(
+                                              max(currentValue + 1, widget.min),
+                                              widget.max,
+                                            );
+                                          });
+                                          _updateCubitValue(currentValue);
+                                        },
+                                        child: Text("+"),
+                                      ),
+                                    ],
+                                  )
                                 : Slider(
                                     // Default Slider editor
                                     value: currentValue.toDouble(),
@@ -1821,107 +1846,111 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                                       onSliderChanged(currentValue);
                                     },
                                   )),
-                  ),
                 ),
-              )),
+              ),
+            ),
+          ),
           // Control column
           Expanded(
             flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
-              child: isBpmUnit ||
+              child:
+                  isBpmUnit ||
                       fileEditor !=
                           null // Check if it's the BPM unit or file editor
-                  ? const SizedBox
-                      .shrink() // If BPM or file editor, render an empty box to hide default text
+                  ? const SizedBox.shrink() // If BPM or file editor, render an empty box to hide default text
                   : widget.isOnOff
-                      ? Checkbox(
-                          value: isChecked,
-                          onChanged: (value) {
-                            setState(() {
-                              isChecked = value!;
-                              currentValue = isChecked ? 1 : 0;
-                            });
-                            _updateCubitValue(currentValue);
-                          },
-                        )
-                      : widget.dropdownItems != null
-                          ? DropdownMenu(
-                              requestFocusOnTap: false,
-                              initialSelection:
-                                  widget.dropdownItems![currentValue],
-                              inputDecorationTheme: const InputDecorationTheme(
-                                contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12.0, vertical: 8.0),
-                                border: OutlineInputBorder(),
-                                isDense: true,
-                              ),
-                              textStyle: widescreen
-                                  ? textTheme.labelLarge
-                                  : textTheme.labelMedium,
-                              dropdownMenuEntries: widget.dropdownItems!
-                                  .map((item) => DropdownMenuEntry(
-                                      value: item, label: item))
-                                  .toList(),
-                              onSelected: (value) {
-                                setState(() {
-                                  currentValue = min(
-                                      max(widget.dropdownItems!.indexOf(value!),
-                                          widget.min),
-                                      widget.max);
-                                });
-                                _updateCubitValue(currentValue);
-                              },
-                            )
-                          : widget.name.toLowerCase().contains("note")
-                              ? Text(midiNoteToNoteString(currentValue))
-                              : widget.name.toLowerCase().contains("midi channel")
-                                  ? Text(
-                                      currentValue == 0 ? "None" : currentValue.toString(),
-                                      style: widescreen
-                                          ? textTheme.labelLarge
-                                          : textTheme.labelSmall,
-                                    )
-                              : widget.displayString != null
-                                  ? GestureDetector(
-                                      onLongPress: () => setState(() {
-                                        // Show alternate editor only if not BPM or file editor
-                                        if (!isBpmUnit && fileEditor == null) {
-                                          _showAlternateEditor =
-                                              !_showAlternateEditor;
-                                        }
-                                      }),
-                                      child: Text(
-                                        widget.displayString!,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: widescreen
-                                            ? textTheme.labelLarge
-                                            : textTheme.labelSmall,
-                                      ),
-                                    )
-                                  // Only show unit text if it's NOT BPM, NOT file editor, and unit is present
-                                  : widget.unit != null &&
-                                          !isBpmUnit &&
-                                          fileEditor == null
-                                      ? Text(
-                                          formatWithUnit(
-                                            currentValue,
-                                            name: widget.name,
-                                            min: widget.min,
-                                            max: widget.max,
-                                            unit: widget.unit,
-                                            powerOfTen: widget.powerOfTen,
-                                          ),
-                                          style: widescreen
-                                              ? textTheme.labelLarge
-                                              : textTheme.labelSmall,
-                                        )
-                                      : Text(
-                                          currentValue.toString(),
-                                          style: widescreen
-                                              ? textTheme.labelLarge
-                                              : textTheme.labelSmall,
-                                        ),
+                  ? Checkbox(
+                      value: isChecked,
+                      onChanged: (value) {
+                        setState(() {
+                          isChecked = value!;
+                          currentValue = isChecked ? 1 : 0;
+                        });
+                        _updateCubitValue(currentValue);
+                      },
+                    )
+                  : widget.dropdownItems != null
+                  ? DropdownMenu(
+                      requestFocusOnTap: false,
+                      initialSelection: widget.dropdownItems![currentValue],
+                      inputDecorationTheme: const InputDecorationTheme(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.0,
+                          vertical: 8.0,
+                        ),
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      textStyle: widescreen
+                          ? textTheme.labelLarge
+                          : textTheme.labelMedium,
+                      dropdownMenuEntries: widget.dropdownItems!
+                          .map(
+                            (item) =>
+                                DropdownMenuEntry(value: item, label: item),
+                          )
+                          .toList(),
+                      onSelected: (value) {
+                        setState(() {
+                          currentValue = min(
+                            max(
+                              widget.dropdownItems!.indexOf(value!),
+                              widget.min,
+                            ),
+                            widget.max,
+                          );
+                        });
+                        _updateCubitValue(currentValue);
+                      },
+                    )
+                  : widget.name.toLowerCase().contains("note")
+                  ? Text(midiNoteToNoteString(currentValue))
+                  : widget.name.toLowerCase().contains("midi channel")
+                  ? Text(
+                      currentValue == 0 ? "None" : currentValue.toString(),
+                      style: widescreen
+                          ? textTheme.labelLarge
+                          : textTheme.labelSmall,
+                    )
+                  : widget.displayString != null
+                  ? GestureDetector(
+                      onLongPress: () => setState(() {
+                        // Show alternate editor only if not BPM or file editor
+                        if (!isBpmUnit && fileEditor == null) {
+                          _showAlternateEditor = !_showAlternateEditor;
+                        }
+                      }),
+                      child: Text(
+                        widget.displayString!,
+                        overflow: TextOverflow.ellipsis,
+                        style: widescreen
+                            ? textTheme.labelLarge
+                            : textTheme.labelSmall,
+                      ),
+                    )
+                  // Only show unit text if it's NOT BPM, NOT file editor, and unit is present
+                  : widget.unit != null && !isBpmUnit && fileEditor == null
+                  ? Text(
+                      formatWithUnit(
+                        currentValue,
+                        name: widget.name,
+                        min: widget.min,
+                        max: widget.max,
+                        unit: widget.unit,
+                        powerOfTen: widget.powerOfTen,
+                      ),
+                      style: widescreen
+                          ? textTheme.labelLarge
+                          : textTheme.labelSmall,
+                    )
+                  : Text(
+                      currentValue.toString(),
+                      style: widescreen
+                          ? textTheme.labelLarge
+                          : textTheme.labelSmall,
+                    ),
             ),
           ),
         ],
@@ -1937,10 +1966,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
 }
 
 class MappingEditButton extends StatelessWidget {
-  const MappingEditButton({
-    super.key,
-    required this.widget,
-  });
+  const MappingEditButton({super.key, required this.widget});
 
   final ParameterViewRow widget;
 
@@ -1950,21 +1976,23 @@ class MappingEditButton extends StatelessWidget {
       scale: 0.6,
       child: Builder(
         builder: (context) {
-          final bool hasMapping = widget.mappingData != null &&
+          final bool hasMapping =
+              widget.mappingData != null &&
               widget.mappingData != PackedMappingData.filler() &&
               widget.mappingData?.isMapped() == true;
 
           // Define your two styles:
           final ButtonStyle defaultStyle = IconButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.onSurface,
-            backgroundColor:
-                Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
           );
           final ButtonStyle mappedStyle = IconButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            backgroundColor: Theme.of(context)
-                .colorScheme
-                .primaryContainer, // or any color you prefer
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.primaryContainer, // or any color you prefer
           );
 
           return IconButton.filledTonal(
@@ -2084,7 +2112,7 @@ String midiNoteToNoteString(int midiNoteNumber) {
     'G#',
     'A',
     'A#',
-    'B'
+    'B',
   ];
 
   // Calculate the octave and note index
@@ -2107,10 +2135,12 @@ class _McpStatusIndicator extends StatelessWidget {
         McpServerService.instance; // Get McpServerService instance
     final isRunning = context.watch<McpServerService>().isRunning;
     final baseColor = isRunning ? Colors.green.shade600 : Colors.grey.shade600;
-    final highlightColor =
-        isRunning ? Colors.green.shade300 : Colors.grey.shade400;
-    final shadowColor =
-        isRunning ? Colors.green.shade800 : Colors.grey.shade800;
+    final highlightColor = isRunning
+        ? Colors.green.shade300
+        : Colors.grey.shade400;
+    final shadowColor = isRunning
+        ? Colors.green.shade800
+        : Colors.grey.shade800;
 
     final tooltip = isRunning
         ? 'MCP server running at http://localhost:$mcpPort (Tap to disable)'
@@ -2123,8 +2153,10 @@ class _McpStatusIndicator extends StatelessWidget {
           debugPrint("[McpIndicatorTap] Not on MacOS/Windows. Toggle ignored.");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(
-                    "MCP Service can only be toggled on macOS or Windows.")),
+              content: Text(
+                "MCP Service can only be toggled on macOS or Windows.",
+              ),
+            ),
           );
           return;
         }
@@ -2133,40 +2165,48 @@ class _McpStatusIndicator extends StatelessWidget {
         final newMcpSetting = !currentMcpSetting;
         await settings.setMcpEnabled(newMcpSetting);
         debugPrint(
-            "[McpIndicatorTap] Toggled MCP setting. Old: $currentMcpSetting, New: $newMcpSetting");
+          "[McpIndicatorTap] Toggled MCP setting. Old: $currentMcpSetting, New: $newMcpSetting",
+        );
 
         // Now apply the logic to start/stop the server
         final bool isServerCurrentlyRunning = mcpInstance.isRunning;
         debugPrint(
-            "[McpIndicatorTap] Server was running: $isServerCurrentlyRunning. New MCP setting: $newMcpSetting");
+          "[McpIndicatorTap] Server was running: $isServerCurrentlyRunning. New MCP setting: $newMcpSetting",
+        );
 
         if (newMcpSetting) {
           // Try to turn ON
           if (!isServerCurrentlyRunning) {
             debugPrint(
-                "[McpIndicatorTap] MCP Setting is ON, Server is OFF. Attempting to START server.");
+              "[McpIndicatorTap] MCP Setting is ON, Server is OFF. Attempting to START server.",
+            );
             await mcpInstance.start().catchError((e) {
               debugPrint('[McpIndicatorTap] Error starting MCP Server: $e');
             });
             debugPrint(
-                "[McpIndicatorTap] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}");
+              "[McpIndicatorTap] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}",
+            );
           } else {
             debugPrint(
-                "[McpIndicatorTap] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}");
+              "[McpIndicatorTap] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}",
+            );
           }
         } else {
           // Try to turn OFF
           if (isServerCurrentlyRunning) {
             debugPrint(
-                "[McpIndicatorTap] MCP Setting is OFF, Server is ON. Attempting to STOP server.");
+              "[McpIndicatorTap] MCP Setting is OFF, Server is ON. Attempting to STOP server.",
+            );
             await mcpInstance.stop().catchError((e) {
               debugPrint('[McpIndicatorTap] Error stopping MCP Server: $e');
             });
             debugPrint(
-                "[McpIndicatorTap] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}");
+              "[McpIndicatorTap] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}",
+            );
           } else {
             debugPrint(
-                "[McpIndicatorTap] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}");
+              "[McpIndicatorTap] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}",
+            );
           }
         }
         // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.
@@ -2180,13 +2220,11 @@ class _McpStatusIndicator extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               center: Alignment(
-                  -0.3, -0.4), // Offset center for top-right light source
+                -0.3,
+                -0.4,
+              ), // Offset center for top-right light source
               radius: 0.9,
-              colors: [
-                highlightColor,
-                baseColor,
-                shadowColor,
-              ],
+              colors: [highlightColor, baseColor, shadowColor],
               stops: [0.0, 0.6, 1.0],
             ),
             boxShadow: [
@@ -2207,7 +2245,9 @@ class _McpStatusIndicator extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.7),
               ),
               margin: const EdgeInsets.only(
-                  right: 3, bottom: 3), // Position highlight
+                right: 3,
+                bottom: 3,
+              ), // Position highlight
             ),
           ),
         ),

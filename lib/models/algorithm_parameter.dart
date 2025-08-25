@@ -13,11 +13,11 @@ sealed class AlgorithmParameter with _$AlgorithmParameter {
     dynamic max,
     dynamic defaultValue,
     String?
-        scope, // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
+    scope, // e.g., "global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate"
     String? description,
     List<String>? enumValues,
     String?
-        type, // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
+    type, // e.g., "file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"
     String? busIdRef,
     String? channelCountRef,
     bool? isPerChannel,

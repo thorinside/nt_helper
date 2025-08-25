@@ -14,14 +14,19 @@ import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/auto_routing_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 
-@GenerateMocks([DistingCubit, AlgorithmMetadataService, AutoRoutingService, IDistingMidiManager, NodePositionsPersistenceService])
+@GenerateMocks([
+  DistingCubit,
+  AlgorithmMetadataService,
+  AutoRoutingService,
+  IDistingMidiManager,
+  NodePositionsPersistenceService,
+])
 import 'node_routing_cubit_test.mocks.dart';
-
 
 void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
-    
+
     // Provide a dummy for DistingState
     provideDummy<DistingState>(
       DistingState.synchronized(
@@ -46,14 +51,18 @@ void main() {
       mockDistingCubit = MockDistingCubit();
       mockAlgorithmMetadataService = MockAlgorithmMetadataService();
       mockPersistenceService = MockNodePositionsPersistenceService();
-      
+
       // Auto routing service is created in the constructor
       // For testing, we'll test the behavior at the state level
-      
+
       // Setup persistence service mock
-      when(mockPersistenceService.loadPositions(any)).thenAnswer((_) async => <int, NodePosition>{});
-      when(mockPersistenceService.savePositions(any, any)).thenAnswer((_) async {});
-      
+      when(
+        mockPersistenceService.loadPositions(any),
+      ).thenAnswer((_) async => <int, NodePosition>{});
+      when(
+        mockPersistenceService.savePositions(any, any),
+      ).thenAnswer((_) async {});
+
       // Setup default state
       when(mockDistingCubit.stream).thenAnswer((_) => Stream.empty());
       when(mockDistingCubit.state).thenReturn(
@@ -67,9 +76,13 @@ void main() {
           unitStrings: [],
         ),
       );
-      
+
       // Initialize the cubit after mocking
-      nodeRoutingCubit = NodeRoutingCubit(mockDistingCubit, mockAlgorithmMetadataService, mockPersistenceService);
+      nodeRoutingCubit = NodeRoutingCubit(
+        mockDistingCubit,
+        mockAlgorithmMetadataService,
+        mockPersistenceService,
+      );
     });
 
     tearDown(() {
@@ -77,109 +90,154 @@ void main() {
     });
 
     group('createConnection', () {
-      test('should immediately add connection to state (optimistic update)', () async {
-        // Arrange
-        final initialState = NodeRoutingStateLoaded(
-          nodePositions: {
-            0: NodePosition(x: 100, y: 100, width: 200, height: 150, algorithmIndex: 0),
-            1: NodePosition(x: 400, y: 100, width: 200, height: 150, algorithmIndex: 1),
-          },
-          connections: [],
-          portLayouts: {
-            0: PortLayout(
-              inputPorts: [],
-              outputPorts: [AlgorithmPort(id: 'output', name: 'Output')],
-            ),
-            1: PortLayout(
-              inputPorts: [AlgorithmPort(id: 'input', name: 'Input')],
-              outputPorts: [],
-            ),
-          },
-          connectedPorts: {},
-          algorithmNames: {0: 'VCO', 1: 'Filter'},
-          portPositions: {
-            '0_output': Offset(300, 175),
-            '1_input': Offset(400, 175),
-          },
-        );
-        
-        nodeRoutingCubit.emit(initialState);
+      test(
+        'should immediately add connection to state (optimistic update)',
+        () async {
+          // Arrange
+          final initialState = NodeRoutingStateLoaded(
+            nodePositions: {
+              0: NodePosition(
+                x: 100,
+                y: 100,
+                width: 200,
+                height: 150,
+                algorithmIndex: 0,
+              ),
+              1: NodePosition(
+                x: 400,
+                y: 100,
+                width: 200,
+                height: 150,
+                algorithmIndex: 1,
+              ),
+            },
+            connections: [],
+            portLayouts: {
+              0: PortLayout(
+                inputPorts: [],
+                outputPorts: [AlgorithmPort(id: 'output', name: 'Output')],
+              ),
+              1: PortLayout(
+                inputPorts: [AlgorithmPort(id: 'input', name: 'Input')],
+                outputPorts: [],
+              ),
+            },
+            connectedPorts: {},
+            algorithmNames: {0: 'VCO', 1: 'Filter'},
+            portPositions: {
+              '0_output': Offset(300, 175),
+              '1_input': Offset(400, 175),
+            },
+          );
 
-        // Act
-        final future = nodeRoutingCubit.createConnection(
-          sourceAlgorithmIndex: 0,
-          sourcePortId: 'output',
-          targetAlgorithmIndex: 1,
-          targetPortId: 'input',
-        );
+          nodeRoutingCubit.emit(initialState);
 
-        // Allow the first state emission (optimistic update)
-        await Future.delayed(Duration.zero);
+          // Act
+          final future = nodeRoutingCubit.createConnection(
+            sourceAlgorithmIndex: 0,
+            sourcePortId: 'output',
+            targetAlgorithmIndex: 1,
+            targetPortId: 'input',
+          );
 
-        // Assert - should immediately have the connection in pending state
-        final state = nodeRoutingCubit.state as NodeRoutingStateLoaded;
-        
-        expect(state.connections.length, equals(1));
-        expect(state.connections.first.sourceAlgorithmIndex, equals(0));
-        expect(state.connections.first.sourcePortId, equals('output'));
-        expect(state.connections.first.targetAlgorithmIndex, equals(1));
-        expect(state.connections.first.targetPortId, equals('input'));
-        expect(state.connections.first.assignedBus, equals(21)); // Default temp bus
-        
-        // Should be in pending state
-        expect(state.pendingConnections, contains(state.connections.first.id));
-        expect(state.operationTimestamps.keys, contains(state.connections.first.id));
-        
-        // Connected ports should be updated
-        expect(state.connectedPorts, contains('0_output'));
-        expect(state.connectedPorts, contains('1_input'));
-        
-        await future;
-      });
+          // Allow the first state emission (optimistic update)
+          await Future.delayed(Duration.zero);
 
-      test('should handle validation failure without creating connection', () async {
-        // Arrange - Invalid connection (same algorithm)
-        final initialState = NodeRoutingStateLoaded(
-          nodePositions: {
-            0: NodePosition(x: 100, y: 100, width: 200, height: 150, algorithmIndex: 0),
-          },
-          connections: [],
-          portLayouts: {
-            0: PortLayout(
-              inputPorts: [AlgorithmPort(id: 'input', name: 'Input')],
-              outputPorts: [AlgorithmPort(id: 'output', name: 'Output')],
-            ),
-          },
-          connectedPorts: {},
-          algorithmNames: {0: 'VCO'},
-          portPositions: {},
-        );
-        
-        nodeRoutingCubit.emit(initialState);
+          // Assert - should immediately have the connection in pending state
+          final state = nodeRoutingCubit.state as NodeRoutingStateLoaded;
 
-        // Act - Try to connect output to input on same algorithm
-        await nodeRoutingCubit.createConnection(
-          sourceAlgorithmIndex: 0,
-          sourcePortId: 'output',
-          targetAlgorithmIndex: 0,
-          targetPortId: 'input',
-        );
+          expect(state.connections.length, equals(1));
+          expect(state.connections.first.sourceAlgorithmIndex, equals(0));
+          expect(state.connections.first.sourcePortId, equals('output'));
+          expect(state.connections.first.targetAlgorithmIndex, equals(1));
+          expect(state.connections.first.targetPortId, equals('input'));
+          expect(
+            state.connections.first.assignedBus,
+            equals(21),
+          ); // Default temp bus
 
-        // Assert - Should not create connection, should have error
-        final state = nodeRoutingCubit.state as NodeRoutingStateLoaded;
-        expect(state.connections.length, equals(0));
-        expect(state.pendingConnections.length, equals(0));
-        expect(state.errorMessage, isNotNull);
-        expect(state.errorMessage, contains('validation failed'));
-      });
+          // Should be in pending state
+          expect(
+            state.pendingConnections,
+            contains(state.connections.first.id),
+          );
+          expect(
+            state.operationTimestamps.keys,
+            contains(state.connections.first.id),
+          );
+
+          // Connected ports should be updated
+          expect(state.connectedPorts, contains('0_output'));
+          expect(state.connectedPorts, contains('1_input'));
+
+          await future;
+        },
+      );
+
+      test(
+        'should handle validation failure without creating connection',
+        () async {
+          // Arrange - Invalid connection (same algorithm)
+          final initialState = NodeRoutingStateLoaded(
+            nodePositions: {
+              0: NodePosition(
+                x: 100,
+                y: 100,
+                width: 200,
+                height: 150,
+                algorithmIndex: 0,
+              ),
+            },
+            connections: [],
+            portLayouts: {
+              0: PortLayout(
+                inputPorts: [AlgorithmPort(id: 'input', name: 'Input')],
+                outputPorts: [AlgorithmPort(id: 'output', name: 'Output')],
+              ),
+            },
+            connectedPorts: {},
+            algorithmNames: {0: 'VCO'},
+            portPositions: {},
+          );
+
+          nodeRoutingCubit.emit(initialState);
+
+          // Act - Try to connect output to input on same algorithm
+          await nodeRoutingCubit.createConnection(
+            sourceAlgorithmIndex: 0,
+            sourcePortId: 'output',
+            targetAlgorithmIndex: 0,
+            targetPortId: 'input',
+          );
+
+          // Assert - Should not create connection, should have error
+          final state = nodeRoutingCubit.state as NodeRoutingStateLoaded;
+          expect(state.connections.length, equals(0));
+          expect(state.pendingConnections.length, equals(0));
+          expect(state.errorMessage, isNotNull);
+          expect(state.errorMessage, contains('validation failed'));
+        },
+      );
 
       test('should handle connection failure and rollback', () async {
         // This test would require mocking the AutoRoutingService to fail
         // For now, we'll test the structure is in place
         final initialState = NodeRoutingStateLoaded(
           nodePositions: {
-            0: NodePosition(x: 100, y: 100, width: 200, height: 150, algorithmIndex: 0),
-            1: NodePosition(x: 400, y: 100, width: 200, height: 150, algorithmIndex: 1),
+            0: NodePosition(
+              x: 100,
+              y: 100,
+              width: 200,
+              height: 150,
+              algorithmIndex: 0,
+            ),
+            1: NodePosition(
+              x: 400,
+              y: 100,
+              width: 200,
+              height: 150,
+              algorithmIndex: 1,
+            ),
           },
           connections: [],
           portLayouts: {
@@ -199,7 +257,7 @@ void main() {
             '1_input': Offset(400, 175),
           },
         );
-        
+
         nodeRoutingCubit.emit(initialState);
 
         // Act
@@ -221,8 +279,20 @@ void main() {
         // Arrange
         final initialState = NodeRoutingStateLoaded(
           nodePositions: {
-            0: NodePosition(x: 100, y: 100, width: 200, height: 150, algorithmIndex: 0),
-            1: NodePosition(x: 400, y: 100, width: 200, height: 150, algorithmIndex: 1),
+            0: NodePosition(
+              x: 100,
+              y: 100,
+              width: 200,
+              height: 150,
+              algorithmIndex: 0,
+            ),
+            1: NodePosition(
+              x: 400,
+              y: 100,
+              width: 200,
+              height: 150,
+              algorithmIndex: 1,
+            ),
           },
           connections: [],
           portLayouts: {
@@ -243,7 +313,7 @@ void main() {
           },
           errorMessage: 'Previous error',
         );
-        
+
         nodeRoutingCubit.emit(initialState);
 
         // Act
@@ -261,51 +331,66 @@ void main() {
     });
 
     group('removeConnection', () {
-      test('should immediately remove connection from state (optimistic update)', () async {
-        // Arrange
-        final existingConnection = Connection(
-          id: '0_output_1_input',
-          sourceAlgorithmIndex: 0,
-          sourcePortId: 'output',
-          targetAlgorithmIndex: 1,
-          targetPortId: 'input',
-          assignedBus: 21,
-          replaceMode: true,
-          isValid: true,
-        );
-        
-        final initialState = NodeRoutingStateLoaded(
-          nodePositions: {
-            0: NodePosition(x: 100, y: 100, width: 200, height: 150, algorithmIndex: 0),
-            1: NodePosition(x: 400, y: 100, width: 200, height: 150, algorithmIndex: 1),
-          },
-          connections: [existingConnection],
-          portLayouts: {
-            0: PortLayout(
-              inputPorts: [],
-              outputPorts: [AlgorithmPort(id: 'output', name: 'Output')],
-            ),
-            1: PortLayout(
-              inputPorts: [AlgorithmPort(id: 'input', name: 'Input')],
-              outputPorts: [],
-            ),
-          },
-          connectedPorts: {'0_output', '1_input'},
-          algorithmNames: {0: 'VCO', 1: 'Filter'},
-          portPositions: {},
-        );
-        
-        nodeRoutingCubit.emit(initialState);
+      test(
+        'should immediately remove connection from state (optimistic update)',
+        () async {
+          // Arrange
+          final existingConnection = Connection(
+            id: '0_output_1_input',
+            sourceAlgorithmIndex: 0,
+            sourcePortId: 'output',
+            targetAlgorithmIndex: 1,
+            targetPortId: 'input',
+            assignedBus: 21,
+            replaceMode: true,
+            isValid: true,
+          );
 
-        // Act
-        await nodeRoutingCubit.removeConnection(existingConnection);
+          final initialState = NodeRoutingStateLoaded(
+            nodePositions: {
+              0: NodePosition(
+                x: 100,
+                y: 100,
+                width: 200,
+                height: 150,
+                algorithmIndex: 0,
+              ),
+              1: NodePosition(
+                x: 400,
+                y: 100,
+                width: 200,
+                height: 150,
+                algorithmIndex: 1,
+              ),
+            },
+            connections: [existingConnection],
+            portLayouts: {
+              0: PortLayout(
+                inputPorts: [],
+                outputPorts: [AlgorithmPort(id: 'output', name: 'Output')],
+              ),
+              1: PortLayout(
+                inputPorts: [AlgorithmPort(id: 'input', name: 'Input')],
+                outputPorts: [],
+              ),
+            },
+            connectedPorts: {'0_output', '1_input'},
+            algorithmNames: {0: 'VCO', 1: 'Filter'},
+            portPositions: {},
+          );
 
-        // Assert - Connection should be immediately removed
-        final state = nodeRoutingCubit.state as NodeRoutingStateLoaded;
-        expect(state.connections.length, equals(0));
-        expect(state.connectedPorts.length, equals(0));
-        expect(state.errorMessage, isNull);
-      });
+          nodeRoutingCubit.emit(initialState);
+
+          // Act
+          await nodeRoutingCubit.removeConnection(existingConnection);
+
+          // Assert - Connection should be immediately removed
+          final state = nodeRoutingCubit.state as NodeRoutingStateLoaded;
+          expect(state.connections.length, equals(0));
+          expect(state.connectedPorts.length, equals(0));
+          expect(state.errorMessage, isNull);
+        },
+      );
     });
 
     group('state management', () {
@@ -321,7 +406,7 @@ void main() {
           replaceMode: true,
           isValid: true,
         );
-        
+
         final state = NodeRoutingStateLoaded(
           nodePositions: {},
           connections: [connection],

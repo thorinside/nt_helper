@@ -84,8 +84,12 @@ Future<void> main() async {
   final projectRoot = Directory.current.path;
 
   // Define the path to the manual file
-  final manualPath =
-      path.join(projectRoot, 'test', 'doc', 'disting_nt_manual_1.8.0.md');
+  final manualPath = path.join(
+    projectRoot,
+    'test',
+    'doc',
+    'disting_nt_manual_1.8.0.md',
+  );
 
   // Define the output path for the JSON file
   final outputPath = path.join(projectRoot, 'test', 'doc', 'algorithms.json');
@@ -137,7 +141,8 @@ Future<Map<String, dynamic>> extractCommonFeatures(String manualContent) async {
 
 // Function to extract polysynth features from the manual
 Future<Map<String, dynamic>> extractPolysynthFeatures(
-    String manualContent) async {
+  String manualContent,
+) async {
   // This will be implemented in Task #46
   debugPrint('Extracting polysynth features from the manual...');
   return {}; // Placeholder
@@ -145,7 +150,8 @@ Future<Map<String, dynamic>> extractPolysynthFeatures(
 
 // Function to extract all algorithms from the manual
 Future<List<Map<String, dynamic>>> extractAllAlgorithms(
-    String manualContent) async {
+  String manualContent,
+) async {
   final List<Map<String, dynamic>> algorithms = [];
 
   // This will contain the regex and logic to extract each algorithm
@@ -157,7 +163,10 @@ Future<List<Map<String, dynamic>>> extractAllAlgorithms(
 
 // Function to extract a specific algorithm by its section title
 Future<Map<String, dynamic>?> extractAlgorithm(
-    String manualContent, String algorithmName, String guid) async {
+  String manualContent,
+  String algorithmName,
+  String guid,
+) async {
   // This will be implemented in the individual algorithm tasks
   debugPrint('Extracting metadata for algorithm: $algorithmName (guid: $guid)');
   return null; // Placeholder

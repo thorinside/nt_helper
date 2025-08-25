@@ -8,10 +8,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class ExecuteLuaMessage extends SysexMessage {
   final String luaScript;
 
-  ExecuteLuaMessage({
-    required super.sysExId,
-    required this.luaScript,
-  });
+  ExecuteLuaMessage({required super.sysExId, required this.luaScript});
 
   @override
   Uint8List encode() {

@@ -15,9 +15,6 @@ class RoutingInformationResponse extends SysexResponse {
       offset += 5;
     }
 
-    return RoutingInfo(
-      algorithmIndex: algorithmIndex,
-      routingInfo: routing,
-    );
+    return RoutingInfo(algorithmIndex: algorithmIndex, routingInfo: routing);
   }
 }

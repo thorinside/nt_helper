@@ -42,7 +42,8 @@ class _RoutingPageState extends State<RoutingPage> {
       });
     } catch (e) {
       debugPrint(
-          "Failed to access DistingCubit or call fetchCurrentRoutingState: $e");
+        "Failed to access DistingCubit or call fetchCurrentRoutingState: $e",
+      );
       // Optionally, handle the error (e.g., stop realtime updates)
       if (mounted) {
         setState(() {
@@ -73,7 +74,6 @@ class _RoutingPageState extends State<RoutingPage> {
       }
     });
   }
-
 
   @override
   Widget build(BuildContext context) {

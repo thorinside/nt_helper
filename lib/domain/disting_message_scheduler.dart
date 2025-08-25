@@ -33,11 +33,7 @@ enum ResponseExpectation {
 // Scheduler state
 // -----------------------------------------------------------------------------
 
-enum _SchedulerState {
-  idle,
-  sending,
-  waitingForResponse,
-}
+enum _SchedulerState { idle, sending, waitingForResponse }
 
 // -----------------------------------------------------------------------------
 // Internal request representation
@@ -89,10 +85,10 @@ class DistingMessageScheduler {
     this.defaultTimeout = const Duration(milliseconds: 1000),
     this.defaultMaxRetries = 5,
     this.defaultRetryDelay = Duration.zero,
-  })  : _midi = midiCommand,
-        _inputDevice = inputDevice,
-        _outputDevice = outputDevice,
-        _sysExId = sysExId {
+  }) : _midi = midiCommand,
+       _inputDevice = inputDevice,
+       _outputDevice = outputDevice,
+       _sysExId = sysExId {
     _subscription = _midi.onMidiDataReceived?.listen(_handleIncomingPacket);
   }
 
@@ -185,8 +181,10 @@ class DistingMessageScheduler {
     final request = _currentRequest!;
     request.attemptCount++;
 
-    debugPrint('Sending SysEx (attempt ${request.attemptCount}): '
-        '${request.packet.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')} ${request.key}');
+    debugPrint(
+      'Sending SysEx (attempt ${request.attemptCount}): '
+      '${request.packet.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')} ${request.key}',
+    );
 
     // Send the message
     _midi.sendData(request.packet, deviceId: _outputDevice.id);
@@ -208,9 +206,12 @@ class DistingMessageScheduler {
     if (request.attemptCount >= request.maxRetries) {
       // Out of retries
       if (request.expectation == ResponseExpectation.required) {
-        request.completer.completeError(TimeoutException(
+        request.completer.completeError(
+          TimeoutException(
             'No response after ${request.attemptCount} attempts',
-            request.timeout));
+            request.timeout,
+          ),
+        );
       } else {
         request.completer.complete(null);
       }
@@ -273,11 +274,14 @@ class DistingMessageScheduler {
     }
 
     debugPrint(
-        'Received matching SysEx: ${parsed.rawBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+      'Received matching SysEx: ${parsed.rawBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+    );
 
     // Parse and complete the response
-    final response =
-        ResponseFactory.fromMessageType(parsed.messageType, parsed.payload);
+    final response = ResponseFactory.fromMessageType(
+      parsed.messageType,
+      parsed.payload,
+    );
 
     if (response != null) {
       try {
@@ -286,12 +290,16 @@ class DistingMessageScheduler {
       } catch (e) {
         // If parsing fails, complete with error instead of raw response to avoid type mismatches
         debugPrint(
-            '[DistingMessageScheduler] Parsing failed for ${response.runtimeType}: $e');
+          '[DistingMessageScheduler] Parsing failed for ${response.runtimeType}: $e',
+        );
         if (request.expectation == ResponseExpectation.optional) {
           request.completer.complete(null);
         } else {
-          request.completer.completeError(StateError(
-              'Failed to parse response: ${response.runtimeType} - $e'));
+          request.completer.completeError(
+            StateError(
+              'Failed to parse response: ${response.runtimeType} - $e',
+            ),
+          );
         }
       }
     } else {
@@ -300,7 +308,8 @@ class DistingMessageScheduler {
         request.completer.complete(null);
       } else {
         request.completer.completeError(
-            StateError('Unhandled response type: ${parsed.messageType}'));
+          StateError('Unhandled response type: ${parsed.messageType}'),
+        );
       }
     }
 

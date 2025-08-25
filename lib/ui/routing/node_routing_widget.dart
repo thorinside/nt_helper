@@ -7,10 +7,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/routing/routing_canvas.dart';
 
 class NodeRoutingWidget extends StatefulWidget {
-
-  const NodeRoutingWidget({
-    super.key,
-  });
+  const NodeRoutingWidget({super.key});
 
   @override
   State<NodeRoutingWidget> createState() => _NodeRoutingWidgetState();
@@ -40,7 +37,7 @@ class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
               duration: const Duration(seconds: 3),
             ),
           );
-          
+
           // Clear the error message to prevent repeated showing
           context.read<NodeRoutingCubit>().clearError();
         }
@@ -94,11 +91,11 @@ class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
     final distingState = context.read<DistingCubit>().state;
     Map<int, List<Mapping>>? algorithmMappings;
     List<Slot>? allSlots;
-    
+
     if (distingState is DistingStateSynchronized) {
       allSlots = distingState.slots;
       algorithmMappings = <int, List<Mapping>>{};
-      
+
       // Group mappings by algorithm index
       for (int i = 0; i < allSlots.length; i++) {
         final slot = allSlots[i];
@@ -109,47 +106,49 @@ class _NodeRoutingWidgetState extends State<NodeRoutingWidget> {
     // Wrap the canvas to allow it to expand beyond the viewport
     return SingleChildScrollView(
       controller: _horizontalScrollController,
-      physics: const NeverScrollableScrollPhysics(), // Disable gesture scrolling
+      physics:
+          const NeverScrollableScrollPhysics(), // Disable gesture scrolling
       scrollDirection: Axis.horizontal,
       child: SingleChildScrollView(
         controller: _verticalScrollController,
-        physics: const NeverScrollableScrollPhysics(), // Disable gesture scrolling
+        physics:
+            const NeverScrollableScrollPhysics(), // Disable gesture scrolling
         scrollDirection: Axis.vertical,
         child: RoutingCanvas(
-      horizontalScrollController: _horizontalScrollController,
-      verticalScrollController: _verticalScrollController,
-      nodePositions: state.nodePositions,
-      algorithmNames: state.algorithmNames,
-      portLayouts: state.portLayouts,
-      connections: state.connections,
-      connectedPorts: state.connectedPorts,
-      portPositions: state.portPositions,
-      connectionPreview: state.connectionPreview,
-      hoveredConnectionId: state.hoveredConnectionId,
-      pendingConnections: state.pendingConnections,
-      failedConnections: state.failedConnections,
-      algorithmMappings: algorithmMappings,
-      allSlots: allSlots,
-      onNodePositionChanged: (algorithmIndex, position) {
-        context.read<NodeRoutingCubit>().updateNodePosition(
-          algorithmIndex,
-          position,
-        );
-      },
-      onConnectionCreated: (connection) {
-        context.read<NodeRoutingCubit>().createConnection(
-          sourceAlgorithmIndex: connection.sourceAlgorithmIndex,
-          sourcePortId: connection.sourcePortId,
-          targetAlgorithmIndex: connection.targetAlgorithmIndex,
-          targetPortId: connection.targetPortId,
-        );
-      },
-      onConnectionRemoved: (connection) {
-        context.read<NodeRoutingCubit>().removeConnection(connection);
-      },
-      onSelectionChanged: () {
-        // Handle selection changes if needed
-      },
+          horizontalScrollController: _horizontalScrollController,
+          verticalScrollController: _verticalScrollController,
+          nodePositions: state.nodePositions,
+          algorithmNames: state.algorithmNames,
+          portLayouts: state.portLayouts,
+          connections: state.connections,
+          connectedPorts: state.connectedPorts,
+          portPositions: state.portPositions,
+          connectionPreview: state.connectionPreview,
+          hoveredConnectionId: state.hoveredConnectionId,
+          pendingConnections: state.pendingConnections,
+          failedConnections: state.failedConnections,
+          algorithmMappings: algorithmMappings,
+          allSlots: allSlots,
+          onNodePositionChanged: (algorithmIndex, position) {
+            context.read<NodeRoutingCubit>().updateNodePosition(
+              algorithmIndex,
+              position,
+            );
+          },
+          onConnectionCreated: (connection) {
+            context.read<NodeRoutingCubit>().createConnection(
+              sourceAlgorithmIndex: connection.sourceAlgorithmIndex,
+              sourcePortId: connection.sourcePortId,
+              targetAlgorithmIndex: connection.targetAlgorithmIndex,
+              targetPortId: connection.targetPortId,
+            );
+          },
+          onConnectionRemoved: (connection) {
+            context.read<NodeRoutingCubit>().removeConnection(connection);
+          },
+          onSelectionChanged: () {
+            // Handle selection changes if needed
+          },
         ),
       ),
     );

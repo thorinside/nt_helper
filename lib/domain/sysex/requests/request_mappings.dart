@@ -11,10 +11,11 @@ class RequestMappingsMessage extends SysexMessage
   @override
   final int parameterNumber;
 
-  RequestMappingsMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber});
+  RequestMappingsMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+  });
 
   @override
   Uint8List encode() {

@@ -59,7 +59,7 @@ void main() {
 
     test('should create failure result with error message', () {
       const errorMessage = 'Optimization failed due to insufficient buses';
-      
+
       final result = TidyResult.failed(errorMessage);
 
       expect(result.success, isFalse);
@@ -186,25 +186,31 @@ void main() {
     });
 
     test('should handle complex optimization with multiple changes', () {
-      final originalConnections = List.generate(5, (i) => Connection(
-        id: 'conn$i',
-        sourceAlgorithmIndex: i,
-        sourcePortId: 'out',
-        targetAlgorithmIndex: i + 1,
-        targetPortId: 'in',
-        assignedBus: 21 + i,
-        replaceMode: false,
-      ));
+      final originalConnections = List.generate(
+        5,
+        (i) => Connection(
+          id: 'conn$i',
+          sourceAlgorithmIndex: i,
+          sourcePortId: 'out',
+          targetAlgorithmIndex: i + 1,
+          targetPortId: 'in',
+          assignedBus: 21 + i,
+          replaceMode: false,
+        ),
+      );
 
-      final optimizedConnections = List.generate(5, (i) => Connection(
-        id: 'conn$i',
-        sourceAlgorithmIndex: i,
-        sourcePortId: 'out',
-        targetAlgorithmIndex: i + 1,
-        targetPortId: 'in',
-        assignedBus: 21 + (i % 2), // Consolidate to fewer buses
-        replaceMode: i % 2 == 1, // Alternate replace mode
-      ));
+      final optimizedConnections = List.generate(
+        5,
+        (i) => Connection(
+          id: 'conn$i',
+          sourceAlgorithmIndex: i,
+          sourcePortId: 'out',
+          targetAlgorithmIndex: i + 1,
+          targetPortId: 'in',
+          assignedBus: 21 + (i % 2), // Consolidate to fewer buses
+          replaceMode: i % 2 == 1, // Alternate replace mode
+        ),
+      );
 
       final changes = <String, BusChange>{};
       for (int i = 0; i < 5; i++) {

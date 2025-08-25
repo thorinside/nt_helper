@@ -6,7 +6,7 @@ class DeviceContext {
   final int totalAlgorithms;
   final int algorithmsInPreset;
   final int? firstAlgorithmParams;
-  
+
   DeviceContext({
     required this.totalAlgorithms,
     required this.algorithmsInPreset,
@@ -16,9 +16,9 @@ class DeviceContext {
 
 class SysExDiagnosticsService {
   final IDistingMidiManager _distingManager;
-  
+
   SysExDiagnosticsService(this._distingManager);
-  
+
   /// Test a specific range of algorithm library indices to identify problematic algorithms
   Future<DiagnosticsReport> testAlgorithmRange({
     required int startIndex,
@@ -27,38 +27,42 @@ class SysExDiagnosticsService {
     bool Function()? isCancelled,
   }) async {
     final report = DiagnosticsReport();
-    
+
     // Wake the device first
     await _distingManager.requestWake();
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     if (isCancelled?.call() == true) return report;
-    
+
     final totalTests = endIndex - startIndex + 1;
     int testsCompleted = 0;
-    
-    for (int algorithmIndex = startIndex; algorithmIndex <= endIndex; algorithmIndex++) {
+
+    for (
+      int algorithmIndex = startIndex;
+      algorithmIndex <= endIndex;
+      algorithmIndex++
+    ) {
       if (isCancelled?.call() == true) break;
-      
+
       final testName = "Algorithm Info at Library Index $algorithmIndex";
       onProgress?.call(testsCompleted / totalTests, testName);
-      
+
       final test = DiagnosticTest(
         name: testName,
         category: "Algorithm Library Scan",
         execute: (manager) => manager.requestAlgorithmInfo(algorithmIndex),
       );
-      
+
       // Run just once for quick scan, or multiple times for detailed testing
       final testResult = await _runSingleTest(test, 1);
       report.addTest(testResult);
-      
+
       testsCompleted++;
-      
+
       // Small delay between tests
       await Future.delayed(const Duration(milliseconds: 50));
     }
-    
+
     onProgress?.call(1.0, "Complete");
     return report;
   }
@@ -70,30 +74,30 @@ class SysExDiagnosticsService {
     bool Function()? isCancelled,
   }) async {
     final report = DiagnosticsReport();
-    
+
     // First, wake the device and gather context
     await _distingManager.requestWake();
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     if (isCancelled?.call() == true) return report;
-    
+
     // Get device context to determine which tests are valid
     final context = await _gatherDeviceContext();
     final tests = await _getContextualDiagnosticTests(context);
-    
+
     for (int i = 0; i < tests.length; i++) {
       if (isCancelled?.call() == true) break;
-      
+
       final test = tests[i];
       onProgress?.call(i / tests.length, test.name);
-      
+
       final testResult = await _runSingleTest(test, repetitions);
       report.addTest(testResult);
-      
+
       // Small delay between tests to avoid overwhelming the device
       await Future.delayed(const Duration(milliseconds: 100));
     }
-    
+
     onProgress?.call(1.0, "Complete");
     return report;
   }
@@ -101,16 +105,18 @@ class SysExDiagnosticsService {
   /// Gather device context to determine valid test parameters
   Future<DeviceContext> _gatherDeviceContext() async {
     try {
-      final numAlgorithms = await _distingManager.requestNumberOfAlgorithms() ?? 0;
-      final numInPreset = await _distingManager.requestNumAlgorithmsInPreset() ?? 0;
-      
+      final numAlgorithms =
+          await _distingManager.requestNumberOfAlgorithms() ?? 0;
+      final numInPreset =
+          await _distingManager.requestNumAlgorithmsInPreset() ?? 0;
+
       // Get info about first algorithm in preset if available
       int? firstAlgorithmParams;
       if (numInPreset > 0) {
         final paramInfo = await _distingManager.requestNumberOfParameters(0);
         firstAlgorithmParams = paramInfo?.numParameters ?? 0;
       }
-      
+
       return DeviceContext(
         totalAlgorithms: numAlgorithms,
         algorithmsInPreset: numInPreset,
@@ -127,10 +133,16 @@ class SysExDiagnosticsService {
   }
 
   /// Find a parameter with supported units (13, 14, 17) for string testing
-  Future<int?> _findParameterWithStringSupport(int slotIndex, int maxParams) async {
+  Future<int?> _findParameterWithStringSupport(
+    int slotIndex,
+    int maxParams,
+  ) async {
     for (int paramIndex = 0; paramIndex < maxParams; paramIndex++) {
       try {
-        final paramInfo = await _distingManager.requestParameterInfo(slotIndex, paramIndex);
+        final paramInfo = await _distingManager.requestParameterInfo(
+          slotIndex,
+          paramIndex,
+        );
         if (paramInfo != null && [13, 14, 17].contains(paramInfo.unit)) {
           return paramIndex;
         }
@@ -144,16 +156,16 @@ class SysExDiagnosticsService {
 
   /// Runs a specific diagnostic test multiple times
   Future<DiagnosticTestResult> _runSingleTest(
-    DiagnosticTest test, 
-    int repetitions
+    DiagnosticTest test,
+    int repetitions,
   ) async {
     final result = DiagnosticTestResult(test.name, test.category);
-    
+
     for (int i = 0; i < repetitions; i++) {
       final stopwatch = Stopwatch()..start();
       bool success = false;
       String? error;
-      
+
       try {
         final response = await test.execute(_distingManager);
         success = response != null;
@@ -161,27 +173,27 @@ class SysExDiagnosticsService {
       } catch (e) {
         error = e.toString();
       }
-      
+
       stopwatch.stop();
       final duration = stopwatch.elapsedMilliseconds;
-      
-      result.addExecution(DiagnosticExecution(
-        duration: duration,
-        success: success,
-        error: error,
-      ));
-      
+
+      result.addExecution(
+        DiagnosticExecution(duration: duration, success: success, error: error),
+      );
+
       // Brief delay between repetitions
       await Future.delayed(const Duration(milliseconds: 50));
     }
-    
+
     return result;
   }
 
   /// Gets contextual diagnostic tests based on current device state
-  Future<List<DiagnosticTest>> _getContextualDiagnosticTests(DeviceContext context) async {
+  Future<List<DiagnosticTest>> _getContextualDiagnosticTests(
+    DeviceContext context,
+  ) async {
     final tests = <DiagnosticTest>[];
-    
+
     // Basic device info - always available
     tests.addAll([
       DiagnosticTest(
@@ -191,7 +203,7 @@ class SysExDiagnosticsService {
       ),
       DiagnosticTest(
         name: "Request Unit Strings",
-        category: "Device Info", 
+        category: "Device Info",
         execute: (manager) => manager.requestUnitStrings(),
       ),
       DiagnosticTest(
@@ -215,7 +227,7 @@ class SysExDiagnosticsService {
         execute: (manager) => manager.requestNumAlgorithmsInPreset(),
       ),
     ]);
-    
+
     // Test algorithm library queries - test a sample of algorithms from the main library
     // This helps identify if specific algorithms in the library are corrupted
     if (context.totalAlgorithms > 0) {
@@ -227,7 +239,7 @@ class SysExDiagnosticsService {
           execute: (manager) => manager.requestAlgorithmInfo(0),
         ),
       );
-      
+
       // Test algorithm at index 12 specifically (the one that was timing out)
       if (context.totalAlgorithms > 12) {
         tests.add(
@@ -238,13 +250,13 @@ class SysExDiagnosticsService {
           ),
         );
       }
-      
+
       // Test a few more algorithms spread throughout the library
       final indicesToTest = <int>[];
       if (context.totalAlgorithms > 50) indicesToTest.add(50);
       if (context.totalAlgorithms > 100) indicesToTest.add(100);
       if (context.totalAlgorithms > 200) indicesToTest.add(200);
-      
+
       for (final index in indicesToTest) {
         tests.add(
           DiagnosticTest(
@@ -254,19 +266,21 @@ class SysExDiagnosticsService {
           ),
         );
       }
-      
+
       // Test the last algorithm
       if (context.totalAlgorithms > 1) {
         tests.add(
           DiagnosticTest(
-            name: "Request Algorithm Info (Library Index ${context.totalAlgorithms - 1})",
+            name:
+                "Request Algorithm Info (Library Index ${context.totalAlgorithms - 1})",
             category: "Algorithm Library",
-            execute: (manager) => manager.requestAlgorithmInfo(context.totalAlgorithms - 1),
+            execute: (manager) =>
+                manager.requestAlgorithmInfo(context.totalAlgorithms - 1),
           ),
         );
       }
     }
-    
+
     // Algorithm-specific tests - only if algorithms exist in preset
     if (context.algorithmsInPreset > 0) {
       tests.addAll([
@@ -301,9 +315,10 @@ class SysExDiagnosticsService {
           execute: (manager) => manager.requestRoutingInformation(0),
         ),
       ]);
-      
+
       // Parameter-specific tests - only if the first algorithm has parameters
-      if (context.firstAlgorithmParams != null && context.firstAlgorithmParams! > 0) {
+      if (context.firstAlgorithmParams != null &&
+          context.firstAlgorithmParams! > 0) {
         tests.addAll([
           DiagnosticTest(
             name: "Request Parameter Info (Slot 0, Param 0)",
@@ -321,21 +336,26 @@ class SysExDiagnosticsService {
             execute: (manager) => manager.requestMappings(0, 0),
           ),
         ]);
-        
+
         // Only test parameter value strings for parameters that support them (units 13, 14, 17)
-        final stringParamIndex = await _findParameterWithStringSupport(0, context.firstAlgorithmParams!);
+        final stringParamIndex = await _findParameterWithStringSupport(
+          0,
+          context.firstAlgorithmParams!,
+        );
         if (stringParamIndex != null) {
           tests.add(
             DiagnosticTest(
-              name: "Request Parameter Value String (Slot 0, Param $stringParamIndex)",
+              name:
+                  "Request Parameter Value String (Slot 0, Param $stringParamIndex)",
               category: "Parameters",
-              execute: (manager) => manager.requestParameterValueString(0, stringParamIndex),
+              execute: (manager) =>
+                  manager.requestParameterValueString(0, stringParamIndex),
             ),
           );
         }
       }
     }
-    
+
     return tests;
   }
 }
@@ -344,7 +364,7 @@ class DiagnosticTest {
   final String name;
   final String category;
   final Future<dynamic> Function(IDistingMidiManager manager) execute;
-  
+
   DiagnosticTest({
     required this.name,
     required this.category,
@@ -356,7 +376,7 @@ class DiagnosticExecution {
   final int duration; // milliseconds
   final bool success;
   final String? error;
-  
+
   DiagnosticExecution({
     required this.duration,
     required this.success,
@@ -368,49 +388,55 @@ class DiagnosticTestResult {
   final String testName;
   final String category;
   final List<DiagnosticExecution> executions = [];
-  
+
   DiagnosticTestResult(this.testName, this.category);
-  
+
   void addExecution(DiagnosticExecution execution) {
     executions.add(execution);
   }
-  
+
   int get totalExecutions => executions.length;
   int get successfulExecutions => executions.where((e) => e.success).length;
   int get failedExecutions => executions.where((e) => !e.success).length;
-  double get successRate => totalExecutions > 0 ? successfulExecutions / totalExecutions : 0.0;
-  
-  int get minDuration => executions.isEmpty ? 0 : executions.map((e) => e.duration).reduce(min);
-  int get maxDuration => executions.isEmpty ? 0 : executions.map((e) => e.duration).reduce(max);
-  double get avgDuration => executions.isEmpty ? 0.0 : executions.map((e) => e.duration).reduce((a, b) => a + b) / executions.length;
-  
+  double get successRate =>
+      totalExecutions > 0 ? successfulExecutions / totalExecutions : 0.0;
+
+  int get minDuration =>
+      executions.isEmpty ? 0 : executions.map((e) => e.duration).reduce(min);
+  int get maxDuration =>
+      executions.isEmpty ? 0 : executions.map((e) => e.duration).reduce(max);
+  double get avgDuration => executions.isEmpty
+      ? 0.0
+      : executions.map((e) => e.duration).reduce((a, b) => a + b) /
+            executions.length;
+
   List<String> get uniqueErrors => executions
-    .where((e) => e.error != null)
-    .map((e) => e.error!)
-    .toSet()
-    .toList();
+      .where((e) => e.error != null)
+      .map((e) => e.error!)
+      .toSet()
+      .toList();
 }
 
 class DiagnosticsReport {
   final List<DiagnosticTestResult> testResults = [];
   final DateTime timestamp = DateTime.now();
-  
+
   void addTest(DiagnosticTestResult result) {
     testResults.add(result);
   }
-  
+
   int get totalTests => testResults.length;
   int get passedTests => testResults.where((t) => t.successRate > 0.8).length;
   int get failedTests => testResults.where((t) => t.successRate <= 0.8).length;
-  
-  List<DiagnosticTestResult> get worstPerformingTests => 
-    testResults.where((t) => t.successRate < 1.0).toList()
-      ..sort((a, b) => a.successRate.compareTo(b.successRate));
-  
+
+  List<DiagnosticTestResult> get worstPerformingTests =>
+      testResults.where((t) => t.successRate < 1.0).toList()
+        ..sort((a, b) => a.successRate.compareTo(b.successRate));
+
   List<DiagnosticTestResult> get slowestTests =>
-    testResults.toList()
-      ..sort((a, b) => b.avgDuration.compareTo(a.avgDuration));
-  
+      testResults.toList()
+        ..sort((a, b) => b.avgDuration.compareTo(a.avgDuration));
+
   Map<String, List<DiagnosticTestResult>> get testsByCategory {
     final Map<String, List<DiagnosticTestResult>> grouped = {};
     for (final test in testResults) {
@@ -418,49 +444,55 @@ class DiagnosticsReport {
     }
     return grouped;
   }
-  
+
   String generateTextReport() {
     final buffer = StringBuffer();
     buffer.writeln('SysEx Diagnostics Report');
     buffer.writeln('Generated: ${timestamp.toIso8601String()}');
     buffer.writeln('=' * 50);
     buffer.writeln();
-    
+
     buffer.writeln('SUMMARY');
     buffer.writeln('Total Tests: $totalTests');
     buffer.writeln('Passed (>80% success): $passedTests');
     buffer.writeln('Failed (≤80% success): $failedTests');
     buffer.writeln();
-    
+
     if (worstPerformingTests.isNotEmpty) {
       buffer.writeln('WORST PERFORMING TESTS');
       for (final test in worstPerformingTests.take(5)) {
-        buffer.writeln('${test.testName}: ${(test.successRate * 100).toStringAsFixed(1)}% success, '
-                       '${test.avgDuration.toStringAsFixed(1)}ms avg');
+        buffer.writeln(
+          '${test.testName}: ${(test.successRate * 100).toStringAsFixed(1)}% success, '
+          '${test.avgDuration.toStringAsFixed(1)}ms avg',
+        );
         if (test.uniqueErrors.isNotEmpty) {
           buffer.writeln('  Errors: ${test.uniqueErrors.join(', ')}');
         }
       }
       buffer.writeln();
     }
-    
+
     buffer.writeln('SLOWEST TESTS');
     for (final test in slowestTests.take(5)) {
-      buffer.writeln('${test.testName}: ${test.avgDuration.toStringAsFixed(1)}ms avg '
-                     '(${test.minDuration}ms min, ${test.maxDuration}ms max)');
+      buffer.writeln(
+        '${test.testName}: ${test.avgDuration.toStringAsFixed(1)}ms avg '
+        '(${test.minDuration}ms min, ${test.maxDuration}ms max)',
+      );
     }
     buffer.writeln();
-    
+
     buffer.writeln('BY CATEGORY');
     for (final entry in testsByCategory.entries) {
       buffer.writeln('${entry.key}:');
       for (final test in entry.value) {
-        buffer.writeln('  ${test.testName}: ${(test.successRate * 100).toStringAsFixed(1)}% success, '
-                       '${test.avgDuration.toStringAsFixed(1)}ms avg');
+        buffer.writeln(
+          '  ${test.testName}: ${(test.successRate * 100).toStringAsFixed(1)}% success, '
+          '${test.avgDuration.toStringAsFixed(1)}ms avg',
+        );
       }
       buffer.writeln();
     }
-    
+
     return buffer.toString();
   }
 }

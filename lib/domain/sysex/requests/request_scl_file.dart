@@ -7,10 +7,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class RequestSclFileMessage extends SysexMessage {
   final String filePath;
 
-  RequestSclFileMessage({
-    required super.sysExId,
-    required this.filePath,
-  });
+  RequestSclFileMessage({required super.sysExId, required this.filePath});
 
   @override
   Uint8List encode() {

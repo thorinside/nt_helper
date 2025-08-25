@@ -38,8 +38,9 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
   Timer? _longPressAccelerationTimer;
   double _accelerationMultiplier = 1.0;
   static const Duration _initialAccelerationDelay = Duration(milliseconds: 500);
-  static const Duration _acceleratingInterval =
-      Duration(milliseconds: 200); // Slowed down from 80ms
+  static const Duration _acceleratingInterval = Duration(
+    milliseconds: 200,
+  ); // Slowed down from 80ms
   static const double _maxAccelerationMultiplier =
       10.0; // Reduced max from 20 to 10
   static const double _accelerationRate =
@@ -58,8 +59,9 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
   void initState() {
     super.initState();
     _currentBpm = widget.initialValue;
-    _textController =
-        TextEditingController(text: _formatBpmForDisplay(_currentBpm));
+    _textController = TextEditingController(
+      text: _formatBpmForDisplay(_currentBpm),
+    );
     _focusNode.addListener(_handleFocusChange);
   }
 
@@ -162,8 +164,9 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     _accelerationMultiplier = 1.0;
     _accelerationStepCount = 0;
 
-    _longPressAccelerationTimer =
-        Timer.periodic(_initialAccelerationDelay, (timerAfterDelay) {
+    _longPressAccelerationTimer = Timer.periodic(_initialAccelerationDelay, (
+      timerAfterDelay,
+    ) {
       timerAfterDelay.cancel();
       _performAcceleratedStep(increment);
       _longPressAccelerationTimer = Timer.periodic(_acceleratingInterval, (_) {
@@ -185,14 +188,15 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
     if (_accelerationStepCount > _stepsBeforeAcceleration) {
       if (_accelerationMultiplier < _maxAccelerationMultiplier) {
         _accelerationMultiplier = min(
-            _accelerationMultiplier * _accelerationRate,
-            _maxAccelerationMultiplier);
+          _accelerationMultiplier * _accelerationRate,
+          _maxAccelerationMultiplier,
+        );
       }
     }
 
     // Step by 10^powerOfTen * accelerationMultiplier
-    int stepSize =
-        (pow(10, widget.powerOfTen) * _accelerationMultiplier).round();
+    int stepSize = (pow(10, widget.powerOfTen) * _accelerationMultiplier)
+        .round();
 
     // Ensure minimum step size is at least one unit
     stepSize = max(stepSize, pow(10, widget.powerOfTen).round());
@@ -279,7 +283,8 @@ class _BpmEditorWidgetState extends State<BpmEditorWidget> {
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(
-                      3), // Limit to 3 digits (up to 999 BPM)
+                    3,
+                  ), // Limit to 3 digits (up to 999 BPM)
                 ],
               ),
               // Position "BPM" as a separate widget to prevent it from affecting text alignment

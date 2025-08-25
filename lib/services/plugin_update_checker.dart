@@ -22,10 +22,10 @@ class PluginUpdateChecker {
     required GalleryService galleryService,
     Duration? cacheExpiryDuration,
     int maxConcurrentChecks = 5,
-  })  : _database = database,
-        _galleryService = galleryService,
-        _cacheExpiryDuration = cacheExpiryDuration ?? const Duration(hours: 1),
-        _maxConcurrentChecks = maxConcurrentChecks;
+  }) : _database = database,
+       _galleryService = galleryService,
+       _cacheExpiryDuration = cacheExpiryDuration ?? const Duration(hours: 1),
+       _maxConcurrentChecks = maxConcurrentChecks;
 
   /// Check for updates for all installed plugins
   Future<UpdateCheckResult> checkAllPluginUpdates({
@@ -46,7 +46,7 @@ class PluginUpdateChecker {
       final pluginsToCheck = forceCheck
           ? await _database.pluginInstallationsDao.getAllInstalledPlugins()
           : await _database.pluginInstallationsDao
-              .getPluginsNeedingUpdateCheck();
+                .getPluginsNeedingUpdateCheck();
 
       if (pluginsToCheck.isEmpty) {
         debugPrint('No plugins need update checking');
@@ -77,8 +77,9 @@ class PluginUpdateChecker {
 
       final summary = _summarizeResults(results, startTime);
       debugPrint(
-          'Plugin update check completed: ${summary.checkedCount} checked, '
-          '${summary.updatesFound} updates found, ${summary.errors.length} errors');
+        'Plugin update check completed: ${summary.checkedCount} checked, '
+        '${summary.updatesFound} updates found, ${summary.errors.length} errors',
+      );
 
       return summary;
     } catch (e) {
@@ -95,8 +96,8 @@ class PluginUpdateChecker {
       debugPrint('Checking updates for plugin: $pluginId');
 
       // Get installed plugin info
-      final installedVersions =
-          await _database.pluginInstallationsDao.getPluginVersions(pluginId);
+      final installedVersions = await _database.pluginInstallationsDao
+          .getPluginVersions(pluginId);
 
       if (installedVersions.isEmpty) {
         return PluginUpdateResult.notInstalled(pluginId);
@@ -113,8 +114,9 @@ class PluginUpdateChecker {
 
       // Get gallery data for this plugin
       final galleryPlugins = await _fetchGalleryPlugins();
-      final galleryPlugin =
-          galleryPlugins.where((p) => p.id == pluginId).firstOrNull;
+      final galleryPlugin = galleryPlugins
+          .where((p) => p.id == pluginId)
+          .firstOrNull;
 
       if (galleryPlugin == null) {
         debugPrint('Plugin $pluginId not found in gallery');
@@ -188,12 +190,15 @@ class PluginUpdateChecker {
 
     // Process in batches to avoid overwhelming the system
     for (int i = 0; i < pluginsToCheck.length; i += _maxConcurrentChecks) {
-      final batchEnd =
-          (i + _maxConcurrentChecks).clamp(0, pluginsToCheck.length);
+      final batchEnd = (i + _maxConcurrentChecks).clamp(
+        0,
+        pluginsToCheck.length,
+      );
       final batch = pluginsToCheck.sublist(i, batchEnd);
 
       debugPrint(
-          'Processing batch ${(i ~/ _maxConcurrentChecks) + 1}: ${batch.length} plugins');
+        'Processing batch ${(i ~/ _maxConcurrentChecks) + 1}: ${batch.length} plugins',
+      );
 
       final batchResults = await Future.wait(
         batch.map((installedPlugin) async {
@@ -224,10 +229,13 @@ class PluginUpdateChecker {
     try {
       final installedVersion = installedPlugin.pluginVersion;
       final availableVersion = VersionComparisonService.getBestAvailableVersion(
-          galleryPlugin.releases);
+        galleryPlugin.releases,
+      );
 
       final hasUpdate = VersionComparisonService.hasUpdate(
-          installedVersion, availableVersion);
+        installedVersion,
+        availableVersion,
+      );
 
       // Update database with version info
       await _database.pluginInstallationsDao.updatePluginVersionInfo(
@@ -255,8 +263,10 @@ class PluginUpdateChecker {
     List<PluginUpdateResult> results,
     DateTime startTime,
   ) {
-    final errors =
-        results.where((r) => r.hasError).map((r) => r.error!).toList();
+    final errors = results
+        .where((r) => r.hasError)
+        .map((r) => r.error!)
+        .toList();
 
     final updatesFound = results.where((r) => r.hasUpdate == true).length;
 
@@ -294,32 +304,31 @@ class UpdateCheckResult {
     required int updatesFound,
     required List<String> errors,
     required Duration duration,
-  }) =>
-      UpdateCheckResult._(
-        success: true,
-        checkedCount: checkedCount,
-        updatesFound: updatesFound,
-        errors: errors,
-        duration: duration,
-      );
+  }) => UpdateCheckResult._(
+    success: true,
+    checkedCount: checkedCount,
+    updatesFound: updatesFound,
+    errors: errors,
+    duration: duration,
+  );
 
   factory UpdateCheckResult.error(String message) => UpdateCheckResult._(
-        success: false,
-        checkedCount: 0,
-        updatesFound: 0,
-        errors: const [],
-        duration: Duration.zero,
-        errorMessage: message,
-      );
+    success: false,
+    checkedCount: 0,
+    updatesFound: 0,
+    errors: const [],
+    duration: Duration.zero,
+    errorMessage: message,
+  );
 
   factory UpdateCheckResult.inProgress() => UpdateCheckResult._(
-        success: false,
-        checkedCount: 0,
-        updatesFound: 0,
-        errors: const [],
-        duration: Duration.zero,
-        inProgress: true,
-      );
+    success: false,
+    checkedCount: 0,
+    updatesFound: 0,
+    errors: const [],
+    duration: Duration.zero,
+    inProgress: true,
+  );
 
   bool get hasErrors => errors.isNotEmpty;
   bool get hasUpdates => updatesFound > 0;
@@ -359,16 +368,15 @@ class PluginUpdateResult {
     required String availableVersion,
     required bool hasUpdate,
     required GalleryPlugin galleryPlugin,
-  }) =>
-      PluginUpdateResult._(
-        pluginId: pluginId,
-        pluginName: pluginName,
-        installedVersion: installedVersion,
-        availableVersion: availableVersion,
-        hasUpdate: hasUpdate,
-        galleryPlugin: galleryPlugin,
-        type: PluginUpdateResultType.success,
-      );
+  }) => PluginUpdateResult._(
+    pluginId: pluginId,
+    pluginName: pluginName,
+    installedVersion: installedVersion,
+    availableVersion: availableVersion,
+    hasUpdate: hasUpdate,
+    galleryPlugin: galleryPlugin,
+    type: PluginUpdateResultType.success,
+  );
 
   factory PluginUpdateResult.notInstalled(String pluginId) =>
       PluginUpdateResult._(
@@ -409,9 +417,4 @@ class PluginUpdateResult {
   }
 }
 
-enum PluginUpdateResultType {
-  success,
-  error,
-  notInstalled,
-  notInGallery,
-}
+enum PluginUpdateResultType { success, error, notInstalled, notInGallery }

@@ -29,11 +29,17 @@ class NodePositionsPersistenceService {
     _prefs = prefs;
   }
 
-  Future<void> savePositions(String presetName, Map<int, NodePosition> positions) async {
+  Future<void> savePositions(
+    String presetName,
+    Map<int, NodePosition> positions,
+  ) async {
     _pendingPositions = positions;
     _pendingKey = '$_nodePositionsKeyPrefix$presetName';
     _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(milliseconds: 500), _flushPendingPositions);
+    _saveTimer = Timer(
+      const Duration(milliseconds: 500),
+      _flushPendingPositions,
+    );
   }
 
   Future<void> _flushPendingPositions() async {

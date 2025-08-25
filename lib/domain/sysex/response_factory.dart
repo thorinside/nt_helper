@@ -26,7 +26,9 @@ import 'package:nt_helper/domain/sysex/responses/lua_output_response.dart';
 
 class ResponseFactory {
   static SysexResponse? fromMessageType(
-      DistingNTRespMessageType type, Uint8List payload) {
+    DistingNTRespMessageType type,
+    Uint8List payload,
+  ) {
     switch (type) {
       case DistingNTRespMessageType.respLuaOutput:
         return LuaOutputResponse(payload);
@@ -78,7 +80,8 @@ class ResponseFactory {
               return FileChunkResponse(payload);
             default:
               return DirectoryListingResponse(
-                  payload); // Default to directory listing
+                payload,
+              ); // Default to directory listing
           }
         }
         return DirectoryListingResponse(payload);

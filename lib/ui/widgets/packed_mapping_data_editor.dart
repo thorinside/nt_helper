@@ -120,8 +120,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           TabBar(
             controller: _tabController,
             labelColor: Theme.of(context).colorScheme.onSurface,
-            unselectedLabelColor:
-                Theme.of(context).colorScheme.onSurface.withAlpha(64),
+            unselectedLabelColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withAlpha(64),
             tabs: const [
               Tab(text: 'CV'),
               Tab(text: 'MIDI'),
@@ -155,12 +156,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
   /// ---------------------
   Widget _buildCvEditor() {
     // Safely clamp the current CV input to 0..12 for display
-    final cvInputValue =
-        (_data.cvInput >= 0 && _data.cvInput <= 29) ? _data.cvInput : 0;
+    final cvInputValue = (_data.cvInput >= 0 && _data.cvInput <= 29)
+        ? _data.cvInput
+        : 0;
 
     // Safely clamp the source value for the dropdown
-    final sourceValue =
-        (_data.source >= 0 && _data.source <= 33) ? _data.source : 0;
+    final sourceValue = (_data.source >= 0 && _data.source <= 33)
+        ? _data.source
+        : 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -203,10 +206,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                       label = 'Slot $slotNumber: ${slot.algorithm.name}';
                     }
 
-                    return DropdownMenuEntry<int>(
-                      value: index,
-                      label: label,
-                    );
+                    return DropdownMenuEntry<int>(value: index, label: label);
                   }
                 }),
               ),
@@ -431,8 +431,9 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
               child: Text(
                 '(N/A for Notes)',
                 style: TextStyle(
-                    color: Theme.of(context).disabledColor,
-                    fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
+                  color: Theme.of(context).disabledColor,
+                  fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                ),
               ),
             ),
           _buildNumericField(
@@ -447,37 +448,40 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
           ),
           // Add the MIDI Detector
           MidiDetectorWidget(
-            onMidiEventFound: ({
-              required MidiEventType type,
-              required channel,
-              required number,
-            }) {
-              // When we've detected 10 consecutive hits of the same CC,
-              // automatically fill in the CC number, and midi channel in your form data
-              // and assume we want to enable the midi mapping.
-              setState(() {
-                // Default to CC type, adjust if it's a note
-                MidiMappingType detectedMappingType = MidiMappingType.cc;
-                if (type == MidiEventType.noteOn ||
-                    type == MidiEventType.noteOff) {
-                  if (_data.midiMappingType != MidiMappingType.noteMomentary &&
-                      _data.midiMappingType != MidiMappingType.noteToggle) {
-                    detectedMappingType = MidiMappingType.noteMomentary;
-                  } else {
-                    // Keep the existing note type if it was already set to one
-                    detectedMappingType = _data.midiMappingType;
-                  }
-                }
+            onMidiEventFound:
+                ({
+                  required MidiEventType type,
+                  required channel,
+                  required number,
+                }) {
+                  // When we've detected 10 consecutive hits of the same CC,
+                  // automatically fill in the CC number, and midi channel in your form data
+                  // and assume we want to enable the midi mapping.
+                  setState(() {
+                    // Default to CC type, adjust if it's a note
+                    MidiMappingType detectedMappingType = MidiMappingType.cc;
+                    if (type == MidiEventType.noteOn ||
+                        type == MidiEventType.noteOff) {
+                      if (_data.midiMappingType !=
+                              MidiMappingType.noteMomentary &&
+                          _data.midiMappingType != MidiMappingType.noteToggle) {
+                        detectedMappingType = MidiMappingType.noteMomentary;
+                      } else {
+                        // Keep the existing note type if it was already set to one
+                        detectedMappingType = _data.midiMappingType;
+                      }
+                    }
 
-                _data = _data.copyWith(
-                    midiMappingType: detectedMappingType,
-                    midiCC: number, // Use 'number' which is CC or Note
-                    midiChannel: channel,
-                    isMidiEnabled: true);
-              });
-              // Also update the text field / controller if necessary
-              _midiCcController.text = number.toString();
-            },
+                    _data = _data.copyWith(
+                      midiMappingType: detectedMappingType,
+                      midiCC: number, // Use 'number' which is CC or Note
+                      midiChannel: channel,
+                      isMidiEnabled: true,
+                    );
+                  });
+                  // Also update the text field / controller if necessary
+                  _midiCcController.text = number.toString();
+                },
           ),
         ],
       ),

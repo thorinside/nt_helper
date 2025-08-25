@@ -39,18 +39,25 @@ class MCPAlgorithmTools {
       return jsonEncode(convertToSnakeCaseKeys(resolution.error!));
     }
 
-    final algorithm =
-        _metadataService.getAlgorithmByGuid(resolution.resolvedGuid!);
+    final algorithm = _metadataService.getAlgorithmByGuid(
+      resolution.resolvedGuid!,
+    );
     if (algorithm == null) {
-      return jsonEncode(convertToSnakeCaseKeys(MCPUtils.buildError(
-          '${MCPConstants.notFoundError}: Algorithm with GUID "${resolution.resolvedGuid!}"',
-          helpCommand: MCPConstants.getAlgorithmHelp)));
+      return jsonEncode(
+        convertToSnakeCaseKeys(
+          MCPUtils.buildError(
+            '${MCPConstants.notFoundError}: Algorithm with GUID "${resolution.resolvedGuid!}"',
+            helpCommand: MCPConstants.getAlgorithmHelp,
+          ),
+        ),
+      );
     }
 
     AlgorithmMetadata algoToProcess;
     if (expandFeatures) {
-      final expandedParams =
-          _metadataService.getExpandedParameters(resolution.resolvedGuid!);
+      final expandedParams = _metadataService.getExpandedParameters(
+        resolution.resolvedGuid!,
+      );
       algoToProcess = algorithm.copyWith(parameters: expandedParams);
     } else {
       algoToProcess = algorithm;
@@ -84,9 +91,13 @@ class MCPAlgorithmTools {
     // Apply filters
     if (category != null && category.isNotEmpty) {
       algorithms = algorithms
-          .where((alg) => alg.categories.any((cat) =>
-              cat.toLowerCase() == category.toLowerCase() ||
-              MCPUtils.similarity(cat, category) >= 0.7))
+          .where(
+            (alg) => alg.categories.any(
+              (cat) =>
+                  cat.toLowerCase() == category.toLowerCase() ||
+                  MCPUtils.similarity(cat, category) >= 0.7,
+            ),
+          )
           .toList();
     }
 
@@ -95,10 +106,12 @@ class MCPAlgorithmTools {
       algorithms = algorithms.where((alg) {
         return alg.name.toLowerCase().contains(lowercaseQuery) ||
             alg.description.toLowerCase().contains(lowercaseQuery) ||
-            alg.categories
-                .any((cat) => cat.toLowerCase().contains(lowercaseQuery)) ||
+            alg.categories.any(
+              (cat) => cat.toLowerCase().contains(lowercaseQuery),
+            ) ||
             alg.features.any(
-                (feature) => feature.toLowerCase().contains(lowercaseQuery));
+              (feature) => feature.toLowerCase().contains(lowercaseQuery),
+            );
       }).toList();
     }
 
@@ -108,8 +121,10 @@ class MCPAlgorithmTools {
       if (alg.description.isNotEmpty) {
         int firstPeriod = alg.description.indexOf('.');
         if (firstPeriod != -1) {
-          firstSentenceDescription =
-              alg.description.substring(0, firstPeriod + 1);
+          firstSentenceDescription = alg.description.substring(
+            0,
+            firstPeriod + 1,
+          );
         } else {
           firstSentenceDescription =
               alg.description; // No period, take whole description
@@ -142,7 +157,10 @@ class MCPAlgorithmTools {
     final routingInfoList = _distingCubit.buildRoutingInformation();
 
     RoutingAnalyzer analyzer = RoutingAnalyzer(
-        routing: routingInfoList, showSignals: true, showMappings: false);
+      routing: routingInfoList,
+      showSignals: true,
+      showMappings: false,
+    );
 
     return jsonEncode(
       convertToSnakeCaseKeys(analyzer.generateSlotBusUsageJson()),

@@ -179,11 +179,14 @@ void main() {
 
         // Assert - Based on bus values:
         // Input Bus (value 1) = INPUT
-        // Output Bus (value 13) = OUTPUT 
+        // Output Bus (value 13) = OUTPUT
         // Send Output (value 21) = AUX (treated as INPUT)
         expect(result.inputPorts, hasLength(2)); // Input Bus + Send Output
         expect(result.outputPorts, hasLength(1)); // Output Bus only
-        expect(result.inputPorts.map((p) => p.name), containsAll(['Input Bus', 'Send Output']));
+        expect(
+          result.inputPorts.map((p) => p.name),
+          containsAll(['Input Bus', 'Send Output']),
+        );
         expect(result.outputPorts[0].name, equals('Output Bus'));
       });
 
@@ -384,7 +387,10 @@ void main() {
         expect(result.inputPorts, hasLength(1)); // Send Bus (AUX)
         expect(result.outputPorts, hasLength(2)); // Main Out + Out Channel
         expect(result.inputPorts[0].name, equals('Send Bus'));
-        expect(result.outputPorts.map((p) => p.name), containsAll(['Audio Output', 'Out Channel']));
+        expect(
+          result.outputPorts.map((p) => p.name),
+          containsAll(['Audio Output', 'Out Channel']),
+        );
       });
     });
 

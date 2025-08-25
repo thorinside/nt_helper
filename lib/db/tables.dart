@@ -72,8 +72,8 @@ class ParameterEnums extends Table {
 
   @override
   List<String> get customConstraints => [
-        'FOREIGN KEY (algorithm_guid, parameter_number) REFERENCES parameters (algorithm_guid, parameter_number)'
-      ];
+    'FOREIGN KEY (algorithm_guid, parameter_number) REFERENCES parameters (algorithm_guid, parameter_number)',
+  ];
 }
 
 @DataClassName('ParameterPageEntry')
@@ -98,9 +98,9 @@ class ParameterPageItems extends Table {
 
   @override
   List<String> get customConstraints => [
-        'FOREIGN KEY (algorithm_guid, page_index) REFERENCES parameter_pages (algorithm_guid, page_index)',
-        'FOREIGN KEY (algorithm_guid, parameter_number) REFERENCES parameters (algorithm_guid, parameter_number)'
-      ];
+    'FOREIGN KEY (algorithm_guid, page_index) REFERENCES parameter_pages (algorithm_guid, page_index)',
+    'FOREIGN KEY (algorithm_guid, parameter_number) REFERENCES parameters (algorithm_guid, parameter_number)',
+  ];
 }
 
 // --- Preset Structure ---
@@ -122,9 +122,7 @@ class PresetSlots extends Table {
   TextColumn get customName => text().nullable()();
 
   @override
-  List<String> get customConstraints => [
-        'UNIQUE (preset_id, slot_index)'
-      ]; // Ensure slot order is unique per preset
+  List<String> get customConstraints => ['UNIQUE (preset_id, slot_index)']; // Ensure slot order is unique per preset
 }
 
 @DataClassName('PresetParameterValueEntry')
@@ -138,8 +136,9 @@ class PresetParameterValues extends Table {
 
   // Add a unique constraint for the combination if needed logically
   @override
-  List<String> get customConstraints =>
-      ['UNIQUE (preset_slot_id, parameter_number)'];
+  List<String> get customConstraints => [
+    'UNIQUE (preset_slot_id, parameter_number)',
+  ];
 }
 
 /// Stores the string representation of a parameter's value for a specific slot
@@ -164,20 +163,23 @@ class PackedMappingDataConverter
   PackedMappingData fromSql(Uint8List fromDb) {
     if (fromDb.isEmpty) {
       debugPrint(
-          "PackedMappingDataConverter.fromSql: Empty data, returning filler");
+        "PackedMappingDataConverter.fromSql: Empty data, returning filler",
+      );
       return PackedMappingData.filler();
     }
 
     if (fromDb.length < 2) {
       debugPrint(
-          "PackedMappingDataConverter.fromSql: Data too short (${fromDb.length} bytes), returning filler");
+        "PackedMappingDataConverter.fromSql: Data too short (${fromDb.length} bytes), returning filler",
+      );
       return PackedMappingData.filler();
     }
 
     final version = fromDb[0];
     final data = fromDb.sublist(1);
     debugPrint(
-        "PackedMappingDataConverter.fromSql: Version $version, data length ${data.length}");
+      "PackedMappingDataConverter.fromSql: Version $version, data length ${data.length}",
+    );
 
     return PackedMappingData.fromBytes(version, data);
   }
@@ -187,7 +189,8 @@ class PackedMappingDataConverter
     final dataBytes = value.toBytes();
     final result = Uint8List.fromList([value.version, ...dataBytes]);
     debugPrint(
-        "PackedMappingDataConverter.toSql: Version ${value.version}, data length ${dataBytes.length}, total length ${result.length}");
+      "PackedMappingDataConverter.toSql: Version ${value.version}, data length ${dataBytes.length}, total length ${result.length}",
+    );
     return result;
   }
 }
@@ -229,7 +232,6 @@ class PresetRoutings extends Table {
   Set<Column> get primaryKey => {presetSlotId};
 }
 
-
 // --- General Metadata Cache ---
 
 @DataClassName('MetadataCacheEntry')
@@ -262,7 +264,8 @@ class PluginInstallations extends Table {
   TextColumn get installationPath =>
       text()(); // Where it was installed on the device
   TextColumn get installationStatus => text().withDefault(
-      const Constant('completed'))(); // 'completed', 'failed', 'partial'
+    const Constant('completed'),
+  )(); // 'completed', 'failed', 'partial'
 
   // Marketplace metadata (stored as JSON for flexibility)
   TextColumn get marketplaceMetadata =>
@@ -288,8 +291,9 @@ class PluginInstallations extends Table {
   // Version tracking for update notifications
   TextColumn get availableVersion =>
       text().nullable()(); // Latest version from gallery
-  TextColumn get updateAvailable => text()
-      .withDefault(const Constant('false'))(); // Update flag ('true'/'false')
+  TextColumn get updateAvailable => text().withDefault(
+    const Constant('false'),
+  )(); // Update flag ('true'/'false')
   DateTimeColumn get lastChecked =>
       dateTime().nullable()(); // Last update check timestamp
 

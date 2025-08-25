@@ -53,14 +53,20 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid, or if the value type is incorrect.
   Future<void> updateParameterValue(
-      int slotIndex, int parameterNumber, dynamic value);
+    int slotIndex,
+    int parameterNumber,
+    dynamic value,
+  );
 
   /// Updates the string value of a specific parameter for the algorithm in the given slot.
   /// Used for text-based parameters like those in the Notes algorithm.
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
   Future<void> updateParameterString(
-      int slotIndex, int parameterNumber, String value);
+    int slotIndex,
+    int parameterNumber,
+    String value,
+  );
 
   /// Retrieves the state of all slots, mapping slot index to the loaded algorithm (or null).
   /// Throws StateError if the Disting is not in a synchronized state.
@@ -119,5 +125,7 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
   Future<ParameterEnumStrings?> getParameterEnumStrings(
-      int slotIndex, int parameterNumber);
+    int slotIndex,
+    int parameterNumber,
+  );
 }

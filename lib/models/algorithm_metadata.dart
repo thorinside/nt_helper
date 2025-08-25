@@ -34,8 +34,11 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
             try {
               // Attempt to read parameterNumber, defaults to null if not present
               final int? pNum = paramJson['parameterNumber'] as int?;
-              allParams.add(AlgorithmParameter.fromJson(paramJson)
-                  .copyWith(parameterNumber: pNum));
+              allParams.add(
+                AlgorithmParameter.fromJson(
+                  paramJson,
+                ).copyWith(parameterNumber: pNum),
+              );
             } catch (e) {
               // Skip invalid parameters
             }
@@ -46,8 +49,9 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
         try {
           // Attempt to read parameterNumber, defaults to null if not present
           final int? pNum = item['parameterNumber'] as int?;
-          allParams.add(AlgorithmParameter.fromJson(item)
-              .copyWith(parameterNumber: pNum));
+          allParams.add(
+            AlgorithmParameter.fromJson(item).copyWith(parameterNumber: pNum),
+          );
         } catch (e) {
           // Skip invalid parameters
         }

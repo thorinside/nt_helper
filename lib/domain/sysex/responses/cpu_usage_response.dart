@@ -10,10 +10,6 @@ class CpuUsageResponse extends SysexResponse {
     final cpu2 = data[1];
     final slotUsages = data.sublist(2).toList();
 
-    return CpuUsage(
-      cpu1: cpu1,
-      cpu2: cpu2,
-      slotUsages: slotUsages,
-    );
+    return CpuUsage(cpu1: cpu1, cpu2: cpu2, slotUsages: slotUsages);
   }
 }

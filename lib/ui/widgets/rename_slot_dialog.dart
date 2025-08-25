@@ -40,20 +40,12 @@ class _RenameSlotDialogState extends State<RenameSlotDialog> {
       title: const Text('Rename Slot'),
       content: TextField(
         controller: _controller,
-        decoration: const InputDecoration(
-          labelText: 'Name',
-        ),
+        decoration: const InputDecoration(labelText: 'Name'),
         autofocus: true,
       ),
       actions: [
-        TextButton(
-          onPressed: _onCancel,
-          child: const Text('CANCEL'),
-        ),
-        ElevatedButton(
-          onPressed: _onConfirm,
-          child: const Text('OK'),
-        ),
+        TextButton(onPressed: _onCancel, child: const Text('CANCEL')),
+        ElevatedButton(onPressed: _onConfirm, child: const Text('OK')),
       ],
     );
   }

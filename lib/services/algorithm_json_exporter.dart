@@ -19,7 +19,8 @@ class AlgorithmJsonExporter {
 
       for (final algorithm in algorithms) {
         debugPrint(
-            'Processing algorithm: ${algorithm.name} (${algorithm.guid})');
+          'Processing algorithm: ${algorithm.name} (${algorithm.guid})',
+        );
 
         // Get full details including parameters
         final details = await dao.getFullAlgorithmDetails(algorithm.guid);
@@ -52,8 +53,9 @@ class AlgorithmJsonExporter {
       }
 
       // Sort algorithms by name for consistent output
-      exportData
-          .sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+      exportData.sort(
+        (a, b) => (a['name'] as String).compareTo(b['name'] as String),
+      );
 
       // Create the final export structure
       final Map<String, dynamic> exportJson = {
@@ -70,7 +72,8 @@ class AlgorithmJsonExporter {
       );
 
       debugPrint(
-          'Successfully exported ${exportData.length} algorithms to $filePath');
+        'Successfully exported ${exportData.length} algorithms to $filePath',
+      );
     } catch (e, stackTrace) {
       debugPrint('Error exporting algorithm details: $e');
       debugPrint('Stack trace: $stackTrace');

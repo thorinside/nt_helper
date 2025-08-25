@@ -5,14 +5,26 @@ part 'plugin_info.g.dart';
 
 /// Enum representing the different types of plugins supported by Disting NT
 enum PluginType {
-  lua('Lua Script', '/programs/lua', '.lua',
-      'Lua scripts for custom algorithms'),
-  threePot('3pot', '/programs/three_pot', '.3pot',
-      '3-potentiometer control plugins'),
+  lua(
+    'Lua Script',
+    '/programs/lua',
+    '.lua',
+    'Lua scripts for custom algorithms',
+  ),
+  threePot(
+    '3pot',
+    '/programs/three_pot',
+    '.3pot',
+    '3-potentiometer control plugins',
+  ),
   cpp('C++ Plugin', '/programs/plug-ins', '.o', 'Compiled C++ plugin objects');
 
   const PluginType(
-      this.displayName, this.directory, this.extension, this.description);
+    this.displayName,
+    this.directory,
+    this.extension,
+    this.description,
+  );
 
   final String displayName;
   final String directory;

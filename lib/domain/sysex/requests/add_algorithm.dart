@@ -8,10 +8,11 @@ class AddAlgorithmMessage extends SysexMessage {
   final String guid;
   final List<int> specifications;
 
-  AddAlgorithmMessage(
-      {required super.sysExId,
-      required this.guid,
-      required this.specifications});
+  AddAlgorithmMessage({
+    required super.sysExId,
+    required this.guid,
+    required this.specifications,
+  });
 
   @override
   Uint8List encode() {

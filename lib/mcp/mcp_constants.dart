@@ -312,11 +312,11 @@ class AlgorithmResolutionResult {
   final bool isSuccess;
 
   AlgorithmResolutionResult.success(this.resolvedGuid)
-      : error = null,
-        isSuccess = true;
+    : error = null,
+      isSuccess = true;
   AlgorithmResolutionResult.error(this.error)
-      : resolvedGuid = null,
-        isSuccess = false;
+    : resolvedGuid = null,
+      isSuccess = false;
 }
 
 /// Utility class for resolving algorithms by GUID or name
@@ -327,14 +327,17 @@ class AlgorithmResolver {
     required String? guid,
     required String? algorithmName,
     required List<dynamic>
-        allAlgorithms, // List of algorithms with .guid and .name properties
+    allAlgorithms, // List of algorithms with .guid and .name properties
   }) {
     // Validate that at least one parameter is provided
     if (!MCPUtils.validateParam(guid) &&
         !MCPUtils.validateParam(algorithmName)) {
-      return AlgorithmResolutionResult.error(MCPUtils.buildError(
+      return AlgorithmResolutionResult.error(
+        MCPUtils.buildError(
           '${MCPConstants.missingParamError}: "guid" or "algorithm_name"',
-          helpCommand: MCPConstants.getAlgorithmHelp));
+          helpCommand: MCPConstants.getAlgorithmHelp,
+        ),
+      );
     }
 
     // If GUID is provided and valid, use it directly
@@ -348,7 +351,9 @@ class AlgorithmResolver {
 
   /// Resolves algorithm by name using exact matching first, then fuzzy matching
   static AlgorithmResolutionResult _resolveByName(
-      String algorithmName, List<dynamic> allAlgorithms) {
+    String algorithmName,
+    List<dynamic> allAlgorithms,
+  ) {
     // Try exact match first (case-insensitive)
     final exactMatches = allAlgorithms
         .where((alg) => alg.name.toLowerCase() == algorithmName.toLowerCase())
@@ -362,9 +367,12 @@ class AlgorithmResolver {
         final candidates = exactMatches
             .map((alg) => {'name': alg.name, 'guid': alg.guid})
             .toList();
-        return AlgorithmResolutionResult.error(MCPUtils.buildError(
+        return AlgorithmResolutionResult.error(
+          MCPUtils.buildError(
             '${MCPConstants.ambiguousError}: "$algorithmName" matches: $candidates',
-            helpCommand: 'Use GUID or be more specific'));
+            helpCommand: 'Use GUID or be more specific',
+          ),
+        );
       }
     }
 
@@ -375,9 +383,12 @@ class AlgorithmResolver {
     }).toList();
 
     if (fuzzyMatches.isEmpty) {
-      return AlgorithmResolutionResult.error(MCPUtils.buildError(
+      return AlgorithmResolutionResult.error(
+        MCPUtils.buildError(
           '${MCPConstants.notFoundError}: No algorithm named "$algorithmName"',
-          helpCommand: MCPConstants.getAlgorithmHelp));
+          helpCommand: MCPConstants.getAlgorithmHelp,
+        ),
+      );
     }
 
     if (fuzzyMatches.length == 1) {
@@ -387,9 +398,12 @@ class AlgorithmResolver {
       final candidates = fuzzyMatches
           .map((alg) => {'name': alg.name, 'guid': alg.guid})
           .toList();
-      return AlgorithmResolutionResult.error(MCPUtils.buildError(
+      return AlgorithmResolutionResult.error(
+        MCPUtils.buildError(
           '${MCPConstants.ambiguousError}: "$algorithmName" matches: $candidates',
-          helpCommand: 'Use GUID or be more specific'));
+          helpCommand: 'Use GUID or be more specific',
+        ),
+      );
     }
   }
 }
@@ -397,12 +411,11 @@ class AlgorithmResolver {
 /// Utility class for common MCP operations
 class MCPUtils {
   /// Builds standardized error response
-  static Map<String, dynamic> buildError(String message,
-      {String? helpCommand}) {
-    final error = <String, dynamic>{
-      'success': false,
-      'error': message,
-    };
+  static Map<String, dynamic> buildError(
+    String message, {
+    String? helpCommand,
+  }) {
+    final error = <String, dynamic>{'success': false, 'error': message};
     if (helpCommand != null) {
       error['help_command'] = helpCommand;
     }
@@ -410,12 +423,11 @@ class MCPUtils {
   }
 
   /// Builds standardized success response
-  static Map<String, dynamic> buildSuccess(String message,
-      {Map<String, dynamic>? data}) {
-    final result = <String, dynamic>{
-      'success': true,
-      'message': message,
-    };
+  static Map<String, dynamic> buildSuccess(
+    String message, {
+    Map<String, dynamic>? data,
+  }) {
+    final result = <String, dynamic>{'success': true, 'message': message};
     if (data != null) {
       result.addAll(data);
     }
@@ -465,11 +477,15 @@ class MCPUtils {
 
   /// Validates required parameter and returns error if invalid
   static Map<String, dynamic>? validateRequiredParam(
-      dynamic param, String paramName,
-      {String? helpCommand}) {
+    dynamic param,
+    String paramName, {
+    String? helpCommand,
+  }) {
     if (!validateParam(param)) {
-      return buildError('${MCPConstants.missingParamError}: "$paramName"',
-          helpCommand: helpCommand);
+      return buildError(
+        '${MCPConstants.missingParamError}: "$paramName"',
+        helpCommand: helpCommand,
+      );
     }
     return null;
   }
@@ -481,39 +497,50 @@ class MCPUtils {
     }
     if (slotIndex < 0 || slotIndex >= MCPConstants.maxSlots) {
       return buildError(
-          '${MCPConstants.invalidRangeError}: slot_index must be between 0 and ${MCPConstants.maxSlots - 1}');
+        '${MCPConstants.invalidRangeError}: slot_index must be between 0 and ${MCPConstants.maxSlots - 1}',
+      );
     }
     return null;
   }
 
   /// Validates parameter number is within valid range for given slot
   static Map<String, dynamic>? validateParameterNumber(
-      int? parameterNumber, int maxParams, int slotIndex) {
+    int? parameterNumber,
+    int maxParams,
+    int slotIndex,
+  ) {
     if (parameterNumber == null) {
       return buildError(
-          '${MCPConstants.missingParamError}: "parameter_number"');
+        '${MCPConstants.missingParamError}: "parameter_number"',
+      );
     }
     if (parameterNumber < 0 || parameterNumber >= maxParams) {
       return buildError(
-          '${MCPConstants.invalidRangeError}: parameter_number must be between 0 and ${maxParams - 1} for slot $slotIndex');
+        '${MCPConstants.invalidRangeError}: parameter_number must be between 0 and ${maxParams - 1} for slot $slotIndex',
+      );
     }
     return null;
   }
 
   /// Validates mutually exclusive parameters (only one should be provided)
   static Map<String, dynamic>? validateMutuallyExclusive(
-      Map<String, dynamic> params, List<String> paramNames) {
-    final providedParams =
-        paramNames.where((name) => validateParam(params[name])).toList();
+    Map<String, dynamic> params,
+    List<String> paramNames,
+  ) {
+    final providedParams = paramNames
+        .where((name) => validateParam(params[name]))
+        .toList();
 
     if (providedParams.isEmpty) {
       return buildError(
-          '${MCPConstants.missingParamError}: One of ${paramNames.join(', ')} is required');
+        '${MCPConstants.missingParamError}: One of ${paramNames.join(', ')} is required',
+      );
     }
 
     if (providedParams.length > 1) {
       return buildError(
-          '${MCPConstants.ambiguousError}: Provide only one of ${paramNames.join(', ')}, not multiple');
+        '${MCPConstants.ambiguousError}: Provide only one of ${paramNames.join(', ')}, not multiple',
+      );
     }
 
     return null;
@@ -521,21 +548,26 @@ class MCPUtils {
 
   /// Validates that exactly one of the required parameters is provided
   static Map<String, dynamic>? validateExactlyOne(
-      Map<String, dynamic> params, List<String> paramNames,
-      {String? helpCommand}) {
-    final providedParams =
-        paramNames.where((name) => validateParam(params[name])).toList();
+    Map<String, dynamic> params,
+    List<String> paramNames, {
+    String? helpCommand,
+  }) {
+    final providedParams = paramNames
+        .where((name) => validateParam(params[name]))
+        .toList();
 
     if (providedParams.isEmpty) {
       return buildError(
-          '${MCPConstants.missingParamError}: One of ${paramNames.join(' or ')} is required',
-          helpCommand: helpCommand);
+        '${MCPConstants.missingParamError}: One of ${paramNames.join(' or ')} is required',
+        helpCommand: helpCommand,
+      );
     }
 
     if (providedParams.length > 1) {
       return buildError(
-          'Provide only one of ${paramNames.join(' or ')}, not both',
-          helpCommand: helpCommand);
+        'Provide only one of ${paramNames.join(' or ')}, not both',
+        helpCommand: helpCommand,
+      );
     }
 
     return null;

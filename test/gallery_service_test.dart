@@ -14,39 +14,44 @@ void main() {
 
     setUp(() {
       mockSettingsService = MockSettingsService();
-      when(mockSettingsService.galleryUrl)
-          .thenReturn('https://test.com/gallery.json');
+      when(
+        mockSettingsService.galleryUrl,
+      ).thenReturn('https://test.com/gallery.json');
     });
 
-    test('should prioritize downloadUrl over GitHub API when available',
-        () async {
-      // Create a test plugin with downloadUrl
-      final plugin = GalleryPlugin(
-        id: 'test-plugin',
-        name: 'Test Plugin',
-        description: 'A test plugin',
-        type: GalleryPluginType.lua,
-        author: 'test-author',
-        repository: PluginRepository(
-          owner: 'test-owner',
-          name: 'test-repo',
-          url: 'https://github.com/test-owner/test-repo',
-        ),
-        releases: PluginReleases(latest: 'v1.0.0'),
-        installation: PluginInstallation(
-          targetPath: '/lua/',
-          downloadUrl: 'https://example.com/direct-download.lua',
-          extractPattern: r'.*\.lua$',
-        ),
-      );
+    test(
+      'should prioritize downloadUrl over GitHub API when available',
+      () async {
+        // Create a test plugin with downloadUrl
+        final plugin = GalleryPlugin(
+          id: 'test-plugin',
+          name: 'Test Plugin',
+          description: 'A test plugin',
+          type: GalleryPluginType.lua,
+          author: 'test-author',
+          repository: PluginRepository(
+            owner: 'test-owner',
+            name: 'test-repo',
+            url: 'https://github.com/test-owner/test-repo',
+          ),
+          releases: PluginReleases(latest: 'v1.0.0'),
+          installation: PluginInstallation(
+            targetPath: '/lua/',
+            downloadUrl: 'https://example.com/direct-download.lua',
+            extractPattern: r'.*\.lua$',
+          ),
+        );
 
-      // Test that downloadUrl is used directly
-      // Note: This is testing the logic, not actual network calls
-      expect(plugin.installation.downloadUrl, isNotNull);
-      expect(plugin.installation.downloadUrl,
-          'https://example.com/direct-download.lua');
-      expect(plugin.installation.extractPattern, r'.*\.lua$');
-    });
+        // Test that downloadUrl is used directly
+        // Note: This is testing the logic, not actual network calls
+        expect(plugin.installation.downloadUrl, isNotNull);
+        expect(
+          plugin.installation.downloadUrl,
+          'https://example.com/direct-download.lua',
+        );
+        expect(plugin.installation.extractPattern, r'.*\.lua$');
+      },
+    );
 
     test('should handle zip extraction with extractPattern', () {
       // Test different plugin types and their extract patterns

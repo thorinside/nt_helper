@@ -14,7 +14,8 @@ class MidiDetectorWidget extends StatelessWidget {
     required MidiEventType type,
     required int channel,
     required int number, // CC or Note number
-  })? onMidiEventFound;
+  })?
+  onMidiEventFound;
 
   const MidiDetectorWidget({super.key, this.onMidiEventFound});
 
@@ -52,7 +53,8 @@ class _MidiDetectorContents extends StatefulWidget {
     required MidiEventType type,
     required int channel,
     required int number,
-  })? onMidiEventFound;
+  })?
+  onMidiEventFound;
   final bool useLocalCubit;
 
   const _MidiDetectorContents({
@@ -124,37 +126,40 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
                   case Initial():
                     _showStatusMessage('No device connected.');
                   case Data(
-                      :final isConnected,
-                      :final selectedDevice,
-                      :final lastDetectedType,
-                      :final lastDetectedChannel,
-                      :final lastDetectedCc,
-                      :final lastDetectedNote
-                    ):
+                    :final isConnected,
+                    :final selectedDevice,
+                    :final lastDetectedType,
+                    :final lastDetectedChannel,
+                    :final lastDetectedCc,
+                    :final lastDetectedNote,
+                  ):
                     if (isConnected) {
                       _showStatusMessage(
-                          'Connected to ${selectedDevice?.name}.');
+                        'Connected to ${selectedDevice?.name}.',
+                      );
                     } else {
                       _showStatusMessage('No device connected.');
                     }
                     if (lastDetectedType != null &&
                         lastDetectedChannel != null) {
-                      final (String, int?) eventInfo =
-                          switch (lastDetectedType) {
+                      final (String, int?)
+                      eventInfo = switch (lastDetectedType) {
                         MidiEventType.cc => ('CC', lastDetectedCc),
                         MidiEventType.noteOn => ('Note On', lastDetectedNote),
-                        MidiEventType.noteOff => ('Note Off', lastDetectedNote)
+                        MidiEventType.noteOff => ('Note Off', lastDetectedNote),
                       };
 
                       final eventNumber = eventInfo.$2;
                       if (eventNumber != null) {
                         final eventTypeStr = eventInfo.$1;
                         _showStatusMessage(
-                            'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}');
+                          'Detected $eventTypeStr $eventNumber on channel ${lastDetectedChannel + 1}',
+                        );
                         widget.onMidiEventFound?.call(
-                            type: lastDetectedType,
-                            channel: lastDetectedChannel,
-                            number: eventNumber);
+                          type: lastDetectedType,
+                          channel: lastDetectedChannel,
+                          number: eventNumber,
+                        );
                       }
                     }
                 }
@@ -171,10 +176,7 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
 
   Widget _buildDeviceDropdown() {
     final entries = _devices.map((device) {
-      return DropdownMenuEntry<MidiDevice>(
-        value: device,
-        label: device.name,
-      );
+      return DropdownMenuEntry<MidiDevice>(value: device, label: device.name);
     }).toList();
 
     return Row(

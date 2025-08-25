@@ -35,10 +35,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   // Gallery service
   late GalleryService _galleryService;
 
-  final List<String> _sections = [
-    'Installed',
-    'Available',
-  ];
+  final List<String> _sections = ['Installed', 'Available'];
 
   // Plugin data
   List<PluginInfo> _luaPlugins = [];
@@ -53,9 +50,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   @override
   void initState() {
     super.initState();
-    _galleryService = GalleryService(
-      settingsService: SettingsService(),
-    );
+    _galleryService = GalleryService(settingsService: SettingsService());
     _loadInstalledPlugins();
   }
 
@@ -129,7 +124,8 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
 
           if (fileBytes == null) {
             throw Exception(
-                'Failed to read file data - no bytes or path available');
+              'Failed to read file data - no bytes or path available',
+            );
           }
 
           // Show progress dialog
@@ -185,7 +181,8 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text(
-                'File installation is only available on desktop platforms'),
+              'File installation is only available on desktop platforms',
+            ),
           ),
         );
       }
@@ -386,7 +383,8 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Directory Already Exists'),
         content: Text(
-            'The folder "$folderName" already exists. Do you want to use it for the backup?'),
+          'The folder "$folderName" already exists. Do you want to use it for the backup?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -416,8 +414,8 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             Text(
               'This action cannot be undone.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ],
         ),
@@ -479,26 +477,33 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             switch (plugin.type) {
               case PluginType.lua:
                 _luaPlugins.add(plugin);
-                _luaPlugins.sort((a, b) =>
-                    a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                _luaPlugins.sort(
+                  (a, b) =>
+                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                );
                 break;
               case PluginType.threePot:
                 _threePotPlugins.add(plugin);
-                _threePotPlugins.sort((a, b) =>
-                    a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                _threePotPlugins.sort(
+                  (a, b) =>
+                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                );
                 break;
               case PluginType.cpp:
                 _cppPlugins.add(plugin);
-                _cppPlugins.sort((a, b) =>
-                    a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                _cppPlugins.sort(
+                  (a, b) =>
+                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                );
                 break;
             }
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  Text('Error sending delete command for "${plugin.name}": $e'),
+              content: Text(
+                'Error sending delete command for "${plugin.name}": $e',
+              ),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -519,7 +524,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         actions: [
           if (_selectedIndex == 0) // Only show buttons on Installed tab
-            ...[
+          ...[
             if (!kIsWeb &&
                 (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
               IconButton(
@@ -577,9 +582,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
         const VerticalDivider(thickness: 1, width: 1),
 
         // Main content
-        Expanded(
-          child: _buildMainContent(),
-        ),
+        Expanded(child: _buildMainContent()),
       ],
     );
   }
@@ -677,10 +680,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             Text(
               'Use the + button above to install plugin files (.lua, .3pot, .o)',
               style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6)),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -714,9 +717,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
       onRefresh: _loadInstalledPlugins,
       child: ExpansionTileTheme(
         data: const ExpansionTileThemeData(
-          shape: RoundedRectangleBorder(
-            side: BorderSide.none,
-          ),
+          shape: RoundedRectangleBorder(side: BorderSide.none),
         ),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
@@ -725,7 +726,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
               _buildPluginTypeSection('Lua Scripts', _luaPlugins, Icons.code),
             if (_threePotPlugins.isNotEmpty)
               _buildPluginTypeSection(
-                  '3pot Plugins', _threePotPlugins, Icons.tune),
+                '3pot Plugins',
+                _threePotPlugins,
+                Icons.tune,
+              ),
             if (_cppPlugins.isNotEmpty)
               _buildPluginTypeSection('C++ Plugins', _cppPlugins, Icons.memory),
           ],
@@ -735,7 +739,10 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
   }
 
   Widget _buildPluginTypeSection(
-      String title, List<PluginInfo> plugins, IconData icon) {
+    String title,
+    List<PluginInfo> plugins,
+    IconData icon,
+  ) {
     // Determine which expansion state to use based on the title
     bool isExpanded;
     void Function(bool) onExpansionChanged;
@@ -743,18 +750,18 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
     switch (title) {
       case 'Lua Scripts':
         isExpanded = _luaExpanded;
-        onExpansionChanged =
-            (expanded) => setState(() => _luaExpanded = expanded);
+        onExpansionChanged = (expanded) =>
+            setState(() => _luaExpanded = expanded);
         break;
       case '3pot Plugins':
         isExpanded = _threePotExpanded;
-        onExpansionChanged =
-            (expanded) => setState(() => _threePotExpanded = expanded);
+        onExpansionChanged = (expanded) =>
+            setState(() => _threePotExpanded = expanded);
         break;
       case 'C++ Plugins':
         isExpanded = _cppExpanded;
-        onExpansionChanged =
-            (expanded) => setState(() => _cppExpanded = expanded);
+        onExpansionChanged = (expanded) =>
+            setState(() => _cppExpanded = expanded);
         break;
       default:
         isExpanded = true;
@@ -772,26 +779,25 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${plugins.length}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -853,10 +859,7 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
               tooltip: 'Plugin Details',
             ),
             IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                color: theme.colorScheme.error,
-              ),
+              icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
               onPressed: () => _deletePlugin(plugin),
               tooltip: 'Delete Plugin',
             ),
@@ -929,16 +932,13 @@ class _PluginManagerScreenState extends State<PluginManagerScreen> {
             width: 80,
             child: Text(
               '$label:',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -1030,8 +1030,8 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog> {
             Text(
               'Error: $_error',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ],
         ],
@@ -1046,9 +1046,11 @@ class _BackupProgressDialogState extends State<_BackupProgressDialog> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(_error != null
-                        ? 'Backup failed: $_error'
-                        : 'Successfully backed up plugins to ${widget.directoryPath}'),
+                    content: Text(
+                      _error != null
+                          ? 'Backup failed: $_error'
+                          : 'Successfully backed up plugins to ${widget.directoryPath}',
+                    ),
                     backgroundColor: _error != null
                         ? Theme.of(context).colorScheme.error
                         : Theme.of(context).colorScheme.primary,

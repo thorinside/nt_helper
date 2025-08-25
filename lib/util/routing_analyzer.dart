@@ -15,10 +15,10 @@ class RoutingAnalyzer {
     required List<RoutingInformation> routing,
     bool showSignals = true,
     bool showMappings = false,
-  })  : _routing = routing,
-        _showSignals = showSignals,
-        _showMappings = showMappings,
-        _slotCount = routing.length {
+  }) : _routing = routing,
+       _showSignals = showSignals,
+       _showMappings = showMappings,
+       _slotCount = routing.length {
     _initializeAnalysis();
   }
 
@@ -66,8 +66,8 @@ class RoutingAnalyzer {
         0,
         0,
         0,
-        0
-      ]
+        0,
+      ],
     ];
 
     for (int s = 0; s < _slotCount; s++) {

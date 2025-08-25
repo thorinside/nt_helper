@@ -22,7 +22,8 @@ class DraggableResizableOverlay extends StatefulWidget {
   });
 
   @override
-  State<DraggableResizableOverlay> createState() => _DraggableResizableOverlayState();
+  State<DraggableResizableOverlay> createState() =>
+      _DraggableResizableOverlayState();
 }
 
 class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
@@ -42,7 +43,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     _height = widget.initialHeight;
     _x = 0;
     _y = 0;
-    
+
     // Load settings after the first frame to ensure MediaQuery is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSettings();
@@ -54,11 +55,11 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     final savedX = _settings.overlayPositionX;
     final savedY = _settings.overlayPositionY;
     final savedScale = _settings.overlaySizeScale;
-    
+
     // Calculate size from scale
     _width = widget.initialWidth * savedScale;
     _height = _width / widget.aspectRatio; // Maintain aspect ratio
-    
+
     // Use saved position if available, otherwise use default
     if (savedX >= 0 && savedY >= 0) {
       _x = savedX;
@@ -69,7 +70,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
       _x = screenSize.width - _width - 16;
       _y = screenSize.height - kBottomNavigationBarHeight - _height - 16;
     }
-    
+
     // Ensure overlay stays within screen bounds
     setState(() {
       _constrainToScreen();
@@ -119,10 +120,13 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
   void _onResizeUpdate(DragUpdateDetails details) {
     setState(() {
       // Calculate new width based on drag delta
-      final newWidth = (_width + details.delta.dx).clamp(widget.minWidth, widget.maxWidth);
+      final newWidth = (_width + details.delta.dx).clamp(
+        widget.minWidth,
+        widget.maxWidth,
+      );
       _width = newWidth;
       _height = _width / widget.aspectRatio; // Maintain aspect ratio
-      
+
       // Ensure overlay stays within screen bounds after resize
       _constrainToScreen();
     });
@@ -140,7 +144,8 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     return Positioned(
       left: _x,
       top: _y,
-      child: Container( // ignore: sized_box_for_whitespace - Container needed for width/height
+      child: Container(
+        // ignore: sized_box_for_whitespace - Container needed for width/height
         width: _width,
         height: _height,
         child: Stack(
@@ -156,7 +161,9 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                     borderRadius: BorderRadius.circular(6),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.2),
+                        color: Colors.black.withValues(
+                          alpha: _isDragging ? 0.3 : 0.2,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -172,7 +179,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                 ),
               ),
             ),
-            
+
             // Resize handle (bottom-right corner)
             Positioned(
               right: 0,
@@ -186,21 +193,23 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
                   height: 20,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(
-                      alpha: _isResizing ? 0.8 : 0.0
+                      alpha: _isResizing ? 0.8 : 0.0,
                     ),
                     borderRadius: const BorderRadius.only(
                       bottomRight: Radius.circular(6),
                     ),
                   ),
-                  child: _isResizing ? const Icon(
-                    Icons.zoom_out_map,
-                    size: 12,
-                    color: Colors.white,
-                  ) : null,
+                  child: _isResizing
+                      ? const Icon(
+                          Icons.zoom_out_map,
+                          size: 12,
+                          color: Colors.white,
+                        )
+                      : null,
                 ),
               ),
             ),
-            
+
             // Show resize handle on hover (for desktop)
             if (_isResizing)
               Positioned(

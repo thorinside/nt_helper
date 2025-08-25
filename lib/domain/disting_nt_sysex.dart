@@ -23,8 +23,7 @@ enum DisplayMode {
   parameters(0),
   algorithmUI(1),
   overview(2),
-  overviewVUs(3),
-  ;
+  overviewVUs(3);
 
   final int value;
 
@@ -124,8 +123,16 @@ class ParameterInfo implements HasAlgorithmIndex, HasParameterNumber {
   }
 
   @override
-  int get hashCode => Object.hash(algorithmIndex, parameterNumber, min, max,
-      defaultValue, unit, name, powerOfTen);
+  int get hashCode => Object.hash(
+    algorithmIndex,
+    parameterNumber,
+    min,
+    max,
+    defaultValue,
+    unit,
+    name,
+    powerOfTen,
+  );
 
   String? getUnitString(List<String> units) {
     if (unit <= 0 || unit > units.length) return null;
@@ -148,11 +155,7 @@ class ParameterValue implements HasAlgorithmIndex, HasParameterNumber {
 
   /// Factory constructor for default `filler` instance
   factory ParameterValue.filler() {
-    return ParameterValue(
-      algorithmIndex: -1,
-      parameterNumber: -1,
-      value: 0,
-    );
+    return ParameterValue(algorithmIndex: -1, parameterNumber: -1, value: 0);
   }
 
   @override
@@ -192,7 +195,10 @@ class ParameterEnumStrings implements HasAlgorithmIndex, HasParameterNumber {
 
   factory ParameterEnumStrings.filler() {
     return ParameterEnumStrings(
-        algorithmIndex: -1, parameterNumber: -1, values: List.empty());
+      algorithmIndex: -1,
+      parameterNumber: -1,
+      values: List.empty(),
+    );
   }
 
   @override
@@ -248,16 +254,18 @@ class Mapping implements HasAlgorithmIndex, HasParameterNumber {
   final int parameterNumber;
   final PackedMappingData packedMappingData;
 
-  const Mapping(
-      {required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.packedMappingData});
+  const Mapping({
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.packedMappingData,
+  });
 
   factory Mapping.filler() {
     return Mapping(
-        algorithmIndex: -1,
-        parameterNumber: -1,
-        packedMappingData: PackedMappingData.filler());
+      algorithmIndex: -1,
+      parameterNumber: -1,
+      packedMappingData: PackedMappingData.filler(),
+    );
   }
 }
 
@@ -285,14 +293,15 @@ class AlgorithmInfo {
   final bool isLoaded;
   final String? filename; // Path to the algorithm file (for plugins)
 
-  AlgorithmInfo(
-      {required this.algorithmIndex,
-      required this.name,
-      required this.guid,
-      required this.specifications,
-      this.isPlugin = false,
-      this.isLoaded = true,
-      this.filename});
+  AlgorithmInfo({
+    required this.algorithmIndex,
+    required this.name,
+    required this.guid,
+    required this.specifications,
+    this.isPlugin = false,
+    this.isLoaded = true,
+    this.filename,
+  });
 
   int get numSpecifications {
     return specifications.length;
@@ -317,9 +326,10 @@ class Algorithm {
 
   Algorithm copyWith({int? algorithmIndex}) {
     return Algorithm(
-        algorithmIndex: algorithmIndex ?? this.algorithmIndex,
-        guid: guid,
-        name: name);
+      algorithmIndex: algorithmIndex ?? this.algorithmIndex,
+      guid: guid,
+      name: name,
+    );
   }
 }
 
@@ -331,10 +341,7 @@ class RoutingInfo implements HasAlgorithmIndex {
   RoutingInfo({required this.algorithmIndex, required this.routingInfo});
 
   factory RoutingInfo.filler() {
-    return RoutingInfo(
-      algorithmIndex: -1,
-      routingInfo: List.filled(6, 0),
-    );
+    return RoutingInfo(algorithmIndex: -1, routingInfo: List.filled(6, 0));
   }
 }
 
@@ -455,7 +462,9 @@ class DistingNTSysExMessage {
   });
 
   factory DistingNTSysExMessage.fromResponse(
-      DistingNTRespMessageType responseMessageType, Uint8List response) {
+    DistingNTRespMessageType responseMessageType,
+    Uint8List response,
+  ) {
     final messageType = responseMessageType;
     // In the original, the payload started from index 6 (0x7A).
     // Now, it should start from index 9 (after 0x7A, status, and command).
@@ -464,12 +473,10 @@ class DistingNTSysExMessage {
     // (but not including) the last element. The last element in the raw MIDI message is 0xF7.
     // The element before 0xF7 is the checksum. So, -1 excludes F7, and the checksum is
     // also excluded.
-    final payload =
-        Uint8List.fromList(response.sublist(9, response.length - 1));
-
-    return DistingNTSysExMessage(
-      messageType: messageType,
-      payload: payload,
+    final payload = Uint8List.fromList(
+      response.sublist(9, response.length - 1),
     );
+
+    return DistingNTSysExMessage(messageType: messageType, payload: payload);
   }
 }

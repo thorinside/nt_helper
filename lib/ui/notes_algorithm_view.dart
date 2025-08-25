@@ -49,9 +49,11 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
     // Combine all value strings into a single text, preserving empty lines
     // Parameters 1-7 correspond to indices 1-7 in valueStrings
     final lines = <String>[];
-    for (int i = 1;
-        i <= _maxLinesCount && i < widget.slot.valueStrings.length;
-        i++) {
+    for (
+      int i = 1;
+      i <= _maxLinesCount && i < widget.slot.valueStrings.length;
+      i++
+    ) {
       final line = widget.slot.valueStrings[i].value;
       lines.add(line); // Don't filter out empty lines
     }
@@ -142,7 +144,8 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
     // Check if we have too many lines
     if (lines.length > _maxLinesCount) {
       _showError(
-          'Text uses ${lines.length} lines, but only $_maxLinesCount lines are supported');
+        'Text uses ${lines.length} lines, but only $_maxLinesCount lines are supported',
+      );
       return false;
     }
 
@@ -150,7 +153,8 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
     for (int i = 0; i < lines.length; i++) {
       if (lines[i].length > _maxLineLength) {
         _showError(
-            'Line ${i + 1} is ${lines[i].length} characters, but maximum is $_maxLineLength');
+          'Line ${i + 1} is ${lines[i].length} characters, but maximum is $_maxLineLength',
+        );
         return false;
       }
     }
@@ -194,26 +198,30 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
         // Add timeout to prevent hanging
         await cubit
             .updateParameterString(
-          algorithmIndex: widget.slot.algorithm.algorithmIndex,
-          parameterNumber: i + 1, // Parameters 1-7, not 0-6
-          value: lineText,
-        )
+              algorithmIndex: widget.slot.algorithm.algorithmIndex,
+              parameterNumber: i + 1, // Parameters 1-7, not 0-6
+              value: lineText,
+            )
             .timeout(
-          const Duration(seconds: 10),
-          onTimeout: () {
-            throw Exception('Timeout saving line ${i + 1}');
-          },
-        );
+              const Duration(seconds: 10),
+              onTimeout: () {
+                throw Exception('Timeout saving line ${i + 1}');
+              },
+            );
       }
 
       // Refresh the slot data from the module to ensure UI is up to date
-      await cubit.refreshSlot(widget.slot.algorithm.algorithmIndex).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          // Don't fail the save if refresh times out, just log it
-          debugPrint('[NotesAlgorithmView] Slot refresh timed out after save');
-        },
-      );
+      await cubit
+          .refreshSlot(widget.slot.algorithm.algorithmIndex)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              // Don't fail the save if refresh times out, just log it
+              debugPrint(
+                '[NotesAlgorithmView] Slot refresh timed out after save',
+              );
+            },
+          );
 
       setState(() {
         _isEditing = false;
@@ -257,7 +265,8 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
     return BlocBuilder<DistingCubit, DistingState>(
       builder: (context, state) {
         // Check if editing is supported based on firmware version
-        final bool supportsEditing = state is DistingStateSynchronized &&
+        final bool supportsEditing =
+            state is DistingStateSynchronized &&
             state.firmwareVersion.hasSetPropertyStringSupport; // 1.10+ firmware
 
         return Padding(
@@ -303,8 +312,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.save),
                         label: Text(_isSaving ? 'Saving...' : 'Save'),
@@ -331,20 +341,24 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (int i = 1;
-              i <= _maxLinesCount && i < widget.slot.valueStrings.length;
-              i++)
-            Builder(builder: (context) {
-              final valueToDisplay = widget.slot.valueStrings[i].value;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                child: Text(
-                  valueToDisplay.trim(),
-                  textAlign: TextAlign.start,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              );
-            })
+          for (
+            int i = 1;
+            i <= _maxLinesCount && i < widget.slot.valueStrings.length;
+            i++
+          )
+            Builder(
+              builder: (context) {
+                final valueToDisplay = widget.slot.valueStrings[i].value;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  child: Text(
+                    valueToDisplay.trim(),
+                    textAlign: TextAlign.start,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -358,8 +372,8 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
         Text(
           'Enter text with up to $_maxLinesCount lines, $_maxLineLength characters per line. Press Enter to create line breaks.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 8),
 
@@ -376,11 +390,10 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
               hintText:
                   'Enter your notes here...\n\nPress Enter to create line breaks.\nLong lines will wrap automatically.',
               hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.6),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
             ),
             inputFormatters: [
               // Allow reasonable input length for editing
@@ -392,7 +405,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
         // Real-time feedback with line preview
         StreamBuilder<String>(
           stream: Stream.periodic(
-              const Duration(milliseconds: 300), (_) => _textController.text),
+            const Duration(milliseconds: 300),
+            (_) => _textController.text,
+          ),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
 
@@ -401,8 +416,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
             final isValidLines = lines.length <= _maxLinesCount;
 
             // Check if any line is too long
-            final hasLongLines =
-                lines.any((line) => line.length > _maxLineLength);
+            final hasLongLines = lines.any(
+              (line) => line.length > _maxLineLength,
+            );
             final isValid = isValidLines && !hasLongLines;
 
             return Padding(
@@ -416,21 +432,19 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                       Text(
                         '${lines.length}/$_maxLinesCount lines',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isValidLines
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant
-                                  : Theme.of(context).colorScheme.error,
-                            ),
+                          color: isValidLines
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : Theme.of(context).colorScheme.error,
+                        ),
                       ),
                       if (hasLongLines) ...[
                         const SizedBox(width: 16),
                         Text(
                           'Some lines too long',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                         ),
                       ],
                     ],
@@ -442,20 +456,18 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                     Text(
                       'Preview:',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
                         ),
                         borderRadius: BorderRadius.circular(4),
                         color: Theme.of(context)
@@ -472,37 +484,34 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                                 Expanded(
                                   child: Text(
                                     'Line ${i + 1}: ${lines[i].isEmpty ? '(empty)' : lines[i]}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           fontFamily: 'monospace',
-                                          color: (i >= _maxLinesCount ||
+                                          color:
+                                              (i >= _maxLinesCount ||
                                                   lines[i].length >
                                                       _maxLineLength)
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .error
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.error
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
                                         ),
                                   ),
                                 ),
                                 Text(
                                   '(${lines[i].length}/$_maxLineLength)',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: lines[i].length > _maxLineLength
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .error
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.error
                                             : Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant
-                                                .withValues(alpha: 0.7),
+                                                  .colorScheme
+                                                  .onSurfaceVariant
+                                                  .withValues(alpha: 0.7),
                                       ),
                                 ),
                               ],
@@ -520,9 +529,9 @@ class _NotesAlgorithmViewState extends State<NotesAlgorithmView> {
                           ? 'Too many lines - only the first $_maxLinesCount will be saved'
                           : 'Lines too long - they will be wrapped or truncated',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ],

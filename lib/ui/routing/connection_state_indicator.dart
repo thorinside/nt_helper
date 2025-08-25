@@ -5,7 +5,7 @@ class ConnectionStateIndicator extends StatefulWidget {
   final bool isPending;
   final bool isFailed;
   final VoidCallback? onRetry;
-  
+
   const ConnectionStateIndicator({
     super.key,
     this.isPending = false,
@@ -14,7 +14,8 @@ class ConnectionStateIndicator extends StatefulWidget {
   });
 
   @override
-  State<ConnectionStateIndicator> createState() => _ConnectionStateIndicatorState();
+  State<ConnectionStateIndicator> createState() =>
+      _ConnectionStateIndicatorState();
 }
 
 class _ConnectionStateIndicatorState extends State<ConnectionStateIndicator>
@@ -30,22 +31,14 @@ class _ConnectionStateIndicatorState extends State<ConnectionStateIndicator>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
-    _opacityAnimation = Tween<double>(
-      begin: 0.3,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.linear,
-    ));
+
+    _opacityAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.linear),
+    );
 
     if (widget.isPending) {
       _animationController.repeat();
@@ -55,7 +48,7 @@ class _ConnectionStateIndicatorState extends State<ConnectionStateIndicator>
   @override
   void didUpdateWidget(ConnectionStateIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     if (widget.isPending != oldWidget.isPending) {
       if (widget.isPending) {
         _animationController.repeat();
@@ -96,11 +89,7 @@ class _ConnectionStateIndicatorState extends State<ConnectionStateIndicator>
           ),
           child: Transform.rotate(
             angle: _rotationAnimation.value * 2 * 3.14159,
-            child: const Icon(
-              Icons.refresh,
-              size: 12,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.refresh, size: 12, color: Colors.white),
           ),
         );
       },
@@ -118,16 +107,8 @@ class _ConnectionStateIndicatorState extends State<ConnectionStateIndicator>
           color: Colors.red,
         ),
         child: widget.onRetry != null
-            ? const Icon(
-                Icons.refresh,
-                size: 12,
-                color: Colors.white,
-              )
-            : const Icon(
-                Icons.error,
-                size: 12,
-                color: Colors.white,
-              ),
+            ? const Icon(Icons.refresh, size: 12, color: Colors.white)
+            : const Icon(Icons.error, size: 12, color: Colors.white),
       ),
     );
   }
@@ -146,11 +127,7 @@ class _ConnectionStateIndicatorState extends State<ConnectionStateIndicator>
           ),
           child: Transform.scale(
             scale: value,
-            child: const Icon(
-              Icons.check,
-              size: 12,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.check, size: 12, color: Colors.white),
           ),
         );
       },

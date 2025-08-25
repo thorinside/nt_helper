@@ -25,7 +25,8 @@ class DirectoryListingResponse extends SysexResponse {
     // In the raw SysEx, this corresponds to data[7], data[8], and then the rest.
     if (data.length < 2) {
       throw ArgumentError(
-          "Invalid payload length for DirectoryListingResponse: ${data.length}, expected at least 2 for status and subcommand.");
+        "Invalid payload length for DirectoryListingResponse: ${data.length}, expected at least 2 for status and subcommand.",
+      );
     }
 
     final status = data[0]; // Status byte within this payload
@@ -42,7 +43,8 @@ class DirectoryListingResponse extends SysexResponse {
     }
 
     final directoryData = data.sublist(
-        2); // Actual directory data starts from index 2 of *this* payload
+      2,
+    ); // Actual directory data starts from index 2 of *this* payload
 
     final entries = <DirectoryEntry>[];
     var i = 0;
@@ -77,12 +79,15 @@ class DirectoryListingResponse extends SysexResponse {
       if ((attributes & 0x10) != 0) {
         name += '/';
       }
-      entries.add(DirectoryEntry(
+      entries.add(
+        DirectoryEntry(
           name: name,
           attributes: attributes,
           date: date,
           time: time,
-          size: size));
+          size: size,
+        ),
+      );
     }
     return DirectoryListing(entries: entries);
   }

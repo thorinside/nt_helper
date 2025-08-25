@@ -29,81 +29,82 @@ class MetadataSyncPage extends StatelessWidget {
       create: (context) =>
           MetadataSyncCubit(database, distingCubit)..loadLocalData(),
       child: BlocBuilder<DistingCubit, DistingState>(
-          // Rebuild the whole page based on DistingState (online/offline)
-          bloc: distingCubit,
-          builder: (context, distingState) {
-            // Determine online/offline/connected status from DistingState
-            final bool isOffline = switch (distingState) {
-              DistingStateSynchronized(offline: final o) => o,
-              _ => false,
-            };
-            final bool isConnected = switch (distingState) {
-              DistingStateSynchronized(offline: final o) => !o,
-              DistingStateConnected() => true,
-              _ => false,
-            };
+        // Rebuild the whole page based on DistingState (online/offline)
+        bloc: distingCubit,
+        builder: (context, distingState) {
+          // Determine online/offline/connected status from DistingState
+          final bool isOffline = switch (distingState) {
+            DistingStateSynchronized(offline: final o) => o,
+            _ => false,
+          };
+          final bool isConnected = switch (distingState) {
+            DistingStateSynchronized(offline: final o) => !o,
+            DistingStateConnected() => true,
+            _ => false,
+          };
 
-            // Handle disconnected/invalid states by navigating back
-            if (distingState is DistingStateInitial ||
-                distingState is DistingStateSelectDevice) {
-              // Connection was lost or device disconnected - navigate back to main screen
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              });
-              return const Center(child: CircularProgressIndicator());
-            }
+          // Handle disconnected/invalid states by navigating back
+          if (distingState is DistingStateInitial ||
+              distingState is DistingStateSelectDevice) {
+            // Connection was lost or device disconnected - navigate back to main screen
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            });
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            // Get the current manager if available (online or offline)
-            final currentManager = distingCubit.disting();
+          // Get the current manager if available (online or offline)
+          final currentManager = distingCubit.disting();
 
-            // Provide the DistingCubit down the tree using BlocProvider.value
-            return BlocProvider.value(
-              value: distingCubit,
-              child: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                builder: (context, metaState) {
-                  return PopScope(
-                    canPop: !(metaState is SyncingMetadata ||
-                        metaState is WaitingForUserContinue ||
-                        metaState is SavingPreset ||
-                        metaState is DeletingPreset),
-                    onPopInvokedWithResult: (didPop, result) {
-                      if (!didPop) {
-                        // Cancel sync if in progress
-                        context.read<MetadataSyncCubit>().cancelMetadataSync();
-                      }
-                    },
-                    child: Scaffold(
-                      appBar: AppBar(
-                        title: Text('Offline Data'),
-                        leading:
-                            BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                          builder: (context, metaState) {
-                            return BackButton(
-                              onPressed: () {
-                                // Cancel sync if in progress, otherwise just navigate back
-                                if (metaState is SyncingMetadata ||
-                                    metaState is WaitingForUserContinue ||
-                                    metaState is SavingPreset ||
-                                    metaState is DeletingPreset) {
-                                  context
-                                      .read<MetadataSyncCubit>()
-                                      .cancelMetadataSync();
-                                } else {
-                                  Navigator.maybePop(context);
-                                }
-                              },
-                            );
-                          },
-                        ),
-                        actions: [
-                          // --- Offline Mode Toggle --- (Interacts with DistingCubit)
-                          BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                              // Still watch MetadataSyncCubit for busy state
-                              builder: (metaCtx, metaState) {
+          // Provide the DistingCubit down the tree using BlocProvider.value
+          return BlocProvider.value(
+            value: distingCubit,
+            child: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+              builder: (context, metaState) {
+                return PopScope(
+                  canPop:
+                      !(metaState is SyncingMetadata ||
+                          metaState is WaitingForUserContinue ||
+                          metaState is SavingPreset ||
+                          metaState is DeletingPreset),
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (!didPop) {
+                      // Cancel sync if in progress
+                      context.read<MetadataSyncCubit>().cancelMetadataSync();
+                    }
+                  },
+                  child: Scaffold(
+                    appBar: AppBar(
+                      title: Text('Offline Data'),
+                      leading: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                        builder: (context, metaState) {
+                          return BackButton(
+                            onPressed: () {
+                              // Cancel sync if in progress, otherwise just navigate back
+                              if (metaState is SyncingMetadata ||
+                                  metaState is WaitingForUserContinue ||
+                                  metaState is SavingPreset ||
+                                  metaState is DeletingPreset) {
+                                context
+                                    .read<MetadataSyncCubit>()
+                                    .cancelMetadataSync();
+                              } else {
+                                Navigator.maybePop(context);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                      actions: [
+                        // --- Offline Mode Toggle --- (Interacts with DistingCubit)
+                        BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                          // Still watch MetadataSyncCubit for busy state
+                          builder: (metaCtx, metaState) {
                             // Busy state checks (simplified, check both cubits)
-                            final isMetaBusy = metaState is! ViewingLocalData &&
+                            final isMetaBusy =
+                                metaState is! ViewingLocalData &&
                                 metaState is! Idle &&
                                 metaState is! Failure;
                             final isDistingBusy = switch (distingState) {
@@ -113,8 +114,9 @@ class MetadataSyncPage extends StatelessWidget {
                             final isBusy = isMetaBusy || isDistingBusy;
 
                             return IconButton(
-                              icon:
-                                  Icon(isOffline ? Icons.wifi_off : Icons.wifi),
+                              icon: Icon(
+                                isOffline ? Icons.wifi_off : Icons.wifi,
+                              ),
                               tooltip: isOffline ? 'Go Online' : 'Work Offline',
                               onPressed: isBusy
                                   ? null
@@ -128,131 +130,137 @@ class MetadataSyncPage extends StatelessWidget {
                                       }
                                     },
                             );
-                          }),
-                          // --- Sync Metadata Button --- (Uses MetadataSyncCubit)
-                          BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                            builder: (metaCtx, metaState) {
-                              final isMetaBusy =
-                                  metaState is! ViewingLocalData &&
-                                      metaState is! Idle &&
-                                      metaState is! Failure;
-                              final isDistingBusy = switch (distingState) {
-                                DistingStateSynchronized(loading: final l) => l,
-                                _ => false,
-                              };
-                              final isBusy = isMetaBusy || isDistingBusy;
-                              // Can sync if connected and not busy
-                              final canSync = isConnected && !isBusy;
-                              return IconButton(
-                                icon: const Icon(Icons.sync),
-                                tooltip: 'Sync From Device',
-                                // Pass manager only if action is possible
-                                onPressed: canSync && currentManager != null
-                                    ? () => _showSyncConfirmationDialog(
-                                        metaCtx, currentManager)
-                                    : null,
-                              );
-                            },
-                          ),
-                          // --- Save Preset Button --- (Uses MetadataSyncCubit)
-                          BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                            builder: (metaCtx, metaState) {
-                              final isMetaBusy =
-                                  metaState is! ViewingLocalData &&
-                                      metaState is! Idle &&
-                                      metaState is! Failure;
-                              final isDistingBusy = switch (distingState) {
-                                DistingStateSynchronized(loading: final l) => l,
-                                _ => false,
-                              };
-                              final isBusy = isMetaBusy || isDistingBusy;
-                              // Can save if connected and not busy
-                              final canSave = isConnected && !isBusy;
-                              return IconButton(
-                                icon: const Icon(Icons.save_alt_outlined),
-                                tooltip: 'Save Current Device Preset',
-                                // Pass manager only if action is possible
-                                onPressed: canSave && currentManager != null
-                                    ? () => metaCtx
-                                        .read<MetadataSyncCubit>()
-                                        .saveCurrentPreset(currentManager)
-                                    : null,
-                              );
-                            },
-                          ),
-                          // --- More Actions Menu ---
-                          BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
-                            builder: (metaCtx, metaState) {
-                              final isMetaBusy =
-                                  metaState is! ViewingLocalData &&
-                                      metaState is! Idle &&
-                                      metaState is! Failure;
-                              final isDistingBusy = switch (distingState) {
-                                DistingStateSynchronized(loading: final l) => l,
-                                _ => false,
-                              };
-                              final isBusy = isMetaBusy || isDistingBusy;
-                              final canSync = isConnected && !isBusy;
-
-                              return PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert),
-                                tooltip: 'More Actions',
-                                enabled: !isBusy,
-                                onSelected: (value) {
-                                  switch (value) {
-                                    case 'incremental_sync':
-                                      if (canSync && currentManager != null) {
-                                        _showIncrementalSyncConfirmationDialog(
-                                            metaCtx, currentManager);
-                                      }
-                                      break;
-                                    case 'export_algorithms':
-                                      _showExportDialog(metaCtx);
-                                      break;
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  PopupMenuItem<String>(
-                                    value: 'incremental_sync',
-                                    enabled: canSync && currentManager != null,
-                                    child: const Row(
-                                      children: [
-                                        Icon(Icons.sync_alt, size: 20),
-                                        SizedBox(width: 12),
-                                        Text('Sync New Algorithms Only'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  PopupMenuItem<String>(
-                                    value: 'export_algorithms',
-                                    enabled: !isBusy,
-                                    child: const Row(
-                                      children: [
-                                        Icon(Icons.download, size: 20),
-                                        SizedBox(width: 12),
-                                        Text('Export Algorithm Details'),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      // Body uses MetadataSyncCubit for DB data, DistingCubit for state
-                      body: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                          },
+                        ),
+                        // --- Sync Metadata Button --- (Uses MetadataSyncCubit)
+                        BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
                           builder: (metaCtx, metaState) {
-                        final isOperationInProgress =
-                            metaState is! ViewingLocalData &&
+                            final isMetaBusy =
+                                metaState is! ViewingLocalData &&
                                 metaState is! Idle &&
                                 metaState is! Failure;
+                            final isDistingBusy = switch (distingState) {
+                              DistingStateSynchronized(loading: final l) => l,
+                              _ => false,
+                            };
+                            final isBusy = isMetaBusy || isDistingBusy;
+                            // Can sync if connected and not busy
+                            final canSync = isConnected && !isBusy;
+                            return IconButton(
+                              icon: const Icon(Icons.sync),
+                              tooltip: 'Sync From Device',
+                              // Pass manager only if action is possible
+                              onPressed: canSync && currentManager != null
+                                  ? () => _showSyncConfirmationDialog(
+                                      metaCtx,
+                                      currentManager,
+                                    )
+                                  : null,
+                            );
+                          },
+                        ),
+                        // --- Save Preset Button --- (Uses MetadataSyncCubit)
+                        BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                          builder: (metaCtx, metaState) {
+                            final isMetaBusy =
+                                metaState is! ViewingLocalData &&
+                                metaState is! Idle &&
+                                metaState is! Failure;
+                            final isDistingBusy = switch (distingState) {
+                              DistingStateSynchronized(loading: final l) => l,
+                              _ => false,
+                            };
+                            final isBusy = isMetaBusy || isDistingBusy;
+                            // Can save if connected and not busy
+                            final canSave = isConnected && !isBusy;
+                            return IconButton(
+                              icon: const Icon(Icons.save_alt_outlined),
+                              tooltip: 'Save Current Device Preset',
+                              // Pass manager only if action is possible
+                              onPressed: canSave && currentManager != null
+                                  ? () => metaCtx
+                                        .read<MetadataSyncCubit>()
+                                        .saveCurrentPreset(currentManager)
+                                  : null,
+                            );
+                          },
+                        ),
+                        // --- More Actions Menu ---
+                        BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                          builder: (metaCtx, metaState) {
+                            final isMetaBusy =
+                                metaState is! ViewingLocalData &&
+                                metaState is! Idle &&
+                                metaState is! Failure;
+                            final isDistingBusy = switch (distingState) {
+                              DistingStateSynchronized(loading: final l) => l,
+                              _ => false,
+                            };
+                            final isBusy = isMetaBusy || isDistingBusy;
+                            final canSync = isConnected && !isBusy;
+
+                            return PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert),
+                              tooltip: 'More Actions',
+                              enabled: !isBusy,
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'incremental_sync':
+                                    if (canSync && currentManager != null) {
+                                      _showIncrementalSyncConfirmationDialog(
+                                        metaCtx,
+                                        currentManager,
+                                      );
+                                    }
+                                    break;
+                                  case 'export_algorithms':
+                                    _showExportDialog(metaCtx);
+                                    break;
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem<String>(
+                                  value: 'incremental_sync',
+                                  enabled: canSync && currentManager != null,
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.sync_alt, size: 20),
+                                      SizedBox(width: 12),
+                                      Text('Sync New Algorithms Only'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuDivider(),
+                                PopupMenuItem<String>(
+                                  value: 'export_algorithms',
+                                  enabled: !isBusy,
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.download, size: 20),
+                                      SizedBox(width: 12),
+                                      Text('Export Algorithm Details'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    // Body uses MetadataSyncCubit for DB data, DistingCubit for state
+                    body: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
+                      builder: (metaCtx, metaState) {
+                        final isOperationInProgress =
+                            metaState is! ViewingLocalData &&
+                            metaState is! Idle &&
+                            metaState is! Failure;
 
                         if (metaState is Idle || metaState is LoadingPreset) {
                           // Show spinner if metadata cubit is loading
                           return const Center(
-                              child: CircularProgressIndicator());
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
                         if (metaState is Failure ||
@@ -269,38 +277,40 @@ class MetadataSyncPage extends StatelessWidget {
                             _ => "An unknown error occurred.",
                           };
                           return Center(
-                              child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.error_outline,
-                                      color:
-                                          Theme.of(context).colorScheme.error,
-                                      size: 48),
+                                  Icon(
+                                    Icons.error_outline,
+                                    color: Theme.of(context).colorScheme.error,
+                                    size: 48,
+                                  ),
                                   const SizedBox(height: 16),
                                   Text(errorMsg, textAlign: TextAlign.center),
                                   const SizedBox(height: 16),
                                   TextButton(
-                                      onPressed: () {
-                                        // Reset only MetadataSyncCubit, let user handle Disting mode
-                                        metaCtx
-                                            .read<MetadataSyncCubit>()
-                                            .reset();
-                                        metaCtx
-                                            .read<MetadataSyncCubit>()
-                                            .loadLocalData(); // Reload list
-                                        // If DistingCubit was also in error, user uses toggle
-                                      },
-                                      child: const Text("Retry Loading List"))
-                                ]),
-                          ));
+                                    onPressed: () {
+                                      // Reset only MetadataSyncCubit, let user handle Disting mode
+                                      metaCtx.read<MetadataSyncCubit>().reset();
+                                      metaCtx
+                                          .read<MetadataSyncCubit>()
+                                          .loadLocalData(); // Reload list
+                                      // If DistingCubit was also in error, user uses toggle
+                                    },
+                                    child: const Text("Retry Loading List"),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
                         }
 
                         if (metaState is CheckpointFound) {
                           return Center(
-                              child:
-                                  _buildCheckpointDialog(context, metaState));
+                            child: _buildCheckpointDialog(context, metaState),
+                          );
                         }
 
                         if (metaState is SyncingMetadata ||
@@ -308,8 +318,8 @@ class MetadataSyncPage extends StatelessWidget {
                             metaState is SavingPreset ||
                             metaState is DeletingPreset) {
                           return Center(
-                              child:
-                                  _buildProgressIndicator(context, metaState));
+                            child: _buildProgressIndicator(context, metaState),
+                          );
                         }
 
                         // Primarily use ViewingLocalData state
@@ -332,7 +342,8 @@ class MetadataSyncPage extends StatelessWidget {
                             metaState is PresetDeleteSuccess ||
                             metaState is PresetLoadSuccess) {
                           return const Center(
-                              child: CircularProgressIndicator());
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
                         // Fallback - this should rarely occur now
@@ -340,8 +351,11 @@ class MetadataSyncPage extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.warning,
-                                  size: 48, color: Colors.orange),
+                              const Icon(
+                                Icons.warning,
+                                size: 48,
+                                color: Colors.orange,
+                              ),
                               const SizedBox(height: 16),
                               Text(
                                 "Unexpected state: ${metaState.runtimeType}",
@@ -355,19 +369,23 @@ class MetadataSyncPage extends StatelessWidget {
                             ],
                           ),
                         );
-                      }),
-                    ), // Scaffold
-                  ); // PopScope
-                }, // BlocBuilder for PopScope
-              ), // BlocProvider.value
-            );
-          }),
+                      },
+                    ),
+                  ), // Scaffold
+                ); // PopScope
+              }, // BlocBuilder for PopScope
+            ), // BlocProvider.value
+          );
+        },
+      ),
     );
   }
 
   // Progress Indicator Widget
   Widget _buildProgressIndicator(
-      BuildContext context, MetadataSyncState state) {
+    BuildContext context,
+    MetadataSyncState state,
+  ) {
     String mainMessage = "Processing...";
     String? subMessage;
     double? progressValue; // Null for indeterminate
@@ -378,12 +396,12 @@ class MetadataSyncPage extends StatelessWidget {
 
     switch (state) {
       case SyncingMetadata(
-          progress: final progress,
-          mainMessage: final msg,
-          subMessage: final sub,
-          algorithmsProcessed: final processed,
-          totalAlgorithms: final total
-        ):
+        progress: final progress,
+        mainMessage: final msg,
+        subMessage: final sub,
+        algorithmsProcessed: final processed,
+        totalAlgorithms: final total,
+      ):
         mainMessage = msg;
         subMessage = sub;
         progressValue = progress > 0 ? progress : null;
@@ -391,11 +409,11 @@ class MetadataSyncPage extends StatelessWidget {
         totalAlgorithms = total;
         break;
       case WaitingForUserContinue(
-          message: final msg,
-          progress: final progress,
-          algorithmsProcessed: final processed,
-          totalAlgorithms: final total
-        ):
+        message: final msg,
+        progress: final progress,
+        algorithmsProcessed: final processed,
+        totalAlgorithms: final total,
+      ):
         mainMessage = "Sync Paused - Device Reboot Required";
         userMessage = msg;
         progressValue = progress;
@@ -429,10 +447,9 @@ class MetadataSyncPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .shadow
-                          .withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.shadow.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -441,8 +458,9 @@ class MetadataSyncPage extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progressValue,
                   minHeight: 12,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     Theme.of(context).colorScheme.primary,
                   ),
@@ -454,9 +472,9 @@ class MetadataSyncPage extends StatelessWidget {
               // Main message
               Text(
                 mainMessage,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -468,8 +486,8 @@ class MetadataSyncPage extends StatelessWidget {
                 Text(
                   "Algorithm $algorithmsProcessed of $totalAlgorithms",
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -478,8 +496,10 @@ class MetadataSyncPage extends StatelessWidget {
               if (subMessage != null) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12),
@@ -490,10 +510,8 @@ class MetadataSyncPage extends StatelessWidget {
                       Text(
                         subMessage,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
@@ -501,9 +519,9 @@ class MetadataSyncPage extends StatelessWidget {
                         width: 200,
                         child: LinearProgressIndicator(
                           minHeight: 4,
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             Theme.of(context).colorScheme.primary,
                           ),
@@ -524,10 +542,9 @@ class MetadataSyncPage extends StatelessWidget {
                     color: Theme.of(context).colorScheme.errorContainer,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .error
-                          .withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -541,12 +558,12 @@ class MetadataSyncPage extends StatelessWidget {
                       Expanded(
                         child: Text(
                           userMessage,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onErrorContainer,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
                         ),
                       ),
                     ],
@@ -572,8 +589,9 @@ class MetadataSyncPage extends StatelessWidget {
                           icon: const Icon(Icons.close, size: 18),
                           label: const Text("Cancel"),
                           style: TextButton.styleFrom(
-                            foregroundColor:
-                                Theme.of(context).colorScheme.error,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
                           ),
                         ),
                         ElevatedButton.icon(
@@ -583,10 +601,12 @@ class MetadataSyncPage extends StatelessWidget {
                           icon: const Icon(Icons.refresh),
                           label: const Text("Continue"),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                           ),
                         ),
                       ],
@@ -663,9 +683,9 @@ class MetadataSyncPage extends StatelessWidget {
                     final manager = distingCubit.disting();
                     if (manager != null) {
                       context.read<MetadataSyncCubit>().startMetadataSync(
-                            manager,
-                            resumeFromIndex: state.algorithmIndex,
-                          );
+                        manager,
+                        resumeFromIndex: state.algorithmIndex,
+                      );
                     }
                   },
                   child: const Text('Resume'),
@@ -680,14 +700,17 @@ class MetadataSyncPage extends StatelessWidget {
 
   // Confirmation Dialog for Metadata Sync (Manager passed in)
   void _showSyncConfirmationDialog(
-      BuildContext metaContext, IDistingMidiManager manager) {
+    BuildContext metaContext,
+    IDistingMidiManager manager,
+  ) {
     showDialog(
       context: metaContext,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Sync Metadata?'),
           content: const Text(
-              'This process reads all algorithm data from the device and may require clearing the current preset. Save any work on the device first! Continue?'),
+            'This process reads all algorithm data from the device and may require clearing the current preset. Save any work on the device first! Continue?',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -698,9 +721,9 @@ class MetadataSyncPage extends StatelessWidget {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 // Call cubit with manager
-                metaContext
-                    .read<MetadataSyncCubit>()
-                    .startMetadataSync(manager);
+                metaContext.read<MetadataSyncCubit>().startMetadataSync(
+                  manager,
+                );
               },
             ),
           ],
@@ -711,14 +734,17 @@ class MetadataSyncPage extends StatelessWidget {
 
   // Confirmation Dialog for Incremental Sync (Manager passed in)
   void _showIncrementalSyncConfirmationDialog(
-      BuildContext metaContext, IDistingMidiManager manager) {
+    BuildContext metaContext,
+    IDistingMidiManager manager,
+  ) {
     showDialog(
       context: metaContext,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Sync New Algorithms Only?'),
           content: const Text(
-              'This will check for algorithms on your device that are not yet in the local database and sync only those new algorithms. This is faster than a full sync but requires that you have already done at least one full sync. Continue?'),
+            'This will check for algorithms on your device that are not yet in the local database and sync only those new algorithms. This is faster than a full sync but requires that you have already done at least one full sync. Continue?',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -729,9 +755,9 @@ class MetadataSyncPage extends StatelessWidget {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 // Call cubit with manager
-                metaContext
-                    .read<MetadataSyncCubit>()
-                    .syncNewAlgorithmsOnly(manager);
+                metaContext.read<MetadataSyncCubit>().syncNewAlgorithmsOnly(
+                  manager,
+                );
               },
             ),
           ],
@@ -774,8 +800,9 @@ class MetadataSyncPage extends StatelessWidget {
                     loadedOfflinePresetId: loadedOfflinePresetId,
                     // Use builderContext to find cubits
                     distingCubit: BlocProvider.of<DistingCubit>(builderContext),
-                    metadataSyncCubit:
-                        BlocProvider.of<MetadataSyncCubit>(builderContext),
+                    metadataSyncCubit: BlocProvider.of<MetadataSyncCubit>(
+                      builderContext,
+                    ),
                   ),
                   // --- Algorithms Tab ---
                   _AlgorithmMetadataListView(
@@ -796,9 +823,7 @@ class MetadataSyncPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlgorithmExportDialog(
-          database: context.read<AppDatabase>(),
-        );
+        return AlgorithmExportDialog(database: context.read<AppDatabase>());
       },
     );
   }
@@ -813,13 +838,14 @@ class _PresetListView extends StatelessWidget {
   final DistingCubit distingCubit;
   final MetadataSyncCubit metadataSyncCubit; // Added MetadataSyncCubit
 
-  const _PresetListView(
-      {required this.presets,
-      required this.isOperationInProgress,
-      required this.isOffline,
-      this.loadedOfflinePresetId,
-      required this.distingCubit,
-      required this.metadataSyncCubit});
+  const _PresetListView({
+    required this.presets,
+    required this.isOperationInProgress,
+    required this.isOffline,
+    this.loadedOfflinePresetId,
+    required this.distingCubit,
+    required this.metadataSyncCubit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -858,10 +884,9 @@ class _PresetListView extends StatelessWidget {
         return ListTile(
           key: ValueKey(preset.id),
           selected: isCurrentlyLoadedOffline,
-          selectedTileColor: Theme.of(context)
-              .colorScheme
-              .primaryContainer
-              .withValues(alpha: 0.3),
+          selectedTileColor: Theme.of(
+            context,
+          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
           title: Text(preset.name.trim()),
           subtitle: Text("Saved: $formattedDate"),
           trailing: Row(
@@ -877,20 +902,24 @@ class _PresetListView extends StatelessWidget {
                 ),
                 tooltip: isOffline ? 'Load Preset Offline' : 'Send to NT',
                 onPressed: canLoad
-                    ? () => _showLoadConfirmationDialog(
-                        context,
-                        preset,
-                        isOffline,
-                        distingCubit,
-                        metadataSyncCubit) // Pass both cubits
+                    ? () =>
+                          _showLoadConfirmationDialog(
+                            context,
+                            preset,
+                            isOffline,
+                            distingCubit,
+                            metadataSyncCubit,
+                          ) // Pass both cubits
                     : null,
               ),
               // Delete Button (Calls MetadataSyncCubit)
               IconButton(
-                icon: Icon(Icons.delete_outline,
-                    color: canDelete
-                        ? Theme.of(context).colorScheme.error
-                        : Colors.grey),
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: canDelete
+                      ? Theme.of(context).colorScheme.error
+                      : Colors.grey,
+                ),
                 tooltip: 'Delete Saved Preset',
                 onPressed: canDelete
                     ? () => _showDeleteConfirmationDialog(context, preset)
@@ -905,21 +934,24 @@ class _PresetListView extends StatelessWidget {
 
   // Helper function for Load Confirmation Dialog
   void _showLoadConfirmationDialog(
-      BuildContext context, // BuildContext from ListView item
-      PresetEntry preset,
-      bool isOffline,
-      DistingCubit distingCubit,
-      MetadataSyncCubit metadataSyncCubit // Pass both cubits
-      ) {
+    BuildContext context, // BuildContext from ListView item
+    PresetEntry preset,
+    bool isOffline,
+    DistingCubit distingCubit,
+    MetadataSyncCubit metadataSyncCubit, // Pass both cubits
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title:
-              Text(isOffline ? 'Load Preset Offline?' : 'Send Preset to NT?'),
-          content: Text(isOffline
-              ? 'Load "${preset.name}" for offline use?' // Simplified message
-              : 'Send "${preset.name}" to device? This overwrites current device state.'),
+          title: Text(
+            isOffline ? 'Load Preset Offline?' : 'Send Preset to NT?',
+          ),
+          content: Text(
+            isOffline
+                ? 'Load "${preset.name}" for offline use?' // Simplified message
+                : 'Send "${preset.name}" to device? This overwrites current device state.',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -934,10 +966,11 @@ class _PresetListView extends StatelessWidget {
                 Navigator.of(dialogContext).pop();
                 try {
                   // Fetch full details (still needed)
-                  final fullDetails = await context // Use outer context for DB
-                      .read<AppDatabase>()
-                      .presetsDao
-                      .getFullPresetDetails(preset.id);
+                  final fullDetails =
+                      await context // Use outer context for DB
+                          .read<AppDatabase>()
+                          .presetsDao
+                          .getFullPresetDetails(preset.id);
 
                   if (fullDetails != null) {
                     // Call correct Cubit based on mode
@@ -954,32 +987,42 @@ class _PresetListView extends StatelessWidget {
                       final onlineManager = distingCubit.disting();
                       if (onlineManager != null) {
                         metadataSyncCubit.loadPresetToDevice(
-                            fullDetails, onlineManager);
+                          fullDetails,
+                          onlineManager,
+                        );
                       } else {
                         // Should not happen if button is enabled correctly
                         throw Exception(
-                            "Cannot load preset: Online manager not available.");
+                          "Cannot load preset: Online manager not available.",
+                        );
                       }
                     }
                   } else {
                     // Show error if details couldn't be loaded
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
                           content: Text(
-                              "Error: Could not load details for preset '${preset.name}'"),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.error));
+                            "Error: Could not load details for preset '${preset.name}'",
+                          ),
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      );
                     }
                   }
                 } catch (e) {
                   // Show error if fetching/loading failed
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).removeCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content:
-                            Text("Error fetching/loading preset details: $e"),
-                        backgroundColor: Theme.of(context).colorScheme.error));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "Error fetching/loading preset details: $e",
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    );
                   }
                 }
               },
@@ -998,7 +1041,8 @@ class _PresetListView extends StatelessWidget {
         return AlertDialog(
           title: const Text('Delete Preset?'),
           content: Text(
-              'Are you sure you want to permanently delete the saved preset "${preset.name}"?'),
+            'Are you sure you want to permanently delete the saved preset "${preset.name}"?',
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -1008,7 +1052,8 @@ class _PresetListView extends StatelessWidget {
             ),
             TextButton(
               style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error),
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
               child: const Text('Delete'),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
@@ -1028,9 +1073,10 @@ class _AlgorithmMetadataListView extends StatefulWidget {
   final List<AlgorithmEntry> algorithms;
   final Map<String, int> parameterCounts;
 
-  const _AlgorithmMetadataListView(
-      {required this.algorithms, required this.parameterCounts // Added key
-      });
+  const _AlgorithmMetadataListView({
+    required this.algorithms,
+    required this.parameterCounts, // Added key
+  });
 
   @override
   State<_AlgorithmMetadataListView> createState() =>
@@ -1081,9 +1127,11 @@ class _AlgorithmMetadataListViewState
       if (query.isEmpty) {
         _filteredAlgorithms = _sortAlgorithms(widget.algorithms);
       } else {
-        _filteredAlgorithms = _sortAlgorithms(widget.algorithms
-            .where((algo) => algo.name.toLowerCase().contains(query))
-            .toList());
+        _filteredAlgorithms = _sortAlgorithms(
+          widget.algorithms
+              .where((algo) => algo.name.toLowerCase().contains(query))
+              .toList(),
+        );
       }
     });
   }
@@ -1147,7 +1195,9 @@ class _AlgorithmMetadataListViewState
                     final algo = _filteredAlgorithms[index];
                     final count = widget.parameterCounts[algo.guid] ?? 0;
                     return _AlgorithmExpansionTile(
-                        algorithm: algo, parameterCount: count);
+                      algorithm: algo,
+                      parameterCount: count,
+                    );
                   },
                 ),
         ),
@@ -1319,36 +1369,36 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
       child: widget.parameterCount == 0
           ? ListTile(
               key: PageStorageKey(widget.algorithm.guid),
-              title:
-                  Text("${widget.algorithm.name} [${widget.algorithm.guid}]"),
+              title: Text(
+                "${widget.algorithm.name} [${widget.algorithm.guid}]",
+              ),
               subtitle: Text("Params: ${widget.parameterCount}"),
               trailing: _isRescanning
                   ? const SizedBox(
                       width: 24,
                       height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : InkWell(
                       onTap: _rescanAlgorithm,
                       borderRadius: BorderRadius.circular(20),
                       child: const Padding(
                         padding: EdgeInsets.all(8.0),
-                        child: Icon(
-                          Icons.refresh,
-                          size: 24,
-                        ),
+                        child: Icon(Icons.refresh, size: 24),
                       ),
                     ),
             )
           : ExpansionTile(
               key: PageStorageKey(widget.algorithm.guid),
-              title:
-                  Text("${widget.algorithm.name} [${widget.algorithm.guid}]"),
+              title: Text(
+                "${widget.algorithm.name} [${widget.algorithm.guid}]",
+              ),
               subtitle: Text("Params: ${widget.parameterCount}"),
-              childrenPadding:
-                  const EdgeInsets.only(left: 32.0, right: 16.0, bottom: 8.0),
+              childrenPadding: const EdgeInsets.only(
+                left: 32.0,
+                right: 16.0,
+                bottom: 8.0,
+              ),
               onExpansionChanged: (isExpanding) {
                 if (isExpanding && _parameters == null && !_isLoading) {
                   _fetchParameters();
@@ -1359,23 +1409,31 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
                   const Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2)),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
-                        child: Text(_error!,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.error))),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
                   ),
                 if (_parameters != null && !_isLoading && _error == null)
                   if (_parameters!.isEmpty && widget.parameterCount > 0)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8.0),
                       child: Center(
-                          child: Text("No parameters found.",
-                              style: TextStyle(fontStyle: FontStyle.italic))),
+                        child: Text(
+                          "No parameters found.",
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ),
                     )
                   else if (_parameters!.isNotEmpty)
                     Column(
@@ -1389,8 +1447,10 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
                           isThreeLine: true,
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          title: Text(param.name,
-                              style: Theme.of(context).textTheme.bodyMedium),
+                          title: Text(
+                            param.name,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1402,9 +1462,7 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
                               ),
                               Text(
                                 "Range: ${param.minValue ?? '-'} to ${param.maxValue ?? '-'} (Def: ${param.defaultValue ?? '-'}), Unit: ${paramWithUnit.unitString ?? '-'}",
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(color: Colors.grey[600]),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1416,12 +1474,14 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
                     )
                   else
                     const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Center(
-                            child: Text(
-                                "Algorithm has parameters but they couldn't be displayed.",
-                                style:
-                                    TextStyle(fontStyle: FontStyle.italic)))),
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Center(
+                        child: Text(
+                          "Algorithm has parameters but they couldn't be displayed.",
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ),
               ],
             ),
     );

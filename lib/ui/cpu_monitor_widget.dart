@@ -120,8 +120,9 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color:
-              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.3,
+          ),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
@@ -145,10 +146,7 @@ class _CpuMonitorWidgetState extends State<CpuMonitorWidget> {
                 ),
               )
             else
-              Text(
-                '${cpu1 ?? 0}% | ${cpu2 ?? 0}%',
-                style: textStyle,
-              ),
+              Text('${cpu1 ?? 0}% | ${cpu2 ?? 0}%', style: textStyle),
           ],
         ),
       ),

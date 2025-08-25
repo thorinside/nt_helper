@@ -120,11 +120,9 @@ class _FloatingScreenshotContent extends StatelessWidget {
                         ),
                       ),
                     )
-                  : const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                  : const Center(child: CircularProgressIndicator()),
             ),
-            
+
             // Controls positioned on the right side
             Positioned(
               top: 4,

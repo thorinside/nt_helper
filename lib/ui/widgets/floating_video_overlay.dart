@@ -27,18 +27,22 @@ class FloatingVideoOverlay extends StatefulWidget {
 
 class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   Uint8List? _lastFrame;
-  Uint8List? _displayFrame;  // Stable frame buffer for display
+  Uint8List? _displayFrame; // Stable frame buffer for display
 
   @override
   void initState() {
     super.initState();
-    debugPrint('[FloatingVideoOverlay] initState called - starting video stream');
+    debugPrint(
+      '[FloatingVideoOverlay] initState called - starting video stream',
+    );
     debugPrint('[FloatingVideoOverlay] Widget cubit: ${widget.cubit}');
-    debugPrint('[FloatingVideoOverlay] VideoFrame cubit: ${widget.videoFrameCubit}');
+    debugPrint(
+      '[FloatingVideoOverlay] VideoFrame cubit: ${widget.videoFrameCubit}',
+    );
     // Start video stream when widget is created
     widget.cubit.startVideoStream();
     debugPrint('[FloatingVideoOverlay] startVideoStream() called');
-    
+
     // Connect VideoFrameCubit to the raw video stream when it becomes available
     _connectVideoFrameCubit();
   }
@@ -50,13 +54,17 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
     if (videoManager != null) {
       final rawStream = videoManager.getRawVideoStream();
       if (rawStream != null) {
-        debugPrint('[FloatingVideoOverlay] Connecting VideoFrameCubit to raw stream');
+        debugPrint(
+          '[FloatingVideoOverlay] Connecting VideoFrameCubit to raw stream',
+        );
         widget.videoFrameCubit.connectToStream(rawStream);
         return;
       }
     }
-    
-    debugPrint('[FloatingVideoOverlay] Video stream not available yet, will retry');
+
+    debugPrint(
+      '[FloatingVideoOverlay] Video stream not available yet, will retry',
+    );
     // Retry after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _connectVideoFrameCubit();
@@ -152,11 +160,12 @@ class FloatingVideoContent extends StatelessWidget {
                     (frameData, frameCounter, lastFrameTime, fps) {
                       if (frameData != null && frameData.isNotEmpty) {
                         // Validate frame data before using it
-                        if (frameData.length > 10) {  // Basic size check
+                        if (frameData.length > 10) {
+                          // Basic size check
                           onFrameUpdate(frameData);
                         }
                       }
-                      
+
                       // Always show the stable display frame
                       if (displayFrame != null) {
                         return GestureDetector(
@@ -165,12 +174,17 @@ class FloatingVideoContent extends StatelessWidget {
                             child: RepaintBoundary(
                               child: Image.memory(
                                 displayFrame!,
-                                key: const ValueKey('stable_frame'),  // Use stable key
-                                fit: BoxFit.cover,  // Fill the available space
-                                gaplessPlayback: true, // Enable for smoother playback
+                                key: const ValueKey(
+                                  'stable_frame',
+                                ), // Use stable key
+                                fit: BoxFit.cover, // Fill the available space
+                                gaplessPlayback:
+                                    true, // Enable for smoother playback
                                 excludeFromSemantics: true,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return const Center(child: Text('Frame error'));
+                                  return const Center(
+                                    child: Text('Frame error'),
+                                  );
                                 },
                               ),
                             ),
@@ -195,69 +209,97 @@ class FloatingVideoContent extends StatelessWidget {
                         bloc: cubit,
                         builder: (context, cubitState) {
                           final videoState = cubitState.maybeWhen(
-                            synchronized: (_, _, _, _, _, _, _, _, _, _, _, _, _, videoStream) => videoStream,
+                            synchronized:
+                                (
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  _,
+                                  videoStream,
+                                ) => videoStream,
                             orElse: () => null,
                           );
-                          
+
                           return videoState?.maybeWhen(
-                            connecting: () => const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(),
-                                  SizedBox(height: 8),
-                                  Text('Connecting to USB video...'),
-                                ],
-                              ),
-                            ),
-                            error: (message) => Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.error_outline, color: Colors.red),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    message,
-                                    style: const TextStyle(fontSize: 12),
-                                    textAlign: TextAlign.center,
+                                connecting: () => const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CircularProgressIndicator(),
+                                      SizedBox(height: 8),
+                                      Text('Connecting to USB video...'),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Checking for device automatically...',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                                    textAlign: TextAlign.center,
+                                ),
+                                error: (message) => Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        message,
+                                        style: const TextStyle(fontSize: 12),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Checking for device automatically...',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: () =>
+                                            cubit.startVideoStream(),
+                                        child: const Text('Retry Now'),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: () => cubit.startVideoStream(),
-                                    child: const Text('Retry Now'),
+                                ),
+                                orElse: () => const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.videocam_off,
+                                        color: Colors.grey,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'USB video not available',
+                                        style: TextStyle(fontSize: 12),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Waiting for connection...',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
-                            orElse: () => const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.videocam_off, color: Colors.grey),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'USB video not available',
-                                    style: TextStyle(fontSize: 12),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Waiting for connection...',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ) ?? const Center(
-                            child: Text('Initializing...'),
-                          );
+                                ),
+                              ) ??
+                              const Center(child: Text('Initializing...'));
                         },
                       );
                     },
@@ -265,7 +307,7 @@ class FloatingVideoContent extends StatelessWidget {
                 },
               ),
             ),
-            
+
             // Close button positioned on the right side
             Positioned(
               top: 4,

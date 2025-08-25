@@ -12,7 +12,8 @@ class NumParametersResponse extends SysexResponse {
     // Basic length check: algorithm index (1) + encoded num params (3) = 4
     if (data.length < 4) {
       throw ArgumentError(
-          "Invalid data length for NumParameters: ${data.length}, expected at least 4.");
+        "Invalid data length for NumParameters: ${data.length}, expected at least 4.",
+      );
     }
     var algorithmIndex = data[0].toInt();
     // Correct slice: sublist(1, 4) gets 3 bytes (index 1, 2, 3)

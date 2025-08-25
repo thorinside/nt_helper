@@ -8,10 +8,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class RequestDirectoryListingMessage extends SysexMessage {
   final String path;
 
-  RequestDirectoryListingMessage({
-    required super.sysExId,
-    required this.path,
-  });
+  RequestDirectoryListingMessage({required super.sysExId, required this.path});
 
   @override
   Uint8List encode() {

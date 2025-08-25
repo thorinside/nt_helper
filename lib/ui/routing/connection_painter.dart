@@ -8,12 +8,8 @@ class LabelHitBox {
   final String id;
   final Rect bounds;
   final Offset center;
-  
-  LabelHitBox({
-    required this.id,
-    required this.bounds,
-    required this.center,
-  });
+
+  LabelHitBox({required this.id, required this.bounds, required this.center});
 }
 
 class ConnectionPainter extends CustomPainter {
@@ -24,7 +20,7 @@ class ConnectionPainter extends CustomPainter {
   final Set<String> pendingConnections;
   final Set<String> failedConnections;
   final String? hoveredLabelId;
-  
+
   // Hit boxes for clickable labels, cleared and repopulated each paint cycle
   final List<LabelHitBox> labelHitBoxes = [];
 
@@ -42,12 +38,12 @@ class ConnectionPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Clear hit boxes for this paint cycle
     labelHitBoxes.clear();
-    
+
     // Draw all established connections
     for (final connection in connections) {
       final isPending = pendingConnections.contains(connection.id);
       final isFailed = failedConnections.contains(connection.id);
-      
+
       _drawConnection(
         canvas,
         connection,
@@ -68,12 +64,15 @@ class ConnectionPainter extends CustomPainter {
   bool? hitTest(Offset position) {
     // Check established connections first
     for (final connection in connections) {
-      final sourceKey = '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
-      final targetKey = '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
+      final sourceKey =
+          '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
+      final targetKey =
+          '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
       final start = portPositions[sourceKey];
       final end = portPositions[targetKey];
       if (start == null || end == null) continue;
-      if (_isPointNearBezier(position, start, end, tolerance: 15.0)) { // Increased for mobile
+      if (_isPointNearBezier(position, start, end, tolerance: 15.0)) {
+        // Increased for mobile
         return true;
       }
     }
@@ -89,18 +88,24 @@ class ConnectionPainter extends CustomPainter {
     bool isPending = false,
     bool isFailed = false,
   }) {
-    final sourceKey = '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
-    final targetKey = '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
-    
+    final sourceKey =
+        '${connection.sourceAlgorithmIndex}_${connection.sourcePortId}';
+    final targetKey =
+        '${connection.targetAlgorithmIndex}_${connection.targetPortId}';
+
     final sourcePos = portPositions[sourceKey];
     final targetPos = portPositions[targetKey];
 
     if (sourcePos == null || targetPos == null) {
-      debugPrint('[ConnectionPainter] Missing port positions: source=$sourceKey->$sourcePos, target=$targetKey->$targetPos');
+      debugPrint(
+        '[ConnectionPainter] Missing port positions: source=$sourceKey->$sourcePos, target=$targetKey->$targetPos',
+      );
       return;
     }
-    
-    debugPrint('[ConnectionPainter] Drawing connection: $sourceKey->$targetKey');
+
+    debugPrint(
+      '[ConnectionPainter] Drawing connection: $sourceKey->$targetKey',
+    );
 
     final paint = Paint()
       ..strokeWidth = isPending ? 2.0 : (isHovered ? 5.0 : 3.0)
@@ -129,7 +134,7 @@ class ConnectionPainter extends CustomPainter {
 
     // Create bezier path
     final path = _createBezierPath(sourcePos, targetPos);
-    
+
     // Draw dashed line for pending connections
     if (isPending) {
       _drawDashedPath(canvas, path, paint, dashArray: [5.0, 5.0]);
@@ -149,7 +154,8 @@ class ConnectionPainter extends CustomPainter {
     Canvas canvas,
     ConnectionPreview connectionPreview,
   ) {
-    final sourceKey = '${connectionPreview.sourceAlgorithmIndex}_${connectionPreview.sourcePortId}';
+    final sourceKey =
+        '${connectionPreview.sourceAlgorithmIndex}_${connectionPreview.sourcePortId}';
     final sourcePos = portPositions[sourceKey];
 
     if (sourcePos == null) {
@@ -157,7 +163,9 @@ class ConnectionPainter extends CustomPainter {
       return;
     }
 
-    debugPrint('[ConnectionPainter] Drawing preview from $sourcePos to ${connectionPreview.cursorPosition}');
+    debugPrint(
+      '[ConnectionPainter] Drawing preview from $sourcePos to ${connectionPreview.cursorPosition}',
+    );
 
     // Color based on validity and execution order
     Color previewColor;
@@ -256,20 +264,26 @@ class ConnectionPainter extends CustomPainter {
   }
 
   // Simple proximity test against our bezier path by sampling points
-  bool _isPointNearBezier(Offset point, Offset start, Offset end, {double tolerance = 10.0}) {
+  bool _isPointNearBezier(
+    Offset point,
+    Offset start,
+    Offset end, {
+    double tolerance = 10.0,
+  }) {
     // Dead zone radius around ports - don't detect connection clicks near ports
     // This allows dragging new connections from already-connected ports
     const double portDeadZoneRadius = 30.0;
-    
+
     // Check if click is within dead zone of source or target port
     final distanceToStart = (point - start).distance;
     final distanceToEnd = (point - end).distance;
-    
-    if (distanceToStart <= portDeadZoneRadius || distanceToEnd <= portDeadZoneRadius) {
+
+    if (distanceToStart <= portDeadZoneRadius ||
+        distanceToEnd <= portDeadZoneRadius) {
       // Within dead zone - don't consider this a click on the connection
       return false;
     }
-    
+
     const samples = 20;
     for (int i = 0; i <= samples; i++) {
       final t = i / samples;
@@ -283,7 +297,7 @@ class ConnectionPainter extends CustomPainter {
     final distance = (end - start).distance;
     final controlStrength = math.min(distance * 0.4, 100.0);
 
-    late Offset cp1; 
+    late Offset cp1;
     late Offset cp2;
     if ((end.dx - start.dx).abs() > (end.dy - start.dy).abs()) {
       cp1 = Offset(start.dx + controlStrength, start.dy);
@@ -342,16 +356,22 @@ class ConnectionPainter extends CustomPainter {
     canvas.drawPath(arrowPath, arrowPaint);
   }
 
-  void _drawEdgeLabel(Canvas canvas, Offset start, Offset end, String label, Connection connection) {
+  void _drawEdgeLabel(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    String label,
+    Connection connection,
+  ) {
     // Calculate midpoint of bezier curve
     final midPoint = _calculateBezierMidpoint(start, end);
 
     // Check if this connection supports mode toggle (not physical I/O)
     final hasMode = connection.sourceAlgorithmIndex >= 0;
     final displayLabel = hasMode && connection.replaceMode
-        ? '$label (R)'  // Only show indicator for Replace mode
-        : label;        // Show plain label for Add mode and physical I/O
-    
+        ? '$label (R)' // Only show indicator for Replace mode
+        : label; // Show plain label for Add mode and physical I/O
+
     // Check hover state
     final labelId = 'connection_${connection.id}_mode';
     final isHovered = hoveredLabelId == labelId;
@@ -370,27 +390,40 @@ class ConnectionPainter extends CustomPainter {
 
     textPainter.layout();
     final textSize = textPainter.size;
-    
+
     // Record hit box for click detection (only for connections with modes)
     if (hasMode) {
-      const padding = 16.0; // Increased for better mobile/Apple Pencil targeting (44pt recommended minimum)
-      labelHitBoxes.add(LabelHitBox(
-        id: labelId,
-        bounds: Rect.fromCenter(
+      const padding =
+          16.0; // Increased for better mobile/Apple Pencil targeting (44pt recommended minimum)
+      labelHitBoxes.add(
+        LabelHitBox(
+          id: labelId,
+          bounds: Rect.fromCenter(
+            center: midPoint,
+            width: math.max(
+              textSize.width + padding * 2,
+              44.0,
+            ), // Minimum 44pt tap target
+            height: math.max(
+              textSize.height + padding * 2,
+              44.0,
+            ), // Minimum 44pt tap target
+          ),
           center: midPoint,
-          width: math.max(textSize.width + padding * 2, 44.0), // Minimum 44pt tap target
-          height: math.max(textSize.height + padding * 2, 44.0), // Minimum 44pt tap target
         ),
-        center: midPoint,
-      ));
+      );
     }
 
     // Draw background with mode-specific color
     final backgroundColor = hasMode
-        ? (connection.replaceMode 
-          ? Colors.blue.withValues(alpha: isHovered ? 0.9 : 0.7)    // Replace = blue
-          : Colors.black.withValues(alpha: isHovered ? 0.9 : 0.7))  // Add = black
-        : Colors.black.withValues(alpha: 0.7);  // Physical I/O = black
+        ? (connection.replaceMode
+              ? Colors.blue.withValues(
+                  alpha: isHovered ? 0.9 : 0.7,
+                ) // Replace = blue
+              : Colors.black.withValues(
+                  alpha: isHovered ? 0.9 : 0.7,
+                )) // Add = black
+        : Colors.black.withValues(alpha: 0.7); // Physical I/O = black
 
     final labelRect = Rect.fromCenter(
       center: midPoint,
@@ -435,7 +468,6 @@ class ConnectionPainter extends CustomPainter {
         end * (t * t * t);
   }
 
-
   /// Get label at position for hit testing
   String? getLabelAtPosition(Offset position) {
     for (final hitBox in labelHitBoxes) {
@@ -445,7 +477,7 @@ class ConnectionPainter extends CustomPainter {
     }
     return null;
   }
-  
+
   @override
   bool shouldRepaint(ConnectionPainter oldDelegate) {
     return connections != oldDelegate.connections ||

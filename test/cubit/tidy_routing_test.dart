@@ -17,10 +17,17 @@ import 'package:nt_helper/services/node_positions_persistence_service.dart';
 
 import 'tidy_routing_test.mocks.dart';
 
-@GenerateMocks([DistingCubit, AlgorithmMetadataService, NodePositionsPersistenceService, AutoRoutingService, BusTidyOptimizer, IDistingMidiManager])
+@GenerateMocks([
+  DistingCubit,
+  AlgorithmMetadataService,
+  NodePositionsPersistenceService,
+  AutoRoutingService,
+  BusTidyOptimizer,
+  IDistingMidiManager,
+])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  
+
   // Configure Mockito to provide dummy values for sealed classes
   provideDummy<NodeRoutingState>(const NodeRoutingState.initial());
   provideDummy<DistingState>(const DistingState.initial());
@@ -39,7 +46,7 @@ void main() {
       mockPersistenceService = MockNodePositionsPersistenceService();
       // mockRoutingService = MockAutoRoutingService(); // Not used in current phase
       mockOptimizer = MockBusTidyOptimizer();
-      
+
       // Mock the DistingCubit stream
       when(mockDistingCubit.stream).thenAnswer((_) => Stream.empty());
       when(mockDistingCubit.state).thenReturn(
@@ -53,10 +60,10 @@ void main() {
           unitStrings: [],
         ),
       );
-      
+
       cubit = NodeRoutingCubit(
-        mockDistingCubit, 
-        mockAlgorithmService, 
+        mockDistingCubit,
+        mockAlgorithmService,
         mockPersistenceService,
         busTidyOptimizer: mockOptimizer,
       );
@@ -76,14 +83,16 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       expect(cubit.state, isA<NodeRoutingStateLoaded>());
       expect(cubit.canPerformTidy, isTrue);
@@ -123,14 +132,16 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: originalConnections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: originalConnections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       // Mock successful optimization
       final optimizedConnections = [
@@ -154,14 +165,16 @@ void main() {
         },
       );
 
-      when(mockOptimizer.tidyConnections(any)).thenAnswer((_) async => tidyResult);
+      when(
+        mockOptimizer.tidyConnections(any),
+      ).thenAnswer((_) async => tidyResult);
 
       // Perform tidy operation
       final result = await cubit.performTidy();
 
       expect(result.success, isTrue);
       expect(result.busesFreed, equals(1));
-      
+
       // State should be updated with optimized connections
       final currentState = cubit.state as NodeRoutingStateLoaded;
       expect(currentState.connections, equals(optimizedConnections));
@@ -181,24 +194,28 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       // Mock failed optimization
       final failedResult = TidyResult.failed('Optimization failed');
-      when(mockOptimizer.tidyConnections(any)).thenAnswer((_) async => failedResult);
+      when(
+        mockOptimizer.tidyConnections(any),
+      ).thenAnswer((_) async => failedResult);
 
       final result = await cubit.performTidy();
 
       expect(result.success, isFalse);
       expect(result.errorMessage, equals('Optimization failed'));
-      
+
       // State should remain unchanged
       final currentState = cubit.state as NodeRoutingStateLoaded;
       expect(currentState.connections, equals(connections));
@@ -217,14 +234,16 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       final tidyResult = TidyResult.success(
         originalConnections: connections,
@@ -233,7 +252,9 @@ void main() {
         changes: {},
       );
 
-      when(mockOptimizer.tidyConnections(any)).thenAnswer((_) async => tidyResult);
+      when(
+        mockOptimizer.tidyConnections(any),
+      ).thenAnswer((_) async => tidyResult);
 
       await cubit.performTidy();
 
@@ -243,43 +264,50 @@ void main() {
       expect(currentState.totalBusesFreed, equals(2));
     });
 
-    test('should accumulate buses freed over multiple tidy operations', () async {
-      final connections = [
-        Connection(
-          id: 'test_conn',
-          sourceAlgorithmIndex: 0,
-          sourcePortId: 'out',
-          targetAlgorithmIndex: 1,
-          targetPortId: 'in',
-          assignedBus: 21,
-          replaceMode: false,
-        ),
-      ];
+    test(
+      'should accumulate buses freed over multiple tidy operations',
+      () async {
+        final connections = [
+          Connection(
+            id: 'test_conn',
+            sourceAlgorithmIndex: 0,
+            sourcePortId: 'out',
+            targetAlgorithmIndex: 1,
+            targetPortId: 'in',
+            assignedBus: 21,
+            replaceMode: false,
+          ),
+        ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-        totalBusesFreed: 3, // Previous optimizations
-      ));
+        cubit.emit(
+          NodeRoutingState.loaded(
+            nodePositions: const {},
+            connections: connections,
+            portLayouts: const {},
+            connectedPorts: const {},
+            algorithmNames: const {},
+            portPositions: const {},
+            totalBusesFreed: 3, // Previous optimizations
+          ),
+        );
 
-      final tidyResult = TidyResult.success(
-        originalConnections: connections,
-        optimizedConnections: connections,
-        busesFreed: 2, // New optimization
-        changes: {},
-      );
+        final tidyResult = TidyResult.success(
+          originalConnections: connections,
+          optimizedConnections: connections,
+          busesFreed: 2, // New optimization
+          changes: {},
+        );
 
-      when(mockOptimizer.tidyConnections(any)).thenAnswer((_) async => tidyResult);
+        when(
+          mockOptimizer.tidyConnections(any),
+        ).thenAnswer((_) async => tidyResult);
 
-      await cubit.performTidy();
+        await cubit.performTidy();
 
-      final currentState = cubit.state as NodeRoutingStateLoaded;
-      expect(currentState.totalBusesFreed, equals(5)); // 3 + 2
-    });
+        final currentState = cubit.state as NodeRoutingStateLoaded;
+        expect(currentState.totalBusesFreed, equals(5)); // 3 + 2
+      },
+    );
 
     test('should not allow concurrent tidy operations', () async {
       final connections = [
@@ -294,14 +322,16 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       // Mock slow operation
       when(mockOptimizer.tidyConnections(any)).thenAnswer((_) async {
@@ -316,7 +346,7 @@ void main() {
 
       // Start first operation
       final future1 = cubit.performTidy();
-      
+
       // Try to start second operation immediately
       final future2 = cubit.performTidy();
 
@@ -325,14 +355,18 @@ void main() {
       // One should succeed, other should fail with concurrent operation error
       expect(results.where((r) => r.success).length, equals(1));
       expect(results.where((r) => !r.success).length, equals(1));
-      
+
       final failedResult = results.firstWhere((r) => !r.success);
       expect(failedResult.errorMessage, contains('concurrent'));
     });
 
     test('should preserve existing state properties during tidy', () async {
-      final originalNodePositions = {0: const NodePosition(algorithmIndex: 0, x: 100, y: 200)};
-      final originalPortLayouts = {0: const PortLayout(inputPorts: [], outputPorts: [])};
+      final originalNodePositions = {
+        0: const NodePosition(algorithmIndex: 0, x: 100, y: 200),
+      };
+      final originalPortLayouts = {
+        0: const PortLayout(inputPorts: [], outputPorts: []),
+      };
       final originalConnectedPorts = <String>{'test'};
       final originalAlgorithmNames = {0: 'TestAlgorithm'};
       final originalPortPositions = {'test': const Offset(50, 75)};
@@ -349,14 +383,16 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: originalNodePositions,
-        connections: connections,
-        portLayouts: originalPortLayouts,
-        connectedPorts: originalConnectedPorts,
-        algorithmNames: originalAlgorithmNames,
-        portPositions: originalPortPositions,
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: originalNodePositions,
+          connections: connections,
+          portLayouts: originalPortLayouts,
+          connectedPorts: originalConnectedPorts,
+          algorithmNames: originalAlgorithmNames,
+          portPositions: originalPortPositions,
+        ),
+      );
 
       final tidyResult = TidyResult.success(
         originalConnections: connections,
@@ -365,7 +401,9 @@ void main() {
         changes: {},
       );
 
-      when(mockOptimizer.tidyConnections(any)).thenAnswer((_) async => tidyResult);
+      when(
+        mockOptimizer.tidyConnections(any),
+      ).thenAnswer((_) async => tidyResult);
 
       await cubit.performTidy();
 
@@ -390,14 +428,16 @@ void main() {
         ),
       ];
 
-      cubit.emit(NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-      ));
+      cubit.emit(
+        NodeRoutingState.loaded(
+          nodePositions: const {},
+          connections: connections,
+          portLayouts: const {},
+          connectedPorts: const {},
+          algorithmNames: const {},
+          portPositions: const {},
+        ),
+      );
 
       // Track state changes
       final stateChanges = <NodeRoutingState>[];
@@ -429,16 +469,18 @@ void main() {
         changes: {},
       );
 
-      final state = NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: const [],
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-        lastTidyResult: tidyResult,
-        totalBusesFreed: 5,
-      ) as NodeRoutingStateLoaded;
+      final state =
+          NodeRoutingState.loaded(
+                nodePositions: const {},
+                connections: const [],
+                portLayouts: const {},
+                connectedPorts: const {},
+                algorithmNames: const {},
+                portPositions: const {},
+                lastTidyResult: tidyResult,
+                totalBusesFreed: 5,
+              )
+              as NodeRoutingStateLoaded;
 
       expect(state.lastTidyResult, equals(tidyResult));
       expect(state.totalBusesFreed, equals(5));
@@ -450,25 +492,30 @@ void main() {
     });
 
     test('should calculate optimization efficiency', () {
-      final connections = List.generate(10, (i) => Connection(
-        id: 'conn_$i',
-        sourceAlgorithmIndex: i,
-        sourcePortId: 'out',
-        targetAlgorithmIndex: i + 1,
-        targetPortId: 'in',
-        assignedBus: 21 + i,
-        replaceMode: false,
-      ));
+      final connections = List.generate(
+        10,
+        (i) => Connection(
+          id: 'conn_$i',
+          sourceAlgorithmIndex: i,
+          sourcePortId: 'out',
+          targetAlgorithmIndex: i + 1,
+          targetPortId: 'in',
+          assignedBus: 21 + i,
+          replaceMode: false,
+        ),
+      );
 
-      final state = NodeRoutingState.loaded(
-        nodePositions: const {},
-        connections: connections,
-        portLayouts: const {},
-        connectedPorts: const {},
-        algorithmNames: const {},
-        portPositions: const {},
-        totalBusesFreed: 3,
-      ) as NodeRoutingStateLoaded;
+      final state =
+          NodeRoutingState.loaded(
+                nodePositions: const {},
+                connections: connections,
+                portLayouts: const {},
+                connectedPorts: const {},
+                algorithmNames: const {},
+                portPositions: const {},
+                totalBusesFreed: 3,
+              )
+              as NodeRoutingStateLoaded;
 
       // Should calculate efficiency based on total connections vs buses freed
       expect(state.optimizationEfficiency, equals(0.3)); // 3/10

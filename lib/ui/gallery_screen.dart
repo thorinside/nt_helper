@@ -73,8 +73,8 @@ class _GalleryViewState extends State<_GalleryView>
     // Listen to search changes
     _searchController.addListener(() {
       context.read<GalleryCubit>().applyFilters(
-            searchQuery: _searchController.text,
-          );
+        searchQuery: _searchController.text,
+      );
     });
   }
 
@@ -86,29 +86,31 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   /// Open README documentation in browser for a plugin
-  Future<void> _showReadmeDialog(BuildContext context, GalleryPlugin plugin) async {
+  Future<void> _showReadmeDialog(
+    BuildContext context,
+    GalleryPlugin plugin,
+  ) async {
     debugPrint('Documentation button pressed for plugin: ${plugin.name}');
-    debugPrint('Repository: ${plugin.repository.owner}/${plugin.repository.name}');
-    
+    debugPrint(
+      'Repository: ${plugin.repository.owner}/${plugin.repository.name}',
+    );
+
     try {
       // Construct the GitHub README URL
       String readmeUrl = plugin.repository.url;
-      
+
       // Ensure it ends with #readme to jump to the README section
       if (!readmeUrl.contains('#readme')) {
-        readmeUrl = readmeUrl.endsWith('/') 
-            ? '$readmeUrl#readme' 
+        readmeUrl = readmeUrl.endsWith('/')
+            ? '$readmeUrl#readme'
             : '$readmeUrl#readme';
       }
-      
+
       debugPrint('Opening README URL: $readmeUrl');
-      
+
       final uri = Uri.parse(readmeUrl);
       if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,10 +147,7 @@ class _GalleryViewState extends State<_GalleryView>
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  children: [
-                    _buildGalleryTab(state),
-                    _buildQueueTab(),
-                  ],
+                  children: [_buildGalleryTab(state), _buildQueueTab()],
                 ),
               ),
             ],
@@ -204,9 +203,9 @@ class _GalleryViewState extends State<_GalleryView>
               Text(
                 'Plugin Gallery',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               const Spacer(),
               _buildHeaderActions(state),
@@ -217,11 +216,10 @@ class _GalleryViewState extends State<_GalleryView>
             Text(
               state.gallery.metadata.description,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ],
@@ -262,8 +260,8 @@ class _GalleryViewState extends State<_GalleryView>
             tooltip: isRefreshing
                 ? 'Refreshing gallery...'
                 : updateCount > 0
-                    ? 'Updates available ($updateCount) - Tap to refresh'
-                    : 'Refresh gallery',
+                ? 'Updates available ($updateCount) - Tap to refresh'
+                : 'Refresh gallery',
           ),
         ),
         Badge(
@@ -298,15 +296,13 @@ class _GalleryViewState extends State<_GalleryView>
       child: TabBar(
         controller: _tabController,
         tabs: [
-          Tab(
-            icon: const Icon(Icons.explore),
-            text: 'Explore',
-          ),
+          Tab(icon: const Icon(Icons.explore), text: 'Explore'),
           Tab(
             icon: BlocBuilder<GalleryCubit, GalleryState>(
               builder: (context, state) {
-                final queueCount =
-                    state is GalleryLoaded ? state.queue.length : 0;
+                final queueCount = state is GalleryLoaded
+                    ? state.queue.length
+                    : 0;
                 return Badge(
                   isLabelVisible: queueCount > 0,
                   label: Text('$queueCount'),
@@ -339,9 +335,7 @@ class _GalleryViewState extends State<_GalleryView>
       return Column(
         children: [
           _buildSearchAndFilters(state),
-          Expanded(
-            child: _buildPluginGrid(state),
-          ),
+          Expanded(child: _buildPluginGrid(state)),
         ],
       );
     } else if (state is GalleryError) {
@@ -363,8 +357,8 @@ class _GalleryViewState extends State<_GalleryView>
             Text(
               state.message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                color: Theme.of(context).colorScheme.error,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -506,11 +500,10 @@ class _GalleryViewState extends State<_GalleryView>
                     ? '${state.filteredPlugins.length} plugin${state.filteredPlugins.length == 1 ? '' : 's'}'
                     : '0 plugins',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),
@@ -540,9 +533,7 @@ class _GalleryViewState extends State<_GalleryView>
         onDeleted: () {},
       ),
       onSelected: (value) {
-        context.read<GalleryCubit>().applyFilters(
-              category: value,
-            );
+        context.read<GalleryCubit>().applyFilters(category: value);
       },
       itemBuilder: (context) => [
         const PopupMenuItem<String?>(
@@ -575,9 +566,11 @@ class _GalleryViewState extends State<_GalleryView>
           size: 18,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
-        label: Text(state is GalleryLoaded
-            ? (state.selectedType?.displayName ?? 'Type')
-            : 'Type'),
+        label: Text(
+          state is GalleryLoaded
+              ? (state.selectedType?.displayName ?? 'Type')
+              : 'Type',
+        ),
         deleteIcon: Icon(
           Icons.arrow_drop_down,
           size: 18,
@@ -586,9 +579,7 @@ class _GalleryViewState extends State<_GalleryView>
         onDeleted: () {},
       ),
       onSelected: (value) {
-        context.read<GalleryCubit>().applyFilters(
-              type: value,
-            );
+        context.read<GalleryCubit>().applyFilters(type: value);
       },
       itemBuilder: (context) => [
         const PopupMenuItem<GalleryPluginType?>(
@@ -624,9 +615,7 @@ class _GalleryViewState extends State<_GalleryView>
             : null,
       ),
       onSelected: (selected) {
-        context.read<GalleryCubit>().applyFilters(
-              featured: selected,
-            );
+        context.read<GalleryCubit>().applyFilters(featured: selected);
       },
     );
   }
@@ -647,8 +636,9 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   Widget _buildPluginGrid(GalleryState state) {
-    final filteredPlugins =
-        state is GalleryLoaded ? state.filteredPlugins : <GalleryPlugin>[];
+    final filteredPlugins = state is GalleryLoaded
+        ? state.filteredPlugins
+        : <GalleryPlugin>[];
 
     if (filteredPlugins.isEmpty) {
       return Center(
@@ -658,30 +648,27 @@ class _GalleryViewState extends State<_GalleryView>
             Icon(
               Icons.search_off,
               size: 64,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
               'No plugins found',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Try adjusting your search or filters',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.4),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
@@ -702,7 +689,10 @@ class _GalleryViewState extends State<_GalleryView>
   }
 
   Widget _buildPluginCard(
-      GalleryPlugin plugin, GalleryState state, BuildContext parentContext) {
+    GalleryPlugin plugin,
+    GalleryState state,
+    BuildContext parentContext,
+  ) {
     if (state is! GalleryLoaded) return const SizedBox.shrink();
 
     final author = plugin.getAuthor(state.gallery);
@@ -729,16 +719,14 @@ class _GalleryViewState extends State<_GalleryView>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.05),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.05),
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outline
-                        .withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -771,9 +759,7 @@ class _GalleryViewState extends State<_GalleryView>
                                 ),
                                 child: Text(
                                   'UPDATE',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
+                                  style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -795,9 +781,7 @@ class _GalleryViewState extends State<_GalleryView>
                                 ),
                                 child: Text(
                                   'INSTALLED',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
+                                  style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -810,12 +794,8 @@ class _GalleryViewState extends State<_GalleryView>
                             Expanded(
                               child: Text(
                                 plugin.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -836,13 +816,11 @@ class _GalleryViewState extends State<_GalleryView>
                               ),
                               child: Text(
                                 plugin.type.displayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
+                                style: Theme.of(context).textTheme.labelSmall
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSecondary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSecondary,
                                     ),
                               ),
                             ),
@@ -854,10 +832,9 @@ class _GalleryViewState extends State<_GalleryView>
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outline
-                                      .withValues(alpha: 0.2),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -877,8 +854,12 @@ class _GalleryViewState extends State<_GalleryView>
 
             // Content with fixed layout sections
             Padding(
-              padding:
-                  const EdgeInsets.fromLTRB(8, 8, 8, 12), // 12px bottom margin
+              padding: const EdgeInsets.fromLTRB(
+                8,
+                8,
+                8,
+                12,
+              ), // 12px bottom margin
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min, // Shrink to fit content
@@ -897,7 +878,6 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
 
                   const SizedBox(height: 16), // Space after description
-
                   // Metadata section (author, downloads, ratings)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -909,18 +889,15 @@ class _GalleryViewState extends State<_GalleryView>
                             Icon(
                               Icons.person,
                               size: 14,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 author.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: Theme.of(context)
                                           .colorScheme
@@ -936,9 +913,7 @@ class _GalleryViewState extends State<_GalleryView>
                           if (plugin.formattedLatestVersion.isNotEmpty)
                             Text(
                               plugin.formattedLatestVersion,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
@@ -955,7 +930,8 @@ class _GalleryViewState extends State<_GalleryView>
                                 color: Colors.transparent,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(12),
-                                  onTap: () => _showReadmeDialog(parentContext, plugin),
+                                  onTap: () =>
+                                      _showReadmeDialog(parentContext, plugin),
                                   child: Tooltip(
                                     message: 'View Documentation',
                                     child: Icon(
@@ -980,10 +956,9 @@ class _GalleryViewState extends State<_GalleryView>
                             Icon(
                               Icons.info_outline,
                               size: 14,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
@@ -991,16 +966,14 @@ class _GalleryViewState extends State<_GalleryView>
                                 hasUpdate
                                     ? 'v${updateInfo.installedVersion} → v${updateInfo.availableVersion}'
                                     : 'v${updateInfo.installedVersion} (up to date)',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: hasUpdate
                                           ? Colors.orange
                                           : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.6),
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
                                       fontWeight: hasUpdate
                                           ? FontWeight.w500
                                           : FontWeight.normal,
@@ -1016,14 +989,13 @@ class _GalleryViewState extends State<_GalleryView>
                   ),
 
                   const SizedBox(height: 8), // Reduced spacing above button
-
-
                   // Action button at bottom
                   SizedBox(
                     width: double.infinity,
                     child: () {
-                      final isInQueue =
-                          state.queue.any((q) => q.plugin.id == plugin.id);
+                      final isInQueue = state.queue.any(
+                        (q) => q.plugin.id == plugin.id,
+                      );
 
                       // Determine button state based on update and queue status
                       if (isInQueue) {
@@ -1035,10 +1007,12 @@ class _GalleryViewState extends State<_GalleryView>
                           icon: const Icon(Icons.remove_from_queue),
                           label: const Text('Remove'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.error,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onError,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onError,
                           ),
                         );
                       } else if (hasUpdate) {
@@ -1077,10 +1051,12 @@ class _GalleryViewState extends State<_GalleryView>
                           icon: const Icon(Icons.add_to_queue),
                           label: const Text('Add to Queue'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                           ),
                         );
                       }
@@ -1108,30 +1084,27 @@ class _GalleryViewState extends State<_GalleryView>
                 Icon(
                   Icons.download_for_offline_outlined,
                   size: 64,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Your queue is empty',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.6),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Add plugins from the explore tab to get started',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.4),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
@@ -1152,10 +1125,9 @@ class _GalleryViewState extends State<_GalleryView>
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outline
-                        .withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
@@ -1169,8 +1141,8 @@ class _GalleryViewState extends State<_GalleryView>
                   TextButton(
                     onPressed:
                         queue.any((q) => q.status == QueuedPluginStatus.queued)
-                            ? () => context.read<GalleryCubit>().clearQueue()
-                            : null,
+                        ? () => context.read<GalleryCubit>().clearQueue()
+                        : null,
                     child: const Text('Clear All'),
                   ),
                   const SizedBox(width: 8),
@@ -1274,7 +1246,8 @@ class _GalleryViewState extends State<_GalleryView>
                 ],
               ],
             ),
-            trailing: (queuedPlugin.status == QueuedPluginStatus.queued ||
+            trailing:
+                (queuedPlugin.status == QueuedPluginStatus.queued ||
                     queuedPlugin.status == QueuedPluginStatus.failed)
                 ? _buildQueueActions(queuedPlugin)
                 : null,
@@ -1295,14 +1268,23 @@ class _GalleryViewState extends State<_GalleryView>
       case QueuedPluginStatus.installing:
         return const Icon(Icons.install_desktop, size: 16);
       case QueuedPluginStatus.completed:
-        return Icon(Icons.check_circle,
-            size: 16, color: Theme.of(context).colorScheme.primary);
+        return Icon(
+          Icons.check_circle,
+          size: 16,
+          color: Theme.of(context).colorScheme.primary,
+        );
       case QueuedPluginStatus.failed:
-        return Icon(Icons.error,
-            size: 16, color: Theme.of(context).colorScheme.error);
+        return Icon(
+          Icons.error,
+          size: 16,
+          color: Theme.of(context).colorScheme.error,
+        );
       case QueuedPluginStatus.analyzing:
-        return Icon(Icons.query_builder,
-            size: 16, color: Theme.of(context).colorScheme.error);
+        return Icon(
+          Icons.query_builder,
+          size: 16,
+          color: Theme.of(context).colorScheme.error,
+        );
     }
   }
 
@@ -1338,8 +1320,9 @@ class _GalleryViewState extends State<_GalleryView>
 
   bool _canInstallQueue(List<QueuedPlugin> queue) {
     // Check if there are any queued plugins
-    final queuedPlugins =
-        queue.where((q) => q.status == QueuedPluginStatus.queued);
+    final queuedPlugins = queue.where(
+      (q) => q.status == QueuedPluginStatus.queued,
+    );
     if (queuedPlugins.isEmpty) return false;
 
     // Check if all collections have valid selections
@@ -1422,7 +1405,8 @@ class _GalleryViewState extends State<_GalleryView>
       var galleryCubit = context.read<GalleryCubit>();
       final galleryService = galleryCubit.galleryService;
       debugPrint(
-          '[PluginDialog] Downloading archive for ${queuedPlugin.plugin.name}');
+        '[PluginDialog] Downloading archive for ${queuedPlugin.plugin.name}',
+      );
       final archiveBytes = await galleryService.downloadPluginArchive(
         queuedPlugin.plugin,
         queuedPlugin.selectedVersion,
@@ -1432,9 +1416,9 @@ class _GalleryViewState extends State<_GalleryView>
       // Check if this is actually a collection with multiple installable plugins
       final installableCount =
           await PluginMetadataExtractor.countInstallablePlugins(
-        archiveBytes,
-        queuedPlugin.plugin,
-      );
+            archiveBytes,
+            queuedPlugin.plugin,
+          );
       debugPrint('[PluginDialog] Found $installableCount installable plugins');
 
       if (!mounted) return;
@@ -1447,15 +1431,21 @@ class _GalleryViewState extends State<_GalleryView>
         debugPrint('[PluginDialog] Single plugin detected, auto-selecting');
         final availablePlugins =
             await PluginMetadataExtractor.extractPluginsFromArchive(
-          archiveBytes,
-          queuedPlugin.plugin,
-        );
+              archiveBytes,
+              queuedPlugin.plugin,
+            );
 
         // Auto-select only installable plugins (.o, .lua, .3pot)
         final autoSelectedPlugins = availablePlugins
-            .map((p) => p.copyWith(
-                selected:
-                    const ['.o', '.lua', '.3pot'].contains('.${p.fileType}')))
+            .map(
+              (p) => p.copyWith(
+                selected: const [
+                  '.o',
+                  '.lua',
+                  '.3pot',
+                ].contains('.${p.fileType}'),
+              ),
+            )
             .toList();
         galleryCubit.updateQueuedPluginSelection(
           queuedPlugin.plugin.id,
@@ -1466,7 +1456,8 @@ class _GalleryViewState extends State<_GalleryView>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Auto-selected single plugin from ${queuedPlugin.plugin.name}'),
+              'Auto-selected single plugin from ${queuedPlugin.plugin.name}',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -1479,7 +1470,8 @@ class _GalleryViewState extends State<_GalleryView>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'No installable plugins found in ${queuedPlugin.plugin.name}'),
+              'No installable plugins found in ${queuedPlugin.plugin.name}',
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
           ),
@@ -1490,11 +1482,12 @@ class _GalleryViewState extends State<_GalleryView>
       // Multiple installable plugins - show selection dialog
       final availablePlugins =
           await PluginMetadataExtractor.extractPluginsFromArchive(
-        archiveBytes,
-        queuedPlugin.plugin,
-      );
+            archiveBytes,
+            queuedPlugin.plugin,
+          );
       debugPrint(
-          '[PluginDialog] Extraction returned ${availablePlugins.length} plugins');
+        '[PluginDialog] Extraction returned ${availablePlugins.length} plugins',
+      );
 
       // Initialize selection from existing state, or select all if first time
       final existingSelection = queuedPlugin.selectedPlugins;
@@ -1506,14 +1499,19 @@ class _GalleryViewState extends State<_GalleryView>
             (p) => p.relativePath == availablePlugins[i].relativePath,
             orElse: () => availablePlugins[i],
           );
-          availablePlugins[i] =
-              availablePlugins[i].copyWith(selected: existing.selected);
+          availablePlugins[i] = availablePlugins[i].copyWith(
+            selected: existing.selected,
+          );
         } else {
           // First time - select all installable plugins by default
-          final isInstallable = const ['.o', '.lua', '.3pot']
-              .contains('.${availablePlugins[i].fileType}');
-          availablePlugins[i] =
-              availablePlugins[i].copyWith(selected: isInstallable);
+          final isInstallable = const [
+            '.o',
+            '.lua',
+            '.3pot',
+          ].contains('.${availablePlugins[i].fileType}');
+          availablePlugins[i] = availablePlugins[i].copyWith(
+            selected: isInstallable,
+          );
         }
       }
 
@@ -1527,7 +1525,8 @@ class _GalleryViewState extends State<_GalleryView>
           availablePlugins: availablePlugins,
           onSelectionChanged: (selectedPlugins) {
             debugPrint(
-                '[PluginDialog] Selection changed: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} plugins selected');
+              '[PluginDialog] Selection changed: ${selectedPlugins.where((p) => p.selected).length} of ${selectedPlugins.length} plugins selected',
+            );
             galleryCubit.updateQueuedPluginSelection(
               queuedPlugin.plugin.id,
               selectedPlugins,
@@ -1574,10 +1573,10 @@ class _GalleryViewState extends State<_GalleryView>
         distingInstallPlugin: (fileName, fileData, {onProgress}) async {
           // Use the DistingCubit's installPlugin method
           await context.read<DistingCubit>().installPlugin(
-                fileName,
-                fileData,
-                onProgress: onProgress,
-              );
+            fileName,
+            fileData,
+            onProgress: onProgress,
+          );
         },
         onPluginStart: (plugin) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1727,8 +1726,9 @@ class _GalleryViewState extends State<_GalleryView>
             ),
             boxShadow: [
               BoxShadow(
-                color:
-                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1746,20 +1746,19 @@ class _GalleryViewState extends State<_GalleryView>
               Text(
                 'Drop plugin files here to install',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Supports .lua, .3pot, and .o files',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1780,8 +1779,9 @@ class _GalleryViewState extends State<_GalleryView>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color:
-                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1800,11 +1800,10 @@ class _GalleryViewState extends State<_GalleryView>
               Text(
                 'This may take a few moments',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
               ),
             ],
           ),

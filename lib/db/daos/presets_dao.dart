@@ -21,7 +21,7 @@ class FullPresetDetails {
 /// parameter values, mappings, routing info, and string values.
 class FullPresetSlot {
   final PresetSlotEntry
-      slot; // Contains slotIndex, customName, presetId, algorithmGuid
+  slot; // Contains slotIndex, customName, presetId, algorithmGuid
   final AlgorithmEntry algorithm; // Base algorithm metadata
   final Map<int, int> parameterValues; // paramNum -> value
   final Map<int, String> parameterStringValues; // paramNum -> stringValue
@@ -38,14 +38,16 @@ class FullPresetSlot {
 
 // --- DAO Definition ---
 
-@DriftAccessor(tables: [
-  Presets,
-  PresetSlots,
-  PresetParameterValues,
-  PresetMappings,
-  PresetParameterStringValues,
-  Algorithms,
-])
+@DriftAccessor(
+  tables: [
+    Presets,
+    PresetSlots,
+    PresetParameterValues,
+    PresetMappings,
+    PresetParameterStringValues,
+    Algorithms,
+  ],
+)
 class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   PresetsDao(super.db);
 
@@ -56,8 +58,9 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   Future<List<PresetEntry>> getAllPresets() => select(presets).get();
 
   Future<PresetEntry?> getPresetByName(String name) {
-    return (select(presets)..where((p) => p.name.equals(name)))
-        .getSingleOrNull();
+    return (select(
+      presets,
+    )..where((p) => p.name.equals(name))).getSingleOrNull();
   }
 
   Future<PresetEntry?> getPresetById(int id) {
@@ -65,17 +68,17 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   }
 
   Future<FullPresetDetails?> getFullPresetDetails(int presetId) async {
-    final presetEntry = await (select(presets)
-          ..where((p) => p.id.equals(presetId)))
-        .getSingleOrNull();
+    final presetEntry = await (select(
+      presets,
+    )..where((p) => p.id.equals(presetId))).getSingleOrNull();
 
     if (presetEntry == null) return null;
 
     try {
       // Fetch all slots for the preset
-      final slotEntries = await (select(presetSlots)
-            ..where((s) => s.presetId.equals(presetId)))
-          .get();
+      final slotEntries = await (select(
+        presetSlots,
+      )..where((s) => s.presetId.equals(presetId))).get();
 
       if (slotEntries.isEmpty) {
         return FullPresetDetails(preset: presetEntry, slots: []);
@@ -90,17 +93,22 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       final algorithmsQuery = select(algorithms)
         ..where((a) => a.guid.isIn(algorithmGuids));
       final algorithmsMap = {
-        for (var a in await algorithmsQuery.get()) a.guid: a
+        for (var a in await algorithmsQuery.get()) a.guid: a,
       };
 
       // Fetch parameter values
       final valuesQuery = select(presetParameterValues)
         ..where((v) => v.presetSlotId.isIn(slotIds));
       final valueEntries = await valuesQuery.get();
-      final paramValuesBySlot = groupBy<PresetParameterValueEntry, int>(
-              valueEntries, (v) => v.presetSlotId)
-          .map((slotId, entries) => MapEntry(
-              slotId, {for (var e in entries) e.parameterNumber: e.value}));
+      final paramValuesBySlot =
+          groupBy<PresetParameterValueEntry, int>(
+            valueEntries,
+            (v) => v.presetSlotId,
+          ).map(
+            (slotId, entries) => MapEntry(slotId, {
+              for (var e in entries) e.parameterNumber: e.value,
+            }),
+          );
 
       // Fetch parameter string values
       final stringValuesQuery =
@@ -109,18 +117,27 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       final stringValueEntries = await stringValuesQuery.get();
       final paramStringValuesBySlot =
           groupBy<PresetParameterStringValueEntry, int>(
-                  stringValueEntries, (sv) => sv.presetSlotId)
-              .map((slotId, entries) => MapEntry(slotId,
-                  {for (var e in entries) e.parameterNumber: e.stringValue}));
+            stringValueEntries,
+            (sv) => sv.presetSlotId,
+          ).map(
+            (slotId, entries) => MapEntry(slotId, {
+              for (var e in entries) e.parameterNumber: e.stringValue,
+            }),
+          );
 
       // Fetch mappings
       final mappingsQuery = select(presetMappings)
         ..where((m) => m.presetSlotId.isIn(slotIds));
       final mappingEntries = await mappingsQuery.get();
-      final paramMappingsBySlot = groupBy<PresetMappingEntry, int>(
-              mappingEntries, (m) => m.presetSlotId)
-          .map((slotId, entries) => MapEntry(slotId,
-              {for (var e in entries) e.parameterNumber: e.packedData}));
+      final paramMappingsBySlot =
+          groupBy<PresetMappingEntry, int>(
+            mappingEntries,
+            (m) => m.presetSlotId,
+          ).map(
+            (slotId, entries) => MapEntry(slotId, {
+              for (var e in entries) e.parameterNumber: e.packedData,
+            }),
+          );
 
       // Assemble FullPresetSlot list
       final List<FullPresetSlot> fullSlots = [];
@@ -128,16 +145,19 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
         final algorithm = algorithmsMap[slotEntry.algorithmGuid];
         if (algorithm != null) {
           final slotId = slotEntry.id;
-          fullSlots.add(FullPresetSlot(
-            slot: slotEntry,
-            algorithm: algorithm,
-            parameterValues: paramValuesBySlot[slotId] ?? {},
-            parameterStringValues: paramStringValuesBySlot[slotId] ?? {},
-            mappings: paramMappingsBySlot[slotId] ?? {},
-          ));
+          fullSlots.add(
+            FullPresetSlot(
+              slot: slotEntry,
+              algorithm: algorithm,
+              parameterValues: paramValuesBySlot[slotId] ?? {},
+              parameterStringValues: paramStringValuesBySlot[slotId] ?? {},
+              mappings: paramMappingsBySlot[slotId] ?? {},
+            ),
+          );
         } else {
           debugPrint(
-              "Warning: Algorithm with GUID ${slotEntry.algorithmGuid} not found for preset ${presetEntry.name}, slot index ${slotEntry.slotIndex}");
+            "Warning: Algorithm with GUID ${slotEntry.algorithmGuid} not found for preset ${presetEntry.name}, slot index ${slotEntry.slotIndex}",
+          );
           // Handle missing algorithm metadata gracefully (e.g., skip slot or error)
         }
       }
@@ -148,7 +168,8 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       return FullPresetDetails(preset: presetEntry, slots: fullSlots);
     } catch (e, stackTrace) {
       debugPrint(
-          "Error getting full preset details for ID $presetId: $e\n$stackTrace");
+        "Error getting full preset details for ID $presetId: $e\n$stackTrace",
+      );
       return null;
     }
   }
@@ -166,10 +187,11 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
           // Explicitly handle the ID: if it's -1, treat it as absent for auto-increment.
           // Otherwise, use the provided ID for potential replacement.
           .copyWith(
-              id: details.preset.id == -1
-                  ? const Value.absent()
-                  : Value(details.preset.id),
-              lastModified: Value(DateTime.now()));
+            id: details.preset.id == -1
+                ? const Value.absent()
+                : Value(details.preset.id),
+            lastModified: Value(DateTime.now()),
+          );
 
       // Insert the companion. `insertOrReplace` will:
       // - Insert if `id` is absent (and generate a new ID).
@@ -186,16 +208,17 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
         // Throw an exception if the insert/replace failed to return a valid ID.
         // This should cause the transaction to roll back.
         throw Exception(
-            "Database operation failed: Invalid preset ID returned ($presetId)");
+          "Database operation failed: Invalid preset ID returned ($presetId)",
+        );
       }
       // --- End Check ---
 
       // 2. Handle Slots
-      final existingSlots = await (select(presetSlots)
-            ..where((s) => s.presetId.equals(presetId)))
-          .get();
+      final existingSlots = await (select(
+        presetSlots,
+      )..where((s) => s.presetId.equals(presetId))).get();
       final Map<int, PresetSlotEntry> existingSlotsById = {
-        for (var s in existingSlots) s.id: s
+        for (var s in existingSlots) s.id: s,
       };
       final Set<int> incomingSlotIds = {};
 
@@ -218,18 +241,25 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
               ? Value(existingSlotForIndex.id)
               : const Value.absent(),
         );
-        final slotId = await into(presetSlots)
-            .insert(slotCompanion, mode: InsertMode.insertOrReplace);
+        final slotId = await into(
+          presetSlots,
+        ).insert(slotCompanion, mode: InsertMode.insertOrReplace);
         incomingSlotIds.add(slotId);
 
         // Clear existing related data for this slot
         await batch((batch) {
           batch.deleteWhere(
-              presetParameterValues, (row) => row.presetSlotId.equals(slotId));
-          batch.deleteWhere(presetParameterStringValues,
-              (row) => row.presetSlotId.equals(slotId));
+            presetParameterValues,
+            (row) => row.presetSlotId.equals(slotId),
+          );
           batch.deleteWhere(
-              presetMappings, (row) => row.presetSlotId.equals(slotId));
+            presetParameterStringValues,
+            (row) => row.presetSlotId.equals(slotId),
+          );
+          batch.deleteWhere(
+            presetMappings,
+            (row) => row.presetSlotId.equals(slotId),
+          );
         });
 
         // Batch insert new data using .insert() companions
@@ -238,11 +268,13 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             batch.insertAll(
               presetParameterValues,
               fullSlot.parameterValues.entries
-                  .map((e) => PresetParameterValuesCompanion.insert(
-                        presetSlotId: slotId,
-                        parameterNumber: e.key,
-                        value: e.value,
-                      ))
+                  .map(
+                    (e) => PresetParameterValuesCompanion.insert(
+                      presetSlotId: slotId,
+                      parameterNumber: e.key,
+                      value: e.value,
+                    ),
+                  )
                   .toList(),
             );
           }
@@ -250,11 +282,13 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             batch.insertAll(
               presetParameterStringValues,
               fullSlot.parameterStringValues.entries
-                  .map((e) => PresetParameterStringValuesCompanion.insert(
-                        presetSlotId: slotId,
-                        parameterNumber: e.key,
-                        stringValue: e.value,
-                      ))
+                  .map(
+                    (e) => PresetParameterStringValuesCompanion.insert(
+                      presetSlotId: slotId,
+                      parameterNumber: e.key,
+                      stringValue: e.value,
+                    ),
+                  )
                   .toList(),
             );
           }
@@ -262,11 +296,13 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
             batch.insertAll(
               presetMappings,
               fullSlot.mappings.entries
-                  .map((e) => PresetMappingsCompanion.insert(
-                        presetSlotId: slotId,
-                        parameterNumber: e.key,
-                        packedData: e.value,
-                      ))
+                  .map(
+                    (e) => PresetMappingsCompanion.insert(
+                      presetSlotId: slotId,
+                      parameterNumber: e.key,
+                      packedData: e.value,
+                    ),
+                  )
                   .toList(),
             );
           }
@@ -277,8 +313,9 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
       final Set<int> existingSlotIdsSet = existingSlotsById.keys.toSet();
       final slotsToDelete = existingSlotIdsSet.difference(incomingSlotIds);
       if (slotsToDelete.isNotEmpty) {
-        await (delete(presetSlots)..where((s) => s.id.isIn(slotsToDelete)))
-            .go();
+        await (delete(
+          presetSlots,
+        )..where((s) => s.id.isIn(slotsToDelete))).go();
       }
 
       return presetId;
@@ -287,8 +324,11 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
 
   Future<void> updatePresetName(int presetId, String newName) async {
     await (update(presets)..where((p) => p.id.equals(presetId))).write(
-        PresetsCompanion(
-            name: Value(newName), lastModified: Value(DateTime.now())));
+      PresetsCompanion(
+        name: Value(newName),
+        lastModified: Value(DateTime.now()),
+      ),
+    );
   }
 
   // --- Deletion Methods ---

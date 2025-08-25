@@ -21,14 +21,19 @@ void main() {
 
     setUp(() {
       mockNodeRoutingCubit = MockNodeRoutingCubit();
-      
+
       // Setup default stream behavior for BlocProvider
-      when(mockNodeRoutingCubit.stream).thenAnswer((_) => 
-        Stream.fromIterable([const NodeRoutingState.initial()]));
-      when(mockNodeRoutingCubit.state).thenReturn(const NodeRoutingState.initial());
+      when(mockNodeRoutingCubit.stream).thenAnswer(
+        (_) => Stream.fromIterable([const NodeRoutingState.initial()]),
+      );
+      when(
+        mockNodeRoutingCubit.state,
+      ).thenReturn(const NodeRoutingState.initial());
     });
 
-    testWidgets('should call performTidy when tidy button is pressed', (tester) async {
+    testWidgets('should call performTidy when tidy button is pressed', (
+      tester,
+    ) async {
       // Create a simple widget that tests the tidy functionality
       final testWidget = MaterialApp(
         home: Scaffold(
@@ -49,13 +54,13 @@ void main() {
       );
 
       // Mock the performTidy method
-      when(mockNodeRoutingCubit.performTidy()).thenAnswer((_) async =>
-        TidyResult.success(
+      when(mockNodeRoutingCubit.performTidy()).thenAnswer(
+        (_) async => TidyResult.success(
           originalConnections: const [],
           optimizedConnections: const [],
           busesFreed: 1,
           changes: const {},
-        )
+        ),
       );
 
       await tester.pumpWidget(testWidget);
@@ -72,7 +77,9 @@ void main() {
       verify(mockNodeRoutingCubit.performTidy()).called(1);
     });
 
-    testWidgets('should handle tidy operation errors gracefully', (tester) async {
+    testWidgets('should handle tidy operation errors gracefully', (
+      tester,
+    ) async {
       // Create a simple test widget
       final testWidget = MaterialApp(
         home: Scaffold(
@@ -82,12 +89,16 @@ void main() {
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () async {
-                    final result = await context.read<NodeRoutingCubit>().performTidy();
+                    final result = await context
+                        .read<NodeRoutingCubit>()
+                        .performTidy();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(result.success 
-                          ? 'Success: ${result.busesFreed} buses freed'
-                          : 'Error: ${result.errorMessage}'),
+                        content: Text(
+                          result.success
+                              ? 'Success: ${result.busesFreed} buses freed'
+                              : 'Error: ${result.errorMessage}',
+                        ),
                       ),
                     );
                   },
@@ -100,9 +111,9 @@ void main() {
       );
 
       // Mock failed tidy operation
-      when(mockNodeRoutingCubit.performTidy()).thenAnswer((_) async =>
-        TidyResult.failed('Test optimization failed')
-      );
+      when(
+        mockNodeRoutingCubit.performTidy(),
+      ).thenAnswer((_) async => TidyResult.failed('Test optimization failed'));
 
       await tester.pumpWidget(testWidget);
       await tester.pumpAndSettle();

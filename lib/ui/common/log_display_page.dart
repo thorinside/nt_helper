@@ -19,9 +19,11 @@ class LogDisplayPage extends StatelessWidget {
         title: const Text('Scan Logs'),
         actions: [
           IconButton(
-            icon: Icon(logger.isRecording
-                ? Icons.pause_circle_filled
-                : Icons.play_circle_filled),
+            icon: Icon(
+              logger.isRecording
+                  ? Icons.pause_circle_filled
+                  : Icons.play_circle_filled,
+            ),
             tooltip: logger.isRecording ? 'Pause Logging' : 'Resume Logging',
             onPressed: () {
               if (logger.isRecording) {

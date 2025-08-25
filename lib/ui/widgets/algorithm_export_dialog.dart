@@ -6,10 +6,7 @@ import 'package:nt_helper/db/database.dart';
 class AlgorithmExportDialog extends StatefulWidget {
   final AppDatabase database;
 
-  const AlgorithmExportDialog({
-    super.key,
-    required this.database,
-  });
+  const AlgorithmExportDialog({super.key, required this.database});
 
   @override
   State<AlgorithmExportDialog> createState() => _AlgorithmExportDialogState();
@@ -101,7 +98,8 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Successfully exported algorithm details to $_selectedPath'),
+              'Successfully exported algorithm details to $_selectedPath',
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
           ),
@@ -160,34 +158,36 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
                     Text(
                       'Export Preview:',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text('• ${_previewData!['totalAlgorithms']} algorithms'),
                     Text(
-                        '• Estimated file size: ${_previewData!['estimatedSize']}'),
+                      '• Estimated file size: ${_previewData!['estimatedSize']}',
+                    ),
                     Text(
-                        '• ${_previewData!['hasParameters'] ? 'Includes' : 'No'} parameter details'),
+                      '• ${_previewData!['hasParameters'] ? 'Includes' : 'No'} parameter details',
+                    ),
                     if ((_previewData!['sampleAlgorithms'] as List)
                         .isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
                         'Sample algorithms:',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       for (final sample
                           in _previewData!['sampleAlgorithms'] as List<String>)
                         Text(
                           '  • $sample',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                     ],
                   ],
@@ -201,10 +201,9 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outline
-                      .withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.5),
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -218,8 +217,8 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
                       Text(
                         'Save Location:',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -228,16 +227,16 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         _selectedPath!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontFamily: 'monospace',
-                            ),
+                          fontFamily: 'monospace',
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -249,9 +248,11 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
                     child: OutlinedButton.icon(
                       onPressed: _isExporting ? null : _selectSaveLocation,
                       icon: const Icon(Icons.folder_open, size: 18),
-                      label: Text(_selectedPath == null
-                          ? 'Choose Save Location'
-                          : 'Change Location'),
+                      label: Text(
+                        _selectedPath == null
+                            ? 'Choose Save Location'
+                            : 'Change Location',
+                      ),
                     ),
                   ),
                 ],
@@ -292,15 +293,16 @@ class _AlgorithmExportDialogState extends State<AlgorithmExportDialog> {
       ),
       actions: [
         TextButton(
-          onPressed:
-              _isExporting ? null : () => Navigator.of(context).pop(false),
+          onPressed: _isExporting
+              ? null
+              : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
         ElevatedButton.icon(
           onPressed:
               (_isExporting || _selectedPath == null || _previewData == null)
-                  ? null
-                  : _performExport,
+              ? null
+              : _performExport,
           icon: _isExporting
               ? const SizedBox(
                   width: 16,

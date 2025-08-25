@@ -9,8 +9,10 @@ class RequestRoutingInformationMessage extends SysexMessage
   @override
   final int algorithmIndex;
 
-  RequestRoutingInformationMessage(
-      {required super.sysExId, required this.algorithmIndex});
+  RequestRoutingInformationMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+  });
 
   @override
   Uint8List encode() {

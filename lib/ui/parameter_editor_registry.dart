@@ -316,7 +316,8 @@ class ParameterEditorRegistry {
     final unit = parameterInfo.unit;
 
     debugPrint(
-        '[ParameterEditorRegistry] Looking for editor: algorithm=$algorithmGuid, parameter=$parameterName, unit=$unit');
+      '[ParameterEditorRegistry] Looking for editor: algorithm=$algorithmGuid, parameter=$parameterName, unit=$unit',
+    );
 
     // Find first matching rule
     for (final rule in _rules) {
@@ -326,7 +327,8 @@ class ParameterEditorRegistry {
         unit: unit,
       )) {
         debugPrint(
-            '[ParameterEditorRegistry] ✅ Found matching rule: ${rule.description}');
+          '[ParameterEditorRegistry] ✅ Found matching rule: ${rule.description}',
+        );
         // Return appropriate editor widget based on rule
         return FileParameterEditor(
           slot: slot,

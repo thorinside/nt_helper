@@ -6,7 +6,7 @@ import 'package:nt_helper/ui/routing/connection_painter.dart';
 void main() {
   group('ConnectionPainter - Optimistic Visual States', () {
     late ConnectionPainter painter;
-    
+
     const testConnections = [
       Connection(
         id: 'normal_connection',
@@ -104,7 +104,7 @@ void main() {
         cursorPosition: const Offset(150, 150),
         isValid: true,
       );
-      
+
       painter = ConnectionPainter(
         connections: testConnections,
         portPositions: testPortPositions,
@@ -130,7 +130,7 @@ void main() {
           connections: testConnections,
           portPositions: testPortPositions,
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: [testConnections.first], // Different connections
           portPositions: testPortPositions,
@@ -144,7 +144,7 @@ void main() {
           connections: testConnections,
           portPositions: testPortPositions,
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: {
@@ -162,7 +162,7 @@ void main() {
           portPositions: testPortPositions,
           pendingConnections: {'pending_1'},
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: testPortPositions,
@@ -178,7 +178,7 @@ void main() {
           portPositions: testPortPositions,
           failedConnections: {'failed_1'},
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: testPortPositions,
@@ -199,7 +199,7 @@ void main() {
             isValid: true,
           ),
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: testPortPositions,
@@ -220,7 +220,7 @@ void main() {
           portPositions: testPortPositions,
           hoveredConnectionId: 'connection_1',
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: testPortPositions,
@@ -234,7 +234,7 @@ void main() {
         // Use the same instances to ensure equality
         const pendingSet = {'pending_1'};
         const failedSet = {'failed_1'};
-        
+
         final oldPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: testPortPositions,
@@ -242,12 +242,12 @@ void main() {
           failedConnections: failedSet,
           hoveredConnectionId: 'connection_1',
         );
-        
+
         final newPainter = ConnectionPainter(
           connections: testConnections,
           portPositions: testPortPositions,
           pendingConnections: pendingSet, // Same instance
-          failedConnections: failedSet,   // Same instance
+          failedConnections: failedSet, // Same instance
           hoveredConnectionId: 'connection_1',
         );
 
@@ -265,7 +265,7 @@ void main() {
         // Mock a point near the connection line
         // This is a basic test - actual hit testing would require more complex setup
         final hitResult = painter.hitTest(const Offset(150, 100));
-        
+
         // The result depends on the implementation, but we're testing the API exists
         expect(hitResult, isA<bool?>());
       });
@@ -277,7 +277,7 @@ void main() {
           cursorPosition: const Offset(150, 150),
           isValid: true,
         );
-        
+
         painter = ConnectionPainter(
           connections: [],
           portPositions: testPortPositions,
@@ -328,13 +328,22 @@ void main() {
 
         // Each connection should have its appropriate state
         expect(painter.pendingConnections, contains('pending_connection'));
-        expect(painter.pendingConnections, isNot(contains('failed_connection')));
-        expect(painter.pendingConnections, isNot(contains('normal_connection')));
-        
+        expect(
+          painter.pendingConnections,
+          isNot(contains('failed_connection')),
+        );
+        expect(
+          painter.pendingConnections,
+          isNot(contains('normal_connection')),
+        );
+
         expect(painter.failedConnections, contains('failed_connection'));
-        expect(painter.failedConnections, isNot(contains('pending_connection')));
+        expect(
+          painter.failedConnections,
+          isNot(contains('pending_connection')),
+        );
         expect(painter.failedConnections, isNot(contains('normal_connection')));
-        
+
         expect(painter.hoveredConnectionId, equals('normal_connection'));
       });
     });

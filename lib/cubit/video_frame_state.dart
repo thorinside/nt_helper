@@ -12,6 +12,6 @@ class VideoFrameState with _$VideoFrameState {
     DateTime? lastFrameTime,
     @Default(0.0) double fps,
   }) = _VideoFrameState;
-  
+
   const factory VideoFrameState.initial() = _Initial;
 }

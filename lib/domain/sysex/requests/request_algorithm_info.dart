@@ -7,8 +7,10 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class RequestAlgorithmInfoMessage extends SysexMessage {
   final int algorithmIndex;
 
-  RequestAlgorithmInfoMessage(
-      {required super.sysExId, required this.algorithmIndex});
+  RequestAlgorithmInfoMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+  });
 
   @override
   Uint8List encode() {

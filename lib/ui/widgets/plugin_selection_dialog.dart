@@ -45,9 +45,11 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
         filteredPlugins = List.from(plugins);
       } else {
         filteredPlugins = plugins
-            .where((plugin) =>
-                plugin.name.toLowerCase().contains(query) ||
-                (plugin.description?.toLowerCase().contains(query) ?? false))
+            .where(
+              (plugin) =>
+                  plugin.name.toLowerCase().contains(query) ||
+                  (plugin.description?.toLowerCase().contains(query) ?? false),
+            )
             .toList();
       }
     });
@@ -79,168 +81,172 @@ class _PluginSelectionDialogState extends State<PluginSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(builder: (dlgContext) {
-      return AlertDialog(
-        title: Row(
-          children: [
-            Icon(_getPluginIcon(widget.plugin.type)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Select Plugins: ${widget.plugin.name}',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 500,
-          height: 600,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Builder(
+      builder: (dlgContext) {
+        return AlertDialog(
+          title: Row(
             children: [
-              // Plugin info
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.plugin.description,
-                        style: Theme.of(dlgContext).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Collection contains ${plugins.length} plugins',
-                        style:
-                            Theme.of(dlgContext).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(dlgContext)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Search bar
-              TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Search plugins...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Selection controls
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '$selectedCount of ${plugins.length} selected',
-                    style: Theme.of(dlgContext).textTheme.bodySmall,
-                  ),
-                  TextButton(
-                    onPressed: _toggleSelectAll,
-                    child: Text(selectAll ? 'Deselect All' : 'Select All'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Plugin list
+              Icon(_getPluginIcon(widget.plugin.type)),
+              const SizedBox(width: 8),
               Expanded(
-                child: ListView.builder(
-                  itemCount: filteredPlugins.length,
-                  itemBuilder: (context, index) {
-                    final plugin = filteredPlugins[index];
-                    return Card(
-                      child: CheckboxListTile(
-                        value: plugin.selected,
-                        onChanged: (value) => _togglePlugin(index),
-                        title: Text(plugin.name),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  _getFileTypeIcon(plugin.fileType),
-                                  size: 16,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  plugin.fileType.toUpperCase(),
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                if (plugin.fileSize != null) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _formatFileSize(plugin.fileSize!),
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ],
-                            ),
-                            if (plugin.description != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                plugin.description!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
-                        ),
-                        dense: true,
-                      ),
-                    );
-                  },
+                child: Text(
+                  'Select Plugins: ${widget.plugin.name}',
+                  style: const TextStyle(fontSize: 18),
                 ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dlgContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: selectedCount > 0
-                ? () {
-                    debugPrint(
-                        '[PluginSelection] Install Selected button pressed: $selectedCount plugins selected');
-                    widget.onSelectionChanged(plugins);
-                    Navigator.of(dlgContext).pop();
-                  }
-                : null,
-            child: Text(
-              selectedCount > 0
-                  ? 'Install Selected ($selectedCount)'
-                  : 'Select at least one plugin',
+          content: SizedBox(
+            width: 500,
+            height: 600,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Plugin info
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.plugin.description,
+                          style: Theme.of(dlgContext).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Collection contains ${plugins.length} plugins',
+                          style: Theme.of(dlgContext).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  dlgContext,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Search bar
+                TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search plugins...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Selection controls
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '$selectedCount of ${plugins.length} selected',
+                      style: Theme.of(dlgContext).textTheme.bodySmall,
+                    ),
+                    TextButton(
+                      onPressed: _toggleSelectAll,
+                      child: Text(selectAll ? 'Deselect All' : 'Select All'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Plugin list
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredPlugins.length,
+                    itemBuilder: (context, index) {
+                      final plugin = filteredPlugins[index];
+                      return Card(
+                        child: CheckboxListTile(
+                          value: plugin.selected,
+                          onChanged: (value) => _togglePlugin(index),
+                          title: Text(plugin.name),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    _getFileTypeIcon(plugin.fileType),
+                                    size: 16,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    plugin.fileType.toUpperCase(),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                  if (plugin.fileSize != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatFileSize(plugin.fileSize!),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              if (plugin.description != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  plugin.description!,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                          dense: true,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      );
-    });
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dlgContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: selectedCount > 0
+                  ? () {
+                      debugPrint(
+                        '[PluginSelection] Install Selected button pressed: $selectedCount plugins selected',
+                      );
+                      widget.onSelectionChanged(plugins);
+                      Navigator.of(dlgContext).pop();
+                    }
+                  : null,
+              child: Text(
+                selectedCount > 0
+                    ? 'Install Selected ($selectedCount)'
+                    : 'Select at least one plugin',
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   IconData _getPluginIcon(GalleryPluginType type) {

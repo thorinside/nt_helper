@@ -13,9 +13,13 @@ String _stringToSnakeCase(String input) {
   // 2. An uppercase letter followed by an uppercase letter and then a lowercase letter (e.g., HTTPRequest -> HTTP_Request)
   String result = input
       .replaceAllMapped(
-          RegExp(r'([a-z0-9])([A-Z])'), (Match m) => '${m[1]}_${m[2]}')
+        RegExp(r'([a-z0-9])([A-Z])'),
+        (Match m) => '${m[1]}_${m[2]}',
+      )
       .replaceAllMapped(
-          RegExp(r'([A-Z])([A-Z][a-z])'), (Match m) => '${m[1]}_${m[2]}');
+        RegExp(r'([A-Z])([A-Z][a-z])'),
+        (Match m) => '${m[1]}_${m[2]}',
+      );
   return result.toLowerCase();
 }
 

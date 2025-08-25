@@ -7,10 +7,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class RequestKbmFileMessage extends SysexMessage {
   final String filePath;
 
-  RequestKbmFileMessage({
-    required super.sysExId,
-    required this.filePath,
-  });
+  RequestKbmFileMessage({required super.sysExId, required this.filePath});
 
   @override
   Uint8List encode() {

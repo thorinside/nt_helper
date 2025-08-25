@@ -79,7 +79,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       }
     }
     debugPrint(
-        "[Offline] Initialized manager state from DB preset '$_presetName' (ID: $_loadedPresetId). Slots: ${_presetAlgorithmGuids.length}");
+      "[Offline] Initialized manager state from DB preset '$_presetName' (ID: $_loadedPresetId). Slots: ${_presetAlgorithmGuids.length}",
+    );
   }
 
   @override
@@ -109,23 +110,26 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         return null;
       }
       final entry = algorithms[algorithmIndex];
-      final specs = await (_metadataDao.select(_metadataDao.specifications)
-            ..where((s) => s.algorithmGuid.equals(entry.guid))
-            ..orderBy([(s) => OrderingTerm.asc(s.specIndex)]))
-          .get();
+      final specs =
+          await (_metadataDao.select(_metadataDao.specifications)
+                ..where((s) => s.algorithmGuid.equals(entry.guid))
+                ..orderBy([(s) => OrderingTerm.asc(s.specIndex)]))
+              .get();
 
       return AlgorithmInfo(
         algorithmIndex: algorithmIndex,
         guid: entry.guid,
         name: entry.name,
         specifications: specs
-            .map((s) => Specification(
-                  name: s.name,
-                  min: s.minValue,
-                  max: s.maxValue,
-                  defaultValue: s.defaultValue,
-                  type: s.type,
-                ))
+            .map(
+              (s) => Specification(
+                name: s.name,
+                min: s.minValue,
+                max: s.maxValue,
+                defaultValue: s.defaultValue,
+                type: s.type,
+              ),
+            )
             .toList(),
       );
     } catch (e) {
@@ -138,15 +142,16 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<Algorithm?> requestAlgorithmGuid(int algorithmIndex) async {
     if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
       debugPrint(
-          "[Offline] requestAlgorithmGuid: Index $algorithmIndex out of bounds for preset size ${_presetAlgorithmGuids.length}");
+        "[Offline] requestAlgorithmGuid: Index $algorithmIndex out of bounds for preset size ${_presetAlgorithmGuids.length}",
+      );
       return null;
     }
     final guid = _presetAlgorithmGuids[algorithmIndex];
 
     try {
-      final algoEntry = await (_metadataDao.select(_metadataDao.algorithms)
-            ..where((a) => a.guid.equals(guid)))
-          .getSingleOrNull();
+      final algoEntry = await (_metadataDao.select(
+        _metadataDao.algorithms,
+      )..where((a) => a.guid.equals(guid))).getSingleOrNull();
 
       if (algoEntry != null) {
         // Retrieve pre-calculated default name and custom name
@@ -160,12 +165,14 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         );
       } else {
         debugPrint(
-            "[Offline] requestAlgorithmGuid: Algorithm with GUID $guid not found in DB.");
+          "[Offline] requestAlgorithmGuid: Algorithm with GUID $guid not found in DB.",
+        );
         return null;
       }
     } catch (e, stackTrace) {
       debugPrint(
-          "[Offline] Error fetching AlgorithmGuid($algorithmIndex, guid: $guid) from DB: $e");
+        "[Offline] Error fetching AlgorithmGuid($algorithmIndex, guid: $guid) from DB: $e",
+      );
       debugPrintStack(stackTrace: stackTrace);
       return null;
     }
@@ -173,13 +180,17 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<ParameterInfo?> requestParameterInfo(
-      int algorithmIndex, int parameterNumber) {
+    int algorithmIndex,
+    int parameterNumber,
+  ) {
     return _runForGuid<ParameterInfo?>(algorithmIndex, (guid) async {
-      final paramEntry = await (_metadataDao.select(_metadataDao.parameters)
-            ..where((p) =>
-                p.algorithmGuid.equals(guid) &
-                p.parameterNumber.equals(parameterNumber)))
-          .getSingleOrNull();
+      final paramEntry =
+          await (_metadataDao.select(_metadataDao.parameters)..where(
+                (p) =>
+                    p.algorithmGuid.equals(guid) &
+                    p.parameterNumber.equals(parameterNumber),
+              ))
+              .getSingleOrNull();
 
       if (paramEntry != null) {
         return ParameterInfo(
@@ -200,22 +211,28 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<ParameterValue?> requestParameterValue(
-      int algorithmIndex, int parameterNumber) async {
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
     final value = _parameterValues[algorithmIndex]?[parameterNumber];
 
     if (value != null) {
       return ParameterValue(
-          algorithmIndex: algorithmIndex,
-          parameterNumber: parameterNumber,
-          value: value);
+        algorithmIndex: algorithmIndex,
+        parameterNumber: parameterNumber,
+        value: value,
+      );
     } else {
-      final paramInfo =
-          await requestParameterInfo(algorithmIndex, parameterNumber);
+      final paramInfo = await requestParameterInfo(
+        algorithmIndex,
+        parameterNumber,
+      );
       return paramInfo != null
           ? ParameterValue(
               algorithmIndex: algorithmIndex,
               parameterNumber: parameterNumber,
-              value: paramInfo.defaultValue)
+              value: paramInfo.defaultValue,
+            )
           : null;
     }
   }
@@ -231,8 +248,13 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         if (pValue != null) {
           values.add(pValue);
         } else {
-          values.add(ParameterValue(
-              algorithmIndex: algorithmIndex, parameterNumber: i, value: 0));
+          values.add(
+            ParameterValue(
+              algorithmIndex: algorithmIndex,
+              parameterNumber: i,
+              value: 0,
+            ),
+          );
         }
       }
       return AllParameterValues(algorithmIndex: algorithmIndex, values: values);
@@ -269,7 +291,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<ParameterEnumStrings?> requestParameterEnumStrings(
-      int algorithmIndex, int parameterNumber) async {
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
     if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
       return Future.value(ParameterEnumStrings.filler());
     }
@@ -277,9 +301,11 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
     try {
       final enumsQuery = _metadataDao.select(_metadataDao.parameterEnums)
-        ..where((e) =>
-            e.algorithmGuid.equals(guid) &
-            e.parameterNumber.equals(parameterNumber))
+        ..where(
+          (e) =>
+              e.algorithmGuid.equals(guid) &
+              e.parameterNumber.equals(parameterNumber),
+        )
         ..orderBy([(e) => OrderingTerm.asc(e.enumIndex)]);
       final enumEntries = await enumsQuery.get();
       if (enumEntries.isNotEmpty) {
@@ -293,7 +319,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       }
     } catch (e, stackTrace) {
       debugPrint(
-          "[Offline] Error fetching enums for guid $guid, param $parameterNumber: $e");
+        "[Offline] Error fetching enums for guid $guid, param $parameterNumber: $e",
+      );
       debugPrintStack(stackTrace: stackTrace);
       return ParameterEnumStrings.filler();
     }
@@ -301,7 +328,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<ParameterValueString?> requestParameterValueString(
-      int algorithmIndex, int parameterNumber) async {
+    int algorithmIndex,
+    int parameterNumber,
+  ) async {
     final stringValue =
         _parameterStringValues[algorithmIndex]?[parameterNumber];
 
@@ -312,19 +341,25 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         value: stringValue,
       );
     } else {
-      final paramValue =
-          await requestParameterValue(algorithmIndex, parameterNumber);
+      final paramValue = await requestParameterValue(
+        algorithmIndex,
+        parameterNumber,
+      );
       if (paramValue == null) return ParameterValueString.filler();
-      final paramInfo =
-          await requestParameterInfo(algorithmIndex, parameterNumber);
+      final paramInfo = await requestParameterInfo(
+        algorithmIndex,
+        parameterNumber,
+      );
       if (paramInfo == null) return ParameterValueString.filler();
       final unitStrings = await requestUnitStrings() ?? [];
       final unitStr = paramInfo.getUnitString(unitStrings);
 
       String generatedStringValue;
       if (paramInfo.unit == 1) {
-        final enums =
-            await requestParameterEnumStrings(algorithmIndex, parameterNumber);
+        final enums = await requestParameterEnumStrings(
+          algorithmIndex,
+          parameterNumber,
+        );
         if (enums != null &&
             enums.values.isNotEmpty &&
             paramValue.value >= 0 &&
@@ -357,10 +392,13 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   Future<Mapping?> requestMappings(int algorithmIndex, int parameterNumber) {
     final mapping = _mappings[algorithmIndex]?[parameterNumber];
     if (mapping != null) {
-      return Future.value(Mapping(
+      return Future.value(
+        Mapping(
           algorithmIndex: algorithmIndex,
           parameterNumber: parameterNumber,
-          packedMappingData: mapping));
+          packedMappingData: mapping,
+        ),
+      );
     } else {
       return Future.value(Mapping.filler());
     }
@@ -389,13 +427,18 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final countQuery = _metadataDao.parameters.selectOnly()
         ..where(_metadataDao.parameters.algorithmGuid.equals(guid))
         ..addColumns([_metadataDao.parameters.parameterNumber.count()]);
-      final count = await countQuery
-              .map((row) =>
-                  row.read(_metadataDao.parameters.parameterNumber.count()))
+      final count =
+          await countQuery
+              .map(
+                (row) =>
+                    row.read(_metadataDao.parameters.parameterNumber.count()),
+              )
               .getSingleOrNull() ??
           0;
       return NumParameters(
-          algorithmIndex: algorithmIndex, numParameters: count);
+        algorithmIndex: algorithmIndex,
+        numParameters: count,
+      );
     }, errorValue: null);
   }
 
@@ -424,7 +467,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> setParameterValue(
-      int algorithmIndex, int parameterNumber, int value) async {
+    int algorithmIndex,
+    int parameterNumber,
+    int value,
+  ) async {
     (_parameterValues[algorithmIndex] ??= {})[parameterNumber] = value;
     // Clear the derived string value when the raw value changes
     _parameterStringValues[algorithmIndex]?.remove(parameterNumber);
@@ -432,15 +478,22 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> setParameterString(
-      int algorithmIndex, int parameterNumber, String value) async {
+    int algorithmIndex,
+    int parameterNumber,
+    String value,
+  ) async {
     (_parameterStringValues[algorithmIndex] ??= {})[parameterNumber] = value;
     debugPrint(
-        "[Offline] setParameterString: Algo $algorithmIndex, Param $parameterNumber = '$value'");
+      "[Offline] setParameterString: Algo $algorithmIndex, Param $parameterNumber = '$value'",
+    );
   }
 
   @override
   Future<void> requestSetMapping(
-      int algorithmIndex, int parameterNumber, PackedMappingData data) async {
+    int algorithmIndex,
+    int parameterNumber,
+    PackedMappingData data,
+  ) async {
     (_mappings[algorithmIndex] ??= {})[parameterNumber] = data;
   }
 
@@ -472,7 +525,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _loadedPresetId = savedPresetId;
       _presetName = presetDetails.preset.name;
       debugPrint(
-          "[Offline] Saved state to preset ID $_loadedPresetId ('$_presetName').");
+        "[Offline] Saved state to preset ID $_loadedPresetId ('$_presetName').",
+      );
     } catch (e, stackTrace) {
       debugPrint("[Offline] Error saving offline state: $e");
       debugPrintStack(stackTrace: stackTrace);
@@ -499,7 +553,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<void> requestAddAlgorithm(
-      AlgorithmInfo algorithm, List<int> specifications) async {
+    AlgorithmInfo algorithm,
+    List<int> specifications,
+  ) async {
     // Calculate default name before adding
     String baseName = algorithm.name;
     String guid = algorithm.guid;
@@ -509,8 +565,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         instanceCount++;
       }
     }
-    String defaultName =
-        (instanceCount > 0) ? "$baseName ${instanceCount + 1}" : baseName;
+    String defaultName = (instanceCount > 0)
+        ? "$baseName ${instanceCount + 1}"
+        : baseName;
 
     // Add GUID and initialize state maps
     _presetAlgorithmGuids.add(guid);
@@ -529,7 +586,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _removeAndShiftState(algorithmIndex);
     } else {
       debugPrint(
-          "[Offline] requestRemoveAlgorithm: Invalid index $algorithmIndex");
+        "[Offline] requestRemoveAlgorithm: Invalid index $algorithmIndex",
+      );
     }
   }
 
@@ -546,7 +604,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _shiftStateUp(algorithmIndex);
     } else {
       debugPrint(
-          "[Offline] requestMoveAlgorithmUp: Cannot move index $algorithmIndex up");
+        "[Offline] requestMoveAlgorithmUp: Cannot move index $algorithmIndex up",
+      );
     }
   }
 
@@ -559,7 +618,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _shiftStateDown(algorithmIndex);
     } else {
       debugPrint(
-          "[Offline] requestMoveAlgorithmDown: Cannot move index $algorithmIndex down");
+        "[Offline] requestMoveAlgorithmDown: Cannot move index $algorithmIndex down",
+      );
     }
   }
 
@@ -569,7 +629,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       _customNames[algorithmIndex] = newName;
     } else {
       debugPrint(
-          "[Offline] requestSendSlotName: Invalid index $algorithmIndex");
+        "[Offline] requestSendSlotName: Invalid index $algorithmIndex",
+      );
     }
   }
 
@@ -583,7 +644,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   @override
   Future<String?> installLua(int algorithmIndex, String luaScript) async {
     debugPrint(
-        "[Offline] installLua: algo=$algorithmIndex, script='$luaScript'");
+      "[Offline] installLua: algo=$algorithmIndex, script='$luaScript'",
+    );
     // Lua installation is not supported in offline mode
     throw UnsupportedError('Lua installation is not available in offline mode');
   }
@@ -616,8 +678,10 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   // --- Helper Methods ---
 
   Future<T?> _runForGuid<T>(
-      int algorithmIndex, Future<T?> Function(String guid) queryRunner,
-      {T? errorValue}) async {
+    int algorithmIndex,
+    Future<T?> Function(String guid) queryRunner, {
+    T? errorValue,
+  }) async {
     if (algorithmIndex < 0 || algorithmIndex >= _presetAlgorithmGuids.length) {
       return errorValue;
     }
@@ -626,7 +690,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       return await queryRunner(guid);
     } catch (e, stackTrace) {
       debugPrint(
-          "[Offline] Error running query for guid $guid (index $algorithmIndex): $e");
+        "[Offline] Error running query for guid $guid (index $algorithmIndex): $e",
+      );
       debugPrintStack(stackTrace: stackTrace);
       return errorValue;
     }
@@ -636,40 +701,47 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     final PresetEntry presetEntry;
     if (_loadedPresetId != null) {
       presetEntry = PresetEntry(
-          id: _loadedPresetId!,
-          name: _presetName,
-          lastModified: DateTime.now());
+        id: _loadedPresetId!,
+        name: _presetName,
+        lastModified: DateTime.now(),
+      );
     } else {
-      presetEntry =
-          PresetEntry(id: -1, name: _presetName, lastModified: DateTime.now());
+      presetEntry = PresetEntry(
+        id: -1,
+        name: _presetName,
+        lastModified: DateTime.now(),
+      );
     }
 
     final List<FullPresetSlot> slots = [];
     for (int i = 0; i < _presetAlgorithmGuids.length; i++) {
       final guid = _presetAlgorithmGuids[i];
-      final algoEntry = await (_metadataDao.select(_metadataDao.algorithms)
-            ..where((a) => a.guid.equals(guid)))
-          .getSingleOrNull();
+      final algoEntry = await (_metadataDao.select(
+        _metadataDao.algorithms,
+      )..where((a) => a.guid.equals(guid))).getSingleOrNull();
 
       if (algoEntry == null) {
         debugPrint(
-            "[Offline] Warning: Algorithm metadata missing for GUID $guid.");
+          "[Offline] Warning: Algorithm metadata missing for GUID $guid.",
+        );
         return null;
       }
 
-      slots.add(FullPresetSlot(
-        slot: PresetSlotEntry(
-          id: -1,
-          presetId: presetEntry.id,
-          slotIndex: i,
-          algorithmGuid: guid,
-          customName: _customNames[i],
+      slots.add(
+        FullPresetSlot(
+          slot: PresetSlotEntry(
+            id: -1,
+            presetId: presetEntry.id,
+            slotIndex: i,
+            algorithmGuid: guid,
+            customName: _customNames[i],
+          ),
+          algorithm: algoEntry,
+          parameterValues: _parameterValues[i] ?? {},
+          parameterStringValues: _parameterStringValues[i] ?? {},
+          mappings: _mappings[i] ?? {},
         ),
-        algorithm: algoEntry,
-        parameterValues: _parameterValues[i] ?? {},
-        parameterStringValues: _parameterStringValues[i] ?? {},
-        mappings: _mappings[i] ?? {},
-      ));
+      );
     }
     return FullPresetDetails(preset: presetEntry, slots: slots);
   }
@@ -819,8 +891,11 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
 
   @override
   Future<SdCardStatus?> requestFileUploadChunk(
-      String path, Uint8List data, int position,
-      {bool createAlways = false}) {
+    String path,
+    Uint8List data,
+    int position, {
+    bool createAlways = false,
+  }) {
     throw UnsupportedError('SD Card write operations not supported offline.');
   }
 
@@ -842,7 +917,8 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
-  Future<void> backupPlugins(String backupDirectory,
-          {void Function(double progress, String currentFile)? onProgress}) =>
-      throw UnsupportedError('Backup not available in offline mode');
+  Future<void> backupPlugins(
+    String backupDirectory, {
+    void Function(double progress, String currentFile)? onProgress,
+  }) => throw UnsupportedError('Backup not available in offline mode');
 }

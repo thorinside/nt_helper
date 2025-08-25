@@ -11,10 +11,11 @@ class SetFocusMessage extends SysexMessage
   @override
   final int parameterNumber;
 
-  SetFocusMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber});
+  SetFocusMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+  });
 
   @override
   Uint8List encode() {

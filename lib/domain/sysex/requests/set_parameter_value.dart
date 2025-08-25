@@ -12,11 +12,12 @@ class SetParameterValueMessage extends SysexMessage
   final int parameterNumber;
   final int value;
 
-  SetParameterValueMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.value});
+  SetParameterValueMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.value,
+  });
 
   @override
   Uint8List encode() {

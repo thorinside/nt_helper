@@ -12,19 +12,21 @@ part 'node_routing_state.freezed.dart';
 @freezed
 sealed class NodeRoutingState with _$NodeRoutingState {
   const factory NodeRoutingState.initial() = NodeRoutingStateInitial;
-  
+
   const factory NodeRoutingState.loading() = NodeRoutingStateLoading;
-  
+
   const factory NodeRoutingState.optimizing() = NodeRoutingStateOptimizing;
-  
+
   const factory NodeRoutingState.loaded({
     required Map<int, NodePosition> nodePositions,
     required List<Connection> connections,
     required Map<int, PortLayout> portLayouts,
     required Set<String> connectedPorts,
     required Map<int, String> algorithmNames,
-    required Map<String, Offset> portPositions, // algorithmIndex_portId -> Offset
-    NodePosition? physicalOutputPosition, // Position of the physical output node
+    required Map<String, Offset>
+    portPositions, // algorithmIndex_portId -> Offset
+    NodePosition?
+    physicalOutputPosition, // Position of the physical output node
     @Default(false) bool hasUserRepositioned,
     ConnectionPreview? connectionPreview,
     String? hoveredConnectionId,
@@ -34,15 +36,17 @@ sealed class NodeRoutingState with _$NodeRoutingState {
     String? errorMessage,
     @Default({}) Set<String> pendingConnections, // Connection IDs being created
     @Default({}) Set<String> failedConnections, // Connection IDs that failed
-    @Default({}) Map<String, DateTime> operationTimestamps, // For timeout tracking
-    @Deprecated('Use portLayouts instead') Map<int, List<AlgorithmPort>>? algorithmPorts,
+    @Default({})
+    Map<String, DateTime> operationTimestamps, // For timeout tracking
+    @Deprecated('Use portLayouts instead')
+    Map<int, List<AlgorithmPort>>? algorithmPorts,
     TidyResult? lastTidyResult, // Result of the last tidy operation
-    @Default(0) int totalBusesFreed, // Cumulative buses freed across all tidy operations
+    @Default(0)
+    int totalBusesFreed, // Cumulative buses freed across all tidy operations
   }) = NodeRoutingStateLoaded;
-  
-  const factory NodeRoutingState.error({
-    required String message,
-  }) = NodeRoutingStateError;
+
+  const factory NodeRoutingState.error({required String message}) =
+      NodeRoutingStateError;
 }
 
 extension NodeRoutingStateLoadedExtensions on NodeRoutingStateLoaded {

@@ -14,11 +14,12 @@ class SetMidiMappingMessage extends SysexMessage
   final int parameterNumber;
   final PackedMappingData data;
 
-  SetMidiMappingMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber,
-      required this.data});
+  SetMidiMappingMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+    required this.data,
+  });
 
   @override
   Uint8List encode() {

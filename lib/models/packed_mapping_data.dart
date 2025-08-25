@@ -64,33 +64,35 @@ class PackedMappingData {
 
   factory PackedMappingData.filler() {
     return PackedMappingData(
-        source: -1,
-        cvInput: -1,
-        isUnipolar: false,
-        isGate: false,
-        volts: -1,
-        delta: -1,
-        midiChannel: -1,
-        midiMappingType: MidiMappingType.cc,
-        midiCC: -1,
-        isMidiEnabled: false,
-        isMidiSymmetric: false,
-        isMidiRelative: false,
-        midiMin: -1,
-        midiMax: -1,
-        i2cCC: -1,
-        isI2cEnabled: false,
-        isI2cSymmetric: false,
-        i2cMin: -1,
-        i2cMax: -1,
-        version: -1);
+      source: -1,
+      cvInput: -1,
+      isUnipolar: false,
+      isGate: false,
+      volts: -1,
+      delta: -1,
+      midiChannel: -1,
+      midiMappingType: MidiMappingType.cc,
+      midiCC: -1,
+      isMidiEnabled: false,
+      isMidiSymmetric: false,
+      isMidiRelative: false,
+      midiMin: -1,
+      midiMax: -1,
+      i2cCC: -1,
+      isI2cEnabled: false,
+      isI2cSymmetric: false,
+      i2cMin: -1,
+      i2cMax: -1,
+      version: -1,
+    );
   }
 
   // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
     if (version < 1 || version > 4) {
       debugPrint(
-          "Warning: Unknown PackedMappingData version $version. Returning filler.");
+        "Warning: Unknown PackedMappingData version $version. Returning filler.",
+      );
       return PackedMappingData.filler();
     }
 
@@ -101,7 +103,8 @@ class PackedMappingData {
     int safeDecode16Unsigned(int currentOffset) {
       if (currentOffset + 3 > dataLength) {
         debugPrint(
-            "Warning: PackedMappingData truncated during decode16 at offset $currentOffset (length $dataLength). Returning 0.");
+          "Warning: PackedMappingData truncated during decode16 at offset $currentOffset (length $dataLength). Returning 0.",
+        );
         return 0;
       }
       return decode16Unsigned(data, currentOffset);
@@ -111,7 +114,8 @@ class PackedMappingData {
     int safeReadByte(int currentOffset) {
       if (currentOffset >= dataLength) {
         debugPrint(
-            "Warning: PackedMappingData truncated during byte read at offset $currentOffset (length $dataLength). Returning 0.");
+          "Warning: PackedMappingData truncated during byte read at offset $currentOffset (length $dataLength). Returning 0.",
+        );
         return 0;
       }
       return data[currentOffset];
@@ -121,14 +125,15 @@ class PackedMappingData {
     int expectedLength = (version == 1)
         ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
         : (version == 2)
-            ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
-            : (version == 3)
-                ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-                : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+        ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
+        : (version == 3)
+        ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
+        : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
 
     if (dataLength != expectedLength) {
       debugPrint(
-          "Warning: PackedMappingData length mismatch. Expected exactly $expectedLength bytes for version $version, got $dataLength. Returning filler.");
+        "Warning: PackedMappingData length mismatch. Expected exactly $expectedLength bytes for version $version, got $dataLength. Returning filler.",
+      );
       return PackedMappingData.filler();
     }
 
@@ -189,7 +194,8 @@ class PackedMappingData {
     // Final validation: offset should equal expected length
     if (offset != expectedLength) {
       debugPrint(
-          "Error: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data is corrupt. Returning filler.");
+        "Error: PackedMappingData final offset ($offset) doesn't match expected length ($expectedLength) for version $version. Data is corrupt. Returning filler.",
+      );
       return PackedMappingData.filler();
     }
 
@@ -239,7 +245,8 @@ class PackedMappingData {
     var max = midiMax;
 
     // Compute the flags
-    int flags = (isMidiEnabled ? 1 : 0) |
+    int flags =
+        (isMidiEnabled ? 1 : 0) |
         (isMidiSymmetric ? 2 : 0) |
         ((midiChannel & 0xF) << 3);
 
@@ -293,11 +300,7 @@ class PackedMappingData {
     final midiBytes = encodeMIDIPackedData();
     final i2cBytes = encodeI2CPackedData();
 
-    final allBytes = [
-      ...cvBytes,
-      ...midiBytes,
-      ...i2cBytes,
-    ];
+    final allBytes = [...cvBytes, ...midiBytes, ...i2cBytes];
 
     final result = Uint8List.fromList(allBytes);
 
@@ -305,14 +308,15 @@ class PackedMappingData {
     int expectedLength = (version == 1)
         ? 22 // 6 + 8 + 8 = CV(6) + MIDI(8) + I2C(8)
         : (version == 2)
-            ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
-            : (version == 3)
-                ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-                : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+        ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
+        : (version == 3)
+        ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
+        : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
 
     if (result.length != expectedLength) {
       debugPrint(
-          "Error: PackedMappingData.toBytes() produced ${result.length} bytes for version $version, expected $expectedLength. CV: ${cvBytes.length}, MIDI: ${midiBytes.length}, I2C: ${i2cBytes.length}");
+        "Error: PackedMappingData.toBytes() produced ${result.length} bytes for version $version, expected $expectedLength. CV: ${cvBytes.length}, MIDI: ${midiBytes.length}, I2C: ${i2cBytes.length}",
+      );
     }
 
     return result;

@@ -94,7 +94,6 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     }
   }
 
-
   /// Loads the preset names from SharedPreferences.
   Future<void> _loadHistoryFromPrefs() async {
     final prefs = widget.preferences ?? await SharedPreferences.getInstance();
@@ -168,7 +167,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'Preset loading requires firmware 1.10+ and device connection'),
+              'Preset loading requires firmware 1.10+ and device connection',
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -182,7 +182,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         Navigator.of(context).pop({
           "sdCardPath": trimmed,
           "action": action,
-          "displayName": trimmed.split('/').last
+          "displayName": trimmed.split('/').last,
         });
         return;
       }
@@ -192,7 +192,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              "'$trimmed' not found in current SD card directory. Please verify the preset exists."),
+            "'$trimmed' not found in current SD card directory. Please verify the preset exists.",
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -268,12 +269,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
         onDragDone: _handleDragDone,
         onDragEntered: _handleDragEntered,
         onDragExited: _handleDragExited,
-        child: Stack(
-          children: [
-            content,
-            if (_isDragOver) _buildDragOverlay(),
-          ],
-        ),
+        child: Stack(children: [content, if (_isDragOver) _buildDragOverlay()]),
       );
     }
 
@@ -290,9 +286,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
             padding: const EdgeInsets.all(8.0),
             child: Text(
               'Preset loading requires firmware 1.10+ and device connection for live SD card scanning.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.orange,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.orange),
               textAlign: TextAlign.center,
             ),
           ),
@@ -301,65 +297,75 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           initialValue: TextEditingValue(text: _controller.text),
           fieldViewBuilder:
               (context, textEditingController, focusNode, onFieldSubmitted) {
-            if (_currentPresetSearchText != textEditingController.text) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _controller.text = textEditingController.text;
-                  _currentPresetSearchText = textEditingController.text;
+                if (_currentPresetSearchText != textEditingController.text) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _controller.text = textEditingController.text;
+                      _currentPresetSearchText = textEditingController.text;
+                    }
+                  });
                 }
-              });
-            }
-            return SizedBox(
-              child: TextField(
-                key: ValueKey('preset-name-text-field'),
-                enabled: true,
-                onSubmitted: (value) {
-                  _controller.text = value;
-                  onFieldSubmitted();
-                },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Preset Name/Path or History',
-                ),
-                controller: textEditingController,
-                focusNode: focusNode,
-              ),
-            );
-          },
-          optionsMaxHeight: 200,
-          optionsViewBuilder: (context,
-              AutocompleteOnSelected<String> onSelected,
-              Iterable<String> options) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 4.0,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: 200, maxWidth: 380),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: options.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final String option = options.elementAt(index);
-                      // Use the helper for display text
-                      String displayText = _getDisplayStringForOption(option);
-                      return InkWell(
-                        onTap: () {
-                          onSelected(option);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(displayText,
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                      );
+                return SizedBox(
+                  child: TextField(
+                    key: ValueKey('preset-name-text-field'),
+                    enabled: true,
+                    onSubmitted: (value) {
+                      _controller.text = value;
+                      onFieldSubmitted();
                     },
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Preset Name/Path or History',
+                    ),
+                    controller: textEditingController,
+                    focusNode: focusNode,
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+          optionsMaxHeight: 200,
+          optionsViewBuilder:
+              (
+                context,
+                AutocompleteOnSelected<String> onSelected,
+                Iterable<String> options,
+              ) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: 200,
+                        maxWidth: 380,
+                      ),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final String option = options.elementAt(index);
+                          // Use the helper for display text
+                          String displayText = _getDisplayStringForOption(
+                            option,
+                          );
+                          return InkWell(
+                            onTap: () {
+                              onSelected(option);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                displayText,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
           onSelected: (String selection) {
             setState(() {
               _controller.text = selection;
@@ -391,7 +397,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
             // Remove duplicates and sort
             final uniqueSuggestions = suggestions.toSet().toList();
-            uniqueSuggestions.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+            uniqueSuggestions.sort(
+              (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
+            );
 
             return uniqueSuggestions.take(20).toList();
           },
@@ -448,7 +456,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       actions.add(
         Builder(
           builder: (context) {
-            final bool canEnableButtons = !_isLoading &&
+            final bool canEnableButtons =
+                !_isLoading &&
                 _useLiveSdScan &&
                 _controller.text.trim().isNotEmpty;
             return ElevatedButton(
@@ -471,7 +480,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
     actions.addAll([
       Builder(
         builder: (context) {
-          final bool canEnableButtons = !_isLoading &&
+          final bool canEnableButtons =
+              !_isLoading &&
               _useLiveSdScan &&
               _controller.text.trim().isNotEmpty;
           return ElevatedButton(
@@ -483,7 +493,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       ),
       Builder(
         builder: (context) {
-          final bool canEnableButtons = !_isLoading &&
+          final bool canEnableButtons =
+              !_isLoading &&
               _useLiveSdScan &&
               _controller.text.trim().isNotEmpty;
           return ElevatedButton(
@@ -536,7 +547,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Please drop a preset package (.zip) or preset file (.json)'),
+            'Please drop a preset package (.zip) or preset file (.json)',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -600,8 +612,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
 
       // Detect file conflicts
       final conflictDetector = FileConflictDetector(widget.distingCubit);
-      final analysisWithConflicts =
-          await conflictDetector.detectConflicts(analysis);
+      final analysisWithConflicts = await conflictDetector.detectConflicts(
+        analysis,
+      );
 
       setState(() {
         _isInstallingPackage = false;
@@ -687,7 +700,8 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           builder: (context) => AlertDialog(
             title: const Text('File Already Exists'),
             content: Text(
-                'A preset named "$fileName" already exists on the SD card. Do you want to overwrite it?'),
+              'A preset named "$fileName" already exists on the SD card. Do you want to overwrite it?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -748,10 +762,7 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
           ],
         ),
         content: SingleChildScrollView(
-          child: Text(
-            message,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(message, style: Theme.of(context).textTheme.bodyMedium),
         ),
         actions: [
           TextButton(
@@ -779,8 +790,9 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
             ),
             boxShadow: [
               BoxShadow(
-                color:
-                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -798,20 +810,19 @@ class _LoadPresetDialogState extends State<LoadPresetDialog> {
               Text(
                 'Drop files here to install',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Supports .zip packages and .json presets',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

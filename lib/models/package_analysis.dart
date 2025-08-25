@@ -23,15 +23,14 @@ class PackageAnalysis {
   });
 
   /// Invalid package constructor
-  const PackageAnalysis.invalid({
-    required this.errorMessage,
-  })  : packageName = '',
-        presetName = '',
-        author = '',
-        version = '',
-        files = const [],
-        manifest = const {},
-        isValid = false;
+  const PackageAnalysis.invalid({required this.errorMessage})
+    : packageName = '',
+      presetName = '',
+      author = '',
+      version = '',
+      files = const [],
+      manifest = const {},
+      isValid = false;
 
   /// Total number of files in the package
   int get totalFiles => files.length;
@@ -62,9 +61,7 @@ class PackageAnalysis {
   }
 
   /// Update file actions
-  PackageAnalysis copyWith({
-    List<PackageFile>? files,
-  }) {
+  PackageAnalysis copyWith({List<PackageFile>? files}) {
     return PackageAnalysis(
       packageName: packageName,
       presetName: presetName,

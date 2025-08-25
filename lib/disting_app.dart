@@ -16,7 +16,6 @@ import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 class DistingApp extends StatefulWidget {
   const DistingApp({super.key});
 
-
   @override
   State<DistingApp> createState() => _DistingAppState();
 }
@@ -49,17 +48,11 @@ class _DistingAppState extends State<DistingApp> {
       ),
       tabBarTheme: TabBarThemeData(
         indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(
-            color: baseColorScheme.secondary,
-            width: 2.0,
-          ),
+          borderSide: BorderSide(color: baseColorScheme.secondary, width: 2.0),
         ),
         labelColor: baseColorScheme.secondary,
         unselectedLabelColor: baseColorScheme.secondary.withAlpha(170),
-        labelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+        labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
@@ -70,17 +63,21 @@ class _DistingAppState extends State<DistingApp> {
 
   @override
   Widget build(BuildContext context) {
-    final lightTheme = buildThemeData(ColorScheme.fromSeed(
-      seedColor: Colors.tealAccent.shade700,
-      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-      brightness: Brightness.light,
-    ).copyWith(surfaceTint: Colors.transparent));
+    final lightTheme = buildThemeData(
+      ColorScheme.fromSeed(
+        seedColor: Colors.tealAccent.shade700,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        brightness: Brightness.light,
+      ).copyWith(surfaceTint: Colors.transparent),
+    );
 
-    final darkTheme = buildThemeData(ColorScheme.fromSeed(
-      seedColor: Colors.tealAccent.shade100,
-      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-      brightness: Brightness.dark,
-    ).copyWith(surfaceTint: Colors.transparent));
+    final darkTheme = buildThemeData(
+      ColorScheme.fromSeed(
+        seedColor: Colors.tealAccent.shade100,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        brightness: Brightness.dark,
+      ).copyWith(surfaceTint: Colors.transparent),
+    );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -93,32 +90,32 @@ class _DistingAppState extends State<DistingApp> {
       initialRoute: '/',
       routes: {
         '/': (context) => MultiBlocProvider(
-              providers: [
-                BlocProvider(
-                  create: (context) {
-                    // Get the AppDatabase instance from the context
-                    final database = context.read<AppDatabase>();
+          providers: [
+            BlocProvider(
+              create: (context) {
+                // Get the AppDatabase instance from the context
+                final database = context.read<AppDatabase>();
 
-                    // Create DistingCubit and pass the database instance
-                    final cubit = DistingCubit(database); // Pass database here
-                    cubit
-                        .initialize(); // Load settings and auto-connect if possible
-                    return cubit;
-                  },
-                ),
-                BlocProvider(
-                  create: (context) {
-                    final distingCubit = context.read<DistingCubit>();
-                    return NodeRoutingCubit(
-                      distingCubit,
-                      AlgorithmMetadataService(),
-                      NodePositionsPersistenceService(),
-                    )..initialize();
-                  },
-                ),
-              ],
-              child: Material(child: DistingPage()),
+                // Create DistingCubit and pass the database instance
+                final cubit = DistingCubit(database); // Pass database here
+                cubit
+                    .initialize(); // Load settings and auto-connect if possible
+                return cubit;
+              },
             ),
+            BlocProvider(
+              create: (context) {
+                final distingCubit = context.read<DistingCubit>();
+                return NodeRoutingCubit(
+                  distingCubit,
+                  AlgorithmMetadataService(),
+                  NodePositionsPersistenceService(),
+                )..initialize();
+              },
+            ),
+          ],
+          child: Material(child: DistingPage()),
+        ),
       },
     );
   }
@@ -142,21 +139,25 @@ class _DistingPageState extends State<DistingPage> {
           McpServerService.initialize(distingCubit: distingCubit);
           final settings = SettingsService();
           debugPrint(
-              "[InitState] Initializing MCP Server. MCP Enabled Setting: ${settings.mcpEnabled}, IsMacOS: ${Platform.isMacOS}, IsWindows: ${Platform.isWindows}");
+            "[InitState] Initializing MCP Server. MCP Enabled Setting: ${settings.mcpEnabled}, IsMacOS: ${Platform.isMacOS}, IsWindows: ${Platform.isWindows}",
+          );
           if ((Platform.isMacOS || Platform.isWindows) && settings.mcpEnabled) {
             if (!McpServerService.instance.isRunning) {
               await McpServerService.instance.start().catchError((e) {
                 debugPrint('[InitState] Error starting MCP Server: $e');
               });
               debugPrint(
-                  "[InitState] MCP Server Initialized and Started. Now Running: ${McpServerService.instance.isRunning}");
+                "[InitState] MCP Server Initialized and Started. Now Running: ${McpServerService.instance.isRunning}",
+              );
             } else {
               debugPrint(
-                  "[InitState] MCP Server was already running (unexpected). Running: ${McpServerService.instance.isRunning}");
+                "[InitState] MCP Server was already running (unexpected). Running: ${McpServerService.instance.isRunning}",
+              );
             }
           } else {
             debugPrint(
-                "[InitState] MCP Server not started (setting disabled or wrong platform).");
+              "[InitState] MCP Server not started (setting disabled or wrong platform).",
+            );
           }
         } catch (e) {
           debugPrint('[InitState] Error in MCP Server setup: $e');
@@ -172,7 +173,8 @@ class _DistingPageState extends State<DistingPage> {
     final bool wasMcpEnabledBeforeDialog = settings.mcpEnabled;
     final bool wasServerRunningBeforeDialog = mcpInstance.isRunning;
     debugPrint(
-        "[HandleSettings] Before dialog: MCP Setting: $wasMcpEnabledBeforeDialog, Server Running: $wasServerRunningBeforeDialog");
+      "[HandleSettings] Before dialog: MCP Setting: $wasMcpEnabledBeforeDialog, Server Running: $wasServerRunningBeforeDialog",
+    );
 
     final result = await context.showSettingsDialog();
 
@@ -183,44 +185,53 @@ class _DistingPageState extends State<DistingPage> {
           .isRunning; // Check state *before* explicitly starting/stopping
 
       debugPrint(
-          "[HandleSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction");
+        "[HandleSettings] After dialog saved: New MCP Setting: $isMcpEnabledAfterDialog, Server Currently Running (before action): $isServerStillRunningBeforeAction",
+      );
 
       if (Platform.isMacOS || Platform.isWindows) {
         if (isMcpEnabledAfterDialog) {
           if (!isServerStillRunningBeforeAction) {
             debugPrint(
-                "[HandleSettings] MCP Setting is ON, Server is OFF. Attempting to START server.");
+              "[HandleSettings] MCP Setting is ON, Server is OFF. Attempting to START server.",
+            );
             await mcpInstance.start().catchError((e) {
               debugPrint('[HandleSettings] Error starting MCP Server: $e');
             });
             debugPrint(
-                "[HandleSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}");
+              "[HandleSettings] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}",
+            );
           } else {
             debugPrint(
-                "[HandleSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}");
+              "[HandleSettings] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}",
+            );
           }
         } else {
           // MCP Setting is OFF
           if (isServerStillRunningBeforeAction) {
             debugPrint(
-                "[HandleSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.");
+              "[HandleSettings] MCP Setting is OFF, Server is ON. Attempting to STOP server.",
+            );
             await mcpInstance.stop().catchError((e) {
               debugPrint('[HandleSettings] Error stopping MCP Server: $e');
             });
             debugPrint(
-                "[HandleSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}");
+              "[HandleSettings] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}",
+            );
           } else {
             debugPrint(
-                "[HandleSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}");
+              "[HandleSettings] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}",
+            );
           }
         }
       } else {
         debugPrint(
-            "[HandleSettings] Not on MacOS/Windows. No MCP server action taken.");
+          "[HandleSettings] Not on MacOS/Windows. No MCP server action taken.",
+        );
       }
     } else {
       debugPrint(
-          "[HandleSettings] Settings dialog cancelled or no changes saved. No MCP server action taken. MCP Setting: ${settings.mcpEnabled}, Server Running: ${mcpInstance.isRunning}");
+        "[HandleSettings] Settings dialog cancelled or no changes saved. No MCP server action taken. MCP Setting: ${settings.mcpEnabled}, Server Running: ${mcpInstance.isRunning}",
+      );
     }
   }
 
@@ -258,9 +269,11 @@ class _DistingPageState extends State<DistingPage> {
                 inputDevices: state.inputDevices,
                 outputDevices: state.outputDevices,
                 onDeviceSelected: (inputDevice, outputDevice, sysExId) {
-                  context
-                      .read<DistingCubit>()
-                      .connectToDevices(inputDevice, outputDevice, sysExId);
+                  context.read<DistingCubit>().connectToDevices(
+                    inputDevice,
+                    outputDevice,
+                    sysExId,
+                  );
                 },
                 onRefresh: () {
                   context.read<DistingCubit>().loadDevices();
@@ -281,8 +294,10 @@ class _DistingPageState extends State<DistingPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Synchronizing...",
-                        style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      "Synchronizing...",
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: CircularProgressIndicator(),
@@ -292,7 +307,7 @@ class _DistingPageState extends State<DistingPage> {
                         context.read<DistingCubit>().cancelSync();
                       },
                       child: Text("Cancel"),
-                    )
+                    ),
                   ],
                 ),
               );
@@ -361,14 +376,10 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
 
   void selectFirstDisting() {
     selectedInputDevice = widget.inputDevices
-        .where(
-          (element) => element.name.toLowerCase().contains('disting'),
-        )
+        .where((element) => element.name.toLowerCase().contains('disting'))
         .firstOrNull;
     selectedOutputDevice = widget.outputDevices
-        .where(
-          (element) => element.name.toLowerCase().contains('disting'),
-        )
+        .where((element) => element.name.toLowerCase().contains('disting'))
         .firstOrNull;
   }
 
@@ -486,12 +497,16 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                   ElevatedButton.icon(
                     icon: const Icon(Icons.link),
                     label: const Text("Connect"),
-                    onPressed: (selectedInputDevice != null &&
+                    onPressed:
+                        (selectedInputDevice != null &&
                             selectedOutputDevice != null &&
                             selectedSysExId != null)
                         ? () {
-                            widget.onDeviceSelected(selectedInputDevice!,
-                                selectedOutputDevice!, selectedSysExId!);
+                            widget.onDeviceSelected(
+                              selectedInputDevice!,
+                              selectedOutputDevice!,
+                              selectedSysExId!,
+                            );
                           }
                         : null,
                   ),
@@ -511,7 +526,7 @@ class _DeviceSelectionViewState extends State<_DeviceSelectionView> {
                       child: const Text("Demo"),
                     ),
                   ],
-                )
+                ),
             ],
           ),
         ),

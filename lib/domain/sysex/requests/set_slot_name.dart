@@ -11,10 +11,11 @@ class SetSlotNameMessage extends SysexMessage implements HasAlgorithmIndex {
   final int algorithmIndex;
   final String name;
 
-  SetSlotNameMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.name});
+  SetSlotNameMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.name,
+  });
 
   @override
   Uint8List encode() {

@@ -84,9 +84,7 @@ void main() {
     });
 
     test('should handle single node graph', () {
-      final adjacencyList = <int, Set<int>>{
-        0: <int>{},
-      };
+      final adjacencyList = <int, Set<int>>{0: <int>{}};
       final result = TopologicalSort.topologicalSort(adjacencyList);
       expect(result, [0]);
     });

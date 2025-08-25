@@ -39,7 +39,7 @@ enum _DevelopmentState {
   changed, // File changed, waiting for changes to settle
   uploading,
   reloading,
-  error
+  error,
 }
 
 class _FileParameterEditorState extends State<FileParameterEditor> {
@@ -67,17 +67,20 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     _textController = TextEditingController();
     _currentDirectory = widget.rule.baseDirectory;
     debugPrint(
-        '[FileParameterEditor] Constructor called for parameter: ${widget.parameterInfo.name}');
+      '[FileParameterEditor] Constructor called for parameter: ${widget.parameterInfo.name}',
+    );
     debugPrint(
-        '[FileParameterEditor] Initializing with directory: $_currentDirectory, mode: ${widget.rule.mode}, parameter: ${widget.parameterInfo.name}');
+      '[FileParameterEditor] Initializing with directory: $_currentDirectory, mode: ${widget.rule.mode}, parameter: ${widget.parameterInfo.name}',
+    );
     _updateDisplayValue();
     if (widget.rule.mode != FileSelectionMode.textInput) {
       debugPrint('[FileParameterEditor] Starting directory load...');
       _loadDirectoryContents();
     } else {
       // For text input, initialize the controller with current value string
-      final valueString =
-          widget.slot.valueStrings.elementAtOrNull(widget.parameterNumber);
+      final valueString = widget.slot.valueStrings.elementAtOrNull(
+        widget.parameterNumber,
+      );
       if (valueString != null && valueString.value.isNotEmpty) {
         _textController.text = valueString.value;
       }
@@ -118,11 +121,13 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
     // Check if value string changed for text parameters
     if (widget.rule.mode == FileSelectionMode.textInput) {
-      final oldValueString = oldWidget.slot.valueStrings
+      final oldValueString =
+          oldWidget.slot.valueStrings
               .elementAtOrNull(oldWidget.parameterNumber)
               ?.value ??
           '';
-      final newValueString = widget.slot.valueStrings
+      final newValueString =
+          widget.slot.valueStrings
               .elementAtOrNull(widget.parameterNumber)
               ?.value ??
           '';
@@ -139,8 +144,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   void _checkForFolderChanges(FileParameterEditor oldWidget) {
     try {
       // Find the folder parameter in both old and new slots
-      final folderParamIndex =
-          widget.slot.parameters.indexWhere((p) => p.name.contains('Folder'));
+      final folderParamIndex = widget.slot.parameters.indexWhere(
+        (p) => p.name.contains('Folder'),
+      );
 
       if (folderParamIndex == -1) return;
 
@@ -154,7 +160,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       // If folder changed, reload directory contents
       if (oldFolderValue != newFolderValue) {
         debugPrint(
-            '[FileParameterEditor] Folder changed from $oldFolderValue to $newFolderValue, reloading files');
+          '[FileParameterEditor] Folder changed from $oldFolderValue to $newFolderValue, reloading files',
+        );
         _loadDirectoryContents();
       }
     } catch (e) {
@@ -173,8 +180,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   String? _getDisplayValueForCurrentValue() {
     final currentVal = _optimisticValue ?? widget.currentValue;
     // Use min value to determine display offset: if min=0, show currentVal+1; if min=1, show currentVal
-    final displayVal =
-        widget.parameterInfo.min == 0 ? currentVal + 1 : currentVal;
+    final displayVal = widget.parameterInfo.min == 0
+        ? currentVal + 1
+        : currentVal;
     // Return actual resolved names if available, otherwise show loading or fallback
     switch (widget.rule.mode) {
       case FileSelectionMode.folderOnly:
@@ -191,8 +199,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             (_isLoadingFiles ? 'Loading...' : 'Item $displayVal');
       case FileSelectionMode.textInput:
         // For text input, we need to get the actual string value from the slot
-        final valueString =
-            widget.slot.valueStrings.elementAtOrNull(widget.parameterNumber);
+        final valueString = widget.slot.valueStrings.elementAtOrNull(
+          widget.parameterNumber,
+        );
         if (valueString != null && valueString.value.isNotEmpty) {
           return valueString.value;
         }
@@ -344,17 +353,21 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       if (widget.rule.recursive) {
         // Recursive search for files
         debugPrint(
-            '[FileParameterEditor] Performing recursive search in: $directoryToLoad');
+          '[FileParameterEditor] Performing recursive search in: $directoryToLoad',
+        );
         allFiles = await _loadDirectoryRecursive(disting, directoryToLoad, '');
         debugPrint(
-            '[FileParameterEditor] Found ${allFiles.length} files recursively');
+          '[FileParameterEditor] Found ${allFiles.length} files recursively',
+        );
       } else {
         // Single directory listing
         debugPrint(
-            '[FileParameterEditor] Requesting directory listing for: $directoryToLoad');
+          '[FileParameterEditor] Requesting directory listing for: $directoryToLoad',
+        );
         final listing = await disting.requestDirectoryListing(directoryToLoad);
         debugPrint(
-            '[FileParameterEditor] Received listing: ${listing?.entries.length ?? 0} entries');
+          '[FileParameterEditor] Received listing: ${listing?.entries.length ?? 0} entries',
+        );
 
         if (listing != null) {
           allFiles = listing.entries;
@@ -363,44 +376,52 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
       if (mounted) {
         setState(() {
-          _availableFiles = allFiles.where((entry) {
-            // Filter out hidden files and system directories
-            if (entry.name.startsWith('.')) return false;
+          _availableFiles =
+              allFiles.where((entry) {
+                // Filter out hidden files and system directories
+                if (entry.name.startsWith('.')) return false;
 
-            // Filter based on mode and allowed extensions
-            switch (widget.rule.mode) {
-              case FileSelectionMode.folderOnly:
-                return entry.isDirectory &&
-                    !widget.rule.excludeDirs
-                        .contains(entry.name.replaceAll('/', ''));
-              case FileSelectionMode.fileOnly:
-              case FileSelectionMode.directFile:
-                if (entry.isDirectory) return false;
-                if (widget.rule.allowedExtensions?.isEmpty ?? true) return true;
-                return widget.rule.allowedExtensions!.any((ext) =>
-                    entry.name.toLowerCase().endsWith(ext.toLowerCase()));
-              case FileSelectionMode.folderThenFile:
-                // Show both folders and valid files
-                if (entry.isDirectory) {
-                  return !widget.rule.excludeDirs
-                      .contains(entry.name.replaceAll('/', ''));
+                // Filter based on mode and allowed extensions
+                switch (widget.rule.mode) {
+                  case FileSelectionMode.folderOnly:
+                    return entry.isDirectory &&
+                        !widget.rule.excludeDirs.contains(
+                          entry.name.replaceAll('/', ''),
+                        );
+                  case FileSelectionMode.fileOnly:
+                  case FileSelectionMode.directFile:
+                    if (entry.isDirectory) return false;
+                    if (widget.rule.allowedExtensions?.isEmpty ?? true)
+                      return true;
+                    return widget.rule.allowedExtensions!.any(
+                      (ext) =>
+                          entry.name.toLowerCase().endsWith(ext.toLowerCase()),
+                    );
+                  case FileSelectionMode.folderThenFile:
+                    // Show both folders and valid files
+                    if (entry.isDirectory) {
+                      return !widget.rule.excludeDirs.contains(
+                        entry.name.replaceAll('/', ''),
+                      );
+                    }
+                    if (widget.rule.allowedExtensions?.isEmpty ?? true)
+                      return true;
+                    return widget.rule.allowedExtensions!.any(
+                      (ext) =>
+                          entry.name.toLowerCase().endsWith(ext.toLowerCase()),
+                    );
+                  case FileSelectionMode.textInput:
+                    return false; // Not used for text input
                 }
-                if (widget.rule.allowedExtensions?.isEmpty ?? true) return true;
-                return widget.rule.allowedExtensions!.any((ext) =>
-                    entry.name.toLowerCase().endsWith(ext.toLowerCase()));
-              case FileSelectionMode.textInput:
-                return false; // Not used for text input
-            }
-          }).toList()
-            ..sort((a, b) {
-              // For recursive mode, sort by full path
-              // For non-recursive, sort directories first, then files
-              if (!widget.rule.recursive && a.isDirectory != b.isDirectory) {
-                return a.isDirectory ? -1 : 1;
-              }
-              // Then sort alphabetically
-              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-            });
+              }).toList()..sort((a, b) {
+                // For recursive mode, sort by full path
+                // For non-recursive, sort directories first, then files
+                if (!widget.rule.recursive && a.isDirectory != b.isDirectory) {
+                  return a.isDirectory ? -1 : 1;
+                }
+                // Then sort alphabetically
+                return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+              });
           _isLoadingFiles = false;
         });
 
@@ -430,8 +451,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       final disting = cubit.disting();
 
       // Find the folder parameter in the same slot
-      final folderParamIndex =
-          widget.slot.parameters.indexWhere((p) => p.name.contains('Folder'));
+      final folderParamIndex = widget.slot.parameters.indexWhere(
+        (p) => p.name.contains('Folder'),
+      );
 
       if (folderParamIndex == -1) {
         debugPrint('[FileParameterEditor] No folder parameter found');
@@ -447,14 +469,18 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       final listing = await disting.requestDirectoryListing(_currentDirectory!);
       if (listing == null) {
         debugPrint(
-            '[FileParameterEditor] No listing received for folder selection');
+          '[FileParameterEditor] No listing received for folder selection',
+        );
         return _currentDirectory;
       }
 
-      final folders = listing.entries
-          .where((e) => e.isDirectory && !e.name.startsWith('.'))
-          .toList()
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      final folders =
+          listing.entries
+              .where((e) => e.isDirectory && !e.name.startsWith('.'))
+              .toList()
+            ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
 
       // Convert folder parameter value to array index using min value
       final folderParam = widget.slot.parameters[folderParamIndex];
@@ -466,11 +492,13 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         return '$_currentDirectory/$selectedFolder';
       } else {
         debugPrint(
-            '[FileParameterEditor] Folder index $folderIndex out of range (${folders.length} folders)');
+          '[FileParameterEditor] Folder index $folderIndex out of range (${folders.length} folders)',
+        );
       }
     } catch (e) {
       debugPrint(
-          '[FileParameterEditor] Error getting selected folder path: $e');
+        '[FileParameterEditor] Error getting selected folder path: $e',
+      );
     }
 
     return _currentDirectory;
@@ -485,7 +513,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'No ${widget.rule.mode == FileSelectionMode.folderOnly ? "folders" : "files"} found in ${_currentDirectory ?? "directory"}'),
+              'No ${widget.rule.mode == FileSelectionMode.folderOnly ? "folders" : "files"} found in ${_currentDirectory ?? "directory"}',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -502,7 +531,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-            'Select ${widget.rule.mode == FileSelectionMode.folderOnly ? 'Folder' : 'File'}'),
+          'Select ${widget.rule.mode == FileSelectionMode.folderOnly ? 'Folder' : 'File'}',
+        ),
         content: SizedBox(
           width: double.maxFinite,
           height: 400,
@@ -524,8 +554,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                     final paramValue = _optimisticValue ?? widget.currentValue;
                     final selectedIndex = paramValue - widget.parameterInfo.min;
                     final isSelected = index == selectedIndex;
-                    final displayName = _cleanDisplayName(entry.name,
-                        isFolder: entry.isDirectory);
+                    final displayName = _cleanDisplayName(
+                      entry.name,
+                      isFolder: entry.isDirectory,
+                    );
 
                     // For recursive mode with subdirectories, show the path structure
                     Widget titleWidget;
@@ -544,12 +576,12 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                           ),
                           Text(
                             path,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       );
@@ -615,8 +647,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     String basePath,
     String relativePath,
   ) async {
-    final currentPath =
-        relativePath.isEmpty ? basePath : '$basePath/$relativePath';
+    final currentPath = relativePath.isEmpty
+        ? basePath
+        : '$basePath/$relativePath';
     final listing = await disting.requestDirectoryListing(currentPath);
 
     if (listing == null) return [];
@@ -633,28 +666,35 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         }
       } else {
         // Add files first (breadth-first approach)
-        final fileName =
-            relativePath.isEmpty ? entry.name : '$relativePath/${entry.name}';
-        results.add(DirectoryEntry(
-          name: fileName,
-          size: entry.size,
-          attributes: entry.attributes,
-          date: entry.date,
-          time: entry.time,
-        ));
+        final fileName = relativePath.isEmpty
+            ? entry.name
+            : '$relativePath/${entry.name}';
+        results.add(
+          DirectoryEntry(
+            name: fileName,
+            size: entry.size,
+            attributes: entry.attributes,
+            date: entry.date,
+            time: entry.time,
+          ),
+        );
       }
     }
 
     // Sort directories alphabetically
-    directories
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    directories.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
 
     // Then recurse into subdirectories (breadth-first)
     for (final dir in directories) {
       final dirName = dir.name.replaceAll('/', '');
       final subPath = relativePath.isEmpty ? dirName : '$relativePath/$dirName';
-      final subResults =
-          await _loadDirectoryRecursive(disting, basePath, subPath);
+      final subResults = await _loadDirectoryRecursive(
+        disting,
+        basePath,
+        subPath,
+      );
       results.addAll(subResults);
     }
 
@@ -792,7 +832,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       children: [
         // Previous button
         InkWell(
-          onTap: (_optimisticValue ?? widget.currentValue) >
+          onTap:
+              (_optimisticValue ?? widget.currentValue) >
                   widget.parameterInfo.min
               ? _decrementValue
               : null,
@@ -802,7 +843,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             child: Icon(
               Icons.navigate_before,
               size: 24,
-              color: (_optimisticValue ?? widget.currentValue) >
+              color:
+                  (_optimisticValue ?? widget.currentValue) >
                       widget.parameterInfo.min
                   ? null
                   : Colors.grey.shade400,
@@ -818,11 +860,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(
-                  _getIconForMode(),
-                  size: 18,
-                  color: Colors.grey.shade600,
-                ),
+                Icon(_getIconForMode(), size: 18, color: Colors.grey.shade600),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -843,7 +881,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
         // Next button
         InkWell(
-          onTap: (_optimisticValue ?? widget.currentValue) <
+          onTap:
+              (_optimisticValue ?? widget.currentValue) <
                   widget.parameterInfo.max
               ? _incrementValue
               : null,
@@ -853,7 +892,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             child: Icon(
               Icons.navigate_next,
               size: 24,
-              color: (_optimisticValue ?? widget.currentValue) <
+              color:
+                  (_optimisticValue ?? widget.currentValue) <
                       widget.parameterInfo.max
                   ? null
                   : Colors.grey.shade400,
@@ -965,10 +1005,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             children: [
               _buildStateIcon(),
               const SizedBox(width: 4),
-              Text(
-                _getStateText(),
-                style: const TextStyle(fontSize: 12),
-              ),
+              Text(_getStateText(), style: const TextStyle(fontSize: 12)),
             ],
           ),
         ),
@@ -1054,8 +1091,10 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Enable Development Mode?'),
-        content: Text('Monitor "${path.basename(file.path)}" for changes and '
-            'automatically reload on the Disting NT?'),
+        content: Text(
+          'Monitor "${path.basename(file.path)}" for changes and '
+          'automatically reload on the Disting NT?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1170,7 +1209,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     });
 
     debugPrint(
-        '[Development Mode] File changed, waiting for changes to settle...');
+      '[Development Mode] File changed, waiting for changes to settle...',
+    );
   }
 
   Future<void> _uploadAndReloadScript() async {

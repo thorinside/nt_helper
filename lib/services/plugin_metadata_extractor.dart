@@ -17,7 +17,8 @@ class PluginMetadataExtractor {
     int count = 0;
 
     debugPrint(
-        '[PluginExtractor] Counting installable plugins in archive with ${archive.length} files');
+      '[PluginExtractor] Counting installable plugins in archive with ${archive.length} files',
+    );
 
     for (final file in archive) {
       if (!file.isFile) continue;
@@ -70,7 +71,8 @@ class PluginMetadataExtractor {
     final installation = plugin.installation;
 
     debugPrint(
-        '[PluginExtractor] Archive has ${archive.length} files, sourceDir: ${installation.sourceDirectoryPath}');
+      '[PluginExtractor] Archive has ${archive.length} files, sourceDir: ${installation.sourceDirectoryPath}',
+    );
 
     for (final file in archive) {
       if (!file.isFile) continue;
@@ -94,7 +96,8 @@ class PluginMetadataExtractor {
       final extension = path.extension(filePath).toLowerCase();
       if (!const ['.o', '.lua', '.3pot', '.cpp'].contains(extension)) {
         debugPrint(
-            '[PluginExtractor] Skipping non-plugin file: $filePath (ext: $extension)');
+          '[PluginExtractor] Skipping non-plugin file: $filePath (ext: $extension)',
+        );
         continue;
       }
 
@@ -122,8 +125,10 @@ class PluginMetadataExtractor {
         if (fileType == 'o') {
           // For ELF files, try to extract GUID and derive name
           final fileBytes = Uint8List.fromList(file.content as List<int>);
-          final guid =
-              await ElfGuidExtractor.extractGuidFromBytes(fileBytes, fileName);
+          final guid = await ElfGuidExtractor.extractGuidFromBytes(
+            fileBytes,
+            fileName,
+          );
           description = 'Plugin GUID: ${guid.guid}';
         } else if (fileType == 'lua') {
           // For Lua files, try to extract description from comments
@@ -134,20 +139,23 @@ class PluginMetadataExtractor {
         // If extraction fails, continue without description
       }
 
-      plugins.add(CollectionPlugin(
-        name: fileName,
-        relativePath: filePath,
-        fileType: fileType,
-        description: description,
-        fileSize: file.size,
-        selected: false,
-      ));
+      plugins.add(
+        CollectionPlugin(
+          name: fileName,
+          relativePath: filePath,
+          fileType: fileType,
+          description: description,
+          fileSize: file.size,
+          selected: false,
+        ),
+      );
     }
 
     // Sort plugins by name
     plugins.sort((a, b) => a.name.compareTo(b.name));
     debugPrint(
-        '[PluginExtractor] Extracted ${plugins.length} plugins from archive');
+      '[PluginExtractor] Extracted ${plugins.length} plugins from archive',
+    );
     return plugins;
   }
 

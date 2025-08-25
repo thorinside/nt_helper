@@ -12,8 +12,9 @@ import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
 
 // Define the static MethodChannel
-const MethodChannel _windowEventsChannel =
-    MethodChannel('com.nt_helper.app/window_events');
+const MethodChannel _windowEventsChannel = MethodChannel(
+  'com.nt_helper.app/window_events',
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

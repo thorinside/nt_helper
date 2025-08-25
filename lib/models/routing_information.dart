@@ -2,7 +2,7 @@
 class RoutingInformation {
   final int algorithmIndex; // same as "slot" in JS
   final List<int>
-      routingInfo; // 6 packed 32-bit values: [r0, r1, r2, r3, r4, r5]
+  routingInfo; // 6 packed 32-bit values: [r0, r1, r2, r3, r4, r5]
   final String algorithmName; // to display in the table
 
   RoutingInformation({
@@ -13,10 +13,10 @@ class RoutingInformation {
 
   /// Serializes this RoutingInformation instance to a JSON map.
   Map<String, dynamic> toJson() => {
-        'algorithmIndex': algorithmIndex,
-        'routingInfo': routingInfo,
-        'algorithmName': algorithmName,
-      };
+    'algorithmIndex': algorithmIndex,
+    'routingInfo': routingInfo,
+    'algorithmName': algorithmName,
+  };
 }
 
 /// Utility function that replicates netInputMask(r) logic from JS.

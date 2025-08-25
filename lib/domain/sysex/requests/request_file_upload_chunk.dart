@@ -26,7 +26,6 @@ class RequestFileUploadChunkMessage extends SysexMessage {
       ...pathBytes,
       0, // Null terminator
       createAlways ? 1 : 0, // Create always flag
-
       // Position encoding (35-bit special format from Python)
       0, // ( position >> 63 ) & 0x7f - always 0
       0, // ( position >> 56 ) & 0x7f - always 0

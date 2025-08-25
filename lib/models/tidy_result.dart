@@ -8,15 +8,16 @@ class TidyResult {
   final Map<String, BusChange> changes;
   final String? errorMessage;
   final List<String> warnings;
-  
+
   const TidyResult.success({
     required this.originalConnections,
     required this.optimizedConnections,
     required this.busesFreed,
     required this.changes,
     this.warnings = const [],
-  }) : success = true, errorMessage = null;
-  
+  }) : success = true,
+       errorMessage = null;
+
   const TidyResult.failed(this.errorMessage)
     : success = false,
       originalConnections = const [],
@@ -33,7 +34,7 @@ class BusChange {
   final bool oldReplaceMode;
   final bool newReplaceMode;
   final String reason;
-  
+
   const BusChange({
     required this.connectionId,
     required this.oldBus,

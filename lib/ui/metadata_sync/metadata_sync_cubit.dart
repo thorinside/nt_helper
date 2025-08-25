@@ -35,19 +35,22 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   static const String _checkpointAlgorithmIndex =
       'metadata_sync_checkpoint_index';
 
-  MetadataSyncCubit(
-    this._database, [
-    this._distingCubit,
-  ]) : super(const MetadataSyncState.idle()) {
+  MetadataSyncCubit(this._database, [this._distingCubit])
+    : super(const MetadataSyncState.idle()) {
     _metadataDao = _database.metadataDao;
     _presetsDao = _database.presetsDao;
   }
 
   // --- Metadata Sync Methods ---
 
-  Future<void> startMetadataSync(IDistingMidiManager manager,
-      {int? resumeFromIndex}) async {
-    if (switch (state) { SyncingMetadata() => true, _ => false }) {
+  Future<void> startMetadataSync(
+    IDistingMidiManager manager, {
+    int? resumeFromIndex,
+  }) async {
+    if (switch (state) {
+      SyncingMetadata() => true,
+      _ => false,
+    }) {
       return;
     }
 
@@ -56,11 +59,13 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     // Pause CPU monitoring during sync to prevent interference
     _distingCubit?.pauseCpuMonitoring();
 
-    emit(const MetadataSyncState.syncingMetadata(
-      progress: 0.0,
-      mainMessage: "Initializing sync...",
-      subMessage: "Preparing...",
-    ));
+    emit(
+      const MetadataSyncState.syncingMetadata(
+        progress: 0.0,
+        mainMessage: "Initializing sync...",
+        subMessage: "Preparing...",
+      ),
+    );
 
     bool errorOccurred = false;
     String finalMessage = "Metadata sync completed successfully.";
@@ -71,13 +76,15 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       resumeFromIndex: resumeFromIndex,
       onProgress: (progress, processed, total, mainMsg, subMsg) {
         if (!isClosed && !_isMetadataSyncCancelled) {
-          emit(MetadataSyncState.syncingMetadata(
-            progress: progress,
-            mainMessage: mainMsg,
-            subMessage: subMsg,
-            algorithmsProcessed: processed,
-            totalAlgorithms: total,
-          ));
+          emit(
+            MetadataSyncState.syncingMetadata(
+              progress: progress,
+              mainMessage: mainMsg,
+              subMessage: subMsg,
+              algorithmsProcessed: processed,
+              totalAlgorithms: total,
+            ),
+          );
         }
       },
       onError: (error) {
@@ -91,8 +98,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
         // Store current progress for the waiting state
         final currentState = state;
-        final currentProgress =
-            currentState is SyncingMetadata ? currentState.progress : 0.0;
+        final currentProgress = currentState is SyncingMetadata
+            ? currentState.progress
+            : 0.0;
         final algorithmsProcessed = currentState is SyncingMetadata
             ? currentState.algorithmsProcessed
             : null;
@@ -100,12 +108,14 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
             ? currentState.totalAlgorithms
             : null;
 
-        emit(MetadataSyncState.waitingForUserContinue(
-          message: message,
-          progress: currentProgress,
-          algorithmsProcessed: algorithmsProcessed,
-          totalAlgorithms: totalAlgorithms,
-        ));
+        emit(
+          MetadataSyncState.waitingForUserContinue(
+            message: message,
+            progress: currentProgress,
+            algorithmsProcessed: algorithmsProcessed,
+            totalAlgorithms: totalAlgorithms,
+          ),
+        );
 
         _continueCompleter = Completer<bool>();
         return await _continueCompleter!.future;
@@ -126,8 +136,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
     if (!isClosed) {
       if (_isMetadataSyncCancelled) {
-        emit(const MetadataSyncState.metadataSyncFailure(
-            "Metadata sync cancelled by user."));
+        emit(
+          const MetadataSyncState.metadataSyncFailure(
+            "Metadata sync cancelled by user.",
+          ),
+        );
       } else if (errorOccurred) {
         emit(MetadataSyncState.metadataSyncFailure(finalMessage));
       } else {
@@ -159,8 +172,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
 
       // Emit cancelled state immediately for better UX
-      emit(const MetadataSyncState.metadataSyncFailure(
-          "Sync cancelled by user."));
+      emit(
+        const MetadataSyncState.metadataSyncFailure("Sync cancelled by user."),
+      );
 
       // Load local data to return to normal state
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -194,8 +208,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     if (state is WaitingForUserContinue &&
         _continueCompleter != null &&
         !_continueCompleter!.isCompleted) {
-      _continueCompleter!
-          .complete(true); // Skip means continue but skip this algorithm
+      _continueCompleter!.complete(
+        true,
+      ); // Skip means continue but skip this algorithm
       _continueCompleter = null;
     }
   }
@@ -217,39 +232,48 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     emit(const MetadataSyncState.savingPreset());
     try {
       // 1. Fetch full preset details directly from the manager (online or offline)
-      final FullPresetDetails? detailsToSave =
-          await manager.requestCurrentPresetDetails();
+      final FullPresetDetails? detailsToSave = await manager
+          .requestCurrentPresetDetails();
 
       if (detailsToSave == null) {
         throw Exception(
-            "Failed to retrieve current preset details from the manager.");
+          "Failed to retrieve current preset details from the manager.",
+        );
       }
 
       final name = detailsToSave.preset.name; // Get name for success message
       debugPrint(
-          " >> saveCurrentPreset: Fetched details for preset '$name' (ID: ${detailsToSave.preset.id}) with ${detailsToSave.slots.length} slots from manager.");
+        " >> saveCurrentPreset: Fetched details for preset '$name' (ID: ${detailsToSave.preset.id}) with ${detailsToSave.slots.length} slots from manager.",
+      );
 
       // 2. Save to Database using the details obtained from the manager
       debugPrint("Saving preset to database...");
       await _presetsDao.saveFullPreset(detailsToSave);
 
       emit(
-          MetadataSyncState.presetSaveSuccess("Preset '$name' saved locally."));
+        MetadataSyncState.presetSaveSuccess("Preset '$name' saved locally."),
+      );
       // Reload data after successful save
       loadLocalData();
     } catch (e, stacktrace) {
       debugPrint("Error saving preset: $e\n$stacktrace");
-      emit(MetadataSyncState.presetSaveFailure(
-          "Failed to save preset: ${e.toString()}"));
+      emit(
+        MetadataSyncState.presetSaveFailure(
+          "Failed to save preset: ${e.toString()}",
+        ),
+      );
     }
   }
 
   Future<void> loadPresetToDevice(
-      FullPresetDetails preset, IDistingMidiManager manager) async {
+    FullPresetDetails preset,
+    IDistingMidiManager manager,
+  ) async {
     emit(const MetadataSyncState.loadingPreset());
     if (kDebugMode) {
       debugPrint(
-          "loadPresetToDevice: Starting load for preset '${preset.preset.name}'");
+        "loadPresetToDevice: Starting load for preset '${preset.preset.name}'",
+      );
     }
     try {
       // 0. Clear the current preset on the device
@@ -258,31 +282,37 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
       await manager.requestNewPreset();
       await Future.delayed(
-          const Duration(milliseconds: 200)); // Allow time to process
+        const Duration(milliseconds: 200),
+      ); // Allow time to process
 
       // 1. Add all algorithms first
       if (kDebugMode) {
         debugPrint(
-            "  -> Adding ${preset.slots.length} algorithms to the device...");
+          "  -> Adding ${preset.slots.length} algorithms to the device...",
+        );
       }
       for (int i = 0; i < preset.slots.length; i++) {
         final slot = preset.slots[i];
         final algorithmGuid = slot.algorithm.guid;
         if (kDebugMode) {
           debugPrint(
-              "  -> Preparing to add Algorithm ${i + 1}: GUID $algorithmGuid");
+            "  -> Preparing to add Algorithm ${i + 1}: GUID $algorithmGuid",
+          );
         }
 
         // Fetch full details to get specifications and AlgorithmInfo fields
-        final algoDetails =
-            await _metadataDao.getFullAlgorithmDetails(algorithmGuid);
+        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
+          algorithmGuid,
+        );
         if (algoDetails == null) {
           throw Exception(
-              "Algorithm metadata for GUID '$algorithmGuid' not found locally. Cannot add slot ${i + 1}.");
+            "Algorithm metadata for GUID '$algorithmGuid' not found locally. Cannot add slot ${i + 1}.",
+          );
         }
         if (kDebugMode) {
           debugPrint(
-              "    -> Found local metadata for '${algoDetails.algorithm.name}'");
+            "    -> Found local metadata for '${algoDetails.algorithm.name}'",
+          );
         }
 
         // Prepare AlgorithmInfo and default specifications
@@ -291,21 +321,25 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
           guid: algoDetails.algorithm.guid,
           name: algoDetails.algorithm.name, // Use the canonical name
           specifications: algoDetails.specifications
-              .map((spec) => Specification(
-                    name: spec.name,
-                    min: spec.minValue,
-                    max: spec.maxValue,
-                    defaultValue: spec.defaultValue,
-                    type: spec.type,
-                  ))
+              .map(
+                (spec) => Specification(
+                  name: spec.name,
+                  min: spec.minValue,
+                  max: spec.maxValue,
+                  defaultValue: spec.defaultValue,
+                  type: spec.type,
+                ),
+              )
               .toList(),
         );
-        final defaultSpecifications =
-            algoDetails.specifications.map((s) => s.defaultValue).toList();
+        final defaultSpecifications = algoDetails.specifications
+            .map((s) => s.defaultValue)
+            .toList();
 
         if (kDebugMode) {
           debugPrint(
-              "    -> Sending Add Algorithm command for slot $i with GUID $algorithmGuid and ${defaultSpecifications.length} specs.");
+            "    -> Sending Add Algorithm command for slot $i with GUID $algorithmGuid and ${defaultSpecifications.length} specs.",
+          );
         }
         await manager.requestAddAlgorithm(algorithmInfo, defaultSpecifications);
         // Add delay after adding each algorithm
@@ -327,18 +361,21 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         await manager.requestSendSlotName(i, slot.algorithm.name);
 
         // Fetch metadata again to get parameter names for logging
-        final algoDetails =
-            await _metadataDao.getFullAlgorithmDetails(algorithmGuid);
+        final algoDetails = await _metadataDao.getFullAlgorithmDetails(
+          algorithmGuid,
+        );
         if (algoDetails == null) {
           debugPrint(
-              "Warning: Metadata for GUID '$algorithmGuid' not found during parameter/mapping phase for slot ${i + 1}. Skipping.");
+            "Warning: Metadata for GUID '$algorithmGuid' not found during parameter/mapping phase for slot ${i + 1}. Skipping.",
+          );
           continue; // Skip configuration for this slot if metadata missing
         }
 
         // 2a. Send Parameter Values
         if (kDebugMode) {
           debugPrint(
-              "    -> Preparing to send ${slot.parameterValues.length} parameter values for slot $i");
+            "    -> Preparing to send ${slot.parameterValues.length} parameter values for slot $i",
+          );
         }
         for (final paramEntry in slot.parameterValues.entries) {
           final parameterNumber = paramEntry.key;
@@ -355,7 +392,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
           if (kDebugMode) {
             debugPrint(
-                "    -> Sending Param $parameterNumber ($paramName) = $value for slot $i");
+              "    -> Sending Param $parameterNumber ($paramName) = $value for slot $i",
+            );
           }
           // Use setParameterValue
           await manager.setParameterValue(
@@ -370,7 +408,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         // 2b. Send Mappings
         if (kDebugMode) {
           debugPrint(
-              "    -> Preparing to send ${slot.mappings.length} mappings for slot $i");
+            "    -> Preparing to send ${slot.mappings.length} mappings for slot $i",
+          );
         }
         for (final mappingEntry in slot.mappings.entries) {
           final parameterNumber = mappingEntry.key;
@@ -378,7 +417,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
           if (kDebugMode) {
             debugPrint(
-                "    -> Sending Mapping for Param $parameterNumber in slot $i: CV(${mappingData.cvInput}), MIDI(${mappingData.isMidiEnabled ? mappingData.midiCC : 'Off'}), I2C(${mappingData.isI2cEnabled ? mappingData.i2cCC : 'Off'})");
+              "    -> Sending Mapping for Param $parameterNumber in slot $i: CV(${mappingData.cvInput}), MIDI(${mappingData.isMidiEnabled ? mappingData.midiCC : 'Off'}), I2C(${mappingData.isI2cEnabled ? mappingData.i2cCC : 'Off'})",
+            );
           }
           // Use requestSetMapping
           await manager.requestSetMapping(
@@ -398,7 +438,8 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       }
       await manager.requestSetPresetName(presetName);
       await Future.delayed(
-          const Duration(milliseconds: 50)); // Short delay after name set
+        const Duration(milliseconds: 50),
+      ); // Short delay after name set
 
       // 2e. Save the preset to finish the process
       await manager.requestSavePreset();
@@ -406,14 +447,20 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       // 3. Add a final delay after all commands are sent
       await Future.delayed(const Duration(milliseconds: 100));
 
-      emit(MetadataSyncState.presetLoadSuccess(
-          "Preset '${preset.preset.name}' sent to device."));
+      emit(
+        MetadataSyncState.presetLoadSuccess(
+          "Preset '${preset.preset.name}' sent to device.",
+        ),
+      );
       // Reload local data after success to ensure UI is in ViewingLocalData state
       await loadLocalData();
     } catch (e, stacktrace) {
       debugPrint("Error loading preset to device: $e\n$stacktrace");
-      emit(MetadataSyncState.presetLoadFailure(
-          "Error sending preset: ${e.toString()}"));
+      emit(
+        MetadataSyncState.presetLoadFailure(
+          "Error sending preset: ${e.toString()}",
+        ),
+      );
     }
   }
 
@@ -422,10 +469,14 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       SyncingMetadata() => true,
       SavingPreset() => true,
       LoadingPreset() => true,
-      _ => false
+      _ => false,
     };
     // Allow proceeding if the state IS deletingPreset, because we want to load data *after* deletion.
-    if (isBusy && !switch (state) { DeletingPreset() => true, _ => false }) {
+    if (isBusy &&
+        !switch (state) {
+          DeletingPreset() => true,
+          _ => false,
+        }) {
       return;
     }
 
@@ -452,16 +503,19 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         await _checkForCheckpoint();
         // Don't emit ViewingLocalData yet - let CheckpointFound state show first
       } else {
-        emit(MetadataSyncState.viewingLocalData(
-          algorithms: algorithms,
-          parameterCounts: parameterCounts,
-          presets: presets,
-        ));
+        emit(
+          MetadataSyncState.viewingLocalData(
+            algorithms: algorithms,
+            parameterCounts: parameterCounts,
+            presets: presets,
+          ),
+        );
       }
     } catch (e, stacktrace) {
       debugPrint('Error loading local data: $e\n$stacktrace');
-      emit(MetadataSyncState.failure(
-          "Failed to load local data: ${e.toString()}"));
+      emit(
+        MetadataSyncState.failure("Failed to load local data: ${e.toString()}"),
+      );
     }
   }
 
@@ -480,10 +534,12 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     final algorithmIndex = prefs.getInt(_checkpointAlgorithmIndex);
 
     if (algorithmName != null && algorithmIndex != null) {
-      emit(MetadataSyncState.checkpointFound(
-        algorithmName: algorithmName,
-        algorithmIndex: algorithmIndex,
-      ));
+      emit(
+        MetadataSyncState.checkpointFound(
+          algorithmName: algorithmName,
+          algorithmIndex: algorithmIndex,
+        ),
+      );
     }
   }
 
@@ -530,15 +586,18 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
       final parameterCounts = results[1] as Map<String, int>;
       final presets = results[2] as List<PresetEntry>;
 
-      emit(MetadataSyncState.viewingLocalData(
-        algorithms: algorithms,
-        parameterCounts: parameterCounts,
-        presets: presets,
-      ));
+      emit(
+        MetadataSyncState.viewingLocalData(
+          algorithms: algorithms,
+          parameterCounts: parameterCounts,
+          presets: presets,
+        ),
+      );
     } catch (e, stacktrace) {
       debugPrint('Error loading local data: $e\n$stacktrace');
-      emit(MetadataSyncState.failure(
-          "Failed to load local data: ${e.toString()}"));
+      emit(
+        MetadataSyncState.failure("Failed to load local data: ${e.toString()}"),
+      );
     }
   }
 
@@ -558,7 +617,10 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   Future<void> syncNewAlgorithmsOnly(IDistingMidiManager manager) async {
-    if (switch (state) { SyncingMetadata() => true, _ => false }) {
+    if (switch (state) {
+      SyncingMetadata() => true,
+      _ => false,
+    }) {
       return;
     }
 
@@ -567,11 +629,13 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     // Pause CPU monitoring during sync to prevent interference
     _distingCubit?.pauseCpuMonitoring();
 
-    emit(const MetadataSyncState.syncingMetadata(
-      progress: 0.0,
-      mainMessage: "Checking for new algorithms...",
-      subMessage: "Comparing device and local lists...",
-    ));
+    emit(
+      const MetadataSyncState.syncingMetadata(
+        progress: 0.0,
+        mainMessage: "Checking for new algorithms...",
+        subMessage: "Comparing device and local lists...",
+      ),
+    );
 
     bool errorOccurred = false;
     String finalMessage = "Incremental sync completed successfully.";
@@ -581,13 +645,15 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
     await syncService.syncNewAlgorithmsOnly(
       onProgress: (progress, processed, total, mainMsg, subMsg) {
         if (!isClosed && !_isMetadataSyncCancelled) {
-          emit(MetadataSyncState.syncingMetadata(
-            progress: progress,
-            mainMessage: mainMsg,
-            subMessage: subMsg,
-            algorithmsProcessed: processed,
-            totalAlgorithms: total,
-          ));
+          emit(
+            MetadataSyncState.syncingMetadata(
+              progress: progress,
+              mainMessage: mainMsg,
+              subMessage: subMsg,
+              algorithmsProcessed: processed,
+              totalAlgorithms: total,
+            ),
+          );
         }
       },
       onError: (error) {
@@ -601,8 +667,9 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
         // Store current progress for the waiting state
         final currentState = state;
-        final currentProgress =
-            currentState is SyncingMetadata ? currentState.progress : 0.0;
+        final currentProgress = currentState is SyncingMetadata
+            ? currentState.progress
+            : 0.0;
         final algorithmsProcessed = currentState is SyncingMetadata
             ? currentState.algorithmsProcessed
             : null;
@@ -610,12 +677,14 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
             ? currentState.totalAlgorithms
             : null;
 
-        emit(MetadataSyncState.waitingForUserContinue(
-          message: message,
-          progress: currentProgress,
-          algorithmsProcessed: algorithmsProcessed,
-          totalAlgorithms: totalAlgorithms,
-        ));
+        emit(
+          MetadataSyncState.waitingForUserContinue(
+            message: message,
+            progress: currentProgress,
+            algorithmsProcessed: algorithmsProcessed,
+            totalAlgorithms: totalAlgorithms,
+          ),
+        );
 
         _continueCompleter = Completer<bool>();
         return await _continueCompleter!.future;
@@ -628,8 +697,11 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
 
     if (!isClosed) {
       if (_isMetadataSyncCancelled) {
-        emit(const MetadataSyncState.metadataSyncFailure(
-            "Incremental sync cancelled by user."));
+        emit(
+          const MetadataSyncState.metadataSyncFailure(
+            "Incremental sync cancelled by user.",
+          ),
+        );
       } else if (errorOccurred) {
         emit(MetadataSyncState.metadataSyncFailure(finalMessage));
       } else {
@@ -640,12 +712,16 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
   }
 
   Future<void> rescanSingleAlgorithm(
-      IDistingMidiManager manager, String algorithmGuid) async {
-    emit(const MetadataSyncState.syncingMetadata(
-      progress: 0.0,
-      mainMessage: "Rescanning algorithm...",
-      subMessage: "Preparing...",
-    ));
+    IDistingMidiManager manager,
+    String algorithmGuid,
+  ) async {
+    emit(
+      const MetadataSyncState.syncingMetadata(
+        progress: 0.0,
+        mainMessage: "Rescanning algorithm...",
+        subMessage: "Preparing...",
+      ),
+    );
 
     try {
       // Find the algorithm info from the database
@@ -673,25 +749,31 @@ class MetadataSyncCubit extends Cubit<MetadataSyncState> {
         throw Exception("Algorithm not found on device");
       }
 
-      emit(MetadataSyncState.syncingMetadata(
-        progress: 0.5,
-        mainMessage: targetAlgoInfo.name,
-        subMessage: "Starting rescan...",
-      ));
+      emit(
+        MetadataSyncState.syncingMetadata(
+          progress: 0.5,
+          mainMessage: targetAlgoInfo.name,
+          subMessage: "Starting rescan...",
+        ),
+      );
 
       // Use the metadata sync service to rescan
       final syncService = MetadataSyncService(manager, _database);
       await syncService.rescanSingleAlgorithm(targetAlgoInfo);
 
-      emit(const MetadataSyncState.metadataSyncSuccess(
-          "Algorithm rescanned successfully"));
+      emit(
+        const MetadataSyncState.metadataSyncSuccess(
+          "Algorithm rescanned successfully",
+        ),
+      );
 
       // Reload data to show updated parameter count
       await loadLocalData();
     } catch (e, stackTrace) {
       debugPrint('Error rescanning algorithm: $e\n$stackTrace');
-      emit(MetadataSyncState.metadataSyncFailure(
-          "Failed to rescan algorithm: $e"));
+      emit(
+        MetadataSyncState.metadataSyncFailure("Failed to rescan algorithm: $e"),
+      );
 
       // Return to data view after error
       Future.delayed(const Duration(seconds: 2), () {

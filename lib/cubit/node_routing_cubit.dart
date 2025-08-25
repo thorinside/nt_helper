@@ -31,7 +31,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   bool _isOptimizing = false;
   bool _isUpdatingFromDistingState = false;
   Timer? _loadConnectionModesDebouncer;
-  
+
   /// Proxy method to handle algorithm addition via DistingCubit
   Future<void> addAlgorithmViaDialog(BuildContext context) async {
     final result = await Navigator.push(
@@ -47,20 +47,20 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     if (result != null && result is Map) {
       final algorithmInfo = result['algorithm'] as AlgorithmInfo;
       final specValues = result['specValues'] as List<int>;
-      
+
       // Add algorithm to the main cubit first
       await _distingCubit.onAlgorithmSelected(algorithmInfo, specValues);
-      
+
       // Find the algorithm index - it should be the last one added
       final distingState = _distingCubit.state;
       if (distingState is DistingStateSynchronized) {
         final algorithmIndex = distingState.slots.length - 1;
         final algorithmName = algorithmInfo.name;
-        
-        // For now, create empty port list - the actual port extraction 
+
+        // For now, create empty port list - the actual port extraction
         // will be handled when the state updates from the main cubit
         final algorithmPorts = <AlgorithmPort>[];
-        
+
         // Update node routing with the new algorithm
         await handleAlgorithmAdded(
           algorithmIndex: algorithmIndex,
@@ -75,7 +75,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   void removeAlgorithm(int algorithmIndex) {
     _distingCubit.onRemoveAlgorithm(algorithmIndex);
   }
-  
+
   // Mode toggle functionality
   Timer? _toggleDebounceTimer;
 
@@ -84,20 +84,31 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   static double physicalOutputNodeX = 800.0; // Will be updated dynamically
   static const double physicalNodeY = 100.0;
   static const double physicalNodeWidth = 80.0; // Narrower
-  static const double physicalInputNodeHeight = 28.0 + (6.0 * 2) + (12 * 28.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
-  static const double physicalOutputNodeHeight = 28.0 + (6.0 * 2) + (8 * 28.0) + (4.0 * 2) + 12.0; // header + header padding + jacks + padding + bottom padding
+  static const double physicalInputNodeHeight =
+      28.0 +
+      (6.0 * 2) +
+      (12 * 28.0) +
+      (4.0 * 2) +
+      12.0; // header + header padding + jacks + padding + bottom padding
+  static const double physicalOutputNodeHeight =
+      28.0 +
+      (6.0 * 2) +
+      (8 * 28.0) +
+      (4.0 * 2) +
+      12.0; // header + header padding + jacks + padding + bottom padding
   static const int physicalInputAlgorithmIndex = -2;
   static const int physicalOutputAlgorithmIndex = -3;
 
   NodeRoutingCubit(
-    this._distingCubit, 
-    this._algorithmMetadataService, 
+    this._distingCubit,
+    this._algorithmMetadataService,
     this._persistenceService, {
     BusTidyOptimizer? busTidyOptimizer, // For testing
   }) : super(const NodeRoutingState.initial()) {
     _autoRoutingService = AutoRoutingService(_distingCubit);
     _portExtractionService = PortExtractionService(_algorithmMetadataService);
-    _busTidyOptimizer = busTidyOptimizer ?? BusTidyOptimizer(this, _autoRoutingService);
+    _busTidyOptimizer =
+        busTidyOptimizer ?? BusTidyOptimizer(this, _autoRoutingService);
     _subscribeToDistingChanges();
   }
 
@@ -109,12 +120,12 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           debugPrint('[NodeRoutingCubit] Skipping update - already processing');
           return;
         }
-        
+
         // Always update from synchronized state to ensure routing canvas stays in sync
         _updateFromDistingState(distingState);
       }
     });
-    
+
     // Also sync with current state if already synchronized
     final currentDistingState = _distingCubit.state;
     if (currentDistingState is DistingStateSynchronized) {
@@ -134,16 +145,18 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     try {
       final distingState = _distingCubit.state;
       if (distingState is! DistingStateSynchronized) {
-        emit(const NodeRoutingState.error(
-          message: 'DistingCubit is not synchronized',
-        ));
+        emit(
+          const NodeRoutingState.error(
+            message: 'DistingCubit is not synchronized',
+          ),
+        );
         return;
       }
 
       // Extract algorithm information directly from slots
       final algorithmNames = <int, String>{};
       final algorithmIndices = <int>[];
-      
+
       for (int i = 0; i < distingState.slots.length; i++) {
         final slot = distingState.slots[i];
         final algorithmName = _enhanceAlgorithmNameWithIdentifier(slot);
@@ -163,36 +176,40 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
       // Convert portLayouts to algorithmPorts format for GraphLayoutService
       final algorithmPorts = portLayouts.map(
-        (index, layout) => MapEntry(
-          index, 
-          [...layout.inputPorts, ...layout.outputPorts],
-        ),
+        (index, layout) =>
+            MapEntry(index, [...layout.inputPorts, ...layout.outputPorts]),
       );
 
       // Load saved positions if available
       final presetName = distingState.presetName;
-      
-      final savedPositions = await _persistenceService.loadPositions(presetName);
-      
+
+      final savedPositions = await _persistenceService.loadPositions(
+        presetName,
+      );
+
       // Check if user has manually repositioned nodes and preserve state
       final currentState = state;
       final Map<int, NodePosition> nodePositions;
       final bool hasUserRepositioned;
-      
+
       if (savedPositions.isNotEmpty) {
         // Use saved positions but recalculate heights to ensure accuracy
         hasUserRepositioned = true;
         nodePositions = savedPositions.map((index, position) {
-          final portLayout = portLayouts[index] ?? const PortLayout(inputPorts: [], outputPorts: []);
-          final adjustedHeight = GraphLayoutService.calculateNodeHeight(portLayout);
+          final portLayout =
+              portLayouts[index] ??
+              const PortLayout(inputPorts: [], outputPorts: []);
+          final adjustedHeight = GraphLayoutService.calculateNodeHeight(
+            portLayout,
+          );
           return MapEntry(index, position.copyWith(height: adjustedHeight));
         });
-        
+
         // Add positions for any new algorithms not in saved data
-        final newAlgorithms = algorithmIndices.where(
-          (index) => !nodePositions.containsKey(index),
-        ).toList();
-        
+        final newAlgorithms = algorithmIndices
+            .where((index) => !nodePositions.containsKey(index))
+            .toList();
+
         if (newAlgorithms.isNotEmpty) {
           final newPositions = GraphLayoutService.calculateGridLayout(
             algorithmIndices: newAlgorithms,
@@ -202,21 +219,26 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           );
           nodePositions.addAll(newPositions);
         }
-      } else if (currentState is NodeRoutingStateLoaded && currentState.hasUserRepositioned) {
+      } else if (currentState is NodeRoutingStateLoaded &&
+          currentState.hasUserRepositioned) {
         // Preserve existing positions but recalculate heights and update for any new algorithms
         hasUserRepositioned = true;
         final existingPositions = currentState.nodePositions;
         nodePositions = existingPositions.map((index, position) {
-          final portLayout = portLayouts[index] ?? const PortLayout(inputPorts: [], outputPorts: []);
-          final adjustedHeight = GraphLayoutService.calculateNodeHeight(portLayout);
+          final portLayout =
+              portLayouts[index] ??
+              const PortLayout(inputPorts: [], outputPorts: []);
+          final adjustedHeight = GraphLayoutService.calculateNodeHeight(
+            portLayout,
+          );
           return MapEntry(index, position.copyWith(height: adjustedHeight));
         });
-        
+
         // Add positions for any new algorithms using grid layout
-        final newAlgorithms = algorithmIndices.where(
-          (index) => !nodePositions.containsKey(index),
-        ).toList();
-        
+        final newAlgorithms = algorithmIndices
+            .where((index) => !nodePositions.containsKey(index))
+            .toList();
+
         if (newAlgorithms.isNotEmpty) {
           final newPositions = GraphLayoutService.calculateGridLayout(
             algorithmIndices: newAlgorithms,
@@ -241,8 +263,20 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final portPositions = _calculatePortPositions(nodePositions, portLayouts);
 
       // Calculate initial physical output position
-      final screenWidth = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width / 
-                         WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+      final screenWidth =
+          WidgetsBinding
+              .instance
+              .platformDispatcher
+              .views
+              .first
+              .physicalSize
+              .width /
+          WidgetsBinding
+              .instance
+              .platformDispatcher
+              .views
+              .first
+              .devicePixelRatio;
       final physicalOutputPosition = NodePosition(
         x: screenWidth - physicalNodeWidth - 50.0,
         y: physicalNodeY,
@@ -273,7 +307,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   }
 
   /// Update node position and recalculate port positions
-  Future<void> updateNodePosition(int algorithmIndex, NodePosition newPosition) async {
+  Future<void> updateNodePosition(
+    int algorithmIndex,
+    NodePosition newPosition,
+  ) async {
     final currentState = state;
     if (currentState is NodeRoutingStateLoaded) {
       final updatedPositions = Map<int, NodePosition>.from(
@@ -283,24 +320,26 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
       // Recalculate port positions with updated node positions
       final updatedPortPositions = _calculatePortPositions(
-        updatedPositions, 
+        updatedPositions,
         currentState.portLayouts,
       );
 
-      emit(currentState.copyWith(
-        nodePositions: updatedPositions,
-        portPositions: updatedPortPositions,
-        hasUserRepositioned: true,
-      ));
+      emit(
+        currentState.copyWith(
+          nodePositions: updatedPositions,
+          portPositions: updatedPortPositions,
+          hasUserRepositioned: true,
+        ),
+      );
 
       // Save positions to persistence service (debounced)
       final presetName = _distingCubit.state.maybeMap(
         orElse: () => 'default',
         synchronized: (s) => s.presetName,
       );
-      
+
       await _persistenceService.savePositions(presetName, updatedPositions);
-      
+
       debugPrint(
         'Node position updated for algorithm $algorithmIndex: (${newPosition.x}, ${newPosition.y})',
       );
@@ -326,31 +365,40 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const canvasSize = Size(1600, 1200);
 
     // Use new method that accepts PortLayouts directly for accurate height calculation
-    final defaultPositions = GraphLayoutService.calculateGridLayoutWithPortLayouts(
-      algorithmIndices: algorithmIndices,
-      algorithmNames: currentState.algorithmNames,
-      portLayouts: currentState.portLayouts,
-      canvasSize: canvasSize,
-    );
+    final defaultPositions =
+        GraphLayoutService.calculateGridLayoutWithPortLayouts(
+          algorithmIndices: algorithmIndices,
+          algorithmNames: currentState.algorithmNames,
+          portLayouts: currentState.portLayouts,
+          canvasSize: canvasSize,
+        );
 
     // Recalculate port positions
     final updatedPortPositions = _calculatePortPositions(
-      defaultPositions, 
+      defaultPositions,
       currentState.portLayouts,
     );
 
     // Emit updated state with default layout
-    emit(currentState.copyWith(
-      nodePositions: defaultPositions,
-      portPositions: updatedPortPositions,
-      hasUserRepositioned: false,
-    ));
+    emit(
+      currentState.copyWith(
+        nodePositions: defaultPositions,
+        portPositions: updatedPortPositions,
+        hasUserRepositioned: false,
+      ),
+    );
 
-    debugPrint('Node positions reset to default grid layout for preset: $presetName');
+    debugPrint(
+      'Node positions reset to default grid layout for preset: $presetName',
+    );
   }
 
   /// Start connection preview
-  void startConnectionPreview(int sourceAlgorithmIndex, String sourcePortId, Offset cursorPosition) {
+  void startConnectionPreview(
+    int sourceAlgorithmIndex,
+    String sourcePortId,
+    Offset cursorPosition,
+  ) {
     final currentState = state;
     if (currentState is NodeRoutingStateLoaded) {
       final connectionPreview = ConnectionPreview(
@@ -365,9 +413,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   }
 
   /// Update connection preview cursor position and validate target
-  void updateConnectionPreview(Offset cursorPosition, {int? hoveredAlgorithmIndex, String? hoveredPortId}) {
+  void updateConnectionPreview(
+    Offset cursorPosition, {
+    int? hoveredAlgorithmIndex,
+    String? hoveredPortId,
+  }) {
     final currentState = state;
-    if (currentState is NodeRoutingStateLoaded && currentState.connectionPreview != null) {
+    if (currentState is NodeRoutingStateLoaded &&
+        currentState.connectionPreview != null) {
       // Check basic validity
       final isValid = hoveredAlgorithmIndex != null && hoveredPortId != null
           ? _isValidConnectionTarget(
@@ -379,17 +432,21 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
               currentState.portLayouts,
             )
           : false;
-      
+
       // Check execution order violation (skip for physical nodes)
-      final violatesOrder = hoveredAlgorithmIndex != null && 
-                            !_isPhysicalNode(currentState.connectionPreview!.sourceAlgorithmIndex) &&
-                            !_isPhysicalNode(hoveredAlgorithmIndex)
-          ? currentState.connectionPreview!.sourceAlgorithmIndex >= hoveredAlgorithmIndex
+      final violatesOrder =
+          hoveredAlgorithmIndex != null &&
+              !_isPhysicalNode(
+                currentState.connectionPreview!.sourceAlgorithmIndex,
+              ) &&
+              !_isPhysicalNode(hoveredAlgorithmIndex)
+          ? currentState.connectionPreview!.sourceAlgorithmIndex >=
+                hoveredAlgorithmIndex
           : false;
 
       final updatedPreview = currentState.connectionPreview!.copyWith(
         cursorPosition: cursorPosition,
-        isValid: isValid && !violatesOrder,  // Not valid if violates order
+        isValid: isValid && !violatesOrder, // Not valid if violates order
         hoveredTargetAlgorithmIndex: hoveredAlgorithmIndex,
         hoveredTargetPortId: hoveredPortId,
         violatesExecutionOrder: violatesOrder,
@@ -417,11 +474,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
 
-    debugPrint('[NodeRoutingCubit] Creating connection: $sourceAlgorithmIndex/$sourcePortId -> $targetAlgorithmIndex/$targetPortId');
+    debugPrint(
+      '[NodeRoutingCubit] Creating connection: $sourceAlgorithmIndex/$sourcePortId -> $targetAlgorithmIndex/$targetPortId',
+    );
 
     // Generate connection ID
-    final connectionId = '${sourceAlgorithmIndex}_${sourcePortId}_${targetAlgorithmIndex}_$targetPortId';
-    
+    final connectionId =
+        '${sourceAlgorithmIndex}_${sourcePortId}_${targetAlgorithmIndex}_$targetPortId';
+
     // Create optimistic connection
     final optimisticConnection = Connection(
       id: connectionId,
@@ -430,7 +490,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       targetAlgorithmIndex: targetAlgorithmIndex,
       targetPortId: targetPortId,
       assignedBus: 21, // Temporary, will be assigned by service
-      replaceMode: false, // Default to Add mode, will be updated by loadConnectionModes
+      replaceMode:
+          false, // Default to Add mode, will be updated by loadConnectionModes
       isValid: true,
     );
 
@@ -443,10 +504,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         ...entry.value.outputPorts,
       ];
     }
-    
+
     // Add physical node ports for validation
     _addPhysicalNodePortsForValidation(algorithmPorts);
-    
+
     final validationResult = RoutingValidator.validateConnection(
       proposedConnection: optimisticConnection,
       existingConnections: currentState.connections,
@@ -454,116 +515,168 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     );
 
     if (!validationResult.isValid) {
-      emit(currentState.copyWith(
-        errorMessage: 'Connection validation failed: ${validationResult.errors.join(', ')}',
-      ));
+      emit(
+        currentState.copyWith(
+          errorMessage:
+              'Connection validation failed: ${validationResult.errors.join(', ')}',
+        ),
+      );
       return;
     }
 
     // OPTIMISTIC UPDATE - Add connection immediately
-    emit(currentState.copyWith(
-      connections: [...currentState.connections, optimisticConnection],
-      pendingConnections: {...currentState.pendingConnections, connectionId},
-      connectedPorts: _extractConnectedPorts([...currentState.connections, optimisticConnection]),
-      operationTimestamps: {...currentState.operationTimestamps, connectionId: DateTime.now()},
-      errorMessage: null,
-    ));
+    emit(
+      currentState.copyWith(
+        connections: [...currentState.connections, optimisticConnection],
+        pendingConnections: {...currentState.pendingConnections, connectionId},
+        connectedPorts: _extractConnectedPorts([
+          ...currentState.connections,
+          optimisticConnection,
+        ]),
+        operationTimestamps: {
+          ...currentState.operationTimestamps,
+          connectionId: DateTime.now(),
+        },
+        errorMessage: null,
+      ),
+    );
 
     debugPrint('[NodeRoutingCubit] Optimistic connection added: $connectionId');
 
     // Hardware update in background
-    _autoRoutingService.assignBusForConnection(
-      sourceAlgorithmIndex: sourceAlgorithmIndex,
-      sourcePortId: sourcePortId,
-      targetAlgorithmIndex: targetAlgorithmIndex,
-      targetPortId: targetPortId,
-      existingConnections: currentState.connections,
-    ).then((busAssignment) async {
-      debugPrint('[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, channels: ${busAssignment.channelCount}, parameters: ${busAssignment.parameterUpdates.length}');
-      
-      // Update with actual bus assignment
-      await _autoRoutingService.updateBusParameters(busAssignment.parameterUpdates);
-      
-      // Mark as confirmed
-      final confirmedState = state;
-      if (confirmedState is NodeRoutingStateLoaded) {
-        List<Connection> updatedConnections;
-        
-        // For multi-channel connections, create multiple visual connections
-        if (busAssignment.channelCount > 1) {
-          debugPrint('[NodeRoutingCubit] Creating ${busAssignment.channelCount} visual connections for multi-channel connection');
-          
-          // Remove the optimistic single connection
-          updatedConnections = confirmedState.connections.where((c) => c.id != connectionId).toList();
-          
-          // Add multiple connections for each channel
-          for (int i = 0; i < busAssignment.channelCount; i++) {
-            final channelSuffix = busAssignment.channelCount == 2 
-              ? (i == 0 ? 'L' : 'R')  // Stereo: L/R
-              : '${i + 1}';  // Multi-channel: 1/2/3...
-              
-            final channelConnectionId = '${sourceAlgorithmIndex}_${sourcePortId}_${i}_${targetAlgorithmIndex}_${targetPortId}_$i';
-            final channelBus = busAssignment.assignedBuses[i];
-            final channelEdgeLabel = _generateEdgeLabel(channelBus, busAssignment.replaceMode);
-            
-            updatedConnections.add(Connection(
-              id: channelConnectionId,
-              sourceAlgorithmIndex: sourceAlgorithmIndex,
-              sourcePortId: '${sourcePortId}_$channelSuffix',
-              targetAlgorithmIndex: targetAlgorithmIndex,
-              targetPortId: '${targetPortId}_$channelSuffix',
-              assignedBus: channelBus,
-              replaceMode: busAssignment.replaceMode,
-              edgeLabel: '$channelEdgeLabel $channelSuffix',
-              isValid: true,
-            ));
-          }
-        } else {
-          // Single channel connection - update the existing connection
-          updatedConnections = confirmedState.connections.map((c) {
-            if (c.id == connectionId) {
-              return c.copyWith(
-                assignedBus: busAssignment.sourceBus,
-                edgeLabel: busAssignment.edgeLabel,
+    _autoRoutingService
+        .assignBusForConnection(
+          sourceAlgorithmIndex: sourceAlgorithmIndex,
+          sourcePortId: sourcePortId,
+          targetAlgorithmIndex: targetAlgorithmIndex,
+          targetPortId: targetPortId,
+          existingConnections: currentState.connections,
+        )
+        .then((busAssignment) async {
+          debugPrint(
+            '[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, channels: ${busAssignment.channelCount}, parameters: ${busAssignment.parameterUpdates.length}',
+          );
+
+          // Update with actual bus assignment
+          await _autoRoutingService.updateBusParameters(
+            busAssignment.parameterUpdates,
+          );
+
+          // Mark as confirmed
+          final confirmedState = state;
+          if (confirmedState is NodeRoutingStateLoaded) {
+            List<Connection> updatedConnections;
+
+            // For multi-channel connections, create multiple visual connections
+            if (busAssignment.channelCount > 1) {
+              debugPrint(
+                '[NodeRoutingCubit] Creating ${busAssignment.channelCount} visual connections for multi-channel connection',
               );
+
+              // Remove the optimistic single connection
+              updatedConnections = confirmedState.connections
+                  .where((c) => c.id != connectionId)
+                  .toList();
+
+              // Add multiple connections for each channel
+              for (int i = 0; i < busAssignment.channelCount; i++) {
+                final channelSuffix = busAssignment.channelCount == 2
+                    ? (i == 0 ? 'L' : 'R') // Stereo: L/R
+                    : '${i + 1}'; // Multi-channel: 1/2/3...
+
+                final channelConnectionId =
+                    '${sourceAlgorithmIndex}_${sourcePortId}_${i}_${targetAlgorithmIndex}_${targetPortId}_$i';
+                final channelBus = busAssignment.assignedBuses[i];
+                final channelEdgeLabel = _generateEdgeLabel(
+                  channelBus,
+                  busAssignment.replaceMode,
+                );
+
+                updatedConnections.add(
+                  Connection(
+                    id: channelConnectionId,
+                    sourceAlgorithmIndex: sourceAlgorithmIndex,
+                    sourcePortId: '${sourcePortId}_$channelSuffix',
+                    targetAlgorithmIndex: targetAlgorithmIndex,
+                    targetPortId: '${targetPortId}_$channelSuffix',
+                    assignedBus: channelBus,
+                    replaceMode: busAssignment.replaceMode,
+                    edgeLabel: '$channelEdgeLabel $channelSuffix',
+                    isValid: true,
+                  ),
+                );
+              }
+            } else {
+              // Single channel connection - update the existing connection
+              updatedConnections = confirmedState.connections.map((c) {
+                if (c.id == connectionId) {
+                  return c.copyWith(
+                    assignedBus: busAssignment.sourceBus,
+                    edgeLabel: busAssignment.edgeLabel,
+                  );
+                }
+                return c;
+              }).toList();
             }
-            return c;
-          }).toList();
-        }
-        
-        final updatedTimestamps = Map<String, DateTime>.from(confirmedState.operationTimestamps);
-        updatedTimestamps.remove(connectionId);
-        
-        emit(confirmedState.copyWith(
-          connections: updatedConnections,
-          pendingConnections: confirmedState.pendingConnections.difference({connectionId}),
-          operationTimestamps: updatedTimestamps,
-          connectedPorts: _extractConnectedPorts(updatedConnections),
-        ));
-        
-        debugPrint('[NodeRoutingCubit] Connection confirmed: $connectionId (${busAssignment.channelCount} channels)');
-        
-        // Load actual connection modes after connection is confirmed
-        loadConnectionModes();
-      }
-    }).catchError((error) {
-      // Rollback on failure
-      debugPrint('[NodeRoutingCubit] Connection failed: $connectionId - $error');
-      final errorState = state;
-      if (errorState is NodeRoutingStateLoaded) {
-        final updatedTimestamps = Map<String, DateTime>.from(errorState.operationTimestamps);
-        updatedTimestamps.remove(connectionId);
-        
-        emit(errorState.copyWith(
-          connections: errorState.connections.where((c) => c.id != connectionId).toList(),
-          pendingConnections: errorState.pendingConnections.difference({connectionId}),
-          failedConnections: {...errorState.failedConnections, connectionId},
-          connectedPorts: _extractConnectedPorts(errorState.connections.where((c) => c.id != connectionId).toList()),
-          operationTimestamps: updatedTimestamps,
-          errorMessage: 'Failed to create connection: $error',
-        ));
-      }
-    });
+
+            final updatedTimestamps = Map<String, DateTime>.from(
+              confirmedState.operationTimestamps,
+            );
+            updatedTimestamps.remove(connectionId);
+
+            emit(
+              confirmedState.copyWith(
+                connections: updatedConnections,
+                pendingConnections: confirmedState.pendingConnections
+                    .difference({connectionId}),
+                operationTimestamps: updatedTimestamps,
+                connectedPorts: _extractConnectedPorts(updatedConnections),
+              ),
+            );
+
+            debugPrint(
+              '[NodeRoutingCubit] Connection confirmed: $connectionId (${busAssignment.channelCount} channels)',
+            );
+
+            // Load actual connection modes after connection is confirmed
+            loadConnectionModes();
+          }
+        })
+        .catchError((error) {
+          // Rollback on failure
+          debugPrint(
+            '[NodeRoutingCubit] Connection failed: $connectionId - $error',
+          );
+          final errorState = state;
+          if (errorState is NodeRoutingStateLoaded) {
+            final updatedTimestamps = Map<String, DateTime>.from(
+              errorState.operationTimestamps,
+            );
+            updatedTimestamps.remove(connectionId);
+
+            emit(
+              errorState.copyWith(
+                connections: errorState.connections
+                    .where((c) => c.id != connectionId)
+                    .toList(),
+                pendingConnections: errorState.pendingConnections.difference({
+                  connectionId,
+                }),
+                failedConnections: {
+                  ...errorState.failedConnections,
+                  connectionId,
+                },
+                connectedPorts: _extractConnectedPorts(
+                  errorState.connections
+                      .where((c) => c.id != connectionId)
+                      .toList(),
+                ),
+                operationTimestamps: updatedTimestamps,
+                errorMessage: 'Failed to create connection: $error',
+              ),
+            );
+          }
+        });
   }
 
   /// Generate edge label for a connection
@@ -586,40 +699,49 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     if (currentState is! NodeRoutingStateLoaded) return;
 
     try {
-      debugPrint('Removing connection: ${connection.sourceAlgorithmIndex}:${connection.sourcePortId} -> ${connection.targetAlgorithmIndex}:${connection.targetPortId}');
-      
+      debugPrint(
+        'Removing connection: ${connection.sourceAlgorithmIndex}:${connection.sourcePortId} -> ${connection.targetAlgorithmIndex}:${connection.targetPortId}',
+      );
+
       // Optimistic update - immediately remove the connection from the visual state
       final updatedConnections = currentState.connections
           .where((c) => c.id != connection.id)
           .toList();
       final updatedConnectedPorts = _extractConnectedPorts(updatedConnections);
-      
-      emit(currentState.copyWith(
-        connections: updatedConnections,
-        connectedPorts: updatedConnectedPorts,
-        errorMessage: null,
-      ));
-      
+
+      emit(
+        currentState.copyWith(
+          connections: updatedConnections,
+          connectedPorts: updatedConnectedPorts,
+          errorMessage: null,
+        ),
+      );
+
       // Now update the hardware in the background
-      _autoRoutingService.removeConnection(
-        sourceAlgorithmIndex: connection.sourceAlgorithmIndex,
-        sourcePortId: connection.sourcePortId,
-        targetAlgorithmIndex: connection.targetAlgorithmIndex,
-        targetPortId: connection.targetPortId,
-      ).then((_) {
-        debugPrint('Connection removed from hardware: ${connection.id}');
-        // The hardware update will trigger a state refresh via our DistingCubit subscription
-        // which will ensure consistency between visual and hardware state
-      }).catchError((e) {
-        // On error, the next hardware state update will restore the correct state
-        debugPrint('Error removing connection: $e');
-        final errorState = state;
-        if (errorState is NodeRoutingStateLoaded) {
-          emit(errorState.copyWith(
-            errorMessage: 'Failed to remove connection: $e',
-          ));
-        }
-      });
+      _autoRoutingService
+          .removeConnection(
+            sourceAlgorithmIndex: connection.sourceAlgorithmIndex,
+            sourcePortId: connection.sourcePortId,
+            targetAlgorithmIndex: connection.targetAlgorithmIndex,
+            targetPortId: connection.targetPortId,
+          )
+          .then((_) {
+            debugPrint('Connection removed from hardware: ${connection.id}');
+            // The hardware update will trigger a state refresh via our DistingCubit subscription
+            // which will ensure consistency between visual and hardware state
+          })
+          .catchError((e) {
+            // On error, the next hardware state update will restore the correct state
+            debugPrint('Error removing connection: $e');
+            final errorState = state;
+            if (errorState is NodeRoutingStateLoaded) {
+              emit(
+                errorState.copyWith(
+                  errorMessage: 'Failed to remove connection: $e',
+                ),
+              );
+            }
+          });
     } catch (e) {
       emit(
         currentState.copyWith(errorMessage: 'Failed to remove connection: $e'),
@@ -631,60 +753,74 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   void _updateFromDistingState(DistingStateSynchronized distingState) {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
-    
+
     // Prevent recursive updates
     if (_isUpdatingFromDistingState) {
-      debugPrint('[NodeRoutingCubit] Already updating from DistingState, skipping');
+      debugPrint(
+        '[NodeRoutingCubit] Already updating from DistingState, skipping',
+      );
       return;
     }
-    
+
     _isUpdatingFromDistingState = true;
-    
+
     debugPrint('[NodeRoutingCubit] ========================================');
     debugPrint('[NodeRoutingCubit] Updating from hardware routing change');
-    debugPrint('[NodeRoutingCubit] Number of slots: ${distingState.slots.length}');
-    
+    debugPrint(
+      '[NodeRoutingCubit] Number of slots: ${distingState.slots.length}',
+    );
+
     // Extract algorithm information directly from slots
     final algorithmNames = <int, String>{};
-    
+
     for (int i = 0; i < distingState.slots.length; i++) {
       final slot = distingState.slots[i];
       final algorithmName = _enhanceAlgorithmNameWithIdentifier(slot);
       algorithmNames[i] = algorithmName;
-      debugPrint('[NodeRoutingCubit] Slot $i: $algorithmName (${slot.algorithm.guid})');
+      debugPrint(
+        '[NodeRoutingCubit] Slot $i: $algorithmName (${slot.algorithm.guid})',
+      );
     }
-    
+
     // Re-extract port layouts for the new algorithm positions
     final newPortLayouts = _extractPortLayoutsFromSlots(distingState.slots);
-    
+
     // Log port layout details
     for (final entry in newPortLayouts.entries) {
       final layout = entry.value;
-      debugPrint('[NodeRoutingCubit] Algorithm ${entry.key} ports: ${layout.inputPorts.length} inputs, ${layout.outputPorts.length} outputs');
+      debugPrint(
+        '[NodeRoutingCubit] Algorithm ${entry.key} ports: ${layout.inputPorts.length} inputs, ${layout.outputPorts.length} outputs',
+      );
     }
-    
+
     // Re-extract connections from the updated hardware state
     final newConnections = _interpretRoutingFromSlots(distingState.slots);
     final newConnectedPorts = _extractConnectedPorts(newConnections);
-    
-    debugPrint('[NodeRoutingCubit] *** CONNECTIONS FOUND: ${newConnections.length} ***');
-    
+
+    debugPrint(
+      '[NodeRoutingCubit] *** CONNECTIONS FOUND: ${newConnections.length} ***',
+    );
+
     // Debug: log each connection found with more detail
     for (final conn in newConnections) {
-      debugPrint('[NodeRoutingCubit] Connection: Alg${conn.sourceAlgorithmIndex}:"${conn.sourcePortId}" -> Alg${conn.targetAlgorithmIndex}:"${conn.targetPortId}" (bus ${conn.assignedBus})');
+      debugPrint(
+        '[NodeRoutingCubit] Connection: Alg${conn.sourceAlgorithmIndex}:"${conn.sourcePortId}" -> Alg${conn.targetAlgorithmIndex}:"${conn.targetPortId}" (bus ${conn.assignedBus})',
+      );
     }
-    
+
     if (newConnections.isEmpty) {
-      debugPrint('[NodeRoutingCubit] WARNING: No connections found! Check bus parameter detection.');
+      debugPrint(
+        '[NodeRoutingCubit] WARNING: No connections found! Check bus parameter detection.',
+      );
     }
-    
+
     debugPrint('[NodeRoutingCubit] ========================================');
-    
+
     // Update node positions to match new algorithm indices
     // Try to preserve relative positions when algorithms are reordered
     final oldPositions = currentState.nodePositions;
     final newNodePositions = <int, NodePosition>{};
-    
+
     // Map old algorithm names to their positions
     final nameToPosition = <String, NodePosition>{};
     for (final entry in currentState.algorithmNames.entries) {
@@ -694,16 +830,18 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         nameToPosition[name] = oldPositions[oldIndex]!;
       }
     }
-    
+
     // Assign positions based on algorithm names
     for (final entry in algorithmNames.entries) {
       final newIndex = entry.key;
       final name = entry.value;
-      
+
       // Calculate proper height based on port layout
-      final portLayout = newPortLayouts[newIndex] ?? const PortLayout(inputPorts: [], outputPorts: []);
+      final portLayout =
+          newPortLayouts[newIndex] ??
+          const PortLayout(inputPorts: [], outputPorts: []);
       final adjustedHeight = GraphLayoutService.calculateNodeHeight(portLayout);
-      
+
       if (nameToPosition.containsKey(name)) {
         // Found the same algorithm, update its index and height in the position
         final oldPos = nameToPosition[name]!;
@@ -722,39 +860,44 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         );
       }
     }
-    
+
     // Recalculate port positions with updated node positions
-    final newPortPositions = _calculatePortPositions(newNodePositions, newPortLayouts);
-    
+    final newPortPositions = _calculatePortPositions(
+      newNodePositions,
+      newPortLayouts,
+    );
+
     // Update the visual state with all the new data
-    emit(currentState.copyWith(
-      nodePositions: newNodePositions,
-      algorithmNames: algorithmNames,
-      portLayouts: newPortLayouts,
-      connections: newConnections,
-      connectedPorts: newConnectedPorts,
-      portPositions: newPortPositions,
-      // physicalOutputPosition is preserved from existing state
-    ));
-    
+    emit(
+      currentState.copyWith(
+        nodePositions: newNodePositions,
+        algorithmNames: algorithmNames,
+        portLayouts: newPortLayouts,
+        connections: newConnections,
+        connectedPorts: newConnectedPorts,
+        portPositions: newPortPositions,
+        // physicalOutputPosition is preserved from existing state
+      ),
+    );
+
     // Reset the update flag
     _isUpdatingFromDistingState = false;
-    
+
     // Schedule connection modes loading (debounced)
     _scheduleLoadConnectionModes();
   }
 
   /// Extract port layouts directly from slots using actual algorithm metadata
-  Map<int, PortLayout> _extractPortLayoutsFromSlots(
-    List<Slot> slots,
-  ) {
+  Map<int, PortLayout> _extractPortLayoutsFromSlots(List<Slot> slots) {
     final portLayouts = <int, PortLayout>{};
 
     for (int i = 0; i < slots.length; i++) {
       final slot = slots[i];
       final algorithmGuid = slot.algorithm.guid;
 
-      debugPrint('[NodeRoutingCubit] Extracting ports for algorithm $i: "$algorithmGuid"');
+      debugPrint(
+        '[NodeRoutingCubit] Extracting ports for algorithm $i: "$algorithmGuid"',
+      );
 
       // Extract ports using PortExtractionService with live parameter data
       final portInfo = _portExtractionService.extractPortsFromSlot(slot);
@@ -768,22 +911,43 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     return portLayouts;
   }
 
-
   /// Find connections by matching parameter values across algorithms
-  List<Connection> _interpretRoutingFromSlots(
-    List<Slot> slots,
-  ) {
+  List<Connection> _interpretRoutingFromSlots(List<Slot> slots) {
     final connections = <Connection>[];
 
-    debugPrint('[NodeRoutingCubit] Finding connections by matching parameter values');
+    debugPrint(
+      '[NodeRoutingCubit] Finding connections by matching parameter values',
+    );
 
     // Find all output parameters and their values
-    final outputParams = <({int algorithmIndex, String paramName, int paramNumber, int busValue})>[];
-    final inputParams = <({int algorithmIndex, String paramName, int paramNumber, int busValue})>[];
+    final outputParams =
+        <
+          ({
+            int algorithmIndex,
+            String paramName,
+            int paramNumber,
+            int busValue,
+          })
+        >[];
+    final inputParams =
+        <
+          ({
+            int algorithmIndex,
+            String paramName,
+            int paramNumber,
+            int busValue,
+          })
+        >[];
 
-    for (int algorithmIndex = 0; algorithmIndex < slots.length; algorithmIndex++) {
+    for (
+      int algorithmIndex = 0;
+      algorithmIndex < slots.length;
+      algorithmIndex++
+    ) {
       final slot = slots[algorithmIndex];
-      debugPrint('[NodeRoutingCubit] Analyzing algorithm $algorithmIndex parameters');
+      debugPrint(
+        '[NodeRoutingCubit] Analyzing algorithm $algorithmIndex parameters',
+      );
 
       // Check each parameter to see if it's an output or input bus assignment
       for (int i = 0; i < slot.parameters.length; i++) {
@@ -799,8 +963,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
         // Check if this is a bus parameter (enum type with bus range)
         final isBusParameter = param.unit == 1 && param.max >= 28;
-        
-        debugPrint('[NodeRoutingCubit] Algorithm $algorithmIndex parameter "${param.name}" unit=${param.unit} max=${param.max} defaultValue=${param.defaultValue} currentValue=${paramValue.value} isBusParameter=$isBusParameter');
+
+        debugPrint(
+          '[NodeRoutingCubit] Algorithm $algorithmIndex parameter "${param.name}" unit=${param.unit} max=${param.max} defaultValue=${param.defaultValue} currentValue=${paramValue.value} isBusParameter=$isBusParameter',
+        );
 
         // Skip if not a bus parameter
         if (!isBusParameter) {
@@ -809,18 +975,20 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
         // Skip if current value is 0 (None/not connected)
         if (paramValue.value == 0) {
-          debugPrint('[NodeRoutingCubit] Skipping bus parameter "${param.name}" (value=0, not connected)');
+          debugPrint(
+            '[NodeRoutingCubit] Skipping bus parameter "${param.name}" (value=0, not connected)',
+          );
           continue;
         }
 
         // Determine if this parameter is an input or output using simple rules
         bool isOutputParam = false;
         bool isInputParam = false;
-        
+
         // Special handling for Feedback algorithms
         final algorithmGuid = slot.algorithm.guid;
         final nameLower = param.name.toLowerCase();
-        
+
         if (algorithmGuid == 'fbtx') {
           // Feedback Send: should only have input parameters, never outputs
           isInputParam = nameLower.contains('input');
@@ -846,7 +1014,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             // Note: Aux buses (21-28) are not classified by defaultValue alone
           }
         }
-        
+
         if (isOutputParam) {
           // Output or Aux parameter (can send signals)
           outputParams.add((
@@ -855,7 +1023,9 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             paramNumber: param.parameterNumber,
             busValue: paramValue.value,
           ));
-          debugPrint('[NodeRoutingCubit] Found OUTPUT parameter: Algorithm $algorithmIndex "${param.name}" paramNumber=${param.parameterNumber} defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
+          debugPrint(
+            '[NodeRoutingCubit] Found OUTPUT parameter: Algorithm $algorithmIndex "${param.name}" paramNumber=${param.parameterNumber} defaultValue=${param.defaultValue} currentValue=${paramValue.value}',
+          );
         } else if (isInputParam) {
           // Input parameter (can receive signals)
           inputParams.add((
@@ -864,39 +1034,49 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             paramNumber: param.parameterNumber,
             busValue: paramValue.value,
           ));
-          debugPrint('[NodeRoutingCubit] Found INPUT parameter: Algorithm $algorithmIndex "${param.name}" paramNumber=${param.parameterNumber} defaultValue=${param.defaultValue} currentValue=${paramValue.value}');
+          debugPrint(
+            '[NodeRoutingCubit] Found INPUT parameter: Algorithm $algorithmIndex "${param.name}" paramNumber=${param.parameterNumber} defaultValue=${param.defaultValue} currentValue=${paramValue.value}',
+          );
         }
       }
     }
 
-    debugPrint('[NodeRoutingCubit] Starting connection matching: ${outputParams.length} outputs, ${inputParams.length} inputs');
-    
+    debugPrint(
+      '[NodeRoutingCubit] Starting connection matching: ${outputParams.length} outputs, ${inputParams.length} inputs',
+    );
+
     // Debug: Print all found parameters
     debugPrint('[NodeRoutingCubit] OUTPUT parameters found:');
     for (final output in outputParams) {
-      debugPrint('  - Algorithm ${output.algorithmIndex}: "${output.paramName}" -> Bus ${output.busValue}');
+      debugPrint(
+        '  - Algorithm ${output.algorithmIndex}: "${output.paramName}" -> Bus ${output.busValue}',
+      );
     }
     debugPrint('[NodeRoutingCubit] INPUT parameters found:');
     for (final input in inputParams) {
-      debugPrint('  - Algorithm ${input.algorithmIndex}: "${input.paramName}" -> Bus ${input.busValue}');
+      debugPrint(
+        '  - Algorithm ${input.algorithmIndex}: "${input.paramName}" -> Bus ${input.busValue}',
+      );
     }
-    
+
     // Detect physical I/O connections
     debugPrint('[NodeRoutingCubit] Detecting physical I/O connections...');
-    
+
     // Physical input connections (buses 1-12)
     for (final input in inputParams) {
       if (input.busValue >= 1 && input.busValue <= 12) {
         final physicalInputNumber = input.busValue;
         final sourcePortId = 'physical_input_$physicalInputNumber';
         final targetPortId = _findPortIdForParameter(
-          input.algorithmIndex, 
-          input.paramNumber, 
+          input.algorithmIndex,
+          input.paramNumber,
           isInput: true,
         );
-        
-        debugPrint('[NodeRoutingCubit] *** FOUND PHYSICAL INPUT CONNECTION: I$physicalInputNumber -> Algorithm ${input.algorithmIndex} "${input.paramName}" (bus ${input.busValue}) ***');
-        
+
+        debugPrint(
+          '[NodeRoutingCubit] *** FOUND PHYSICAL INPUT CONNECTION: I$physicalInputNumber -> Algorithm ${input.algorithmIndex} "${input.paramName}" (bus ${input.busValue}) ***',
+        );
+
         connections.add(
           Connection(
             id: '${physicalInputAlgorithmIndex}_${sourcePortId}_${input.algorithmIndex}_$targetPortId',
@@ -911,20 +1091,23 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         );
       }
     }
-    
+
     // Physical output connections (buses 13-20)
     for (final output in outputParams) {
       if (output.busValue >= 13 && output.busValue <= 20) {
-        final physicalOutputNumber = output.busValue - 12; // Bus 13 = O1, Bus 14 = O2, etc.
+        final physicalOutputNumber =
+            output.busValue - 12; // Bus 13 = O1, Bus 14 = O2, etc.
         final sourcePortId = _findPortIdForParameter(
-          output.algorithmIndex, 
-          output.paramNumber, 
+          output.algorithmIndex,
+          output.paramNumber,
           isInput: false,
         );
         final targetPortId = 'physical_output_$physicalOutputNumber';
-        
-        debugPrint('[NodeRoutingCubit] *** FOUND PHYSICAL OUTPUT CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> O$physicalOutputNumber (bus ${output.busValue}) ***');
-        
+
+        debugPrint(
+          '[NodeRoutingCubit] *** FOUND PHYSICAL OUTPUT CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> O$physicalOutputNumber (bus ${output.busValue}) ***',
+        );
+
         connections.add(
           Connection(
             id: '${output.algorithmIndex}_${sourcePortId}_${physicalOutputAlgorithmIndex}_$targetPortId',
@@ -939,14 +1122,17 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         );
       }
     }
-    
+
     // Match output parameters with input parameters that have the same bus value
     for (final output in outputParams) {
       for (final input in inputParams) {
-        if (output.algorithmIndex == input.algorithmIndex) continue; // Skip self-connections
+        if (output.algorithmIndex == input.algorithmIndex)
+          continue; // Skip self-connections
         if (output.busValue != input.busValue) continue; // Must use same bus
 
-        debugPrint('[NodeRoutingCubit] *** FOUND CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm ${input.algorithmIndex} "${input.paramName}" (bus ${output.busValue}) ***');
+        debugPrint(
+          '[NodeRoutingCubit] *** FOUND CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm ${input.algorithmIndex} "${input.paramName}" (bus ${output.busValue}) ***',
+        );
 
         // Use parameter numbers as port IDs for uniqueness
         final sourcePortId = output.paramNumber.toString();
@@ -957,7 +1143,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           output.algorithmIndex,
           output.paramNumber,
         );
-        
+
         connections.add(
           Connection(
             id: 'param_${output.algorithmIndex}_${input.algorithmIndex}_${output.busValue}',
@@ -976,64 +1162,85 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     // Handle width-based input patterns for multi-channel algorithms
     debugPrint('[NodeRoutingCubit] Checking for width-based input patterns...');
     _addWidthBasedConnections(connections, outputParams, slots);
-    
-    // Handle poly input patterns for polyphonic algorithms  
+
+    // Handle poly input patterns for polyphonic algorithms
     debugPrint('[NodeRoutingCubit] Checking for poly input patterns...');
     _addPolyConnections(connections, outputParams, slots);
 
-    debugPrint('[NodeRoutingCubit] Created ${connections.length} connections total');
-    
+    debugPrint(
+      '[NodeRoutingCubit] Created ${connections.length} connections total',
+    );
+
     // Apply bus sharing validation to remove invalidated connections
     final validatedConnections = _validateBusSharing(connections);
-    debugPrint('[NodeRoutingCubit] After validation: ${validatedConnections.length} connections remain');
-    
+    debugPrint(
+      '[NodeRoutingCubit] After validation: ${validatedConnections.length} connections remain',
+    );
+
     return validatedConnections;
   }
 
   /// Add connections for width-based input patterns
   void _addWidthBasedConnections(
     List<Connection> connections,
-    List<({int algorithmIndex, String paramName, int paramNumber, int busValue})> outputParams,
+    List<
+      ({int algorithmIndex, String paramName, int paramNumber, int busValue})
+    >
+    outputParams,
     List<Slot> slots,
   ) {
-    for (int algorithmIndex = 0; algorithmIndex < slots.length; algorithmIndex++) {
+    for (
+      int algorithmIndex = 0;
+      algorithmIndex < slots.length;
+      algorithmIndex++
+    ) {
       final slot = slots[algorithmIndex];
       final algorithmGuid = slot.algorithm.guid;
-      
+
       // Check if this is a width-aware algorithm by looking for Width parameter
       final hasWidthParam = slot.parameters.any((param) {
         final nameLower = param.name.toLowerCase();
-        return nameLower == 'width' || nameLower == 'channels' || nameLower == 'channel count';
+        return nameLower == 'width' ||
+            nameLower == 'channels' ||
+            nameLower == 'channel count';
       });
-      
+
       if (!hasWidthParam) {
         continue;
       }
-      
-      debugPrint('[NodeRoutingCubit] Found width-aware algorithm: ${slot.algorithm.name} (GUID: $algorithmGuid)');
-      
+
+      debugPrint(
+        '[NodeRoutingCubit] Found width-aware algorithm: ${slot.algorithm.name} (GUID: $algorithmGuid)',
+      );
+
       // Find audio input parameter and width parameter
       ParameterInfo? audioInputParam;
       ParameterInfo? widthParam;
-      
+
       for (final param in slot.parameters) {
         final nameLower = param.name.toLowerCase();
-        if (nameLower == 'audio input' || nameLower == 'input' || nameLower == 'left input') {
+        if (nameLower == 'audio input' ||
+            nameLower == 'input' ||
+            nameLower == 'left input') {
           audioInputParam = param;
-        } else if (nameLower == 'width' || nameLower == 'channels' || nameLower == 'channel count') {
+        } else if (nameLower == 'width' ||
+            nameLower == 'channels' ||
+            nameLower == 'channel count') {
           widthParam = param;
         }
       }
-      
+
       if (audioInputParam == null || widthParam == null) {
-        debugPrint('[NodeRoutingCubit] Width-aware algorithm missing audio input or width parameter');
+        debugPrint(
+          '[NodeRoutingCubit] Width-aware algorithm missing audio input or width parameter',
+        );
         continue;
       }
-      
+
       // Get current parameter values (using local variables to avoid null safety issues)
       final audioParam = audioInputParam;
       final wParam = widthParam;
-      
+
       final audioInputValue = slot.values.firstWhere(
         (v) => v.parameterNumber == audioParam.parameterNumber,
         orElse: () => ParameterValue(
@@ -1042,7 +1249,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           value: audioParam.defaultValue,
         ),
       );
-      
+
       final widthValue = slot.values.firstWhere(
         (v) => v.parameterNumber == wParam.parameterNumber,
         orElse: () => ParameterValue(
@@ -1051,47 +1258,53 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           value: wParam.defaultValue,
         ),
       );
-      
+
       final baseBus = audioInputValue.value;
       final width = widthValue.value;
-      
-      debugPrint('[NodeRoutingCubit] Width pattern: base bus $baseBus, width $width');
-      
+
+      debugPrint(
+        '[NodeRoutingCubit] Width pattern: base bus $baseBus, width $width',
+      );
+
       // Skip if audio input is not connected or width is 1 (already handled by normal logic)
       if (baseBus == 0 || width <= 1) {
         continue;
       }
-      
+
       // Create connections for width-based channels (base bus down to base-width+1)
       // For example: Audio input = Aux 2 (bus 22), Width = 2 should connect Aux 1 (21) and Aux 2 (22)
       for (int i = 0; i < width; i++) {
         final targetBus = baseBus - i;
-        
+
         // Skip if target bus goes below 1 or above 28
         if (targetBus < 1 || targetBus > 28) {
           continue;
         }
-        
+
         // Skip the base bus if it's already handled by normal connection logic
         // But we actually need to handle all buses for width-based patterns
         // so let's not skip any
-        
+
         // Find output parameters that match this target bus
         for (final output in outputParams) {
           if (output.busValue == targetBus) {
             // Create additional connection for this width channel
             final sourcePortId = output.paramNumber.toString();
             // Create appropriate port ID for the width channel
-            final channelName = width == 2 ? (i == 0 ? 'R' : 'L') : '${width - i}';
+            final channelName = width == 2
+                ? (i == 0 ? 'R' : 'L')
+                : '${width - i}';
             final targetPortId = '${audioParam.parameterNumber}_$channelName';
-            
-            debugPrint('[NodeRoutingCubit] *** FOUND WIDTH-BASED CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm $algorithmIndex "${audioParam.name}" $channelName (bus $targetBus) ***');
-            
+
+            debugPrint(
+              '[NodeRoutingCubit] *** FOUND WIDTH-BASED CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm $algorithmIndex "${audioParam.name}" $channelName (bus $targetBus) ***',
+            );
+
             final actualMode = _getOutputModeFromParameter(
               output.algorithmIndex,
               output.paramNumber,
             );
-            
+
             connections.add(
               Connection(
                 id: 'width_${output.algorithmIndex}_${algorithmIndex}_${targetBus}_$channelName',
@@ -1113,47 +1326,63 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   /// Add connections for poly input patterns
   void _addPolyConnections(
     List<Connection> connections,
-    List<({int algorithmIndex, String paramName, int paramNumber, int busValue})> outputParams,
+    List<
+      ({int algorithmIndex, String paramName, int paramNumber, int busValue})
+    >
+    outputParams,
     List<Slot> slots,
   ) {
-    for (int algorithmIndex = 0; algorithmIndex < slots.length; algorithmIndex++) {
+    for (
+      int algorithmIndex = 0;
+      algorithmIndex < slots.length;
+      algorithmIndex++
+    ) {
       final slot = slots[algorithmIndex];
       final algorithmGuid = slot.algorithm.guid;
-      
+
       // Check if this is a poly algorithm
       if (!algorithmGuid.startsWith('py')) {
         continue;
       }
-      
-      debugPrint('[NodeRoutingCubit] Found poly algorithm: ${slot.algorithm.name} (GUID: $algorithmGuid)');
-      
+
+      debugPrint(
+        '[NodeRoutingCubit] Found poly algorithm: ${slot.algorithm.name} (GUID: $algorithmGuid)',
+      );
+
       // Find gate input parameters
       final gateInputParams = <({ParameterInfo param, int gateNumber})>[];
-      
+
       for (final param in slot.parameters) {
         final nameLower = param.name.toLowerCase();
         if (nameLower.contains('gate input')) {
           // Extract gate number from parameter name
-          final gateMatch = RegExp(r'gate input (\d+)', caseSensitive: false).firstMatch(param.name);
+          final gateMatch = RegExp(
+            r'gate input (\d+)',
+            caseSensitive: false,
+          ).firstMatch(param.name);
           if (gateMatch != null) {
             final gateNumber = int.tryParse(gateMatch.group(1) ?? '1') ?? 1;
             gateInputParams.add((param: param, gateNumber: gateNumber));
           }
         }
       }
-      
+
       if (gateInputParams.isEmpty) {
-        debugPrint('[NodeRoutingCubit] Poly algorithm has no gate input parameters');
+        debugPrint(
+          '[NodeRoutingCubit] Poly algorithm has no gate input parameters',
+        );
         continue;
       }
-      
-      debugPrint('[NodeRoutingCubit] Found ${gateInputParams.length} gate input parameters');
-      
+
+      debugPrint(
+        '[NodeRoutingCubit] Found ${gateInputParams.length} gate input parameters',
+      );
+
       // For each gate input parameter, check if it's connected and create poly connections
       for (final gateInfo in gateInputParams) {
         final gateParam = gateInfo.param;
         final gateNumber = gateInfo.gateNumber;
-        
+
         final gateValue = slot.values.firstWhere(
           (v) => v.parameterNumber == gateParam.parameterNumber,
           orElse: () => ParameterValue(
@@ -1162,29 +1391,34 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             value: gateParam.defaultValue,
           ),
         );
-        
+
         // Skip if gate is not connected (value = 0)
         if (gateValue.value == 0) {
           continue;
         }
-        
+
         final gateBus = gateValue.value;
-        debugPrint('[NodeRoutingCubit] Gate $gateNumber connected to bus $gateBus');
-        
+        debugPrint(
+          '[NodeRoutingCubit] Gate $gateNumber connected to bus $gateBus',
+        );
+
         // Find output parameters that match this gate bus
         for (final output in outputParams) {
           if (output.busValue == gateBus) {
             // Create poly gate connection
             final sourcePortId = output.paramNumber.toString();
-            final targetPortId = '${gateParam.parameterNumber}'; // Gate input port
-            
-            debugPrint('[NodeRoutingCubit] *** FOUND POLY GATE CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm $algorithmIndex "Gate $gateNumber" (bus $gateBus) ***');
-            
+            final targetPortId =
+                '${gateParam.parameterNumber}'; // Gate input port
+
+            debugPrint(
+              '[NodeRoutingCubit] *** FOUND POLY GATE CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm $algorithmIndex "Gate $gateNumber" (bus $gateBus) ***',
+            );
+
             final actualMode = _getOutputModeFromParameter(
               output.algorithmIndex,
               output.paramNumber,
             );
-            
+
             connections.add(
               Connection(
                 id: 'poly_gate_${output.algorithmIndex}_${algorithmIndex}_${gateBus}_$gateNumber',
@@ -1199,7 +1433,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
             );
           }
         }
-        
+
         // TODO: Handle CV inputs associated with this gate if needed
         // For now, the main gate connection should be sufficient for display
       }
@@ -1209,46 +1443,52 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   /// Get the actual output mode from parameter value
   bool _getOutputModeFromParameter(int algorithmIndex, int parameterNumber) {
     final distingState = _distingCubit.state;
-    if (distingState is! DistingStateSynchronized) return false; // Default to Add
-    
+    if (distingState is! DistingStateSynchronized)
+      return false; // Default to Add
+
     if (algorithmIndex >= distingState.slots.length) return false;
-    
+
     final slot = distingState.slots[algorithmIndex];
-    
+
     // Find the base parameter
     final baseParam = slot.parameters.firstWhereOrNull(
       (p) => p.parameterNumber == parameterNumber,
     );
-    
+
     if (baseParam != null) {
       // Look for corresponding mode parameter
       final modeParamName = '${baseParam.name} mode';
       final modeParam = slot.parameters.firstWhereOrNull(
         (p) => p.name.toLowerCase() == modeParamName.toLowerCase(),
       );
-      
+
       if (modeParam != null) {
         // Get the actual parameter value
         final paramValue = slot.values.firstWhereOrNull(
           (v) => v.parameterNumber == modeParam.parameterNumber,
         );
-        
+
         if (paramValue != null) {
           final isReplace = paramValue.value == 1;
-          debugPrint('[NodeRoutingCubit] Output mode for "${baseParam.name}": ${isReplace ? 'Replace' : 'Add'} (param value: ${paramValue.value})');
+          debugPrint(
+            '[NodeRoutingCubit] Output mode for "${baseParam.name}": ${isReplace ? 'Replace' : 'Add'} (param value: ${paramValue.value})',
+          );
           return isReplace;
         }
       }
     }
-    
+
     // Fallback: check if this looks like an output parameter with mode
-    final allModeParams = slot.parameters.where((p) => 
-      p.name.toLowerCase().endsWith(' mode') && 
-      (p.name.toLowerCase().contains('output') || 
-       p.name.toLowerCase().contains('out') || 
-       p.name.toLowerCase().contains('send'))
-    ).toList();
-    
+    final allModeParams = slot.parameters
+        .where(
+          (p) =>
+              p.name.toLowerCase().endsWith(' mode') &&
+              (p.name.toLowerCase().contains('output') ||
+                  p.name.toLowerCase().contains('out') ||
+                  p.name.toLowerCase().contains('send')),
+        )
+        .toList();
+
     if (allModeParams.isNotEmpty) {
       // If there's only one mode parameter, use it
       if (allModeParams.length == 1) {
@@ -1256,35 +1496,39 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         final paramValue = slot.values.firstWhereOrNull(
           (v) => v.parameterNumber == modeParam.parameterNumber,
         );
-        
+
         if (paramValue != null) {
           final isReplace = paramValue.value == 1;
-          debugPrint('[NodeRoutingCubit] Fallback mode for algorithm $algorithmIndex: ${isReplace ? 'Replace' : 'Add'} (param "${modeParam.name}" = ${paramValue.value})');
+          debugPrint(
+            '[NodeRoutingCubit] Fallback mode for algorithm $algorithmIndex: ${isReplace ? 'Replace' : 'Add'} (param "${modeParam.name}" = ${paramValue.value})',
+          );
           return isReplace;
         }
       }
     }
-    
-    debugPrint('[NodeRoutingCubit] No mode parameter found for algorithm $algorithmIndex param $parameterNumber, defaulting to Add');
+
+    debugPrint(
+      '[NodeRoutingCubit] No mode parameter found for algorithm $algorithmIndex param $parameterNumber, defaulting to Add',
+    );
     return false; // Default to Add mode
   }
 
   /// Find the correct port ID for a given parameter number
   String _findPortIdForParameter(
     int algorithmIndex,
-    int parameterNumber,
-    {required bool isInput}
-  ) {
+    int parameterNumber, {
+    required bool isInput,
+  }) {
     // Port IDs are now parameter numbers as strings to ensure uniqueness
     // This matches what PortExtractionService does
     final portId = parameterNumber.toString();
-    
-    debugPrint('[NodeRoutingCubit] Using port ID "$portId" for parameter #$parameterNumber');
-    
+
+    debugPrint(
+      '[NodeRoutingCubit] Using port ID "$portId" for parameter #$parameterNumber',
+    );
+
     return portId;
   }
-
-
 
   /// Extract connected ports from connections
   Set<String> _extractConnectedPorts(List<Connection> connections) {
@@ -1317,7 +1561,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const portWidgetSize = 24.0;
     const portVerticalMargin = 4.0;
     const portRowPadding = 1.0;
-    const rowHeight = portWidgetSize + (portVerticalMargin * 2) + (portRowPadding * 2);
+    const rowHeight =
+        portWidgetSize + (portVerticalMargin * 2) + (portRowPadding * 2);
 
     for (final entry in nodePositions.entries) {
       final algorithmIndex = entry.key;
@@ -1332,16 +1577,17 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         final portId = port.id ?? port.name;
         final portKey = '${algorithmIndex}_$portId';
 
-        final portY = nodePos.y + 
-                      headerHeight + 
-                      verticalPadding + 
-                      (i * rowHeight) + 
-                      portRowPadding + 
-                      portVerticalMargin + 
-                      (portWidgetSize / 2);
+        final portY =
+            nodePos.y +
+            headerHeight +
+            verticalPadding +
+            (i * rowHeight) +
+            portRowPadding +
+            portVerticalMargin +
+            (portWidgetSize / 2);
 
         final portX = nodePos.x + horizontalPadding + (portWidgetSize / 2);
-        
+
         portPositions[portKey] = Offset(portX, portY);
       }
 
@@ -1351,16 +1597,21 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         final portId = port.id ?? port.name;
         final portKey = '${algorithmIndex}_$portId';
 
-        final portY = nodePos.y + 
-                      headerHeight + 
-                      verticalPadding + 
-                      (i * rowHeight) + 
-                      portRowPadding + 
-                      portVerticalMargin + 
-                      (portWidgetSize / 2);
+        final portY =
+            nodePos.y +
+            headerHeight +
+            verticalPadding +
+            (i * rowHeight) +
+            portRowPadding +
+            portVerticalMargin +
+            (portWidgetSize / 2);
 
-        final portX = nodePos.x + nodePos.width - horizontalPadding - (portWidgetSize / 2);
-        
+        final portX =
+            nodePos.x +
+            nodePos.width -
+            horizontalPadding -
+            (portWidgetSize / 2);
+
         portPositions[portKey] = Offset(portX, portY);
       }
     }
@@ -1388,15 +1639,17 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     // Handle physical nodes - they don't appear in portLayouts
     bool sourcePortExists = false;
     bool targetPortExists = false;
-    
+
     // Validate source port
     if (sourceAlgorithmIndex == physicalInputAlgorithmIndex) {
       // Physical input ports (I1-I12)
-      sourcePortExists = sourcePortId.startsWith('physical_input_') &&
+      sourcePortExists =
+          sourcePortId.startsWith('physical_input_') &&
           _isValidPhysicalInputPortId(sourcePortId);
     } else if (sourceAlgorithmIndex == physicalOutputAlgorithmIndex) {
       // Physical output ports (O1-O8) - these act as bidirectional
-      sourcePortExists = sourcePortId.startsWith('physical_output_') &&
+      sourcePortExists =
+          sourcePortId.startsWith('physical_output_') &&
           _isValidPhysicalOutputPortId(sourcePortId);
     } else {
       // Algorithm node source port
@@ -1406,17 +1659,19 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         (port) => (port.id ?? port.name) == sourcePortId,
       );
     }
-    
+
     if (!sourcePortExists) return false;
 
     // Validate target port
     if (targetAlgorithmIndex == physicalInputAlgorithmIndex) {
       // Physical input ports (I1-I12) - these act as bidirectional
-      targetPortExists = targetPortId.startsWith('physical_input_') &&
+      targetPortExists =
+          targetPortId.startsWith('physical_input_') &&
           _isValidPhysicalInputPortId(targetPortId);
     } else if (targetAlgorithmIndex == physicalOutputAlgorithmIndex) {
       // Physical output ports (O1-O8)
-      targetPortExists = targetPortId.startsWith('physical_output_') &&
+      targetPortExists =
+          targetPortId.startsWith('physical_output_') &&
           _isValidPhysicalOutputPortId(targetPortId);
     } else {
       // Algorithm node target port
@@ -1426,7 +1681,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         (port) => (port.id ?? port.name) == targetPortId,
       );
     }
-    
+
     if (!targetPortExists) return false;
 
     // Check if connection already exists
@@ -1462,7 +1717,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final portId = port.id ?? port.name;
       final portKey = '${algorithmIndex}_$portId';
       final portPosition = currentState.portPositions[portKey];
-      
+
       if (portPosition != null) {
         // Check if position is within port bounds (24x24 centered on position)
         const portSize = 24.0;
@@ -1471,7 +1726,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           width: portSize,
           height: portSize,
         );
-        
+
         if (portRect.contains(position)) {
           return portId;
         }
@@ -1513,14 +1768,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     for (final entry in currentState.nodePositions.entries) {
       final algorithmIndex = entry.key;
       final nodePos = entry.value;
-      
+
       final nodeRect = Rect.fromLTWH(
         nodePos.x,
         nodePos.y,
         nodePos.width,
         nodePos.height,
       );
-      
+
       if (nodeRect.contains(position)) {
         return algorithmIndex;
       }
@@ -1528,12 +1783,12 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
     return null;
   }
-  
+
   /// Move algorithm up one slot (delegate to DistingCubit)
   Future<void> moveAlgorithmUp(int algorithmIndex) async {
     await _distingCubit.moveAlgorithmUp(algorithmIndex);
   }
-  
+
   /// Move algorithm down one slot (delegate to DistingCubit)
   Future<void> moveAlgorithmDown(int algorithmIndex) async {
     await _distingCubit.moveAlgorithmDown(algorithmIndex);
@@ -1545,7 +1800,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const portRowHeight = 28.0;
     const verticalPadding = 4.0;
     const portSize = 24.0;
-    
+
     // Check if position is within physical input node bounds
     final nodeRect = Rect.fromLTWH(
       physicalInputNodeX,
@@ -1553,30 +1808,37 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       physicalNodeWidth,
       physicalInputNodeHeight,
     );
-    
+
     if (!nodeRect.contains(position)) return null;
-    
+
     // Calculate which jack was hit
-    final relativeY = position.dy - physicalNodeY - headerHeight - verticalPadding;
+    final relativeY =
+        position.dy - physicalNodeY - headerHeight - verticalPadding;
     if (relativeY < 0) return null;
-    
+
     final jackIndex = (relativeY / portRowHeight).floor();
     if (jackIndex < 0 || jackIndex >= 12) return null;
-    
+
     // Check if position is within the centered port widget area
-    final jackY = physicalNodeY + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
-    final portX = physicalInputNodeX + (physicalNodeWidth / 2); // Centered horizontally
-    
+    final jackY =
+        physicalNodeY +
+        headerHeight +
+        verticalPadding +
+        (jackIndex * portRowHeight) +
+        (portRowHeight / 2);
+    final portX =
+        physicalInputNodeX + (physicalNodeWidth / 2); // Centered horizontally
+
     final portRect = Rect.fromCenter(
       center: Offset(portX, jackY),
       width: portSize,
       height: portSize,
     );
-    
+
     if (portRect.contains(position)) {
       return 'physical_input_${jackIndex + 1}';
     }
-    
+
     return null;
   }
 
@@ -1586,12 +1848,18 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     const portRowHeight = 28.0;
     const verticalPadding = 4.0;
     const portSize = 24.0;
-    
+
     final currentState = state;
-    final outputPosition = currentState is NodeRoutingStateLoaded 
+    final outputPosition = currentState is NodeRoutingStateLoaded
         ? _getPhysicalOutputPosition(currentState)
-        : NodePosition(x: physicalOutputNodeX, y: physicalNodeY, width: physicalNodeWidth, height: physicalOutputNodeHeight, algorithmIndex: physicalOutputAlgorithmIndex);
-    
+        : NodePosition(
+            x: physicalOutputNodeX,
+            y: physicalNodeY,
+            width: physicalNodeWidth,
+            height: physicalOutputNodeHeight,
+            algorithmIndex: physicalOutputAlgorithmIndex,
+          );
+
     // Check if position is within physical output node bounds
     final nodeRect = Rect.fromLTWH(
       outputPosition.x,
@@ -1599,30 +1867,37 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       physicalNodeWidth,
       physicalOutputNodeHeight,
     );
-    
+
     if (!nodeRect.contains(position)) return null;
-    
+
     // Calculate which jack was hit
-    final relativeY = position.dy - outputPosition.y - headerHeight - verticalPadding;
+    final relativeY =
+        position.dy - outputPosition.y - headerHeight - verticalPadding;
     if (relativeY < 0) return null;
-    
+
     final jackIndex = (relativeY / portRowHeight).floor();
     if (jackIndex < 0 || jackIndex >= 8) return null;
-    
+
     // Check if position is within the centered port widget area
-    final jackY = outputPosition.y + headerHeight + verticalPadding + (jackIndex * portRowHeight) + (portRowHeight / 2);
-    final portX = outputPosition.x + (physicalNodeWidth / 2); // Centered horizontally
-    
+    final jackY =
+        outputPosition.y +
+        headerHeight +
+        verticalPadding +
+        (jackIndex * portRowHeight) +
+        (portRowHeight / 2);
+    final portX =
+        outputPosition.x + (physicalNodeWidth / 2); // Centered horizontally
+
     final portRect = Rect.fromCenter(
       center: Offset(portX, jackY),
       width: portSize,
       height: portSize,
     );
-    
+
     if (portRect.contains(position)) {
       return 'physical_output_${jackIndex + 1}';
     }
-    
+
     return null;
   }
 
@@ -1630,7 +1905,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   bool _isValidPhysicalInputPortId(String portId) {
     final match = RegExp(r'^physical_input_(\d+)$').firstMatch(portId);
     if (match == null) return false;
-    
+
     final jackNumber = int.tryParse(match.group(1) ?? '');
     return jackNumber != null && jackNumber >= 1 && jackNumber <= 12;
   }
@@ -1639,38 +1914,44 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   bool _isValidPhysicalOutputPortId(String portId) {
     final match = RegExp(r'^physical_output_(\d+)$').firstMatch(portId);
     if (match == null) return false;
-    
+
     final jackNumber = int.tryParse(match.group(1) ?? '');
     return jackNumber != null && jackNumber >= 1 && jackNumber <= 8;
   }
 
   /// Check if algorithm index is a physical node
   bool _isPhysicalNode(int algorithmIndex) {
-    return algorithmIndex == physicalInputAlgorithmIndex || 
-           algorithmIndex == physicalOutputAlgorithmIndex;
+    return algorithmIndex == physicalInputAlgorithmIndex ||
+        algorithmIndex == physicalOutputAlgorithmIndex;
   }
 
   /// Add physical node ports for validation
-  void _addPhysicalNodePortsForValidation(Map<int, List<AlgorithmPort>> algorithmPorts) {
+  void _addPhysicalNodePortsForValidation(
+    Map<int, List<AlgorithmPort>> algorithmPorts,
+  ) {
     // Physical input node ports (I1-I12) - treat as output ports for dragging
     final physicalInputPorts = <AlgorithmPort>[];
     for (int i = 1; i <= 12; i++) {
-      physicalInputPorts.add(AlgorithmPort(
-        id: 'physical_input_$i',
-        name: 'I$i',
-        description: 'Physical input jack $i',
-      ));
+      physicalInputPorts.add(
+        AlgorithmPort(
+          id: 'physical_input_$i',
+          name: 'I$i',
+          description: 'Physical input jack $i',
+        ),
+      );
     }
     algorithmPorts[physicalInputAlgorithmIndex] = physicalInputPorts;
-    
+
     // Physical output node ports (O1-O8) - treat as input ports for dropping
     final physicalOutputPorts = <AlgorithmPort>[];
     for (int i = 1; i <= 8; i++) {
-      physicalOutputPorts.add(AlgorithmPort(
-        id: 'physical_output_$i',
-        name: 'O$i',
-        description: 'Physical output jack $i',
-      ));
+      physicalOutputPorts.add(
+        AlgorithmPort(
+          id: 'physical_output_$i',
+          name: 'O$i',
+          description: 'Physical output jack $i',
+        ),
+      );
     }
     algorithmPorts[physicalOutputAlgorithmIndex] = physicalOutputPorts;
   }
@@ -1679,16 +1960,17 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   static void updatePhysicalOutputPositionStatic(double screenWidth) {
     physicalOutputNodeX = screenWidth - physicalNodeWidth - 50.0;
   }
-  
+
   /// Get physical output position with fallback to default
   NodePosition _getPhysicalOutputPosition(NodeRoutingStateLoaded state) {
-    return state.physicalOutputPosition ?? NodePosition(
-      x: physicalOutputNodeX,
-      y: physicalNodeY,
-      width: physicalNodeWidth,
-      height: physicalOutputNodeHeight,
-      algorithmIndex: physicalOutputAlgorithmIndex,
-    );
+    return state.physicalOutputPosition ??
+        NodePosition(
+          x: physicalOutputNodeX,
+          y: physicalNodeY,
+          width: physicalNodeWidth,
+          height: physicalOutputNodeHeight,
+          algorithmIndex: physicalOutputAlgorithmIndex,
+        );
   }
 
   /// Update physical output node position
@@ -1696,30 +1978,36 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is NodeRoutingStateLoaded) {
       // Recalculate port positions with updated physical output position
-      final updatedPortPositions = Map<String, Offset>.from(currentState.portPositions);
-      
+      final updatedPortPositions = Map<String, Offset>.from(
+        currentState.portPositions,
+      );
+
       // Update static variable for backward compatibility
       physicalOutputNodeX = newPosition.x;
-      
+
       // Recalculate physical node port positions
       _addPhysicalNodePortPositions(updatedPortPositions);
 
-      emit(currentState.copyWith(
-        physicalOutputPosition: newPosition,
-        portPositions: updatedPortPositions,
-      ));
+      emit(
+        currentState.copyWith(
+          physicalOutputPosition: newPosition,
+          portPositions: updatedPortPositions,
+        ),
+      );
 
       // Save position to persistence service if needed
       final presetName = _distingCubit.state.maybeMap(
         orElse: () => 'default',
         synchronized: (s) => s.presetName,
       );
-      
+
       // Save with special index for physical output
-      final positionsToSave = Map<int, NodePosition>.from(currentState.nodePositions);
+      final positionsToSave = Map<int, NodePosition>.from(
+        currentState.nodePositions,
+      );
       positionsToSave[physicalOutputAlgorithmIndex] = newPosition;
       await _persistenceService.savePositions(presetName, positionsToSave);
-      
+
       debugPrint(
         'Physical output position updated: (${newPosition.x}, ${newPosition.y})',
       );
@@ -1730,74 +2018,98 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   void updateScreenWidth(double screenWidth) {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
-    
+
     // Update physical output position based on screen width if it hasn't been manually positioned
-    final currentPhysicalOutputPosition = _getPhysicalOutputPosition(currentState);
+    final currentPhysicalOutputPosition = _getPhysicalOutputPosition(
+      currentState,
+    );
     final currentOutputX = currentPhysicalOutputPosition.x;
     final expectedX = screenWidth - physicalNodeWidth - 50.0;
-    
+
     // Only update if the position seems to be the default calculated position
     if ((currentOutputX - expectedX).abs() > 10.0) {
       // User has manually positioned it, don't auto-update
-      debugPrint('[NodeRoutingCubit] Physical output manually positioned, preserving position');
+      debugPrint(
+        '[NodeRoutingCubit] Physical output manually positioned, preserving position',
+      );
       return;
     }
-    
+
     final newOutputPosition = currentPhysicalOutputPosition.copyWith(
       x: expectedX,
     );
-    
+
     // Update static position
     physicalOutputNodeX = expectedX;
-    
+
     // Recalculate physical node port positions
-    final updatedPortPositions = Map<String, Offset>.from(currentState.portPositions);
+    final updatedPortPositions = Map<String, Offset>.from(
+      currentState.portPositions,
+    );
     _addPhysicalNodePortPositions(updatedPortPositions);
-    
+
     // Emit updated state with new positions
-    emit(currentState.copyWith(
-      physicalOutputPosition: newOutputPosition,
-      portPositions: updatedPortPositions,
-    ));
-    
-    debugPrint('[NodeRoutingCubit] Updated physical output positions for screen width: $screenWidth');
+    emit(
+      currentState.copyWith(
+        physicalOutputPosition: newOutputPosition,
+        portPositions: updatedPortPositions,
+      ),
+    );
+
+    debugPrint(
+      '[NodeRoutingCubit] Updated physical output positions for screen width: $screenWidth',
+    );
   }
 
   /// Add port positions for physical nodes (not in nodePositions map)
   void _addPhysicalNodePortPositions(Map<String, Offset> portPositions) {
     final currentState = state;
-    
+
     // Physical node constants (must match widget definitions)
     const headerHeight = 28.0;
     const portRowHeight = 28.0;
     const verticalPadding = 4.0;
-    
+
     // Physical input node (I1-I12)
     for (int i = 1; i <= 12; i++) {
       final portId = 'physical_input_$i';
       final portKey = '${physicalInputAlgorithmIndex}_$portId';
-      
-      final jackY = physicalNodeY + headerHeight + verticalPadding + 
-                   ((i - 1) * portRowHeight) + (portRowHeight / 2);
+
+      final jackY =
+          physicalNodeY +
+          headerHeight +
+          verticalPadding +
+          ((i - 1) * portRowHeight) +
+          (portRowHeight / 2);
       final portX = physicalInputNodeX + (physicalNodeWidth / 2); // Centered
-      
+
       portPositions[portKey] = Offset(portX, jackY);
     }
-    
-    // Physical output node (O1-O8)  
+
+    // Physical output node (O1-O8)
     for (int i = 1; i <= 8; i++) {
       final portId = 'physical_output_$i';
       final portKey = '${physicalOutputAlgorithmIndex}_$portId';
-      
+
       // Use dynamic position from state if available, otherwise fall back to static
-      final outputPosition = currentState is NodeRoutingStateLoaded 
+      final outputPosition = currentState is NodeRoutingStateLoaded
           ? _getPhysicalOutputPosition(currentState)
-          : NodePosition(x: physicalOutputNodeX, y: physicalNodeY, width: physicalNodeWidth, height: 188.0, algorithmIndex: physicalOutputAlgorithmIndex);
-      
-      final jackY = outputPosition.y + headerHeight + verticalPadding + 
-                   ((i - 1) * portRowHeight) + (portRowHeight / 2);
+          : NodePosition(
+              x: physicalOutputNodeX,
+              y: physicalNodeY,
+              width: physicalNodeWidth,
+              height: 188.0,
+              algorithmIndex: physicalOutputAlgorithmIndex,
+            );
+
+      final jackY =
+          outputPosition.y +
+          headerHeight +
+          verticalPadding +
+          ((i - 1) * portRowHeight) +
+          (portRowHeight / 2);
       final portX = outputPosition.x + (physicalNodeWidth / 2); // Centered
-      
+
       portPositions[portKey] = Offset(portX, jackY);
     }
   }
@@ -1814,7 +2126,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   Future<void> toggleConnectionMode(String connectionId) async {
     // Cancel previous debounce timer
     _toggleDebounceTimer?.cancel();
-    
+
     // Debounce rapid clicks (500ms)
     _toggleDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
       await _performModeToggle(connectionId);
@@ -1826,46 +2138,52 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
 
-    final connection = currentState.connections.firstWhereOrNull((c) => c.id == connectionId);
+    final connection = currentState.connections.firstWhereOrNull(
+      (c) => c.id == connectionId,
+    );
     if (connection == null) {
       debugPrint('[NodeRoutingCubit] Connection not found: $connectionId');
       return;
     }
-    
+
     // Skip physical I/O connections (negative algorithmIndex)
     if (connection.sourceAlgorithmIndex < 0) {
-      debugPrint('[NodeRoutingCubit] Physical I/O connections do not have mode parameters');
+      debugPrint(
+        '[NodeRoutingCubit] Physical I/O connections do not have mode parameters',
+      );
       return;
     }
-    
+
     // Find mode parameter
     final modeParamNumber = _findModeParameterForOutput(
       connection.sourceAlgorithmIndex,
       connection.sourcePortId,
     );
-    
+
     if (modeParamNumber == null) {
-      debugPrint('[NodeRoutingCubit] No mode parameter found for connection $connectionId');
+      debugPrint(
+        '[NodeRoutingCubit] No mode parameter found for connection $connectionId',
+      );
       return;
     }
-    
+
     // Calculate new mode
     final currentMode = connection.replaceMode ? 1 : 0;
     final newMode = currentMode == 0 ? 1 : 0;
-    
-    debugPrint('[NodeRoutingCubit] Toggling mode for connection $connectionId: ${currentMode == 1 ? 'Replace (R)' : 'Add'} -> ${newMode == 1 ? 'Replace (R)' : 'Add'}');
-    
-    // Optimistic update - immediate UI change
-    final updatedConnection = connection.copyWith(
-      replaceMode: newMode == 1,
+
+    debugPrint(
+      '[NodeRoutingCubit] Toggling mode for connection $connectionId: ${currentMode == 1 ? 'Replace (R)' : 'Add'} -> ${newMode == 1 ? 'Replace (R)' : 'Add'}',
     );
-    
-    final updatedConnections = currentState.connections.map((c) => 
-      c.id == connectionId ? updatedConnection : c
-    ).toList();
-    
+
+    // Optimistic update - immediate UI change
+    final updatedConnection = connection.copyWith(replaceMode: newMode == 1);
+
+    final updatedConnections = currentState.connections
+        .map((c) => c.id == connectionId ? updatedConnection : c)
+        .toList();
+
     emit(currentState.copyWith(connections: updatedConnections));
-    
+
     try {
       // Queue hardware update
       await _distingCubit.updateParameterValue(
@@ -1874,17 +2192,22 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         value: newMode,
         userIsChangingTheValue: true,
       );
-      
-      debugPrint('[NodeRoutingCubit] Mode toggle successful for connection $connectionId');
+
+      debugPrint(
+        '[NodeRoutingCubit] Mode toggle successful for connection $connectionId',
+      );
     } catch (error) {
       // Revert on failure
       debugPrint('[NodeRoutingCubit] Mode toggle failed, reverting: $error');
       final revertState = state;
       if (revertState is NodeRoutingStateLoaded) {
-        final revertedConnections = revertState.connections.map((c) => 
-          c.id == connectionId ? connection : c  // Revert to original
-        ).toList();
-        
+        final revertedConnections = revertState.connections
+            .map(
+              (c) =>
+                  c.id == connectionId ? connection : c, // Revert to original
+            )
+            .toList();
+
         emit(revertState.copyWith(connections: revertedConnections));
       }
     }
@@ -1894,11 +2217,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   int? _findModeParameterForOutput(int algorithmIndex, String portId) {
     final distingState = _distingCubit.state;
     if (distingState is! DistingStateSynchronized) return null;
-    
+
     if (algorithmIndex >= distingState.slots.length) return null;
-    
+
     final slot = distingState.slots[algorithmIndex];
-    
+
     // First try to find the parameter by port ID directly (parameter number as string)
     final portParamNumber = int.tryParse(portId);
     if (portParamNumber != null) {
@@ -1906,32 +2229,44 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       final baseParam = slot.parameters.firstWhereOrNull(
         (p) => p.parameterNumber == portParamNumber,
       );
-      
+
       if (baseParam != null) {
-        debugPrint('[NodeRoutingCubit] Base parameter found: "${baseParam.name}" (${baseParam.parameterNumber})');
-        
+        debugPrint(
+          '[NodeRoutingCubit] Base parameter found: "${baseParam.name}" (${baseParam.parameterNumber})',
+        );
+
         // Look for a mode parameter with name pattern: baseParam.name + " mode"
         final modeParamName = '${baseParam.name} mode';
         final modeParam = slot.parameters.firstWhereOrNull(
           (p) => p.name.toLowerCase() == modeParamName.toLowerCase(),
         );
-        
-        debugPrint('[NodeRoutingCubit] Looking for exact mode parameter: "$modeParamName"');
-        debugPrint('[NodeRoutingCubit] Available mode parameters: ${slot.parameters.where((p) => p.name.toLowerCase().contains('mode')).map((p) => '"${p.name}" (${p.parameterNumber})').join(', ')}');
-        
+
+        debugPrint(
+          '[NodeRoutingCubit] Looking for exact mode parameter: "$modeParamName"',
+        );
+        debugPrint(
+          '[NodeRoutingCubit] Available mode parameters: ${slot.parameters.where((p) => p.name.toLowerCase().contains('mode')).map((p) => '"${p.name}" (${p.parameterNumber})').join(', ')}',
+        );
+
         if (modeParam != null) {
-          debugPrint('[NodeRoutingCubit] Found mode parameter: "${modeParam.name}" (${modeParam.parameterNumber}) for output "${baseParam.name}"');
+          debugPrint(
+            '[NodeRoutingCubit] Found mode parameter: "${modeParam.name}" (${modeParam.parameterNumber}) for output "${baseParam.name}"',
+          );
           return modeParam.parameterNumber;
         } else {
-          debugPrint('[NodeRoutingCubit] Exact mode parameter "$modeParamName" not found');
+          debugPrint(
+            '[NodeRoutingCubit] Exact mode parameter "$modeParamName" not found',
+          );
         }
       }
     }
-    
+
     // More flexible fallback: find mode parameters for outputs
     // First try exact patterns but be more specific about matching
-    debugPrint('[NodeRoutingCubit] Fallback: searching for mode parameters in slot $algorithmIndex for portId "$portId"');
-    
+    debugPrint(
+      '[NodeRoutingCubit] Fallback: searching for mode parameters in slot $algorithmIndex for portId "$portId"',
+    );
+
     // Try to match based on port parameter name patterns
     if (portParamNumber != null) {
       final allParams = slot.parameters.toList();
@@ -1941,9 +2276,12 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           // Found the base parameter, look for the next parameter that's a mode
           if (i + 1 < allParams.length) {
             final nextParam = allParams[i + 1];
-            if (nextParam.name.toLowerCase().endsWith(' mode') && 
-                nextParam.unit == 1 && nextParam.max == 1) {
-              debugPrint('[NodeRoutingCubit] Found adjacent mode parameter: "${nextParam.name}" (${nextParam.parameterNumber}) for port parameter "${param.name}"');
+            if (nextParam.name.toLowerCase().endsWith(' mode') &&
+                nextParam.unit == 1 &&
+                nextParam.max == 1) {
+              debugPrint(
+                '[NodeRoutingCubit] Found adjacent mode parameter: "${nextParam.name}" (${nextParam.parameterNumber}) for port parameter "${param.name}"',
+              );
               return nextParam.parameterNumber;
             }
           }
@@ -1951,245 +2289,324 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         }
       }
     }
-    
+
     for (final param in slot.parameters) {
       final nameLower = param.name.toLowerCase();
-      if (nameLower.endsWith(' mode') && 
-          (nameLower.contains('output') || nameLower.contains('out') || nameLower.contains('send'))) {
-        debugPrint('[NodeRoutingCubit] Found mode parameter by pattern: "${param.name}" (${param.parameterNumber})');
+      if (nameLower.endsWith(' mode') &&
+          (nameLower.contains('output') ||
+              nameLower.contains('out') ||
+              nameLower.contains('send'))) {
+        debugPrint(
+          '[NodeRoutingCubit] Found mode parameter by pattern: "${param.name}" (${param.parameterNumber})',
+        );
         return param.parameterNumber;
       }
     }
-    
+
     // Even more flexible: any parameter with 'mode' that might be related to outputs
-    final modeParams = slot.parameters.where((p) => 
-      p.name.toLowerCase().contains('mode') && 
-      p.unit == 1 && // Enum parameter
-      p.max == 1      // Binary choice (0/1)
-    ).toList();
-    
+    final modeParams = slot.parameters
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains('mode') &&
+              p.unit == 1 && // Enum parameter
+              p.max == 1, // Binary choice (0/1)
+        )
+        .toList();
+
     if (modeParams.length == 1) {
       // If there's only one mode parameter, it's likely the one we want
       final modeParam = modeParams.first;
-      debugPrint('[NodeRoutingCubit] Found single mode parameter: "${modeParam.name}" (${modeParam.parameterNumber})');
+      debugPrint(
+        '[NodeRoutingCubit] Found single mode parameter: "${modeParam.name}" (${modeParam.parameterNumber})',
+      );
       return modeParam.parameterNumber;
     } else if (modeParams.length > 1) {
       // Multiple mode parameters - try to find the one most likely to be output-related
       for (final param in modeParams) {
         final nameLower = param.name.toLowerCase();
-        if (nameLower.contains('out') || nameLower.contains('send') || nameLower.contains('main')) {
-          debugPrint('[NodeRoutingCubit] Found likely output mode parameter: "${param.name}" (${param.parameterNumber})');
+        if (nameLower.contains('out') ||
+            nameLower.contains('send') ||
+            nameLower.contains('main')) {
+          debugPrint(
+            '[NodeRoutingCubit] Found likely output mode parameter: "${param.name}" (${param.parameterNumber})',
+          );
           return param.parameterNumber;
         }
       }
-      
+
       // If still no match, use the first one and log it
       final firstMode = modeParams.first;
-      debugPrint('[NodeRoutingCubit] Using first mode parameter as fallback: "${firstMode.name}" (${firstMode.parameterNumber})');
+      debugPrint(
+        '[NodeRoutingCubit] Using first mode parameter as fallback: "${firstMode.name}" (${firstMode.parameterNumber})',
+      );
       return firstMode.parameterNumber;
     }
-    
-    debugPrint('[NodeRoutingCubit] No mode parameter found for algorithm $algorithmIndex, port $portId');
+
+    debugPrint(
+      '[NodeRoutingCubit] No mode parameter found for algorithm $algorithmIndex, port $portId',
+    );
     return null;
   }
 
   /// Schedule loading of connection modes (debounced to prevent rapid updates)
   void _scheduleLoadConnectionModes() {
     _loadConnectionModesDebouncer?.cancel();
-    _loadConnectionModesDebouncer = Timer(const Duration(milliseconds: 300), () {
-      loadConnectionModes();
-    });
+    _loadConnectionModesDebouncer = Timer(
+      const Duration(milliseconds: 300),
+      () {
+        loadConnectionModes();
+      },
+    );
   }
-  
+
   /// Load connection modes from parameter values (source of truth)
   Future<void> loadConnectionModes() async {
     final currentState = state;
     if (currentState is! NodeRoutingStateLoaded) return;
-    
+
     final distingState = _distingCubit.state;
     if (distingState is! DistingStateSynchronized) return;
-    
-    debugPrint('[NodeRoutingCubit] ========== LOADING CONNECTION MODES ==========');
-    debugPrint('[NodeRoutingCubit] Processing ${currentState.connections.length} connections');
-    
+
+    debugPrint(
+      '[NodeRoutingCubit] ========== LOADING CONNECTION MODES ==========',
+    );
+    debugPrint(
+      '[NodeRoutingCubit] Processing ${currentState.connections.length} connections',
+    );
+
     final updatedConnections = <Connection>[];
-    
+
     for (final connection in currentState.connections) {
       // Skip physical I/O connections
       if (connection.sourceAlgorithmIndex < 0) {
         updatedConnections.add(connection);
         continue;
       }
-      
-      debugPrint('[NodeRoutingCubit] Processing connection ${connection.id} from slot ${connection.sourceAlgorithmIndex}, port ${connection.sourcePortId}');
-      
+
+      debugPrint(
+        '[NodeRoutingCubit] Processing connection ${connection.id} from slot ${connection.sourceAlgorithmIndex}, port ${connection.sourcePortId}',
+      );
+
       // Find mode parameter for this connection
       final modeParamNumber = _findModeParameterForOutput(
         connection.sourceAlgorithmIndex,
         connection.sourcePortId,
       );
-      
-      if (modeParamNumber != null && connection.sourceAlgorithmIndex < distingState.slots.length) {
+
+      if (modeParamNumber != null &&
+          connection.sourceAlgorithmIndex < distingState.slots.length) {
         // Read actual value from slot parameters (source of truth)
         final slot = distingState.slots[connection.sourceAlgorithmIndex];
         final paramValue = slot.values.firstWhereOrNull(
           (v) => v.parameterNumber == modeParamNumber,
         );
-        
+
         if (paramValue != null) {
           // Update connection with actual mode
           final actualMode = paramValue.value == 1;
-          
-          updatedConnections.add(connection.copyWith(
-            replaceMode: actualMode,  // 1 = Replace, 0 = Add
-          ));
-          
-          debugPrint('[NodeRoutingCubit] ✅ Updated connection ${connection.id}: mode=${actualMode ? 'Replace (R)' : 'Add'} (param #$modeParamNumber = ${paramValue.value})');
+
+          updatedConnections.add(
+            connection.copyWith(
+              replaceMode: actualMode, // 1 = Replace, 0 = Add
+            ),
+          );
+
+          debugPrint(
+            '[NodeRoutingCubit] ✅ Updated connection ${connection.id}: mode=${actualMode ? 'Replace (R)' : 'Add'} (param #$modeParamNumber = ${paramValue.value})',
+          );
         } else {
           updatedConnections.add(connection);
-          debugPrint('[NodeRoutingCubit] ⚠️ Mode parameter #$modeParamNumber not found in slot values for connection ${connection.id}');
+          debugPrint(
+            '[NodeRoutingCubit] ⚠️ Mode parameter #$modeParamNumber not found in slot values for connection ${connection.id}',
+          );
         }
       } else {
         updatedConnections.add(connection);
-        debugPrint('[NodeRoutingCubit] ⚠️ No mode parameter found for connection ${connection.id}');
+        debugPrint(
+          '[NodeRoutingCubit] ⚠️ No mode parameter found for connection ${connection.id}',
+        );
       }
     }
-    
+
     // Validate bus sharing after loading connection modes
     debugPrint('[NodeRoutingCubit] Running bus sharing validation...');
     final validatedConnections = _validateBusSharing(updatedConnections);
-    
+
     emit(currentState.copyWith(connections: validatedConnections));
-    debugPrint('[NodeRoutingCubit] ========== CONNECTION MODES COMPLETE: ${currentState.connections.length} -> ${validatedConnections.length} connections ==========');
+    debugPrint(
+      '[NodeRoutingCubit] ========== CONNECTION MODES COMPLETE: ${currentState.connections.length} -> ${validatedConnections.length} connections ==========',
+    );
   }
 
   /// Validate bus sharing for connections based on replace mode sessions and execution order
   List<Connection> _validateBusSharing(List<Connection> connections) {
-    debugPrint('[NodeRoutingCubit] Validating bus sharing for ${connections.length} connections');
-    
+    debugPrint(
+      '[NodeRoutingCubit] Validating bus sharing for ${connections.length} connections',
+    );
+
     // Group connections by assigned bus
     final connectionsByBus = <int, List<Connection>>{};
     for (final connection in connections) {
-      connectionsByBus.putIfAbsent(connection.assignedBus, () => []).add(connection);
+      connectionsByBus
+          .putIfAbsent(connection.assignedBus, () => [])
+          .add(connection);
     }
-    
+
     final validConnections = <Connection>[];
-    
+
     for (final entry in connectionsByBus.entries) {
       final bus = entry.key;
       final connectionsOnBus = entry.value;
-      
+
       if (connectionsOnBus.length == 1) {
         // Single connection on bus - include if execution order is valid
         final connection = connectionsOnBus.first;
         if (!connection.violatesExecutionOrder) {
           validConnections.add(connection.copyWith(isValid: true));
-          debugPrint('[NodeRoutingCubit] Bus $bus: Single connection ${connection.id} - VALID');
+          debugPrint(
+            '[NodeRoutingCubit] Bus $bus: Single connection ${connection.id} - VALID',
+          );
         } else {
-          debugPrint('[NodeRoutingCubit] Bus $bus: Single connection ${connection.id} - REMOVED (exec order violation)');
+          debugPrint(
+            '[NodeRoutingCubit] Bus $bus: Single connection ${connection.id} - REMOVED (exec order violation)',
+          );
         }
         continue;
       }
-      
+
       // Multiple connections on same bus - validate using session-based logic
-      final sessionValidConnections = _validateBusConnections(bus, connectionsOnBus);
+      final sessionValidConnections = _validateBusConnections(
+        bus,
+        connectionsOnBus,
+      );
       validConnections.addAll(sessionValidConnections);
     }
-    
-    debugPrint('[NodeRoutingCubit] Bus sharing validation complete: ${connections.length} -> ${validConnections.length} connections');
+
+    debugPrint(
+      '[NodeRoutingCubit] Bus sharing validation complete: ${connections.length} -> ${validConnections.length} connections',
+    );
     return validConnections;
   }
 
   /// Validate connections on a single bus using session-based Replace mode logic
-  List<Connection> _validateBusConnections(int bus, List<Connection> connectionsOnBus) {
-    debugPrint('[NodeRoutingCubit] Bus $bus: Validating ${connectionsOnBus.length} connections with session logic');
-    
+  List<Connection> _validateBusConnections(
+    int bus,
+    List<Connection> connectionsOnBus,
+  ) {
+    debugPrint(
+      '[NodeRoutingCubit] Bus $bus: Validating ${connectionsOnBus.length} connections with session logic',
+    );
+
     // Log all connections on this bus for debugging
     for (final conn in connectionsOnBus) {
-      debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${conn.id} from slot ${conn.sourceAlgorithmIndex} - replaceMode: ${conn.replaceMode}');
+      debugPrint(
+        '[NodeRoutingCubit] Bus $bus: Connection ${conn.id} from slot ${conn.sourceAlgorithmIndex} - replaceMode: ${conn.replaceMode}',
+      );
     }
-    
+
     // Sort all connections by source algorithm execution order
     final sortedConnections = List<Connection>.from(connectionsOnBus);
-    sortedConnections.sort((a, b) => a.sourceAlgorithmIndex.compareTo(b.sourceAlgorithmIndex));
-    
+    sortedConnections.sort(
+      (a, b) => a.sourceAlgorithmIndex.compareTo(b.sourceAlgorithmIndex),
+    );
+
     // Remove execution order violations first
     final validOrderConnections = sortedConnections
         .where((conn) => !conn.violatesExecutionOrder)
         .toList();
-    
-    debugPrint('[NodeRoutingCubit] Bus $bus: ${validOrderConnections.length} connections with valid execution order');
-    
+
+    debugPrint(
+      '[NodeRoutingCubit] Bus $bus: ${validOrderConnections.length} connections with valid execution order',
+    );
+
     // Find Replace mode boundaries to determine which connections are valid
     final validConnections = <Connection>[];
     int? lastReplaceSlot;
-    
+
     // Find the last (highest slot number) Replace mode connection
     for (final connection in validOrderConnections.reversed) {
       if (connection.replaceMode) {
         lastReplaceSlot = connection.sourceAlgorithmIndex;
-        debugPrint('[NodeRoutingCubit] Bus $bus: Found last Replace mode at slot $lastReplaceSlot');
+        debugPrint(
+          '[NodeRoutingCubit] Bus $bus: Found last Replace mode at slot $lastReplaceSlot',
+        );
         break;
       }
     }
-    
+
     if (lastReplaceSlot != null) {
       // There's a Replace mode - apply session-based validation
-      debugPrint('[NodeRoutingCubit] Bus $bus: Applying Replace mode boundary at slot $lastReplaceSlot');
+      debugPrint(
+        '[NodeRoutingCubit] Bus $bus: Applying Replace mode boundary at slot $lastReplaceSlot',
+      );
       for (final connection in validOrderConnections) {
         if (connection.sourceAlgorithmIndex >= lastReplaceSlot) {
           // This connection is from the replacing session - always keep
           validConnections.add(connection.copyWith(isValid: true));
-          debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} - KEPT (replace session)');
+          debugPrint(
+            '[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} - KEPT (replace session)',
+          );
         } else {
           // This connection is from before the replace boundary
           // Only remove if it's a cross-session connection (target is after the replace boundary)
           if (connection.targetAlgorithmIndex > lastReplaceSlot) {
             // Cross-session connection - remove it
-            debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} to slot ${connection.targetAlgorithmIndex} - REMOVED (cross-session, replaced by slot $lastReplaceSlot)');
+            debugPrint(
+              '[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} to slot ${connection.targetAlgorithmIndex} - REMOVED (cross-session, replaced by slot $lastReplaceSlot)',
+            );
           } else {
             // Intra-session connection (both source and target before replace boundary) - keep it
             validConnections.add(connection.copyWith(isValid: true));
-            debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} to slot ${connection.targetAlgorithmIndex} - KEPT (intra-session before replace)');
+            debugPrint(
+              '[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} to slot ${connection.targetAlgorithmIndex} - KEPT (intra-session before replace)',
+            );
           }
         }
       }
     } else {
       // No Replace mode - keep all Add mode connections
-      debugPrint('[NodeRoutingCubit] Bus $bus: No Replace mode found, keeping all connections');
+      debugPrint(
+        '[NodeRoutingCubit] Bus $bus: No Replace mode found, keeping all connections',
+      );
       for (final connection in validOrderConnections) {
         validConnections.add(connection.copyWith(isValid: true));
-        debugPrint('[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} - KEPT (all add mode)');
+        debugPrint(
+          '[NodeRoutingCubit] Bus $bus: Connection ${connection.id} from slot ${connection.sourceAlgorithmIndex} - KEPT (all add mode)',
+        );
       }
     }
-    
-    debugPrint('[NodeRoutingCubit] Bus $bus: Session validation complete: ${connectionsOnBus.length} -> ${validConnections.length} connections');
+
+    debugPrint(
+      '[NodeRoutingCubit] Bus $bus: Session validation complete: ${connectionsOnBus.length} -> ${validConnections.length} connections',
+    );
     return validConnections;
   }
-  
+
   /// Enhance algorithm name with identifier for Feedback algorithms
   String _enhanceAlgorithmNameWithIdentifier(Slot slot) {
     final baseName = slot.algorithm.name;
     final guid = slot.algorithm.guid;
-    
+
     // Check if this is a Feedback algorithm
     if (guid == 'fbtx' || guid == 'fbrx') {
       // Look for Identifier parameter to display
       final identifierParam = slot.parameters.firstWhereOrNull(
-        (p) => p.name.toLowerCase().contains('identifier') || p.name.toLowerCase().contains('id'),
+        (p) =>
+            p.name.toLowerCase().contains('identifier') ||
+            p.name.toLowerCase().contains('id'),
       );
-      
+
       if (identifierParam != null) {
         final paramValue = slot.values.firstWhereOrNull(
           (v) => v.parameterNumber == identifierParam.parameterNumber,
         );
-        
+
         if (paramValue != null && paramValue.value > 0) {
           return '$baseName (${paramValue.value})';
         }
       }
     }
-    
+
     return baseName;
   }
 
@@ -2200,21 +2617,25 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       debugPrint('[NodeRoutingCubit] Not synchronized, cannot show parameters');
       return;
     }
-    
+
     debugPrint('[NodeRoutingCubit] ======== MODE PARAMETER DEBUG ========');
     for (int i = 0; i < distingState.slots.length; i++) {
       final slot = distingState.slots[i];
       debugPrint('[NodeRoutingCubit] Algorithm $i: ${slot.algorithm.name}');
-      
-      final modeParams = slot.parameters.where((p) => 
-        p.name.toLowerCase().contains('mode')
-      ).toList();
-      
+
+      final modeParams = slot.parameters
+          .where((p) => p.name.toLowerCase().contains('mode'))
+          .toList();
+
       if (modeParams.isNotEmpty) {
         debugPrint('[NodeRoutingCubit]   Mode parameters:');
         for (final param in modeParams) {
-          final value = slot.values.firstWhereOrNull((v) => v.parameterNumber == param.parameterNumber);
-          debugPrint('[NodeRoutingCubit]     ${param.parameterNumber}: "${param.name}" = ${value?.value ?? 'NO_VALUE'} (${param.unit == 1 ? 'ENUM' : 'OTHER'}, range: ${param.min}-${param.max})');
+          final value = slot.values.firstWhereOrNull(
+            (v) => v.parameterNumber == param.parameterNumber,
+          );
+          debugPrint(
+            '[NodeRoutingCubit]     ${param.parameterNumber}: "${param.name}" = ${value?.value ?? 'NO_VALUE'} (${param.unit == 1 ? 'ENUM' : 'OTHER'}, range: ${param.min}-${param.max})',
+          );
         }
       } else {
         debugPrint('[NodeRoutingCubit]   No mode parameters found');
@@ -2240,23 +2661,30 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     );
 
     // Update node positions map
-    final updatedNodePositions = Map<int, NodePosition>.from(currentState.nodePositions);
+    final updatedNodePositions = Map<int, NodePosition>.from(
+      currentState.nodePositions,
+    );
     updatedNodePositions[algorithmIndex] = newPosition;
 
     // Update algorithm names map
-    final updatedAlgorithmNames = Map<int, String>.from(currentState.algorithmNames);
+    final updatedAlgorithmNames = Map<int, String>.from(
+      currentState.algorithmNames,
+    );
     updatedAlgorithmNames[algorithmIndex] = algorithmName;
 
     // Create port layout for the new algorithm
     // Note: algorithmPorts parameter should already be separated into input/output lists
     // or we need to get the port layout from the PortExtractionService
     final portLayout = PortLayout(
-      inputPorts: algorithmPorts,  // For now, treat all as input ports
-      outputPorts: [],  // This should be properly separated based on actual port types
+      inputPorts: algorithmPorts, // For now, treat all as input ports
+      outputPorts:
+          [], // This should be properly separated based on actual port types
     );
 
     // Update port layouts map
-    final updatedPortLayouts = Map<int, PortLayout>.from(currentState.portLayouts);
+    final updatedPortLayouts = Map<int, PortLayout>.from(
+      currentState.portLayouts,
+    );
     updatedPortLayouts[algorithmIndex] = portLayout;
 
     // Persist positions
@@ -2267,12 +2695,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     await _persistenceService.savePositions(presetName, updatedNodePositions);
 
     // Emit updated state
-    emit(currentState.copyWith(
-      nodePositions: updatedNodePositions,
-      algorithmNames: updatedAlgorithmNames,
-      portLayouts: updatedPortLayouts,
-      hasUserRepositioned: true,
-    ));
+    emit(
+      currentState.copyWith(
+        nodePositions: updatedNodePositions,
+        algorithmNames: updatedAlgorithmNames,
+        portLayouts: updatedPortLayouts,
+        hasUserRepositioned: true,
+      ),
+    );
   }
 
   // ==================== TIDY OPTIMIZATION METHODS ====================
@@ -2286,9 +2716,11 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   Future<TidyResult> performTidy() async {
     // Check for concurrent operations first
     if (_isOptimizing) {
-      return TidyResult.failed('Tidy operation already in progress - concurrent operations not allowed');
+      return TidyResult.failed(
+        'Tidy operation already in progress - concurrent operations not allowed',
+      );
     }
-    
+
     // Check state validity
     if (state is! NodeRoutingStateLoaded) {
       return TidyResult.failed('Cannot perform tidy: invalid state');
@@ -2296,45 +2728,54 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
 
     // Preserve the loaded state before changing to optimizing
     final originalLoadedState = state as NodeRoutingStateLoaded;
-    
+
     _isOptimizing = true;
-    
+
     try {
       // Emit optimizing state
       emit(const NodeRoutingState.optimizing());
-      
+
       // Perform optimization with the preserved state
-      final result = await _busTidyOptimizer.tidyConnections(originalLoadedState);
-      
+      final result = await _busTidyOptimizer.tidyConnections(
+        originalLoadedState,
+      );
+
       if (result.success) {
         // Apply changes to hardware if optimization was successful
         try {
           await _autoRoutingService.applyTidyResult(result);
-          debugPrint('[NodeRoutingCubit] Successfully applied tidy result to hardware');
+          debugPrint(
+            '[NodeRoutingCubit] Successfully applied tidy result to hardware',
+          );
         } catch (e) {
-          debugPrint('[NodeRoutingCubit] Failed to apply tidy result to hardware: $e');
+          debugPrint(
+            '[NodeRoutingCubit] Failed to apply tidy result to hardware: $e',
+          );
           // Continue with state update - the optimization worked, just hardware sync failed
         }
-        
+
         // Update state with optimized connections
-        final newTotalBusesFreed = originalLoadedState.totalBusesFreed + result.busesFreed;
-        
-        emit(originalLoadedState.copyWith(
-          connections: result.optimizedConnections,
-          lastTidyResult: result,
-          totalBusesFreed: newTotalBusesFreed,
-        ));
+        final newTotalBusesFreed =
+            originalLoadedState.totalBusesFreed + result.busesFreed;
+
+        emit(
+          originalLoadedState.copyWith(
+            connections: result.optimizedConnections,
+            lastTidyResult: result,
+            totalBusesFreed: newTotalBusesFreed,
+          ),
+        );
       } else {
         // Restore the loaded state on failure
         emit(originalLoadedState);
       }
-      
+
       return result;
     } finally {
       _isOptimizing = false;
     }
   }
-  
+
   @override
   Future<void> close() {
     _toggleDebounceTimer?.cancel();
@@ -2346,7 +2787,8 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   /// Clear error message from state
   void clearError() {
     final currentState = state;
-    if (currentState is NodeRoutingStateLoaded && currentState.errorMessage != null) {
+    if (currentState is NodeRoutingStateLoaded &&
+        currentState.errorMessage != null) {
       emit(currentState.copyWith(errorMessage: null));
     }
   }

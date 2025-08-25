@@ -9,8 +9,10 @@ class PresetFileSystemImpl implements PresetFileSystem {
   PresetFileSystemImpl(this.manager);
 
   @override
-  Future<List<String>> listFiles(String directoryPath,
-      {bool recursive = false}) async {
+  Future<List<String>> listFiles(
+    String directoryPath, {
+    bool recursive = false,
+  }) async {
     final root = await manager.requestDirectoryListing(directoryPath);
 
     if (root == null) {
@@ -18,19 +20,23 @@ class PresetFileSystemImpl implements PresetFileSystem {
     }
 
     return root.entries.fold<List<String>>(
-        [],
-        (list, DirectoryEntry entry) async {
-          if (entry.isDirectory) {
-            if (recursive) {
-              final subList = await listFiles(entry.name, recursive: true);
-              list.addAll(subList);
+      [],
+      (list, DirectoryEntry entry) async {
+            if (entry.isDirectory) {
+              if (recursive) {
+                final subList = await listFiles(entry.name, recursive: true);
+                list.addAll(subList);
+              }
+            } else {
+              list.add(entry.name);
             }
-          } else {
-            list.add(entry.name);
+            return list;
           }
-          return list;
-        } as List<String> Function(
-            List<String> previousValue, DirectoryEntry element));
+          as List<String> Function(
+            List<String> previousValue,
+            DirectoryEntry element,
+          ),
+    );
   }
 
   @override

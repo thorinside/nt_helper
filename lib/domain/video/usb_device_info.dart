@@ -4,7 +4,7 @@ class UsbDeviceInfo {
   final int vendorId;
   final int productId;
   final bool isDistingNT;
-  
+
   const UsbDeviceInfo({
     required this.deviceId,
     required this.productName,

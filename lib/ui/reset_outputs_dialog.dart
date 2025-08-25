@@ -27,10 +27,7 @@ Future<void> showResetOutputsDialog({
             },
             dropdownMenuEntries: List.generate(29, (index) {
               if (index == 0) {
-                return const DropdownMenuEntry<int>(
-                  value: 0,
-                  label: 'None',
-                );
+                return const DropdownMenuEntry<int>(value: 0, label: 'None');
               } else if (index >= 1 && index <= 12) {
                 return DropdownMenuEntry<int>(
                   value: index,

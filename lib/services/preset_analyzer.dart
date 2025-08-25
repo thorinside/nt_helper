@@ -4,7 +4,8 @@ import '../models/preset_dependencies.dart';
 /// Analyzes preset JSON files to extract dependencies
 class PresetAnalyzer {
   static PresetDependencies analyzeDependencies(
-      Map<String, dynamic> presetData) {
+    Map<String, dynamic> presetData,
+  ) {
     final dependencies = PresetDependencies();
 
     if (presetData['slots'] != null) {
@@ -75,7 +76,9 @@ class PresetAnalyzer {
 
   /// Generate a report of what was included in the package
   static String generatePackageReport(
-      PresetDependencies dependencies, List<CollectedFile> collectedFiles) {
+    PresetDependencies dependencies,
+    List<CollectedFile> collectedFiles,
+  ) {
     final foundFiles = collectedFiles.map((f) => f.relativePath).toSet();
     final missing = <String>[];
 

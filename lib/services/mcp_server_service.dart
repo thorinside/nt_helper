@@ -16,7 +16,7 @@ import 'package:crypto/crypto.dart';
 String generateUUID() {
   // Try multiple approaches to get secure randomness
   late math.Random rng;
-  
+
   try {
     // First try: Use Dart's secure random
     rng = math.Random.secure();
@@ -27,7 +27,10 @@ String generateUUID() {
       final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
       final processId = DateTime.now().millisecondsSinceEpoch & 0xFFFF;
       final entropy = sha256.convert('$timestamp-$processId'.codeUnits).bytes;
-      final seed = entropy.fold<int>(0, (prev, byte) => prev ^ (byte << (prev % 24)));
+      final seed = entropy.fold<int>(
+        0,
+        (prev, byte) => prev ^ (byte << (prev % 24)),
+      );
       rng = math.Random(seed);
       debugPrint('[MCP] Using crypto-enhanced random: $e');
     } catch (e2) {
@@ -44,14 +47,14 @@ String generateUUID() {
       }
     }
   }
-  
+
   // Create a custom UUID v4 with our secure RNG
   final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
-  
+
   // Set version (4) and variant bits according to RFC 4122
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;  // Version 4
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;  // Variant bits
-  
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant bits
+
   // Convert to UUID format
   final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
@@ -68,7 +71,8 @@ class McpServerService extends ChangeNotifier {
   static McpServerService get instance {
     if (_instance == null) {
       throw StateError(
-          'McpServerService not initialized. Call initialize() first.');
+        'McpServerService not initialized. Call initialize() first.',
+      );
     }
     return _instance!;
   }
@@ -105,10 +109,7 @@ class McpServerService extends ChangeNotifier {
     };
   }
 
-  Future<void> start({
-    int port = 3000,
-    InternetAddress? bindAddress,
-  }) async {
+  Future<void> start({int port = 3000, InternetAddress? bindAddress}) async {
     if (isRunning) {
       debugPrint('[MCP] Server already running.');
       return;
@@ -123,7 +124,8 @@ class McpServerService extends ChangeNotifier {
       // Create HTTP server
       _httpServer = await HttpServer.bind(address, port);
       debugPrint(
-          '[MCP] HTTP Server listening on http://${address.address}:$port/mcp');
+        '[MCP] HTTP Server listening on http://${address.address}:$port/mcp',
+      );
 
       // Handle HTTP requests
       _httpSubscription = _httpServer!.listen(
@@ -180,8 +182,10 @@ class McpServerService extends ChangeNotifier {
         break;
       default:
         request.response.statusCode = HttpStatus.methodNotAllowed;
-        request.response.headers
-            .set(HttpHeaders.allowHeader, 'GET, POST, DELETE, OPTIONS');
+        request.response.headers.set(
+          HttpHeaders.allowHeader,
+          'GET, POST, DELETE, OPTIONS',
+        );
         request.response.write('Method Not Allowed');
         await request.response.close();
     }
@@ -189,10 +193,14 @@ class McpServerService extends ChangeNotifier {
 
   void _setCorsHeaders(HttpResponse response) {
     response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers
-        .set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers',
-        'Origin, X-Requested-With, Content-Type, Accept, mcp-session-id, Last-Event-ID, Authorization');
+    response.headers.set(
+      'Access-Control-Allow-Methods',
+      'GET, POST, DELETE, OPTIONS',
+    );
+    response.headers.set(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, mcp-session-id, Last-Event-ID, Authorization',
+    );
     response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Max-Age', '86400');
     response.headers.set('Access-Control-Expose-Headers', 'mcp-session-id');
@@ -231,7 +239,9 @@ class McpServerService extends ChangeNotifier {
         if (sessionId != null) {
           // Client provided a session ID - use it for the new transport
           transport = await _createNewTransport(sessionId: sessionId);
-          debugPrint('[MCP] Creating new transport with client-provided session ID: $sessionId');
+          debugPrint(
+            '[MCP] Creating new transport with client-provided session ID: $sessionId',
+          );
         } else {
           // No session ID provided - generate one
           transport = await _createNewTransport();
@@ -247,11 +257,16 @@ class McpServerService extends ChangeNotifier {
       } else {
         // Non-initialization request with unknown session ID - create a new session
         if (sessionId != null) {
-          debugPrint('[MCP] Unknown session ID $sessionId, creating new transport');
+          debugPrint(
+            '[MCP] Unknown session ID $sessionId, creating new transport',
+          );
           transport = await _createNewTransport(sessionId: sessionId);
         } else {
-          _sendErrorResponse(request, HttpStatus.badRequest,
-              'Bad Request: No session ID provided for non-initialization request');
+          _sendErrorResponse(
+            request,
+            HttpStatus.badRequest,
+            'Bad Request: No session ID provided for non-initialization request',
+          );
           return;
         }
       }
@@ -261,7 +276,10 @@ class McpServerService extends ChangeNotifier {
     } catch (e, s) {
       debugPrint('[MCP] Error handling POST request: $e\n$s');
       _sendErrorResponse(
-          request, HttpStatus.internalServerError, 'Internal server error');
+        request,
+        HttpStatus.internalServerError,
+        'Internal server error',
+      );
     }
   }
 
@@ -270,19 +288,29 @@ class McpServerService extends ChangeNotifier {
     final sessionId = request.headers.value('mcp-session-id');
     if (sessionId == null) {
       _sendErrorResponse(
-          request, HttpStatus.badRequest, 'Missing session ID for SSE stream');
+        request,
+        HttpStatus.badRequest,
+        'Missing session ID for SSE stream',
+      );
       return;
     }
-    
+
     // If session doesn't exist, create a new transport for it
     if (!_transports.containsKey(sessionId)) {
-      debugPrint('[MCP] Creating new transport for unknown session ID: $sessionId');
+      debugPrint(
+        '[MCP] Creating new transport for unknown session ID: $sessionId',
+      );
       try {
         await _createNewTransport(sessionId: sessionId);
       } catch (e) {
-        debugPrint('[MCP] Failed to create transport for session $sessionId: $e');
+        debugPrint(
+          '[MCP] Failed to create transport for session $sessionId: $e',
+        );
         _sendErrorResponse(
-            request, HttpStatus.internalServerError, 'Failed to create session');
+          request,
+          HttpStatus.internalServerError,
+          'Failed to create session',
+        );
         return;
       }
     }
@@ -304,12 +332,16 @@ class McpServerService extends ChangeNotifier {
     final sessionId = request.headers.value('mcp-session-id');
     if (sessionId == null) {
       _sendErrorResponse(
-          request, HttpStatus.badRequest, 'Missing session ID for termination');
+        request,
+        HttpStatus.badRequest,
+        'Missing session ID for termination',
+      );
       return;
     }
 
     debugPrint(
-        '[MCP] Received session termination request for session $sessionId');
+      '[MCP] Received session termination request for session $sessionId',
+    );
 
     try {
       if (_transports.containsKey(sessionId)) {
@@ -317,16 +349,23 @@ class McpServerService extends ChangeNotifier {
         await transport.handleRequest(request);
       } else {
         // Session doesn't exist - just return OK since it's already "terminated"
-        debugPrint('[MCP] Session $sessionId already terminated or never existed');
+        debugPrint(
+          '[MCP] Session $sessionId already terminated or never existed',
+        );
         request.response.statusCode = HttpStatus.ok;
         request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode({'status': 'ok', 'message': 'Session already terminated'}));
+        request.response.write(
+          jsonEncode({'status': 'ok', 'message': 'Session already terminated'}),
+        );
         await request.response.close();
       }
     } catch (e, s) {
       debugPrint('[MCP] Error handling DELETE request: $e\n$s');
-      _sendErrorResponse(request, HttpStatus.internalServerError,
-          'Error processing session termination');
+      _sendErrorResponse(
+        request,
+        HttpStatus.internalServerError,
+        'Error processing session termination',
+      );
     }
   }
 
@@ -346,11 +385,13 @@ class McpServerService extends ChangeNotifier {
       if (!headersSent) {
         request.response.statusCode = statusCode;
         request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode({
-          'jsonrpc': '2.0',
-          'error': {'code': -32000, 'message': message},
-          'id': null,
-        }));
+        request.response.write(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'error': {'code': -32000, 'message': message},
+            'id': null,
+          }),
+        );
         request.response.close();
       }
     } catch (_) {
@@ -546,16 +587,19 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     for (final entry in hardcodedContent.entries) {
       _resourceCache[entry.key] = entry.value;
       debugPrint(
-          '[MCP] ✅ Pre-loaded hardcoded resource: ${entry.key} (${entry.value.length} chars)');
+        '[MCP] ✅ Pre-loaded hardcoded resource: ${entry.key} (${entry.value.length} chars)',
+      );
     }
 
     debugPrint(
-        '[MCP] Pre-loading complete. Cached ${_resourceCache.length} resources');
+      '[MCP] Pre-loading complete. Cached ${_resourceCache.length} resources',
+    );
 
     // Debug: Show what's in the cache
     for (final entry in _resourceCache.entries) {
       debugPrint(
-          '[MCP] 📋 Cache entry: ${entry.key} -> ${entry.value.length} chars');
+        '[MCP] 📋 Cache entry: ${entry.key} -> ${entry.value.length} chars',
+      );
     }
   }
 
@@ -598,13 +642,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         'expand_features': {
           'type': 'boolean',
           'description': 'Expand parameters',
-          'default': false
-        }
+          'default': false,
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.getAlgorithmDetails(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -613,12 +658,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'List algorithms with optional category/text filtering.',
       inputSchemaProperties: {
         'category': {'type': 'string', 'description': 'Filter by category'},
-        'query': {'type': 'string', 'description': 'Text search filter'}
+        'query': {'type': 'string', 'description': 'Text search filter'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.listAlgorithms(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -630,7 +676,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.getCurrentRoutingState(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
   }
@@ -644,7 +691,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.getCurrentPreset(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -654,12 +702,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Add algorithm to first available slot. Use GUID or name (fuzzy matching >=70%).',
       inputSchemaProperties: {
         'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
-        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'}
+        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.addAlgorithm(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -668,12 +717,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description:
           'Remove algorithm from slot. WARNING: Subsequent algorithms shift down.',
       inputSchemaProperties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.removeAlgorithm(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -685,21 +735,22 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         'slot_index': {'type': 'integer', 'description': '0-based slot index'},
         'parameter_number': {
           'type': 'integer',
-          'description': 'From get_current_preset'
+          'description': 'From get_current_preset',
         },
         'parameter_name': {
           'type': 'string',
-          'description': 'Parameter name (must be unique)'
+          'description': 'Parameter name (must be unique)',
         },
         'value': {
           'type': 'number',
-          'description': 'Value within parameter min/max'
-        }
+          'description': 'Value within parameter min/max',
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.setParameterValue(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -711,13 +762,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         'slot_index': {'type': 'integer', 'description': '0-based slot index'},
         'parameter_number': {
           'type': 'integer',
-          'description': 'From get_current_preset'
-        }
+          'description': 'From get_current_preset',
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.getParameterValue(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -725,10 +777,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       'get_parameter_enum_values',
       description: 'Get available enum values for an enum parameter',
       inputSchemaProperties: {
-        'slot_index': {
-          'type': 'integer',
-          'description': '0-based slot index',
-        },
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
         'parameter_number': {
           'type': 'integer',
           'description': 'Parameter number (0-based)',
@@ -741,7 +790,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.getParameterEnumValues(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -757,12 +807,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       'set_preset_name',
       description: 'Set preset name. Use save_preset to persist.',
       inputSchemaProperties: {
-        'name': {'type': 'string', 'description': 'Preset name'}
+        'name': {'type': 'string', 'description': 'Preset name'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.setPresetName(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -771,12 +822,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'Set custom slot name. Use save_preset to persist.',
       inputSchemaProperties: {
         'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'name': {'type': 'string', 'description': 'Custom slot name'}
+        'name': {'type': 'string', 'description': 'Custom slot name'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.setSlotName(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -788,7 +840,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.newPreset(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -799,7 +852,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.savePreset(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -810,7 +864,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.getPresetName(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -818,12 +873,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       'get_slot_name',
       description: 'Get custom slot name for specified slot.',
       inputSchemaProperties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.getSlotName(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
   }
@@ -834,12 +890,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description:
           'Move algorithm up one slot. Algorithms evaluate top to bottom.',
       inputSchemaProperties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.moveAlgorithmUp(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -848,12 +905,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description:
           'Move algorithm down one slot. Algorithms evaluate top to bottom.',
       inputSchemaProperties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'}
+        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.moveAlgorithmDown(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -865,18 +923,19 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         'slot_index': {'type': 'integer', 'description': '0-based slot index'},
         'direction': {
           'type': 'string',
-          'description': 'Direction to move: "up" or "down"'
+          'description': 'Direction to move: "up" or "down"',
         },
         'steps': {
           'type': 'integer',
           'description': 'Number of steps to move (default: 1)',
-          'default': 1
-        }
+          'default': 1,
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.moveAlgorithm(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
   }
@@ -896,21 +955,22 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
             'properties': {
               'parameter_number': {
                 'type': 'integer',
-                'description': 'Parameter number (0-based)'
+                'description': 'Parameter number (0-based)',
               },
               'parameter_name': {
                 'type': 'string',
-                'description': 'Parameter name (alternative to number)'
+                'description': 'Parameter name (alternative to number)',
               },
-              'value': {'type': 'number', 'description': 'Parameter value'}
-            }
-          }
-        }
+              'value': {'type': 'number', 'description': 'Parameter value'},
+            },
+          },
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.setMultipleParameters(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -923,13 +983,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         'parameter_numbers': {
           'type': 'array',
           'description': 'Array of parameter numbers to retrieve',
-          'items': {'type': 'integer'}
-        }
+          'items': {'type': 'integer'},
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.getMultipleParameters(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -943,20 +1004,21 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'description': 'JSON object with preset_name and slots array',
           'properties': {
             'preset_name': {'type': 'string'},
-            'slots': {'type': 'array'}
+            'slots': {'type': 'array'},
           },
-          'required': ['preset_name', 'slots']
+          'required': ['preset_name', 'slots'],
         },
         'clear_existing': {
           'type': 'boolean',
           'description': 'Clear existing preset first (default: true)',
-          'default': true
-        }
+          'default': true,
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.buildPresetFromJson(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
   }
@@ -967,21 +1029,28 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'Get current module screenshot as base64 JPEG.',
       inputSchemaProperties: {},
       callback: ({args, extra}) async {
-        final Map<String, dynamic> result =
-            await tools.getModuleScreenshot(args ?? {});
+        final Map<String, dynamic> result = await tools.getModuleScreenshot(
+          args ?? {},
+        );
         if (result['success'] == true) {
-          return CallToolResult.fromContent(content: [
-            ImageContent(
-              data: result['screenshot_base64'] as String,
-              mimeType: 'image/jpeg',
-            )
-          ]);
+          return CallToolResult.fromContent(
+            content: [
+              ImageContent(
+                data: result['screenshot_base64'] as String,
+                mimeType: 'image/jpeg',
+              ),
+            ],
+          );
         } else {
-          return CallToolResult.fromContent(content: [
-            TextContent(
-                text: result['error'] as String? ??
-                    'Unknown error retrieving screenshot')
-          ]);
+          return CallToolResult.fromContent(
+            content: [
+              TextContent(
+                text:
+                    result['error'] as String? ??
+                    'Unknown error retrieving screenshot',
+              ),
+            ],
+          );
         }
       },
     );
@@ -994,7 +1063,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.getCpuUsage(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -1005,13 +1075,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       inputSchemaProperties: {
         'text': {
           'type': 'string',
-          'description': 'Note text (auto-wrapped at 31 chars)'
-        }
+          'description': 'Note text (auto-wrapped at 31 chars)',
+        },
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.setNotes(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -1023,7 +1094,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       callback: ({args, extra}) async {
         final resultJson = await tools.getNotes(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
 
@@ -1033,12 +1105,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Find if specific algorithm exists in current preset. Returns slot locations.',
       inputSchemaProperties: {
         'algorithm_guid': {'type': 'string', 'description': 'Algorithm GUID'},
-        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'}
+        'algorithm_name': {'type': 'string', 'description': 'Algorithm name'},
       },
       callback: ({args, extra}) async {
         final resultJson = await tools.findAlgorithmInPreset(args ?? {});
         return CallToolResult.fromContent(
-            content: [TextContent(text: resultJson)]);
+          content: [TextContent(text: resultJson)],
+        );
       },
     );
   }
@@ -1061,43 +1134,51 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
         debugPrint('[MCP] Diagnostics requested - Server running: $isRunning');
         return CallToolResult.fromContent(
-            content: [TextContent(text: jsonEncode(diagnostics))]);
+          content: [TextContent(text: jsonEncode(diagnostics))],
+        );
       },
     );
   }
 
   /// Helper method to create resource callback with pre-loaded content
   ReadResourceCallback _createResourceCallback(
-      String resourceName, String content) {
+    String resourceName,
+    String content,
+  ) {
     return (uri, extra) async {
       final startTime = DateTime.now();
       debugPrint(
-          '[MCP] 🔄 Serving resource: $resourceName (${content.length} chars)');
+        '[MCP] 🔄 Serving resource: $resourceName (${content.length} chars)',
+      );
 
       // DEBUGGING: Add more detailed logging for resource requests
       debugPrint('[MCP] 🔍 Resource request details:');
       debugPrint('[MCP]   - URI: ${uri.toString()}');
       debugPrint('[MCP]   - Content length: ${content.length}');
       debugPrint(
-          '[MCP]   - Content preview: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
+        '[MCP]   - Content preview: ${content.substring(0, content.length > 50 ? 50 : content.length)}...',
+      );
       debugPrint('[MCP]   - Cache entries: ${_resourceCache.keys.join(', ')}');
 
       // Double-check cache state at request time
       final originalContent = _resourceCache[resourceName];
       if (originalContent != null) {
         debugPrint(
-            '[MCP] ✅ Cache hit for $resourceName (${originalContent.length} chars)');
+          '[MCP] ✅ Cache hit for $resourceName (${originalContent.length} chars)',
+        );
       } else {
         debugPrint('[MCP] ❌ Cache miss for $resourceName');
       }
 
       // Use real content now that we know the mechanism works
-      var rawContent = originalContent ??
+      var rawContent =
+          originalContent ??
           'Documentation not available - Resource not found in cache: $resourceName';
 
       debugPrint('[MCP] 🔄 Raw content length: ${rawContent.length}');
       debugPrint(
-          '[MCP] 🔄 Raw content preview: ${rawContent.substring(0, rawContent.length > 100 ? 100 : rawContent.length)}...');
+        '[MCP] 🔄 Raw content preview: ${rawContent.substring(0, rawContent.length > 100 ? 100 : rawContent.length)}...',
+      );
 
       // SANITIZE: Replace Unicode characters that break MCP JSON serialization
       final originalLength = rawContent.length;
@@ -1114,7 +1195,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       final sanitizedLength = finalContent.length;
       if (originalLength != sanitizedLength) {
         debugPrint(
-            '[MCP] 🧹 Content sanitized: $originalLength → $sanitizedLength chars');
+          '[MCP] 🧹 Content sanitized: $originalLength → $sanitizedLength chars',
+        );
       } else {
         debugPrint('[MCP] 🧹 Content requires no sanitization');
       }
@@ -1128,7 +1210,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         final resourceContents = ResourceContents.fromJson({
           'uri': uri.toString(),
           'text': finalContent,
-          'mimeType': 'text/markdown'
+          'mimeType': 'text/markdown',
         });
 
         debugPrint('[MCP] ✅ ResourceContents created successfully');
@@ -1138,7 +1220,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
         final duration = DateTime.now().difference(startTime);
         debugPrint(
-            '[MCP] ⏱️ Resource callback completed in ${duration.inMilliseconds}ms');
+          '[MCP] ⏱️ Resource callback completed in ${duration.inMilliseconds}ms',
+        );
         debugPrint('[MCP] 🚀 Returning ReadResourceResult to transport layer');
 
         return result;
@@ -1150,7 +1233,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         debugPrint('[MCP] 🔄 Returning empty result as fallback');
         final duration = DateTime.now().difference(startTime);
         debugPrint(
-            '[MCP] ⏱️ Resource callback (fallback) completed in ${duration.inMilliseconds}ms');
+          '[MCP] ⏱️ Resource callback (fallback) completed in ${duration.inMilliseconds}ms',
+        );
 
         return ReadResourceResult(contents: []);
       }
@@ -1178,14 +1262,16 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       debugPrint('[MCP] Registering $resourceName...');
 
       // Get content from cache - fallback to error message if not found
-      final content = _resourceCache[resourceName] ??
+      final content =
+          _resourceCache[resourceName] ??
           'Documentation not available - Resource not cached: $resourceName';
 
       // DEBUGGING: Add more detailed logging for registration
       debugPrint('[MCP] 🔍 Registration details for $resourceName:');
       debugPrint('[MCP]   - Cache lookup result: ${content.length} chars');
       debugPrint(
-          '[MCP]   - Content preview: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
+        '[MCP]   - Content preview: ${content.substring(0, content.length > 50 ? 50 : content.length)}...',
+      );
 
       if (_resourceCache.containsKey(resourceName)) {
         debugPrint('[MCP] ✅ Resource found in cache');
@@ -1193,9 +1279,12 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         debugPrint('[MCP] ❌ Resource NOT found in cache - using fallback');
       }
 
-      server.resource(resourceName, resourceName,
-          _createResourceCallback(resourceName, content),
-          metadata: (mimeType: 'text/markdown', description: description));
+      server.resource(
+        resourceName,
+        resourceName,
+        _createResourceCallback(resourceName, content),
+        metadata: (mimeType: 'text/markdown', description: description),
+      );
 
       debugPrint('[MCP] ✅ Registered $resourceName (${content.length} chars)');
     }
@@ -1205,168 +1294,208 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
   void _registerHelpfulPrompts(McpServer server) {
     // Preset builder prompt - guides through building a preset step by step
-    server.prompt('preset-builder',
-        description: 'Guides you through building a custom preset step by step',
-        argsSchema: {
-          'use_case': PromptArgumentDefinition(
-            description:
-                'Describe what you want the preset to do (e.g., "audio delay with modulation", "CV sequencer setup")',
-            required: true,
-          ),
-          'skill_level': PromptArgumentDefinition(
-            description:
-                'Your experience level: "beginner", "intermediate", or "advanced"',
-            required: false,
-          ),
-        }, callback: (args, extra) async {
-      final useCase = args!['use_case'] as String;
-      final skillLevel = args['skill_level'] as String? ?? 'intermediate';
+    server.prompt(
+      'preset-builder',
+      description: 'Guides you through building a custom preset step by step',
+      argsSchema: {
+        'use_case': PromptArgumentDefinition(
+          description:
+              'Describe what you want the preset to do (e.g., "audio delay with modulation", "CV sequencer setup")',
+          required: true,
+        ),
+        'skill_level': PromptArgumentDefinition(
+          description:
+              'Your experience level: "beginner", "intermediate", or "advanced"',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final useCase = args!['use_case'] as String;
+        final skillLevel = args['skill_level'] as String? ?? 'intermediate';
 
-      return GetPromptResult(messages: [
-        PromptMessage(
-            role: PromptMessageRole.user,
-            content: TextContent(
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
                 text:
-                    'I want to build a Disting NT preset for: "$useCase"\n\nMy skill level is: $skillLevel\n\nPlease help me build this preset step by step. Start by:\n1. Understanding the current state with get_current_preset\n2. Suggesting appropriate algorithms from the right categories\n3. Setting up the signal routing properly\n4. Configuring parameters for the desired sound/behavior\n\nUse the MCP tools available to inspect the current state and build the preset interactively. Explain each step clearly and ask for feedback before proceeding to the next step.'))
-      ]);
-    });
+                    'I want to build a Disting NT preset for: "$useCase"\n\nMy skill level is: $skillLevel\n\nPlease help me build this preset step by step. Start by:\n1. Understanding the current state with get_current_preset\n2. Suggesting appropriate algorithms from the right categories\n3. Setting up the signal routing properly\n4. Configuring parameters for the desired sound/behavior\n\nUse the MCP tools available to inspect the current state and build the preset interactively. Explain each step clearly and ask for feedback before proceeding to the next step.',
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
     // Algorithm recommender prompt
-    server.prompt('algorithm-recommender',
-        description:
-            'Recommends algorithms based on musical/technical requirements',
-        argsSchema: {
-          'requirement': PromptArgumentDefinition(
-            description:
-                'What you need the algorithm to do (e.g., "filter bass frequencies", "generate random CV", "create stereo delay")',
-            required: true,
-          ),
-          'context': PromptArgumentDefinition(
-            description: 'Additional context about your setup or constraints',
-            required: false,
-          ),
-        }, callback: (args, extra) async {
-      final requirement = args!['requirement'] as String;
-      final context = args['context'] as String? ?? '';
+    server.prompt(
+      'algorithm-recommender',
+      description:
+          'Recommends algorithms based on musical/technical requirements',
+      argsSchema: {
+        'requirement': PromptArgumentDefinition(
+          description:
+              'What you need the algorithm to do (e.g., "filter bass frequencies", "generate random CV", "create stereo delay")',
+          required: true,
+        ),
+        'context': PromptArgumentDefinition(
+          description: 'Additional context about your setup or constraints',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final requirement = args!['requirement'] as String;
+        final context = args['context'] as String? ?? '';
 
-      final contextText =
-          context.isNotEmpty ? '\nAdditional context: $context' : '';
+        final contextText = context.isNotEmpty
+            ? '\nAdditional context: $context'
+            : '';
 
-      return GetPromptResult(messages: [
-        PromptMessage(
-            role: PromptMessageRole.user,
-            content: TextContent(
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
                 text:
-                    'I need an algorithm that can: "$requirement"$contextText\n\nPlease help me find the best algorithm(s) for this by:\n1. Searching through appropriate categories using list_algorithms\n2. Getting detailed information about promising candidates with get_algorithm_details\n3. Explaining the pros and cons of each option\n4. Recommending the best choice with reasoning\n5. Suggesting how to integrate it into a preset effectively\n\nFocus on practical recommendations that will work well for my specific use case.'))
-      ]);
-    });
+                    'I need an algorithm that can: "$requirement"$contextText\n\nPlease help me find the best algorithm(s) for this by:\n1. Searching through appropriate categories using list_algorithms\n2. Getting detailed information about promising candidates with get_algorithm_details\n3. Explaining the pros and cons of each option\n4. Recommending the best choice with reasoning\n5. Suggesting how to integrate it into a preset effectively\n\nFocus on practical recommendations that will work well for my specific use case.',
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
     // Routing analyzer prompt
-    server.prompt('routing-analyzer',
-        description: 'Analyzes and explains current routing configuration',
-        argsSchema: {
-          'focus': PromptArgumentDefinition(
-            description:
-                'What to focus on: "signal_flow", "problems", "optimization", or "explanation"',
-            required: false,
-          ),
-        }, callback: (args, extra) async {
-      final focus = args?['focus'] as String? ?? 'explanation';
+    server.prompt(
+      'routing-analyzer',
+      description: 'Analyzes and explains current routing configuration',
+      argsSchema: {
+        'focus': PromptArgumentDefinition(
+          description:
+              'What to focus on: "signal_flow", "problems", "optimization", or "explanation"',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final focus = args?['focus'] as String? ?? 'explanation';
 
-      String focusInstructions;
-      switch (focus) {
-        case 'signal_flow':
-          focusInstructions =
-              'Focus on explaining the signal flow path through each algorithm.';
-          break;
-        case 'problems':
-          focusInstructions =
-              'Look for potential routing problems, conflicts, or inefficiencies.';
-          break;
-        case 'optimization':
-          focusInstructions =
-              'Suggest ways to optimize the routing for better performance or sound.';
-          break;
-        default:
-          focusInstructions =
-              'Provide a clear explanation of how the routing works.';
-      }
+        String focusInstructions;
+        switch (focus) {
+          case 'signal_flow':
+            focusInstructions =
+                'Focus on explaining the signal flow path through each algorithm.';
+            break;
+          case 'problems':
+            focusInstructions =
+                'Look for potential routing problems, conflicts, or inefficiencies.';
+            break;
+          case 'optimization':
+            focusInstructions =
+                'Suggest ways to optimize the routing for better performance or sound.';
+            break;
+          default:
+            focusInstructions =
+                'Provide a clear explanation of how the routing works.';
+        }
 
-      return GetPromptResult(messages: [
-        PromptMessage(
-            role: PromptMessageRole.user,
-            content: TextContent(
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
                 text:
-                    'Please analyze the current routing configuration of my Disting NT preset.\n\n$focusInstructions\n\nSteps to follow:\n1. Get the current preset state with get_current_preset\n2. Get the routing information with get_routing\n3. Analyze the signal flow between algorithms\n4. Explain how signals move through the bus system\n5. Identify any issues or suggest improvements\n\nPlease use the physical names (Input N, Output N, Aux N) when explaining the routing, not internal bus numbers. Make the explanation clear and educational.'))
-      ]);
-    });
+                    'Please analyze the current routing configuration of my Disting NT preset.\n\n$focusInstructions\n\nSteps to follow:\n1. Get the current preset state with get_current_preset\n2. Get the routing information with get_routing\n3. Analyze the signal flow between algorithms\n4. Explain how signals move through the bus system\n5. Identify any issues or suggest improvements\n\nPlease use the physical names (Input N, Output N, Aux N) when explaining the routing, not internal bus numbers. Make the explanation clear and educational.',
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
     // Parameter tuner prompt
-    server.prompt('parameter-tuner',
-        description:
-            'Helps tune algorithm parameters for specific sounds or behaviors',
-        argsSchema: {
-          'slot_index': PromptArgumentDefinition(
-            description: 'Slot index of algorithm to tune (0-31)',
-            required: true,
-          ),
-          'desired_sound': PromptArgumentDefinition(
-            description: 'Describe the sound or behavior you want to achieve',
-            required: true,
-          ),
-          'current_issue': PromptArgumentDefinition(
-            description:
-                'What is not working about the current settings (optional)',
-            required: false,
-          ),
-        }, callback: (args, extra) async {
-      final slotIndex = args!['slot_index'];
-      final desiredSound = args['desired_sound'] as String;
-      final currentIssue = args['current_issue'] as String? ?? '';
+    server.prompt(
+      'parameter-tuner',
+      description:
+          'Helps tune algorithm parameters for specific sounds or behaviors',
+      argsSchema: {
+        'slot_index': PromptArgumentDefinition(
+          description: 'Slot index of algorithm to tune (0-31)',
+          required: true,
+        ),
+        'desired_sound': PromptArgumentDefinition(
+          description: 'Describe the sound or behavior you want to achieve',
+          required: true,
+        ),
+        'current_issue': PromptArgumentDefinition(
+          description:
+              'What is not working about the current settings (optional)',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final slotIndex = args!['slot_index'];
+        final desiredSound = args['desired_sound'] as String;
+        final currentIssue = args['current_issue'] as String? ?? '';
 
-      final issueText =
-          currentIssue.isNotEmpty ? '\nCurrent issue: $currentIssue' : '';
+        final issueText = currentIssue.isNotEmpty
+            ? '\nCurrent issue: $currentIssue'
+            : '';
 
-      return GetPromptResult(messages: [
-        PromptMessage(
-            role: PromptMessageRole.user,
-            content: TextContent(
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
                 text:
-                    'I want to tune the algorithm in slot $slotIndex to achieve: "$desiredSound"$issueText\n\nPlease help me tune the parameters by:\n1. Getting the current preset state to see what algorithm is in slot $slotIndex\n2. Getting detailed information about the algorithm and its parameters\n3. Understanding the current parameter values and their ranges\n4. Suggesting specific parameter changes to achieve the desired sound\n5. Explaining what each parameter does and how it affects the sound\n6. Making the changes step by step with explanations\n\nBe specific about parameter values and explain the reasoning behind each suggestion.'))
-      ]);
-    });
+                    'I want to tune the algorithm in slot $slotIndex to achieve: "$desiredSound"$issueText\n\nPlease help me tune the parameters by:\n1. Getting the current preset state to see what algorithm is in slot $slotIndex\n2. Getting detailed information about the algorithm and its parameters\n3. Understanding the current parameter values and their ranges\n4. Suggesting specific parameter changes to achieve the desired sound\n5. Explaining what each parameter does and how it affects the sound\n6. Making the changes step by step with explanations\n\nBe specific about parameter values and explain the reasoning behind each suggestion.',
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
     // Troubleshooter prompt
-    server.prompt('troubleshooter',
-        description: 'Helps diagnose and fix common Disting NT issues',
-        argsSchema: {
-          'problem': PromptArgumentDefinition(
-            description: 'Describe the problem you are experiencing',
-            required: true,
-          ),
-          'symptoms': PromptArgumentDefinition(
-            description: 'Additional symptoms or context about the issue',
-            required: false,
-          ),
-        }, callback: (args, extra) async {
-      final problem = args!['problem'] as String;
-      final symptoms = args['symptoms'] as String? ?? '';
+    server.prompt(
+      'troubleshooter',
+      description: 'Helps diagnose and fix common Disting NT issues',
+      argsSchema: {
+        'problem': PromptArgumentDefinition(
+          description: 'Describe the problem you are experiencing',
+          required: true,
+        ),
+        'symptoms': PromptArgumentDefinition(
+          description: 'Additional symptoms or context about the issue',
+          required: false,
+        ),
+      },
+      callback: (args, extra) async {
+        final problem = args!['problem'] as String;
+        final symptoms = args['symptoms'] as String? ?? '';
 
-      final symptomsText =
-          symptoms.isNotEmpty ? '\nAdditional symptoms: $symptoms' : '';
+        final symptomsText = symptoms.isNotEmpty
+            ? '\nAdditional symptoms: $symptoms'
+            : '';
 
-      return GetPromptResult(messages: [
-        PromptMessage(
-            role: PromptMessageRole.user,
-            content: TextContent(
+        return GetPromptResult(
+          messages: [
+            PromptMessage(
+              role: PromptMessageRole.user,
+              content: TextContent(
                 text:
-                    'I am having this problem with my Disting NT: "$problem"$symptomsText\n\nPlease help me troubleshoot this by:\n1. Checking the connection status with mcp_diagnostics\n2. Getting the current preset state to understand the configuration\n3. Checking routing and signal flow if audio-related\n4. Looking at CPU usage if performance-related\n5. Suggesting step-by-step solutions to try\n6. Explaining what each diagnostic step reveals\n\nWork through the troubleshooting systematically and explain what we are checking at each step.'))
-      ]);
-    });
+                    'I am having this problem with my Disting NT: "$problem"$symptomsText\n\nPlease help me troubleshoot this by:\n1. Checking the connection status with mcp_diagnostics\n2. Getting the current preset state to understand the configuration\n3. Checking routing and signal flow if audio-related\n4. Looking at CPU usage if performance-related\n5. Suggesting step-by-step solutions to try\n6. Explaining what each diagnostic step reveals\n\nWork through the troubleshooting systematically and explain what we are checking at each step.',
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Create a new transport and connect server following example pattern
-  Future<StreamableHTTPServerTransport> _createNewTransport({String? sessionId}) async {
+  Future<StreamableHTTPServerTransport> _createNewTransport({
+    String? sessionId,
+  }) async {
     StreamableHTTPServerTransport? transport;
     McpServer? server;
 
@@ -1376,11 +1505,15 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
     // Create new transport with event store for resumability
     transport = StreamableHTTPServerTransport(
       options: StreamableHTTPServerTransportOptions(
-        sessionIdGenerator: sessionId != null ? () => sessionId : () => generateUUID(),
+        sessionIdGenerator: sessionId != null
+            ? () => sessionId
+            : () => generateUUID(),
         eventStore: InMemoryEventStore(),
         onsessioninitialized: (initializedSessionId) {
           // Store both transport and server by session ID when session is initialized
-          debugPrint('[MCP] Session initialized with ID: $initializedSessionId');
+          debugPrint(
+            '[MCP] Session initialized with ID: $initializedSessionId',
+          );
           _transports[initializedSessionId] = transport!;
           _servers[initializedSessionId] = server!;
         },
@@ -1392,7 +1525,8 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       final sessionId = transport!.sessionId;
       if (sessionId != null && _transports.containsKey(sessionId)) {
         debugPrint(
-            '[MCP] Transport closed for session $sessionId, removing from transports map');
+          '[MCP] Transport closed for session $sessionId, removing from transports map',
+        );
         _cleanupSession(sessionId);
       }
     };
@@ -1414,9 +1548,11 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
 
 /// Enhanced in-memory event store for MCP message persistence
 class InMemoryEventStore implements EventStore {
-  final Map<String,
-          List<({EventId id, JsonRpcMessage message, DateTime timestamp})>>
-      _events = {};
+  final Map<
+    String,
+    List<({EventId id, JsonRpcMessage message, DateTime timestamp})>
+  >
+  _events = {};
   int _eventCounter = 0;
   static const int maxEventsPerStream = 1000;
   static const Duration maxEventAge = Duration(hours: 24);
@@ -1437,8 +1573,9 @@ class InMemoryEventStore implements EventStore {
     if (events == null) return;
 
     final now = DateTime.now();
-    events
-        .removeWhere((event) => now.difference(event.timestamp) > maxEventAge);
+    events.removeWhere(
+      (event) => now.difference(event.timestamp) > maxEventAge,
+    );
 
     if (events.length > maxEventsPerStream) {
       events.removeRange(0, events.length - maxEventsPerStream);
@@ -1449,7 +1586,7 @@ class InMemoryEventStore implements EventStore {
   Future<StreamId> replayEventsAfter(
     EventId lastEventId, {
     required Future<void> Function(EventId eventId, JsonRpcMessage message)
-        send,
+    send,
   }) async {
     String? streamId;
     int fromIndex = -1;

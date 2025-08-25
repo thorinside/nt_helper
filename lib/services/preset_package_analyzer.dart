@@ -14,7 +14,8 @@ class PresetPackageAnalyzer {
       // Decode the archive
       final archive = ZipDecoder().decodeBytes(zipBytes);
       debugPrint(
-          '[PackageAnalyzer] Decoded archive with ${archive.files.length} files');
+        '[PackageAnalyzer] Decoded archive with ${archive.files.length} files',
+      );
 
       // Find and parse manifest.json
       final manifestFile = archive.files
@@ -42,7 +43,8 @@ class PresetPackageAnalyzer {
           .toList();
 
       debugPrint(
-          '[PackageAnalyzer] Found ${rootFiles.length} files in root/ directory');
+        '[PackageAnalyzer] Found ${rootFiles.length} files in root/ directory',
+      );
 
       // Convert archive files to PackageFile objects
       final packageFiles = <PackageFile>[];
@@ -64,7 +66,8 @@ class PresetPackageAnalyzer {
       }
 
       debugPrint(
-          '[PackageAnalyzer] Created ${packageFiles.length} package file entries');
+        '[PackageAnalyzer] Created ${packageFiles.length} package file entries',
+      );
 
       return PackageAnalysis(
         packageName: packageName,
@@ -92,8 +95,9 @@ class PresetPackageAnalyzer {
 
       // Check for required files
       final hasManifest = archive.files.any((f) => f.name == 'manifest.json');
-      final hasRootDirectory =
-          archive.files.any((f) => f.name.startsWith('root/'));
+      final hasRootDirectory = archive.files.any(
+        (f) => f.name.startsWith('root/'),
+      );
 
       return hasManifest && hasRootDirectory;
     } catch (e) {
@@ -104,10 +108,14 @@ class PresetPackageAnalyzer {
 
   /// Extract specific file content from the package
   static Future<Uint8List?> extractFile(
-      Uint8List zipBytes, String filePath) async {
+    Uint8List zipBytes,
+    String filePath,
+  ) async {
     try {
       final archive = ZipDecoder().decodeBytes(zipBytes);
-      final file = archive.files.where((f) => f.isFile).firstWhere(
+      final file = archive.files
+          .where((f) => f.isFile)
+          .firstWhere(
             (f) => f.name == filePath,
             orElse: () => throw Exception('File not found: $filePath'),
           );
@@ -121,7 +129,9 @@ class PresetPackageAnalyzer {
 
   /// Get all files that would be extracted to a specific directory
   static List<PackageFile> getFilesForDirectory(
-      PackageAnalysis analysis, String directory) {
+    PackageAnalysis analysis,
+    String directory,
+  ) {
     return analysis.files
         .where((file) => file.targetPath.startsWith('$directory/'))
         .toList();

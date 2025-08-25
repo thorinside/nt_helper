@@ -7,10 +7,7 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class LoadPluginMessage extends SysexMessage {
   final String guid;
 
-  LoadPluginMessage({
-    required super.sysExId,
-    required this.guid,
-  });
+  LoadPluginMessage({required super.sysExId, required this.guid});
 
   @override
   Uint8List encode() {

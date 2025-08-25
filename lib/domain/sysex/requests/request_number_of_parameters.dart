@@ -9,8 +9,10 @@ class RequestNumberOfParametersMessage extends SysexMessage
   @override
   final int algorithmIndex;
 
-  RequestNumberOfParametersMessage(
-      {required super.sysExId, required this.algorithmIndex});
+  RequestNumberOfParametersMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+  });
 
   @override
   Uint8List encode() {

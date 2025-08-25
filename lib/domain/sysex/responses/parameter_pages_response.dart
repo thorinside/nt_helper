@@ -13,19 +13,16 @@ class ParameterPagesResponse extends SysexResponse {
     int offset = 2;
     return ParameterPages(
       algorithmIndex: algorithmIndex,
-      pages: List.generate(
-        numPages,
-        (_) {
-          final strInfo = decodeNullTerminatedAscii(data, offset);
-          offset = strInfo.nextOffset;
-          final name = strInfo.value;
-          final numParameters = data[offset++];
-          final parameterNumbers = List.generate(numParameters, (_) {
-            return data[offset++] << 7 | data[offset++];
-          });
-          return ParameterPage(name: name, parameters: parameterNumbers);
-        },
-      ),
+      pages: List.generate(numPages, (_) {
+        final strInfo = decodeNullTerminatedAscii(data, offset);
+        offset = strInfo.nextOffset;
+        final name = strInfo.value;
+        final numParameters = data[offset++];
+        final parameterNumbers = List.generate(numParameters, (_) {
+          return data[offset++] << 7 | data[offset++];
+        });
+        return ParameterPage(name: name, parameters: parameterNumbers);
+      }),
     );
   }
 }

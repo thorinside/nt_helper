@@ -11,10 +11,11 @@ class RequestParameterEnumStringsMessage extends SysexMessage
   @override
   final int parameterNumber;
 
-  RequestParameterEnumStringsMessage(
-      {required super.sysExId,
-      required this.algorithmIndex,
-      required this.parameterNumber});
+  RequestParameterEnumStringsMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+    required this.parameterNumber,
+  });
 
   @override
   Uint8List encode() {

@@ -55,17 +55,13 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     await _midiCommand.connectToDevice(device);
 
     // Listen for events
-    _midiSubscription =
-        _midiCommand.onMidiDataReceived?.listen(_handleMidiData);
+    _midiSubscription = _midiCommand.onMidiDataReceived?.listen(
+      _handleMidiData,
+    );
 
     // Update the state with selected device & isConnected
     if (currentState is Data) {
-      emit(
-        currentState.copyWith(
-          selectedDevice: device,
-          isConnected: true,
-        ),
-      );
+      emit(currentState.copyWith(selectedDevice: device, isConnected: true));
     } else {
       // If it wasn't in the data state, just create one
       emit(
@@ -106,8 +102,9 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
       int note = data[1];
       int velocity = data[2];
       // Treat Note On with velocity 0 as Note Off
-      detectedType =
-          (velocity == 0) ? MidiEventType.noteOff : MidiEventType.noteOn;
+      detectedType = (velocity == 0)
+          ? MidiEventType.noteOff
+          : MidiEventType.noteOn;
       detectedNote = note;
       detectedNumber = detectedNote;
       // debugPrint("Raw Note On: ch=$channel, note=$detectedNote, vel=$velocity -> Type=$detectedType");
@@ -123,8 +120,11 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
     // --- Process if a relevant message was detected ---
     if (detectedType != null && detectedNumber != null) {
-      final currentEventSignature =
-          (type: detectedType, channel: channel, number: detectedNumber);
+      final currentEventSignature = (
+        type: detectedType,
+        channel: channel,
+        number: detectedNumber,
+      );
 
       // Check consecutive hits
       if (currentEventSignature == _lastEventSignature) {
@@ -136,18 +136,21 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
 
       // Determine if the threshold is met for this event type
       // Note: Notes always meet threshold >= 1
-      final bool thresholdMet = (detectedType == MidiEventType.cc &&
+      final bool thresholdMet =
+          (detectedType == MidiEventType.cc &&
               _consecutiveCount >= kThreshold) ||
-          (detectedType != MidiEventType.cc /* i.e., Note On/Off */);
+          (detectedType != MidiEventType.cc /* i.e., Note On/Off */ );
 
       // Update the state
       final currentState = state;
       if (currentState is Data) {
         // --- Debug Print Start ---
         debugPrint(
-            'MIDI Event Parsed: type=$detectedType, ch=$channel, num=$detectedNumber, cc=$detectedCc, note=$detectedNote');
+          'MIDI Event Parsed: type=$detectedType, ch=$channel, num=$detectedNumber, cc=$detectedCc, note=$detectedNote',
+        );
         debugPrint(
-            'Consecutive Count: $_consecutiveCount, Threshold Met: $thresholdMet');
+          'Consecutive Count: $_consecutiveCount, Threshold Met: $thresholdMet',
+        );
         // --- Debug Print End ---
 
         // Set fields only if threshold is met, otherwise null
@@ -162,10 +165,12 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
         // --- Debug Print Start ---
         if (thresholdMet) {
           debugPrint(
-              'Emitting State: type=${nextState.lastDetectedType}, ch=${nextState.lastDetectedChannel}, cc=${nextState.lastDetectedCc}, note=${nextState.lastDetectedNote}');
+            'Emitting State: type=${nextState.lastDetectedType}, ch=${nextState.lastDetectedChannel}, cc=${nextState.lastDetectedCc}, note=${nextState.lastDetectedNote}',
+          );
         } else {
           debugPrint(
-              'Threshold not met, emitting null state for detected event.');
+            'Threshold not met, emitting null state for detected event.',
+          );
         }
         // --- Debug Print End ---
 

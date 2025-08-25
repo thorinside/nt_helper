@@ -34,8 +34,10 @@ class ConnectionPreview {
       cursorPosition: cursorPosition ?? this.cursorPosition,
       isValid: isValid ?? this.isValid,
       hoveredTargetPortId: hoveredTargetPortId ?? this.hoveredTargetPortId,
-      hoveredTargetAlgorithmIndex: hoveredTargetAlgorithmIndex ?? this.hoveredTargetAlgorithmIndex,
-      violatesExecutionOrder: violatesExecutionOrder ?? this.violatesExecutionOrder,
+      hoveredTargetAlgorithmIndex:
+          hoveredTargetAlgorithmIndex ?? this.hoveredTargetAlgorithmIndex,
+      violatesExecutionOrder:
+          violatesExecutionOrder ?? this.violatesExecutionOrder,
     );
   }
 
@@ -43,12 +45,12 @@ class ConnectionPreview {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is ConnectionPreview &&
-      other.sourceAlgorithmIndex == sourceAlgorithmIndex &&
-      other.sourcePortId == sourcePortId &&
-      other.cursorPosition == cursorPosition &&
-      other.isValid == isValid &&
-      other.hoveredTargetPortId == hoveredTargetPortId &&
-      other.hoveredTargetAlgorithmIndex == hoveredTargetAlgorithmIndex;
+        other.sourceAlgorithmIndex == sourceAlgorithmIndex &&
+        other.sourcePortId == sourcePortId &&
+        other.cursorPosition == cursorPosition &&
+        other.isValid == isValid &&
+        other.hoveredTargetPortId == hoveredTargetPortId &&
+        other.hoveredTargetAlgorithmIndex == hoveredTargetAlgorithmIndex;
   }
 
   @override

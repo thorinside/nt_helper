@@ -15,7 +15,7 @@ class SetDisplayModeMessage extends SysexMessage {
       ...buildHeader(sysExId),
       DistingNTRequestMessageType.setDisplayMode.value,
       displayMode.value & 0x7F,
-      ...buildFooter()
+      ...buildFooter(),
     ];
     return Uint8List.fromList(bytes);
   }

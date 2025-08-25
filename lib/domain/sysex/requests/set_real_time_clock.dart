@@ -7,8 +7,10 @@ import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 class SetRealTimeClockMessage extends SysexMessage {
   final int unixTimeSeconds;
 
-  SetRealTimeClockMessage(
-      {required super.sysExId, required this.unixTimeSeconds});
+  SetRealTimeClockMessage({
+    required super.sysExId,
+    required this.unixTimeSeconds,
+  });
 
   @override
   Uint8List encode() {

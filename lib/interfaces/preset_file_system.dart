@@ -6,6 +6,8 @@ abstract class PresetFileSystem {
   Future<Uint8List?> readFile(String relativePath);
 
   /// List all files in a directory (recursively if specified)
-  Future<List<String>> listFiles(String directoryPath,
-      {bool recursive = false});
+  Future<List<String>> listFiles(
+    String directoryPath, {
+    bool recursive = false,
+  });
 }

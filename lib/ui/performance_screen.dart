@@ -60,8 +60,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       body: BlocBuilder<DistingCubit, DistingState>(
         builder: (context, state) {
           if (state is DistingStateSynchronized) {
-            final mappedParameters =
-                context.read<DistingCubit>().buildMappedParameterList();
+            final mappedParameters = context
+                .read<DistingCubit>()
+                .buildMappedParameterList();
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               child: ListView.builder(
@@ -76,12 +77,12 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                                   mappedParameters[index - 1].algorithm.name)
                           ? Padding(
                               padding: EdgeInsets.only(
-                                  top: (index == 0 ? 0.0 : 16.0), bottom: 8),
+                                top: (index == 0 ? 0.0 : 16.0),
+                                bottom: 8,
+                              ),
                               child: Text(
                                 item.algorithm.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
+                                style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
                                       color: Theme.of(context)
                                           .textTheme
@@ -97,8 +98,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                           algorithm: item.algorithm,
                           routing: RoutingInfo.filler(),
                           pages: ParameterPages(
-                              algorithmIndex: item.algorithm.algorithmIndex,
-                              pages: []),
+                            algorithmIndex: item.algorithm.algorithmIndex,
+                            pages: [],
+                          ),
                           parameters: [item.parameter],
                           values: [item.value],
                           enums: [item.enums],

@@ -42,8 +42,10 @@ class SettingsService {
   static const String defaultGalleryUrl =
       'https://nt-gallery.nosuch.dev/api/gallery.json';
   static const bool defaultIncludeCommunityPlugins = false;
-  static const double defaultOverlayPositionX = -1.0; // -1 means use default positioning
-  static const double defaultOverlayPositionY = -1.0; // -1 means use default positioning
+  static const double defaultOverlayPositionX =
+      -1.0; // -1 means use default positioning
+  static const double defaultOverlayPositionY =
+      -1.0; // -1 means use default positioning
   static const double defaultOverlaySizeScale = 1.0;
 
   /// Initialize the settings service
@@ -194,18 +196,21 @@ class _SettingsDialogState extends State<SettingsDialog> {
   Future<void> _saveSettings() async {
     if (_formKey.currentState!.validate()) {
       final settings = SettingsService();
-      await settings
-          .setRequestTimeout(int.parse(_requestTimeoutController.text));
-      await settings
-          .setInterMessageDelay(int.parse(_interMessageDelayController.text));
+      await settings.setRequestTimeout(
+        int.parse(_requestTimeoutController.text),
+      );
+      await settings.setInterMessageDelay(
+        int.parse(_interMessageDelayController.text),
+      );
       await settings.setGalleryUrl(_galleryUrlController.text.trim());
       await settings.setHapticsEnabled(_hapticsEnabled);
       await settings.setMcpEnabled(_mcpEnabled);
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
 
       if (mounted) {
-        Navigator.of(context)
-            .pop(true); // Return true to indicate settings were saved
+        Navigator.of(
+          context,
+        ).pop(true); // Return true to indicate settings were saved
       }
     }
   }
@@ -244,7 +249,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           suffixText: 'ms',
                         ),
                         keyboardType: TextInputType.number,
@@ -275,7 +282,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           suffixText: 'ms',
                         ),
                         keyboardType: TextInputType.number,
@@ -304,7 +313,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       subtitle: const Text(
-                          'Provide tactile feedback when interacting with the app'),
+                        'Provide tactile feedback when interacting with the app',
+                      ),
                       value: _hapticsEnabled,
                       onChanged: (value) {
                         setState(() {
@@ -321,7 +331,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       subtitle: const Text(
-                          'When viewing an algorithm, all parameter pages will start collapsed'),
+                        'When viewing an algorithm, all parameter pages will start collapsed',
+                      ),
                       value: _startPagesCollapsed,
                       onChanged: (value) {
                         setState(() {
@@ -342,7 +353,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           hintText: 'https://...',
                         ),
                         keyboardType: TextInputType.url,
@@ -367,7 +380,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         subtitle: const Text(
-                            'Enable the MCP server for desktop integrations (Windows/MacOS only)'),
+                          'Enable the MCP server for desktop integrations (Windows/MacOS only)',
+                        ),
                         value: _mcpEnabled,
                         onChanged: (value) {
                           setState(() {
@@ -389,8 +403,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
               children: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context)
-                        .pop(false); // Return false to indicate cancel
+                    Navigator.of(
+                      context,
+                    ).pop(false); // Return false to indicate cancel
                   },
                   child: const Text('Cancel'),
                 ),
@@ -425,18 +440,15 @@ class _SettingSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
         if (subtitle != null)
           Padding(
             padding: const EdgeInsets.only(top: 4.0, bottom: 12.0),
             child: Text(
               subtitle!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           )
         else
@@ -479,9 +491,7 @@ class _SettingsStatusCardState extends State<_SettingsStatusCard> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -547,23 +557,17 @@ class _SettingListTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: Theme.of(context).colorScheme.secondary,
-          ),
+          Icon(icon, color: Theme.of(context).colorScheme.secondary),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            child: Text(title, style: Theme.of(context).textTheme.bodyLarge),
           ),
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ],
       ),

@@ -16,15 +16,15 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
   /// Connect to a video stream and start receiving frames
   void connectToStream(Stream<dynamic> videoStream) {
     debugPrint('[VideoFrameCubit] Connecting to video stream');
-    
+
     // Cancel any existing subscription
     _frameSubscription?.cancel();
-    
+
     // Reset counters
     _frameCounter = 0;
     _lastFrameTime = null;
     _fpsBuffer.clear();
-    
+
     // Subscribe to the video stream
     _frameSubscription = videoStream.listen(
       _onFrameReceived,
@@ -43,10 +43,10 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
   void _onFrameReceived(dynamic data) {
     // Cast data to Uint8List (EventChannel provides correct type for binary data)
     final frameData = data as Uint8List;
-    
+
     final now = DateTime.now();
     _frameCounter++;
-    
+
     // Calculate FPS
     double currentFps = 0.0;
     if (_lastFrameTime != null) {
@@ -54,27 +54,28 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
       if (timeDiff > 0) {
         final instantFps = 1000000.0 / timeDiff; // Convert microseconds to FPS
         _fpsBuffer.add(instantFps);
-        
+
         // Keep buffer size limited
         if (_fpsBuffer.length > _fpsBufferSize) {
           _fpsBuffer.removeAt(0);
         }
-        
+
         // Calculate average FPS
         currentFps = _fpsBuffer.reduce((a, b) => a + b) / _fpsBuffer.length;
       }
     }
-    
+
     _lastFrameTime = now;
-    
+
     // Emit new frame state
-    emit(VideoFrameState(
-      frameData: frameData,
-      frameCounter: _frameCounter,
-      lastFrameTime: now,
-      fps: currentFps,
-    ));
-    
+    emit(
+      VideoFrameState(
+        frameData: frameData,
+        frameCounter: _frameCounter,
+        lastFrameTime: now,
+        fps: currentFps,
+      ),
+    );
   }
 
   /// Disconnect from the video stream

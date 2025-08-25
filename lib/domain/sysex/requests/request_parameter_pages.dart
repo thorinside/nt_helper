@@ -9,8 +9,10 @@ class RequestParameterPagesMessage extends SysexMessage
   @override
   final int algorithmIndex;
 
-  RequestParameterPagesMessage(
-      {required super.sysExId, required this.algorithmIndex});
+  RequestParameterPagesMessage({
+    required super.sysExId,
+    required this.algorithmIndex,
+  });
 
   @override
   Uint8List encode() {

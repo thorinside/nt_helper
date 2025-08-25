@@ -8,8 +8,11 @@ class MoveAlgorithmMessage extends SysexMessage {
   final int fromIndex;
   final int toIndex;
 
-  MoveAlgorithmMessage(
-      {required super.sysExId, required this.fromIndex, required this.toIndex});
+  MoveAlgorithmMessage({
+    required super.sysExId,
+    required this.fromIndex,
+    required this.toIndex,
+  });
 
   @override
   Uint8List encode() {
