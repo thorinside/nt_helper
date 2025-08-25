@@ -571,20 +571,11 @@ class PortExtractionService {
     final baseBus = audioInputValue.value;
     debugPrint('[PortExtractionService] Audio input parameter: ${audioInputParam.name} = bus $baseBus');
     
-    // Skip if audio input is not connected (set to "None"/bus 0)
-    if (baseBus == 0) {
-      debugPrint('[PortExtractionService] Audio input not connected, skipping width-based port generation');
-      return _WidthBasedPortResult(ports: widthPorts, busAssignments: busAssignments);
-    }
+    // Note: We always generate ports regardless of connection status
+    // so they remain available for connection in the UI
     
-    // Check if width would exceed maximum bus number
-    if (baseBus + width - 1 > 28) {
-      debugPrint('[PortExtractionService] Width $width from base bus $baseBus would exceed maximum bus 28, limiting to available buses');
-    }
-    
-    // Generate ports based on width
-    for (int i = 0; i < width && (baseBus + i) <= 28; i++) {
-      final busNumber = baseBus + i;
+    // Generate ports based on width (always generate them for UI visibility)
+    for (int i = 0; i < width; i++) {
       String portName;
       String portId;
       
@@ -607,9 +598,19 @@ class PortExtractionService {
       );
       
       widthPorts.add(port);
-      busAssignments[portId] = busNumber;
       
-      debugPrint('[PortExtractionService] Added width-based port: $portName (bus $busNumber)');
+      // Only assign bus numbers if the base input is connected
+      if (baseBus > 0) {
+        final busNumber = baseBus - i;  // Use same logic as connection interpretation
+        if (busNumber >= 1 && busNumber <= 28) {
+          busAssignments[portId] = busNumber;
+          debugPrint('[PortExtractionService] Added width-based port: $portName (bus $busNumber)');
+        } else {
+          debugPrint('[PortExtractionService] Added width-based port: $portName (no valid bus)');
+        }
+      } else {
+        debugPrint('[PortExtractionService] Added width-based port: $portName (disconnected)');
+      }
     }
     
     return _WidthBasedPortResult(ports: widthPorts, busAssignments: busAssignments);
