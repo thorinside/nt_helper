@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
   desktop_drop
   pasteboard
+  share_plus
   sqlite3_flutter_libs
   universal_ble
   url_launcher_windows
