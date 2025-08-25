@@ -31,8 +31,6 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   bool _isOptimizing = false;
   bool _isUpdatingFromDistingState = false;
   Timer? _loadConnectionModesDebouncer;
-  int _lastProcessedSlotCount = -1;
-  String _lastProcessedPresetName = '';
   
   /// Proxy method to handle algorithm addition via DistingCubit
   Future<void> addAlgorithmViaDialog(BuildContext context) async {
@@ -106,26 +104,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
   void _subscribeToDistingChanges() {
     _distingSubscription = _distingCubit.stream.listen((distingState) {
       if (distingState is DistingStateSynchronized) {
-        // Check if this is a meaningful change before updating
-        final slotCount = distingState.slots.length;
-        final presetName = distingState.presetName;
-        
-        // Skip if we're already processing or if nothing significant changed
+        // Skip if we're already processing to prevent infinite loops
         if (_isUpdatingFromDistingState) {
           debugPrint('[NodeRoutingCubit] Skipping update - already processing');
           return;
         }
         
-        // Only update if slots or preset changed
-        if (slotCount != _lastProcessedSlotCount || presetName != _lastProcessedPresetName) {
-          _lastProcessedSlotCount = slotCount;
-          _lastProcessedPresetName = presetName;
-          // Convert hardware routing data to visual representation
-          _updateFromDistingState(distingState);
-        } else {
-          // Just load connection modes if needed (debounced)
-          _scheduleLoadConnectionModes();
-        }
+        // Always update from synchronized state to ensure routing canvas stays in sync
+        _updateFromDistingState(distingState);
       }
     });
     
@@ -135,8 +121,6 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       // Use a post-frame callback to avoid updating during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_isUpdatingFromDistingState) {
-          _lastProcessedSlotCount = currentDistingState.slots.length;
-          _lastProcessedPresetName = currentDistingState.presetName;
           _updateFromDistingState(currentDistingState);
         }
       });
@@ -940,6 +924,14 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       }
     }
 
+    // Handle width-based input patterns for multi-channel algorithms
+    debugPrint('[NodeRoutingCubit] Checking for width-based input patterns...');
+    _addWidthBasedConnections(connections, outputParams, slots);
+    
+    // Handle poly input patterns for polyphonic algorithms  
+    debugPrint('[NodeRoutingCubit] Checking for poly input patterns...');
+    _addPolyConnections(connections, outputParams, slots);
+
     debugPrint('[NodeRoutingCubit] Created ${connections.length} connections total');
     
     // Apply bus sharing validation to remove invalidated connections
@@ -947,6 +939,222 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
     debugPrint('[NodeRoutingCubit] After validation: ${validatedConnections.length} connections remain');
     
     return validatedConnections;
+  }
+
+  /// Add connections for width-based input patterns
+  void _addWidthBasedConnections(
+    List<Connection> connections,
+    List<({int algorithmIndex, String paramName, int paramNumber, int busValue})> outputParams,
+    List<Slot> slots,
+  ) {
+    for (int algorithmIndex = 0; algorithmIndex < slots.length; algorithmIndex++) {
+      final slot = slots[algorithmIndex];
+      final algorithmGuid = slot.algorithm.guid;
+      
+      // Check if this is a width-aware algorithm by looking for Width parameter
+      final hasWidthParam = slot.parameters.any((param) {
+        final nameLower = param.name.toLowerCase();
+        return nameLower == 'width' || nameLower == 'channels' || nameLower == 'channel count';
+      });
+      
+      if (!hasWidthParam) {
+        continue;
+      }
+      
+      debugPrint('[NodeRoutingCubit] Found width-aware algorithm: ${slot.algorithm.name} (GUID: $algorithmGuid)');
+      
+      // Find audio input parameter and width parameter
+      ParameterInfo? audioInputParam;
+      ParameterInfo? widthParam;
+      
+      for (final param in slot.parameters) {
+        final nameLower = param.name.toLowerCase();
+        if (nameLower == 'audio input' || nameLower == 'input' || nameLower == 'left input') {
+          audioInputParam = param;
+        } else if (nameLower == 'width' || nameLower == 'channels' || nameLower == 'channel count') {
+          widthParam = param;
+        }
+      }
+      
+      if (audioInputParam == null || widthParam == null) {
+        debugPrint('[NodeRoutingCubit] Width-aware algorithm missing audio input or width parameter');
+        continue;
+      }
+      
+      // Get current parameter values (using local variables to avoid null safety issues)
+      final audioParam = audioInputParam;
+      final wParam = widthParam;
+      
+      final audioInputValue = slot.values.firstWhere(
+        (v) => v.parameterNumber == audioParam.parameterNumber,
+        orElse: () => ParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: audioParam.parameterNumber,
+          value: audioParam.defaultValue,
+        ),
+      );
+      
+      final widthValue = slot.values.firstWhere(
+        (v) => v.parameterNumber == wParam.parameterNumber,
+        orElse: () => ParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: wParam.parameterNumber,
+          value: wParam.defaultValue,
+        ),
+      );
+      
+      final baseBus = audioInputValue.value;
+      final width = widthValue.value;
+      
+      debugPrint('[NodeRoutingCubit] Width pattern: base bus $baseBus, width $width');
+      
+      // Skip if audio input is not connected or width is 1 (already handled by normal logic)
+      if (baseBus == 0 || width <= 1) {
+        continue;
+      }
+      
+      // Create connections for width-based channels (base bus down to base-width+1)
+      // For example: Audio input = Aux 2 (bus 22), Width = 2 should connect Aux 1 (21) and Aux 2 (22)
+      for (int i = 0; i < width; i++) {
+        final targetBus = baseBus - i;
+        
+        // Skip if target bus goes below 1 or above 28
+        if (targetBus < 1 || targetBus > 28) {
+          continue;
+        }
+        
+        // Skip the base bus if it's already handled by normal connection logic
+        // But we actually need to handle all buses for width-based patterns
+        // so let's not skip any
+        
+        // Find output parameters that match this target bus
+        for (final output in outputParams) {
+          if (output.busValue == targetBus) {
+            // Create additional connection for this width channel
+            final sourcePortId = output.paramNumber.toString();
+            // Create appropriate port ID for the width channel
+            final channelName = width == 2 ? (i == 0 ? 'R' : 'L') : '${width - i}';
+            final targetPortId = '${audioParam.parameterNumber}_$channelName';
+            
+            debugPrint('[NodeRoutingCubit] *** FOUND WIDTH-BASED CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm $algorithmIndex "${audioParam.name}" $channelName (bus $targetBus) ***');
+            
+            final actualMode = _getOutputModeFromParameter(
+              output.algorithmIndex,
+              output.paramNumber,
+            );
+            
+            connections.add(
+              Connection(
+                id: 'width_${output.algorithmIndex}_${algorithmIndex}_${targetBus}_$channelName',
+                sourceAlgorithmIndex: output.algorithmIndex,
+                sourcePortId: sourcePortId,
+                targetAlgorithmIndex: algorithmIndex,
+                targetPortId: targetPortId,
+                assignedBus: targetBus,
+                replaceMode: actualMode,
+                isValid: true,
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /// Add connections for poly input patterns
+  void _addPolyConnections(
+    List<Connection> connections,
+    List<({int algorithmIndex, String paramName, int paramNumber, int busValue})> outputParams,
+    List<Slot> slots,
+  ) {
+    for (int algorithmIndex = 0; algorithmIndex < slots.length; algorithmIndex++) {
+      final slot = slots[algorithmIndex];
+      final algorithmGuid = slot.algorithm.guid;
+      
+      // Check if this is a poly algorithm
+      if (!algorithmGuid.startsWith('py')) {
+        continue;
+      }
+      
+      debugPrint('[NodeRoutingCubit] Found poly algorithm: ${slot.algorithm.name} (GUID: $algorithmGuid)');
+      
+      // Find gate input parameters
+      final gateInputParams = <({ParameterInfo param, int gateNumber})>[];
+      
+      for (final param in slot.parameters) {
+        final nameLower = param.name.toLowerCase();
+        if (nameLower.contains('gate input')) {
+          // Extract gate number from parameter name
+          final gateMatch = RegExp(r'gate input (\d+)', caseSensitive: false).firstMatch(param.name);
+          if (gateMatch != null) {
+            final gateNumber = int.tryParse(gateMatch.group(1) ?? '1') ?? 1;
+            gateInputParams.add((param: param, gateNumber: gateNumber));
+          }
+        }
+      }
+      
+      if (gateInputParams.isEmpty) {
+        debugPrint('[NodeRoutingCubit] Poly algorithm has no gate input parameters');
+        continue;
+      }
+      
+      debugPrint('[NodeRoutingCubit] Found ${gateInputParams.length} gate input parameters');
+      
+      // For each gate input parameter, check if it's connected and create poly connections
+      for (final gateInfo in gateInputParams) {
+        final gateParam = gateInfo.param;
+        final gateNumber = gateInfo.gateNumber;
+        
+        final gateValue = slot.values.firstWhere(
+          (v) => v.parameterNumber == gateParam.parameterNumber,
+          orElse: () => ParameterValue(
+            algorithmIndex: algorithmIndex,
+            parameterNumber: gateParam.parameterNumber,
+            value: gateParam.defaultValue,
+          ),
+        );
+        
+        // Skip if gate is not connected (value = 0)
+        if (gateValue.value == 0) {
+          continue;
+        }
+        
+        final gateBus = gateValue.value;
+        debugPrint('[NodeRoutingCubit] Gate $gateNumber connected to bus $gateBus');
+        
+        // Find output parameters that match this gate bus
+        for (final output in outputParams) {
+          if (output.busValue == gateBus) {
+            // Create poly gate connection
+            final sourcePortId = output.paramNumber.toString();
+            final targetPortId = '${gateParam.parameterNumber}'; // Gate input port
+            
+            debugPrint('[NodeRoutingCubit] *** FOUND POLY GATE CONNECTION: Algorithm ${output.algorithmIndex} "${output.paramName}" -> Algorithm $algorithmIndex "Gate $gateNumber" (bus $gateBus) ***');
+            
+            final actualMode = _getOutputModeFromParameter(
+              output.algorithmIndex,
+              output.paramNumber,
+            );
+            
+            connections.add(
+              Connection(
+                id: 'poly_gate_${output.algorithmIndex}_${algorithmIndex}_${gateBus}_$gateNumber',
+                sourceAlgorithmIndex: output.algorithmIndex,
+                sourcePortId: sourcePortId,
+                targetAlgorithmIndex: algorithmIndex,
+                targetPortId: targetPortId,
+                assignedBus: gateBus,
+                replaceMode: actualMode,
+                isValid: true,
+              ),
+            );
+          }
+        }
+        
+        // TODO: Handle CV inputs associated with this gate if needed
+        // For now, the main gate connection should be sufficient for display
+      }
+    }
   }
 
   /// Get the actual output mode from parameter value

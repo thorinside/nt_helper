@@ -19,6 +19,16 @@ class AlgorithmPortInfo {
   });
 }
 
+class _WidthBasedPortResult {
+  final List<AlgorithmPort> ports;
+  final Map<String, int> busAssignments;
+
+  const _WidthBasedPortResult({
+    required this.ports,
+    required this.busAssignments,
+  });
+}
+
 class PortExtractionService {
   final AlgorithmMetadataService _metadataService;
 
@@ -43,6 +53,12 @@ class PortExtractionService {
         // Skip gate input parameters for poly algorithms - they'll be handled specially
         if (_isPolyAlgorithm(slot.algorithm.guid) && _isGateInputParameter(paramInfo)) {
           debugPrint('🔍 [PortExtractionService] Skipping gate input parameter "${paramInfo.name}" for poly algorithm');
+          continue;
+        }
+
+        // Skip audio input parameters for width-aware algorithms - they'll be handled specially
+        if (_isWidthAwareAlgorithm(slot.algorithm.guid) && _isAudioInputParameter(paramInfo)) {
+          debugPrint('🔍 [PortExtractionService] Skipping audio input parameter "${paramInfo.name}" for width-aware algorithm');
           continue;
         }
 
@@ -78,6 +94,14 @@ class PortExtractionService {
       final polyPorts = _extractPolyInputPorts(slot);
       inputPorts.addAll(polyPorts);
       debugPrint('[PortExtractionService] Added ${polyPorts.length} poly input ports');
+    }
+
+    // Special handling for width-aware algorithms with mono/stereo/multi-channel patterns
+    if (_isWidthAwareAlgorithm(slot.algorithm.guid)) {
+      final widthResult = _extractWidthBasedInputPorts(slot);
+      inputPorts.addAll(widthResult.ports);
+      busAssignments.addAll(widthResult.busAssignments);
+      debugPrint('[PortExtractionService] Added ${widthResult.ports.length} width-based input ports');
     }
 
     // Fallback to static metadata if no live parameters found
@@ -387,14 +411,46 @@ class PortExtractionService {
 
   /// Check if algorithm uses poly input patterns (gate + CV count)
   bool _isPolyAlgorithm(String algorithmGuid) {
-    // Known poly algorithms that use gate+CV patterns
-    return algorithmGuid == 'pyfm'; // Poly FM
-    // TODO: Add other poly algorithms as discovered
+    // All poly algorithms use 'py' prefix (pycv, pyfm, pyms, pymu, pyri, pywt)
+    return algorithmGuid.startsWith('py');
+  }
+
+  /// Check if algorithm uses width-based input patterns (mono/stereo/multi-channel)
+  bool _isWidthAwareAlgorithm(String algorithmGuid) {
+    // Check if algorithm has a Width parameter in its metadata
+    final parameters = _metadataService.getExpandedParameters(algorithmGuid);
+    return parameters.any((param) {
+      final nameLower = param.name.toLowerCase();
+      return nameLower == 'width' || 
+             nameLower == 'channels' || 
+             nameLower == 'channel count';
+    });
   }
 
   /// Check if a parameter is a gate input parameter for poly algorithms
   bool _isGateInputParameter(ParameterInfo paramInfo) {
     return paramInfo.name.toLowerCase().contains('gate input');
+  }
+
+  /// Check if a parameter is a width parameter for width-aware algorithms
+  bool _isWidthParameter(ParameterInfo paramInfo) {
+    final nameLower = paramInfo.name.toLowerCase();
+    return nameLower == 'width' || 
+           nameLower == 'channels' || 
+           nameLower == 'channel count';
+  }
+
+  /// Check if a parameter is an audio input parameter for width-aware algorithms
+  bool _isAudioInputParameter(ParameterInfo paramInfo) {
+    final nameLower = paramInfo.name.toLowerCase();
+    return nameLower == 'audio input' || 
+           nameLower == 'input' ||
+           nameLower == 'left input';
+  }
+
+  /// Find width parameter for a given slot
+  ParameterInfo? _findWidthParameter(Slot slot) {
+    return slot.parameters.firstWhereOrNull((param) => _isWidthParameter(param));
   }
 
   /// Extract poly input ports for algorithms with gate+CV patterns
@@ -476,6 +532,87 @@ class PortExtractionService {
   ParameterInfo? _findCvCountParameter(Slot slot, int gateNumber) {
     return slot.parameters.firstWhereOrNull((param) =>
       param.name.toLowerCase().contains('gate $gateNumber cv count'));
+  }
+
+  /// Extract width-based input ports for algorithms with mono/stereo/multi-channel support
+  _WidthBasedPortResult _extractWidthBasedInputPorts(Slot slot) {
+    final widthPorts = <AlgorithmPort>[];
+    final busAssignments = <String, int>{};
+    
+    debugPrint('[PortExtractionService] Extracting width-based input ports for ${slot.algorithm.name}');
+    
+    // Find width parameter
+    final widthParam = _findWidthParameter(slot);
+    if (widthParam == null) {
+      debugPrint('[PortExtractionService] No width parameter found');
+      return _WidthBasedPortResult(ports: widthPorts, busAssignments: busAssignments);
+    }
+    
+    final widthValue = slot.values.firstWhere(
+      (v) => v.parameterNumber == widthParam.parameterNumber,
+      orElse: () => ParameterValue.filler(),
+    );
+    
+    final width = widthValue.value;
+    debugPrint('[PortExtractionService] Found width parameter: ${widthParam.name} = $width');
+    
+    // Find audio input parameter
+    final audioInputParam = slot.parameters.firstWhereOrNull((param) => _isAudioInputParameter(param));
+    if (audioInputParam == null) {
+      debugPrint('[PortExtractionService] No audio input parameter found');
+      return _WidthBasedPortResult(ports: widthPorts, busAssignments: busAssignments);
+    }
+    
+    final audioInputValue = slot.values.firstWhere(
+      (v) => v.parameterNumber == audioInputParam.parameterNumber,
+      orElse: () => ParameterValue.filler(),
+    );
+    
+    final baseBus = audioInputValue.value;
+    debugPrint('[PortExtractionService] Audio input parameter: ${audioInputParam.name} = bus $baseBus');
+    
+    // Skip if audio input is not connected (set to "None"/bus 0)
+    if (baseBus == 0) {
+      debugPrint('[PortExtractionService] Audio input not connected, skipping width-based port generation');
+      return _WidthBasedPortResult(ports: widthPorts, busAssignments: busAssignments);
+    }
+    
+    // Check if width would exceed maximum bus number
+    if (baseBus + width - 1 > 28) {
+      debugPrint('[PortExtractionService] Width $width from base bus $baseBus would exceed maximum bus 28, limiting to available buses');
+    }
+    
+    // Generate ports based on width
+    for (int i = 0; i < width && (baseBus + i) <= 28; i++) {
+      final busNumber = baseBus + i;
+      String portName;
+      String portId;
+      
+      if (width == 1) {
+        portName = 'Audio Input';
+        portId = '${audioInputParam.parameterNumber}';
+      } else if (width == 2) {
+        portName = i == 0 ? 'Audio Input L' : 'Audio Input R';
+        portId = '${audioInputParam.parameterNumber}_${i == 0 ? 'L' : 'R'}';
+      } else {
+        portName = 'Audio Input ${i + 1}';
+        portId = '${audioInputParam.parameterNumber}_${i + 1}';
+      }
+      
+      final port = AlgorithmPort(
+        id: portId,
+        name: portName,
+        description: 'Audio input channel ${i + 1}',
+        busIdRef: audioInputParam.name,
+      );
+      
+      widthPorts.add(port);
+      busAssignments[portId] = busNumber;
+      
+      debugPrint('[PortExtractionService] Added width-based port: $portName (bus $busNumber)');
+    }
+    
+    return _WidthBasedPortResult(ports: widthPorts, busAssignments: busAssignments);
   }
 
 }
