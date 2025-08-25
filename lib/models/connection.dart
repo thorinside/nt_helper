@@ -14,7 +14,7 @@ sealed class Connection with _$Connection {
     required int assignedBus,  // Bus number (1-28)
     required bool replaceMode,  // true = Replace, false = Add
     @Default(false) bool isValid,
-    String? edgeLabel,  // e.g., "A1 R", "O3 A", "I2 R"
+    String? edgeLabel,  // e.g., "A1", "O3 R", "I2"
   }) = _Connection;
 
   factory Connection.fromJson(Map<String, dynamic> json) =>
@@ -29,8 +29,9 @@ extension ConnectionHelpers on Connection {
     final busNum = assignedBus <= 12 ? assignedBus :
                    assignedBus <= 20 ? assignedBus - 12 :
                    assignedBus - 20;
-    // Omit mode for now since replace/add logic needs to check actual output mode parameters
-    return '$busType$busNum';
+    // Only show R suffix for Replace mode, no suffix for Add mode
+    final modeSuffix = replaceMode ? ' R' : '';
+    return '$busType$busNum$modeSuffix';
   }
   
   /// Check if this connection violates execution order

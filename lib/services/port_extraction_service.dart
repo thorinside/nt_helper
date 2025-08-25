@@ -42,6 +42,9 @@ class PortExtractionService {
 
     debugPrint('[PortExtractionService] Extracting ports from live slot data for ${slot.algorithm.name}');
 
+    // Try to get metadata for better port classification
+    final metadata = _metadataService.getAlgorithmByGuid(slot.algorithm.guid);
+    
     // Look through all parameters to find bus-type parameters
     for (final paramInfo in slot.parameters) {
       final paramValue = slot.values.firstWhere(
@@ -70,8 +73,8 @@ class PortExtractionService {
           busIdRef: paramInfo.name,
         );
 
-        final isInput = _isInputParameterFromSlot(paramInfo, slot.algorithm.guid);
-        final isOutput = _isOutputParameterFromSlot(paramInfo, slot.algorithm.guid);
+        final isInput = _isInputParameterFromSlot(paramInfo, slot.algorithm.guid, metadata);
+        final isOutput = _isOutputParameterFromSlot(paramInfo, slot.algorithm.guid, metadata);
         
         debugPrint('🔍 [PortExtractionService] Parameter "${paramInfo.name}" defaultValue=${paramInfo.defaultValue} -> isInput=$isInput, isOutput=$isOutput');
         
@@ -351,22 +354,66 @@ class PortExtractionService {
         name.contains('wave') ||
         name.contains('velocity')) {
       
-      // Must have reasonable bus range (0-27 to 0-28)
-      if (paramInfo.max >= 27 && paramInfo.min <= 28) {
+      // Must have reasonable bus range (min 0-1, max 27-28)
+      if (paramInfo.max >= 27 && paramInfo.min <= 1) {
         return true;
       }
     }
     
+    // Tertiary check: enum-based detection for parameters with bus enum values
+    // This catches parameters like "Strum" that have bus names as enum values
+    if (_hasBusEnumValues(paramInfo)) {
+      debugPrint('[PortExtractionService] Parameter "${paramInfo.name}" has bus enum values');
+      return true;
+    }
+    
     return false;
   }
+  
+  /// Check if a parameter has enum values that represent buses
+  bool _hasBusEnumValues(ParameterInfo paramInfo) {
+    // Must have the right range for bus parameters
+    if (!((paramInfo.min == 0 || paramInfo.min == 1) && paramInfo.max >= 27 && paramInfo.max <= 28)) {
+      return false;
+    }
+    
+    // Check if it has enum values (unit == 1 typically indicates enum)
+    if (paramInfo.unit != 1) {
+      return false;
+    }
+    
+    // For now, we'll accept any parameter with the right range and enum unit
+    // In the future, we could check actual enum string values if available
+    return true;
+  }
 
-  bool _isInputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid]) {
+  bool _isInputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid, AlgorithmMetadata? metadata]) {
     // 1) Check if this is a bus parameter (min 0 or 1, max 27-28)
     if (!((paramInfo.min == 0 || paramInfo.min == 1) && (paramInfo.max >= 27 && paramInfo.max <= 28))) {
       return false;
     }
     
-    // 2) Check parameter name for semantic hints
+    // 2) If we have metadata, check if this parameter matches a documented input port
+    if (metadata != null) {
+      final paramNameLower = paramInfo.name.toLowerCase();
+      for (final port in metadata.inputPorts) {
+        if (port.name.toLowerCase() == paramNameLower || 
+            port.busIdRef?.toLowerCase() == paramNameLower) {
+          debugPrint('[PortExtractionService] Parameter "${paramInfo.name}" matches metadata input port "${port.name}"');
+          return true;
+        }
+      }
+      // Also check if it's explicitly NOT an output
+      for (final port in metadata.outputPorts) {
+        if (port.name.toLowerCase() == paramNameLower || 
+            port.busIdRef?.toLowerCase() == paramNameLower) {
+          debugPrint('[PortExtractionService] Parameter "${paramInfo.name}" matches metadata output port "${port.name}" - NOT an input');
+          return false;
+        }
+      }
+    }
+    
+    // 3) Check parameter name for semantic hints
     final nameLower = paramInfo.name.toLowerCase();
     if (nameLower.contains('input')) {
       return true;
@@ -375,7 +422,17 @@ class PortExtractionService {
       return false; // It's an output, not input
     }
     
-    // 3) Fall back to defaultValue ranges
+    // 4) Check if it's an enum-based bus parameter
+    if (_hasBusEnumValues(paramInfo)) {
+      // For enum parameters without clear naming, assume input if not in output range
+      if (paramInfo.defaultValue >= 13 && paramInfo.defaultValue <= 20) {
+        return false; // Default is output bus
+      }
+      debugPrint('[PortExtractionService] Enum-based parameter "${paramInfo.name}" assumed to be input');
+      return true; // Assume input for enum-based bus parameters
+    }
+    
+    // 5) Fall back to defaultValue ranges
     if (paramInfo.defaultValue >= 1 && paramInfo.defaultValue <= 12) {
       return true; // Input buses
     }
@@ -386,13 +443,33 @@ class PortExtractionService {
     return false;
   }
 
-  bool _isOutputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid]) {
+  bool _isOutputParameterFromSlot(ParameterInfo paramInfo, [String? algorithmGuid, AlgorithmMetadata? metadata]) {
     // 1) Check if this is a bus parameter (min 0 or 1, max 27-28)
     if (!((paramInfo.min == 0 || paramInfo.min == 1) && (paramInfo.max >= 27 && paramInfo.max <= 28))) {
       return false;
     }
     
-    // 2) Check parameter name for semantic hints
+    // 2) If we have metadata, check if this parameter matches a documented output port
+    if (metadata != null) {
+      final paramNameLower = paramInfo.name.toLowerCase();
+      for (final port in metadata.outputPorts) {
+        if (port.name.toLowerCase() == paramNameLower || 
+            port.busIdRef?.toLowerCase() == paramNameLower) {
+          debugPrint('[PortExtractionService] Parameter "${paramInfo.name}" matches metadata output port "${port.name}"');
+          return true;
+        }
+      }
+      // Also check if it's explicitly NOT an input
+      for (final port in metadata.inputPorts) {
+        if (port.name.toLowerCase() == paramNameLower || 
+            port.busIdRef?.toLowerCase() == paramNameLower) {
+          debugPrint('[PortExtractionService] Parameter "${paramInfo.name}" matches metadata input port "${port.name}" - NOT an output');
+          return false;
+        }
+      }
+    }
+    
+    // 3) Check parameter name for semantic hints
     final nameLower = paramInfo.name.toLowerCase();
     if (nameLower.contains('output')) {
       return true;
@@ -401,7 +478,17 @@ class PortExtractionService {
       return false; // It's an input, not output
     }
     
-    // 3) Fall back to defaultValue ranges
+    // 4) Check if it's an enum-based bus parameter
+    if (_hasBusEnumValues(paramInfo)) {
+      // For enum parameters without clear naming, check default value
+      if (paramInfo.defaultValue >= 13 && paramInfo.defaultValue <= 20) {
+        debugPrint('[PortExtractionService] Enum-based parameter "${paramInfo.name}" assumed to be output (default in output range)');
+        return true; // Default is output bus
+      }
+      return false; // Not an output if default isn't in output range
+    }
+    
+    // 5) Fall back to defaultValue ranges
     if (paramInfo.defaultValue >= 13 && paramInfo.defaultValue <= 20) {
       return true; // Output buses
     }
@@ -583,8 +670,8 @@ class PortExtractionService {
         portName = 'Audio Input';
         portId = '${audioInputParam.parameterNumber}';
       } else if (width == 2) {
-        portName = i == 0 ? 'Audio Input R' : 'Audio Input L';
-        portId = '${audioInputParam.parameterNumber}_${i == 0 ? 'R' : 'L'}';
+        portName = i == 0 ? 'Audio Input L' : 'Audio Input R';
+        portId = '${audioInputParam.parameterNumber}_${i == 0 ? 'L' : 'R'}';
       } else {
         portName = 'Audio Input ${i + 1}';
         portId = '${audioInputParam.parameterNumber}_${i + 1}';

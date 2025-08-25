@@ -479,7 +479,7 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       targetPortId: targetPortId,
       existingConnections: currentState.connections,
     ).then((busAssignment) async {
-      debugPrint('[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, parameters: ${busAssignment.parameterUpdates.length}');
+      debugPrint('[NodeRoutingCubit] Bus assignment: ${busAssignment.edgeLabel}, channels: ${busAssignment.channelCount}, parameters: ${busAssignment.parameterUpdates.length}');
       
       // Update with actual bus assignment
       await _autoRoutingService.updateBusParameters(busAssignment.parameterUpdates);
@@ -487,15 +487,49 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
       // Mark as confirmed
       final confirmedState = state;
       if (confirmedState is NodeRoutingStateLoaded) {
-        final updatedConnections = confirmedState.connections.map((c) {
-          if (c.id == connectionId) {
-            return c.copyWith(
-              assignedBus: busAssignment.sourceBus,
-              edgeLabel: busAssignment.edgeLabel,
-            );
+        List<Connection> updatedConnections;
+        
+        // For multi-channel connections, create multiple visual connections
+        if (busAssignment.channelCount > 1) {
+          debugPrint('[NodeRoutingCubit] Creating ${busAssignment.channelCount} visual connections for multi-channel connection');
+          
+          // Remove the optimistic single connection
+          updatedConnections = confirmedState.connections.where((c) => c.id != connectionId).toList();
+          
+          // Add multiple connections for each channel
+          for (int i = 0; i < busAssignment.channelCount; i++) {
+            final channelSuffix = busAssignment.channelCount == 2 
+              ? (i == 0 ? 'L' : 'R')  // Stereo: L/R
+              : '${i + 1}';  // Multi-channel: 1/2/3...
+              
+            final channelConnectionId = '${sourceAlgorithmIndex}_${sourcePortId}_${i}_${targetAlgorithmIndex}_${targetPortId}_$i';
+            final channelBus = busAssignment.assignedBuses[i];
+            final channelEdgeLabel = _generateEdgeLabel(channelBus, busAssignment.replaceMode);
+            
+            updatedConnections.add(Connection(
+              id: channelConnectionId,
+              sourceAlgorithmIndex: sourceAlgorithmIndex,
+              sourcePortId: '${sourcePortId}_$channelSuffix',
+              targetAlgorithmIndex: targetAlgorithmIndex,
+              targetPortId: '${targetPortId}_$channelSuffix',
+              assignedBus: channelBus,
+              replaceMode: busAssignment.replaceMode,
+              edgeLabel: '$channelEdgeLabel $channelSuffix',
+              isValid: true,
+            ));
           }
-          return c;
-        }).toList();
+        } else {
+          // Single channel connection - update the existing connection
+          updatedConnections = confirmedState.connections.map((c) {
+            if (c.id == connectionId) {
+              return c.copyWith(
+                assignedBus: busAssignment.sourceBus,
+                edgeLabel: busAssignment.edgeLabel,
+              );
+            }
+            return c;
+          }).toList();
+        }
         
         final updatedTimestamps = Map<String, DateTime>.from(confirmedState.operationTimestamps);
         updatedTimestamps.remove(connectionId);
@@ -504,9 +538,10 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
           connections: updatedConnections,
           pendingConnections: confirmedState.pendingConnections.difference({connectionId}),
           operationTimestamps: updatedTimestamps,
+          connectedPorts: _extractConnectedPorts(updatedConnections),
         ));
         
-        debugPrint('[NodeRoutingCubit] Connection confirmed: $connectionId');
+        debugPrint('[NodeRoutingCubit] Connection confirmed: $connectionId (${busAssignment.channelCount} channels)');
         
         // Load actual connection modes after connection is confirmed
         loadConnectionModes();
@@ -529,6 +564,20 @@ class NodeRoutingCubit extends Cubit<NodeRoutingState> {
         ));
       }
     });
+  }
+
+  /// Generate edge label for a connection
+  String _generateEdgeLabel(int bus, bool replaceMode) {
+    String busLabel;
+    if (bus <= 12) {
+      busLabel = 'I$bus';
+    } else if (bus <= 20) {
+      busLabel = 'O${bus - 12}';
+    } else {
+      busLabel = 'A${bus - 20}';
+    }
+    // Only show R suffix for Replace mode, no suffix for Add mode
+    return replaceMode ? '$busLabel R' : busLabel;
   }
 
   /// Remove a connection

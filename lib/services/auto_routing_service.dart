@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
@@ -58,64 +59,92 @@ class AutoRoutingService {
     }
     // Standard algorithm-to-algorithm connections
     else {
-      // Get source parameter number and its current value
-      final sourceParamNumber = _findParameterNumberForPort(
-        sourceAlgorithmIndex,
-        sourcePortId,
-        isOutput: true,
-      );
-      final currentSourceBus = _getParameterValue(
-        sourceAlgorithmIndex,
-        sourceParamNumber,
-      );
-
-      // Simple rules:
-      // 1. If source is already connected (has parameter value > 0), reuse that bus
-      // 2. If source exists in existing connections, reuse that bus
-      // 3. If target is external output, use appropriate Output bus
-      // 4. Otherwise assign first available aux bus
-      if (currentSourceBus != null && currentSourceBus > 0) {
-        // Source is already connected - use its bus value
-        assignedBus = currentSourceBus;
+      // Check if target algorithm has width > 1
+      final targetWidth = _getAlgorithmWidth(targetAlgorithmIndex);
+      
+      if (targetWidth > 1) {
+        // Multi-width target algorithm - need to assign consecutive buses
         debugPrint(
-          '[AutoRoutingService] Source parameter #$sourceParamNumber has value $assignedBus, using it for connection',
+          '[AutoRoutingService] Target algorithm $targetAlgorithmIndex has width=$targetWidth, will assign consecutive buses',
+        );
+        
+        // Find consecutive available buses
+        final baseBus = _findConsecutiveAvailableBuses(
+          existingConnections,
+          targetWidth,
+        );
+        
+        if (baseBus == -1) {
+          throw InsufficientBusesException(
+            'Cannot find $targetWidth consecutive buses for width=$targetWidth connection',
+          );
+        }
+        
+        assignedBus = baseBus;
+        debugPrint(
+          '[AutoRoutingService] Assigned consecutive buses starting at $baseBus for width=$targetWidth connection',
         );
       } else {
-        // Check if this same source port is already used in existing connections
-        Connection? existingConnection;
-        try {
-          existingConnection = existingConnections.firstWhere(
-            (conn) =>
-                conn.sourceAlgorithmIndex == sourceAlgorithmIndex &&
-                conn.sourcePortId == sourcePortId,
-          );
-        } catch (e) {
-          existingConnection = null;
-        }
+        // Single-width connection - use existing logic
+        // Get source parameter number and its current value
+        final sourceParamNumber = _findParameterNumberForPort(
+          sourceAlgorithmIndex,
+          sourcePortId,
+          isOutput: true,
+        );
+        final currentSourceBus = _getParameterValue(
+          sourceAlgorithmIndex,
+          sourceParamNumber,
+        );
 
-        if (existingConnection != null && existingConnection.assignedBus > 0) {
-          // Reuse the bus from existing connection with same source
-          assignedBus = existingConnection.assignedBus;
+        // Simple rules:
+        // 1. If source is already connected (has parameter value > 0), reuse that bus
+        // 2. If source exists in existing connections, reuse that bus
+        // 3. If target is external output, use appropriate Output bus
+        // 4. Otherwise assign first available aux bus
+        if (currentSourceBus != null && currentSourceBus > 0) {
+          // Source is already connected - use its bus value
+          assignedBus = currentSourceBus;
           debugPrint(
-            '[AutoRoutingService] Found existing connection from same source, reusing bus $assignedBus',
-          );
-        } else if (targetAlgorithmIndex == -1 &&
-            targetPortId.startsWith('output_')) {
-          // Special case: External output connection - use the appropriate Output bus
-          final outputNum =
-              int.tryParse(targetPortId.replaceAll('output_', '')) ?? 1;
-          assignedBus = 12 + outputNum; // Output buses are 13-20 (Output 1-8)
-          debugPrint(
-            '[AutoRoutingService] External output connection, using Output bus $assignedBus',
+            '[AutoRoutingService] Source parameter #$sourceParamNumber has value $assignedBus, using it for connection',
           );
         } else {
-          // Source not connected - assign first available aux bus
-          assignedBus = _findAvailableAuxBusConsideringState(
-            existingConnections,
-          );
-          debugPrint(
-            '[AutoRoutingService] Source not connected, assigning new bus $assignedBus',
-          );
+          // Check if this same source port is already used in existing connections
+          Connection? existingConnection;
+          try {
+            existingConnection = existingConnections.firstWhere(
+              (conn) =>
+                  conn.sourceAlgorithmIndex == sourceAlgorithmIndex &&
+                  conn.sourcePortId == sourcePortId,
+            );
+          } catch (e) {
+            existingConnection = null;
+          }
+
+          if (existingConnection != null && existingConnection.assignedBus > 0) {
+            // Reuse the bus from existing connection with same source
+            assignedBus = existingConnection.assignedBus;
+            debugPrint(
+              '[AutoRoutingService] Found existing connection from same source, reusing bus $assignedBus',
+            );
+          } else if (targetAlgorithmIndex == -1 &&
+              targetPortId.startsWith('output_')) {
+            // Special case: External output connection - use the appropriate Output bus
+            final outputNum =
+                int.tryParse(targetPortId.replaceAll('output_', '')) ?? 1;
+            assignedBus = 12 + outputNum; // Output buses are 13-20 (Output 1-8)
+            debugPrint(
+              '[AutoRoutingService] External output connection, using Output bus $assignedBus',
+            );
+          } else {
+            // Source not connected - assign first available aux bus
+            assignedBus = _findAvailableAuxBusConsideringState(
+              existingConnections,
+            );
+            debugPrint(
+              '[AutoRoutingService] Source not connected, assigning new bus $assignedBus',
+            );
+          }
         }
       }
     }
@@ -138,45 +167,27 @@ class AutoRoutingService {
     // Create parameter updates - update algorithm parameters individually, skip physical nodes
     final parameterUpdates = <ParameterUpdate>[];
 
-    // Update algorithm parameters individually, skip physical nodes (negative indices)
-    // This allows updating algorithm parameters when connecting to/from physical I/O
-    // while avoiding RangeError on physical nodes
-
-    // Set source output parameter first if source is an algorithm (not physical node)
-    if (sourceAlgorithmIndex >= 0) {
-      final sourceParamNumber = _findParameterNumberForPort(
-        sourceAlgorithmIndex,
-        sourcePortId,
-        isOutput: true,
-      );
-
+    // Check if this is a multi-width connection
+    final targetWidth = targetAlgorithmIndex >= 0 ? _getAlgorithmWidth(targetAlgorithmIndex) : 1;
+    final sourceWidth = sourceAlgorithmIndex >= 0 ? _getAlgorithmWidth(sourceAlgorithmIndex) : 1;
+    
+    // For width-aware algorithms, we need to set multiple bus parameters
+    if (targetWidth > 1 && targetAlgorithmIndex >= 0) {
       debugPrint(
-        '[AutoRoutingService] Setting source output bus to $assignedBus',
+        '[AutoRoutingService] Creating multi-channel parameter updates for width=$targetWidth connection',
       );
-      parameterUpdates.add(
-        ParameterUpdate(
-          algorithmIndex: sourceAlgorithmIndex,
-          parameterId: _inferOutputBusParameterId(sourcePortId),
-          parameterNumber: sourceParamNumber,
-          value: assignedBus,
-        ),
-      );
-    } else {
-      debugPrint(
-        '[AutoRoutingService] Source is physical node $sourceAlgorithmIndex, skipping parameter update',
-      );
-    }
-
-    // Set target input parameter if target is an algorithm (not physical node or external output)
-    if (targetAlgorithmIndex >= 0) {
+      
+      // For width-aware algorithms, the main input parameter controls all channels
+      // The hardware interprets the single bus value as the starting point for consecutive buses
       final targetParamNumber = _findParameterNumberForPort(
         targetAlgorithmIndex,
         targetPortId,
         isOutput: false,
       );
-
+      
+      // Set the base bus - hardware will automatically use consecutive buses
       debugPrint(
-        '[AutoRoutingService] Setting target input bus to $assignedBus',
+        '[AutoRoutingService] Setting target input base bus to $assignedBus (will use buses $assignedBus-${assignedBus + targetWidth - 1})',
       );
       parameterUpdates.add(
         ParameterUpdate(
@@ -186,19 +197,181 @@ class AutoRoutingService {
           value: assignedBus,
         ),
       );
+      
+      // For source, we need to set multiple outputs if the source width matches
+      if (sourceAlgorithmIndex >= 0) {
+        if (sourceWidth >= targetWidth) {
+          // Source has enough channels - connect them sequentially
+          for (int i = 0; i < targetWidth; i++) {
+            final channelPortId = i == 0 ? sourcePortId : '${sourcePortId}_${i + 1}';
+            final sourceParamNumber = _findParameterNumberForPort(
+              sourceAlgorithmIndex,
+              channelPortId,
+              isOutput: true,
+            );
+            
+            debugPrint(
+              '[AutoRoutingService] Setting source output channel ${i + 1} bus to ${assignedBus + i}',
+            );
+            parameterUpdates.add(
+              ParameterUpdate(
+                algorithmIndex: sourceAlgorithmIndex,
+                parameterId: _inferOutputBusParameterId(channelPortId),
+                parameterNumber: sourceParamNumber,
+                value: assignedBus + i,
+              ),
+            );
+          }
+        } else {
+          // Source has fewer channels - duplicate to fill target channels
+          final sourceParamNumber = _findParameterNumberForPort(
+            sourceAlgorithmIndex,
+            sourcePortId,
+            isOutput: true,
+          );
+          
+          // Set source to first bus, hardware will duplicate as needed
+          debugPrint(
+            '[AutoRoutingService] Setting mono source output bus to $assignedBus (will be duplicated to fill $targetWidth channels)',
+          );
+          for (int i = 0; i < targetWidth; i++) {
+            parameterUpdates.add(
+              ParameterUpdate(
+                algorithmIndex: sourceAlgorithmIndex,
+                parameterId: _inferOutputBusParameterId(sourcePortId),
+                parameterNumber: sourceParamNumber,
+                value: assignedBus + i,
+              ),
+            );
+          }
+        }
+      }
     } else {
-      debugPrint(
-        '[AutoRoutingService] Target is physical node $targetAlgorithmIndex or external output, skipping parameter update',
-      );
+      // Standard single-channel connection
+      // Set source output parameter first if source is an algorithm (not physical node)
+      if (sourceAlgorithmIndex >= 0) {
+        final sourceParamNumber = _findParameterNumberForPort(
+          sourceAlgorithmIndex,
+          sourcePortId,
+          isOutput: true,
+        );
+
+        debugPrint(
+          '[AutoRoutingService] Setting source output bus to $assignedBus',
+        );
+        parameterUpdates.add(
+          ParameterUpdate(
+            algorithmIndex: sourceAlgorithmIndex,
+            parameterId: _inferOutputBusParameterId(sourcePortId),
+            parameterNumber: sourceParamNumber,
+            value: assignedBus,
+          ),
+        );
+      } else {
+        debugPrint(
+          '[AutoRoutingService] Source is physical node $sourceAlgorithmIndex, skipping parameter update',
+        );
+      }
+
+      // Set target input parameter if target is an algorithm (not physical node or external output)
+      if (targetAlgorithmIndex >= 0) {
+        final targetParamNumber = _findParameterNumberForPort(
+          targetAlgorithmIndex,
+          targetPortId,
+          isOutput: false,
+        );
+
+        debugPrint(
+          '[AutoRoutingService] Setting target input bus to $assignedBus',
+        );
+        parameterUpdates.add(
+          ParameterUpdate(
+            algorithmIndex: targetAlgorithmIndex,
+            parameterId: _inferInputBusParameterId(targetPortId),
+            parameterNumber: targetParamNumber,
+            value: assignedBus,
+          ),
+        );
+      } else {
+        debugPrint(
+          '[AutoRoutingService] Target is physical node $targetAlgorithmIndex or external output, skipping parameter update',
+        );
+      }
     }
 
+    // Determine the actual channel count for this connection
+    final actualChannelCount = targetWidth > 1 ? targetWidth : 1;
+    final buses = List.generate(actualChannelCount, (i) => assignedBus + i);
+    
     return BusAssignment(
       connectionId: connectionId,
       sourceBus: assignedBus,
       replaceMode: replaceMode,
       edgeLabel: edgeLabel,
       parameterUpdates: parameterUpdates,
+      channelCount: actualChannelCount,
+      assignedBuses: buses,
     );
+  }
+
+  /// Find consecutive available buses for multi-width connections
+  int _findConsecutiveAvailableBuses(
+    List<Connection> existingConnections,
+    int count,
+  ) {
+    final usedBuses = <int>{};
+    
+    // Collect all buses currently in use
+    for (final connection in existingConnections) {
+      usedBuses.add(connection.assignedBus);
+    }
+    
+    // Also consider buses currently in use by hardware
+    usedBuses.addAll(_collectUsedOutputBusesFromState());
+    
+    // Try to find consecutive buses starting from aux buses (21-28)
+    for (int startBus = 21; startBus <= 28 - count + 1; startBus++) {
+      bool allAvailable = true;
+      for (int i = 0; i < count; i++) {
+        if (usedBuses.contains(startBus + i)) {
+          allAvailable = false;
+          break;
+        }
+      }
+      if (allAvailable) {
+        return startBus;
+      }
+    }
+    
+    // Try output buses if aux buses don't have enough consecutive slots
+    for (int startBus = 13; startBus <= 20 - count + 1; startBus++) {
+      bool allAvailable = true;
+      for (int i = 0; i < count; i++) {
+        if (usedBuses.contains(startBus + i)) {
+          allAvailable = false;
+          break;
+        }
+      }
+      if (allAvailable) {
+        return startBus;
+      }
+    }
+    
+    // Try input buses as last resort
+    for (int startBus = 1; startBus <= 12 - count + 1; startBus++) {
+      bool allAvailable = true;
+      for (int i = 0; i < count; i++) {
+        if (usedBuses.contains(startBus + i)) {
+          allAvailable = false;
+          break;
+        }
+      }
+      if (allAvailable) {
+        return startBus;
+      }
+    }
+    
+    return -1; // No consecutive buses available
   }
 
   /// Find an available aux bus (21-28), fall back to other buses if needed
@@ -358,7 +531,7 @@ class AutoRoutingService {
     }
   }
 
-  /// Generate edge label like "A1 R" or "O3 A"
+  /// Generate edge label like "A1" or "O3 R"
   String _generateEdgeLabel(int bus, bool replaceMode) {
     String busLabel;
     if (bus >= 1 && bus <= 12) {
@@ -371,8 +544,8 @@ class AutoRoutingService {
       busLabel = 'B$bus'; // Fallback for unknown bus
     }
 
-    final mode = replaceMode ? 'R' : 'A';
-    return '$busLabel $mode';
+    // Only show R suffix for Replace mode, no suffix for Add mode
+    return replaceMode ? '$busLabel R' : busLabel;
   }
 
   /// Infer output bus parameter ID from port ID
@@ -391,6 +564,46 @@ class AutoRoutingService {
       return 'input_bus';
     }
     return 'in_bus'; // Fallback
+  }
+
+  /// Strip channel suffix from port ID (_L, _R, _1, _2, etc.)
+  String _stripChannelSuffix(String portId) {
+    // Remove common channel suffixes: _L, _R, _1, _2, _3, _4, etc.
+    final suffixPattern = RegExp(r'_[LR]$|_\d+$');
+    return portId.replaceAll(suffixPattern, '');
+  }
+
+  /// Check if an algorithm has a width parameter and get its value
+  int _getAlgorithmWidth(int algorithmIndex) {
+    if (algorithmIndex < 0) return 1; // Physical nodes always width 1
+    
+    final distingState = _cubit.state;
+    if (distingState is! DistingStateSynchronized) return 1;
+    
+    if (algorithmIndex >= distingState.slots.length) return 1;
+    
+    final slot = distingState.slots[algorithmIndex];
+    
+    // Look for width/channels parameter
+    for (final param in slot.parameters) {
+      final nameLower = param.name.toLowerCase();
+      if (nameLower == 'width' || 
+          nameLower == 'channels' || 
+          nameLower == 'channel count') {
+        // Get the current value
+        final value = slot.values.firstWhere(
+          (v) => v.parameterNumber == param.parameterNumber,
+          orElse: () => ParameterValue.filler(),
+        );
+        
+        debugPrint(
+          '[AutoRoutingService] Algorithm $algorithmIndex has width parameter "${param.name}" = ${value.value}',
+        );
+        return value.value;
+      }
+    }
+    
+    return 1; // Default width
   }
 
   /// Find the parameter number for a given port by matching port ID with parameter names
@@ -430,16 +643,32 @@ class AutoRoutingService {
       '[AutoRoutingService] Finding parameter for port "$portId" (isOutput=$isOutput) in algorithm $algorithmIndex',
     );
 
-    final paramNumber = int.tryParse(portId);
+    // Strip channel suffix (_L, _R, _1, _2, etc.) from port ID if present
+    final strippedPortId = _stripChannelSuffix(portId);
+    debugPrint('[AutoRoutingService] Stripped port ID: "$portId" -> "$strippedPortId"');
+
+    final paramNumber = int.tryParse(strippedPortId);
     if (paramNumber != null) {
-      final param = slot.parameters.firstWhere(
+      // Check if this parameter exists
+      final param = slot.parameters.firstWhereOrNull(
         (p) => p.parameterNumber == paramNumber,
-        orElse: () => slot.parameters.first,
       );
-      debugPrint(
-        '[AutoRoutingService] Found parameter by number: #$paramNumber "${param.name}"',
-      );
-      return paramNumber;
+      
+      if (param != null) {
+        debugPrint(
+          '[AutoRoutingService] Found parameter by number: #$paramNumber "${param.name}"',
+        );
+        return paramNumber;
+      }
+      
+      // If parameter number doesn't exist and we have parameters, use fallback
+      if (slot.parameters.isNotEmpty) {
+        final fallback = slot.parameters.first;
+        debugPrint(
+          '[AutoRoutingService] Parameter #$paramNumber not found, using fallback: "${fallback.name}"',
+        );
+        return fallback.parameterNumber;
+      }
     }
 
     // First pass: exact match with sanitized name AND matching input/output type
@@ -453,7 +682,7 @@ class AutoRoutingService {
           .replaceAll(RegExp(r'_+'), '_')
           .replaceAll(RegExp(r'^_|_$'), '');
 
-      if (sanitizedParamName == portId) {
+      if (sanitizedParamName == strippedPortId) {
         // Check if this is a bus parameter
         final unit = param.getUnitString(units) ?? '';
         final isBusParam =
@@ -470,7 +699,7 @@ class AutoRoutingService {
         // If this parameter matches the expected type, use it immediately
         if ((isOutput && isParamOutput) || (!isOutput && isParamInput)) {
           debugPrint(
-            '[AutoRoutingService] Exact match with correct type: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$portId" (${isOutput ? "OUTPUT" : "INPUT"})',
+            '[AutoRoutingService] Exact match with correct type: Found parameter "${param.name}" (#${param.parameterNumber}) for port "$strippedPortId" (${isOutput ? "OUTPUT" : "INPUT"})',
           );
           return param.parameterNumber;
         }
@@ -479,7 +708,7 @@ class AutoRoutingService {
         if (fallbackParamNumber == null) {
           fallbackParamNumber = param.parameterNumber;
           debugPrint(
-            '[AutoRoutingService] Storing fallback: parameter "${param.name}" (#${param.parameterNumber}) for port "$portId" (expected ${isOutput ? "OUTPUT" : "INPUT"}, found ${isParamOutput ? "OUTPUT" : isParamInput ? "INPUT" : "UNKNOWN"})',
+            '[AutoRoutingService] Storing fallback: parameter "${param.name}" (#${param.parameterNumber}) for port "$strippedPortId" (expected ${isOutput ? "OUTPUT" : "INPUT"}, found ${isParamOutput ? "OUTPUT" : isParamInput ? "INPUT" : "UNKNOWN"})',
           );
         }
       }
@@ -488,7 +717,7 @@ class AutoRoutingService {
     // If we found an exact name match but wrong type, use it as a fallback
     if (fallbackParamNumber != null) {
       debugPrint(
-        '[AutoRoutingService] Using fallback parameter #$fallbackParamNumber for port "$portId"',
+        '[AutoRoutingService] Using fallback parameter #$fallbackParamNumber for port "$strippedPortId"',
       );
       return fallbackParamNumber;
     }
@@ -776,6 +1005,8 @@ class BusAssignment {
   final bool replaceMode;
   final String edgeLabel;
   final List<ParameterUpdate> parameterUpdates;
+  final int channelCount; // Number of channels in this connection (1 for mono, 2 for stereo, etc.)
+  final List<int> assignedBuses; // All buses assigned for multi-channel connections
 
   BusAssignment({
     required this.connectionId,
@@ -783,7 +1014,9 @@ class BusAssignment {
     required this.replaceMode,
     required this.edgeLabel,
     required this.parameterUpdates,
-  });
+    this.channelCount = 1,
+    List<int>? assignedBuses,
+  }) : assignedBuses = assignedBuses ?? [sourceBus];
 }
 
 class ParameterUpdate {
