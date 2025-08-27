@@ -57,8 +57,9 @@ class BusDependencyGraph {
     final opportunities = <SafeReplaceOpportunity>[];
 
     for (final lifetime in _busLifetimes.values) {
-      if (lifetime.writerSlots.isEmpty || lifetime.readerSlots.isEmpty)
+      if (lifetime.writerSlots.isEmpty || lifetime.readerSlots.isEmpty) {
         continue;
+      }
 
       // Skip physical I/O connections (negative indices)
       if (lifetime.writerSlots.any((slot) => slot < 0)) continue;

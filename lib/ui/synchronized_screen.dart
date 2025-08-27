@@ -34,9 +34,6 @@ import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
-import 'package:nt_helper/cubit/node_routing_cubit.dart';
-import 'package:nt_helper/cubit/node_routing_state.dart';
-import 'package:nt_helper/ui/routing/node_routing_widget.dart';
 import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
 import 'package:nt_helper/ui/algorithm_registry.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
@@ -267,8 +264,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Widget _buildRoutingCanvas() {
-    // NodeRoutingCubit is now provided at the app level
-    return const NodeRoutingWidget();
+    return const Center(
+      child: Text(
+        'Routing Canvas Placeholder',
+        style: TextStyle(fontSize: 24, color: Colors.grey),
+      ),
+    );
   }
 
   BottomAppBar _buildBottomAppBar() {
@@ -579,65 +580,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   List<Widget> _buildRoutingModeActions() {
     return [
-      // Tidy Routing
-      BlocBuilder<NodeRoutingCubit, NodeRoutingState>(
-        builder: (context, state) {
-          final nodeRoutingCubit = context.read<NodeRoutingCubit>();
-          final distingCubit = context.read<DistingCubit>();
-          final canTidy = nodeRoutingCubit.canPerformTidy;
-          final isOptimizing = state is NodeRoutingStateOptimizing;
-          final isOffline = switch (distingCubit.state) {
-            DistingStateSynchronized(offline: final o) => o,
-            _ => false,
-          };
-
-          return IconButton(
-            icon: isOptimizing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.auto_fix_high),
-            tooltip: 'Tidy Routing - Optimize bus usage',
-            onPressed: widget.loading || isOffline || isOptimizing || !canTidy
-                ? null
-                : () async {
-                    // Debug: Log current state before attempting tidy
-                    debugPrint(
-                      '[TidyButton] NodeRoutingCubit state: ${nodeRoutingCubit.state.runtimeType}',
-                    );
-                    debugPrint('[TidyButton] canTidy: $canTidy');
-                    debugPrint('[TidyButton] isOptimizing: $isOptimizing');
-                    final result = await nodeRoutingCubit.performTidy();
-                    if (context.mounted) {
-                      final messenger = ScaffoldMessenger.of(context);
-                      if (result.success) {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Routing optimized! ${result.busesFreed} buses freed.',
-                            ),
-                            backgroundColor: Colors.green.shade600,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      } else {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Optimization failed: ${result.errorMessage}',
-                            ),
-                            backgroundColor: Colors.red.shade600,
-                            duration: const Duration(seconds: 4),
-                          ),
-                        );
-                      }
-                    }
-                  },
-          );
-        },
-      ),
+      // Placeholder for future routing actions
     ];
   }
 

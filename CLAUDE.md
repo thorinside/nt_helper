@@ -27,3 +27,7 @@ Cross-platform Flutter application for managing Disting NT Eurorack module prese
 **Debugging:** Always use `debugPrint()`, never `print()`.
 
 **Workflow:** Feature branches required, PR approval needed.
+
+## Task Master AI Instructions
+**Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
+@./.taskmaster/CLAUDE.md

@@ -391,8 +391,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                   case FileSelectionMode.fileOnly:
                   case FileSelectionMode.directFile:
                     if (entry.isDirectory) return false;
-                    if (widget.rule.allowedExtensions?.isEmpty ?? true)
+                    if (widget.rule.allowedExtensions?.isEmpty ?? true) {
                       return true;
+                    }
                     return widget.rule.allowedExtensions!.any(
                       (ext) =>
                           entry.name.toLowerCase().endsWith(ext.toLowerCase()),
@@ -404,8 +405,9 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                         entry.name.replaceAll('/', ''),
                       );
                     }
-                    if (widget.rule.allowedExtensions?.isEmpty ?? true)
+                    if (widget.rule.allowedExtensions?.isEmpty ?? true) {
                       return true;
+                    }
                     return widget.rule.allowedExtensions!.any(
                       (ext) =>
                           entry.name.toLowerCase().endsWith(ext.toLowerCase()),

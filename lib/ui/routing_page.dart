@@ -3,7 +3,6 @@ import 'dart:async'; // For Timer
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/models/routing_information.dart';
-import 'package:nt_helper/ui/routing/routing_table_widget.dart';
 
 class RoutingPage extends StatefulWidget {
   // Changed to StatefulWidget
@@ -101,10 +100,31 @@ class _RoutingPageState extends State<RoutingPage> {
               padding: const EdgeInsets.all(8.0),
               child: SingleChildScrollView(
                 scrollDirection: Axis.vertical,
-                child: RoutingTableWidget(
-                  routing: _routingInformation,
-                  showSignals: true,
-                  showMappings: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Routing Analysis',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    ..._routingInformation.map((routing) => Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Slot ${routing.algorithmIndex}: ${routing.algorithmName}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Routing Info: ${routing.routingInfo.join(", ")}'),
+                          ],
+                        ),
+                      ),
+                    )),
+                  ],
                 ),
               ),
             ),
