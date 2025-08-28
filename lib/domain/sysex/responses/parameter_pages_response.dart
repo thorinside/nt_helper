@@ -14,7 +14,7 @@ class ParameterPagesResponse extends SysexResponse {
     return ParameterPages(
       algorithmIndex: algorithmIndex,
       pages: List.generate(numPages, (_) {
-        final strInfo = decodeNullTerminatedAscii(offset);
+        final strInfo = decodeNullTerminatedAscii(data, offset);
         offset = strInfo.nextOffset;
         final name = strInfo.value;
         final numParameters = data[offset++];

@@ -1290,7 +1290,7 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
 
     try {
       // Use the metadata sync service directly for the rescan
-      final syncService = MetadataSyncService(managerbase);
+      final syncService = MetadataSyncService(manager, database);
 
       // Find the algorithm info from the database
       final dao = database.metadataDao;

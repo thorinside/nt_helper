@@ -181,7 +181,7 @@ class PackedMappingDataConverter
       "PackedMappingDataConverter.fromSql: Version $version length ${data.length}",
     );
 
-    return PackedMappingData.fromBytes(version);
+    return PackedMappingData.fromBytes(version, data);
   }
 
   @override

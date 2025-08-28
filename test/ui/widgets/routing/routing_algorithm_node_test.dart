@@ -165,7 +165,7 @@ void main() {
           .thenThrow(const RoutingFactoryException('Test error', AlgorithmRoutingMetadata(
             algorithmGuid: 'test',
             routingType: RoutingType.polyphonic,
-          )));
+          ), null));
 
       await tester.pumpWidget(
         MaterialApp(

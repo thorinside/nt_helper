@@ -29,7 +29,7 @@ DistingNTParsedMessage? decodeDistingNTSysEx(Uint8List data) {
   // 5) The next byte after that is the message type
   final messageTypeByte = data[6] & 0x7F;
   var msgType = DistingNTRespMessageType.fromByte(messageTypeByte);
-  var payload = data.sublist(7.length - 1);
+  var payload = data.sublist(7, data.length - 1);
 
   // 6) The payload is everything between that byte and the final 0xF7,
   // but usually after the messageType we parse based on the command.

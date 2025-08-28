@@ -43,7 +43,7 @@ class PackageCreator {
       onProgress?.call('Collecting files...');
 
       // Collect dependency files
-      final fileCollector = FileCollector(fileSystembase);
+      final fileCollector = FileCollector(fileSystem, database);
       final dependencyFiles = await fileCollector.collectDependencies(
         dependencies,
         config: config,

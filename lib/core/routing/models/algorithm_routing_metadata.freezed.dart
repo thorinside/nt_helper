@@ -49,7 +49,7 @@ mixin _$AlgorithmRoutingMetadata {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AlgorithmRoutingMetadataCopyWith<AlgorithmRoutingMetadata> get copyWith => _$AlgorithmRoutingMetadataCopyWithImpl<AlgorithmRoutingMetadata>(this as AlgorithmRoutingMeta_$identity);
+$AlgorithmRoutingMetadataCopyWith<AlgorithmRoutingMetadata> get copyWith => _$AlgorithmRoutingMetadataCopyWithImpl<AlgorithmRoutingMetadata>(this as AlgorithmRoutingMetadata, _$identity);
 
   /// Serializes this AlgorithmRoutingMetadata to a JSON map.
   Map<String, dynamic> toJson();

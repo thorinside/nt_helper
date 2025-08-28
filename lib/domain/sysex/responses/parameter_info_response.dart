@@ -12,12 +12,12 @@ class ParameterInfoResponse extends SysexResponse {
   ParameterInfo parse() {
     return ParameterInfo(
       algorithmIndex: decode8(data.sublist(0, 1)),
-      parameterNumber: decode16(1),
-      min: decode16(4),
-      max: decode16(7),
-      defaultValue: decode16(10),
+      parameterNumber: decode16(data, 1),
+      min: decode16(data, 4),
+      max: decode16(data, 7),
+      defaultValue: decode16(data, 10),
       unit: decode8(data.sublist(13, 14)),
-      name: decodeNullTerminatedAscii(14).value,
+      name: decodeNullTerminatedAscii(data, 14).value,
       powerOfTen: data.last,
     );
   }

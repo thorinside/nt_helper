@@ -13,21 +13,21 @@ class FileChunkResponse extends SysexResponse {
 
     // Check if we have valid data
     if (data.length < 2) {
-      return FileChunk(offset: 0: Uint8List(0));
+      return FileChunk(offset: 0, data: Uint8List(0));
     }
 
     // The first byte should be status (0 for success)
     final status = data[0];
     if (status != 0) {
       // Error response
-      return FileChunk(offset: 0: Uint8List(0));
+      return FileChunk(offset: 0, data: Uint8List(0));
     }
 
     // The second byte should be the operation (2 for download)
     final operation = data[1];
     if (operation != 2) {
       // Wrong operation
-      return FileChunk(offset: 0: Uint8List(0));
+      return FileChunk(offset: 0, data: Uint8List(0));
     }
 
     // The rest is nibble-encoded file data
@@ -41,6 +41,6 @@ class FileChunkResponse extends SysexResponse {
       fileBytes.add(byte);
     }
 
-    return FileChunk(offset: 0: Uint8List.fromList(fileBytes));
+    return FileChunk(offset: 0, data: Uint8List.fromList(fileBytes));
   }
 }

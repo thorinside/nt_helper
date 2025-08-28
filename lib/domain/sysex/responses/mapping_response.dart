@@ -12,7 +12,7 @@ class MappingResponse extends SysexResponse {
   Mapping parse() {
     return Mapping(
       algorithmIndex: decode8(data),
-      parameterNumber: decode16(1),
+      parameterNumber: decode16(data, 1),
       packedMappingData: PackedMappingData.fromBytes(
         decode8(data.sublist(4, 5)),
         data.sublist(5),

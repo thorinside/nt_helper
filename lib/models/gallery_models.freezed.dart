@@ -20,7 +20,7 @@ mixin _$GalleryMetadata {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$GalleryMetadataCopyWith<GalleryMetadata> get copyWith => _$GalleryMetadataCopyWithImpl<GalleryMetadata>(this as GalleryMeta_$identity);
+$GalleryMetadataCopyWith<GalleryMetadata> get copyWith => _$GalleryMetadataCopyWithImpl<GalleryMetadata>(this as GalleryMetadata, _$identity);
 
   /// Serializes this GalleryMetadata to a JSON map.
   Map<String, dynamic> toJson();
@@ -3710,7 +3710,7 @@ $GalleryCopyWith<Gallery> get copyWith => _$GalleryCopyWithImpl<Gallery>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Gallery&&(identical(other.version, version) || other.version == version)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&(identical(other.metametadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other.categories, categories)&&const DeepCollectionEquality().equals(other.authors, authors)&&const DeepCollectionEquality().equals(other.plugins, plugins));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Gallery&&(identical(other.version, version) || other.version == version)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other.categories, categories)&&const DeepCollectionEquality().equals(other.authors, authors)&&const DeepCollectionEquality().equals(other.plugins, plugins));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3719,7 +3719,7 @@ int get hashCode => Object.hash(runtimeType,version,lastUpdated,metadata,const D
 
 @override
 String toString() {
-  return 'Gallery(version: $version, lastUpdated: $lastUpdated, metadata: $metacategories: $categories, authors: $authors, plugins: $plugins)';
+  return 'Gallery(version: $version, lastUpdated: $lastUpdated, metadata: $metadata, categories: $categories, authors: $authors, plugins: $plugins)';
 }
 
 
@@ -3730,7 +3730,7 @@ abstract mixin class $GalleryCopyWith<$Res>  {
   factory $GalleryCopyWith(Gallery value, $Res Function(Gallery) _then) = _$GalleryCopyWithImpl;
 @useResult
 $Res call({
- String version, DateTime lastUpdated, GalleryMetadata metaList<PluginCategory> categories, Map<String, PluginAuthor> authors, List<GalleryPlugin> plugins
+ String version, DateTime lastUpdated, GalleryMetadata metadata, List<PluginCategory> categories, Map<String, PluginAuthor> authors, List<GalleryPlugin> plugins
 });
 
 
@@ -3764,7 +3764,7 @@ as List<GalleryPlugin>,
 @pragma('vm:prefer-inline')
 $GalleryMetadataCopyWith<$Res> get metadata {
   
-  return $GalleryMetadataCopyWith<$Res>(_self.meta(value) {
+  return $GalleryMetadataCopyWith<$Res>(_self.metadata, (value) {
     return _then(_self.copyWith(metadata: value));
   });
 }
@@ -3846,7 +3846,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String version,  DateTime lastUpdated,  GalleryMetadata meta List<PluginCategory> categories,  Map<String, PluginAuthor> authors,  List<GalleryPlugin> plugins)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String version,  DateTime lastUpdated,  GalleryMetadata metadata,  List<PluginCategory> categories,  Map<String, PluginAuthor> authors,  List<GalleryPlugin> plugins)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Gallery() when $default != null:
 return $default(_that.version,_that.lastUpdated,_that.metadata,_that.categories,_that.authors,_that.plugins);case _:
@@ -3867,7 +3867,7 @@ return $default(_that.version,_that.lastUpdated,_that.metadata,_that.categories,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String version,  DateTime lastUpdated,  GalleryMetadata meta List<PluginCategory> categories,  Map<String, PluginAuthor> authors,  List<GalleryPlugin> plugins)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String version,  DateTime lastUpdated,  GalleryMetadata metadata,  List<PluginCategory> categories,  Map<String, PluginAuthor> authors,  List<GalleryPlugin> plugins)  $default,) {final _that = this;
 switch (_that) {
 case _Gallery():
 return $default(_that.version,_that.lastUpdated,_that.metadata,_that.categories,_that.authors,_that.plugins);}
@@ -3884,7 +3884,7 @@ return $default(_that.version,_that.lastUpdated,_that.metadata,_that.categories,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String version,  DateTime lastUpdated,  GalleryMetadata meta List<PluginCategory> categories,  Map<String, PluginAuthor> authors,  List<GalleryPlugin> plugins)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String version,  DateTime lastUpdated,  GalleryMetadata metadata,  List<PluginCategory> categories,  Map<String, PluginAuthor> authors,  List<GalleryPlugin> plugins)?  $default,) {final _that = this;
 switch (_that) {
 case _Gallery() when $default != null:
 return $default(_that.version,_that.lastUpdated,_that.metadata,_that.categories,_that.authors,_that.plugins);case _:
@@ -3899,7 +3899,7 @@ return $default(_that.version,_that.lastUpdated,_that.metadata,_that.categories,
 @JsonSerializable()
 
 class _Gallery implements Gallery {
-  const _Gallery({required this.version, required this.lastUpdated, required this.metafinal  List<PluginCategory> categories = const [], final  Map<String, PluginAuthor> authors = const {}, final  List<GalleryPlugin> plugins = const []}): _categories = categories,_authors = authors,_plugins = plugins;
+  const _Gallery({required this.version, required this.lastUpdated, required this.metadata, final  List<PluginCategory> categories = const [], final  Map<String, PluginAuthor> authors = const {}, final  List<GalleryPlugin> plugins = const []}): _categories = categories,_authors = authors,_plugins = plugins;
   factory _Gallery.fromJson(Map<String, dynamic> json) => _$GalleryFromJson(json);
 
 @override final  String version;
@@ -3940,7 +3940,7 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Gallery&&(identical(other.version, version) || other.version == version)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&(identical(other.metametadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other._categories, _categories)&&const DeepCollectionEquality().equals(other._authors, _authors)&&const DeepCollectionEquality().equals(other._plugins, _plugins));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Gallery&&(identical(other.version, version) || other.version == version)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&(identical(other.metadata, metadata) || other.metadata == metadata)&&const DeepCollectionEquality().equals(other._categories, _categories)&&const DeepCollectionEquality().equals(other._authors, _authors)&&const DeepCollectionEquality().equals(other._plugins, _plugins));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3949,7 +3949,7 @@ int get hashCode => Object.hash(runtimeType,version,lastUpdated,metadata,const D
 
 @override
 String toString() {
-  return 'Gallery(version: $version, lastUpdated: $lastUpdated, metadata: $metacategories: $categories, authors: $authors, plugins: $plugins)';
+  return 'Gallery(version: $version, lastUpdated: $lastUpdated, metadata: $metadata, categories: $categories, authors: $authors, plugins: $plugins)';
 }
 
 
@@ -3960,7 +3960,7 @@ abstract mixin class _$GalleryCopyWith<$Res> implements $GalleryCopyWith<$Res> {
   factory _$GalleryCopyWith(_Gallery value, $Res Function(_Gallery) _then) = __$GalleryCopyWithImpl;
 @override @useResult
 $Res call({
- String version, DateTime lastUpdated, GalleryMetadata metaList<PluginCategory> categories, Map<String, PluginAuthor> authors, List<GalleryPlugin> plugins
+ String version, DateTime lastUpdated, GalleryMetadata metadata, List<PluginCategory> categories, Map<String, PluginAuthor> authors, List<GalleryPlugin> plugins
 });
 
 
@@ -3995,7 +3995,7 @@ as List<GalleryPlugin>,
 @pragma('vm:prefer-inline')
 $GalleryMetadataCopyWith<$Res> get metadata {
   
-  return $GalleryMetadataCopyWith<$Res>(_self.meta(value) {
+  return $GalleryMetadataCopyWith<$Res>(_self.metadata, (value) {
     return _then(_self.copyWith(metadata: value));
   });
 }

@@ -1844,7 +1844,7 @@ class DistingCubit extends Cubit<DistingState> {
     switch (state) {
       case DistingStateSynchronized _:
         final disting = requireDisting();
-        await disting.requestSetMapping(algorithmIndex, parameterNumber);
+        await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
         await _refreshStateFromManager(); // Refresh state from manager
         break;
       default:
