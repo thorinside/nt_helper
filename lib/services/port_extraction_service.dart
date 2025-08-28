@@ -136,7 +136,7 @@ class PortExtractionService {
     // Fallback to static metadata if no live parameters found
     if (inputPorts.isEmpty && outputPorts.isEmpty) {
       debugPrint(
-        '[PortExtractionService] No bus parameters found in live data, falling back to static metadata',
+        '[PortExtractionService] No bus parameters found in live falling back to static metadata',
       );
       return extractPorts(slot.algorithm.guid);
     }
@@ -434,7 +434,7 @@ class PortExtractionService {
       return false;
     }
 
-    // 2) If we have metadata, check if this parameter matches a documented input port
+    // 2) If we have metacheck if this parameter matches a documented input port
     if (metadata != null) {
       final paramNameLower = paramInfo.name.toLowerCase();
       for (final port in metadata.inputPorts) {
@@ -501,7 +501,7 @@ class PortExtractionService {
       return false;
     }
 
-    // 2) If we have metadata, check if this parameter matches a documented output port
+    // 2) If we have metacheck if this parameter matches a documented output port
     if (metadata != null) {
       final paramNameLower = paramInfo.name.toLowerCase();
       for (final port in metadata.outputPorts) {

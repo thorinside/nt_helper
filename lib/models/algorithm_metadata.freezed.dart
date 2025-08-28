@@ -21,7 +21,7 @@ mixin _$AlgorithmMetadata {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AlgorithmMetadataCopyWith<AlgorithmMetadata> get copyWith => _$AlgorithmMetadataCopyWithImpl<AlgorithmMetadata>(this as AlgorithmMetadata, _$identity);
+$AlgorithmMetadataCopyWith<AlgorithmMetadata> get copyWith => _$AlgorithmMetadataCopyWithImpl<AlgorithmMetadata>(this as AlgorithmMeta_$identity);
 
   /// Serializes this AlgorithmMetadata to a JSON map.
   Map<String, dynamic> toJson();

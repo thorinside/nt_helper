@@ -163,7 +163,7 @@ class PackedMappingDataConverter
   PackedMappingData fromSql(Uint8List fromDb) {
     if (fromDb.isEmpty) {
       debugPrint(
-        "PackedMappingDataConverter.fromSql: Empty data, returning filler",
+        "PackedMappingDataConverter.fromSql: Empty returning filler",
       );
       return PackedMappingData.filler();
     }
@@ -178,10 +178,10 @@ class PackedMappingDataConverter
     final version = fromDb[0];
     final data = fromDb.sublist(1);
     debugPrint(
-      "PackedMappingDataConverter.fromSql: Version $version, data length ${data.length}",
+      "PackedMappingDataConverter.fromSql: Version $version length ${data.length}",
     );
 
-    return PackedMappingData.fromBytes(version, data);
+    return PackedMappingData.fromBytes(version);
   }
 
   @override
@@ -189,7 +189,7 @@ class PackedMappingDataConverter
     final dataBytes = value.toBytes();
     final result = Uint8List.fromList([value.version, ...dataBytes]);
     debugPrint(
-      "PackedMappingDataConverter.toSql: Version ${value.version}, data length ${dataBytes.length}, total length ${result.length}",
+      "PackedMappingDataConverter.toSql: Version ${value.version} length ${dataBytes.length}, total length ${result.length}",
     );
     return result;
   }
@@ -238,7 +238,7 @@ class PresetRoutings extends Table {
 class MetadataCache extends Table {
   // A unique key to identify the cached data (e.g., 'unit_strings_ordered_list')
   TextColumn get cacheKey => text()();
-  // The cached data, stored as a JSON string or other suitable format
+  // The cached stored as a JSON string or other suitable format
   TextColumn get cacheValue => text()();
 
   @override

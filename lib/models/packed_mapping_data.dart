@@ -107,7 +107,7 @@ class PackedMappingData {
         );
         return 0;
       }
-      return decode16Unsigned(data, currentOffset);
+      return decode16Unsigned(currentOffset);
     }
 
     // Helper function for safe byte read
