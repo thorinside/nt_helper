@@ -11,8 +11,8 @@ class ParameterValueResponse extends SysexResponse {
   ParameterValue parse() {
     return ParameterValue(
       algorithmIndex: decode8(data.sublist(0, 1)),
-      parameterNumber: decode16(data, 1),
-      value: decode16(data, 4),
+      parameterNumber: decode16(1),
+      value: decode16(4),
     );
   }
 }

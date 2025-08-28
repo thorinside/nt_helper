@@ -6,6 +6,6 @@ class MessageResponse extends SysexResponse {
 
   @override
   String parse() {
-    return decodeNullTerminatedAscii(data, 0).value;
+    return decodeNullTerminatedAscii(0).value;
   }
 }

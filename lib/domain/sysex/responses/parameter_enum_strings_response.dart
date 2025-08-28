@@ -13,9 +13,9 @@ class ParameterEnumStringsResponse extends SysexResponse {
     int start = 5;
     return ParameterEnumStrings(
       algorithmIndex: decode8(data),
-      parameterNumber: decode16(data, 1),
+      parameterNumber: decode16(1),
       values: List.generate(decode8(data.sublist(4, 5)), (i) {
-        ParseResult result = decodeNullTerminatedAscii(data, start);
+        ParseResult result = decodeNullTerminatedAscii(start);
         start = result.nextOffset;
         return result.value;
       }),

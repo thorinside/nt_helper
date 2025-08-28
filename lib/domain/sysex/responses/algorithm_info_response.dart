@@ -11,7 +11,7 @@ class AlgorithmInfoResponse extends SysexResponse {
     int offset = 0;
 
     // 1) Decode the 16-bit algorithm index (2 bytes).
-    final algorithmIndex = decode16(data, offset);
+    final algorithmIndex = decode16(offset);
     offset += 2;
 
     // 2) Skip 1 byte at index 2 (if your data format specifies this gap).
@@ -27,13 +27,13 @@ class AlgorithmInfoResponse extends SysexResponse {
 
     // 5) Decode each specification, each occupying 3 + 3 + 3 + 1 = 10 bytes.
     final specs = List.generate(numSpecifications, (_) {
-      final min = decode16(data, offset);
+      final min = decode16(offset);
       offset += 3;
 
-      final max = decode16(data, offset);
+      final max = decode16(offset);
       offset += 3;
 
-      final defaultValue = decode16(data, offset);
+      final defaultValue = decode16(offset);
       offset += 3;
 
       final type = data[offset];
@@ -49,13 +49,13 @@ class AlgorithmInfoResponse extends SysexResponse {
     });
 
     // 6) Decode the main algorithm name (null-terminated ASCII).
-    final nameStr = decodeNullTerminatedAscii(data, offset);
+    final nameStr = decodeNullTerminatedAscii(offset);
     offset = nameStr.nextOffset;
     final algorithmName = nameStr.value;
 
     // 7) Decode each specification's display name (also null-terminated).
     final specNames = List.generate(numSpecifications, (_) {
-      final str = decodeNullTerminatedAscii(data, offset);
+      final str = decodeNullTerminatedAscii(offset);
       offset = str.nextOffset;
       return str.value;
     });
@@ -90,7 +90,7 @@ class AlgorithmInfoResponse extends SysexResponse {
     // 10) Decode the filename/path (null-terminated ASCII) if available
     String? filename;
     if (offset < data.length) {
-      final filenameStr = decodeNullTerminatedAscii(data, offset);
+      final filenameStr = decodeNullTerminatedAscii(offset);
       offset = filenameStr.nextOffset;
       filename = filenameStr.value.isNotEmpty ? filenameStr.value : null;
     }

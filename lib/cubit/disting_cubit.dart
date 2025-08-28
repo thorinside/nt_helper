@@ -1062,7 +1062,7 @@ class DistingCubit extends Cubit<DistingState> {
         // Full refresh: re-download everything including algorithm library
         await _performSyncAndEmit();
       } else {
-        // Fast refresh: only update preset data, then optionally refresh algorithms in background
+        // Fast refresh: only update preset then optionally refresh algorithms in background
         await _refreshStateFromManager();
 
         // Check if we should refresh algorithms in the background
@@ -1844,7 +1844,7 @@ class DistingCubit extends Cubit<DistingState> {
     switch (state) {
       case DistingStateSynchronized _:
         final disting = requireDisting();
-        await disting.requestSetMapping(algorithmIndex, parameterNumber, data);
+        await disting.requestSetMapping(algorithmIndex, parameterNumber);
         await _refreshStateFromManager(); // Refresh state from manager
         break;
       default:

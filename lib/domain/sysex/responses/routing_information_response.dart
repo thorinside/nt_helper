@@ -11,7 +11,7 @@ class RoutingInformationResponse extends SysexResponse {
     final routing = <int>[];
     var offset = 1;
     for (var i = 0; i < 6; i++) {
-      routing.add(decode32(data, offset));
+      routing.add(decode32(offset));
       offset += 5;
     }
 

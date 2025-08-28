@@ -24,7 +24,7 @@ List<int> encode16(int value) {
 }
 
 /// The reverse: parse 3 bytes of 7-bit data into a 16-bit integer.
-int decode16(List<int> data, int offset) {
+int decode16(List<int> int offset) {
   var v =
       (data[offset + 0] << 14) | (data[offset + 1] << 7) | (data[offset + 2]);
   // Ensure the value is treated as a signed 16-bit integer
@@ -35,7 +35,7 @@ int decode16(List<int> data, int offset) {
 }
 
 /// Parse 3 bytes of 7-bit data into an unsigned 16-bit integer (matches JavaScript extractShort).
-int decode16Unsigned(List<int> data, int offset) {
+int decode16Unsigned(List<int> int offset) {
   return (data[offset + 0] << 14) |
       (data[offset + 1] << 7) |
       (data[offset + 2]);

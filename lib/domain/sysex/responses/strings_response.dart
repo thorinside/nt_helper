@@ -10,7 +10,7 @@ class StringsResponse extends SysexResponse {
     int numStrings = decode8(data);
     int start = 1;
     return List.generate(numStrings, (i) {
-      var value = decodeNullTerminatedAscii(data, start);
+      var value = decodeNullTerminatedAscii(start);
       start = value.nextOffset;
       return value.value;
     });

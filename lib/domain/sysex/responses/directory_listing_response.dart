@@ -22,7 +22,7 @@ class DirectoryListingResponse extends SysexResponse {
   @override
   DirectoryListing parse() {
     // Expected payload: status (1 byte), subcommand (1 byte), then directory data.
-    // In the raw SysEx, this corresponds to data[7], data[8], and then the rest.
+    // In the raw SysEx, this corresponds to data[7][8], and then the rest.
     if (data.length < 2) {
       throw ArgumentError(
         "Invalid payload length for DirectoryListingResponse: ${data.length}, expected at least 2 for status and subcommand.",

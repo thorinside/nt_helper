@@ -728,7 +728,7 @@ class DistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
     PackedMappingData data,
   ) {
-    return requestSetMapping(algorithmIndex, parameterNumber, data);
+    return requestSetMapping(algorithmIndex, parameterNumber);
   }
 
   Future<void> requestSetI2CMapping(
@@ -736,7 +736,7 @@ class DistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
     PackedMappingData data,
   ) {
-    return requestSetMapping(algorithmIndex, parameterNumber, data);
+    return requestSetMapping(algorithmIndex, parameterNumber);
   }
 
   Future<void> requestSetMIDIMapping(
@@ -744,7 +744,7 @@ class DistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
     PackedMappingData data,
   ) {
-    return requestSetMapping(algorithmIndex, parameterNumber, data);
+    return requestSetMapping(algorithmIndex, parameterNumber);
   }
 
   @override

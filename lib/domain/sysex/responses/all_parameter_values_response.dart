@@ -15,7 +15,7 @@ class AllParameterValuesResponse extends SysexResponse {
           ParameterValue(
             algorithmIndex: algorithmIndex,
             parameterNumber: offset ~/ 3,
-            value: decode16(data, offset),
+            value: decode16(offset),
           ),
       ],
     );
