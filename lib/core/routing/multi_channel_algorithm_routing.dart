@@ -418,10 +418,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         return 'Gate';
       case PortType.clock:
         return 'Clock';
-      case PortType.midi:
-        return 'MIDI';
-      case PortType.data:
-        return 'Data';
     }
   }
   

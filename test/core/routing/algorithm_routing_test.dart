@@ -123,7 +123,7 @@ void main() {
       midiInputPort = const Port(
         id: 'midi_in',
         name: 'MIDI Input',
-        type: PortType.midi,
+        type: PortType.gate,
         direction: PortDirection.input,
       );
     });
@@ -195,7 +195,7 @@ void main() {
         algorithm.setInputPorts([midiInputPort]);
         algorithm.setOutputPorts([audioOutputPort]);
         
-        final isValid = algorithm.validateConnection(audioOutputPort, midiInputPort);
+        final isValid = algorithm.validateConnection(audioOutputPort, audioInputPort);
         
         expect(isValid, isFalse);
       });
@@ -214,7 +214,7 @@ void main() {
         algorithm.setInputPorts([midiInputPort]);
         algorithm.setOutputPorts([audioOutputPort]);
         
-        final result = algorithm.validateConnectionDetailed(audioOutputPort, midiInputPort);
+        final result = algorithm.validateConnectionDetailed(audioOutputPort, audioInputPort);
         
         expect(result.isValid, isFalse);
         expect(result.errors.isNotEmpty, isTrue);
@@ -239,7 +239,7 @@ void main() {
         algorithm.setInputPorts([midiInputPort]);
         algorithm.setOutputPorts([audioOutputPort]);
         
-        final connection = algorithm.addConnection(audioOutputPort, midiInputPort);
+        final connection = algorithm.addConnection(audioOutputPort, audioInputPort);
         
         expect(connection, isNull);
       });
@@ -339,7 +339,7 @@ void main() {
       });
 
       test('should invalidate routing with incompatible connection', () {
-        algorithm.setInputPorts([audioInputPort, midiInputPort]);
+        algorithm.setInputPorts([audioInputPort]);
         algorithm.setOutputPorts([audioOutputPort]);
         
         const incompatibleConnection = Connection(

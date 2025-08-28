@@ -300,7 +300,7 @@ void main() {
     test('should handle custom port types', () {
       const config = MultiChannelAlgorithmConfig(
         channelCount: 2,
-        supportedPortTypes: [PortType.gate, PortType.clock, PortType.midi],
+        supportedPortTypes: [PortType.gate, PortType.clock],
         createMasterMix: false,
       );
       final routing = MultiChannelAlgorithmRouting(config: config);
@@ -314,7 +314,6 @@ void main() {
       
       expect(inputPorts.any((p) => p.type == PortType.gate), isTrue);
       expect(inputPorts.any((p) => p.type == PortType.clock), isTrue);
-      expect(inputPorts.any((p) => p.type == PortType.midi), isTrue);
       expect(inputPorts.any((p) => p.type == PortType.audio), isFalse);
       
       routing.dispose();

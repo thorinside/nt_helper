@@ -17,12 +17,6 @@ enum PortType {
   
   /// Digital/clock signal port
   clock,
-  
-  /// MIDI signal port
-  midi,
-  
-  /// Generic data port
-  data,
 }
 
 /// Enum representing the direction of a port

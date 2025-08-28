@@ -48,14 +48,14 @@ void main() {
       midiInputPort = const Port(
         id: 'midi_in',
         name: 'MIDI Input',
-        type: PortType.midi,
+        type: PortType.gate,
         direction: PortDirection.input,
       );
       
       // midiOutputPort = const Port(
       //   id: 'midi_out',
       //   name: 'MIDI Output',
-      //   type: PortType.midi,
+      //   type: ,
       //   direction: PortDirection.output,
       // );
       

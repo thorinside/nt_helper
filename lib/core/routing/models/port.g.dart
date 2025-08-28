@@ -33,8 +33,6 @@ const _$PortTypeEnumMap = {
   PortType.cv: 'cv',
   PortType.gate: 'gate',
   PortType.clock: 'clock',
-  PortType.midi: 'midi',
-  PortType.data: 'data',
 };
 
 const _$PortDirectionEnumMap = {

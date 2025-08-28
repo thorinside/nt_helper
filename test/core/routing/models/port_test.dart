@@ -89,7 +89,7 @@ void main() {
         const bidirectionalPort = Port(
           id: 'bidirectional',
           name: 'Bidirectional',
-          type: PortType.midi,
+          type: PortType.audio,
           direction: PortDirection.bidirectional,
         );
 
@@ -158,21 +158,21 @@ void main() {
         const bidirectionalPort = Port(
           id: 'bidirectional',
           name: 'Bidirectional',
-          type: PortType.data,
+          type: PortType.audio,
           direction: PortDirection.bidirectional,
         );
 
         const inputPort = Port(
           id: 'input',
           name: 'Input',
-          type: PortType.data,
+          type: PortType.audio,
           direction: PortDirection.input,
         );
 
         const outputPort = Port(
           id: 'output',
           name: 'Output',
-          type: PortType.data,
+          type: PortType.audio,
           direction: PortDirection.output,
         );
 
@@ -251,7 +251,7 @@ void main() {
         const midiPort = Port(
           id: 'midi',
           name: 'MIDI',
-          type: PortType.midi,
+          type: PortType.audio,
           direction: PortDirection.input,
         );
 
