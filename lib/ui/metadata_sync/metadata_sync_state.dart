@@ -54,6 +54,6 @@ sealed class MetadataSyncState with _$MetadataSyncState {
     required List<PresetEntry> presets,
   }) = ViewingLocalData;
 
-  // Generic failure for operations other than sync/save/load (e.g., data loading failure)
+  // Generic failure for operations other than sync/save/load (e.g. loading failure)
   const factory MetadataSyncState.failure(String error) = Failure;
 }

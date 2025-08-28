@@ -248,7 +248,7 @@ class MetadataSyncPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Body uses MetadataSyncCubit for DB data, DistingCubit for state
+                    // Body uses MetadataSyncCubit for DB DistingCubit for state
                     body: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
                       builder: (metaCtx, metaState) {
                         final isOperationInProgress =
@@ -1290,7 +1290,7 @@ class _AlgorithmExpansionTileState extends State<_AlgorithmExpansionTile> {
 
     try {
       // Use the metadata sync service directly for the rescan
-      final syncService = MetadataSyncService(manager, database);
+      final syncService = MetadataSyncService(managerbase);
 
       // Find the algorithm info from the database
       final dao = database.metadataDao;
