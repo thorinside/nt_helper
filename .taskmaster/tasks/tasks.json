@@ -1,0 +1,444 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Remove NodeRoutingCubit and Related State Management",
+        "description": "Eliminate all routing canvas state management components, including NodeRoutingCubit, dependency injection registrations, and associated test files, ensuring application initialization remains intact.",
+        "details": "Identify all usages and definitions of NodeRoutingCubit and related state management classes. Remove these classes and update dependency injection registrations (e.g., get_it, provider, riverpod) to exclude them. Update all import statements referencing these components. Remove associated test files from the test directory. Verify that app initialization logic is unaffected and that MIDI, preset management, MCP server, and database integrations remain functional. Recommended: Use IDE-wide search and refactor tools for thorough removal.",
+        "testStrategy": "Run unit tests and integration tests to confirm no references to removed state management remain. Validate app startup in all modes (demo, offline, connected) and check for runtime errors. Ensure flutter analyze reports zero errors.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Replace Routing Canvas UI with Placeholder",
+        "description": "Replace complex routing canvas UI components with a simple placeholder widget, maintaining navigation and layout structure.",
+        "status": "done",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "details": "Create a minimal StatelessWidget (e.g., RoutingCanvasPlaceholder) using current Flutter best practices (Flutter 3.22+, null safety, Material 3). Replace NodeRoutingWidget and its usages in synchronized_screen.dart and other relevant files with the placeholder. Ensure navigation logic remains correct and that the UI layout is not broken. Update or remove UI tests that depend on the old routing canvas. Recommended: Use Navigator 2.0 or go_router for navigation if the app uses advanced routing; otherwise, retain Navigator.push/pop for simplicity.",
+        "testStrategy": "Run widget and UI tests to verify placeholder renders correctly and navigation works as expected. Confirm layout integrity on all supported platforms. Ensure flutter analyze passes with zero errors.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement placeholder widget in synchronized_screen.dart",
+            "description": "Created a simple placeholder widget in the _buildRoutingCanvas() method (lines 266-273) that displays 'Routing Canvas Placeholder' with appropriate styling.",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Maintain routing mode toggle functionality",
+            "description": "Ensured the Parameters/Routing toggle remains functional and correctly switches between parameter view and the placeholder.",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Preserve navigation structure",
+            "description": "Maintained proper navigation structure with IndexedStack implementation.",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Verify code quality and build",
+            "description": "Confirmed flutter analyze passes with zero errors and app builds successfully on macOS.",
+            "status": "completed",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Remove Routing Canvas UI Components and Utilities",
+        "description": "Delete all routing canvas UI components, including node widgets, connection painters, canvas layouts, and related helpers/utilities.",
+        "details": "Locate and remove NodeRoutingWidget, algorithm node widgets, connection painter widgets, physical node widgets, canvas layout widgets, and any routing UI utilities/helpers. Use IDE-wide search to find all references and usages. Ensure that only routing analysis components (e.g., routing_page.dart) are preserved. Remove associated test files and update test directory structure. Recommended: Use static analysis tools to detect unused code and dependencies.",
+        "testStrategy": "Run UI and integration tests to confirm no references to removed components remain. Validate that routing analysis functionality is unaffected. Ensure flutter analyze passes with zero errors.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Clean Up Directory Structure and Imports",
+        "description": "Reorganize preserved files, update import paths, and remove obsolete directories and test files to streamline the codebase.",
+        "details": "Remove lib/ui/routing/ directory except for preserved files (e.g., routing_page.dart). Move preserved files to appropriate locations following current Flutter project structure conventions. Update all import statements to reflect new file locations. Remove routing-related test files and clean up the test directory structure. Recommended: Use IDE refactoring tools and static analysis to ensure no broken imports remain.",
+        "testStrategy": "Run flutter analyze to confirm zero errors. Validate that all preserved functionality (routing analysis, MIDI, preset management, MCP server, database) works as expected. Run all tests to ensure no failures due to import or directory changes.",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Final Verification, Dependency Cleanup, and Documentation",
+        "description": "Perform comprehensive testing, remove unused dependencies, and document any breaking changes or migration notes.",
+        "details": "Run all integration and widget tests across all supported platforms (Linux, macOS, iOS, Android, Windows). Use flutter analyze to confirm zero errors. Search for and remove any remaining references to deleted components. Remove unused dependencies from pubspec.yaml using tools like pubspec_cleanup or IDE suggestions. Test application in demo, offline, and connected modes. Document any breaking changes or migration notes in CHANGELOG.md or MIGRATION.md. Recommended: Use CI/CD pipelines for automated testing and analysis.",
+        "testStrategy": "Run full test suite and manual QA on all platforms. Validate builds and runtime behavior in all modes. Confirm no regression in core functionality. Review documentation for completeness and accuracy.",
+        "priority": "medium",
+        "dependencies": [
+          4
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Core Framework Foundation for Algorithm Routing System",
+        "description": "Establish the foundational architecture for the Algorithm Routing System by creating the abstract AlgorithmRouting base class, defining data models for RoutingState, Port, and Connection using Freezed, and implementing a port compatibility validation system, all following Flutter/Dart and Cubit best practices.",
+        "details": "1. **Abstract Base Class**: Define an abstract class `AlgorithmRouting` in `lib/core/routing/algorithm_routing.dart` with a clear, extensible interface for routing algorithms. Include essential methods such as `route()`, `validateConnection()`, and state accessors. Use Dart's abstract class conventions and document all methods with DartDoc comments for clarity and maintainability.\n\n2. **Data Models with Freezed**: Implement immutable data models for `RoutingState`, `Port`, and `Connection` using the Freezed package. Place these in `lib/core/routing/models/`. Ensure models are serializable (add `fromJson`/`toJson` where appropriate), support deep equality, and are compatible with Cubit state management. Use union types in Freezed for representing different routing states if needed.\n\n3. **Port Compatibility Validation**: Develop a robust system to validate port compatibility (e.g., type, direction, constraints) as a reusable service or utility. Integrate this into the `AlgorithmRouting` interface and ensure it is easily testable. Use Dart's type system and pattern matching for clarity and safety.\n\n4. **Cubit State Management**: Prepare the models and base class for seamless integration with Cubit/BLoC patterns. Ensure all state changes are immutable and can be emitted as new states. Follow established Cubit conventions in the project for naming, file structure, and documentation.\n\n5. **Debugging and Analysis**: Use `debugPrint()` for all debugging output. Ensure the codebase passes `flutter analyze` with zero errors or warnings. Adhere to null safety and Flutter 3.22+ best practices.\n\n6. **Comprehensive Testing**: Write unit and model tests for all components, including edge cases for port compatibility and state transitions. Place tests in `test/core/routing/` and follow existing project test patterns. Use mock data and dependency injection where appropriate to isolate logic.\n\n7. **Documentation**: Document all public APIs and models using DartDoc. Add usage examples for the base class and validation system in comments or a dedicated `README.md` in the module directory.",
+        "testStrategy": "1. Run `flutter analyze` to ensure zero errors or warnings.\n2. Execute all new and existing unit tests in `test/core/routing/` to verify model correctness, state immutability, and validation logic.\n3. Test the abstract base class by creating a minimal concrete implementation and verifying interface contract adherence.\n4. Validate that port compatibility logic correctly accepts and rejects connections based on defined rules, including edge cases.\n5. Review DartDoc output to confirm all public APIs are documented.\n6. Manually inspect debug output to ensure only `debugPrint()` is used and that logs are informative and non-intrusive.",
+        "status": "done",
+        "dependencies": [
+          5
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define Abstract AlgorithmRouting Base Class",
+            "description": "Create an abstract class AlgorithmRouting in lib/core/routing/algorithm_routing.dart with a clear, extensible interface for routing algorithms, including essential abstract methods such as route(), validateConnection(), and state accessors. Document all methods using DartDoc comments.",
+            "dependencies": [],
+            "details": "Use Dart's abstract class conventions and ensure the class cannot be instantiated. Include both abstract and concrete methods as needed, and provide clear documentation for each method to guide implementers. Follow Dart and Flutter best practices for naming and structure.",
+            "status": "done",
+            "testStrategy": "Verify that the class cannot be instantiated directly and that all abstract methods must be implemented by subclasses. Use flutter analyze to ensure no errors or warnings."
+          },
+          {
+            "id": 2,
+            "title": "Implement Immutable Data Models with Freezed",
+            "description": "Define immutable data models for RoutingState, Port, and Connection using the Freezed package in lib/core/routing/models/. Ensure models are serializable, support deep equality, and are compatible with Cubit state management.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Implement fromJson/toJson methods for serialization, use union types in Freezed for representing different routing states if needed, and ensure all models are documented with DartDoc. Structure models for seamless integration with Cubit/BLoC patterns.",
+            "status": "done",
+            "testStrategy": "Write unit tests to verify immutability, serialization, deep equality, and correct state transitions. Run flutter analyze to confirm model correctness."
+          },
+          {
+            "id": 3,
+            "title": "Develop Port Compatibility Validation System",
+            "description": "Create a reusable service or utility to validate port compatibility (type, direction, constraints) and integrate it into the AlgorithmRouting interface. Ensure the system is easily testable and leverages Dart's type system and pattern matching.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Design the validation logic to be robust and extensible, supporting future port types or constraints. Document the validation system and provide usage examples in comments or a dedicated README.md.",
+            "status": "done",
+            "testStrategy": "Write comprehensive unit tests covering all compatibility rules and edge cases. Use mock data to isolate validation logic. Confirm zero errors with flutter analyze."
+          },
+          {
+            "id": 4,
+            "title": "Integrate with Cubit State Management",
+            "description": "Prepare the abstract base class and data models for seamless integration with Cubit/BLoC patterns, ensuring all state changes are immutable and can be emitted as new states.",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Follow established Cubit conventions for naming, file structure, and documentation. Ensure that RoutingState and related models are designed for efficient state emission and updates within Cubit.",
+            "status": "done",
+            "testStrategy": "Create a minimal Cubit implementation using the new models and base class. Write tests to verify state transitions and immutability. Run flutter analyze to ensure compliance."
+          },
+          {
+            "id": 5,
+            "title": "Comprehensive Testing and Documentation",
+            "description": "Write unit and model tests for all components, including edge cases for port compatibility and state transitions. Document all public APIs and models using DartDoc, and add usage examples for the base class and validation system.",
+            "dependencies": [
+              "6.4"
+            ],
+            "details": "Place tests in test/core/routing/ and follow existing project test patterns. Use dependency injection and mock data where appropriate. Ensure all code is documented and usage examples are provided in comments or a README.md.",
+            "status": "done",
+            "testStrategy": "Run all tests and ensure 100% coverage for new logic. Use flutter analyze to confirm zero errors or warnings. Review documentation for completeness and clarity."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement PolyAlgorithmRouting and MultiChannelAlgorithmRouting Classes",
+        "description": "Develop concrete routing implementations for the Algorithm Routing Framework by creating PolyAlgorithmRouting and MultiChannelAlgorithmRouting classes, each inheriting from AlgorithmRouting and implementing required abstract methods.",
+        "details": "1. Create PolyAlgorithmRouting and MultiChannelAlgorithmRouting classes in lib/core/routing/.\n2. Ensure both classes inherit from AlgorithmRouting and implement generateInputPorts(), generateOutputPorts(), and validateConnection() using Dart's override conventions and strong typing.\n3. For PolyAlgorithmRouting:\n   - Implement polyphonic routing logic using gate input and virtual CV ports.\n   - Dynamically generate ports based on algorithm properties (e.g., number of voices, gate/CV requirements).\n   - Use immutable data models (Freezed) for ports and connections.\n   - Validate connections by checking port compatibility and algorithm-specific rules.\n4. For MultiChannelAlgorithmRouting:\n   - Implement width-based routing logic with configurable channel count (default: 1 for normal, N for width-based algorithms).\n   - Dynamically generate input/output ports based on channel configuration.\n   - Ensure robust validation for multi-channel connections, including width and type checks.\n5. Follow current Dart/Flutter best practices: null safety, strong typing, clear documentation (DartDoc), and separation of concerns.\n6. Write comprehensive unit tests for each class covering port generation, connection validation, and edge cases.\n7. Develop integration tests to verify interoperability between PolyAlgorithmRouting and MultiChannelAlgorithmRouting, including mixed routing scenarios and error handling.\n8. Use Cubit for state management in tests where routing state changes are involved.\n9. Document all public APIs and implementation details for maintainability.",
+        "testStrategy": "1. Write unit tests for PolyAlgorithmRouting and MultiChannelAlgorithmRouting covering all abstract method implementations, including edge cases for port generation and connection validation.\n2. Develop integration tests simulating real-world routing scenarios involving both classes, verifying correct port mapping, connection validation, and error handling.\n3. Use mock algorithm properties to test dynamic port generation and validation logic.\n4. Run flutter analyze to ensure zero errors or warnings.\n5. Execute all tests in test/core/routing/ and confirm full coverage and passing results.\n6. Review DartDoc documentation for completeness and clarity.",
+        "status": "done",
+        "dependencies": [
+          6
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define PolyAlgorithmRouting and MultiChannelAlgorithmRouting Classes",
+            "description": "Create the PolyAlgorithmRouting and MultiChannelAlgorithmRouting classes in lib/core/routing/, ensuring both inherit from AlgorithmRouting.",
+            "dependencies": [],
+            "details": "Establish the class structure, set up inheritance from AlgorithmRouting, and prepare class-level documentation using DartDoc.",
+            "status": "done",
+            "testStrategy": "Verify class existence, inheritance, and documentation using static analysis and code review."
+          },
+          {
+            "id": 2,
+            "title": "Implement Abstract Method Overrides with Strong Typing",
+            "description": "Implement generateInputPorts(), generateOutputPorts(), and validateConnection() in both classes, using Dart's override conventions and strong typing.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Ensure all required abstract methods from AlgorithmRouting are overridden with correct signatures and null safety. Add method-level documentation.",
+            "status": "done",
+            "testStrategy": "Write unit tests to confirm method signatures, type safety, and correct override behavior."
+          },
+          {
+            "id": 3,
+            "title": "Develop Polyphonic Routing Logic and Dynamic Port Generation",
+            "description": "Implement polyphonic routing logic in PolyAlgorithmRouting, including dynamic port generation based on algorithm properties and validation using immutable data models.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Use gate input and virtual CV ports, generate ports dynamically according to number of voices and requirements, and validate connections with algorithm-specific rules using Freezed models.",
+            "status": "done",
+            "testStrategy": "Unit test port generation and connection validation for various polyphonic scenarios and edge cases."
+          },
+          {
+            "id": 4,
+            "title": "Implement Multi-Channel Routing Logic and Validation",
+            "description": "Develop width-based routing logic in MultiChannelAlgorithmRouting, supporting configurable channel counts and robust multi-channel connection validation.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Dynamically generate input/output ports based on channel configuration, and ensure validation covers width and type checks for all connections.",
+            "status": "done",
+            "testStrategy": "Unit test channel-based port generation and validation logic for single and multi-channel configurations."
+          },
+          {
+            "id": 5,
+            "title": "Write Comprehensive Unit and Integration Tests",
+            "description": "Create unit tests for both classes covering port generation, connection validation, and edge cases, and develop integration tests for interoperability and error handling.",
+            "dependencies": [
+              "7.3",
+              "7.4"
+            ],
+            "details": "Ensure tests cover all method implementations, mixed routing scenarios, and error conditions. Use Cubit for state management in tests involving routing state changes.",
+            "status": "done",
+            "testStrategy": "Run all unit and integration tests, verifying coverage and correct behavior in real-world and edge-case scenarios."
+          },
+          {
+            "id": 6,
+            "title": "Document Public APIs and Implementation Details",
+            "description": "Document all public APIs and implementation details for PolyAlgorithmRouting and MultiChannelAlgorithmRouting to ensure maintainability and clarity.",
+            "dependencies": [
+              "7.5"
+            ],
+            "details": "Use DartDoc to provide clear, comprehensive documentation for all public methods, properties, and usage examples. Ensure separation of concerns is explained.",
+            "status": "done",
+            "testStrategy": "Review generated documentation for completeness and clarity; confirm with code review and static analysis tools."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Implement RoutingFactory with Algorithm Metadata and Dependency Injection Integration",
+        "description": "Develop a RoutingFactory class that selects and instantiates the correct routing implementation (PolyAlgorithmRouting or MultiChannelAlgorithmRouting) based on algorithm metadata, and integrate it with the get_it dependency injection system.",
+        "details": "1. Define an extensible AlgorithmMetadata model that specifies routing requirements (e.g., voice count, width, gate requirements) and is decoupled from routing implementation logic.\n2. Implement the RoutingFactory class in lib/core/routing/, following the Factory Method pattern: expose a method (e.g., createRouting) that accepts AlgorithmMetadata and returns an AlgorithmRouting instance. Use strong typing and Dart best practices for extensibility.\n3. Ensure the factory logic is easily extensible for future routing types by using a clean decision structure (e.g., switch/case or strategy map) based on metadata properties, and document extension points.\n4. Integrate RoutingFactory with the get_it dependency injection system: register the factory as a singleton or factory in the DI container, and ensure consumers can retrieve routing instances via DI.\n5. Maintain a strict separation of concerns: AlgorithmMetadata should not reference routing classes directly, and RoutingFactory should not require knowledge of algorithm implementation details beyond metadata.\n6. Follow current Dart/Flutter best practices for dependency injection (get_it v7+), null safety, and code documentation. Include code comments and usage examples where appropriate.",
+        "testStrategy": "- Write comprehensive unit tests for RoutingFactory covering all algorithm-to-routing-type mapping scenarios, including edge cases and future extensibility.\n- Test that RoutingFactory correctly instantiates PolyAlgorithmRouting and MultiChannelAlgorithmRouting based on various metadata inputs.\n- Write integration tests to verify correct registration and retrieval of RoutingFactory and routing instances via get_it.\n- Mock AlgorithmMetadata and routing classes as needed to isolate factory logic.\n- Use code coverage tools to ensure all decision branches are tested.\n- Run flutter analyze and ensure zero errors or warnings.",
+        "status": "done",
+        "dependencies": [
+          6,
+          7
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Extensible AlgorithmMetadata Model",
+            "description": "Define an extensible AlgorithmMetadata data model that specifies routing requirements such as voice count, width, and gate requirements, ensuring it is decoupled from routing implementation logic.",
+            "dependencies": [],
+            "details": "Implement the AlgorithmMetadata class in Dart, using strong typing and null safety. Ensure the model is flexible for future routing requirements and does not reference routing classes directly. Document all fields and extension points for future maintainers.",
+            "status": "done",
+            "testStrategy": "Write unit tests to verify correct instantiation, field validation, and extensibility of AlgorithmMetadata. Ensure that changes to metadata do not affect routing logic."
+          },
+          {
+            "id": 2,
+            "title": "Implement RoutingFactory Class Using Factory Method Pattern",
+            "description": "Create the RoutingFactory class in lib/core/routing/, exposing a method (e.g., createRouting) that accepts AlgorithmMetadata and returns an appropriate AlgorithmRouting instance.",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Follow the Factory Method pattern to instantiate PolyAlgorithmRouting or MultiChannelAlgorithmRouting based on metadata properties. Use strong typing and Dart best practices for extensibility. Include code comments and usage examples.",
+            "status": "done",
+            "testStrategy": "Write unit tests for RoutingFactory covering all mapping scenarios, including edge cases and future extensibility. Verify correct instantiation of routing types based on metadata."
+          },
+          {
+            "id": 3,
+            "title": "Ensure Extensible and Documented Factory Decision Logic",
+            "description": "Implement a clean, extensible decision structure (e.g., switch/case or strategy map) within RoutingFactory to select routing types based on metadata, and document extension points for future routing implementations.",
+            "dependencies": [
+              "8.2"
+            ],
+            "details": "Structure the factory logic for easy addition of new routing types. Provide clear documentation and code comments indicating where and how to extend the decision logic.",
+            "status": "done",
+            "testStrategy": "Write unit tests to verify that new routing types can be added with minimal changes and that the decision logic correctly selects routing implementations for all supported scenarios."
+          },
+          {
+            "id": 4,
+            "title": "Integrate RoutingFactory with get_it Dependency Injection",
+            "description": "Register RoutingFactory with the get_it dependency injection system as a singleton or factory, ensuring consumers can retrieve routing instances via DI.",
+            "dependencies": [
+              "8.3"
+            ],
+            "details": "Configure get_it (v7+) to register RoutingFactory appropriately. Update DI setup to allow consumers to request routing instances based on metadata. Follow Dart/Flutter best practices for DI and null safety.",
+            "status": "done",
+            "testStrategy": "Write integration tests to verify RoutingFactory registration and retrieval via get_it. Ensure consumers can obtain routing instances through DI and that singleton/factory behavior is correct."
+          },
+          {
+            "id": 5,
+            "title": "Maintain Separation of Concerns and Document Best Practices",
+            "description": "Ensure strict separation of concerns: AlgorithmMetadata must not reference routing classes, and RoutingFactory should only depend on metadata. Document architecture and usage according to Dart/Flutter best practices.",
+            "dependencies": [
+              "8.4"
+            ],
+            "details": "Review and refactor code to enforce separation of concerns. Add comprehensive documentation and code comments explaining design decisions, extension points, and usage examples. Adhere to Dart/Flutter best practices for code structure and documentation.",
+            "status": "done",
+            "testStrategy": "Write code review checklists and automated tests to verify separation of concerns. Ensure documentation is complete and usage examples are accurate and up-to-date."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement UI Components Integration for Algorithm Routing Visualization",
+        "description": "Develop and integrate Flutter widgets for visualizing the algorithm routing system, including polymorphic AlgorithmNode, ConnectionLine with bezier curves, and a RoutingCanvas that adapts to routing types, all with Cubit-based reactive updates and comprehensive widget testing.",
+        "details": "1. **AlgorithmNode Widget**: Create a reusable widget that displays algorithm metadata (name, type, etc.) and dynamically generates input/output ports based on the routing type (PolyAlgorithmRouting or MultiChannelAlgorithmRouting). Use the RoutingFactory to determine the routing type and port layout at runtime. Ensure the widget visually distinguishes between different port types and supports extensibility for future routing types.\n\n2. **ConnectionLine Widget**: Implement a custom painter widget that draws bezier curves between ports, supporting smooth, visually appealing connections. Use Flutter's CustomPainter and Path APIs, following best practices for performance and hit-testing. Allow for interactive feedback (e.g., highlighting on hover or selection).\n\n3. **RoutingCanvas Widget**: Compose the overall routing visualization by orchestrating AlgorithmNode and ConnectionLine widgets. The canvas should listen to the RoutingEditorCubit for state changes and update the UI reactively. Ensure the layout adapts to changes in the routing state, such as adding/removing nodes or connections.\n\n4. **Integration with RoutingFactory**: Use dependency injection (get_it) to access the RoutingFactory and instantiate the correct routing implementation for each algorithm node. Ensure that port layouts and connection validation are delegated to the appropriate routing class, demonstrating polymorphic behavior in the UI.\n\n5. **Reactive State Management**: Integrate with the existing Cubit (RoutingEditorCubit) for state updates. Use BlocBuilder or similar patterns to ensure widgets rebuild efficiently in response to routing state changes. Avoid unnecessary rebuilds by leveraging keys and widget composition best practices.\n\n6. **Widget Testing**: Write comprehensive widget tests using flutter_test and mockito (or mocktail) to verify correct rendering, port layout adaptation, connection drawing, and interaction (e.g., drag-and-drop, selection). Test edge cases such as rapid state changes, empty states, and invalid connections.\n\n7. **Best Practices**: Follow Flutter best practices for custom painting, widget composition, and performance optimization. Document all public APIs and provide clear separation between UI and business logic. Ensure accessibility (semantics) and responsiveness across platforms.\n\nReferences for best practices: [1][5]",
+        "testStrategy": "- Write widget tests for AlgorithmNode to verify correct port rendering for both PolyAlgorithmRouting and MultiChannelAlgorithmRouting, using mock RoutingFactory and Cubit states.\n- Test ConnectionLine rendering with various port positions and ensure bezier curves are drawn accurately.\n- Simulate routing state changes in RoutingEditorCubit and verify that RoutingCanvas updates the UI reactively without performance issues.\n- Test user interactions such as selecting nodes, dragging connections, and adding/removing nodes, ensuring correct Cubit state updates and UI feedback.\n- Run flutter analyze to ensure zero errors or warnings.\n- Manually test on multiple platforms (desktop, mobile) for responsiveness and accessibility.",
+        "status": "pending",
+        "dependencies": [
+          6,
+          7,
+          8
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design AlgorithmNode Widget Structure",
+            "description": "Define the visual and structural layout for the AlgorithmNode widget, ensuring it displays algorithm metadata and supports dynamic port generation based on routing type.",
+            "dependencies": [],
+            "details": "Specify UI elements for metadata (name, type, etc.), and outline a flexible system for input/output port rendering that can adapt to different routing types and future extensions.\n<info added on 2025-08-28T03:39:26.282Z>\nImplementation of AlgorithmNode widget has been completed successfully. The widget displays algorithm metadata including name, type, and voice/channel count with proper theming integration. It features a flexible port rendering system that adapts to different algorithm types (Poly, Multi-channel, Mono) with color-coded port types. The implementation includes interactive callbacks for node and port taps, and provides a positioned() method for Stack placement. Comprehensive widget tests have been created, covering algorithm name and type display, port visualization for different types, interaction callbacks, visual styles for port types, and empty port handling. All 10 tests are passing. The widget correctly adapts its port layout based on AlgorithmRoutingMetadata, supporting both PolyAlgorithmRouting (voice-based) and MultiChannelAlgorithmRouting (channel-based) routing types.\n</info added on 2025-08-28T03:39:26.282Z>",
+            "status": "done",
+            "testStrategy": "Verify widget renders correct metadata and port placeholders for various routing types using widget tests."
+          },
+          {
+            "id": 2,
+            "title": "Implement Dynamic Port Generation in AlgorithmNode",
+            "description": "Develop logic within AlgorithmNode to dynamically generate input/output ports according to the routing type, leveraging RoutingFactory for runtime decisions.",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Integrate RoutingFactory to determine routing type and port layout, ensuring visual distinction between port types and extensibility for new routing types.\n<info added on 2025-08-28T03:42:30.388Z>\nSuccessfully implemented RoutingAlgorithmNode widget that dynamically generates input/output ports based on routing type. The widget integrates with RoutingFactory to create appropriate AlgorithmRouting instances (PolyAlgorithmRouting or MultiChannelAlgorithmRouting) and displays different port layouts accordingly. Implementation includes proper error handling, memory management through disposal of routing instances, and positioning functionality for Stack placement. Comprehensive test suite verifies routing instance creation, port generation for different routing types, error handling, widget lifecycle management, and interaction callbacks. All tests are passing, confirming the successful integration of RoutingFactory with the UI layer and demonstrating polymorphic behavior through a unified widget API.\n</info added on 2025-08-28T03:42:30.388Z>",
+            "status": "done",
+            "testStrategy": "Test port generation for PolyAlgorithmRouting and MultiChannelAlgorithmRouting using mock RoutingFactory and validate visual differentiation."
+          },
+          {
+            "id": 3,
+            "title": "Develop ConnectionLine Widget with Bezier Curves",
+            "description": "Create a custom painter widget to draw bezier curve connections between ports, supporting smooth visuals and interactive feedback.",
+            "dependencies": [],
+            "details": "Utilize Flutter's CustomPainter and Path APIs to render bezier curves, implement hit-testing for interaction, and provide visual feedback on hover or selection.",
+            "status": "pending",
+            "testStrategy": "Test bezier curve rendering accuracy and interactive feedback for various port positions and connection states."
+          },
+          {
+            "id": 4,
+            "title": "Compose RoutingCanvas Widget for Visualization",
+            "description": "Build the RoutingCanvas widget to orchestrate AlgorithmNode and ConnectionLine widgets, adapting layout to routing state changes.",
+            "dependencies": [
+              "9.2",
+              "9.3"
+            ],
+            "details": "Ensure the canvas listens to RoutingEditorCubit for state updates, dynamically adds/removes nodes and connections, and maintains a responsive layout.",
+            "status": "pending",
+            "testStrategy": "Simulate adding/removing nodes and connections, verifying correct UI updates and layout adaptation."
+          },
+          {
+            "id": 5,
+            "title": "Integrate RoutingFactory with Dependency Injection",
+            "description": "Connect RoutingFactory to the UI layer using get_it for dependency injection, ensuring correct routing implementation instantiation for each node.",
+            "dependencies": [
+              "9.2"
+            ],
+            "details": "Delegate port layout and connection validation to the appropriate routing class, demonstrating polymorphic behavior in the UI.",
+            "status": "pending",
+            "testStrategy": "Test that AlgorithmNode receives correct routing implementation and port layout for various algorithm metadata inputs."
+          },
+          {
+            "id": 6,
+            "title": "Implement Reactive State Management with Cubit",
+            "description": "Integrate RoutingEditorCubit for reactive state updates, ensuring efficient widget rebuilding and UI consistency.",
+            "dependencies": [
+              "9.4"
+            ],
+            "details": "Use BlocBuilder or similar patterns to rebuild widgets on state changes, optimize rebuilds with keys and composition best practices.",
+            "status": "pending",
+            "testStrategy": "Test UI responsiveness to rapid state changes and verify minimal unnecessary rebuilds."
+          },
+          {
+            "id": 7,
+            "title": "Develop Comprehensive Widget Tests",
+            "description": "Write widget tests covering rendering, port layout adaptation, connection drawing, and user interactions such as drag-and-drop and selection.",
+            "dependencies": [
+              "9.2",
+              "9.3",
+              "9.4",
+              "9.6"
+            ],
+            "details": "Use flutter_test and mockito/mocktail to simulate various states and interactions, including edge cases like empty states and invalid connections.",
+            "status": "pending",
+            "testStrategy": "Ensure all UI components behave correctly under normal and edge-case scenarios, with high test coverage."
+          },
+          {
+            "id": 8,
+            "title": "Apply Flutter Best Practices and Documentation",
+            "description": "Refactor and document all public APIs, ensuring clear separation of UI and business logic, accessibility, and cross-platform responsiveness.",
+            "dependencies": [
+              "9.1",
+              "9.3",
+              "9.4",
+              "9.6"
+            ],
+            "details": "Follow best practices for custom painting, widget composition, and performance. Add semantic labels for accessibility and test responsiveness on multiple platforms.",
+            "status": "pending",
+            "testStrategy": "Run accessibility audits, performance profiling, and cross-platform UI tests."
+          },
+          {
+            "id": 9,
+            "title": "Finalize Integration and Conduct End-to-End Testing",
+            "description": "Integrate all components into the main application, performing end-to-end testing to validate the complete routing visualization workflow.",
+            "dependencies": [
+              "9.7",
+              "9.8"
+            ],
+            "details": "Ensure seamless interaction between AlgorithmNode, ConnectionLine, RoutingCanvas, and state management. Validate user flows and error handling.",
+            "status": "pending",
+            "testStrategy": "Perform manual and automated end-to-end tests, covering all user scenarios and integration points."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-27T21:39:42.923Z",
+      "updated": "2025-08-28T03:42:34.482Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

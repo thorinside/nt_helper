@@ -1,0 +1,91 @@
+# Routing Canvas Cleanup and Removal Specification
+
+## Project Overview
+
+This project involves cleaning up the nt_helper Flutter application by removing the routing canvas proof-of-concept implementation that is no longer needed. The goal is to streamline the codebase while preserving essential routing analysis functionality.
+
+## Background
+
+The application currently contains a routing canvas implementation that was developed as a proof-of-concept. This implementation includes node routing state management, UI components for visual routing representation, and associated test files. The decision has been made to remove this functionality while keeping the core routing analysis capabilities intact.
+
+## Objectives
+
+1. **Remove Unnecessary State Management**: Eliminate NodeRoutingCubit and related state management components that are no longer needed.
+
+2. **Simplify User Interface**: Replace complex routing canvas UI with a simple placeholder while maintaining proper navigation structure.
+
+3. **Clean Up Codebase**: Remove all routing canvas UI components including node widgets, connection painters, and canvas layout components.
+
+4. **Maintain Essential Functionality**: Preserve routing analysis components that are still needed for the application's core functionality.
+
+5. **Ensure Quality**: Maintain zero flutter analyze errors and ensure all tests pass after cleanup.
+
+## Detailed Requirements
+
+### Phase 1: State Management Cleanup
+- Remove NodeRoutingCubit class and associated state management
+- Clean up dependency injection registrations
+- Update all import statements throughout the codebase
+- Remove associated test files
+- Verify application initialization remains intact
+
+### Phase 2: UI Replacement
+- Create simple placeholder widget to replace complex NodeRoutingWidget
+- Update synchronized_screen.dart to use the new placeholder
+- Maintain proper layout and navigation structure
+- Ensure UI tests continue to pass
+
+### Phase 3: Component Removal
+- Remove all routing canvas UI components including:
+  - NodeRoutingWidget and related classes
+  - Algorithm node widgets
+  - Connection painter widgets
+  - Physical node widgets  
+  - Canvas layout widgets
+- Clean up routing UI utilities and helpers
+- Verify UI tests pass after removal
+
+### Phase 4: Directory Structure Cleanup
+- Preserve routing_page.dart and routing analysis functionality
+- Remove lib/ui/routing/ directory except for preserved files
+- Reorganize preserved files to appropriate locations
+- Update import paths as needed
+- Remove routing-related test files
+- Clean up test directory structure
+
+### Phase 5: Final Verification and Quality Assurance
+- Run comprehensive integration tests
+- Ensure flutter analyze shows zero errors
+- Search for and clean up any remaining references to removed components
+- Remove unused dependencies from pubspec.yaml if any
+- Test application in all modes (demo, offline, connected)
+- Verify builds work on all target platforms
+- Document any breaking changes or migration notes
+
+## Success Criteria
+
+- Zero flutter analyze errors
+- All existing tests pass
+- Application builds and runs successfully on all target platforms
+- No regression in core application functionality
+- Routing analysis functionality remains intact
+- Codebase is cleaner and more maintainable
+- No references to removed components remain in codebase
+
+## Technical Constraints
+
+- Must maintain compatibility with existing MIDI functionality
+- Cannot break existing preset management features
+- Must preserve MCP server integration
+- Application must continue to work in demo, offline, and connected modes
+- Must maintain existing database functionality
+
+## Platform Requirements
+
+- Linux
+- macOS
+- iOS
+- Android
+- Windows
+
+The cleanup must not break functionality on any of these platforms.
