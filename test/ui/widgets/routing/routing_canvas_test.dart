@@ -8,7 +8,7 @@ import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
-import 'package:nt_helper/ui/widgets/routing/routing_canvas.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 
 import 'routing_canvas_test.mocks.dart';
 

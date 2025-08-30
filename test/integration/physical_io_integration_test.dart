@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nt_helper/ui/widgets/routing/routing_canvas.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_validator.dart';

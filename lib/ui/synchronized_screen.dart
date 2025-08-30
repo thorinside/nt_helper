@@ -31,7 +31,7 @@ import 'package:nt_helper/ui/performance_screen.dart';
 import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
 import 'package:nt_helper/ui/routing_page.dart';
-import 'package:nt_helper/ui/widgets/routing/routing_canvas.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
