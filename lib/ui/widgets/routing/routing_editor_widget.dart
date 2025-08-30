@@ -319,10 +319,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                   ),
                 ),
                 // Draw connections below nodes and ignore pointer events so panning/dragging isn't blocked
-                IgnorePointer(
-                  ignoring: true,
-                  child: _buildConnectionCanvas(connections),
-                ),
+                if (connections.isNotEmpty)
+                  IgnorePointer(
+                    ignoring: true,
+                    child: _buildConnectionCanvas(connections),
+                  ),
                 // Nodes on top (without any wrapping GestureDetector)
                 if (widget.showPhysicalPorts) ..._buildPhysicalInputNodes(physicalInputs),
                 if (widget.showPhysicalPorts) ..._buildPhysicalOutputNodes(physicalOutputs),

@@ -59,7 +59,7 @@ class PhysicalIONodeWidget extends StatelessWidget {
     this.onDragEnd,
     this.position = Offset.zero,
     this.isVerticalLayout = true,
-    this.nodeWidth = 120.0,
+    this.nodeWidth = 160.0,
     this.jackSpacing = 35.0,
     this.showLabels = true,
     this.labelAlignment = LabelAlignment.right,
