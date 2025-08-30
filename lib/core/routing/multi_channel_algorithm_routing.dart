@@ -232,6 +232,33 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   @override
   List<Port> generateOutputPorts() {
     final ports = <Port>[];
+
+    // If outputs are explicitly defined in algorithm properties, use them.
+    final declared = config.algorithmProperties['outputs'];
+    if (declared is List && declared.isNotEmpty) {
+      for (final item in declared) {
+        if (item is Map) {
+          final id = item['id']?.toString() ?? 'out_${ports.length + 1}';
+          final name = item['name']?.toString() ?? 'Output';
+          final typeStr = item['type']?.toString().toLowerCase();
+          final type = _parsePortType(typeStr) ?? PortType.audio;
+          ports.add(Port(
+            id: id,
+            name: name,
+            type: type,
+            direction: PortDirection.output,
+            description: item['description']?.toString(),
+            metadata: {
+              'isDeclaredOutput': true,
+              if (item['busParam'] != null) 'busParam': item['busParam'],
+              if (item['channel'] != null) 'channel': item['channel'],
+            },
+          ));
+        }
+      }
+      debugPrint('MultiChannelAlgorithmRouting: Generated ${ports.length} output ports (declared)');
+      return ports;
+    }
     
     // Generate ports for each channel
     for (int channel = 0; channel < config.channelCount; channel++) {

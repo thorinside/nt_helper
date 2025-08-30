@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/algorithm_routing_metadata.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:nt_helper/models/algorithm_metadata.dart' show AlgorithmMetadata;
 import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
@@ -233,46 +235,138 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     }
 
-  // Non-poly defaults to single-channel (no master mix) here
-    // Try to derive human-friendly input/output names from parameters
-    final paramNames = slot.parameters.map((p) => p.name).toSet();
-    final List<Map<String, Object?>> derivedInputs = [];
-    void addInput(String displayName, {String type = 'audio'}) {
-      derivedInputs.add({
-        'id': 'in_${displayName.replaceAll(' ', '_').toLowerCase()}',
-        'name': displayName,
-        'type': type,
-      });
-    }
-    if (paramNames.contains('Left/mono input')) addInput('Left/mono input', type: 'audio');
-    if (paramNames.contains('Right input')) addInput('Right input', type: 'audio');
-    if (paramNames.contains('Audio input')) addInput('Audio input', type: 'audio');
-    if (paramNames.contains('CV input')) addInput('CV input', type: 'cv');
+    // Non-poly: build from algorithm metadata + parameter names; honor 'Width' parameter if present
+    final metaSvc = AlgorithmMetadataService();
+    final AlgorithmMetadata? meta = metaSvc.getAlgorithmByGuid(slot.algorithm.guid);
 
-    final List<Map<String, Object?>> derivedOutputs = [];
-    void addOutput(String displayName, {String type = 'audio'}) {
-      derivedOutputs.add({
-        'id': 'out_${displayName.replaceAll(' ', '_').toLowerCase()}',
-        'name': displayName,
-        'type': type,
-      });
+    // Helper: map param names for quick lookup and value accessor
+    final Map<String, ParameterInfo> paramsByName = {
+      for (final p in slot.parameters) p.name: p,
+    };
+
+    int? _getIntValue(String name) {
+      final pi = paramsByName[name];
+      if (pi == null || pi.parameterNumber < 0) return null;
+      final Map<int, int> valueByParam = {for (final v in slot.values) v.parameterNumber: v.value};
+      return valueByParam[pi.parameterNumber] ?? pi.defaultValue;
     }
-    if (paramNames.contains('Left/mono output')) addOutput('Left/mono output', type: 'audio');
-    if (paramNames.contains('Right output')) addOutput('Right output', type: 'audio');
+
+    // Derive declared inputs from metadata, using parameter names when available
+    final List<Map<String, Object?>> declaredInputs = [];
+    if (meta != null && meta.inputPorts.isNotEmpty) {
+      for (final ip in meta.inputPorts) {
+        final busRef = ip.busIdRef;
+        final labelFromParam = busRef != null && paramsByName.containsKey(busRef) ? busRef : null;
+        final label = labelFromParam ?? ip.name;
+        String type = 'audio';
+        final lower = label.toLowerCase();
+        if (lower.contains('trigger') || lower.contains('mark') || lower.contains('stop')) type = 'gate';
+        else if (lower.contains('cv')) type = 'cv';
+        declaredInputs.add({
+          'id': 'in_${label.replaceAll(' ', '_').toLowerCase()}',
+          'name': label,
+          'type': type,
+        });
+      }
+    }
+
+    // Derive outputs from metadata similarly (fallback to parameter names)
+    final List<Map<String, Object?>> declaredOutputs = [];
+    if (meta != null && meta.outputPorts.isNotEmpty) {
+      for (final op in meta.outputPorts) {
+        final busRef = op.busIdRef;
+        final labelFromParam = busRef != null && paramsByName.containsKey(busRef) ? busRef : null;
+        final label = labelFromParam ?? op.name;
+        declaredOutputs.add({
+          'id': 'out_${label.replaceAll(' ', '_').toLowerCase()}',
+          'name': label,
+          'type': 'audio',
+        });
+      }
+    }
+
+    // Handle width: limit audio inputs to specified count if present
+    final int? width = _getIntValue('Width') ?? _getIntValue('width');
+    if (width != null && width > 0) {
+      // Prefer known stereo labels when width==1 or 2
+      List<Map<String, Object?>> audioInputs = declaredInputs.where((m) => (m['type'] as String) == 'audio').toList();
+
+      String baseAudioName = 'Audio';
+
+      if (audioInputs.isEmpty) {
+        // Synthesize: "Audio", "Audio 2", ...
+        audioInputs = List.generate(width, (i) => {
+          'id': 'in_${i + 1}',
+          'name': i == 0 ? baseAudioName : '$baseAudioName ${i + 1}',
+          'type': 'audio',
+        });
+      } else {
+        if (width == 1 && audioInputs.length >= 1) {
+          // Prefer Left/mono for mono
+          audioInputs = [
+            audioInputs.firstWhere(
+              (m) => (m['name'] as String).toLowerCase().contains('left/mono'),
+              orElse: () => audioInputs.first,
+            )
+          ];
+        } else if (width == 2 && audioInputs.length >= 2) {
+          // Try to pick left/mono + right if available
+          final left = audioInputs.firstWhere(
+            (m) => (m['name'] as String).toLowerCase().contains('left/mono') || (m['name'] as String).toLowerCase().contains('left '),
+            orElse: () => audioInputs.first,
+          );
+          final right = audioInputs.firstWhere(
+            (m) => (m['name'] as String).toLowerCase().contains('right '),
+            orElse: () => audioInputs.length > 1 ? audioInputs[1] : audioInputs.first,
+          );
+          audioInputs = [left, right];
+        }
+
+        // If width exceeds declared inputs, pad using base name rules
+        if (audioInputs.length < width) {
+          final firstName = (audioInputs.first['name'] as String).trim();
+          final firstIsAudio = firstName.toLowerCase() == 'audio';
+          baseAudioName = firstIsAudio ? 'Audio' : 'Audio'; // default to 'Audio' for padding
+
+          for (int i = audioInputs.length; i < width; i++) {
+            final idx = i + 1;
+            final name = idx == 1 && firstIsAudio ? baseAudioName : '$baseAudioName $idx';
+            // Avoid duplicating the first if it's already 'Audio'
+            if (idx == 1 && !firstIsAudio) {
+              // keep existing firstName; continue to next index
+              continue;
+            }
+            audioInputs.add({
+              'id': 'in_$idx',
+              'name': name,
+              'type': 'audio',
+            });
+          }
+        } else if (audioInputs.length > width) {
+          audioInputs = audioInputs.take(width).toList();
+        }
+      }
+      // Merge back: keep non-audio inputs, replace audio inputs with constrained list
+      final nonAudio = declaredInputs.where((m) => (m['type'] as String) != 'audio');
+      declaredInputs
+        ..clear()
+        ..addAll(audioInputs)
+        ..addAll(nonAudio);
+    }
 
     return AlgorithmRoutingMetadata(
       algorithmGuid: slot.algorithm.guid,
       algorithmName: slot.algorithm.name,
       routingType: RoutingType.multiChannel,
-      channelCount: 1,
-      supportsStereo: false,
+      channelCount: (width != null && width > 0) ? width : 1,
+      supportsStereo: (width ?? 1) == 2,
       allowsIndependentChannels: true,
       createMasterMix: false,
       portNamePrefix: 'Main',
-      supportedPortTypes: const ['audio', 'cv'],
+      supportedPortTypes: const ['audio', 'cv', 'gate'],
       customProperties: {
-        if (derivedInputs.isNotEmpty) 'inputs': derivedInputs,
-        if (derivedOutputs.isNotEmpty) 'outputs': derivedOutputs,
+        if (declaredInputs.isNotEmpty) 'inputs': declaredInputs,
+        if (declaredOutputs.isNotEmpty) 'outputs': declaredOutputs,
       },
     );
   }
