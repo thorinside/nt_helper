@@ -40,7 +40,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<RoutingEditorCubit>.value(
               value: mockCubit,
-              child: const RoutingCanvas(
+              child: const RoutingEditorWidget(
                 canvasSize: Size(1200, 800),
                 showPhysicalPorts: true,
               ),
@@ -152,7 +152,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<RoutingEditorCubit>.value(
               value: mockCubit,
-              child: RoutingCanvas(
+              child: RoutingEditorWidget(
                 canvasSize: const Size(1200, 800),
                 showPhysicalPorts: true,
                 onConnectionCreated: (source, target) {},

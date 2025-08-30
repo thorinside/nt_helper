@@ -31,6 +31,8 @@ import 'package:nt_helper/ui/performance_screen.dart';
 import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
 import 'package:nt_helper/ui/routing_page.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_canvas.dart';
+import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
@@ -264,10 +266,87 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   }
 
   Widget _buildRoutingCanvas() {
-    return const Center(
-      child: Text(
-        'Routing Canvas Placeholder',
-        style: TextStyle(fontSize: 24, color: Colors.grey),
+    return BlocProvider(
+      create: (context) => RoutingEditorCubit(context.read<DistingCubit>()),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Header with routing controls
+            Row(
+              children: [
+                Text(
+                  'Algorithm Routing Visualization',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const Spacer(),
+                BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
+                  builder: (context, state) {
+                    return Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: state.maybeWhen(
+                            loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => () {
+                              context.read<RoutingEditorCubit>().refreshRouting();
+                            },
+                            orElse: () => null,
+                          ),
+                          tooltip: 'Refresh Routing',
+                        ),
+                        const SizedBox(width: 8),
+                        state.when(
+                          initial: () => const Icon(Icons.circle, color: Colors.grey),
+                          disconnected: () => const Icon(Icons.circle, color: Colors.red),
+                          connecting: () => const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          refreshing: () => const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          persisting: () => const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          syncing: () => const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => const Icon(Icons.circle, color: Colors.green),
+                          error: (_) => const Icon(Icons.circle, color: Colors.red),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Routing Canvas
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                return RoutingEditorWidget(
+                    canvasSize: Size(constraints.maxWidth, constraints.maxHeight),
+                    showPhysicalPorts: true,
+                    onConnectionCreated: (source, target) {
+                      context.read<RoutingEditorCubit>().createConnection(
+                            sourcePortId: source,
+                            targetPortId: target,
+                          );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
