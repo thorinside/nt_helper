@@ -3,7 +3,6 @@ import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
-import 'port_compatibility_validator.dart';
 
 /// Configuration data for polyphonic algorithm routing.
 /// 
@@ -22,6 +21,18 @@ class PolyAlgorithmConfig {
   
   /// Number of virtual CV ports to generate per voice
   final int virtualCvPortsPerVoice;
+
+  /// Optional explicit gate bus assignments for poly algorithms that follow
+  /// the Disting NT polysynth pattern (Gate + N CVs on consecutive busses).
+  ///
+  /// Each entry is the selected bus for Gate N (0 means 'None').
+  /// Only non-zero (connected) gates will produce CV input ports.
+  final List<int>? gateInputs;
+  
+  /// Optional CV counts for each gate (same indexing as [gateInputs]).
+  /// Determines how many CV inputs are available on consecutive busses
+  /// immediately after the gate bus for that gate. If omitted, defaults to 0.
+  final List<int>? gateCvCounts;
   
   /// Base name prefix for generated ports
   final String portNamePrefix;
@@ -34,6 +45,8 @@ class PolyAlgorithmConfig {
     this.requiresGateInputs = true,
     this.usesVirtualCvPorts = true,
     this.virtualCvPortsPerVoice = 2,
+    this.gateInputs,
+    this.gateCvCounts,
     this.portNamePrefix = 'Voice',
     this.algorithmProperties = const {},
   });
@@ -82,10 +95,9 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   /// - [initialState]: Optional initial routing state
   PolyAlgorithmRouting({
     required this.config,
-    PortCompatibilityValidator? validator,
+    super.validator,
     RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState(),
-       super(validator: validator) {
+  }) : _state = initialState ?? const RoutingState() {
     debugPrint(
       'PolyAlgorithmRouting: Initialized with ${config.voiceCount} voices, '
       'gates: ${config.requiresGateInputs}, CV: ${config.usesVirtualCvPorts}'
@@ -107,55 +119,95 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   @override
   List<Port> generateInputPorts() {
     final ports = <Port>[];
-    
-    // Generate ports for each voice
-    for (int voice = 0; voice < config.voiceCount; voice++) {
-      final voiceNumber = voice + 1; // 1-based voice numbering
-      
-      // Main audio input for each voice
-      ports.add(Port(
-        id: 'poly_audio_in_$voiceNumber',
-        name: '${config.portNamePrefix} $voiceNumber Audio In',
-        type: PortType.audio,
-        direction: PortDirection.input,
-        description: 'Audio input for voice $voiceNumber',
-        metadata: {
-          'voiceNumber': voiceNumber,
-          'isPolyVoice': true,
-        },
-      ));
-      
-      // Gate input if required
-      if (config.requiresGateInputs) {
-        ports.add(Port(
-          id: 'poly_gate_in_$voiceNumber',
-          name: '${config.portNamePrefix} $voiceNumber Gate',
-          type: PortType.gate,
-          direction: PortDirection.input,
-          description: 'Gate/trigger input for voice $voiceNumber',
-          metadata: {
-            'voiceNumber': voiceNumber,
-            'isPolyVoice': true,
-            'isGateInput': true,
-          },
-        ));
+
+    // If explicit gate inputs are provided (either directly or via algorithmProperties),
+    // follow the gate + CV-per-gate pattern.
+    List<int>? gateInputsFromProps;
+    List<int>? gateCvCountsFromProps;
+    final props = config.algorithmProperties;
+    if (config.gateInputs == null && props.containsKey('gateInputs')) {
+      final raw = props['gateInputs'];
+      if (raw is List) {
+        gateInputsFromProps = raw.map((e) => (e is num) ? e.toInt() : 0).toList();
       }
-      
-      // Virtual CV inputs if enabled
-      if (config.usesVirtualCvPorts) {
-        for (int cv = 0; cv < config.virtualCvPortsPerVoice; cv++) {
-          final cvNumber = cv + 1;
+    }
+    if (config.gateCvCounts == null && props.containsKey('gateCvCounts')) {
+      final raw = props['gateCvCounts'];
+      if (raw is List) {
+        gateCvCountsFromProps = raw.map((e) => (e is num) ? e.toInt() : 0).toList();
+      }
+    }
+
+    final effectiveGateInputs = config.gateInputs ?? gateInputsFromProps;
+    final effectiveGateCvCounts = config.gateCvCounts ?? gateCvCountsFromProps;
+    final hasGateDrivenSpec = (effectiveGateInputs != null && effectiveGateInputs.isNotEmpty);
+    if (hasGateDrivenSpec) {
+      final gateInputs = effectiveGateInputs; // Non-null due to hasGateDrivenSpec
+      final gateCvCounts = effectiveGateCvCounts ?? const [];
+
+      for (int gateIndex = 0; gateIndex < gateInputs.length; gateIndex++) {
+        final gateNumber = gateIndex + 1; // 1-based
+        final gateBus = gateInputs[gateIndex];
+
+        // Only connected gates (bus > 0) produce Gate and CV ports
+        if (gateBus > 0) {
+          // Gate input port
           ports.add(Port(
-            id: 'poly_cv_in_${voiceNumber}_$cvNumber',
-            name: '${config.portNamePrefix} $voiceNumber CV$cvNumber',
-            type: PortType.cv,
+            id: 'poly_gate_in_$gateNumber',
+            name: 'Gate $gateNumber',
+            type: PortType.gate,
             direction: PortDirection.input,
-            description: 'Virtual CV input $cvNumber for voice $voiceNumber',
+            description: 'Gate/trigger input for gate $gateNumber',
             metadata: {
-              'voiceNumber': voiceNumber,
-              'cvNumber': cvNumber,
+              'gateNumber': gateNumber,
               'isPolyVoice': true,
-              'isVirtualCV': true,
+              'isGateInput': true,
+              'gateBus': gateBus,
+            },
+          ));
+
+          // CV inputs for this connected gate, on consecutive busses after the gate bus
+          final cvCount = gateIndex < gateCvCounts.length ? gateCvCounts[gateIndex] : 0;
+          for (int cv = 0; cv < cvCount; cv++) {
+            final cvNumber = cv + 1;
+            ports.add(Port(
+              id: 'poly_gate_${gateNumber}_cv_$cvNumber',
+              name: 'Gate $gateNumber CV$cvNumber',
+              type: PortType.cv,
+              direction: PortDirection.input,
+              description: 'CV input $cvNumber for gate $gateNumber',
+              metadata: {
+                'gateNumber': gateNumber,
+                'cvNumber': cvNumber,
+                'isPolyVoice': true,
+                'isGateDrivenCV': true,
+                // Bus mapping rule: bus = gateBus + cvNumber
+                'suggestedBus': gateBus + cvNumber,
+              },
+            ));
+          }
+        }
+      }
+    }
+
+    // Append any extra declared inputs (e.g., Wave input, Pitchbend input, Audio input)
+    final extras = props['extraInputs'];
+    if (extras is List) {
+      for (final item in extras) {
+        if (item is Map) {
+          final id = item['id']?.toString() ?? 'extra_${ports.length + 1}';
+          final name = item['name']?.toString() ?? 'Extra Input';
+          final typeStr = item['type']?.toString().toLowerCase();
+          final type = _parsePortType(typeStr) ?? PortType.cv;
+          ports.add(Port(
+            id: id,
+            name: name,
+            type: type,
+            direction: PortDirection.input,
+            description: item['description']?.toString(),
+            metadata: {
+              'isExtraInput': true,
+              if (item['busParam'] != null) 'busParam': item['busParam'],
             },
           ));
         }
@@ -169,56 +221,51 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   @override
   List<Port> generateOutputPorts() {
     final ports = <Port>[];
-    
-    // Generate output ports for each voice
-    for (int voice = 0; voice < config.voiceCount; voice++) {
-      final voiceNumber = voice + 1;
-      
-      // Main audio output for each voice
-      ports.add(Port(
-        id: 'poly_audio_out_$voiceNumber',
-        name: '${config.portNamePrefix} $voiceNumber Audio Out',
-        type: PortType.audio,
-        direction: PortDirection.output,
-        description: 'Audio output for voice $voiceNumber',
-        metadata: {
-          'voiceNumber': voiceNumber,
-          'isPolyVoice': true,
-        },
-      ));
-      
-      // Optional gate output (echo/passthrough)
-      if (config.requiresGateInputs) {
-        ports.add(Port(
-          id: 'poly_gate_out_$voiceNumber',
-          name: '${config.portNamePrefix} $voiceNumber Gate Out',
-          type: PortType.gate,
-          direction: PortDirection.output,
-          description: 'Gate output for voice $voiceNumber',
-          metadata: {
-            'voiceNumber': voiceNumber,
-            'isPolyVoice': true,
-            'isGateOutput': true,
-          },
-        ));
+
+    // If outputs are explicitly defined in algorithm properties, use them.
+    final outputs = config.algorithmProperties['outputs'];
+    if (outputs is List && outputs.isNotEmpty) {
+      for (final item in outputs) {
+        if (item is Map) {
+          final id = item['id']?.toString() ?? 'out_${ports.length + 1}';
+          final name = item['name']?.toString() ?? 'Output';
+          final typeStr = item['type']?.toString().toLowerCase();
+          final type = _parsePortType(typeStr) ?? PortType.audio;
+          ports.add(Port(
+            id: id,
+            name: name,
+            type: type,
+            direction: PortDirection.output,
+            description: item['description']?.toString(),
+            metadata: {
+              'isDeclaredOutput': true,
+              if (item['busParam'] != null) 'busParam': item['busParam'],
+              if (item['channel'] != null) 'channel': item['channel'],
+            },
+          ));
+        }
       }
+      debugPrint('PolyAlgorithmRouting: Generated ${ports.length} output ports (declared)');
+      return ports;
     }
-    
-    // Mixed output (sum of all voices)
-    ports.add(Port(
-      id: 'poly_mix_out',
-      name: 'Poly Mix Out',
-      type: PortType.audio,
-      direction: PortDirection.output,
-      description: 'Mixed output of all polyphonic voices',
-      metadata: {
-        'isMixedOutput': true,
-        'voiceCount': config.voiceCount,
-      },
-    ));
-    
-    debugPrint('PolyAlgorithmRouting: Generated ${ports.length} output ports');
+
+    // No declared outputs; return empty and let higher layers decide or provide outputs via properties
+    debugPrint('PolyAlgorithmRouting: No declared outputs found (returning none)');
     return ports;
+  }
+
+  PortType? _parsePortType(String? name) {
+    switch (name) {
+      case 'audio':
+        return PortType.audio;
+      case 'cv':
+        return PortType.cv;
+      case 'gate':
+        return PortType.gate;
+      case 'clock':
+        return PortType.clock;
+    }
+    return null;
   }
 
   @override

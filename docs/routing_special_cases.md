@@ -92,7 +92,8 @@ Feedback Send/Receive pairs create "teleport tunnels" using identifier parameter
 Poly algorithms use a special pattern:
 - Gate input parameter controls the gate bus
 - CV count parameter determines number of CV inputs
-- When gate is connected, CV ports are dynamically created
+- When a gate is connected (bus > 0), CV ports are dynamically created
+- Gates set to None (bus = 0) produce no CV input ports
 
 ### Port Generation
 For each active gate:
