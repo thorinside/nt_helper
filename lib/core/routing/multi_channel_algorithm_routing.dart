@@ -142,6 +142,33 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   @override
   List<Port> generateInputPorts() {
     final ports = <Port>[];
+
+    // If explicit inputs are defined in algorithm properties, use them first.
+    final declaredInputs = config.algorithmProperties['inputs'];
+    if (declaredInputs is List && declaredInputs.isNotEmpty) {
+      for (final item in declaredInputs) {
+        if (item is Map) {
+          final id = item['id']?.toString() ?? 'in_${ports.length + 1}';
+          final name = item['name']?.toString() ?? 'Input';
+          final typeStr = item['type']?.toString().toLowerCase();
+          final type = _parsePortType(typeStr) ?? PortType.audio;
+          ports.add(Port(
+            id: id,
+            name: name,
+            type: type,
+            direction: PortDirection.input,
+            description: item['description']?.toString(),
+            metadata: {
+              'isDeclaredInput': true,
+              if (item['busParam'] != null) 'busParam': item['busParam'],
+              if (item['channel'] != null) 'channel': item['channel'],
+            },
+          ));
+        }
+      }
+      debugPrint('MultiChannelAlgorithmRouting: Generated ${ports.length} input ports (declared)');
+      return ports;
+    }
     
     // Generate ports for each channel
     for (int channel = 0; channel < config.channelCount; channel++) {
@@ -312,6 +339,20 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     
     debugPrint('MultiChannelAlgorithmRouting: Generated ${ports.length} output ports');
     return ports;
+  }
+
+  PortType? _parsePortType(String? name) {
+    switch (name) {
+      case 'audio':
+        return PortType.audio;
+      case 'cv':
+        return PortType.cv;
+      case 'gate':
+        return PortType.gate;
+      case 'clock':
+        return PortType.clock;
+    }
+    return null;
   }
 
   @override

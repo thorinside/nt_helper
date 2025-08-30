@@ -233,11 +233,47 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     }
 
-    // Non-poly defaults to single-channel (no master mix) here
-    return AlgorithmRoutingMetadataFactory.normal(
+  // Non-poly defaults to single-channel (no master mix) here
+    // Try to derive human-friendly input/output names from parameters
+    final paramNames = slot.parameters.map((p) => p.name).toSet();
+    final List<Map<String, Object?>> derivedInputs = [];
+    void addInput(String displayName, {String type = 'audio'}) {
+      derivedInputs.add({
+        'id': 'in_${displayName.replaceAll(' ', '_').toLowerCase()}',
+        'name': displayName,
+        'type': type,
+      });
+    }
+    if (paramNames.contains('Left/mono input')) addInput('Left/mono input', type: 'audio');
+    if (paramNames.contains('Right input')) addInput('Right input', type: 'audio');
+    if (paramNames.contains('Audio input')) addInput('Audio input', type: 'audio');
+    if (paramNames.contains('CV input')) addInput('CV input', type: 'cv');
+
+    final List<Map<String, Object?>> derivedOutputs = [];
+    void addOutput(String displayName, {String type = 'audio'}) {
+      derivedOutputs.add({
+        'id': 'out_${displayName.replaceAll(' ', '_').toLowerCase()}',
+        'name': displayName,
+        'type': type,
+      });
+    }
+    if (paramNames.contains('Left/mono output')) addOutput('Left/mono output', type: 'audio');
+    if (paramNames.contains('Right output')) addOutput('Right output', type: 'audio');
+
+    return AlgorithmRoutingMetadata(
       algorithmGuid: slot.algorithm.guid,
       algorithmName: slot.algorithm.name,
+      routingType: RoutingType.multiChannel,
+      channelCount: 1,
+      supportsStereo: false,
+      allowsIndependentChannels: true,
+      createMasterMix: false,
       portNamePrefix: 'Main',
+      supportedPortTypes: const ['audio', 'cv'],
+      customProperties: {
+        if (derivedInputs.isNotEmpty) 'inputs': derivedInputs,
+        if (derivedOutputs.isNotEmpty) 'outputs': derivedOutputs,
+      },
     );
   }
 
