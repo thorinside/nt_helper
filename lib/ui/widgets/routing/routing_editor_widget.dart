@@ -411,6 +411,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           slotNumber: algorithm.index + 1, // 1-indexed for display
           position: position,
           isSelected: isSelected,
+          inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
+          outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
           onDragStart: () {
             if (!_isDraggingNode) {
               setState(() {
@@ -442,8 +444,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onMoveDown: algorithm.index < algorithms.length - 1 ? () => _handleAlgorithmMoveDown(algorithm.index) : null,
           onDelete: () => _handleAlgorithmDelete(algorithm.index),
           onTap: () => _handleNodeTap(nodeId),
-          inputCount: algorithm.inputPorts.length,
-          outputCount: algorithm.outputPorts.length,
         ),
       );
     }).toList();

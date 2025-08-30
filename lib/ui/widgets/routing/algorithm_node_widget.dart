@@ -27,8 +27,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final VoidCallback? onMoveDown;
   final VoidCallback? onDelete;
   final VoidCallback? onTap;
-  final int inputCount;
-  final int outputCount;
+  final List<String> inputLabels;
+  final List<String> outputLabels;
   
   const AlgorithmNodeWidget({
     super.key,
@@ -44,8 +44,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onMoveDown,
     this.onDelete,
     this.onTap,
-    this.inputCount = 2,
-    this.outputCount = 2,
+    this.inputLabels = const [],
+    this.outputLabels = const [],
   });
   
   @override
@@ -160,13 +160,13 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           // Title with slot number pre-pended
           Expanded(
             child: Text(
-              '#${widget.slotNumber} ${widget.algorithmName}',
+              '#${widget.slotNumber} ${_truncateWithEllipsis(widget.algorithmName, 25)}',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: foregroundColor,
                 fontWeight: FontWeight.w600,
               ),
               overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+              maxLines: 2,
               softWrap: false,
             ),
           ),
@@ -220,19 +220,25 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Input ports
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(widget.inputCount, (index) => 
-              _buildPort(theme, 'I${index + 1}', true),
+          // Inputs aligned to left
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(widget.inputLabels.length, (index) =>
+                _buildPort(theme, widget.inputLabels[index], true, alignEnd: false),
+              ),
             ),
           ),
-          const SizedBox(width: 40),
-          // Output ports
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(widget.outputCount, (index) => 
-              _buildPort(theme, 'O${index + 1}', false),
+          const SizedBox(width: 24),
+          // Outputs aligned to right
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(widget.outputLabels.length, (index) =>
+                _buildPort(theme, widget.outputLabels[index], false, alignEnd: true),
+              ),
             ),
           ),
         ],
@@ -240,11 +246,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     );
   }
   
-  Widget _buildPort(ThemeData theme, String label, bool isInput) {
+  Widget _buildPort(ThemeData theme, String label, bool isInput, {bool alignEnd = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isInput) ...[
             Text(
@@ -275,6 +282,11 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         ],
       ),
     );
+  }
+
+  String _truncateWithEllipsis(String text, int maxChars) {
+    if (text.length <= maxChars) return text;
+    return '${text.substring(0, maxChars)}…';
   }
   
   void _handleDragStart(DragStartDetails details) {
