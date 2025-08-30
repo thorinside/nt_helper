@@ -4,6 +4,7 @@ import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/port_compatibility_validator.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/core/routing/models/algorithm_routing_metadata.dart';
+import 'package:nt_helper/services/haptic_feedback_service.dart';
 
 /// Service locator configuration for routing-related dependencies.
 /// 
@@ -39,12 +40,16 @@ class RoutingServiceLocator {
   /// Gets the PortCompatibilityValidator instance from the service locator
   static PortCompatibilityValidator get portValidator => _getIt<PortCompatibilityValidator>();
 
+  /// Gets the HapticFeedbackService instance from the service locator
+  static IHapticFeedbackService get hapticFeedbackService => _getIt<IHapticFeedbackService>();
+
   /// Sets up all routing-related dependencies in the service locator.
   /// 
   /// This method should be called during app initialization, before any
   /// routing functionality is used. It registers:
   /// - PortCompatibilityValidator as a singleton
   /// - RoutingFactory as a singleton (using the validator)
+  /// - HapticFeedbackService as a singleton
   /// 
   /// Parameters:
   /// - [customValidator]: Optional custom port compatibility validator.
@@ -74,6 +79,11 @@ class RoutingServiceLocator {
     final factory = customFactory ?? RoutingFactory(validator: validator);
     _getIt.registerSingleton<RoutingFactory>(factory);
     debugPrint('RoutingServiceLocator: Registered RoutingFactory');
+
+    // Register haptic feedback service as singleton
+    final hapticService = HapticFeedbackService();
+    _getIt.registerSingleton<IHapticFeedbackService>(hapticService);
+    debugPrint('RoutingServiceLocator: Registered HapticFeedbackService');
 
     debugPrint('RoutingServiceLocator: Setup complete');
   }
@@ -162,6 +172,11 @@ class RoutingServiceLocator {
     debugPrint('RoutingServiceLocator: Resetting routing dependencies');
 
     // Unregister in reverse order of registration to handle dependencies properly
+    if (_getIt.isRegistered<IHapticFeedbackService>()) {
+      await _getIt.unregister<IHapticFeedbackService>();
+      debugPrint('RoutingServiceLocator: Unregistered HapticFeedbackService');
+    }
+
     if (_getIt.isRegistered<RoutingFactory>()) {
       await _getIt.unregister<RoutingFactory>();
       debugPrint('RoutingServiceLocator: Unregistered RoutingFactory');

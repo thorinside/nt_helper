@@ -1,31 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/ui/widgets/routing/connection_validator.dart';
 
 /// Represents a connection between two ports in the routing canvas.
 /// 
-/// This class holds the information about which ports are connected
-/// and provides data for the ConnectionLine widget to render.
+/// This immutable data class holds the information about which ports are connected
+/// and provides all necessary data for the ConnectionLine widget to render the connection.
+/// 
+/// ## Features
+/// - Immutable connection data structure
+/// - Source and destination port information
+/// - Canvas position coordinates for rendering
+/// - Visual state management (selection, highlighting)
+/// - Connection validity checking
+/// - Color coding based on port types
+/// - Optional metadata storage
+/// 
+/// ## Usage
+/// ```dart
+/// final connection = Connection(
+///   sourcePort: outputPort,
+///   destinationPort: inputPort,
+///   sourcePosition: Offset(100, 50),
+///   destinationPosition: Offset(300, 150),
+///   isSelected: false,
+///   isHighlighted: false,
+/// );
+/// ```
 @immutable
 class Connection {
-  /// The source port (typically an output port)
+  /// The source port (typically an output port).
+  /// 
+  /// This represents the starting point of the connection and determines
+  /// the connection's color and validation rules.
   final Port sourcePort;
   
-  /// The destination port (typically an input port)  
+  /// The destination port (typically an input port).
+  /// 
+  /// This represents the ending point of the connection and is used
+  /// for compatibility checking with the source port.
   final Port destinationPort;
   
-  /// The position of the source port on the canvas
+  /// The position of the source port on the canvas.
+  /// 
+  /// Used as the starting point for drawing the bezier curve connection.
   final Offset sourcePosition;
   
-  /// The position of the destination port on the canvas
+  /// The position of the destination port on the canvas.
+  /// 
+  /// Used as the ending point for drawing the bezier curve connection.
   final Offset destinationPosition;
   
-  /// Whether this connection is currently selected
+  /// Whether this connection is currently selected.
+  /// 
+  /// Selected connections are rendered with increased stroke width
+  /// and full opacity for emphasis.
   final bool isSelected;
   
-  /// Whether this connection should be highlighted (e.g., on hover)
+  /// Whether this connection should be highlighted (e.g., on hover).
+  /// 
+  /// Highlighted connections are rendered with slightly increased
+  /// stroke width and higher opacity than normal.
   final bool isHighlighted;
   
-  /// Optional metadata for this connection
+  /// Optional metadata for this connection.
+  /// 
+  /// Can store additional data such as connection strength,
+  /// latency, or other connection-specific properties.
   final Map<String, dynamic>? metadata;
 
   const Connection({
@@ -80,6 +121,11 @@ class Connection {
            sourcePort.isCompatibleWith(destinationPort);
   }
 
+  /// Returns true if this connection represents a ghost connection
+  bool get isGhostConnection {
+    return ConnectionValidator.isGhostConnection(sourcePort, destinationPort);
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -97,23 +143,58 @@ class Connection {
 /// This widget renders smooth, visually appealing connections using Flutter's
 /// CustomPainter API. It supports interactive feedback such as highlighting
 /// and selection states.
+/// 
+/// ## Features
+/// - Smooth bezier curve rendering with horizontal control points
+/// - Interactive hover and tap detection
+/// - Animation support for connection drawing
+/// - Color-coded connections based on port types
+/// - Visual feedback for selection and highlighting states
+/// - Invalid connection styling (red with reduced opacity)
+/// - Optimized hit testing for easier interaction
+/// - Accessibility support with semantic labels
+/// 
+/// ## Usage
+/// ```dart
+/// ConnectionLine(
+///   connection: connectionData,
+///   strokeWidth: 2.0,
+///   animated: true,
+///   onTapped: () => handleConnectionTap(),
+///   onHover: (isHovered) => handleHover(isHovered),
+/// )
+/// ```
 class ConnectionLine extends StatefulWidget {
-  /// The connection to render
+  /// The connection data containing ports, positions, and visual state.
+  /// 
+  /// This provides all necessary information for rendering the connection line.
   final Connection connection;
   
-  /// The stroke width of the connection line
+  /// The base stroke width of the connection line.
+  /// 
+  /// The actual rendered width may be modified based on connection state
+  /// (selection increases width by 1.5x, highlighting by 1.2x).
   final double strokeWidth;
   
-  /// Called when the connection is tapped
+  /// Callback invoked when the connection line is tapped.
+  /// 
+  /// Typically used for connection selection or context menu display.
   final VoidCallback? onTapped;
   
-  /// Called when the connection is hovered (desktop/web)
+  /// Callback invoked when the connection is hovered (desktop/web platforms).
+  /// 
+  /// Receives a boolean indicating whether the mouse entered (true) or exited (false) the connection area.
   final ValueChanged<bool>? onHover;
   
-  /// Whether to animate the connection drawing
+  /// Whether to animate the connection drawing from start to finish.
+  /// 
+  /// When enabled, the connection will animate from source to destination
+  /// using the specified animation duration and easing curve.
   final bool animated;
   
-  /// The animation duration for drawing the connection
+  /// The duration for the connection drawing animation.
+  /// 
+  /// Only used when [animated] is true. Uses ease-out cubic curve for natural motion.
   final Duration animationDuration;
 
   const ConnectionLine({
@@ -167,7 +248,15 @@ class _ConnectionLineState extends State<ConnectionLine>
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
+    final semanticLabel = widget.connection.isGhostConnection
+        ? 'Ghost connection from ${widget.connection.sourcePort.name} to ${widget.connection.destinationPort.name} - signal available to other algorithms'
+        : 'Connection from ${widget.connection.sourcePort.name} to ${widget.connection.destinationPort.name}';
+        
+    final semanticHint = widget.connection.isGhostConnection
+        ? 'Ghost connection line - algorithm output to physical I/O. Tap to select or modify.'
+        : 'Port connection line. Tap to select or modify connection.';
+
+    Widget connectionWidget = MouseRegion(
       onEnter: (_) => _handleHover(true),
       onExit: (_) => _handleHover(false),
       child: GestureDetector(
@@ -182,6 +271,29 @@ class _ConnectionLineState extends State<ConnectionLine>
           child: Container(), // Empty container to provide hit area
         ),
       ),
+    );
+
+    // Wrap ghost connections in tooltip
+    if (widget.connection.isGhostConnection) {
+      final tooltipMessage = ConnectionValidator.getConnectionDescription(
+        widget.connection.sourcePort, 
+        widget.connection.destinationPort,
+      );
+      
+      connectionWidget = Tooltip(
+        message: tooltipMessage,
+        waitDuration: const Duration(milliseconds: 500),
+        child: connectionWidget,
+      );
+    }
+
+    return Semantics(
+      label: semanticLabel,
+      hint: semanticHint,
+      button: true,
+      enabled: true,
+      selected: widget.connection.isSelected,
+      child: connectionWidget,
     );
   }
   
@@ -255,19 +367,39 @@ class _ConnectionLinePainter extends CustomPainter {
       connection.destinationPosition,
     );
     
+    // For ghost connections, create and draw dashed path
+    Path pathToDraw = path;
+    if (connection.isGhostConnection) {
+      pathToDraw = _createDashedPath(path);
+      paint.color = lineColor.withValues(alpha: lineColor.a * 0.7);
+    }
+    
     // Apply animation by trimming the path
-    if (animationValue < 1.0) {
-      final pathMetrics = path.computeMetrics();
+    if (animationValue < 1.0 && animationValue > 0.0) {
+      final pathMetrics = pathToDraw.computeMetrics();
       if (pathMetrics.isNotEmpty) {
-        final pathMetric = pathMetrics.first;
-        final animatedPath = pathMetric.extractPath(
-          0.0,
-          pathMetric.length * animationValue,
-        );
-        canvas.drawPath(animatedPath, paint);
+        try {
+          final pathMetric = pathMetrics.first;
+          final pathLength = pathMetric.length;
+          if (pathLength > 0) {
+            final animatedLength = pathLength * animationValue;
+            if (animatedLength > 0) {
+              final animatedPath = pathMetric.extractPath(0.0, animatedLength);
+              canvas.drawPath(animatedPath, paint);
+            }
+          }
+        } catch (e) {
+          // Fallback to drawing the full path if animation fails
+          canvas.drawPath(pathToDraw, paint);
+        }
       }
     } else {
-      canvas.drawPath(path, paint);
+      canvas.drawPath(pathToDraw, paint);
+    }
+    
+    // Draw ghost connection indicator
+    if (connection.isGhostConnection) {
+      _drawGhostIndicator(canvas, path);
     }
     
     // Draw connection endpoints
@@ -282,29 +414,44 @@ class _ConnectionLinePainter extends CustomPainter {
   /// Creates a smooth bezier curve path between two points
   Path _createBezierPath(Offset start, Offset end) {
     final path = Path();
+    
+    // Validate input coordinates
+    if (!start.isFinite || !end.isFinite) {
+      // Return a simple line path as fallback
+      path.moveTo(0, 0);
+      path.lineTo(100, 100);
+      return path;
+    }
+    
     path.moveTo(start.dx, start.dy);
     
     // Calculate control points for smooth curves
     final dx = end.dx - start.dx;
     
     // Use horizontal offset for control points to create natural curves
-    final controlOffset = dx.abs() * 0.5;
+    final controlOffset = (dx.abs() * 0.5).clamp(10.0, 200.0);
     
     final controlPoint1 = Offset(
-      start.dx + controlOffset,
+      start.dx + (dx > 0 ? controlOffset : -controlOffset),
       start.dy,
     );
     
     final controlPoint2 = Offset(
-      end.dx - controlOffset,
+      end.dx - (dx > 0 ? controlOffset : -controlOffset),
       end.dy,
     );
     
-    path.cubicTo(
-      controlPoint1.dx, controlPoint1.dy,
-      controlPoint2.dx, controlPoint2.dy,
-      end.dx, end.dy,
-    );
+    // Validate control points
+    if (controlPoint1.isFinite && controlPoint2.isFinite) {
+      path.cubicTo(
+        controlPoint1.dx, controlPoint1.dy,
+        controlPoint2.dx, controlPoint2.dy,
+        end.dx, end.dy,
+      );
+    } else {
+      // Fallback to simple line if control points are invalid
+      path.lineTo(end.dx, end.dy);
+    }
     
     return path;
   }
@@ -335,6 +482,89 @@ class _ConnectionLinePainter extends CustomPainter {
     );
     
     canvas.drawPath(path, selectionPaint);
+  }
+  
+  /// Creates a dashed path for ghost connections
+  Path _createDashedPath(Path originalPath) {
+    final dashedPath = Path();
+    final pathMetrics = originalPath.computeMetrics();
+    
+    for (final pathMetric in pathMetrics) {
+      double distance = 0.0;
+      bool draw = true;
+      const double dashLength = 8.0;
+      const double gapLength = 4.0;
+      
+      while (distance < pathMetric.length) {
+        final segmentLength = draw ? dashLength : gapLength;
+        final endDistance = (distance + segmentLength).clamp(0.0, pathMetric.length);
+        
+        if (draw) {
+          final extractedPath = pathMetric.extractPath(distance, endDistance);
+          dashedPath.addPath(extractedPath, Offset.zero);
+        }
+        
+        distance = endDistance;
+        draw = !draw;
+      }
+    }
+    
+    return dashedPath;
+  }
+  
+  /// Draws ghost connection indicator (small ghost icon)
+  void _drawGhostIndicator(Canvas canvas, Path connectionPath) {
+    final pathMetrics = connectionPath.computeMetrics();
+    if (pathMetrics.isEmpty) return;
+    
+    // Find the midpoint of the connection
+    final pathMetric = pathMetrics.first;
+    final midDistance = pathMetric.length * 0.5;
+    final tangent = pathMetric.getTangentForOffset(midDistance);
+    
+    if (tangent == null) return;
+    
+    final midPoint = tangent.position;
+    
+    // Draw a small ghost icon (translucent circle with "G")
+    final ghostPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.white.withValues(alpha: 0.9);
+    
+    const ghostRadius = 10.0;
+    canvas.drawCircle(midPoint, ghostRadius, ghostPaint);
+    
+    // Draw border
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = connection.getConnectionColor().withValues(alpha: 0.8);
+    
+    canvas.drawCircle(midPoint, ghostRadius, borderPaint);
+    
+    // Draw "G" text
+    final textSpan = TextSpan(
+      text: 'G',
+      style: TextStyle(
+        color: connection.getConnectionColor().withValues(alpha: 0.9),
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    
+    final textPainter = TextPainter(
+      text: textSpan,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+    
+    textPainter.layout();
+    final textOffset = Offset(
+      midPoint.dx - textPainter.width / 2,
+      midPoint.dy - textPainter.height / 2,
+    );
+    
+    textPainter.paint(canvas, textOffset);
   }
 
   @override
@@ -384,7 +614,25 @@ class _ConnectionLinePainter extends CustomPainter {
 /// A widget that manages multiple ConnectionLine widgets efficiently.
 /// 
 /// This widget is optimized for rendering many connections simultaneously
-/// and provides batch operations for connection management.
+/// and provides batch operations for connection management. It uses a Stack
+/// layout to overlay all connections and supports individual interaction callbacks.
+/// 
+/// ## Performance Features
+/// - Efficient Stack-based rendering for multiple connections
+/// - Individual connection interaction handling
+/// - Batch animation support
+/// - Optimized for large numbers of connections
+/// 
+/// ## Usage
+/// ```dart
+/// ConnectionLineManager(
+///   connections: connectionsList,
+///   strokeWidth: 2.0,
+///   animated: true,
+///   onConnectionTapped: (connection) => handleTap(connection),
+///   onConnectionHover: (connection, hovered) => handleHover(connection, hovered),
+/// )
+/// ```
 class ConnectionLineManager extends StatelessWidget {
   /// The list of connections to render
   final List<Connection> connections;

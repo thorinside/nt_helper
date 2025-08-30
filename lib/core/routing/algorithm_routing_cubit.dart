@@ -2,9 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
-import 'models/port.dart';
 import 'models/connection.dart';
-import 'port_compatibility_validator.dart';
 
 /// Cubit for managing algorithm routing state.
 /// 
@@ -37,9 +35,9 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
     emit(state.withStatus(RoutingSystemStatus.initializing));
     
     try {
-      // Generate ports from the algorithm
-      final inputPorts = _algorithm.generateInputPorts();
-      final outputPorts = _algorithm.generateOutputPorts();
+      // Get ports from the algorithm
+      final inputPorts = _algorithm.inputPorts;
+      final outputPorts = _algorithm.outputPorts;
       
       // Update state with generated ports
       final newState = state

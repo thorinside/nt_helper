@@ -10,6 +10,7 @@ import 'package:nt_helper/services/settings_service.dart' show SettingsService;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
+import 'package:nt_helper/core/routing/routing_service_locator.dart';
 
 // Define the static MethodChannel
 const MethodChannel _windowEventsChannel = MethodChannel(
@@ -22,6 +23,9 @@ void main() async {
   await SettingsService().init();
   await NodePositionsPersistenceService().init();
   await AlgorithmMetadataService().initialize(database);
+  
+  // Initialize routing dependencies
+  await RoutingServiceLocator.setup();
 
   runApp(
     MultiProvider(
@@ -63,6 +67,14 @@ void main() async {
         debugPrint("Error closing database: $e");
         // Optionally, decide if this error should affect prefsSavedSuccessfully
         // For now, we let it proceed and return based on prefs saving.
+      }
+      
+      try {
+        debugPrint("Resetting routing service locator...");
+        await RoutingServiceLocator.reset();
+        debugPrint("Routing service locator reset successfully.");
+      } catch (e) {
+        debugPrint("Error resetting routing service locator: $e");
       }
 
       return prefsSavedSuccessfully; // Signal success/failure of prefs saving

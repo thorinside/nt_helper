@@ -3,7 +3,6 @@ import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
-import 'port_compatibility_validator.dart';
 
 /// Configuration data for multi-channel algorithm routing.
 /// 
@@ -119,10 +118,9 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// - [initialState]: Optional initial routing state
   MultiChannelAlgorithmRouting({
     required this.config,
-    PortCompatibilityValidator? validator,
+    super.validator,
     RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState(),
-       super(validator: validator) {
+  }) : _state = initialState ?? const RoutingState() {
     debugPrint(
       'MultiChannelAlgorithmRouting: Initialized with ${config.channelCount} channels, '
       'stereo: ${config.supportsStereoChannels}, mix: ${config.createMasterMix}'

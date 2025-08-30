@@ -50,7 +50,7 @@ void main() {
 
     Widget createTestWidget({
       RoutingEditorState? initialState,
-      RoutingCanvas? canvas,
+      RoutingEditorWidget? canvas,
     }) {
       when(mockCubit.state).thenReturn(
         initialState ?? const RoutingEditorState.initial()
@@ -115,7 +115,7 @@ void main() {
         ));
         
         // Verify all components are rendered
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
         expect(find.text('Audio In 1'), findsOneWidget);
         expect(find.text('CV In 1'), findsOneWidget);
         expect(find.text('Audio Out 1'), findsOneWidget);
@@ -139,7 +139,7 @@ void main() {
         ));
         
         // Should render canvas without errors
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
         
         // Should not have any nodes or connections
         expect(find.byType(RoutingAlgorithmNode), findsNothing);
@@ -173,7 +173,7 @@ void main() {
         await tester.pump(); // Allow state to update
         
         // Should render without errors
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
     });
 
@@ -198,7 +198,7 @@ void main() {
         ));
         
         // Canvas should handle node selection callbacks
-        final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+        final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
         expect(canvasWidget.onNodeSelected, isNotNull);
         expect(selectedNodeId, isNull); // Initially no node is selected
       });
@@ -223,7 +223,7 @@ void main() {
         ));
         
         // Canvas should handle connection creation callbacks
-        final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+        final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
         expect(canvasWidget.onConnectionCreated, isNotNull);
         expect(sourcePortId, isNull); // Initially no source port is selected
         expect(targetPortId, isNull); // Initially no target port is selected
@@ -240,18 +240,18 @@ void main() {
         ));
         
         // Should handle tap gestures on the canvas
-        await tester.tap(find.byType(RoutingCanvas));
+        await tester.tap(find.byType(RoutingEditorWidget));
         await tester.pump();
         
         // Should handle drag gestures
         await tester.dragFrom(
-          tester.getCenter(find.byType(RoutingCanvas)),
+          tester.getCenter(find.byType(RoutingEditorWidget)),
           const Offset(50, 50),
         );
         await tester.pump();
         
         // Should not throw any errors
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
     });
 
@@ -284,7 +284,7 @@ void main() {
         expect(find.byType(RoutingAlgorithmNode), findsNWidgets(5));
         
         // Should complete rendering within reasonable time
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
 
       testWidgets('should handle rapid state changes without issues', (WidgetTester tester) async {
@@ -309,7 +309,7 @@ void main() {
           await tester.pump();
           
           // Should handle all state transitions without errors
-          expect(find.byType(RoutingCanvas), findsOneWidget);
+          expect(find.byType(RoutingEditorWidget), findsOneWidget);
         }
       });
     });
@@ -330,7 +330,7 @@ void main() {
         ));
         
         // Should render with accessibility support
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
         
         // Test semantic finder works
         expect(find.text('Audio In 1'), findsOneWidget);
@@ -349,7 +349,7 @@ void main() {
           ),
         ));
         
-        final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+        final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
         expect(canvasWidget.canvasSize, equals(customSize));
       });
     });

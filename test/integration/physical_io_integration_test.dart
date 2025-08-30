@@ -22,7 +22,7 @@ void main() {
       mockCubit = MockRoutingEditorCubit();
     });
     
-    testWidgets('Physical nodes render correctly in RoutingCanvas', (tester) async {
+    testWidgets('Physical nodes render correctly in RoutingEditorWidget', (tester) async {
       // Arrange
       when(mockCubit.state).thenReturn(
         const RoutingEditorState.loaded(

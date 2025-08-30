@@ -1,6 +1,4 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_line.dart';
@@ -146,6 +144,59 @@ void main() {
       expect(connection1, equals(connection2)); // Same ports, different positions
       expect(connection1, isNot(equals(connection3))); // Different ports
     });
+
+    group('Ghost Connections', () {
+      late Port algorithmOutput;
+      late Port physicalInput;
+      late Port physicalOutput;
+      
+      setUp(() {
+        algorithmOutput = const Port(
+          id: 'alg_out_1',
+          name: 'Algorithm Output 1',
+          type: PortType.audio,
+          direction: PortDirection.output,
+          metadata: {'isPhysical': false},
+        );
+        
+        physicalInput = const Port(
+          id: 'hw_in_1',
+          name: 'Physical Input 1',
+          type: PortType.audio,
+          direction: PortDirection.output, // Physical inputs act as sources
+          metadata: {'isPhysical': true, 'jackType': 'input'},
+        );
+        
+        physicalOutput = const Port(
+          id: 'hw_out_1',
+          name: 'Physical Output 1',
+          type: PortType.audio,
+          direction: PortDirection.input, // Physical outputs act as sinks
+          metadata: {'isPhysical': true, 'jackType': 'output'},
+        );
+      });
+
+      test('should identify ghost connections correctly', () {
+        // Ghost connection: Algorithm output -> Physical input
+        final ghostConnection = Connection(
+          sourcePort: algorithmOutput,
+          destinationPort: physicalInput,
+          sourcePosition: Offset.zero,
+          destinationPosition: const Offset(100, 100),
+        );
+        
+        // Regular connection: Algorithm output -> Physical output
+        final regularConnection = Connection(
+          sourcePort: algorithmOutput,
+          destinationPort: physicalOutput,
+          sourcePosition: Offset.zero,
+          destinationPosition: const Offset(100, 100),
+        );
+        
+        expect(ghostConnection.isGhostConnection, isTrue);
+        expect(regularConnection.isGhostConnection, isFalse);
+      });
+    });
   });
 
   group('ConnectionLine Widget', () {
@@ -209,14 +260,12 @@ void main() {
     });
 
     testWidgets('should handle hover events on desktop', (WidgetTester tester) async {
-      bool isHovered = false;
-      
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: ConnectionLine(
               connection: testConnection,
-              onHover: (hovered) => isHovered = hovered,
+              onHover: (hovered) { /* hover callback for testing */ },
             ),
           ),
         ),
@@ -338,6 +387,107 @@ void main() {
       expect(find.byType(ConnectionLine), findsOneWidget);
       expect(invalidConnection.isValid, isFalse);
     });
+
+    testWidgets('should render ghost connections with special styling', (WidgetTester tester) async {
+      // Create a ghost connection
+      final algorithmOutput = const Port(
+        id: 'alg_out_1',
+        name: 'Algorithm Output 1',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        metadata: {'isPhysical': false},
+      );
+      
+      final physicalInput = const Port(
+        id: 'hw_in_1',
+        name: 'Physical Input 1',
+        type: PortType.audio,
+        direction: PortDirection.output, // Physical inputs act as sources
+        metadata: {'isPhysical': true, 'jackType': 'input'},
+      );
+      
+      final ghostConnection = Connection(
+        sourcePort: algorithmOutput,
+        destinationPort: physicalInput,
+        sourcePosition: const Offset(50, 100),
+        destinationPosition: const Offset(200, 150),
+      );
+      
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ConnectionLine(
+              connection: ghostConnection,
+            ),
+          ),
+        ),
+      );
+      
+      expect(find.byType(ConnectionLine), findsOneWidget);
+      expect(ghostConnection.isGhostConnection, isTrue);
+      
+      // Verify tooltip is present for ghost connections
+      expect(find.byType(Tooltip), findsOneWidget);
+    });
+
+    testWidgets('should have proper semantic labels for ghost connections', (WidgetTester tester) async {
+      // Create a ghost connection
+      final algorithmOutput = const Port(
+        id: 'alg_out_1',
+        name: 'Algorithm Output 1',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        metadata: {'isPhysical': false},
+      );
+      
+      final physicalInput = const Port(
+        id: 'hw_in_1',
+        name: 'Physical Input 1',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        metadata: {'isPhysical': true, 'jackType': 'input'},
+      );
+      
+      final ghostConnection = Connection(
+        sourcePort: algorithmOutput,
+        destinationPort: physicalInput,
+        sourcePosition: const Offset(50, 100),
+        destinationPosition: const Offset(200, 150),
+      );
+      
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ConnectionLine(
+              connection: ghostConnection,
+            ),
+          ),
+        ),
+      );
+      
+      final semantics = tester.getSemantics(find.byType(ConnectionLine));
+      expect(semantics.label, contains('Ghost connection'));
+      expect(semantics.label, contains('signal available to other algorithms'));
+      expect(semantics.hint, contains('Ghost connection line'));
+    });
+
+    testWidgets('should not show tooltip for regular connections', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ConnectionLine(
+              connection: testConnection,
+            ),
+          ),
+        ),
+      );
+      
+      expect(find.byType(ConnectionLine), findsOneWidget);
+      expect(testConnection.isGhostConnection, isFalse);
+      
+      // Regular connections should not have tooltips
+      expect(find.byType(Tooltip), findsNothing);
+    });
   });
 
   group('ConnectionLineManager', () {
@@ -419,17 +569,13 @@ void main() {
     });
 
     testWidgets('should handle connection hover events', (WidgetTester tester) async {
-      Connection? hoveredConnection;
-      bool? isHovered;
-      
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: ConnectionLineManager(
               connections: testConnections,
               onConnectionHover: (connection, hovered) {
-                hoveredConnection = connection;
-                isHovered = hovered;
+                /* hover callback for testing */
               },
             ),
           ),

@@ -17,6 +17,7 @@ import shared_preferences_foundation
 import sqlite3_flutter_libs
 import universal_ble
 import url_launcher_macos
+import webview_flutter_wkwebview
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   BitsdojoWindowPlugin.register(with: registry.registrar(forPlugin: "BitsdojoWindowPlugin"))
@@ -31,4 +32,5 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   Sqlite3FlutterLibsPlugin.register(with: registry.registrar(forPlugin: "Sqlite3FlutterLibsPlugin"))
   UniversalBlePlugin.register(with: registry.registrar(forPlugin: "UniversalBlePlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
+  WebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "WebViewFlutterPlugin"))
 }

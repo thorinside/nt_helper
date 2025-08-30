@@ -14,7 +14,7 @@ import 'routing_canvas_test.mocks.dart';
 
 @GenerateMocks([RoutingFactory, RoutingEditorCubit, AlgorithmRouting])
 void main() {
-  group('RoutingCanvas', () {
+  group('RoutingEditorWidget', () {
     late MockRoutingFactory mockRoutingFactory;
     late MockRoutingEditorCubit mockCubit;
     late MockAlgorithmRouting mockAlgorithmRouting;
@@ -48,7 +48,7 @@ void main() {
 
     Widget createTestWidget({
       RoutingEditorState? initialState,
-      RoutingCanvas? canvas,
+      RoutingEditorWidget? canvas,
     }) {
       when(mockCubit.state).thenReturn(
         initialState ?? const RoutingEditorState.initial()
@@ -70,7 +70,7 @@ void main() {
     testWidgets('should render with initial state', (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
       
-      expect(find.byType(RoutingCanvas), findsOneWidget);
+      expect(find.byType(RoutingEditorWidget), findsOneWidget);
       expect(find.text('Initializing routing editor...'), findsOneWidget);
       expect(find.byIcon(Icons.device_hub), findsOneWidget);
     });
@@ -132,7 +132,7 @@ void main() {
         ),
       ));
       
-      expect(find.byType(RoutingCanvas), findsOneWidget);
+      expect(find.byType(RoutingEditorWidget), findsOneWidget);
       expect(find.text('Audio In 1'), findsOneWidget);
       expect(find.text('Audio In 2'), findsOneWidget);
       expect(find.text('Audio Out 1'), findsOneWidget);
@@ -164,7 +164,7 @@ void main() {
         ),
       ));
       
-      expect(find.byType(RoutingCanvas), findsOneWidget);
+      expect(find.byType(RoutingEditorWidget), findsOneWidget);
       // The algorithm nodes should be rendered, though specific text might be hard to find
       // due to the widget hierarchy
     });
@@ -180,11 +180,11 @@ void main() {
       ));
       
       // Tap on the canvas
-      await tester.tap(find.byType(RoutingCanvas));
+      await tester.tap(find.byType(RoutingEditorWidget));
       await tester.pump();
       
       // Should not throw any errors
-      expect(find.byType(RoutingCanvas), findsOneWidget);
+      expect(find.byType(RoutingEditorWidget), findsOneWidget);
     });
 
     testWidgets('should support custom canvas size', (WidgetTester tester) async {
@@ -195,7 +195,7 @@ void main() {
         initialState: const RoutingEditorState.initial(),
       ));
       
-      final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+      final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
       expect(canvasWidget.canvasSize, equals(customSize));
     });
 
@@ -231,7 +231,7 @@ void main() {
         ),
       ));
       
-      final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+      final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
       expect(canvasWidget.onNodeSelected, isNotNull);
     });
 
@@ -248,7 +248,7 @@ void main() {
         ),
       ));
       
-      final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+      final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
       expect(canvasWidget.onConnectionCreated, isNotNull);
     });
 
@@ -265,7 +265,7 @@ void main() {
         ),
       ));
       
-      final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+      final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
       expect(canvasWidget.onConnectionRemoved, isNotNull);
     });
 
@@ -291,7 +291,7 @@ void main() {
         initialState: const RoutingEditorState.initial(),
       ));
       
-      final canvasWidget = tester.widget<RoutingCanvas>(find.byType(RoutingCanvas));
+      final canvasWidget = tester.widget<RoutingEditorWidget>(find.byType(RoutingEditorWidget));
       expect(canvasWidget.routingFactory, equals(customFactory));
     });
 
@@ -309,7 +309,7 @@ void main() {
       // Should show loaded state UI
       expect(find.text('Initializing routing editor...'), findsNothing);
       expect(find.byType(Stack), findsAtLeastNWidgets(1)); // Stack is used in loaded state
-      expect(find.byType(RoutingCanvas), findsOneWidget);
+      expect(find.byType(RoutingEditorWidget), findsOneWidget);
     });
 
     group('Port Type Colors', () {
@@ -351,12 +351,12 @@ void main() {
         
         // Start a drag gesture
         await tester.dragFrom(
-          tester.getCenter(find.byType(RoutingCanvas)),
+          tester.getCenter(find.byType(RoutingEditorWidget)),
           const Offset(50, 50),
         );
         
         // Should not throw any errors
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
 
       testWidgets('should maintain node positions', (WidgetTester tester) async {
@@ -370,7 +370,7 @@ void main() {
         ));
         
         // Canvas should render with consistent positioning
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
         expect(find.byType(Stack), findsAtLeastNWidgets(1));
       });
     });
@@ -388,7 +388,7 @@ void main() {
         );
         
         await tester.pumpWidget(createTestWidget(initialState: initialState));
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
         
         // Update to identical loaded state - should not trigger rebuild due to buildWhen
         when(mockCubit.state).thenReturn(RoutingEditorState.loaded(
@@ -402,7 +402,7 @@ void main() {
         
         // Pump widget with same state
         await tester.pump();
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
 
       testWidgets('should rebuild when meaningful state changes occur', (WidgetTester tester) async {
@@ -439,7 +439,7 @@ void main() {
         when(mockCubit.state).thenReturn(newState);
         
         await tester.pumpWidget(createTestWidget(initialState: newState));
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
 
       testWidgets('should maintain widget keys for stability', (WidgetTester tester) async {
@@ -486,7 +486,7 @@ void main() {
         }
         
         // Should handle all state transitions without errors
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
       });
 
       testWidgets('should cache algorithm metadata for performance', (WidgetTester tester) async {
@@ -515,7 +515,7 @@ void main() {
         ));
         
         // The algorithm node should be rendered with cached metadata
-        expect(find.byType(RoutingCanvas), findsOneWidget);
+        expect(find.byType(RoutingEditorWidget), findsOneWidget);
         expect(find.byKey(const ValueKey('algorithm_node_0')), findsOneWidget);
       });
     });

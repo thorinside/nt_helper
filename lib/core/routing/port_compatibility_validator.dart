@@ -48,15 +48,13 @@ class ValidationResult {
   final List<ValidationWarning> warnings;
   
   /// Creates a successful validation result
-  const ValidationResult.success({List<ValidationWarning> warnings = const []})
+  const ValidationResult.success({this.warnings = const []})
       : isValid = true,
-        errors = const [],
-        warnings = warnings;
+        errors = const [];
   
   /// Creates a failed validation result
-  const ValidationResult.failure(List<ValidationError> errors)
+  const ValidationResult.failure(this.errors)
       : isValid = false,
-        errors = errors,
         warnings = const [];
   
   @override
