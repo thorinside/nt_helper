@@ -1,14 +1,14 @@
 # Spec Requirements Document
 
-> Spec: Routing Canvas Visual Editor
+> Spec: Routing Editor Visual Widget
 > Created: 2025-08-27
 > Status: Planning
 
 ## Overview
 
-The Routing Canvas is a visual editing interface that allows users to interactively modify routing configurations for Disting NT algorithm presets. This feature transforms the complex parameter-based routing system into an intuitive drag-and-drop canvas where users can visually connect ports, understand signal flow, and make routing changes in real-time.
+The Routing Editor is a visual widget that allows users to interactively modify routing configurations for Disting NT algorithm presets. This feature transforms the complex parameter-based routing system into an intuitive drag-and-drop canvas where users can visually connect ports, understand signal flow, and make routing changes in real-time.
 
-The canvas displays the physical Disting NT hardware (12 inputs, 8 outputs) alongside algorithm ports as visual nodes, with connection lines representing signal routing paths. Users can create, modify, and delete routing connections by dragging between ports, providing immediate visual feedback for complex routing scenarios.
+The editor displays the physical Disting NT hardware (12 inputs, 8 outputs) alongside algorithm ports as visual nodes, with connection lines representing signal routing paths. Users can create, modify, and delete routing connections by dragging between ports, providing immediate visual feedback for complex routing scenarios.
 
 ## User Stories
 
@@ -23,11 +23,11 @@ As a Disting NT user, I want to:
 
 ## Spec Scope
 
-- RoutingEditorCubit state management for canvas interactions
-- RoutingEditorState containing physical ports, algorithm ports, and connections
+- RoutingEditorCubit state management for interactions
+- RoutingEditorState containing physical ports, algorithm ports (precomputed), and connections
 - Physical port system (12 hardware inputs, 8 hardware outputs with type information)
-- OOP hierarchy for different algorithm routing types (NormalAlgorithmRouting, PolyAlgorithmRouting, WidthAlgorithmRouting)
-- Visual canvas widget for displaying ports and routing connections
+- OOP hierarchy for different algorithm routing types (PolyAlgorithmRouting, MultiChannelAlgorithmRouting)
+- Visual widget (RoutingEditorWidget) for displaying ports and routing connections
 - Drag-and-drop interaction system for connecting ports
 - Real-time validation of routing configurations
 - Parameter abstraction layer hiding low-level routing details

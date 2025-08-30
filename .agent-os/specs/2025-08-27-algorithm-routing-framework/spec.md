@@ -8,7 +8,7 @@
 
 The Algorithm Routing Framework provides an object-oriented abstraction layer for managing MIDI routing patterns between input/output pairs in the Disting NT module. The framework defines a base `AlgorithmRouting` class with two specialized subclasses (`PolyAlgorithmRouting`, `MultiChannelAlgorithmRouting`) that handle different routing behaviors while maintaining a consistent API for the UI and state management layers.
 
-This framework replaces the current procedural routing logic with a clean, extensible architecture that separates routing concerns from UI rendering and provides type-safe routing operations with proper validation and error handling.
+This framework replaces ad-hoc routing logic with a clean, extensible architecture that separates routing concerns from UI rendering and provides validation and error handling. Routing decisions are Slot-driven and executed in `RoutingEditorCubit`, while `AlgorithmRouting` enumerates and validates ports.
 
 ## User Stories
 
@@ -32,16 +32,14 @@ This framework replaces the current procedural routing logic with a clean, exten
 
 ### Routing Operations
 
-- **Connection Management**: Create, update, and delete routing connections
-- **Validation Logic**: Ensure routing configurations are valid for each routing type
-- **State Serialization**: Convert routing state to/from JSON for persistence
-- **Conflict Resolution**: Handle conflicting routing requests appropriately
-- **Change Notifications**: Emit events when routing configuration changes
+- **Port Enumeration**: Generate input/output ports from routing metadata (derived from Slot parameters)
+- **Validation**: Ensure connections are valid for each routing type and the overall routing is consistent
+- **Connection Management**: High-level connection management is handled in the cubit/ui; routing provides validation helpers
 
 ### Integration Points
 
 - **Algorithm Integration**: Each algorithm specifies its supported routing type(s)
-- **UI Integration**: Routing canvas and controls consume routing state through unified API
+- **UI Integration**: `RoutingEditorWidget` consumes precomputed ports and renders them; routing does not perform UI tasks
 - **MIDI Integration**: Routing framework translates abstract connections to MIDI messages
 - **Preset Integration**: Routing configurations are included in preset save/load operations
 
@@ -58,11 +56,10 @@ This framework replaces the current procedural routing logic with a clean, exten
 A complete OOP routing framework consisting of:
 
 1. **Base AlgorithmRouting class** with abstract interface and shared functionality
-2. **Two concrete routing implementations** (PolyAlgorithmRouting, MultiChannelAlgorithmRouting) 
-3. **Comprehensive unit tests** covering all routing operations and edge cases
-4. **Integration with existing algorithm system** maintaining backward compatibility
-5. **Updated UI components** that consume the new routing API
-6. **Documentation and examples** for adding new routing types
+2. **Two concrete routing implementations** (PolyAlgorithmRouting, MultiChannelAlgorithmRouting)
+3. **Integration with `RoutingEditorCubit`**, which derives routing metadata from Slot and instantiates routing
+4. **Updated UI component** (`RoutingEditorWidget`) that renders precomputed ports
+5. **Documentation** for adding new routing types
 
 The framework should be production-ready with full test coverage, proper error handling, and seamless integration with the existing codebase.
 

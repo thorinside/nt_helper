@@ -10,28 +10,17 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 ### Core Architecture
 
 #### AlgorithmRouting Base Class
-- **Location**: `lib/domain/routing/algorithm_routing.dart`
+- **Location**: `lib/core/routing/algorithm_routing.dart`
 - **Type**: Abstract base class
-- **Pattern**: Simple abstract base class with virtual methods for subclass implementation
-- **State Management**: Immutable state with Freezed data classes
-- **Error Handling**: Simple nullable returns or boolean validation results
+- **Pattern**: Port enumeration + validation; instances are created by RoutingFactory using metadata derived from Slot
+- **Error Handling**: ValidationResult for detailed feedback; boolean helpers where appropriate
 
 ```dart
 abstract class AlgorithmRouting {
-  // Abstract methods for subclass implementation
-  List<Port> generateInputPorts(Algorithm algorithm);
-  List<Port> generateOutputPorts(Algorithm algorithm);
-  bool validateConnection(String sourcePortId, String targetPortId);
-  RoutingValidationResult validateRoutingState(List<Connection> connections);
-  
-  // Common methods with default behavior (can be overridden)
-  RoutingState createInitialState(Algorithm algorithm);
-  RoutingState addConnection(RoutingState state, Connection connection);
-  RoutingState removeConnection(RoutingState state, String connectionId);
-  
-  // Serialization support
-  Map<String, dynamic> toJson(RoutingState state);
-  RoutingState fromJson(Map<String, dynamic> json, Algorithm algorithm);
+  List<Port> get inputPorts;   // Generated once per instance
+  List<Port> get outputPorts;  // Generated once per instance
+  bool validateConnection(Port source, Port destination);
+  ValidationResult validateRouting();
 }
 ```
 
@@ -40,38 +29,14 @@ abstract class AlgorithmRouting {
 - **MultiChannelAlgorithmRouting**: Width-based routing with configurable channel count (default: 1 for normal algorithms, N for width-based algorithms)
 
 #### State Management Integration
-- **Pattern**: BLoC/Cubit pattern consistent with existing codebase
-- **State Classes**: Immutable Freezed data classes for type safety
-- **Events**: Command pattern for routing operations
-- **Persistence**: JSON serialization for preset storage
+- **Pattern**: Cubit pattern consistent with existing codebase
+- **RoutingEditorCubit**: Derives routing metadata from `Slot` (gate inputs, CV counts, extras, outputs) and instantiates routing via `RoutingFactory`; stores precomputed ports in state
 
 ### Flutter/Dart Specific Implementation
-
-#### Type Safety
-```dart
-// Sealed classes for exhaustive pattern matching
-@freezed
-sealed class RoutingType with _$RoutingType {
-  const factory RoutingType.normal() = NormalRoutingType;
-  const factory RoutingType.poly(int maxVoices) = PolyRoutingType;
-  const factory RoutingType.multiChannel(List<ChannelConfig> channels) = MultiChannelRoutingType;
-}
-
-// Port validation with custom types
-enum PortCompatibility { compatible, incompatible, requiresConversion }
-
-// Routing result types
-@freezed 
-sealed class RoutingResult<T> with _$RoutingResult<T> {
-  const factory RoutingResult.success(T data) = RoutingSuccess<T>;
-  const factory RoutingResult.failure(RoutingError error) = RoutingFailure<T>;
-}
-```
+Focus on existing models and simple enums for port types and directions (audio, cv, gate, clock). Avoid speculative abstractions that aren’t implemented.
 
 #### Dependency Injection
-- **Pattern**: get_it service locator for routing factory registration
-- **Registration**: Algorithm-specific routing type mapping
-- **Lifecycle**: Singleton routing services with proper disposal
+- **Pattern**: get_it service locator for `RoutingFactory` (provided via `RoutingServiceLocator`)
 
 #### Memory Management
 - **Streams**: Proper StreamSubscription management with disposal
@@ -80,39 +45,10 @@ sealed class RoutingResult<T> with _$RoutingResult<T> {
 
 ### State Management Patterns
 
-#### RoutingEditorCubit Enhancement
+#### RoutingEditorCubit Responsibilities
 ```dart
 class RoutingEditorCubit extends Cubit<RoutingEditorState> {
-  final Map<int, AlgorithmRouting> _routingInstances = {};
-  final RoutingFactory _routingFactory;
-  
-  // Enhanced state processing with routing framework
-  void _processSynchronizedState(List<Slot> slots) {
-    final algorithms = <RoutingAlgorithm>[];
-    final connections = <Connection>[];
-    
-    for (int i = 0; i < slots.length; i++) {
-      final slot = slots[i];
-      final routing = _routingFactory.createRouting(slot.algorithm);
-      _routingInstances[i] = routing;
-      
-      final routingState = routing.createInitialState(slot.algorithm);
-      final inputPorts = routing.generateInputPorts(slot.algorithm);
-      final outputPorts = routing.generateOutputPorts(slot.algorithm);
-      
-      algorithms.add(RoutingAlgorithm(
-        index: i,
-        algorithm: slot.algorithm,
-        inputPorts: inputPorts,
-        outputPorts: outputPorts,
-        routingType: routing.routingType,
-      ));
-      
-      connections.addAll(routingState.connections);
-    }
-    
-    emit(RoutingEditorState.loaded(/*...*/));
-  }
+  // Derive metadata from Slot params → create routing → read ports → emit state
 }
 ```
 
@@ -125,38 +61,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 ### Integration Requirements
 
 #### Algorithm Integration
-```dart
-// Extended Algorithm model with routing metadata
-class Algorithm {
-  final int algorithmIndex;
-  final String guid;
-  final String name;
-  final RoutingType supportedRoutingType; // NEW
-  final List<PortDefinition> portDefinitions; // NEW
-}
-
-// Port definition metadata
-class PortDefinition {
-  final String id;
-  final String name;
-  final PortType type;
-  final PortDirection direction;
-  final bool isRequired;
-  final List<String> compatiblePortTypes;
-}
-```
+No changes to Algorithm model are required. Routing metadata is derived from Slot parameters in `RoutingEditorCubit`.
 
 
 #### Preset System Integration
-```dart
-// Enhanced preset model with routing state
-class PresetData {
-  final String name;
-  final List<Slot> slots;
-  final Map<int, RoutingState> routingStates; // NEW - per algorithm routing state
-  final List<Connection> globalConnections; // NEW - cross-algorithm connections
-}
-```
+Routing-related preset changes are out of scope here; visualization uses live Slot data.
 
 
 ### Error Handling Strategy

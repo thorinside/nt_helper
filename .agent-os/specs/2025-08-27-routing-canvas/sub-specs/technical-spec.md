@@ -10,41 +10,31 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 ### State Management Architecture
 
 **RoutingEditorCubit**
-- Processes SynchronizedState into RoutingEditorState
-- Manages canvas interaction state (selection, dragging, validation)
-- Handles undo/redo stack for routing modifications
-- Coordinates with existing state management (AlgorithmCubit, PresetCubit)
+- Consumes synchronized `Slot`s from DistingCubit
+- Derives routing metadata from Slot parameters (gate inputs, gate CV counts, extra inputs, outputs)
+- Instantiates routing via `RoutingFactory` (Poly/Multi) and enumerates ports
+- Emits `RoutingEditorState` with precomputed physical ports, algorithm ports, and connections
+- Manages interaction state (selection, dragging) and validation
 
 **RoutingEditorState**
-- Contains physical hardware ports (12 inputs, 8 outputs) with type information
-- Contains Algorithm objects with their input/output ports
-- Contains all routing connections between ports
-- Tracks current selection and interaction state
-- Maintains validation results and error states
-- Stores undo/redo history
+- Physical hardware ports (12 inputs, 8 outputs) with type information
+- Algorithm entries with their input/output ports (precomputed)
+- All routing connections between ports
+- Current selection and interaction state
 
 ### OOP Routing Hierarchy
 
 The AlgorithmRouting hierarchy abstracts two key responsibilities:
-1. **Port Extraction** - How to extract input/output ports from algorithm parameter data
-2. **Preset Update** - How to apply routing changes back to preset parameters
+1. **Port Enumeration** - Generate input/output ports from routing metadata (derived from Slot)
+2. **Validation** - Validate individual connections and overall routing consistency
 
 **Base AlgorithmRouting Class**
 ```dart
 abstract class AlgorithmRouting {
-  // Port Extraction Methods - Extract ports from algorithm parameter data
-  List<Port> extractInputPorts(Slot slot);
-  List<Port> extractOutputPorts(Slot slot);
-  
-  // Connection Methods - Create connections between ports
-  List<Connection> extractConnections(Slot slot, List<Port> allPorts);
-  
-  // Preset Update Methods - Apply routing changes back to parameters
-  void applyConnectionsToPreset(List<Connection> connections, Slot slot);
-  
-  // Validation
-  bool validateConnections(List<Connection> connections);
-  List<String> getValidationErrors(List<Connection> connections);
+  List<Port> get inputPorts; // generated once per instance
+  List<Port> get outputPorts;
+  bool validateConnection(Port source, Port destination);
+  ValidationResult validateRouting();
 }
 ```
 
@@ -96,15 +86,15 @@ class Connection {
 
 ### Canvas Widget Architecture
 
-**RoutingCanvasWidget**
+**RoutingEditorWidget**
 - CustomPainter-based canvas for performance
 - Node positioning and connection line rendering
 - Hit testing for drag-and-drop interactions
 - Zoom/pan capabilities (future enhancement)
 
 **Node Representation**
-- InputBusNode and OutputBusNode widgets
-- Visual indication of bus types and current connections
+- PhysicalInputNode / PhysicalOutputNode and AlgorithmNode widgets
+- Visual indication of port types and current connections
 - Drag handles and connection points
 
 **Connection Visualization**
