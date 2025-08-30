@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
-import 'package:nt_helper/core/routing/routing_service_locator.dart';
-import 'package:nt_helper/services/haptic_feedback_service.dart';
+// Haptics removed from routing editor scope
 import 'jack_painter.dart';
 
 /// A custom Flutter widget that visually represents a 1/8" Eurorack jack socket
@@ -109,7 +108,7 @@ class _JackConnectionWidgetState extends State<JackConnectionWidget>
   late FocusNode _focusNode;
   
   /// Haptic feedback service
-  late IHapticFeedbackService _hapticFeedback;
+  // Haptics removed: keep API surface but no-op feedback
   
   /// Whether to use internal focus node
   bool get _useInternalFocusNode => widget.focusNode == null;
@@ -124,8 +123,7 @@ class _JackConnectionWidgetState extends State<JackConnectionWidget>
   void initState() {
     super.initState();
     
-    // Initialize haptic feedback service
-    _hapticFeedback = RoutingServiceLocator.hapticFeedbackService;
+    // No haptic feedback initialization
     
     // Initialize focus node
     if (_useInternalFocusNode) {
@@ -182,11 +180,7 @@ class _JackConnectionWidgetState extends State<JackConnectionWidget>
   }
   
   /// Provides haptic feedback for interactions
-  void _triggerHapticFeedback() {
-    if (widget.enableHapticFeedback) {
-      _hapticFeedback.lightImpact(context);
-    }
-  }
+  void _triggerHapticFeedback() {}
   
   /// Handles keyboard interactions
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent keyEvent) {

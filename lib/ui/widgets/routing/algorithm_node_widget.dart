@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/core/routing/routing_service_locator.dart';
-import 'package:nt_helper/services/haptic_feedback_service.dart';
 import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 // No direct dependency on RoutingEditorWidget static members
 
@@ -17,9 +15,14 @@ import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 class AlgorithmNodeWidget extends StatefulWidget {
   final String algorithmName;
   final int slotNumber;
+  // Position is now handled by parent Positioned widget
   final Offset position;
+  // Optional leading icon for the top bar
+  final Widget? leadingIcon;
   final bool isSelected;
   final Function(Offset)? onPositionChanged;
+  final VoidCallback? onDragStart;
+  final VoidCallback? onDragEnd;
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final VoidCallback? onDelete;
@@ -32,8 +35,11 @@ class AlgorithmNodeWidget extends StatefulWidget {
     required this.algorithmName,
     required this.slotNumber,
     required this.position,
+    this.leadingIcon,
     this.isSelected = false,
     this.onPositionChanged,
+    this.onDragStart,
+    this.onDragEnd,
     this.onMoveUp,
     this.onMoveDown,
     this.onDelete,
@@ -48,26 +54,33 @@ class AlgorithmNodeWidget extends StatefulWidget {
 
 class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   bool _isDragging = false;
-  Offset _dragOffset = Offset.zero;
-  late IHapticFeedbackService _hapticFeedback;
+  // Track drag start and initial position for stable deltas
+  Offset _dragStartGlobal = Offset.zero;
+  Offset _initialPosition = Offset.zero;
   
   @override
   void initState() {
     super.initState();
-    _hapticFeedback = RoutingServiceLocator.hapticFeedbackService;
   }
   
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Positioned(
-      left: widget.position.dx,
-      top: widget.position.dy,
-      child: GestureDetector(
+    // Reserve enough width for ~50 title characters plus actions
+    final titleStyle = theme.textTheme.titleSmall ?? const TextStyle(fontSize: 14);
+    // Reserve space for roughly 20 characters to keep titles readable without oversizing
+    final reservedTitle = '#${widget.slotNumber} ${'W' * 20}';
+    final reservedTitleWidth = _measureTextWidth(reservedTitle, titleStyle);
+    final actionsCount = (widget.onMoveUp != null ? 1 : 0) + (widget.onMoveDown != null ? 1 : 0) + 1; // +1 for overflow
+    const iconButtonWidth = 48.0; // Material minimum tap target
+    final actionsWidth = actionsCount * iconButtonWidth;
+    final leadingWidth = widget.leadingIcon != null ? 18.0 + 8.0 : 0.0; // icon + spacing
+    const horizontalPadding = 16.0; // 8 left + 8 right from title bar padding
+    const portsMinWidth = 280.0; // two 120px jacks + 40px spacing
+    final minNodeWidth = (reservedTitleWidth + actionsWidth + leadingWidth + horizontalPadding).clamp(portsMinWidth, 2000.0);
+
+    return GestureDetector(
         onTap: () {
-          // Provide light haptic feedback for node selection
-          _hapticFeedback.lightImpact(context);
           widget.onTap?.call();
         },
         onPanStart: _handleDragStart,
@@ -75,6 +88,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         onPanEnd: _handleDragEnd,
         child: AnimatedContainer(
           duration: _isDragging ? Duration.zero : const Duration(milliseconds: 150),
+          constraints: BoxConstraints(minWidth: minNodeWidth),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
@@ -107,20 +121,25 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             ),
           ),
         ),
-      ),
-    );
+      );
+  }
+
+  double _measureTextWidth(String text, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: double.infinity);
+    return painter.size.width;
   }
   
   Widget _buildTitleBar(ThemeData theme) {
-    // Ensure proper contrast for the title bar background
-    final backgroundColor = AccessibilityColors.ensureContrast(
-      theme.colorScheme.primary.withValues(alpha: 0.15), // Slightly higher alpha
-      theme.colorScheme.surface,
-      minRatio: AccessibilityColors.wcagAALarge, // Use large text standard
-    );
+    // Use app bar theming for better readability and consistency
+    final backgroundColor = theme.appBarTheme.backgroundColor ?? theme.colorScheme.surfaceContainerHigh;
+    final foregroundColor = theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: const BorderRadius.only(
@@ -131,103 +150,68 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Slot number badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-              borderRadius: BorderRadius.circular(4),
+          if (widget.leadingIcon != null) ...[
+            IconTheme(
+              data: IconThemeData(color: foregroundColor, size: 18),
+              child: widget.leadingIcon!,
             ),
-            child: Text(
-              '#${widget.slotNumber}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Algorithm name
+            const SizedBox(width: 8),
+          ],
+          // Title with slot number pre-pended
           Expanded(
             child: Text(
-              widget.algorithmName,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AccessibilityColors.ensureContrast(
-                  theme.colorScheme.onSurface,
-                  backgroundColor,
-                  minRatio: AccessibilityColors.wcagAANormal,
-                ),
+              '#${widget.slotNumber} ${widget.algorithmName}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: foregroundColor,
+                fontWeight: FontWeight.w600,
               ),
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              softWrap: false,
             ),
           ),
-          // Toolbar
-          _buildToolbar(theme),
+          // Up to three actions as icons (show Up/Down if provided)
+          if (widget.onMoveUp != null)
+            IconButton(
+              tooltip: 'Move Up',
+              icon: const Icon(Icons.arrow_upward, size: 18),
+              onPressed: widget.onMoveUp,
+            ),
+          if (widget.onMoveDown != null)
+            IconButton(
+              tooltip: 'Move Down',
+              icon: const Icon(Icons.arrow_downward, size: 18),
+              onPressed: widget.onMoveDown,
+            ),
+          // Overflow menu: only delete here
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: Icon(Icons.more_vert, size: 18, color: foregroundColor),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'delete',
+                enabled: widget.onDelete != null,
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 18, color: theme.colorScheme.error),
+                    const SizedBox(width: 8),
+                    Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'delete') {
+                _handleDelete();
+              }
+            },
+          ),
         ],
       ),
     );
   }
   
-  Widget _buildToolbar(ThemeData theme) {
-    return PopupMenuButton<String>(
-      icon: Icon(
-        Icons.more_vert,
-        size: 18,
-        color: theme.colorScheme.onSurface,
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'up',
-          enabled: widget.onMoveUp != null && widget.slotNumber > 1,
-          child: const Row(
-            children: [
-              Icon(Icons.arrow_upward, size: 18),
-              SizedBox(width: 8),
-              Text('Move Up'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'down',
-          enabled: widget.onMoveDown != null,
-          child: const Row(
-            children: [
-              Icon(Icons.arrow_downward, size: 18),
-              SizedBox(width: 8),
-              Text('Move Down'),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'delete',
-          enabled: widget.onDelete != null,
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 18, color: theme.colorScheme.error),
-              const SizedBox(width: 8),
-              Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
-            ],
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        debugPrint('AlgorithmNodeWidget: Toolbar action selected: $value');
-        switch (value) {
-          case 'up':
-            _handleMoveUp();
-            break;
-          case 'down':
-            _handleMoveDown();
-            break;
-          case 'delete':
-            _handleDelete();
-            break;
-        }
-      },
-    );
-  }
+  // Removed old overflow-only toolbar; actions are now visible icon buttons with delete in overflow
   
   Widget _buildPorts(ThemeData theme) {
     return Container(
@@ -294,69 +278,21 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
   
   void _handleDragStart(DragStartDetails details) {
-    // Provide medium haptic feedback for drag start
-    _hapticFeedback.mediumImpact(context);
+    // Intentionally no haptic/audio/visual feedback on drag start
     
     setState(() {
       _isDragging = true;
-      _dragOffset = details.localPosition;
+      _dragStartGlobal = details.globalPosition;
+      _initialPosition = widget.position;
     });
-    debugPrint('AlgorithmNodeWidget: Drag started at ${details.localPosition}');
+
+    // Notify parent that a drag has begun
+    widget.onDragStart?.call();
   }
   
-  // Toolbar action handlers integrated with DistingCubit
-  void _handleMoveUp() async {
-    // Provide light haptic feedback for button interaction
-    _hapticFeedback.lightImpact(context);
-    
-    debugPrint('AlgorithmNodeWidget: Moving algorithm #${widget.slotNumber} up');
-    
-    final cubit = context.read<DistingCubit>();
-    try {
-      // Slot numbers are 1-indexed, but the cubit uses 0-indexed
-      final algorithmIndex = widget.slotNumber - 1;
-      
-      if (algorithmIndex <= 0) {
-        debugPrint('AlgorithmNodeWidget: Cannot move first algorithm up');
-        _showFeedback('Cannot move the first algorithm up', isError: true);
-        return;
-      }
-      
-      await cubit.moveAlgorithmUp(algorithmIndex);
-      widget.onMoveUp?.call();
-      _showFeedback('Moved algorithm up');
-      debugPrint('AlgorithmNodeWidget: Successfully moved algorithm up');
-    } catch (e) {
-      debugPrint('AlgorithmNodeWidget: Error moving algorithm up: $e');
-      _showFeedback('Failed to move algorithm: $e', isError: true);
-    }
-  }
-  
-  void _handleMoveDown() async {
-    // Provide light haptic feedback for button interaction
-    _hapticFeedback.lightImpact(context);
-    
-    debugPrint('AlgorithmNodeWidget: Moving algorithm #${widget.slotNumber} down');
-    
-    final cubit = context.read<DistingCubit>();
-    try {
-      // Slot numbers are 1-indexed, but the cubit uses 0-indexed
-      final algorithmIndex = widget.slotNumber - 1;
-      
-      await cubit.moveAlgorithmDown(algorithmIndex);
-      widget.onMoveDown?.call();
-      _showFeedback('Moved algorithm down');
-      debugPrint('AlgorithmNodeWidget: Successfully moved algorithm down');
-    } catch (e) {
-      debugPrint('AlgorithmNodeWidget: Error moving algorithm down: $e');
-      _showFeedback('Failed to move algorithm: $e', isError: true);
-    }
-  }
+  // Toolbar action handlers removed; actions call callbacks directly
   
   void _handleDelete() async {
-    // Provide medium haptic feedback for important delete action
-    _hapticFeedback.mediumImpact(context);
-    
     debugPrint('AlgorithmNodeWidget: Deleting algorithm #${widget.slotNumber}');
     
     // Show confirmation dialog
@@ -418,23 +354,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
-    
-    // Calculate new position with accurate coordinate transform
-    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    
-    final RenderBox? parentBox = renderBox.parent as RenderBox?;
-    if (parentBox == null) return;
-    
-    // Get the global position and convert to parent's local coordinates
-    final globalPosition = details.globalPosition;
-    final localPosition = parentBox.globalToLocal(globalPosition);
-    
-    // Calculate the new position accounting for the drag offset
-    final newPosition = Offset(
-      localPosition.dx - _dragOffset.dx,
-      localPosition.dy - _dragOffset.dy,
-    );
+    // Compute new position from drag delta relative to drag start
+    final dragDelta = details.globalPosition - _dragStartGlobal;
+    final newPosition = _initialPosition + dragDelta;
     
     // Snap to grid
     const double gridSize = 50.0;
@@ -446,20 +368,20 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     // Constrain to canvas bounds
     const double canvasSize = 5000.0;
     final constrainedPosition = Offset(
-      snappedPosition.dx.clamp(0, canvasSize - 200),
-      snappedPosition.dy.clamp(0, canvasSize - 100),
+      snappedPosition.dx.clamp(0.0, canvasSize - 200),
+      snappedPosition.dy.clamp(0.0, canvasSize - 100),
     );
     
     widget.onPositionChanged?.call(constrainedPosition);
-    
-    debugPrint('AlgorithmNodeWidget: Dragging to ${constrainedPosition.dx},${constrainedPosition.dy}');
   }
   
   void _handleDragEnd(DragEndDetails details) {
     setState(() {
       _isDragging = false;
     });
-    debugPrint('AlgorithmNodeWidget: Drag ended');
+
+    // Notify parent that drag ended
+    widget.onDragEnd?.call();
   }
 }
 

@@ -21,9 +21,9 @@ class AccessibilityColors {
   /// Calculates the relative luminance of a color
   /// Based on WCAG 2.1 specification
   static double _getRelativeLuminance(Color color) {
-    final r = _getRGBComponent(color.red / 255.0);
-    final g = _getRGBComponent(color.green / 255.0);
-    final b = _getRGBComponent(color.blue / 255.0);
+    final r = _getRGBComponent((color.r * 255.0).round() / 255.0);
+    final g = _getRGBComponent((color.g * 255.0).round() / 255.0);
+    final b = _getRGBComponent((color.b * 255.0).round() / 255.0);
     
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }

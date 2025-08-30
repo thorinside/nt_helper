@@ -9,8 +9,8 @@ import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
-import 'package:nt_helper/ui/widgets/routing/routing_algorithm_node.dart';
-import 'package:nt_helper/ui/widgets/routing/connection_line.dart' as connection_widget;
+import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
+import 'package:nt_helper/ui/widgets/routing/connection_painter.dart';
 
 import 'routing_integration_test.mocks.dart';
 
@@ -122,10 +122,10 @@ void main() {
         expect(find.text('Audio Out 2'), findsOneWidget);
         
         // Verify algorithm nodes are created with factory integration
-        expect(find.byType(RoutingAlgorithmNode), findsOneWidget);
+        expect(find.byType(AlgorithmNodeWidget), findsOneWidget);
         
         // Verify connections are rendered
-        expect(find.byType(connection_widget.ConnectionLine), findsAtLeastNWidgets(1));
+        expect(find.byType(ConnectionCanvas), findsAtLeastNWidgets(1));
       });
 
       testWidgets('should handle empty state gracefully', (WidgetTester tester) async {
@@ -142,8 +142,8 @@ void main() {
         expect(find.byType(RoutingEditorWidget), findsOneWidget);
         
         // Should not have any nodes or connections
-        expect(find.byType(RoutingAlgorithmNode), findsNothing);
-        expect(find.byType(connection_widget.ConnectionLine), findsNothing);
+        expect(find.byType(AlgorithmNodeWidget), findsNothing);
+        expect(find.byType(ConnectionCanvas), findsNothing);
       });
 
       testWidgets('should handle error states with proper error messages', (WidgetTester tester) async {
@@ -281,7 +281,7 @@ void main() {
         ));
         
         // Should render all algorithm nodes
-        expect(find.byType(RoutingAlgorithmNode), findsNWidgets(5));
+        expect(find.byType(AlgorithmNodeWidget), findsNWidgets(5));
         
         // Should complete rendering within reasonable time
         expect(find.byType(RoutingEditorWidget), findsOneWidget);

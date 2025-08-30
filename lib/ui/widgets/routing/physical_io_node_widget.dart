@@ -235,6 +235,8 @@ class PhysicalIONodeWidget extends StatelessWidget {
           port: port,
           isSelected: false, // TODO: Track selection state
           customWidth: 120, // Match the container width
+          // Disable haptic/visual overlay for all physical ports (inputs and outputs)
+          enableHapticFeedback: !PhysicalPortGenerator.isPhysicalPort(port),
           onTap: () => onPortTapped?.call(port),
         ),
       ),
