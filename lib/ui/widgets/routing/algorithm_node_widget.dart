@@ -66,18 +66,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Reserve enough width for ~50 title characters plus actions
-    final titleStyle = theme.textTheme.titleSmall ?? const TextStyle(fontSize: 14);
-    // Reserve space for roughly 20 characters to keep titles readable without oversizing
-    final reservedTitle = '#${widget.slotNumber} ${'W' * 20}';
-    final reservedTitleWidth = _measureTextWidth(reservedTitle, titleStyle);
-    final actionsCount = (widget.onMoveUp != null ? 1 : 0) + (widget.onMoveDown != null ? 1 : 0) + 1; // +1 for overflow
-    const iconButtonWidth = 48.0; // Material minimum tap target
-    final actionsWidth = actionsCount * iconButtonWidth;
-    final leadingWidth = widget.leadingIcon != null ? 18.0 + 8.0 : 0.0; // icon + spacing
-    const horizontalPadding = 16.0; // 8 left + 8 right from title bar padding
-    const portsMinWidth = 280.0; // two 120px jacks + 40px spacing
-    final minNodeWidth = (reservedTitleWidth + actionsWidth + leadingWidth + horizontalPadding).clamp(portsMinWidth, 2000.0);
 
     return GestureDetector(
         onTap: () {
@@ -88,7 +76,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         onPanEnd: _handleDragEnd,
         child: AnimatedContainer(
           duration: _isDragging ? Duration.zero : const Duration(milliseconds: 150),
-          constraints: BoxConstraints(minWidth: minNodeWidth),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
@@ -122,15 +109,6 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           ),
         ),
       );
-  }
-
-  double _measureTextWidth(String text, TextStyle style) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: double.infinity);
-    return painter.size.width;
   }
   
   Widget _buildTitleBar(ThemeData theme) {
@@ -170,19 +148,17 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
               softWrap: false,
             ),
           ),
-          // Up to three actions as icons (show Up/Down if provided)
-          if (widget.onMoveUp != null)
-            IconButton(
-              tooltip: 'Move Up',
-              icon: const Icon(Icons.arrow_upward, size: 18),
-              onPressed: widget.onMoveUp,
-            ),
-          if (widget.onMoveDown != null)
-            IconButton(
-              tooltip: 'Move Down',
-              icon: const Icon(Icons.arrow_downward, size: 18),
-              onPressed: widget.onMoveDown,
-            ),
+          // Up/Down actions always present; disabled when not applicable
+          IconButton(
+            tooltip: 'Move Up',
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            onPressed: widget.onMoveUp,
+          ),
+          IconButton(
+            tooltip: 'Move Down',
+            icon: const Icon(Icons.arrow_downward, size: 18),
+            onPressed: widget.onMoveDown,
+          ),
           // Overflow menu: only delete here
           PopupMenuButton<String>(
             tooltip: 'More',
@@ -215,30 +191,28 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   
   Widget _buildPorts(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Inputs aligned to left
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(widget.inputLabels.length, (index) =>
-                _buildPort(theme, widget.inputLabels[index], true, alignEnd: false),
-              ),
+          // Inputs (natural width)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(widget.inputLabels.length, (index) =>
+              _buildPort(theme, widget.inputLabels[index], true),
             ),
           ),
-          const SizedBox(width: 24),
-          // Outputs aligned to right
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(widget.outputLabels.length, (index) =>
-                _buildPort(theme, widget.outputLabels[index], false, alignEnd: true),
-              ),
+          const SizedBox(width: 16),
+          // Flexible spacer pushes outputs to the far right edge
+          const Expanded(child: SizedBox.shrink()),
+          // Outputs (flush right)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(widget.outputLabels.length, (index) =>
+              _buildPort(theme, widget.outputLabels[index], false),
             ),
           ),
         ],
@@ -250,8 +224,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           if (!isInput) ...[
             Text(
