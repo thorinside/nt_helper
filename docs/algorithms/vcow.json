@@ -70,36 +70,36 @@
     {
       "name": "Triangle/saw amplitude",
       "unit": "V",
-      "min": 0.00,
-      "max": 10.00,
-      "default": 10.00,
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
       "scope": "gain",
       "description": "Sets the amplitude of the triangle/saw output (pre-gain)."
     },
     {
       "name": "Square/pulse amplitude",
       "unit": "V",
-      "min": 0.00,
-      "max": 10.00,
-      "default": 10.00,
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
       "scope": "gain",
       "description": "Sets the amplitude of the square/pulse output (pre-gain)."
     },
     {
       "name": "Sub amplitude",
       "unit": "V",
-      "min": 0.00,
-      "max": 10.00,
-      "default": 10.00,
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
       "scope": "gain",
       "description": "Sets the amplitude of the sub-octave output (pre-gain)."
     },
     {
       "name": "Sine amplitude",
       "unit": "V",
-      "min": 0.00,
-      "max": 10.00,
-      "default": 10.00,
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
       "scope": "gain",
       "description": "Sets the amplitude of the sine output (pre-gain)."
     },
@@ -262,6 +262,47 @@
       ],
       "scope": "routing",
       "description": "Add/Replace mode for the sine signal."
+    },
+    {
+      "name": "0 2 0 Enables oversampling, to reduce aliasing noise at higher frequencies. The options are “None”, “2x”, and “4x”. FM scale",
+      "unit": "Hz",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the Hz/V sensitivity of the linear FM input."
+    },
+    {
+      "name": "0.00 10.00 10.00 V Sets the amplitude of the sub-octave output (before it’s affected by the gain). Sine amplitude",
+      "unit": "V",
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "description": "Sets the amplitude of the sine output (before it’s",
+      "scope": "routing"
+    },
+    {
+      "name": "Triangle/ saw mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The add/replace mode for the triangle/saw signal."
+    },
+    {
+      "name": "0 2 0 Enables oversampling, to reduce aliasing noise at higher frequencies. The options are “None”, “2x”, and “4x”. FM scale",
+      "unit": "Hz",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the Hz/V sensitivity of the linear FM input."
+    },
+    {
+      "name": "0.00 10.00 10.00 V Sets the amplitude of the sub-octave output (before it’s affected by the gain). Sine amplitude",
+      "unit": "V",
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "description": "Sets the amplitude of the sine output (before it’s",
+      "scope": "routing"
     }
   ],
   "input_ports": [
@@ -271,9 +312,21 @@
     "CV (FM)"
   ],
   "output_ports": [
-    "Audio (Triangle/Saw)",
-    "Audio (Square/Pulse)",
-    "Audio (Sub)",
-    "Audio (Sine)"
+    {
+      "name": "Audio (Triangle/Saw)"
+    },
+    {
+      "name": "Audio (Square/Pulse)"
+    },
+    {
+      "name": "Audio (Sub)"
+    },
+    {
+      "name": "Audio (Sine)"
+    },
+    {
+      "name": "Sub output",
+      "busIdRef": "Sub output"
+    }
   ]
 }

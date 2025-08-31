@@ -1,0 +1,204 @@
+{
+  "guid": "envq",
+  "name": "Envelope (DAHDSR)",
+  "categories": [
+    "Envelope",
+    "Modulation"
+  ],
+  "description": "Complex DAHDSR envelope generator with multiple trigger modes, clock sync, and shared shapes across channels.",
+  "specifications": [
+    {
+      "name": "Channels",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 1
+      },
+      "description": "Number of envelopes to generate."
+    },
+    {
+      "name": "Shapes",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 1
+      },
+      "description": "Number of envelope shapes shared across channels."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Trigger input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "channel",
+      "description": "Trigger input bus for the envelope (0=None)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "scope": "channel",
+      "description": "Envelope output bus (0=None)."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "channel",
+      "description": "Add/Replace mode for the output bus."
+    },
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Clock mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "See ‘Clock modes’, below."
+    },
+    {
+      "name": "MIDI divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "description": "The MIDI clock divisor, if the source is MIDI."
+    },
+    {
+      "name": "Scale",
+      "unit": "V",
+      "min": -10,
+      "max": 10,
+      "default": 8,
+      "description": "The magnitude of the output envelope."
+    },
+    {
+      "name": "Offset",
+      "unit": "V",
+      "min": -10,
+      "max": 10,
+      "default": 0,
+      "description": "The offset (starting/ending value) of the envelope."
+    },
+    {
+      "name": "Vel -> scale",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The amount by which the trigger velocity affects the"
+    },
+    {
+      "name": "Trigger input 0 28 The bus to use for the envelope’s trigger input. Clock input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the envelope’s clock input.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the envelope’s end of cycle output. Active output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the envelope’s active output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 16 0 The MIDI channel on which notes can trigger the envelope. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "The I2C channel on which notes can trigger the"
+    },
+    {
+      "name": "Delay",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "Sets the delay time. In milliseconds, multiplied by"
+    },
+    {
+      "name": "the Range parameter. Attack",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "Sets the attack time."
+    },
+    {
+      "name": "Hold",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "Sets the hold time."
+    },
+    {
+      "name": "Decay",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "Sets the decay time."
+    },
+    {
+      "name": "Sustain",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the sustain level."
+    },
+    {
+      "name": "Release",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 500,
+      "description": "Sets the release time."
+    },
+    {
+      "name": "0 127 64 Sets the decay and release curve shapes. Low values are more exponential; high values more linear. Range",
+      "min": 0,
+      "max": 4,
+      "default": 2,
+      "description": "The time range (multiplier), from ‘x 0.01’ to ‘x 100’."
+    }
+  ],
+  "features": [],
+  "input_ports": [
+    {
+      "name": "Trigger input",
+      "busIdRef": "Trigger input"
+    },
+    {
+      "name": "Clock input",
+      "busIdRef": "Clock input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
+  ]
+}

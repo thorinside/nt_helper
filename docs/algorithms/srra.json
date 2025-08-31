@@ -166,6 +166,98 @@
       ],
       "scope": "routing",
       "description": "The Add/Replace mode for the trigger bus."
+    },
+    {
+      "name": "Unrandomn ess",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the likelihood of the pattern not changing on"
+    },
+    {
+      "name": "each clock. At 0%, there is a 50:50 chance of a bit flip, which is the most random setting. At 100%, there will never be a fit flip, so the pattern is locked. At -100% there will always be a bit flip, which has the effect of locking the pattern with a repeat count of twice the length. Direction",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the pattern moves forwards or in"
+    },
+    {
+      "name": "● The new bit value is high. ● The new bit value is low. ● The bit changes. ● The bit goes from low to high. ● The bit goes from high to low. Type",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Chooses whether the output trigger will be of a"
+    },
+    {
+      "name": "fixed length, or calculated as a percentage of the clock length. Length (ms)",
+      "unit": "ms",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "description": "The trigger length, if fixed length is chosen."
+    },
+    {
+      "name": "is high, the pattern will always be modified on a clock, even if the pattern is locked. CV output",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "description": "The output bus for the CV.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 28 0 The output bus for the trigger. CV output",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The Add/Replace mode for the CV bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Unrandomn ess",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the likelihood of the pattern not changing on"
+    },
+    {
+      "name": "each clock. At 0%, there is a 50:50 chance of a bit flip, which is the most random setting. At 100%, there will never be a fit flip, so the pattern is locked. At -100% there will always be a bit flip, which has the effect of locking the pattern with a repeat count of twice the length. Direction",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the pattern moves forwards or in"
+    },
+    {
+      "name": "● The new bit value is high. ● The new bit value is low. ● The bit changes. ● The bit goes from low to high. ● The bit goes from high to low. Type",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Chooses whether the output trigger will be of a"
+    },
+    {
+      "name": "fixed length, or calculated as a percentage of the clock length. Length (ms)",
+      "unit": "ms",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "description": "The trigger length, if fixed length is chosen."
+    },
+    {
+      "name": "is high, the pattern will always be modified on a clock, even if the pattern is locked. CV output",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "description": "The output bus for the CV.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 28 0 The output bus for the trigger. CV output",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The Add/Replace mode for the CV bus.",
+      "scope": "routing"
     }
   ],
   "input_ports": [
@@ -173,7 +265,15 @@
     "Gate (Modify)"
   ],
   "output_ports": [
-    "CV",
-    "Trigger"
+    {
+      "name": "CV"
+    },
+    {
+      "name": "Trigger"
+    },
+    {
+      "name": "CV output",
+      "busIdRef": "CV output"
+    }
   ]
 }

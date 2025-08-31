@@ -36,6 +36,38 @@
         "Replace"
       ],
       "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Enable 0 1 Enables the channel. Input 1 28 Chooses the input bus to convert. Expander",
+      "min": 1,
+      "max": 6,
+      "default": 1,
+      "description": "Chooses the expander module – 1 for the ES-5 itself,",
+      "scope": "routing"
+    },
+    {
+      "name": "or 2-6 for the attached ESX-8GTs. Output",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "Chooses the output on the selected expander.",
+      "scope": "routing"
+    },
+    {
+      "name": "Enable 0 1 Enables the channel. Input 1 28 Chooses the input bus to convert. Expander",
+      "min": 1,
+      "max": 6,
+      "default": 1,
+      "description": "Chooses the expander module – 1 for the ES-5 itself,",
+      "scope": "routing"
+    },
+    {
+      "name": "or 2-6 for the attached ESX-8GTs. Output",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "Chooses the output on the selected expander.",
+      "scope": "routing"
     }
   ],
   "input_ports": [

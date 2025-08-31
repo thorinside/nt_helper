@@ -82,9 +82,9 @@
     {
       "name": "Max voltage",
       "unit": "V",
-      "defaultValue": 5.00,
-      "minValue": -10.00,
-      "maxValue": 10.00,
+      "defaultValue": 5.0,
+      "minValue": -10.0,
+      "maxValue": 10.0,
       "description": "Sets the envelope's maximum voltage."
     },
     {
@@ -116,7 +116,10 @@
       "minValue": 0,
       "maxValue": 28,
       "scope": "channel",
-      "description": "The bus to use for the channel output."
+      "description": "The bus to use for the channel output.",
+      "min": 0,
+      "max": 28,
+      "default": 15
     },
     {
       "name": "Output mode",
@@ -157,6 +160,62 @@
       "maxValue": 127,
       "scope": "channel",
       "description": "The MIDI or I2C note number that will trigger the envelope generator, or '-1' for 'Any'."
+    },
+    {
+      "name": "0 2 0 The trigger mode. The options are: ● Attack/release ● Attack/decay ● Looped AD Time mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The envelope time mode. The options are:"
+    },
+    {
+      "name": "● Macro (asymmetric) ● Macro (symmetric) ● Independent Joint time",
+      "min": 0,
+      "max": 1023,
+      "default": 0,
+      "description": "Sets the attack and release times if the ‘Time mode’"
+    },
+    {
+      "name": "is one of the two ‘Macro’ options. Attack time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "Sets the attack time if the ‘Time mode’ is"
+    },
+    {
+      "name": "‘Independent’. Release time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "Sets the release time if the ‘Time mode’ is"
+    },
+    {
+      "name": "0 2 0 The trigger mode. The options are: ● Attack/release ● Attack/decay ● Looped AD Time mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The envelope time mode. The options are:"
+    },
+    {
+      "name": "● Macro (asymmetric) ● Macro (symmetric) ● Independent Joint time",
+      "min": 0,
+      "max": 1023,
+      "default": 0,
+      "description": "Sets the attack and release times if the ‘Time mode’"
+    },
+    {
+      "name": "is one of the two ‘Macro’ options. Attack time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "Sets the attack time if the ‘Time mode’ is"
+    },
+    {
+      "name": "‘Independent’. Release time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "Sets the release time if the ‘Time mode’ is"
     }
   ],
   "input_ports": [

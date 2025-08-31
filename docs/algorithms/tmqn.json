@@ -120,11 +120,26 @@
       "default": 0,
       "scope": "per-channel",
       "description": "If enabled, notes that are already over by the time the clock pulse comes around are suppressed."
+    },
+    {
+      "name": "1 16 2 The MIDI channel on which to send notes. Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 9,
+      "description": "The MIDI clock divisor, if Sync is set to MIDI."
     }
   ],
   "input_ports": [
-    "Clock",
-    "MIDI"
+    {
+      "name": "Clock"
+    },
+    {
+      "name": "MIDI"
+    },
+    {
+      "name": "Clock input",
+      "busIdRef": "Clock input"
+    }
   ],
   "output_ports": [
     "MIDI"

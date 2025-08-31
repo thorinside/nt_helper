@@ -15,7 +15,10 @@
       "minValue": 0,
       "maxValue": 6,
       "description": "Selects the resonator mode.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 6,
+      "default": 0
     },
     {
       "name": "Synth effect",
@@ -24,7 +27,10 @@
       "minValue": 0,
       "maxValue": 5,
       "description": "Selects the audio effect applied if Mode is 'Synth'.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 5,
+      "default": 0
     },
     {
       "name": "Polyphony",
@@ -42,7 +48,10 @@
       "minValue": -36,
       "maxValue": 24,
       "description": "Coarse tuning control.",
-      "scope": "global"
+      "scope": "global",
+      "min": -36,
+      "max": 24,
+      "default": 0
     },
     {
       "name": "Fine tune",
@@ -51,7 +60,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Fine tuning control.",
-      "scope": "global"
+      "scope": "global",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Structure",
@@ -60,7 +72,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Controls the resonator 'structure'.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Brightness",
@@ -69,7 +84,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Controls the resonator 'brightness'.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Damping",
@@ -78,7 +96,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Controls the resonator 'damping'.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Position",
@@ -87,7 +108,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Controls the resonator 'position'.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Chord",
@@ -96,7 +120,10 @@
       "minValue": 0,
       "maxValue": 10,
       "description": "Chooses the chord for resonator modes that use one.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 10,
+      "default": 0
     },
     {
       "name": "Noise gate",
@@ -150,7 +177,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "CV input bus for 'brightness' (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Frequency input",
@@ -177,7 +207,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "CV input bus for 'structure' (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Position input",
@@ -195,7 +228,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Output bus for the Odd output (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Odd output mode",
@@ -296,7 +332,90 @@
       "minValue": 0,
       "maxValue": 255,
       "description": "I2C channel to receive on (0=Off).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 255,
+      "default": 1
+    },
+    {
+      "name": "to the synth output. Polyphony",
+      "min": 1,
+      "max": 4,
+      "default": 1,
+      "description": "Sets the number of simultaneous voices.",
+      "scope": "routing"
+    },
+    {
+      "name": "use one. In the original, set from the Structure knob. Noise gate",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Enables a noise gate on the audio input. Always"
+    },
+    {
+      "name": "enabled in the original Rings. Input gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "description": "A gain applied to the input audio, before it hits the",
+      "scope": "routing"
+    },
+    {
+      "name": "-40 12 0 dB The output level (of both the Odd and Even outputs). Dry gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 12,
+      "default": -40,
+      "description": "The level of the input audio mixed into the",
+      "scope": "routing"
+    },
+    {
+      "name": "0 3 0 Controls the algorithm's response to MIDI. See below. I2C mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Controls the algorithm's response to I2C. See"
+    },
+    {
+      "name": "to the synth output. Polyphony",
+      "min": 1,
+      "max": 4,
+      "default": 1,
+      "description": "Sets the number of simultaneous voices.",
+      "scope": "routing"
+    },
+    {
+      "name": "use one. In the original, set from the Structure knob. Noise gate",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Enables a noise gate on the audio input. Always"
+    },
+    {
+      "name": "enabled in the original Rings. Input gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "description": "A gain applied to the input audio, before it hits the",
+      "scope": "routing"
+    },
+    {
+      "name": "-40 12 0 dB The output level (of both the Odd and Even outputs). Dry gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 12,
+      "default": -40,
+      "description": "The level of the input audio mixed into the",
+      "scope": "routing"
+    },
+    {
+      "name": "0 3 0 Controls the algorithm's response to MIDI. See below. I2C mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Controls the algorithm's response to I2C. See"
     }
   ],
   "features": [

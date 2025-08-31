@@ -99,6 +99,68 @@
           "description": "The output voltage when the input is 'high', in 12-TET semitones (one twelfth of a Volt)."
         }
       ]
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables debouncing on this channel."
+    },
+    {
+      "name": "-10 10 5 V The output voltage when the input is ‘high’, in Volts. Output semitones",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "The output voltage when the input is ‘high’, in 12-",
+      "scope": "routing"
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables debouncing on this channel."
+    },
+    {
+      "name": "-10 10 5 V The output voltage when the input is ‘high’, in Volts. Output semitones",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "The output voltage when the input is ‘high’, in 12-",
+      "scope": "routing"
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
     }
   ]
 }

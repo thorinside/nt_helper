@@ -43,6 +43,62 @@
       "default": 0,
       "scope": "global",
       "description": "The input bus for tuner number 4 (0=disabled)."
+    },
+    {
+      "name": "Channel",
+      "min": 1,
+      "max": 0,
+      "default": 28,
+      "description": "1 The input bus for tuner number 1."
+    },
+    {
+      "name": "Channel",
+      "min": 2,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 2."
+    },
+    {
+      "name": "Channel",
+      "min": 3,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 3."
+    },
+    {
+      "name": "Channel",
+      "min": 4,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 4."
+    },
+    {
+      "name": "Channel",
+      "min": 1,
+      "max": 0,
+      "default": 28,
+      "description": "1 The input bus for tuner number 1."
+    },
+    {
+      "name": "Channel",
+      "min": 2,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 2."
+    },
+    {
+      "name": "Channel",
+      "min": 3,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 3."
+    },
+    {
+      "name": "Channel",
+      "min": 4,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 4."
     }
   ],
   "input_ports": [

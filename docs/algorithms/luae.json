@@ -200,7 +200,10 @@
       "minValue": 1,
       "maxValue": 28,
       "scope": "expression",
-      "description": "The bus to use for the expression output."
+      "description": "The bus to use for the expression output.",
+      "min": 1,
+      "max": 28,
+      "default": 15
     },
     {
       "name": "Output mode",

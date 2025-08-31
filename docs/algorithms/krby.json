@@ -2,9 +2,9 @@
   "guid": "krby",
   "name": "Kirbinator",
   "categories": [
-    "VCO",
-    "Oscillator",
-    "Chiptune"
+    "Audio Processing",
+    "Stochastic",
+    "Buffer"
   ],
   "description": "Stochastic audio processor that continuously records audio and plays back pitched, reversed, and panned slices based on probabilities triggered by Mark and Trigger inputs. Features random seed control and mutation for repeatable/evolving patterns.",
   "specifications": [
@@ -24,7 +24,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that playback will be pitched up."
+      "description": "The probability that playback will be pitched up."
     },
     {
       "name": "Pitch down",
@@ -32,7 +32,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that playback will be pitched down."
+      "description": "The probability that playback will be pitched down."
     },
     {
       "name": "Fifths",
@@ -40,7 +40,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that pitch shift (if up/down) will be a perfect fifth; otherwise, an octave."
+      "description": "The probability that, if playback is pitched up or down, it will be by a perfect fifth; otherwise, it will be by an octave."
     },
     {
       "name": "Reverse",
@@ -48,7 +48,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that playback will be reversed."
+      "description": "The probability that playback will be reversed."
     },
     {
       "name": "Glide",
@@ -56,7 +56,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that a glide will be applied to any pitch change."
+      "description": "The probability that a glide will be applied to any pitch change."
     },
     {
       "name": "Stutter",
@@ -64,7 +64,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that playback of the new slice will be stuttered (initial part repeated)."
+      "description": "The probability that playback of the new slice will be stuttered, that is, that the initial part of the playback will be repeated."
     },
     {
       "name": "Triplet",
@@ -72,7 +72,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "If 'Metrical' stutter is selected, probability that stutter is triplet division, else power of 2."
+      "description": "If 'Metrical' stutter has been selected, the probability that a stutter will be a triplet division, rather than a division by a power of 2."
     },
     {
       "name": "Play",
@@ -80,7 +80,7 @@
       "defaultValue": 100,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Probability that playback will actually happen; otherwise, playback stops."
+      "description": "The probability that playback will actually happen; otherwise, playback stops."
     },
     {
       "name": "Glide control",
@@ -100,7 +100,7 @@
       "defaultValue": 100,
       "minValue": 0,
       "maxValue": 1000,
-      "description": "Glide time to apply if glide is activated (when Glide control is Single)."
+      "description": "The time of the glide time to apply, if a glide is activated by the probability."
     },
     {
       "name": "Glide up",
@@ -108,7 +108,7 @@
       "defaultValue": 100,
       "minValue": 0,
       "maxValue": 1000,
-      "description": "Glide up time (when Glide control is Independent)."
+      "description": "The glide up time, if the control is independent."
     },
     {
       "name": "Glide down",
@@ -116,7 +116,7 @@
       "defaultValue": 100,
       "minValue": 0,
       "maxValue": 1000,
-      "description": "Glide down time (when Glide control is Independent)."
+      "description": "The glide down time, if the control is independent."
     },
     {
       "name": "Through zero",
@@ -128,7 +128,7 @@
         "Off",
         "On"
       ],
-      "description": "Whether glides are allowed when playback direction reverses (can produce tape stop effect)."
+      "description": "Whether glides are allowed when the playback direction reverses. Such glides can produce a very strong tape stop effect."
     },
     {
       "name": "Min stutter",
@@ -136,7 +136,7 @@
       "defaultValue": 2,
       "minValue": 1,
       "maxValue": 16,
-      "description": "Minimum number of restarts if stutter is activated."
+      "description": "If a stutter is activated, the minimum number of restarts."
     },
     {
       "name": "Max stutter",
@@ -144,7 +144,7 @@
       "defaultValue": 3,
       "minValue": 1,
       "maxValue": 16,
-      "description": "Maximum number of restarts if stutter is activated."
+      "description": "If a stutter is activated, the maximum number of restarts."
     },
     {
       "name": "Min jump",
@@ -152,7 +152,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 16,
-      "description": "Minimum number of slices away from current record position to jump."
+      "description": "The minimum number of slices away from the current record position to jump."
     },
     {
       "name": "Max jump",
@@ -160,10 +160,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 16,
-      "description": "Maximum number of slices away from current record position to jump."
+      "description": "The maximum number of slices away from the current record position to jump."
     },
     {
-      "name": "Stutter Type",
+      "name": "Stutter",
       "unit": null,
       "defaultValue": 1,
       "minValue": 0,
@@ -172,7 +172,7 @@
         "Free",
         "Metrical"
       ],
-      "description": "Sets whether stutter is Free (unconstrained) or Metrical (powers of 2/3)."
+      "description": "Sets whether stutter is 'Free' (unconstrained apart from by the minimum and maximum parameters), or 'Metrical' (restricted to powers of 2 and 3, according to the Triplet probability)."
     },
     {
       "name": "Pitch offset",
@@ -180,7 +180,7 @@
       "defaultValue": 0,
       "minValue": -24,
       "maxValue": 24,
-      "description": "Constant pitch change applied to playback, added to probabilistic pitch change."
+      "description": "Applies a constant pitch change to playback, added to any probabilistic pitch change."
     },
     {
       "name": "Glide offset",
@@ -188,7 +188,7 @@
       "defaultValue": 0,
       "minValue": -1000,
       "maxValue": 1000,
-      "description": "Constant glide time applied, added to probabilistic glide."
+      "description": "Applies a constant glide time, added to any probabilistic glide."
     },
     {
       "name": "Fade",
@@ -196,7 +196,7 @@
       "defaultValue": 10,
       "minValue": 0,
       "maxValue": 1000,
-      "description": "Fade in/out time for slice playback."
+      "description": "Sets the fade in/out time for slice playback."
     },
     {
       "name": "Random seed",
@@ -204,7 +204,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 32767,
-      "description": "Random seed to apply (if non-zero) for repeatable patterns."
+      "description": "If non-zero, a random seed to apply."
     },
     {
       "name": "Apply seed",
@@ -212,6 +212,10 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 1,
+      "enumValues": [
+        "Off",
+        "On"
+      ],
       "description": "Applies the random seed when the parameter goes from 0 to 1."
     },
     {
@@ -220,7 +224,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Degree of mutation (blend) from the current random seed to the next."
+      "description": "The degree of mutation from the given random seed to the next."
     },
     {
       "name": "Trigger hold time",
@@ -228,15 +232,15 @@
       "defaultValue": 0.0,
       "minValue": 0.0,
       "maxValue": 5.0,
-      "description": "Time trigger must be held; releasing after this time stops playback (0=Off)."
+      "description": "Sets the time after which releasing the trigger input will be treated as a stop trigger."
     },
     {
       "name": "Buffer size",
       "unit": "s",
-      "defaultValue": null,
+      "defaultValue": 1.0,
       "minValue": 1.0,
-      "maxValue": 44.0,
-      "description": "The audio buffer size (max set by specifications)."
+      "maxValue": null,
+      "description": "The audio buffer size (the maximum is set by the algorithm specifications)."
     },
     {
       "name": "Feedback",
@@ -244,7 +248,7 @@
       "defaultValue": -24.0,
       "minValue": -24.0,
       "maxValue": 0.0,
-      "description": "Attenuation of existing buffer content per recording pass (-24dB = replace)."
+      "description": "The amount by which existing buffer content is attenuated on each recording pass. -24dB is treated as –∞dB i.e. the previous content is completely replaced."
     },
     {
       "name": "Detect",
@@ -256,7 +260,7 @@
         "Off",
         "On"
       ],
-      "description": "Enables automatic transient detection to create marks."
+      "description": "Enables transient detection. See above."
     },
     {
       "name": "Sensitivity",
@@ -264,7 +268,7 @@
       "defaultValue": 100,
       "minValue": 0,
       "maxValue": 200,
-      "description": "Transient detection sensitivity."
+      "description": "The transient detection sensitivity."
     },
     {
       "name": "Dry gain",
@@ -272,7 +276,7 @@
       "defaultValue": -40,
       "minValue": -40,
       "maxValue": 6,
-      "description": "Level of the input signal passed through to the output (-40dB = off)."
+      "description": "The level of the input signal passed through to the output."
     },
     {
       "name": "Effect gain",
@@ -280,7 +284,7 @@
       "defaultValue": 0,
       "minValue": -40,
       "maxValue": 6,
-      "description": "Output level of the Kirbinator effect."
+      "description": "The output level of the Kirbinator effect."
     },
     {
       "name": "Pan mean",
@@ -288,7 +292,7 @@
       "defaultValue": 0,
       "minValue": -100,
       "maxValue": 100,
-      "description": "Average pan position of slice playback."
+      "description": "The average pan position of slice playback."
     },
     {
       "name": "Pan deviation",
@@ -296,7 +300,7 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 100,
-      "description": "Amount of random deviation from average pan position per trigger."
+      "description": "The amount of random deviation away from the average pan position, calculated for each trigger."
     },
     {
       "name": "Left/mono input",
@@ -304,7 +308,8 @@
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
-      "description": "The left or mono audio input."
+      "description": "The left or mono audio input.",
+      "scope": "routing"
     },
     {
       "name": "Right input",
@@ -312,7 +317,8 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The right audio input (0 = None)."
+      "description": "The right audio input.",
+      "scope": "routing"
     },
     {
       "name": "Left/mono output",
@@ -320,7 +326,8 @@
       "defaultValue": 13,
       "minValue": 1,
       "maxValue": 28,
-      "description": "The left or mono audio output."
+      "description": "The left or mono audio output.",
+      "scope": "routing"
     },
     {
       "name": "Right output",
@@ -328,7 +335,8 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The right audio output (0 = None)."
+      "description": "The right audio output.",
+      "scope": "routing"
     },
     {
       "name": "Output mode",
@@ -340,7 +348,8 @@
         "Add",
         "Replace"
       ],
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "scope": "routing"
     },
     {
       "name": "Mark input",
@@ -348,7 +357,8 @@
       "defaultValue": 3,
       "minValue": 0,
       "maxValue": 28,
-      "description": "Bus to use as the Mark signal (defines slices)."
+      "description": "The bus to use as the Mark signal.",
+      "scope": "routing"
     },
     {
       "name": "Trigger input",
@@ -356,7 +366,8 @@
       "defaultValue": 3,
       "minValue": 0,
       "maxValue": 28,
-      "description": "Bus to use as the Trigger signal (initiates playback/parameter change)."
+      "description": "The bus to use as the Trigger signal.",
+      "scope": "routing"
     },
     {
       "name": "Stop input",
@@ -364,7 +375,8 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "A trigger on this bus stops the currently playing slice (0 = None)."
+      "description": "A trigger on this bus causes the currently playing slice to stop.",
+      "scope": "routing"
     },
     {
       "name": "Pitch offset input",
@@ -372,7 +384,8 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "A 1V/octave pitch CV on this bus is added to the 'Pitch offset' parameter (0 = None)."
+      "description": "A 1V/octave pitch CV on this bus is added to the 'Pitch offset' parameter.",
+      "scope": "routing"
     }
   ],
   "input_ports": [

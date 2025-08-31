@@ -34,7 +34,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The main mixer output bus (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Duplicate output",
@@ -109,7 +112,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The channel input bus (0=None). Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Gain",
@@ -118,7 +124,10 @@
       "minValue": -70.0,
       "maxValue": 6.0,
       "description": "The channel gain. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": -70,
+      "max": 6,
+      "default": -70
     },
     {
       "name": "Mute",
@@ -127,7 +136,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Mutes the channel. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Solo",
@@ -136,7 +148,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Solos the channel. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Name",
@@ -152,7 +167,45 @@
       "minValue": -70.0,
       "maxValue": 6.0,
       "description": "The send gain for this channel to the specific send bus. Indexed per channel, per send.",
-      "scope": "channel-send"
+      "scope": "channel-send",
+      "min": -70,
+      "max": 6,
+      "default": -70
+    },
+    {
+      "name": "Destination",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Output gain",
+      "unit": "dB",
+      "min": -70,
+      "max": 6,
+      "default": 0,
+      "description": "The mixer output gain.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Output gain",
+      "unit": "dB",
+      "min": -70,
+      "max": 6,
+      "default": 0,
+      "description": "The mixer output gain.",
+      "scope": "routing"
+    },
+    {
+      "name": "1 28 13 The output bus for the send. Note that the send always uses ‘Add’ output mode. Pre/post",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Whether the send is Pre-fade or Post-fade.",
+      "scope": "routing"
     }
   ],
   "input_ports": [
@@ -161,6 +214,10 @@
       "name": "Channel Input",
       "description": "Mono input for a mixer channel. Use busIdRef based on channel index.",
       "busIdRef": "Input"
+    },
+    {
+      "name": "Destination",
+      "busIdRef": "Destination"
     }
   ],
   "output_ports": [

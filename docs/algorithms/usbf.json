@@ -183,12 +183,41 @@
       ],
       "scope": "channel 8",
       "description": "Add/Replace mode for channel 8 output."
+    },
+    {
+      "name": "to",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as"
+    },
+    {
+      "name": "mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as"
     }
   ],
   "input_ports": [
     "USB Audio/CV (from Host)"
   ],
   "output_ports": [
-    "Audio/CV (to Busses)"
+    {
+      "name": "Audio/CV (to Busses)"
+    },
+    {
+      "name": "to",
+      "busIdRef": "to"
+    }
   ]
 }

@@ -37,21 +37,27 @@
     },
     {
       "name": "Shift input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use for the phase shift CV, scaled as 5V per 360°."
+      "description": "The bus to use for the phase shift CV, scaled as 5V per 360°.",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The first audio input bus."
+      "description": "The first audio input bus.",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Width",
@@ -99,6 +105,15 @@
       "description": "The standard Add/Replace mode selector as described above for the negative shifted output."
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Shift input",
+      "busIdRef": "Shift input"
+    },
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
   "output_ports": []
 }

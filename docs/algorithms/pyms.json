@@ -90,7 +90,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Stereo pan position for the timbre.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Transpose",
@@ -99,7 +102,10 @@
       "minValue": -60,
       "maxValue": 60,
       "description": "Coarse tuning for the timbre.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": -60,
+      "max": 60,
+      "default": 0
     },
     {
       "name": "Fine tune",
@@ -108,7 +114,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Fine tuning for the timbre.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Envelope",
@@ -117,7 +126,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Enables ADSR volume envelope for the timbre (0=Off, 1=On). If off, sample plays fully.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Attack",
@@ -153,7 +165,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Envelope release time (10ms-30s, exp).",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 0,
+      "max": 127,
+      "default": 77
     },
     {
       "name": "Velocity",
@@ -162,7 +177,10 @@
       "minValue": 0,
       "maxValue": 100,
       "description": "Amount velocity affects volume.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 0,
+      "max": 100,
+      "default": 100
     },
     {
       "name": "Sustain",
@@ -180,7 +198,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "Left or mono output bus for the timbre.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Right output",
@@ -189,7 +210,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Right output bus for the timbre (0=None).",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "MIDI channel",
@@ -198,7 +222,10 @@
       "minValue": 0,
       "maxValue": 16,
       "description": "MIDI channel for the timbre (0=Omni).",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 0,
+      "max": 16,
+      "default": 1
     },
     {
       "name": "MPE channels",
@@ -225,7 +252,115 @@
       "minValue": 0,
       "maxValue": 48,
       "description": "MIDI pitch bend range for the timbre.",
-      "scope": "timbre"
+      "scope": "timbre",
+      "min": 0,
+      "max": 48,
+      "default": 2
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Gate offset",
+      "unit": "ms",
+      "min": 0,
+      "max": 10,
+      "default": 0.2,
+      "description": "Offsets (delays) the gate inputs relative to the pitch"
+    },
+    {
+      "name": "Folder 1 1 Sets the sample folder to use. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Sets the output level."
+    },
+    {
+      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "Sets the envelope attack time (from 1ms to 15s,"
+    },
+    {
+      "name": "exponential response). Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Sets the envelope decay time (from 20ms to 15s,"
+    },
+    {
+      "name": "exponential response). Sustain",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the envelope sustain level."
+    },
+    {
+      "name": "exponential response). Velocity",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the amount by which the note velocity affects"
+    },
+    {
+      "name": "the note volume. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Gate offset",
+      "unit": "ms",
+      "min": 0,
+      "max": 10,
+      "default": 0.2,
+      "description": "Offsets (delays) the gate inputs relative to the pitch"
+    },
+    {
+      "name": "Folder 1 1 Sets the sample folder to use. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Sets the output level."
+    },
+    {
+      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "Sets the envelope attack time (from 1ms to 15s,"
+    },
+    {
+      "name": "exponential response). Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Sets the envelope decay time (from 20ms to 15s,"
+    },
+    {
+      "name": "exponential response). Sustain",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the envelope sustain level."
+    },
+    {
+      "name": "the note volume. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
     }
   ],
   "features": [

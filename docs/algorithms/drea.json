@@ -137,7 +137,376 @@
         "Add",
         "Replace"
       ],
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    {
+      "name": "Wave input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "0.0 % Sets the position within the wavetable. Wave input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "Sets an input bus to modulate the wave offset.",
+      "scope": "routing"
+    },
+    {
+      "name": "Octave",
+      "min": -8,
+      "max": 8,
+      "default": 1,
+      "description": "Sets an octave shift for the fundamental."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Adjusts the tuning of all frequencies in (12-TET)"
+    },
+    {
+      "name": "Numerator 3",
+      "min": 1,
+      "max": 1024,
+      "default": 62,
+      "description": "Sets the numerator of the frequency ratio of tone 3."
+    },
+    {
+      "name": "Gate",
+      "min": 0,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 0."
+    },
+    {
+      "name": "Gate",
+      "min": 1,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 1."
+    },
+    {
+      "name": "Gate",
+      "min": 2,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 2."
+    },
+    {
+      "name": "Gate",
+      "min": 3,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 3."
+    },
+    {
+      "name": "Gate",
+      "min": 4,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 4."
+    },
+    {
+      "name": "Gain",
+      "min": 0,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for the fundamental. “-40” is treated as –∞dB."
+    },
+    {
+      "name": "Gain",
+      "min": 1,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 1."
+    },
+    {
+      "name": "Gain",
+      "min": 2,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 2."
+    },
+    {
+      "name": "Gain",
+      "min": 3,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 3."
+    },
+    {
+      "name": "Gain",
+      "min": 4,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 4."
+    },
+    {
+      "name": "Pan",
+      "min": 1,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 1."
+    },
+    {
+      "name": "Pan",
+      "min": 2,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 2."
+    },
+    {
+      "name": "Pan",
+      "min": 3,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 3."
+    },
+    {
+      "name": "Pan",
+      "min": 4,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 4."
+    },
+    {
+      "name": "Decay time",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "Decay time for the envelopes."
+    },
+    {
+      "name": "FM input",
+      "min": 1,
+      "max": 0,
+      "default": 28,
+      "description": "0 Which input bus to use to frequency modulate",
+      "scope": "routing"
+    },
+    {
+      "name": "(FM) tone 1. The input is scaled according to the FM Range parameter. FM input",
+      "min": 2,
+      "max": 0,
+      "default": 28,
+      "description": "0 As above for tone 2.",
+      "scope": "routing"
+    },
+    {
+      "name": "FM input",
+      "min": 3,
+      "max": 0,
+      "default": 28,
+      "description": "0 As above for tone 3.",
+      "scope": "routing"
+    },
+    {
+      "name": "FM input",
+      "min": 4,
+      "max": 0,
+      "default": 28,
+      "description": "0 As above for tone 4.",
+      "scope": "routing"
+    },
+    {
+      "name": "FM Range",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Sets the scaling for the FM inputs. The options are"
+    },
+    {
+      "name": "0.0 % Sets the position within the wavetable. Wave input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "Sets an input bus to modulate the wave offset.",
+      "scope": "routing"
+    },
+    {
+      "name": "Octave",
+      "min": -8,
+      "max": 8,
+      "default": 1,
+      "description": "Sets an octave shift for the fundamental."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Adjusts the tuning of all frequencies in (12-TET)"
+    },
+    {
+      "name": "Numerator 3",
+      "min": 1,
+      "max": 1024,
+      "default": 62,
+      "description": "Sets the numerator of the frequency ratio of tone 3."
+    },
+    {
+      "name": "Gate",
+      "min": 0,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 0."
+    },
+    {
+      "name": "Gate",
+      "min": 1,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 1."
+    },
+    {
+      "name": "Gate",
+      "min": 2,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 2."
+    },
+    {
+      "name": "Gate",
+      "min": 3,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 3."
+    },
+    {
+      "name": "Gate",
+      "min": 4,
+      "max": 0,
+      "default": 1,
+      "description": "0 Gate for tone 4."
+    },
+    {
+      "name": "Gain",
+      "min": 0,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for the fundamental. “-40” is treated as –∞dB."
+    },
+    {
+      "name": "Gain",
+      "min": 1,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 1."
+    },
+    {
+      "name": "Gain",
+      "min": 2,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 2."
+    },
+    {
+      "name": "Gain",
+      "min": 3,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 3."
+    },
+    {
+      "name": "Gain",
+      "min": 4,
+      "max": -40,
+      "default": 6,
+      "description": "0 dB Gain for tone 4."
+    },
+    {
+      "name": "Pan",
+      "min": 1,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 1."
+    },
+    {
+      "name": "Pan",
+      "min": 2,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 2."
+    },
+    {
+      "name": "Pan",
+      "min": 3,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 3."
+    },
+    {
+      "name": "Pan",
+      "min": 4,
+      "max": -100,
+      "default": 100,
+      "description": "0 % Stereo pan position for tone 4."
+    },
+    {
+      "name": "Decay time",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "Decay time for the envelopes."
+    },
+    {
+      "name": "FM input",
+      "min": 1,
+      "max": 0,
+      "default": 28,
+      "description": "0 Which input bus to use to frequency modulate",
+      "scope": "routing"
+    },
+    {
+      "name": "(FM) tone 1. The input is scaled according to the FM Range parameter. FM input",
+      "min": 2,
+      "max": 0,
+      "default": 28,
+      "description": "0 As above for tone 2.",
+      "scope": "routing"
+    },
+    {
+      "name": "FM input",
+      "min": 3,
+      "max": 0,
+      "default": 28,
+      "description": "0 As above for tone 3.",
+      "scope": "routing"
+    },
+    {
+      "name": "FM input",
+      "min": 4,
+      "max": 0,
+      "default": 28,
+      "description": "0 As above for tone 4.",
+      "scope": "routing"
+    },
+    {
+      "name": "FM Range",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Sets the scaling for the FM inputs. The options are"
     }
   ],
   "features": [
@@ -185,6 +554,10 @@
       "name": "Level CV",
       "description": "Level CV input bus.",
       "busIdRef": "Level CV"
+    },
+    {
+      "name": "Wave input",
+      "busIdRef": "Wave input"
     }
   ],
   "output_ports": [
@@ -193,6 +566,10 @@
       "name": "Output",
       "description": "Output bus.",
       "busIdRef": "Output"
+    },
+    {
+      "name": "Left output",
+      "busIdRef": "Left output"
     }
   ]
 }

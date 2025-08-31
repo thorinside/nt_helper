@@ -56,9 +56,9 @@
     {
       "name": "Amplitude",
       "unit": "V",
-      "min": 0.00,
-      "max": 10.00,
-      "default": 10.00,
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
       "scope": "gain",
       "description": "Sets the amplitude of the output (pre-gain)."
     },
@@ -110,6 +110,30 @@
       ],
       "scope": "routing",
       "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "Wavetable 0 Chooses the wavetable. Wave offset",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the position within the wavetable."
+    },
+    {
+      "name": "0 28 0 Sets an input bus to modulate the wave offset. Output",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "description": "The output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Wavetable 0 Chooses the wavetable. Wave offset",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the position within the wavetable."
     }
   ],
   "input_ports": [
@@ -117,6 +141,12 @@
     "CV (Wave Offset)"
   ],
   "output_ports": [
-    "Audio"
+    {
+      "name": "Audio"
+    },
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
   ]
 }

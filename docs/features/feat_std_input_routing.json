@@ -9,7 +9,7 @@
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "per-channel-or-common",
+      "scope": "per-channel",
       "description": "The input bus."
     }
   ]

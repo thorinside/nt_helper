@@ -70,10 +70,40 @@
           "description": "The output voltage when the clock is high/active."
         }
       ]
+    },
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above. Multiplier",
+      "min": 1,
+      "max": 24,
+      "default": 2,
+      "description": "The clock multiplier."
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above. Multiplier",
+      "min": 1,
+      "max": 24,
+      "default": 2,
+      "description": "The clock multiplier."
     }
   ],
   "categories": [
     "Clock",
     "Utility"
-  ]
+  ],
+  "input_ports": [
+    {
+      "name": "Clock input",
+      "busIdRef": "Clock input"
+    }
+  ],
+  "output_ports": []
 }

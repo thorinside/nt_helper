@@ -1,0 +1,16 @@
+{
+  "guid": "feat_bypass",
+  "name": "Algorithm Bypass",
+  "description": "Universal bypass functionality available on all algorithms. When enabled, the algorithm's processing is completely skipped and it consumes no CPU. Bypassed algorithms appear 'grayed out' in the overview and still respond to parameter automation.",
+  "parameters": [
+    {
+      "name": "Bypass",
+      "unit": "toggle",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1,
+      "description": "When enabled, completely skips algorithm processing and consumes no CPU.",
+      "scope": "global"
+    }
+  ]
+}

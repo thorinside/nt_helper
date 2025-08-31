@@ -25,7 +25,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Enables the channel. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Left/mono input",
@@ -43,7 +46,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The right input bus, if stereo (0=None). Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Sidechain input",
@@ -116,6 +122,40 @@
       "maxValue": 0,
       "description": "Amount signal is attenuated when gate is closed (-80 treated as -∞dB). Indexed per channel.",
       "scope": "channel"
+    },
+    {
+      "name": "1 28 1 The left or mono input bus. Right input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The right input bus, if stereo.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 28 0 The sidechain input bus. Threshold",
+      "unit": "dB",
+      "min": -70,
+      "max": 0,
+      "default": -24,
+      "description": "The threshold level required to open the gate.",
+      "scope": "routing"
+    },
+    {
+      "name": "1 28 1 The left or mono input bus. Right input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The right input bus, if stereo.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 28 0 The sidechain input bus. Threshold",
+      "unit": "dB",
+      "min": -70,
+      "max": 0,
+      "default": -24,
+      "description": "The threshold level required to open the gate.",
+      "scope": "routing"
     }
   ],
   "input_ports": [

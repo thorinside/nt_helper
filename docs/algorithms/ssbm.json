@@ -51,7 +51,10 @@
       "minValue": 1,
       "maxValue": 8,
       "scope": "global",
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "min": 1,
+      "max": 8,
+      "default": 1
     },
     {
       "name": "Upper SB output",
@@ -88,6 +91,54 @@
       "maxValue": 1,
       "scope": "global",
       "description": "The standard Add/Replace mode selector as described above for the lower side band."
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 1,
+      "default": 28,
+      "description": "1 The first input bus to process for the first signal.",
+      "scope": "routing"
+    },
+    {
+      "name": "Input",
+      "min": 2,
+      "max": 1,
+      "default": 28,
+      "description": "2 The first input bus to process for the second signal.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above for the upper side band. Lower SB output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The first output bus for the lower side band.",
+      "scope": "routing"
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 1,
+      "default": 28,
+      "description": "1 The first input bus to process for the first signal.",
+      "scope": "routing"
+    },
+    {
+      "name": "Input",
+      "min": 2,
+      "max": 1,
+      "default": 28,
+      "description": "2 The first input bus to process for the second signal.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above for the upper side band. Lower SB output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The first output bus for the lower side band.",
+      "scope": "routing"
     }
   ],
   "input_ports": [],

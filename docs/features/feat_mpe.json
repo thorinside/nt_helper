@@ -1,0 +1,25 @@
+{
+  "guid": "feat_mpe",
+  "name": "MPE Support", 
+  "description": "MIDI Polyphonic Expression (MPE) support for enhanced expressive control. Handles note allocation and per-note pitch bend. Supports both standard (common channel 1) and upper zone (common channel 16) configurations.",
+  "parameters": [
+    {
+      "name": "MIDI channel",
+      "unit": "channel",
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 16,
+      "description": "MPE common channel. Typically 1 for standard zone, 16 for upper zone.",
+      "scope": "global"
+    },
+    {
+      "name": "MPE channels",
+      "unit": null,
+      "defaultValue": 4,
+      "minValue": 1,
+      "maxValue": 15,
+      "description": "Number of MPE note channels. For common channel 1, uses channels 2-N. For common channel 16, uses channels 15 down to minimum.",
+      "scope": "global"
+    }
+  ]
+}

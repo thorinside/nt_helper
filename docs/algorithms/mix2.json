@@ -34,7 +34,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The main mixer left output bus (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Right output",
@@ -65,7 +68,10 @@
       "minValue": -70.0,
       "maxValue": 6.0,
       "description": "The main mixer output gain.",
-      "scope": "global"
+      "scope": "global",
+      "min": -70,
+      "max": 6,
+      "default": 0
     },
     {
       "name": "Send Destination",
@@ -131,7 +137,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The channel right input bus (if stereo, 0=None). Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Gain",
@@ -140,7 +149,10 @@
       "minValue": -70.0,
       "maxValue": 6.0,
       "description": "The channel gain. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": -70,
+      "max": 6,
+      "default": -70
     },
     {
       "name": "Pan",
@@ -149,7 +161,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "The channel stereo pan. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Mute",
@@ -158,7 +173,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Mutes the channel. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Solo",
@@ -167,7 +185,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Solos the channel. Indexed per channel.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Name",
@@ -183,7 +204,64 @@
       "minValue": -70.0,
       "maxValue": 6.0,
       "description": "The send gain for this channel to the specific send bus. Indexed per channel, per send.",
-      "scope": "channel-send"
+      "scope": "channel-send",
+      "min": -70,
+      "max": 6,
+      "default": -70
+    },
+    {
+      "name": "Destination",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "mode described above. Output gain",
+      "unit": "dB",
+      "min": -70,
+      "max": 6,
+      "default": 0,
+      "description": "The mixer output gain.",
+      "scope": "routing"
+    },
+    {
+      "name": "Pre/post",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Whether the send is Pre-fade or Post-fade."
+    },
+    {
+      "name": "Width",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Whether the send is mono or stereo. Stereo sends"
+    },
+    {
+      "name": "Destinatio n",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "description": "The output bus for the send. Note that the send"
+    },
+    {
+      "name": "always uses ‘Add’ output mode. Pre/post",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "Whether the send is Pre-fade or Post-fade.",
+      "scope": "routing"
+    },
+    {
+      "name": "Width",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Whether the send is mono or stereo. Stereo sends"
     }
   ],
   "input_ports": [
@@ -198,6 +276,10 @@
       "name": "Channel Input R",
       "description": "Right input for a stereo mixer channel. Use busIdRef based on channel index.",
       "busIdRef": "Input right"
+    },
+    {
+      "name": "Destination",
+      "busIdRef": "Destination"
     }
   ],
   "output_ports": [

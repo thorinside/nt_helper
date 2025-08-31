@@ -10,8 +10,8 @@
   ],
   "gui_description": null,
   "categories": [
-    "Utility",
-    "Routing"
+    "Effect",
+    "Modulation"
   ],
   "specifications": [],
   "parameters": [
@@ -86,6 +86,26 @@
           ]
         }
       ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "name": "Right input",
+      "busIdRef": "Right input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left output",
+      "busIdRef": "Left output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
     }
   ]
 }

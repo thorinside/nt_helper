@@ -15,7 +15,10 @@
       "minValue": 0,
       "maxValue": 23,
       "description": "Chooses the synthesis model.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 23,
+      "default": 0
     },
     {
       "name": "Coarse tune",
@@ -24,7 +27,10 @@
       "minValue": -60,
       "maxValue": 60,
       "description": "Coarse tuning control.",
-      "scope": "global"
+      "scope": "global",
+      "min": -60,
+      "max": 60,
+      "default": 0
     },
     {
       "name": "Fine tune",
@@ -33,7 +39,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Fine tuning control.",
-      "scope": "global"
+      "scope": "global",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Harmonics",
@@ -42,7 +51,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Sets the harmonics control.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Timbre",
@@ -51,7 +63,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Sets the timbre control.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Morph",
@@ -60,7 +75,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Sets the morph control.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "FM",
@@ -69,7 +87,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Sets the FM depth.",
-      "scope": "global"
+      "scope": "global",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Timbre mod",
@@ -78,7 +99,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Sets the timbre modulation depth.",
-      "scope": "global"
+      "scope": "global",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Morph mod",
@@ -87,7 +111,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Sets the morph modulation depth.",
-      "scope": "global"
+      "scope": "global",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Low-pass gate",
@@ -105,7 +132,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Sets the envelope decay time.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 64
     },
     {
       "name": "Trigger input",
@@ -114,7 +144,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Selects which bus is used as the trigger input (0=None, constant sound).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Level input",
@@ -123,7 +156,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Selects which bus is used as the level input (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "CV input",
@@ -132,7 +168,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Selects which bus is used as the pitch CV input (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "FM input",
@@ -141,7 +180,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Selects which bus is used as the FM input (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Harmonics input",
@@ -159,7 +201,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Selects which bus is used as the timbre input (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Morph input",
@@ -186,7 +231,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The bus for the 'Aux' output (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Output mode",
@@ -217,7 +265,10 @@
       "minValue": -40,
       "maxValue": 6,
       "description": "The level of the 'Aux' output signal.",
-      "scope": "global"
+      "scope": "global",
+      "min": -40,
+      "max": 6,
+      "default": 0
     },
     {
       "name": "MIDI mode",
@@ -232,7 +283,10 @@
         "Pitch & trigger"
       ],
       "description": "Controls the algorithm's response to MIDI.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 3,
+      "default": 0
     },
     {
       "name": "I2C mode",
@@ -265,7 +319,40 @@
       "minValue": 0,
       "maxValue": 255,
       "description": "The I2C channel to receive on (0=Off).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 255,
+      "default": 1
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Main gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "The level of the ‘Main’ output signal."
+    },
+    {
+      "name": "below. I2C mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Controls the algorithm's response to I2C. See"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Main gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "The level of the ‘Main’ output signal."
+    },
+    {
+      "name": "below. I2C mode",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Controls the algorithm's response to I2C. See"
     }
   ],
   "input_ports": [

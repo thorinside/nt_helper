@@ -137,6 +137,68 @@
       ],
       "scope": "routing",
       "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "Exponential scaling from 0.5ms to 1000ms. Decay",
+      "min": 0,
+      "max": 1000,
+      "default": 394,
+      "description": "Sets the decay time of the band envelope trackers."
+    },
+    {
+      "name": "Exponential scaling from 0.5ms to 1000ms. High pass",
+      "unit": "Hz",
+      "min": 10,
+      "max": 1000,
+      "default": 50,
+      "description": "Sets the frequency of a high-pass filter applied to"
+    },
+    {
+      "name": "both the modulator and carrier. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Applies an overall gain."
+    },
+    {
+      "name": "1 8 1 The number of carrier busses to process. For example, for a stereo signal, set this to 2. Output",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "description": "The first output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Exponential scaling from 0.5ms to 1000ms. Decay",
+      "min": 0,
+      "max": 1000,
+      "default": 394,
+      "description": "Sets the decay time of the band envelope trackers."
+    },
+    {
+      "name": "Exponential scaling from 0.5ms to 1000ms. High pass",
+      "unit": "Hz",
+      "min": 10,
+      "max": 1000,
+      "default": 50,
+      "description": "Sets the frequency of a high-pass filter applied to"
+    },
+    {
+      "name": "both the modulator and carrier. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Applies an overall gain."
+    },
+    {
+      "name": "1 8 1 The number of carrier busses to process. For example, for a stereo signal, set this to 2. Output",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "description": "The first output bus.",
+      "scope": "routing"
     }
   ],
   "input_ports": [
@@ -144,6 +206,12 @@
     "Audio (Carrier)"
   ],
   "output_ports": [
-    "Audio (Vocoded)"
+    {
+      "name": "Audio (Vocoded)"
+    },
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
   ]
 }

@@ -1,0 +1,220 @@
+{
+  "guid": "feat_chord_arpeggiator",
+  "name": "Chord Generator & Arpeggiator",
+  "description": "Advanced chord generation and arpeggiation system supporting Shape and SATB harmony modes. Can generate chords, arpeggiate input notes, or combine both. Includes broken chord (strumming) effects.",
+  "parameters": [
+    {
+      "name": "Enable",
+      "unit": "enum",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Off",
+        "Shape", 
+        "SATB"
+      ],
+      "description": "Enables chord generator and chooses harmony mode.",
+      "scope": "global"
+    },
+    {
+      "name": "Key",
+      "unit": "ST",
+      "defaultValue": 0,
+      "minValue": -12,
+      "maxValue": 12,
+      "description": "Sets the key of the chord (C, D♭, D, etc.).",
+      "scope": "global"
+    },
+    {
+      "name": "Mode",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 12,
+      "description": "Sets the mode/rotation within the scale. For Major scale: Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian.",
+      "scope": "global"
+    },
+    {
+      "name": "Scale",
+      "unit": "enum",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 8,
+      "enumValues": [
+        "Chromatic",
+        "Major",
+        "Natural Minor", 
+        "Harmonic Minor",
+        "Dominant",
+        "Fully Diminished",
+        "Dominant Dim",
+        "Augmented",
+        "Whole Tone"
+      ],
+      "description": "Scale to use for chord building.",
+      "scope": "global"
+    },
+    {
+      "name": "Shape",
+      "unit": "enum", 
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 13,
+      "enumValues": [
+        "None",
+        "Octave",
+        "Two Octaves", 
+        "Root/Fifth",
+        "Root/Fifth + 8ve",
+        "Triad",
+        "Triad + 8ve",
+        "Sus4",
+        "Sus4 + 8ve", 
+        "Sixth",
+        "Sixth + 8ve",
+        "Seventh",
+        "Seventh + 8ve",
+        "Ninth"
+      ],
+      "description": "In Shape mode: chord shape to generate.",
+      "scope": "global"
+    },
+    {
+      "name": "Inversion",
+      "unit": null,
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 3,
+      "description": "In Shape mode: chord inversion (0=root position, 1=first inversion, etc.).",
+      "scope": "global"
+    },
+    {
+      "name": "Root degree",
+      "unit": "enum",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 7,
+      "enumValues": [
+        "From CV",
+        "I",
+        "II", 
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII"
+      ],
+      "description": "In SATB mode: root degree for harmony.",
+      "scope": "global"
+    },
+    {
+      "name": "Root CV",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for root degree pitch when Root degree is 'From CV'.",
+      "scope": "global"
+    },
+    {
+      "name": "Cantus firmus",
+      "unit": "enum",
+      "defaultValue": 3,
+      "minValue": 0,
+      "maxValue": 3,
+      "enumValues": [
+        "Soprano",
+        "Alto",
+        "Tenor", 
+        "Bass"
+      ],
+      "description": "In SATB mode: which voice corresponds to the original note.",
+      "scope": "global"
+    },
+    {
+      "name": "Position",
+      "unit": "enum",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 5,
+      "enumValues": [
+        "Close",
+        "Open",
+        "T-vce +1 -1",
+        "T-vce +2 -1", 
+        "T-vce +1 -2",
+        "T-vce +2 -2"
+      ],
+      "description": "In SATB mode: voice spacing (Close/Open or Tintinnabuli style).",
+      "scope": "global"
+    },
+    {
+      "name": "Arpeggio",
+      "unit": "enum",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 14,
+      "enumValues": [
+        "Off",
+        "Up",
+        "Down",
+        "Alt", 
+        "Alt2",
+        "Up -8ve",
+        "Down -8ve",
+        "Alt -8ve",
+        "Alt2 -8ve",
+        "Step Up",
+        "Step Down", 
+        "Random",
+        "Random2",
+        "Random3",
+        "As Played"
+      ],
+      "description": "Arpeggiator mode and pattern.",
+      "scope": "global"
+    },
+    {
+      "name": "Range",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 3,
+      "description": "Arpeggio octave range (1=single octave, 2-3=multiple octaves).",
+      "scope": "global"
+    },
+    {
+      "name": "Arp reset",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for arpeggiator reset trigger.",
+      "scope": "global"
+    },
+    {
+      "name": "Break time",
+      "unit": "ms",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 1000,
+      "description": "Time delay for broken chords (strumming effect).",
+      "scope": "global"
+    },
+    {
+      "name": "Break dir",
+      "unit": "enum",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "Up",
+        "Down",
+        "Alternating"
+      ],
+      "description": "Direction for broken chord playback.",
+      "scope": "global"
+    }
+  ]
+}

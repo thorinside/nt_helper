@@ -88,6 +88,31 @@
       "default": 0,
       "scope": "per-channel",
       "description": "The slew time for falling signals (used if Control is 'Dual')."
+    },
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "● ‘Single’ - use ‘Up/shared slew’ for both slew times. ● ‘Dual’ - use separate slew times for rising and falling signals. ● ‘Common single’ and ‘Common dual’ - as above but using the shared times from the Common parameters. Up/shared",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "The slew time for both, or only rising, signals."
     }
   ],
   "features": [
@@ -95,9 +120,21 @@
     "feat_std_output_routing"
   ],
   "input_ports": [
-    "CV"
+    {
+      "name": "CV"
+    },
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
   ],
   "output_ports": [
-    "CV"
+    {
+      "name": "CV"
+    },
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
   ]
 }

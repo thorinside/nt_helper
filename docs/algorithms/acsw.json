@@ -1,21 +1,22 @@
 {
-  "name": "Accent Sweep",
+  "name": "Accent sweep",
   "guid": "acsw",
   "short_description": "AD envelope with variable peak",
-  "description": "This algorithm recreates a very specific aspect of the Roland TB-303's circuitry. There is a lengthy write-up on it on the Devil Fish page here^50 (https://www.firstpr.com.au/rwi/dfish/303-unique.html), but essentially it creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered.",
+  "description": "This algorithm recreates a very specific aspect of the Roland TB-303's circuitry. There is a lengthy write-up on it on the Devil Fish page here (https://www.firstpr.com.au/rwi/dfish/303-unique.html), but essentially it creates an AD (attack/decay) envelope which will reach a higher maximum level if repeatedly triggered.",
   "categories": [
     "Envelope",
     "Modulation"
   ],
   "use_cases": [
     "TB-303 style accent simulation",
-    "Dynamic envelope shaping"
+    "Dynamic envelope shaping",
+    "Attack/decay envelope generation"
   ],
   "gui_description": "The display shows the input (dark) and output (light) signals.",
   "specifications": [],
   "parameters": [
     {
-      "page": "Envelope",
+      "page": "Envelope parameters",
       "params": [
         {
           "name": "Input mode",
@@ -66,7 +67,7 @@
           "min": 1,
           "max": 470,
           "default": 47,
-          "unit": "kΩ",
+          "unit": "kΩ",
           "description": "The value of the charge resistor."
         },
         {
@@ -74,7 +75,7 @@
           "min": 1,
           "max": 470,
           "default": 100,
-          "unit": "kΩ",
+          "unit": "kΩ",
           "description": "The value of the discharge resistor."
         },
         {
@@ -82,7 +83,7 @@
           "min": 1,
           "max": 470,
           "default": 100,
-          "unit": "kΩ",
+          "unit": "kΩ",
           "description": "The value of the potentiometer."
         },
         {
@@ -96,7 +97,7 @@
       ]
     },
     {
-      "page": "Routing",
+      "page": "Routing parameters",
       "params": [
         {
           "name": "Input",
@@ -130,6 +131,18 @@
           "is_common": true
         }
       ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
     }
   ]
 }

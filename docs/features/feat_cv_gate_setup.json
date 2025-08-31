@@ -1,0 +1,115 @@
+{
+  "guid": "feat_cv_gate_setup",
+  "name": "CV/Gate Setup",
+  "description": "Polyphonic CV/Gate input configuration. Supports up to 6 gates, each with up to 11 CVs. CV buses follow immediately after gate bus (e.g., gate on bus 1, CVs on buses 2-3). Gate voltage of 5V represents maximum velocity.",
+  "parameters": [
+    {
+      "name": "Gate input 1",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for gate 1. 0 = None.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate 1 CV count",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 11,
+      "description": "Number of CV inputs following gate 1 bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate input 2",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for gate 2. 0 = None.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate 2 CV count",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 11,
+      "description": "Number of CV inputs following gate 2 bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate input 3",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for gate 3. 0 = None.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate 3 CV count",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 11,
+      "description": "Number of CV inputs following gate 3 bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate input 4",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for gate 4. 0 = None.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate 4 CV count",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 11,
+      "description": "Number of CV inputs following gate 4 bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate input 5",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for gate 5. 0 = None.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate 5 CV count",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 11,
+      "description": "Number of CV inputs following gate 5 bus.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate input 6",
+      "unit": "bus",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 28,
+      "description": "Input bus for gate 6. 0 = None.",
+      "scope": "global"
+    },
+    {
+      "name": "Gate 6 CV count",
+      "unit": null,
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 11,
+      "description": "Number of CV inputs following gate 6 bus.",
+      "scope": "global"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "name": "Chaos",
   "guid": "xaoc",
   "short_description": "CVs from the Lorenz equations",
-  "description": "This algorithm generates chaotic CVs according to the Lorenz equations or Rössler equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation ('Rho mod' affects 'r', and 'Beta mod' affects 'b'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
+  "description": "This algorithm generates chaotic CVs according to a variety of so-called 'attractors', including the well-known Lorenz equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – 'Rho mod' affects 'r' (aka 'ρ'), and 'Beta mod' affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
   "use_cases": [
     "Generating chaotic CV modulation",
     "Creating unpredictable, evolving patterns",
@@ -17,13 +17,16 @@
         {
           "name": "Attractor",
           "min": 0,
-          "max": 1,
+          "max": 4,
           "default": 0,
           "unit": null,
-          "description": "Chooses which equations to use: Lorenz or Rössler.",
+          "description": "Chooses which equations to use: Lorenz, Rössler, Aizawa, Arneodo, or Thomas.",
           "enum_values": [
             "Lorenz",
-            "Rössler"
+            "Rössler", 
+            "Aizawa",
+            "Arneodo",
+            "Thomas"
           ]
         },
         {
@@ -64,11 +67,35 @@
           "max": 1,
           "default": 0,
           "unit": null,
-          "description": "When this parameter is set to 1, the system is reset to initial conditions.",
+          "description": "When this parameter is set to 1, the system is reset to the values given by the Reset X/Y/Z parameters.",
           "enum_values": [
             "Off",
             "On"
           ]
+        },
+        {
+          "name": "Reset X",
+          "min": -20.0,
+          "max": 20.0,
+          "default": 0.1,
+          "unit": null,
+          "description": "The X value to reset to."
+        },
+        {
+          "name": "Reset Y", 
+          "min": -20.0,
+          "max": 20.0,
+          "default": 0.0,
+          "unit": null,
+          "description": "The Y value to reset to."
+        },
+        {
+          "name": "Reset Z",
+          "min": -20.0,
+          "max": 20.0,
+          "default": 0.0,
+          "unit": null,
+          "description": "The Z value to reset to."
         }
       ]
     },
@@ -193,6 +220,15 @@
             "Add"
           ],
           "is_common": true
+        },
+        {
+          "name": "Reset input",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "unit": null,
+          "description": "The bus to use for the reset input. A positive-going edge here resets the system to the values given by the Reset X/Y/Z parameters. 0 = None.",
+          "is_bus": true
         }
       ]
     }
@@ -200,5 +236,25 @@
   "categories": [
     "CV",
     "Random"
+  ],
+  "input_ports": [
+    {
+      "name": "Reset input",
+      "busIdRef": "Reset input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "X output",
+      "busIdRef": "X output"
+    },
+    {
+      "name": "Y output",
+      "busIdRef": "Y output"
+    },
+    {
+      "name": "Z output",
+      "busIdRef": "Z output"
+    }
   ]
 }

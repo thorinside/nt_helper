@@ -25,7 +25,10 @@
       "minValue": 0,
       "maxValue": 100,
       "scope": "global",
-      "description": "The reverb wet/dry mix."
+      "description": "The reverb wet/dry mix.",
+      "min": 0,
+      "max": 100,
+      "default": 100
     },
     {
       "name": "Reverb time",
@@ -43,7 +46,10 @@
       "minValue": 0,
       "maxValue": 100,
       "scope": "global",
-      "description": "The reverb diffusion. (In Clouds this is fixed at 70%)."
+      "description": "The reverb diffusion. (In Clouds this is fixed at 70%).",
+      "min": 0,
+      "max": 100,
+      "default": 70
     },
     {
       "name": "Reverb low pass",
@@ -74,7 +80,37 @@
       "enumValues": [
         "Native",
         "Authentic (32kHz)"
-      ]
+      ],
+      "min": 0,
+      "max": 1,
+      "default": 0
+    },
+    {
+      "name": "Left input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
     }
   ],
   "input_ports": [

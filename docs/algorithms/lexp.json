@@ -3,45 +3,48 @@
   "name": "Linear/Exponential",
   "categories": [
     "Utility",
-    "CV"
+    "CV",
+    "Converter"
   ],
-  "description": "Implements linear-to-exponential (Hz/V to V/Oct) and exponential-to-linear (V/Oct to Hz/V) converters. Assumes 0V V/Oct = C3 (~130.8Hz).",
+  "description": "Converts between Volt/octave and Hz/Volt CV standards. Implements both linear-to-exponential and exponential-to-linear converters. The 0V point for V/octave signals is C3 (approximately 130.8Hz).",
   "specifications": [],
   "parameters": [
     {
-      "name": "Lin->Exp: Hz/V",
+      "name": "Hz/V",
       "unit": "Hz",
       "defaultValue": 1000,
       "minValue": 1,
       "maxValue": 2000,
-      "description": "The Hz/Volt scaling for the Linear to Exponential converter."
+      "description": "The Hz/Volt scaling for Linear/Expo converter."
     },
     {
-      "name": "Lin->Exp: Offset",
+      "name": "Offset",
       "unit": "mV",
       "defaultValue": 0,
       "minValue": -1000,
       "maxValue": 1000,
-      "description": "Voltage offset subtracted from the linear input."
+      "description": "A voltage offset subtracted from the input."
     },
     {
-      "name": "Lin->Exp: Input",
+      "name": "Input",
       "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The input (linear, Hz/V) bus (0 = None)."
+      "description": "The input (linear, Hz/V) bus.",
+      "scope": "routing"
     },
     {
-      "name": "Lin->Exp: Output",
+      "name": "Output",
       "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The output (exponential, V/octave) bus (0 = None)."
+      "description": "The output (exponential, V/octave) bus.",
+      "scope": "routing"
     },
     {
-      "name": "Lin->Exp: Output mode",
+      "name": "Output mode",
       "unit": null,
       "defaultValue": 1,
       "minValue": 0,
@@ -50,42 +53,45 @@
         "Add",
         "Replace"
       ],
-      "description": "Output mode for the Linear to Exponential converter."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "scope": "routing"
     },
     {
-      "name": "Exp->Lin: Hz/V",
+      "name": "Hz/V",
       "unit": "Hz",
       "defaultValue": 1000,
       "minValue": 1,
       "maxValue": 2000,
-      "description": "The Hz/Volt scaling for the Exponential to Linear converter."
+      "description": "The Hz/Volt scaling for Expo/Linear converter."
     },
     {
-      "name": "Exp->Lin: Offset",
+      "name": "Offset",
       "unit": "mV",
       "defaultValue": 0,
       "minValue": -1000,
       "maxValue": 1000,
-      "description": "Voltage offset added to the linear output."
+      "description": "A voltage offset added to the output."
     },
     {
-      "name": "Exp->Lin: Input",
+      "name": "Input",
       "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The input (exponential, V/octave) bus (0 = None)."
+      "description": "The input (exponential, V/octave) bus.",
+      "scope": "routing"
     },
     {
-      "name": "Exp->Lin: Output",
+      "name": "Output",
       "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The output (linear, Hz/V) bus (0 = None)."
+      "description": "The output (linear, Hz/V) bus.",
+      "scope": "routing"
     },
     {
-      "name": "Exp->Lin: Output mode",
+      "name": "Output mode",
       "unit": null,
       "defaultValue": 1,
       "minValue": 0,
@@ -94,35 +100,36 @@
         "Add",
         "Replace"
       ],
-      "description": "Output mode for the Exponential to Linear converter."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "scope": "routing"
     }
   ],
   "input_ports": [
     {
-      "id": "lin_in",
+      "id": "linear_input",
       "name": "Linear In",
-      "description": "Linear (Hz/V) input.",
-      "busIdRef": "Lin->Exp: Input"
+      "description": "Linear (Hz/V) input for conversion to V/octave.",
+      "busIdRef": "Input"
     },
     {
-      "id": "exp_in",
+      "id": "exponential_input",
       "name": "Exponential In",
-      "description": "Exponential (V/Oct) input.",
-      "busIdRef": "Exp->Lin: Input"
+      "description": "Exponential (V/octave) input for conversion to Hz/V.",
+      "busIdRef": "Input"
     }
   ],
   "output_ports": [
     {
-      "id": "exp_out",
+      "id": "exponential_output",
       "name": "Exponential Out",
-      "description": "Exponential (V/Oct) output.",
-      "busIdRef": "Lin->Exp: Output"
+      "description": "Exponential (V/octave) output from linear conversion.",
+      "busIdRef": "Output"
     },
     {
-      "id": "lin_out",
+      "id": "linear_output",
       "name": "Linear Out",
-      "description": "Linear (Hz/V) output.",
-      "busIdRef": "Exp->Lin: Output"
+      "description": "Linear (Hz/V) output from exponential conversion.",
+      "busIdRef": "Output"
     }
   ]
 }

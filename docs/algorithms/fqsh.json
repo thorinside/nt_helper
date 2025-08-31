@@ -15,7 +15,10 @@
       "minValue": -1.0,
       "maxValue": 1.0,
       "description": "Sets the frequency shift.",
-      "scope": "global"
+      "scope": "global",
+      "min": -1,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Multiplier",
@@ -24,7 +27,10 @@
       "minValue": 0,
       "maxValue": 3,
       "description": "Set a multiplier for the shift amount: x1, x10, x100, or x1000.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 3,
+      "default": 2
     },
     {
       "name": "Hz/V",
@@ -51,25 +57,34 @@
       "minValue": -40,
       "maxValue": 0,
       "description": "The output gain applied to the effected signal.",
-      "scope": "global"
+      "scope": "global",
+      "min": -40,
+      "max": 0,
+      "default": 0
     },
     {
       "name": "Shift input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
       "description": "The bus to use for the frequency shift CV.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
       "description": "The first audio input bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Width",
@@ -115,8 +130,47 @@
       "maxValue": 1,
       "description": "The standard Add/Replace mode selector as described above for the negative shifted output.",
       "scope": "global"
+    },
+    {
+      "name": "or x1000. Hz/V",
+      "min": 0,
+      "max": 3,
+      "default": 1,
+      "description": "Sets the scaling of the shift CV input, in Hz/Volt."
+    },
+    {
+      "name": "One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "or x1000. Hz/V",
+      "min": 0,
+      "max": 3,
+      "default": 1,
+      "description": "Sets the scaling of the shift CV input, in Hz/Volt."
+    },
+    {
+      "name": "One of: 1Hz/V, 10Hz/V, 100Hz/V, or 1kHz/V. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The output wet/dry mix."
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Shift input",
+      "busIdRef": "Shift input"
+    },
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
   "output_ports": []
 }

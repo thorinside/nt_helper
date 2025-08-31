@@ -24,7 +24,10 @@
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The clock input bus. A rising edge advances the patterns by one step."
+      "description": "The clock input bus. A rising edge advances the patterns by one step.",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Reset input",
@@ -33,7 +36,10 @@
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The reset input bus. A high level resets the patterns to step 1 (and holds them there)."
+      "description": "The reset input bus. A high level resets the patterns to step 1 (and holds them there).",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Enable",
@@ -124,7 +130,10 @@
       "minValue": 1,
       "maxValue": 28,
       "scope": "channel",
-      "description": "The output bus for the channel."
+      "description": "The output bus for the channel.",
+      "min": 1,
+      "max": 28,
+      "default": 15
     },
     {
       "name": "Output mode",
@@ -137,7 +146,10 @@
         "Replace"
       ],
       "scope": "channel",
-      "description": "The standard Add/Replace mode selector as described above."
+      "description": "The standard Add/Replace mode selector as described above.",
+      "min": 0,
+      "max": 1,
+      "default": 0
     }
   ],
   "input_ports": [

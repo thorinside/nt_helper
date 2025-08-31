@@ -2,7 +2,11 @@
   "name": "Attenuverter",
   "guid": "attn",
   "short_description": "Attenuates and offsets signals",
-  "description": "This simple algorithm scales and offsets signals. It is probably most useful for CVs, but can be used for audio as well. The signal is scaled and then offset i.e. output = offset + ( input x scale ). Various offset parameters are provided, which might be useful in different scenarios - they are all simply added together. Note that it is valid to use this algorithm with no input bus selected, in which case the output is simply the offset voltage.",
+  "description": "This simple algorithm scales and offsets signals. It is probably most useful for CVs, but can be used for audio as well. The signal is scaled and then offset i.e. output = offset + ( input × scale ). Various offset parameters are provided, which might be useful in different scenarios – they are all simply added together. Note that it is valid to use this algorithm with no input bus selected, in which case the output is simply the offset voltage.",
+  "categories": [
+    "Utility",
+    "CV"
+  ],
   "use_cases": [
     "Scaling CV signals",
     "Offsetting CV signals",
@@ -10,10 +14,6 @@
     "Generating constant offset voltages"
   ],
   "gui_description": null,
-  "categories": [
-    "Utility",
-    "CV"
-  ],
   "specifications": [
     {
       "name": "Channels",
@@ -24,7 +24,7 @@
   ],
   "parameters": [
     {
-      "page": "Channel {i+1}",
+      "page": "Per-channel parameters",
       "is_per_channel": true,
       "params": [
         {
@@ -33,7 +33,7 @@
           "max": 28,
           "default": 1,
           "unit": null,
-          "description": "The input bus to process. 0 = None.",
+          "description": "The input bus to process.",
           "is_bus": true
         },
         {
@@ -54,7 +54,7 @@
           "max": 28,
           "default": 0,
           "unit": null,
-          "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'. 0 = None.",
+          "description": "The output bus. If set to 'None', the input bus is used as output, and the mode is always 'Replace'.",
           "is_bus": true
         },
         {
@@ -111,6 +111,18 @@
           "description": "Sets the channel offset (semitones i.e. 1/12th of a Volt)."
         }
       ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
     }
   ]
 }

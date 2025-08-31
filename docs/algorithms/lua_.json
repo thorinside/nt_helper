@@ -15,7 +15,10 @@
       "minValue": 0,
       "maxValue": 999,
       "description": "Selects the Lua script file (.lua) to run from the '/programs/lua' directory on the MicroSD card.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 999,
+      "default": 0
     }
   ],
   "input_ports": [],

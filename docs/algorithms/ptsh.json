@@ -46,7 +46,10 @@
       "minValue": -48,
       "maxValue": 48,
       "description": "The pitch shift amount, in semitones.",
-      "scope": "global"
+      "scope": "global",
+      "min": -48,
+      "max": 48,
+      "default": 0
     },
     {
       "name": "Cents",
@@ -55,7 +58,10 @@
       "minValue": -1200,
       "maxValue": 1200,
       "description": "The pitch shift amount, in cents.",
-      "scope": "global"
+      "scope": "global",
+      "min": -1200,
+      "max": 1200,
+      "default": 0
     },
     {
       "name": "Audio input",
@@ -64,7 +70,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "The bus to use as the audio input.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Shift input",
@@ -73,7 +82,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The bus to use as a V/octave pitch shift amount CV (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Output",
@@ -82,7 +94,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "The output bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Output mode",
@@ -96,6 +111,36 @@
       ],
       "description": "Output mode (Add/Replace).",
       "scope": "global"
+    },
+    {
+      "name": "0 1 1 Chooses the pitch shifting algorithm, ‘2-phase’ or ‘3- phase’. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
+      "unit": "ms",
+      "min": 1,
+      "max": 682,
+      "default": 300,
+      "description": "The maximum length of the delay line used by the"
+    },
+    {
+      "name": "pitch shifter. The mean latency of the algorithm is half this value. Octaves",
+      "min": -10,
+      "max": 10,
+      "default": 0,
+      "description": "The pitch shift amount, in octaves."
+    },
+    {
+      "name": "0 1 1 Chooses the pitch shifting algorithm, ‘2-phase’ or ‘3- phase’. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
+      "unit": "ms",
+      "min": 1,
+      "max": 682,
+      "default": 300,
+      "description": "The maximum length of the delay line used by the"
+    },
+    {
+      "name": "pitch shifter. The mean latency of the algorithm is half this value. Octaves",
+      "min": -10,
+      "max": 10,
+      "default": 0,
+      "description": "The pitch shift amount, in octaves."
     }
   ],
   "input_ports": [

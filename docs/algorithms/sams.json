@@ -14,7 +14,10 @@
       "minValue": -200.0,
       "maxValue": 200.0,
       "scope": "global",
-      "description": "Sets the playback speed. Negative values play backwards."
+      "description": "Sets the playback speed. Negative values play backwards.",
+      "min": -200,
+      "max": 200,
+      "default": 100
     },
     {
       "name": "Transpose",
@@ -32,7 +35,10 @@
       "minValue": -100,
       "maxValue": 100,
       "scope": "global",
-      "description": "Adjusts the playback speed in cents."
+      "description": "Adjusts the playback speed in cents.",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Speed input",
@@ -41,18 +47,61 @@
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use for speed control, scaled as 5V for 100%."
+      "description": "The bus to use for speed control, scaled as 5V for 100%.",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Pitch input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use for 1V/octave pitch control."
+      "description": "The bus to use for 1V/octave pitch control.",
+      "min": 0,
+      "max": 28,
+      "default": 0
+    },
+    {
+      "name": "backwards. Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Transposes the playback speed in semitones."
+    },
+    {
+      "name": "100%. Pitch input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for 1V/octave pitch control.",
+      "scope": "routing"
+    },
+    {
+      "name": "backwards. Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Transposes the playback speed in semitones."
+    },
+    {
+      "name": "0 28 0 The bus to use for speed control, scaled as 5V for 100%. Pitch input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for 1V/octave pitch control.",
+      "scope": "routing"
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Pitch input",
+      "busIdRef": "Pitch input"
+    }
+  ],
   "output_ports": []
 }
