@@ -30,6 +30,9 @@ class PhysicalInputNode extends StatelessWidget {
   /// Whether to show port labels.
   final bool showLabels;
   
+  /// Callback to report each jack's global center for connection anchoring
+  final void Function(Port port, Offset globalCenter)? onPortPositionResolved;
+  
   const PhysicalInputNode({
     super.key,
     this.onPortTapped,
@@ -39,13 +42,16 @@ class PhysicalInputNode extends StatelessWidget {
     this.position = Offset.zero,
     this.jackSpacing,
     this.showLabels = true,
+    this.onPortPositionResolved,
   });
   
   @override
   Widget build(BuildContext context) {
     final ports = PhysicalPortGenerator.generatePhysicalInputPorts();
     final screenSize = MediaQuery.of(context).size;
-    final spacing = jackSpacing ?? PhysicalIONodeWidget.getOptimalSpacing(screenSize);
+    final spacing = jackSpacing ?? (
+      screenSize.height < 600 ? 28.0 : (screenSize.height > 1000 ? 42.0 : 35.0)
+    );
     
     return Semantics(
       label: 'Physical Inputs',
@@ -64,6 +70,7 @@ class PhysicalInputNode extends StatelessWidget {
         jackSpacing: spacing,
         showLabels: showLabels,
         labelAlignment: LabelAlignment.right, // Labels on right for inputs
+        onPortPositionResolved: onPortPositionResolved,
       ),
     );
   }

@@ -8,7 +8,7 @@ import 'package:nt_helper/ui/widgets/routing/physical_port_generator.dart';
 /// This widget provides the common structure and styling for both
 /// physical input and output nodes, displaying a vertical list of
 /// jack connections with appropriate spacing and visual design.
-class PhysicalIONodeWidget extends StatelessWidget {
+class PhysicalIONodeWidget extends StatefulWidget {
   /// The list of ports to display in this node.
   final List<Port> ports;
   
@@ -48,6 +48,11 @@ class PhysicalIONodeWidget extends StatelessWidget {
   /// The alignment of labels relative to jacks.
   final LabelAlignment labelAlignment;
   
+  /// Callback invoked after layout to report each port jack's global center
+  /// position. This enables the canvas to anchor connections precisely to
+  /// the visual jack centers.
+  final void Function(Port port, Offset globalCenter)? onPortPositionResolved;
+  
   const PhysicalIONodeWidget({
     super.key,
     required this.ports,
@@ -63,7 +68,31 @@ class PhysicalIONodeWidget extends StatelessWidget {
     this.jackSpacing = 35.0,
     this.showLabels = true,
     this.labelAlignment = LabelAlignment.right,
+    this.onPortPositionResolved,
   });
+  
+  @override
+  State<PhysicalIONodeWidget> createState() => _PhysicalIONodeWidgetState();
+
+  /// Calculates the optimal spacing based on screen size.
+  static double getOptimalSpacing(Size screenSize) {
+    // Base spacing: 35px (optimal for touch)
+    const double baseSpacing = 35.0;
+    
+    // Adjust for screen height
+    if (screenSize.height < 600) {
+      return baseSpacing * 0.8; // 28px for smaller screens
+    } else if (screenSize.height > 1000) {
+      return baseSpacing * 1.2; // 42px for larger screens
+    }
+    
+    return baseSpacing;
+  }
+}
+
+class _PhysicalIONodeWidgetState extends State<PhysicalIONodeWidget> {
+  // Maintain stable keys for each port's jack container so we can measure positions
+  final Map<String, GlobalKey> _portKeys = {};
   
   @override
   Widget build(BuildContext context) {
@@ -72,7 +101,7 @@ class PhysicalIONodeWidget extends StatelessWidget {
     
     return RepaintBoundary(
       child: SizedBox(
-        width: nodeWidth,
+        width: widget.nodeWidth,
         child: Container(
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainer.withValues(alpha: 0.8),
@@ -122,14 +151,14 @@ class PhysicalIONodeWidget extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            icon,
+            widget.icon,
             size: 16.0,
             color: colorScheme.primary,
           ),
           const SizedBox(width: 8.0),
           Expanded(
             child: Text(
-              title,
+              widget.title,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -144,13 +173,13 @@ class PhysicalIONodeWidget extends StatelessWidget {
   
   /// Builds the list of port widgets.
   Widget _buildPortList(BuildContext context) {
-    if (isVerticalLayout) {
+    if (widget.isVerticalLayout) {
       return SizedBox(
-        width: nodeWidth,
+        width: widget.nodeWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
-          children: ports.map((port) => _buildPortRow(context, port)).toList(),
+          children: widget.ports.map((port) => _buildPortRow(context, port)).toList(),
         ),
       );
     } else {
@@ -160,7 +189,7 @@ class PhysicalIONodeWidget extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: ports.map((port) => _buildPortColumn(context, port)).toList(),
+            children: widget.ports.map((port) => _buildPortColumn(context, port)).toList(),
           ),
         ),
       );
@@ -169,11 +198,11 @@ class PhysicalIONodeWidget extends StatelessWidget {
   
   /// Builds a single port row (for vertical layout).
   Widget _buildPortRow(BuildContext context, Port port) {
-    final isInput = labelAlignment == LabelAlignment.right;
+    final isInput = widget.labelAlignment == LabelAlignment.right;
     
     return SizedBox(
-      width: nodeWidth,
-      height: jackSpacing,
+      width: widget.nodeWidth,
+      height: widget.jackSpacing,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Row(
@@ -182,12 +211,12 @@ class PhysicalIONodeWidget extends StatelessWidget {
               isInput ? MainAxisAlignment.start : MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (!isInput && showLabels) ...[
+            if (!isInput && widget.showLabels) ...[
               Flexible(child: _buildLabel(context, port)),
               const SizedBox(width: 8.0),
             ],
             _buildJack(context, port),
-            if (isInput && showLabels) ...[
+            if (isInput && widget.showLabels) ...[
               const SizedBox(width: 8.0),
               Flexible(child: _buildLabel(context, port)),
             ],
@@ -202,13 +231,13 @@ class PhysicalIONodeWidget extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(
         vertical: 8.0,
-        horizontal: (jackSpacing - 24.0) / 2,
+        horizontal: (widget.jackSpacing - 24.0) / 2,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildJack(context, port),
-          if (showLabels) ...[
+          if (widget.showLabels) ...[
             const SizedBox(height: 4.0),
             _buildLabel(context, port),
           ],
@@ -219,16 +248,17 @@ class PhysicalIONodeWidget extends StatelessWidget {
   
   /// Builds the jack widget for a port.
   Widget _buildJack(BuildContext context, Port port) {
+    final key = _portKeys.putIfAbsent(port.id, () => GlobalKey());
     return Container(
       width: 120, // Increased width for better text readability
       height: 32, // Increased height for better visual appearance
       alignment: Alignment.center,
       child: GestureDetector(
-        key: ValueKey(port.id),
-        onTap: () => onPortTapped?.call(port),
-        onPanStart: (_) => onDragStart?.call(port),
-        onPanUpdate: (details) => onDragUpdate?.call(port, details.globalPosition),
-        onPanEnd: (details) => onDragEnd?.call(port, details.velocity.pixelsPerSecond.distance > 0 
+        key: key,
+        onTap: () => widget.onPortTapped?.call(port),
+        onPanStart: (_) => widget.onDragStart?.call(port),
+        onPanUpdate: (details) => widget.onDragUpdate?.call(port, details.globalPosition),
+        onPanEnd: (details) => widget.onDragEnd?.call(port, details.velocity.pixelsPerSecond.distance > 0 
             ? details.velocity.pixelsPerSecond 
             : Offset.zero),
         child: JackConnectionWidget(
@@ -237,7 +267,7 @@ class PhysicalIONodeWidget extends StatelessWidget {
           customWidth: 120, // Match the container width
           // Disable haptic/visual overlay for all physical ports (inputs and outputs)
           enableHapticFeedback: !PhysicalPortGenerator.isPhysicalPort(port),
-          onTap: () => onPortTapped?.call(port),
+          onTap: () => widget.onPortTapped?.call(port),
         ),
       ),
     );
@@ -257,19 +287,42 @@ class PhysicalIONodeWidget extends StatelessWidget {
     );
   }
   
-  /// Calculates the optimal spacing based on screen size.
-  static double getOptimalSpacing(Size screenSize) {
-    // Base spacing: 35px (optimal for touch)
-    const double baseSpacing = 35.0;
-    
-    // Adjust for screen height
-    if (screenSize.height < 600) {
-      return baseSpacing * 0.8; // 28px for smaller screens
-    } else if (screenSize.height > 1000) {
-      return baseSpacing * 1.2; // 42px for larger screens
-    }
-    
-    return baseSpacing;
+  // Note: Optimal spacing helper moved to widget class as a static method
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scheduleAnchorResolution();
+  }
+
+  @override
+  void didUpdateWidget(covariant PhysicalIONodeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleAnchorResolution();
+  }
+
+  void _scheduleAnchorResolution() {
+    if (widget.onPortPositionResolved == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final entry in _portKeys.entries) {
+        final ctx = entry.value.currentContext;
+        if (ctx == null) continue;
+        final render = ctx.findRenderObject() as RenderBox?;
+        if (render == null || !render.attached) continue;
+        final topLeft = render.localToGlobal(Offset.zero);
+        final size = render.size;
+        final port = widget.ports.firstWhere(
+          (p) => p.id == entry.key,
+          orElse: () => widget.ports.first,
+        );
+        // Match JackPainter geometry: jack radius = 12, inset 4 from side
+        final isInputJack = port.direction == PortDirection.input || port.direction == PortDirection.bidirectional;
+        final localCenter = isInputJack
+            ? const Offset(16, 16) // 12 radius + 4 inset, vertically centered (32 height)
+            : Offset(size.width - 16, 16);
+        widget.onPortPositionResolved?.call(port, topLeft + localCenter);
+      }
+    });
   }
 }
 

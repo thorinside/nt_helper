@@ -12,6 +12,7 @@ import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 // Removed unused imports from previous canvas split
 import 'package:nt_helper/ui/widgets/routing/connection_validator.dart';
+import 'package:nt_helper/models/physical_connection.dart';
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
 /// It composes the routing canvas and exposes the same API for compatibility.
@@ -19,19 +20,21 @@ class RoutingEditorWidget extends StatefulWidget {
   final Object? routingFactory; // ignored (decisions in cubit)
   final Size canvasSize;
   final bool showPhysicalPorts;
+  final bool showBusLabels;
   final Function(String nodeId)? onNodeSelected;
   final Function(String sourcePortId, String targetPortId)? onConnectionCreated;
   final Function(String connectionId)? onConnectionRemoved;
 
-  const RoutingEditorWidget({
+  RoutingEditorWidget({
     super.key,
     this.routingFactory,
     this.canvasSize = const Size(1200, 800),
     this.showPhysicalPorts = true,
+    bool? showBusLabels,
     this.onNodeSelected,
     this.onConnectionCreated,
     this.onConnectionRemoved,
-  });
+  }) : showBusLabels = showBusLabels ?? (canvasSize.width >= 800);
 
   @override
   State<RoutingEditorWidget> createState() => _RoutingEditorWidgetState();
@@ -49,6 +52,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   // ScrollControllers for manual pan control
   late ScrollController _horizontalScrollController;
   late ScrollController _verticalScrollController;
+  // Canvas container key for coordinate transforms
+  final GlobalKey _canvasKey = GlobalKey();
   
   // Canvas dimensions
   static const double _canvasWidth = 5000.0;
@@ -88,27 +93,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Position nodes in the center area of the 5000x5000 canvas
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    
-    // Physical inputs on the left side
-    const double inputX = centerX - 600;
-    const double inputSpacing = 70.0;
-    for (int i = 0; i < 12; i++) {
-      _nodePositions['hw_in_${i + 1}'] = Offset(
-        inputX,
-        centerY - 300 + (i * inputSpacing),
-      );
-    }
-    
-    // Physical outputs on the right side
-    const double outputX = centerX + 600;
-    const double outputSpacing = 90.0;
-    for (int i = 0; i < 8; i++) {
-      _nodePositions['hw_out_${i + 1}'] = Offset(
-        outputX,
-        centerY - 300 + (i * outputSpacing),
-      );
-    }
-    
+    // Physical port anchors are resolved dynamically by measuring widgets
     // Algorithm nodes in the center area
     const double algorithmStartX = centerX - 250;
     const double algorithmSpacing = 300.0;
@@ -167,8 +152,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       refreshing: () => _buildLoadingOverlay(context),
       persisting: () => _buildLoadingOverlay(context),
       syncing: () => _buildLoadingOverlay(context),
-      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) =>
-          _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections),
+      loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) =>
+          _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections, physicalConnections),
       error: (message) => _buildErrorState(context, message),
     );
   }
@@ -245,6 +230,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<Port> physicalOutputs,
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
+    List<PhysicalConnection> physicalConnections,
   ) {
     return Semantics(
       label: 'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
@@ -286,6 +272,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               }
             },
             child: Container(
+              key: _canvasKey,
               width: _canvasWidth,
               height: _canvasHeight,
               decoration: BoxDecoration(
@@ -318,16 +305,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     ),
                   ),
                 ),
-                // Draw connections below nodes and ignore pointer events so panning/dragging isn't blocked
+                // Nodes on middle layer (connections will draw above to overlay ports)
+                if (widget.showPhysicalPorts) ..._buildPhysicalInputNodes(physicalInputs),
+                if (widget.showPhysicalPorts) ..._buildPhysicalOutputNodes(physicalOutputs),
+                ..._buildAlgorithmNodes(algorithms),
+                // Draw connections above nodes so they appear to emanate from ports
+                if (physicalConnections.isNotEmpty)
+                  IgnorePointer(
+                    ignoring: true,
+                    child: _buildPhysicalConnectionCanvas(physicalConnections),
+                  ),
                 if (connections.isNotEmpty)
                   IgnorePointer(
                     ignoring: true,
                     child: _buildConnectionCanvas(connections),
                   ),
-                // Nodes on top (without any wrapping GestureDetector)
-                if (widget.showPhysicalPorts) ..._buildPhysicalInputNodes(physicalInputs),
-                if (widget.showPhysicalPorts) ..._buildPhysicalOutputNodes(physicalOutputs),
-                ..._buildAlgorithmNodes(algorithms),
                 if (_isDraggingConnection && _dragPosition != null) _buildTemporaryConnection(),
               ],
             ),
@@ -358,6 +350,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onDragStart: (port) => _handlePortDragStart(port),
           onDragUpdate: (port, position) => _handlePortDragUpdate(port, position),
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
+          onPortPositionResolved: (port, globalCenter) {
+            _updatePortAnchor(port.id, globalCenter);
+          },
         ),
       ),
     ];
@@ -382,6 +377,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onDragStart: (port) => _handlePortDragStart(port),
           onDragUpdate: (port, position) => _handlePortDragUpdate(port, position),
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
+          onPortPositionResolved: (port, globalCenter) {
+            _updatePortAnchor(port.id, globalCenter);
+          },
         ),
       ),
     ];
@@ -413,6 +411,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           isSelected: isSelected,
           inputLabels: algorithm.inputPorts.map((p) => p.name).toList(),
           outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
+          inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
+          outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
+          onPortPositionResolved: (portId, globalCenter, isInput) {
+            _updatePortAnchor(portId, globalCenter);
+          },
           onDragStart: () {
             if (!_isDraggingNode) {
               setState(() {
@@ -522,6 +525,64 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     );
   }
 
+  Widget _buildPhysicalConnectionCanvas(List<PhysicalConnection> physicalConnections) {
+    // Convert PhysicalConnection objects to ConnectionData for rendering
+    final connectionDataList = <ConnectionData>[];
+    
+    for (final physicalConnection in physicalConnections) {
+      final sourcePosition = _getPortPosition(physicalConnection.sourcePortId);
+      final targetPosition = _getPortPosition(physicalConnection.targetPortId);
+      if (sourcePosition == null || targetPosition == null) continue;
+      
+      // Convert PhysicalConnection to routing.Connection for ConnectionData
+      final routingConnection = Connection(
+        id: physicalConnection.id,
+        sourcePortId: physicalConnection.sourcePortId,
+        targetPortId: physicalConnection.targetPortId,
+        isGhostConnection: false, // Physical connections are solid, not ghost
+      );
+      
+      connectionDataList.add(ConnectionData(
+        connection: routingConnection,
+        sourcePosition: sourcePosition,
+        destinationPosition: targetPosition,
+        busNumber: physicalConnection.busNumber,
+        outputMode: null, // Physical connections ignore output mode styling
+        isSelected: false, // Physical connections are never selected
+        isHighlighted: false,
+        isPhysicalConnection: true, // Mark as physical connection
+        isInputConnection: physicalConnection.isInputConnection, // Pass input/output info
+      ));
+    }
+    
+    if (connectionDataList.isEmpty) return const SizedBox.shrink();
+    
+    // Create a custom theme for physical connections with distinct colors
+    final theme = Theme.of(context);
+    final physicalConnectionTheme = ConnectionVisualTheme.fromColorScheme(
+      theme.colorScheme.copyWith(
+        primary: Colors.blue,      // Use blue for input connections
+        secondary: Colors.green,   // Use green for output connections  
+        tertiary: Colors.blueGrey, // Use blue-grey for mixed connections
+      ),
+    );
+    
+    final stateManager = ConnectionStateManager(
+      theme: physicalConnectionTheme,
+      selectedConnectionIds: {}, // Physical connections are never selected
+    );
+    
+    // Return ConnectionCanvas widget with physical connection styling
+    return ConnectionCanvas(
+      connections: connectionDataList,
+      connectionStateManager: stateManager,
+      enableAntiOverlap: true,
+      showLabels: widget.showBusLabels, // Show I#/O# labels based on widget parameter
+      enableAnimations: false, // Physical connections don't need animations
+      onConnectionTapped: null, // Physical connections are not interactive
+    );
+  }
+
   Widget _buildTemporaryConnection() {
     if (_connectionSourcePortId == null || _dragPosition == null) {
       return const SizedBox.shrink();
@@ -610,7 +671,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     if (previous.physicalInputs.length != current.physicalInputs.length ||
         previous.physicalOutputs.length != current.physicalOutputs.length ||
         previous.algorithms.length != current.algorithms.length ||
-        previous.connections.length != current.connections.length) {
+        previous.connections.length != current.connections.length ||
+        previous.physicalConnections.length != current.physicalConnections.length) {
       return true;
     }
     for (int i = 0; i < current.algorithms.length; i++) {
@@ -646,6 +708,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return true;
       }
     }
+    
+    // Check physical connections for changes
+    if (previous.physicalConnections.length != current.physicalConnections.length) return true;
+    for (int i = 0; i < current.physicalConnections.length; i++) {
+      if (i >= previous.physicalConnections.length) return true;
+      final prev = previous.physicalConnections[i];
+      final curr = current.physicalConnections[i];
+      if (prev.id != curr.id || 
+          prev.sourcePortId != curr.sourcePortId || 
+          prev.targetPortId != curr.targetPortId ||
+          prev.busNumber != curr.busNumber ||
+          prev.algorithmIndex != curr.algorithmIndex) {
+        return true;
+      }
+    }
+    
     return false;
   }
 
@@ -690,7 +768,29 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         );
       }
     }
-    // Algorithm ports could be added similarly if needed
+    // Algorithm ports
+    for (final algo in state.algorithms) {
+      for (final p in algo.inputPorts) {
+        if (p.id == portId) {
+          return core_port.Port(
+            id: p.id,
+            name: p.name,
+            type: _mapUiToCoreType(p.type),
+            direction: core_port.PortDirection.input,
+          );
+        }
+      }
+      for (final p in algo.outputPorts) {
+        if (p.id == portId) {
+          return core_port.Port(
+            id: p.id,
+            name: p.name,
+            type: _mapUiToCoreType(p.type),
+            direction: core_port.PortDirection.output,
+          );
+        }
+      }
+    }
     return null;
   }
   core_port.PortType _mapUiToCoreType(PortType type) { /* same mapping as canvas */
@@ -706,9 +806,52 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
   }
   Offset? _getPortPosition(String portId) {
-    final pos = _nodePositions[portId];
-    if (pos != null) return Offset(pos.dx + 60, pos.dy + 20);
+    // First use measured anchors if available
+    final anchored = _nodePositions[portId];
+    if (anchored != null) return anchored;
+    
+    // Next, try to resolve algorithm port IDs by looking them up in the loaded state
+    // We search all algorithm nodes for a matching port ID and anchor to that node.
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is RoutingEditorStateLoaded) {
+      for (final algo in routingState.algorithms) {
+        // Check inputs
+        final inputIndex = algo.inputPorts.indexWhere((p) => p.id == portId);
+        if (inputIndex != -1) {
+          final nodeId = 'algorithm_${algo.index}';
+          final nodePos = _nodePositions[nodeId];
+          if (nodePos != null) {
+            // Anchor to left edge for inputs; simple vertical offset near top
+            const portOffset = Offset(0, 60);
+            return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
+          }
+        }
+        // Check outputs
+        final outputIndex = algo.outputPorts.indexWhere((p) => p.id == portId);
+        if (outputIndex != -1) {
+          final nodeId = 'algorithm_${algo.index}';
+          final nodePos = _nodePositions[nodeId];
+          if (nodePos != null) {
+            // Anchor to right edge for outputs; simple vertical offset near top
+            const portOffset = Offset(240, 60);
+            return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
+          }
+        }
+      }
+    }
+    
     return null;
+  }
+
+  void _updatePortAnchor(String portId, Offset globalCenter) {
+    final ctx = _canvasKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return;
+    final local = box.globalToLocal(globalCenter);
+    setState(() {
+      _nodePositions[portId] = local;
+    });
   }
 }
 

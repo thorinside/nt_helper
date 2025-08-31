@@ -6,8 +6,8 @@ import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_validator.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_port_generator.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
@@ -15,6 +15,11 @@ import 'package:mockito/annotations.dart';
 import 'physical_io_integration_test.mocks.dart';
 
 void main() {
+  setUpAll(() {
+    // Provide dummy values for Mockito
+    provideDummy<RoutingEditorState>(const RoutingEditorState.initial());
+  });
+
   group('Physical I/O Integration Tests', () {
     late MockRoutingEditorCubit mockCubit;
     
@@ -23,13 +28,39 @@ void main() {
     });
     
     testWidgets('Physical nodes render correctly in RoutingEditorWidget', (tester) async {
-      // Arrange
+      // Arrange - provide some physical ports to trigger rendering
+      final physicalInputs = PhysicalPortGenerator.generatePhysicalInputPorts();
+      final physicalOutputs = PhysicalPortGenerator.generatePhysicalOutputPorts();
+      
+      // Convert core Port objects to UI Port objects  
+      final uiPhysicalInputs = physicalInputs.map((corePort) => Port(
+        id: corePort.id,
+        name: corePort.name,
+        type: PortType.audio,
+        direction: PortDirection.output,
+      )).toList();
+      
+      final uiPhysicalOutputs = physicalOutputs.map((corePort) => Port(
+        id: corePort.id,
+        name: corePort.name,
+        type: PortType.audio,
+        direction: PortDirection.input,
+      )).toList();
+      
       when(mockCubit.state).thenReturn(
-        const RoutingEditorState.loaded(
-          physicalInputs: [],
-          physicalOutputs: [],
-          algorithms: [],
-          connections: [],
+        RoutingEditorState.loaded(
+          physicalInputs: uiPhysicalInputs,
+          physicalOutputs: uiPhysicalOutputs,
+          algorithms: const [],
+          connections: const [],
+          physicalConnections: const [],
+          buses: const [],
+          portOutputModes: const {},
+          isHardwareSynced: true,
+          isPersistenceEnabled: false,
+          lastSyncTime: DateTime.now(),
+          lastPersistTime: null,
+          lastError: null,
         ),
       );
       when(mockCubit.stream).thenAnswer((_) => const Stream.empty());
@@ -40,7 +71,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<RoutingEditorCubit>.value(
               value: mockCubit,
-              child: const RoutingEditorWidget(
+              child: RoutingEditorWidget(
                 canvasSize: Size(1200, 800),
                 showPhysicalPorts: true,
               ),
@@ -133,15 +164,39 @@ void main() {
     });
     
     testWidgets('Drag and drop creates valid connections', (tester) async {
-      // Arrange
-      // no-op capture; we validate creation path indirectly in widget tree
+      // Arrange - provide some physical ports to trigger rendering
+      final physicalInputs = PhysicalPortGenerator.generatePhysicalInputPorts();
+      final physicalOutputs = PhysicalPortGenerator.generatePhysicalOutputPorts();
+      
+      // Convert core Port objects to UI Port objects  
+      final uiPhysicalInputs = physicalInputs.map((corePort) => Port(
+        id: corePort.id,
+        name: corePort.name,
+        type: PortType.audio,
+        direction: PortDirection.output,
+      )).toList();
+      
+      final uiPhysicalOutputs = physicalOutputs.map((corePort) => Port(
+        id: corePort.id,
+        name: corePort.name,
+        type: PortType.audio,
+        direction: PortDirection.input,
+      )).toList();
       
       when(mockCubit.state).thenReturn(
-        const RoutingEditorState.loaded(
-          physicalInputs: [],
-          physicalOutputs: [],
-          algorithms: [],
-          connections: [],
+        RoutingEditorState.loaded(
+          physicalInputs: uiPhysicalInputs,
+          physicalOutputs: uiPhysicalOutputs,
+          algorithms: const [],
+          connections: const [],
+          physicalConnections: const [],
+          buses: const [],
+          portOutputModes: const {},
+          isHardwareSynced: true,
+          isPersistenceEnabled: false,
+          lastSyncTime: DateTime.now(),
+          lastPersistTime: null,
+          lastError: null,
         ),
       );
       when(mockCubit.stream).thenAnswer((_) => const Stream.empty());

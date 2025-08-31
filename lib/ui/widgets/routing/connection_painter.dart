@@ -12,6 +12,8 @@ class ConnectionData {
   final String? outputMode; // 'mix' or 'replace'
   final bool isSelected;
   final bool isHighlighted;
+  final bool isPhysicalConnection; // True if this is a physical connection
+  final bool? isInputConnection; // True if physical input connection, false if output, null if not physical
 
   const ConnectionData({
     required this.connection,
@@ -21,6 +23,8 @@ class ConnectionData {
     this.outputMode,
     this.isSelected = false,
     this.isHighlighted = false,
+    this.isPhysicalConnection = false,
+    this.isInputConnection,
   });
 
   /// Convenience getter for ghost connection status from the connection model
@@ -334,17 +338,35 @@ class ConnectionPainter extends CustomPainter {
     final metrics = path.computeMetrics();
     if (metrics.isEmpty) return;
 
-    final metric = metrics.first;
+    // Safe access to first metric
+    final metricsIterator = metrics.iterator;
+    if (!metricsIterator.moveNext()) return;
+    final metric = metricsIterator.current;
+
     final midDistance = metric.length * 0.5;
     final tangent = metric.getTangentForOffset(midDistance);
     if (tangent == null) return;
 
     final midPoint = tangent.position;
 
-    // Create label text
-    String label = 'Bus ${conn.busNumber}';
-    if (conn.outputMode == 'replace') {
-      label += ' (R)';
+    // Create label text based on connection type
+    String label;
+    if (conn.isPhysicalConnection && conn.isInputConnection != null) {
+      // Physical connection: format as "I#" for inputs, "O#" for outputs
+      if (conn.isInputConnection!) {
+        // Input connections use bus numbers 1-12
+        label = 'I${conn.busNumber}';
+      } else {
+        // Output connections use bus numbers 13-20, map to output numbers 1-8
+        final outputNumber = conn.busNumber! - 12;
+        label = 'O$outputNumber';
+      }
+    } else {
+      // User connection: format as "Bus #"
+      label = 'Bus ${conn.busNumber}';
+      if (conn.outputMode == 'replace') {
+        label += ' (R)';
+      }
     }
 
     // Draw label background

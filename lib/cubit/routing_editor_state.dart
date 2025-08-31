@@ -113,6 +113,7 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     required List<Port> physicalOutputs, // 8 physical output ports
     required List<RoutingAlgorithm> algorithms, // Algorithms with their ports
     required List<Connection> connections, // All routing connections
+    @Default([]) List<PhysicalConnection> physicalConnections, // Discovered physical connections
     @Default([]) List<RoutingBus> buses, // Available routing buses
     @Default({}) Map<String, OutputMode> portOutputModes, // Output modes per port
     @Default(false) bool isHardwareSynced, // Hardware sync status

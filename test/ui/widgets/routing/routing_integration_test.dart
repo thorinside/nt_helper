@@ -63,7 +63,7 @@ void main() {
         home: Scaffold(
           body: BlocProvider<RoutingEditorCubit>.value(
             value: mockCubit,
-            child: canvas ?? const RoutingEditorWidget(),
+            child: canvas ?? RoutingEditorWidget(),
           ),
         ),
       );
@@ -265,7 +265,7 @@ void main() {
         const customSize = Size(1000, 800);
         
         await tester.pumpWidget(createTestWidget(
-          canvas: const RoutingEditorWidget(canvasSize: customSize),
+          canvas: RoutingEditorWidget(canvasSize: customSize),
           initialState: const RoutingEditorState.loaded(
             physicalInputs: [],
             physicalOutputs: [],

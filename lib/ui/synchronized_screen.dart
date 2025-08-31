@@ -287,7 +287,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         IconButton(
                           icon: const Icon(Icons.refresh),
                           onPressed: state.maybeWhen(
-                            loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => () {
+                            loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => () {
                               context.read<RoutingEditorCubit>().refreshRouting();
                             },
                             orElse: () => null,
@@ -318,7 +318,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                          loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => const Icon(Icons.circle, color: Colors.green),
+                          loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => const Icon(Icons.circle, color: Colors.green),
                           error: (_) => const Icon(Icons.circle, color: Colors.red),
                         ),
                       ],

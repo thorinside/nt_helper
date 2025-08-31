@@ -29,6 +29,11 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final VoidCallback? onTap;
   final List<String> inputLabels;
   final List<String> outputLabels;
+  // Port IDs aligned with labels, used for accurate connection anchors
+  final List<String>? inputPortIds;
+  final List<String>? outputPortIds;
+  // Callback to report per-port anchor global position
+  final void Function(String portId, Offset globalCenter, bool isInput)? onPortPositionResolved;
   
   const AlgorithmNodeWidget({
     super.key,
@@ -46,6 +51,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onTap,
     this.inputLabels = const [],
     this.outputLabels = const [],
+    this.inputPortIds,
+    this.outputPortIds,
+    this.onPortPositionResolved,
   });
   
   @override
@@ -201,7 +209,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: List.generate(widget.inputLabels.length, (index) =>
-              _buildPort(theme, widget.inputLabels[index], true),
+              _buildPort(
+                theme,
+                widget.inputLabels[index],
+                true,
+                portId: (widget.inputPortIds != null && index < widget.inputPortIds!.length)
+                    ? widget.inputPortIds![index]
+                    : null,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -212,7 +227,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: List.generate(widget.outputLabels.length, (index) =>
-              _buildPort(theme, widget.outputLabels[index], false),
+              _buildPort(
+                theme,
+                widget.outputLabels[index],
+                false,
+                portId: (widget.outputPortIds != null && index < widget.outputPortIds!.length)
+                    ? widget.outputPortIds![index]
+                    : null,
+              ),
             ),
           ),
         ],
@@ -220,8 +242,10 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     );
   }
   
-  Widget _buildPort(ThemeData theme, String label, bool isInput, {bool alignEnd = false}) {
-    return Padding(
+  Widget _buildPort(ThemeData theme, String label, bool isInput, {bool alignEnd = false, String? portId}) {
+    // Key to measure the dot center position
+    final dotKey = GlobalKey();
+    final widgetRow = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -235,6 +259,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             const SizedBox(width: 4),
           ],
           Container(
+            key: dotKey,
             width: 12,
             height: 12,
             decoration: BoxDecoration(
@@ -256,6 +281,19 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         ],
       ),
     );
+    // Schedule anchor resolution after layout
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.onPortPositionResolved == null || portId == null) return;
+      final ctx = dotKey.currentContext;
+      if (ctx == null) return;
+      final render = ctx.findRenderObject() as RenderBox?;
+      if (render == null || !render.attached) return;
+      final topLeft = render.localToGlobal(Offset.zero);
+      final size = render.size; // 12x12
+      final center = topLeft + Offset(size.width / 2, size.height / 2);
+      widget.onPortPositionResolved!(portId, center, isInput);
+    });
+    return widgetRow;
   }
 
   String _truncateWithEllipsis(String text, int maxChars) {

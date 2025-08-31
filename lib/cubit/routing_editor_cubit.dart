@@ -13,6 +13,7 @@ import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/models/physical_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'routing_editor_cubit.freezed.dart';
@@ -61,7 +62,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
-  /// Extract routing data from synchronized state and build visual representation
+  /// Extract routing data from synchronized state and build visual representation.
+  /// 
+  /// This method implements performance optimization by only being called when the 
+  /// DistingCubit's synchronized state changes, ensuring physical connection discovery 
+  /// only runs when algorithm parameters or slots change, not on every UI rebuild.
   void _processSynchronizedState(List<Slot> slots) {
     try {
       // Create physical hardware ports
@@ -70,6 +75,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       
       // Build algorithm representations with ports determined by AlgorithmRouting
       final algorithms = <RoutingAlgorithm>[];
+      final allPhysicalConnections = <PhysicalConnection>[];
       final RoutingFactory factory = RoutingServiceLocator.routingFactory;
       for (int i = 0; i < slots.length; i++) {
         final slot = slots[i];
@@ -111,9 +117,36 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               .toList(),
         );
         algorithms.add(routingAlgorithm);
+        
+        // Discover physical connections for this algorithm
+        final algorithmPhysicalConnections = _createPhysicalConnectionsForAlgorithm(routing, slot, i);
+        allPhysicalConnections.addAll(algorithmPhysicalConnections);
       }
       
-      // No connections for now - will be handled by AlgorithmRouting hierarchy
+      // Sort all physical connections globally for stable presentation:
+      // 1. By algorithm index
+      // 2. By connection type (input connections first)
+      // 3. By source port ID, then target port ID
+      allPhysicalConnections.sort((a, b) {
+        // First, sort by algorithm index
+        final algorithmComparison = a.algorithmIndex.compareTo(b.algorithmIndex);
+        if (algorithmComparison != 0) {
+          return algorithmComparison;
+        }
+        // Within same algorithm, input connections before output connections
+        if (a.isInputConnection != b.isInputConnection) {
+          return a.isInputConnection ? -1 : 1;
+        }
+        // Within same connection type, sort by source port ID
+        final sourceComparison = a.sourcePortId.compareTo(b.sourcePortId);
+        if (sourceComparison != 0) {
+          return sourceComparison;
+        }
+        // If source ports are same, sort by target port ID
+        return a.targetPortId.compareTo(b.targetPortId);
+      });
+      
+      // No user connections for now - will be handled by AlgorithmRouting hierarchy
       final connections = <Connection>[];
 
       emit(RoutingEditorState.loaded(
@@ -121,6 +154,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         physicalOutputs: physicalOutputs,
         algorithms: algorithms,
         connections: connections,
+        physicalConnections: allPhysicalConnections,
         isHardwareSynced: true,
         lastSyncTime: DateTime.now(),
       ));
@@ -262,11 +296,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final lower = label.toLowerCase();
         if (lower.contains('trigger') || lower.contains('mark') || lower.contains('stop')) type = 'gate';
         else if (lower.contains('cv')) type = 'cv';
-        declaredInputs.add({
+        final inputMap = <String, Object?>{
           'id': 'in_${label.replaceAll(' ', '_').toLowerCase()}',
           'name': label,
           'type': type,
-        });
+          if (busRef != null) 'busParam': busRef,
+        };
+        // Fallback: if metadata lacks busRef, try to match a parameter with same/similar name
+        if (busRef == null) {
+          final p = _findParameterByName(slot, label);
+          if (p != null && p.parameterNumber >= 0) {
+            inputMap['busParam'] = p.name;
+          }
+        }
+        declaredInputs.add(inputMap);
       }
     }
 
@@ -277,11 +320,73 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final busRef = op.busIdRef;
         final labelFromParam = busRef != null && paramsByName.containsKey(busRef) ? busRef : null;
         final label = labelFromParam ?? op.name;
-        declaredOutputs.add({
+        final outMap = <String, Object?>{
           'id': 'out_${label.replaceAll(' ', '_').toLowerCase()}',
           'name': label,
           'type': 'audio',
-        });
+          if (busRef != null) 'busParam': busRef,
+        };
+        // Fallback: if metadata lacks busRef, try to match by parameter name
+        if (busRef == null) {
+          final p = _findParameterByName(slot, label);
+          if (p != null && p.parameterNumber >= 0) {
+            outMap['busParam'] = p.name;
+          }
+        }
+        declaredOutputs.add(outMap);
+      }
+    }
+
+    // Fallback: if metadata lacked some ports or didn't provide busRef, synthesize from parameters
+    // Inputs from parameter names (e.g., "Pitch input", "Wave input", "Gate input")
+    for (final entry in paramsByName.entries) {
+      final pname = entry.key;
+      final lower = pname.toLowerCase();
+      final hasInputWord = lower.contains('input');
+      final looksLikeBus = hasInputWord && !lower.contains('mode');
+      if (looksLikeBus) {
+        final already = declaredInputs.any((m) => (m['name'] as String).toLowerCase() == lower);
+        if (!already) {
+          String type = 'audio';
+          if (lower.contains('cv')) type = 'cv';
+          if (lower.contains('gate') || lower.contains('trigger')) type = 'gate';
+          declaredInputs.add({
+            'id': 'in_${pname.replaceAll(' ', '_').toLowerCase()}',
+            'name': pname,
+            'type': type,
+            'busParam': pname,
+          });
+        } else {
+          // Ensure existing record has busParam
+          final idx = declaredInputs.indexWhere((m) => (m['name'] as String).toLowerCase() == lower);
+          if (idx >= 0 && declaredInputs[idx]['busParam'] == null) {
+            declaredInputs[idx]['busParam'] = pname;
+          }
+        }
+      }
+    }
+
+    // Outputs from parameter names (e.g., "Left output", "Right output", "Output", "Output bus")
+    for (final entry in paramsByName.entries) {
+      final pname = entry.key;
+      final lower = pname.toLowerCase();
+      final hasOutputWord = lower.contains('output');
+      final looksLikeBus = hasOutputWord && !lower.contains('mode');
+      if (looksLikeBus) {
+        final already = declaredOutputs.any((m) => (m['name'] as String).toLowerCase() == lower);
+        if (!already) {
+          declaredOutputs.add({
+            'id': 'out_${pname.replaceAll(' ', '_').toLowerCase()}',
+            'name': pname,
+            'type': 'audio',
+            'busParam': pname,
+          });
+        } else {
+          final idx = declaredOutputs.indexWhere((m) => (m['name'] as String).toLowerCase() == lower);
+          if (idx >= 0 && declaredOutputs[idx]['busParam'] == null) {
+            declaredOutputs[idx]['busParam'] = pname;
+          }
+        }
       }
     }
 
@@ -419,6 +524,223 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       const Port(id: 'hw_out_7', name: 'Audio Out 7', type: PortType.audio, direction: PortDirection.output),
       const Port(id: 'hw_out_8', name: 'Audio Out 8', type: PortType.audio, direction: PortDirection.output),
     ];
+  }
+
+  /// Resolve the bus number for a given port based on its metadata and slot parameters.
+  /// 
+  /// Returns the bus number (1-12 for inputs, 13-20 for outputs) or null if no bus is assigned.
+  /// 
+  /// Resolution strategy:
+  /// 1. Check port.metadata['busParam'] and lookup in slot parameters
+  /// 2. Fall back to poly gate/CV logic if applicable
+  /// 3. Handle edge cases: bus 0 ("None"), missing params, invalid ranges
+  int? _getBusNumberForPort(core_port.Port port, Slot slot) {
+    // Strategy 1: Use busParam from port metadata
+    final busParam = port.metadata?['busParam'] as String?;
+    if (busParam != null) {
+      // Find the parameter in the slot (robust match)
+      final paramInfo = _findParameterByName(slot, busParam);
+      if (paramInfo != null && paramInfo.parameterNumber >= 0) {
+        // Get the current value for this parameter
+        final paramValue = slot.values
+            .where((v) => v.parameterNumber == paramInfo.parameterNumber)
+            .firstOrNull;
+        final busValue = paramValue?.value ?? paramInfo.defaultValue;
+        
+        // Validate bus number range
+        if (busValue > 0 && busValue <= 20) {
+          return busValue;
+        }
+        // Bus 0 means "None" - no physical connection
+        if (busValue == 0) {
+          return null;
+        }
+      }
+    }
+
+    // Strategy 2: Fall back to polyphonic gate/CV logic
+    if (port.metadata?['isGateInput'] == true) {
+      // For gate inputs, use the gateBus from metadata
+      final gateBus = port.metadata?['gateBus'] as int?;
+      if (gateBus != null && gateBus > 0 && gateBus <= 12) {
+        return gateBus;
+      }
+    }
+
+    // CV inputs: for poly, CV ports immediately follow the gate bus.
+    // PolyAlgorithmRouting sets metadata {'isGateDrivenCV': true, 'suggestedBus': gateBus + cvNumber}
+    // Also honor a generic 'suggestedBus' even without the flag, to support other sources.
+    final isGateDrivenCv = port.metadata?['isGateDrivenCV'] == true;
+    final suggestedBus = port.metadata?['suggestedBus'] as int?;
+    if (isGateDrivenCv || suggestedBus != null) {
+      if (suggestedBus != null && suggestedBus > 0 && suggestedBus <= 12) {
+        return suggestedBus;
+      }
+    }
+
+    // Strategy 3: No bus assignment found
+    return null;
+  }
+
+  /// Tries to find a parameter by name with tolerant matching.
+  /// 1) Exact match
+  /// 2) Case-insensitive match
+  /// 3) Normalized match (strip non-alphanum, collapse spaces)
+  /// 4) Contains match on normalized names
+  ParameterInfo? _findParameterByName(Slot slot, String name) {
+    // Exact
+    final exact = slot.parameters.where((p) => p.name == name).firstOrNull;
+    if (exact != null) return exact;
+
+    final targetNorm = _normalizeName(name);
+
+    // Case-insensitive
+    final ci = slot.parameters
+        .where((p) => p.name.toLowerCase() == name.toLowerCase())
+        .firstOrNull;
+    if (ci != null) return ci;
+
+    // Normalized equality
+    final normEq = slot.parameters
+        .where((p) => _normalizeName(p.name) == targetNorm)
+        .firstOrNull;
+    if (normEq != null) return normEq;
+
+    // Contains (either direction) on normalized strings
+    final contains = slot.parameters
+        .where((p) {
+          final pn = _normalizeName(p.name);
+          return pn.contains(targetNorm) || targetNorm.contains(pn);
+        })
+        .firstOrNull;
+    return contains;
+  }
+
+  String _normalizeName(String s) {
+    return s
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  /// Discover physical input connections from hardware inputs (buses 1-12) to algorithm input ports.
+  /// 
+  /// Returns a list of PhysicalConnection instances representing connections from physical
+  /// hardware jacks to algorithm input ports based on bus assignments.
+  List<PhysicalConnection> _createPhysicalInputConnections(
+    core_routing.AlgorithmRouting routing,
+    Slot slot,
+    int algorithmIndex,
+  ) {
+    final connections = <PhysicalConnection>[];
+    
+    // Get all input ports from the algorithm routing
+    final inputPorts = routing.inputPorts;
+    
+    for (final port in inputPorts) {
+      // Resolve the bus number for this port
+      final busNumber = _getBusNumberForPort(port, slot);
+      
+      // Only create connections for valid input buses (1-12)
+      if (busNumber != null && busNumber >= 1 && busNumber <= 12) {
+        // Map bus number to hardware input port ID
+        final hardwarePortId = 'hw_in_$busNumber';
+        
+        // Create the physical connection
+        final connection = PhysicalConnection.withGeneratedId(
+          sourcePortId: hardwarePortId,
+          targetPortId: port.id,
+          busNumber: busNumber,
+          isInputConnection: true,
+          algorithmIndex: algorithmIndex,
+        );
+        
+        connections.add(connection);
+      }
+    }
+    
+    return connections;
+  }
+
+  /// Discover physical output connections from algorithm output ports to hardware outputs (buses 13-20).
+  /// 
+  /// Returns a list of PhysicalConnection instances representing connections from algorithm
+  /// output ports to physical hardware jacks based on bus assignments.
+  List<PhysicalConnection> _createPhysicalOutputConnections(
+    core_routing.AlgorithmRouting routing,
+    Slot slot,
+    int algorithmIndex,
+  ) {
+    final connections = <PhysicalConnection>[];
+    
+    // Get all output ports from the algorithm routing
+    final outputPorts = routing.outputPorts;
+    
+    for (final port in outputPorts) {
+      // Resolve the bus number for this port
+      final busNumber = _getBusNumberForPort(port, slot);
+      
+      // Only create connections for valid output buses (13-20)
+      if (busNumber != null && busNumber >= 13 && busNumber <= 20) {
+        // Map bus number to hardware output port ID (13->1, 14->2, ..., 20->8)
+        final hardwarePortNumber = busNumber - 12;
+        final hardwarePortId = 'hw_out_$hardwarePortNumber';
+        
+        // Create the physical connection
+        final connection = PhysicalConnection.withGeneratedId(
+          sourcePortId: port.id,
+          targetPortId: hardwarePortId,
+          busNumber: busNumber,
+          isInputConnection: false,
+          algorithmIndex: algorithmIndex,
+        );
+        
+        connections.add(connection);
+      }
+    }
+    
+    return connections;
+  }
+
+  /// Create physical connections for a single algorithm by combining input and output discovery.
+  /// 
+  /// This is the integrated method that combines both input and output physical connection
+  /// discovery for a given algorithm, providing a complete view of its physical routing.
+  /// 
+  /// Returns a list of PhysicalConnection instances sorted by connection type and port ID
+  /// for stable diffing and consistent UI presentation.
+  List<PhysicalConnection> _createPhysicalConnectionsForAlgorithm(
+    core_routing.AlgorithmRouting routing,
+    Slot slot,
+    int algorithmIndex,
+  ) {
+    final connections = <PhysicalConnection>[];
+    
+    // Discover input connections (physical inputs to algorithm inputs)
+    connections.addAll(_createPhysicalInputConnections(routing, slot, algorithmIndex));
+    
+    // Discover output connections (algorithm outputs to physical outputs)
+    connections.addAll(_createPhysicalOutputConnections(routing, slot, algorithmIndex));
+    
+    // Sort connections for stable presentation:
+    // 1. Input connections first, then output connections
+    // 2. Within each type, sort by source port ID then target port ID
+    connections.sort((a, b) {
+      // Input connections before output connections
+      if (a.isInputConnection != b.isInputConnection) {
+        return a.isInputConnection ? -1 : 1;
+      }
+      // Within same connection type, sort by source port ID
+      final sourceComparison = a.sourcePortId.compareTo(b.sourcePortId);
+      if (sourceComparison != 0) {
+        return sourceComparison;
+      }
+      // If source ports are same, sort by target port ID
+      return a.targetPortId.compareTo(b.targetPortId);
+    });
+    
+    return connections;
   }
 
   /// Create a new connection between source and target ports
