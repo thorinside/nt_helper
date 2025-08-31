@@ -159,6 +159,24 @@
       "scope": "global"
     },
     {
+      "name": "Left output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 14,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The right output bus.",
+      "scope": "routing"
+    },
+    {
       "name": "Global gain",
       "unit": "dB",
       "min": -40,
@@ -297,6 +315,14 @@
       "name": "Audio Output",
       "description": "Main audio output.",
       "busIdRef": "Output bus"
+    },
+    {
+      "name": "Left output",
+      "busIdRef": "Left output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
     }
   ]
 }

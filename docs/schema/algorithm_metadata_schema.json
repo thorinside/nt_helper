@@ -7,8 +7,8 @@
   "properties": {
     "guid": {
       "type": "string",
-      "pattern": "^[a-z0-9]{4}$",
-      "description": "4-letter algorithm identifier"
+      "pattern": "^[a-zA-Z0-9 ]{4}$",
+      "description": "4-character algorithm identifier (letters, numbers, spaces allowed - case insensitive)"
     },
     "name": {
       "type": "string",
@@ -154,8 +154,17 @@
         },
         "scope": {
           "type": "string",
-          "enum": ["global", "per-channel", "per-trigger", "operator", "program", "mix", "routing", "vco", "gain", "filter", "animate", "channel"],
-          "description": "Parameter scope"
+          "enum": [
+            "animate", "channel", "channel 1", "channel 2", "channel 3", "channel 4", 
+            "channel 5", "channel 6", "channel 7", "channel 8", "channel-send", 
+            "common", "controls", "converter", "countdown", "cv", "expression", 
+            "filter", "gain", "global", "harmony", "loop", "MIDI", "mix", "noise", 
+            "operator", "per-channel", "per-trigger", "per-trigger envelope", 
+            "per-trigger setup", "per-voice", "program", "randomise", "register", 
+            "routing", "sample rate", "send", "sequencer", "setup", "step", 
+            "switch", "timbre", "track", "tracker", "trigger", "VCO", "vocoder"
+          ],
+          "description": "Parameter scope - defines the functional grouping or context of the parameter"
         },
         "description": {
           "type": "string",
@@ -177,7 +186,7 @@
         },
         "type": {
           "type": "string",
-          "enum": ["file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate"],
+          "enum": ["file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate", "string"],
           "description": "Parameter type"
         },
         "busIdRef": {

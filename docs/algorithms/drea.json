@@ -161,6 +161,15 @@
       "description": ""
     },
     {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": ""
+    },
+    {
       "name": "0.0 % Sets the position within the wavetable. Wave input",
       "min": 0,
       "max": 28,
@@ -570,6 +579,10 @@
     {
       "name": "Left output",
       "busIdRef": "Left output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
     }
   ]
 }

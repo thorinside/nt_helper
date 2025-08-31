@@ -148,11 +148,47 @@
       ]
     },
     {
+      "name": "Left/mono input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": ""
+    },
+    {
       "name": "Right input",
       "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 2,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Left/mono output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Speed input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
       "scope": "routing",
       "description": ""
     },
@@ -251,9 +287,26 @@
   ],
   "input_ports": [
     {
+      "name": "Left/mono input",
+      "busIdRef": "Left/mono input"
+    },
+    {
       "name": "Right input",
       "busIdRef": "Right input"
+    },
+    {
+      "name": "Speed input",
+      "busIdRef": "Speed input"
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "busIdRef": "Left/mono output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
+    }
+  ]
 }

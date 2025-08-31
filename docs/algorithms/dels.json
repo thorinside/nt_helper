@@ -301,6 +301,15 @@
       "description": ""
     },
     {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": ""
+    },
+    {
       "name": "V/oct input",
       "unit": "bus",
       "min": 0,
@@ -470,6 +479,10 @@
     {
       "name": "Left output",
       "busIdRef": "Left output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
     }
   ]
 }

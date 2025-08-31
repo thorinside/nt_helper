@@ -236,14 +236,35 @@
     }
   ],
   "input_ports": [
-    "Audio",
-    "CV (Frequency)",
-    "CV (Resonance)"
+    {
+      "name": "Audio",
+      "busIdRef": "Audio input"
+    },
+    {
+      "name": "CV (Frequency)",
+      "busIdRef": "CV (Frequency) input"
+    },
+    {
+      "name": "CV (Resonance)",
+      "busIdRef": "CV (Resonance) input"
+    }
   ],
   "output_ports": [
-    "Audio (Blended)",
-    "Audio (Lowpass)",
-    "Audio (Bandpass)",
-    "Audio (Highpass)"
+    {
+      "name": "Audio (Blended)",
+      "busIdRef": "Blended output"
+    },
+    {
+      "name": "Audio (Lowpass)",
+      "busIdRef": "Lowpass output"
+    },
+    {
+      "name": "Audio (Bandpass)",
+      "busIdRef": "Bandpass output"
+    },
+    {
+      "name": "Audio (Highpass)",
+      "busIdRef": "Highpass output"
+    }
   ]
 }
