@@ -49,8 +49,9 @@ extension ConnectionHelpers on Connection {
       return false;
     }
 
-    // Algorithm connections must respect execution order
-    return sourceAlgorithmIndex >= targetAlgorithmIndex;
+    // Algorithm connections via buses are valid in both directions
+    // Only self-connections are invalid
+    return sourceAlgorithmIndex == targetAlgorithmIndex;
   }
 
   /// Check if this connection involves a physical input node (algorithmIndex -2)

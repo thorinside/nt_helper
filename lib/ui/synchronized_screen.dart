@@ -287,39 +287,12 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         IconButton(
                           icon: const Icon(Icons.refresh),
                           onPressed: state.maybeWhen(
-                            loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => () {
+                            loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, algorithmConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => () {
                               context.read<RoutingEditorCubit>().refreshRouting();
                             },
                             orElse: () => null,
                           ),
                           tooltip: 'Refresh Routing',
-                        ),
-                        const SizedBox(width: 8),
-                        state.when(
-                          initial: () => const Icon(Icons.circle, color: Colors.grey),
-                          disconnected: () => const Icon(Icons.circle, color: Colors.red),
-                          connecting: () => const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          refreshing: () => const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          persisting: () => const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          syncing: () => const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) => const Icon(Icons.circle, color: Colors.green),
-                          error: (_) => const Icon(Icons.circle, color: Colors.red),
                         ),
                       ],
                     );
@@ -332,14 +305,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                return RoutingEditorWidget(
+                  return RoutingEditorWidget(
                     canvasSize: Size(constraints.maxWidth, constraints.maxHeight),
                     showPhysicalPorts: true,
                     onConnectionCreated: (source, target) {
                       context.read<RoutingEditorCubit>().createConnection(
-                            sourcePortId: source,
-                            targetPortId: target,
-                          );
+                        sourcePortId: source,
+                        targetPortId: target,
+                      );
                     },
                   );
                 },

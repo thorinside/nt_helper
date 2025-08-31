@@ -40,6 +40,8 @@ sealed class Port with _$Port {
     required String name, // Display name
     required PortType type,
     required PortDirection direction,
+    int? busNumber, // Bus number this port is connected to (1-28)
+    String? parameterName, // Name of the parameter controlling this port's bus assignment
   }) = _Port;
 }
 
@@ -114,6 +116,7 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     required List<RoutingAlgorithm> algorithms, // Algorithms with their ports
     required List<Connection> connections, // All routing connections
     @Default([]) List<PhysicalConnection> physicalConnections, // Discovered physical connections
+    @Default([]) List<AlgorithmConnection> algorithmConnections, // Discovered algorithm-to-algorithm connections
     @Default([]) List<RoutingBus> buses, // Available routing buses
     @Default({}) Map<String, OutputMode> portOutputModes, // Output modes per port
     @Default(false) bool isHardwareSynced, // Hardware sync status
