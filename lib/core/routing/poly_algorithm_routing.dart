@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
@@ -152,9 +153,14 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
 
         // Only connected gates (bus > 0) produce Gate and CV ports
         if (gateBus > 0) {
-          // Gate input port
+          // Gate input port with algorithm UUID for uniqueness
+          final algUuid = config.algorithmProperties['algorithmUuid'] as String?;
+          final gatePortId = algUuid != null 
+              ? '${algUuid}_gate_$gateNumber'
+              : 'poly_gate_in_$gateNumber';
+          
           ports.add(Port(
-            id: 'poly_gate_in_$gateNumber',
+            id: gatePortId,
             name: 'Gate $gateNumber',
             type: PortType.gate,
             direction: PortDirection.input,
@@ -164,6 +170,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               'isPolyVoice': true,
               'isGateInput': true,
               'gateBus': gateBus,
+              'busValue': gateBus,  // Store bus value for connection discovery
             },
           ));
 
@@ -171,8 +178,14 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           final cvCount = gateIndex < gateCvCounts.length ? gateCvCounts[gateIndex] : 0;
           for (int cv = 0; cv < cvCount; cv++) {
             final cvNumber = cv + 1;
+            final algUuid = config.algorithmProperties['algorithmUuid'] as String?;
+            final cvPortId = algUuid != null
+                ? '${algUuid}_gate_${gateNumber}_cv_$cvNumber'
+                : 'poly_gate_${gateNumber}_cv_$cvNumber';
+            final cvBus = gateBus + cvNumber;  // Bus mapping rule
+            
             ports.add(Port(
-              id: 'poly_gate_${gateNumber}_cv_$cvNumber',
+              id: cvPortId,
               name: 'Gate $gateNumber CV$cvNumber',
               type: PortType.cv,
               direction: PortDirection.input,
@@ -182,8 +195,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
                 'cvNumber': cvNumber,
                 'isPolyVoice': true,
                 'isGateDrivenCV': true,
-                // Bus mapping rule: bus = gateBus + cvNumber
-                'suggestedBus': gateBus + cvNumber,
+                'suggestedBus': cvBus,
+                'busValue': cvBus,  // Store actual bus value for connection discovery
               },
             ));
           }
@@ -209,6 +222,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             metadata: {
               'isExtraInput': true,
               if (item['busParam'] != null) 'busParam': item['busParam'],
+              if (item['busValue'] != null) 'busValue': item['busValue'],
+              if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
             },
           ));
         }
@@ -241,6 +256,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             metadata: {
               'isDeclaredOutput': true,
               if (item['busParam'] != null) 'busParam': item['busParam'],
+              if (item['busValue'] != null) 'busValue': item['busValue'],
+              if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
               if (item['channel'] != null) 'channel': item['channel'],
             },
           ));
@@ -413,13 +430,15 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   /// 
   /// Parameters:
   /// - [slot]: The slot containing algorithm and parameter information
-  /// - [routingParams]: Pre-extracted routing parameters (bus assignments)
+  /// - [ioParameters]: Pre-extracted routing parameters (bus assignments)
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
   static PolyAlgorithmRouting createFromSlot(
     Slot slot, {
-    required Map<String, int> routingParams,
+    required Map<String, int> ioParameters,
     String? algorithmUuid,
   }) {
+    // Ensure we have a valid algorithm UUID
+    final algId = algorithmUuid ?? 'algo_${slot.algorithm.guid}_${DateTime.now().millisecondsSinceEpoch}';
     // Extract gate configuration per CV/Gate Setup spec
     final gateInputs = <int>[];
     final gateCvCounts = <int>[];
@@ -427,11 +446,11 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     // Process all 6 possible gates
     for (int i = 1; i <= 6; i++) {
       // Gate input bus (0 = None, 1-28 = bus assignment)
-      final gateBus = routingParams['Gate input $i'] ?? 0;
+      final gateBus = ioParameters['Gate input $i'] ?? 0;
       gateInputs.add(gateBus);
       
       // CV count for this gate (only relevant if gate is connected)
-      final cvCount = routingParams['Gate $i CV count'] ?? 0;
+      final cvCount = ioParameters['Gate $i CV count'] ?? 0;
       gateCvCounts.add(cvCount);
     }
     
@@ -445,7 +464,12 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     final inputPorts = <Map<String, Object?>>[];
     final outputPorts = <Map<String, Object?>>[];
     
-    for (final entry in routingParams.entries) {
+    // Find parameter info for each io parameter to get parameter numbers
+    final paramsByName = <String, ParameterInfo>{
+      for (final p in slot.parameters) p.name: p,
+    };
+    
+    for (final entry in ioParameters.entries) {
       final paramName = entry.key;
       final busValue = entry.value;
       
@@ -457,6 +481,10 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       
       // Skip unconnected parameters (bus value 0 means "None")
       if (busValue == 0) continue;
+      
+      // Get parameter number for unique ID generation
+      final paramInfo = paramsByName[paramName];
+      final paramNumber = paramInfo?.parameterNumber ?? 0;
       
       // Determine if this is an input or output based on parameter name
       final lowerName = paramName.toLowerCase();
@@ -473,11 +501,12 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       }
       
       final port = {
-        'id': '${isOutput ? "out" : "in"}_${paramName.replaceAll(' ', '_').toLowerCase()}',
+        'id': '${algId}_param_$paramNumber',  // Unique ID with algorithm UUID and parameter number
         'name': paramName,
         'type': portType,
         'busParam': paramName,
         'busValue': busValue,
+        'parameterNumber': paramNumber,
       };
       
       if (isOutput) {
@@ -511,9 +540,11 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       algorithmProperties: {
         'algorithmGuid': slot.algorithm.guid,
         'algorithmName': slot.algorithm.name,
-        'algorithmUuid': algorithmUuid,
+        'algorithmUuid': algId,  // Use the ensured algorithm ID
         'extraInputs': inputPorts,  // Non-gate routing inputs
         'outputs': outputPorts,      // All output routing parameters
+        'gateInputs': gateInputs,  // Store for gate port generation
+        'gateCvCounts': gateCvCounts,  // Store for CV port generation
       },
     );
     

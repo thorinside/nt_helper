@@ -251,13 +251,13 @@ abstract class AlgorithmRouting {
   /// Returns an appropriate AlgorithmRouting implementation
   static AlgorithmRouting fromSlot(Slot slot, {String? algorithmUuid}) {
     // Extract routing parameters once for all implementations
-    final routingParams = extractRoutingParameters(slot);
+    final ioParameters = extractIOParameters(slot);
     
     // Ask each implementation if it can handle this slot
     if (PolyAlgorithmRouting.canHandle(slot)) {
       return PolyAlgorithmRouting.createFromSlot(
         slot, 
-        routingParams: routingParams,
+        ioParameters: ioParameters,
         algorithmUuid: algorithmUuid,
       );
     }
@@ -265,7 +265,7 @@ abstract class AlgorithmRouting {
     // MultiChannelAlgorithmRouting is the fallback for everything else
     return MultiChannelAlgorithmRouting.createFromSlot(
       slot,
-      routingParams: routingParams, 
+      ioParameters: ioParameters,
       algorithmUuid: algorithmUuid,
     );
   }
@@ -282,8 +282,8 @@ abstract class AlgorithmRouting {
   /// - [slot]: The slot to analyze
   /// 
   /// Returns a map of parameter names to their bus values
-  static Map<String, int> extractRoutingParameters(Slot slot) {
-    final routingParams = <String, int>{};
+  static Map<String, int> extractIOParameters(Slot slot) {
+    final ioParameters = <String, int>{};
     
     final valueByParam = <int, int>{
       for (final v in slot.values) v.parameterNumber: v.value,
@@ -297,16 +297,16 @@ abstract class AlgorithmRouting {
       final isBusParameter = param.unit == 1 && 
           (param.min == 0 || param.min == 1) &&
           (param.max == 27 || param.max == 28);
-      
+
       if (isBusParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
         // Include all bus parameters, even if not connected (value 0)
         // The subclass will decide how to handle them
-        routingParams[param.name] = value;
+        ioParameters[param.name] = value;
       }
     }
     
-    return routingParams;
+    return ioParameters;
   }
   
   /// Helper method to get parameter value from a slot.
