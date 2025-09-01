@@ -57,6 +57,7 @@ sealed class Connection with _$Connection {
     @Default(1.0) double gain,
     @Default(false) bool isMuted,
     @Default(false) bool isGhostConnection,
+    Map<String, dynamic>? properties,
     DateTime? createdAt,
     DateTime? modifiedAt,
   }) = _Connection;
@@ -81,9 +82,15 @@ sealed class RoutingBus with _$RoutingBus {
 @freezed
 sealed class RoutingAlgorithm with _$RoutingAlgorithm {
   const factory RoutingAlgorithm({
+    /// Stable unique identifier for this algorithm instance
+    required String id,
+    /// Current slot index (0-7), can change when algorithms are reordered
     required int index,
+    /// The algorithm definition
     required Algorithm algorithm,
+    /// Input ports for this algorithm
     required List<Port> inputPorts,
+    /// Output ports for this algorithm
     required List<Port> outputPorts,
   }) = _RoutingAlgorithm;
 }
@@ -115,8 +122,6 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     required List<Port> physicalOutputs, // 8 physical output ports
     required List<RoutingAlgorithm> algorithms, // Algorithms with their ports
     required List<Connection> connections, // All routing connections
-    @Default([]) List<PhysicalConnection> physicalConnections, // Discovered physical connections
-    @Default([]) List<AlgorithmConnection> algorithmConnections, // Discovered algorithm-to-algorithm connections
     @Default([]) List<RoutingBus> buses, // Available routing buses
     @Default({}) Map<String, OutputMode> portOutputModes, // Output modes per port
     @Default(false) bool isHardwareSynced, // Hardware sync status

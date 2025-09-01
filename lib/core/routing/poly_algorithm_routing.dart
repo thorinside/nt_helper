@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
@@ -392,5 +393,130 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     _cachedInputPorts = null;
     _cachedOutputPorts = null;
     debugPrint('PolyAlgorithmRouting: Disposed');
+  }
+  
+  /// Determines if this routing implementation can handle the given slot.
+  /// 
+  /// Returns true if the algorithm GUID starts with 'py' (polysynth algorithms).
+  static bool canHandle(Slot slot) {
+    return slot.algorithm.guid.startsWith('py');
+  }
+  
+  /// Creates a PolyAlgorithmRouting instance from a slot.
+  /// 
+  /// Extracts gate configuration following the CV/Gate Setup specification:
+  /// - Up to 6 gates, each with a bus assignment (0 = None)
+  /// - Each gate has a CV count (0-11) 
+  /// - CVs follow immediately after gate bus (e.g., gate on bus 1, CVs on buses 2-3)
+  /// 
+  /// All other routing parameters are converted to regular input/output ports.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot containing algorithm and parameter information
+  /// - [routingParams]: Pre-extracted routing parameters (bus assignments)
+  /// - [algorithmUuid]: Optional UUID for the algorithm instance
+  static PolyAlgorithmRouting createFromSlot(
+    Slot slot, {
+    required Map<String, int> routingParams,
+    String? algorithmUuid,
+  }) {
+    // Extract gate configuration per CV/Gate Setup spec
+    final gateInputs = <int>[];
+    final gateCvCounts = <int>[];
+    
+    // Process all 6 possible gates
+    for (int i = 1; i <= 6; i++) {
+      // Gate input bus (0 = None, 1-28 = bus assignment)
+      final gateBus = routingParams['Gate input $i'] ?? 0;
+      gateInputs.add(gateBus);
+      
+      // CV count for this gate (only relevant if gate is connected)
+      final cvCount = routingParams['Gate $i CV count'] ?? 0;
+      gateCvCounts.add(cvCount);
+    }
+    
+    // Trim trailing unconnected gates
+    while (gateInputs.isNotEmpty && gateInputs.last == 0) {
+      gateInputs.removeLast();
+      gateCvCounts.removeLast();
+    }
+    
+    // Process remaining routing parameters as regular ports
+    final inputPorts = <Map<String, Object?>>[];
+    final outputPorts = <Map<String, Object?>>[];
+    
+    for (final entry in routingParams.entries) {
+      final paramName = entry.key;
+      final busValue = entry.value;
+      
+      // Skip gate-specific parameters (handled above)
+      if (paramName.startsWith('Gate input ') || 
+          (paramName.startsWith('Gate ') && paramName.contains(' CV count'))) {
+        continue;
+      }
+      
+      // Skip unconnected parameters (bus value 0 means "None")
+      if (busValue == 0) continue;
+      
+      // Determine if this is an input or output based on parameter name
+      final lowerName = paramName.toLowerCase();
+      final isOutput = lowerName.contains('output') && !lowerName.contains('mode');
+      
+      // Infer port type from parameter name
+      String portType = 'audio';
+      if (lowerName.contains('cv') || lowerName.contains('pitchbend') || lowerName.contains('wave')) {
+        portType = 'cv';
+      } else if (lowerName.contains('gate') || lowerName.contains('reset') || lowerName.contains('trigger')) {
+        portType = 'gate';
+      } else if (lowerName.contains('clock')) {
+        portType = 'clock';
+      }
+      
+      final port = {
+        'id': '${isOutput ? "out" : "in"}_${paramName.replaceAll(' ', '_').toLowerCase()}',
+        'name': paramName,
+        'type': portType,
+        'busParam': paramName,
+        'busValue': busValue,
+      };
+      
+      if (isOutput) {
+        // Add channel metadata for stereo outputs
+        if (lowerName.contains('left')) port['channel'] = 'left';
+        else if (lowerName.contains('right')) port['channel'] = 'right';
+        else if (lowerName.contains('mono')) port['channel'] = 'mono';
+        outputPorts.add(port);
+      } else {
+        inputPorts.add(port);
+      }
+    }
+    
+    // Get voice count if available
+    int voiceCount = 1;
+    final maxVoices = AlgorithmRouting.getParameterValue(slot, 'Max voices');
+    if (maxVoices > 0) {
+      voiceCount = maxVoices;
+    } else {
+      final voices = AlgorithmRouting.getParameterValue(slot, 'Voices');
+      if (voices > 0) voiceCount = voices;
+    }
+    
+    // Create configuration for poly routing
+    final config = PolyAlgorithmConfig(
+      voiceCount: voiceCount,
+      requiresGateInputs: true,
+      usesVirtualCvPorts: false,  // Real CV ports based on gate configuration
+      gateInputs: gateInputs,
+      gateCvCounts: gateCvCounts,
+      algorithmProperties: {
+        'algorithmGuid': slot.algorithm.guid,
+        'algorithmName': slot.algorithm.name,
+        'algorithmUuid': algorithmUuid,
+        'extraInputs': inputPorts,  // Non-gate routing inputs
+        'outputs': outputPorts,      // All output routing parameters
+      },
+    );
+    
+    return PolyAlgorithmRouting(config: config);
   }
 }

@@ -4,16 +4,22 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/services/algorithm_metadata_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([DistingCubit, IDistingMidiManager])
+@GenerateMocks([DistingCubit, IDistingMidiManager, AppDatabase])
 import 'routing_editor_cubit_test.mocks.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  
   group('RoutingEditorCubit', () {
     late MockDistingCubit mockDistingCubit;
     late RoutingEditorCubit routingEditorCubit;
@@ -24,7 +30,20 @@ void main() {
       provideDummy<DistingState>(const DistingState.initial());
     });
 
-    setUp(() {
+    setUp(() async {
+      // Mock SharedPreferences
+      SharedPreferences.setMockInitialValues({});
+      
+      // Setup RoutingServiceLocator for tests
+      if (RoutingServiceLocator.isSetup) {
+        await RoutingServiceLocator.reset();
+      }
+      await RoutingServiceLocator.setup();
+      
+      // Initialize AlgorithmMetadataService with mock database
+      final mockDatabase = MockAppDatabase();
+      await AlgorithmMetadataService().initialize(mockDatabase);
+      
       mockDistingCubit = MockDistingCubit();
       distingStateController = StreamController<DistingState>.broadcast();
       
@@ -36,9 +55,10 @@ void main() {
       routingEditorCubit = RoutingEditorCubit(mockDistingCubit);
     });
 
-    tearDown(() {
-      distingStateController.close();
-      routingEditorCubit.close();
+    tearDown(() async {
+      await distingStateController.close();
+      await routingEditorCubit.close();
+      await RoutingServiceLocator.reset();
     });
 
     group('initialization', () {

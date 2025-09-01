@@ -298,7 +298,7 @@ as String?,
 /// @nodoc
 mixin _$Connection implements DiagnosticableTreeMixin {
 
- String get id; String get sourcePortId; String get targetPortId; String? get busId; OutputMode get outputMode; double get gain; bool get isMuted; bool get isGhostConnection; DateTime? get createdAt; DateTime? get modifiedAt;
+ String get id; String get sourcePortId; String get targetPortId; String? get busId; OutputMode get outputMode; double get gain; bool get isMuted; bool get isGhostConnection; Map<String, dynamic>? get properties; DateTime? get createdAt; DateTime? get modifiedAt;
 /// Create a copy of Connection
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -310,21 +310,21 @@ $ConnectionCopyWith<Connection> get copyWith => _$ConnectionCopyWithImpl<Connect
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'Connection'))
-    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('properties', properties))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&const DeepCollectionEquality().equals(other.properties, properties)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,sourcePortId,targetPortId,busId,outputMode,gain,isMuted,isGhostConnection,createdAt,modifiedAt);
+int get hashCode => Object.hash(runtimeType,id,sourcePortId,targetPortId,busId,outputMode,gain,isMuted,isGhostConnection,const DeepCollectionEquality().hash(properties),createdAt,modifiedAt);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, createdAt: $createdAt, modifiedAt: $modifiedAt)';
+  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, properties: $properties, createdAt: $createdAt, modifiedAt: $modifiedAt)';
 }
 
 
@@ -335,7 +335,7 @@ abstract mixin class $ConnectionCopyWith<$Res>  {
   factory $ConnectionCopyWith(Connection value, $Res Function(Connection) _then) = _$ConnectionCopyWithImpl;
 @useResult
 $Res call({
- String id, String sourcePortId, String targetPortId, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, DateTime? createdAt, DateTime? modifiedAt
+ String id, String sourcePortId, String targetPortId, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, Map<String, dynamic>? properties, DateTime? createdAt, DateTime? modifiedAt
 });
 
 
@@ -352,7 +352,7 @@ class _$ConnectionCopyWithImpl<$Res>
 
 /// Create a copy of Connection
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? properties = freezed,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sourcePortId: null == sourcePortId ? _self.sourcePortId : sourcePortId // ignore: cast_nullable_to_non_nullable
@@ -362,7 +362,8 @@ as String?,outputMode: null == outputMode ? _self.outputMode : outputMode // ign
 as OutputMode,gain: null == gain ? _self.gain : gain // ignore: cast_nullable_to_non_nullable
 as double,isMuted: null == isMuted ? _self.isMuted : isMuted // ignore: cast_nullable_to_non_nullable
 as bool,isGhostConnection: null == isGhostConnection ? _self.isGhostConnection : isGhostConnection // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,properties: freezed == properties ? _self.properties : properties // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,modifiedAt: freezed == modifiedAt ? _self.modifiedAt : modifiedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -446,10 +447,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  Map<String, dynamic>? properties,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Connection() when $default != null:
-return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.createdAt,_that.modifiedAt);case _:
+return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.properties,_that.createdAt,_that.modifiedAt);case _:
   return orElse();
 
 }
@@ -467,10 +468,10 @@ return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  DateTime? createdAt,  DateTime? modifiedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  Map<String, dynamic>? properties,  DateTime? createdAt,  DateTime? modifiedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Connection():
-return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.createdAt,_that.modifiedAt);}
+return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.properties,_that.createdAt,_that.modifiedAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -484,10 +485,10 @@ return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  Map<String, dynamic>? properties,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Connection() when $default != null:
-return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.createdAt,_that.modifiedAt);case _:
+return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.properties,_that.createdAt,_that.modifiedAt);case _:
   return null;
 
 }
@@ -499,7 +500,7 @@ return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that
 
 
 class _Connection with DiagnosticableTreeMixin implements Connection {
-  const _Connection({required this.id, required this.sourcePortId, required this.targetPortId, this.busId, this.outputMode = OutputMode.replace, this.gain = 1.0, this.isMuted = false, this.isGhostConnection = false, this.createdAt, this.modifiedAt});
+  const _Connection({required this.id, required this.sourcePortId, required this.targetPortId, this.busId, this.outputMode = OutputMode.replace, this.gain = 1.0, this.isMuted = false, this.isGhostConnection = false, final  Map<String, dynamic>? properties, this.createdAt, this.modifiedAt}): _properties = properties;
   
 
 @override final  String id;
@@ -510,6 +511,15 @@ class _Connection with DiagnosticableTreeMixin implements Connection {
 @override@JsonKey() final  double gain;
 @override@JsonKey() final  bool isMuted;
 @override@JsonKey() final  bool isGhostConnection;
+ final  Map<String, dynamic>? _properties;
+@override Map<String, dynamic>? get properties {
+  final value = _properties;
+  if (value == null) return null;
+  if (_properties is EqualUnmodifiableMapView) return _properties;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(value);
+}
+
 @override final  DateTime? createdAt;
 @override final  DateTime? modifiedAt;
 
@@ -524,21 +534,21 @@ _$ConnectionCopyWith<_Connection> get copyWith => __$ConnectionCopyWithImpl<_Con
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'Connection'))
-    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('properties', properties))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&const DeepCollectionEquality().equals(other._properties, _properties)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,sourcePortId,targetPortId,busId,outputMode,gain,isMuted,isGhostConnection,createdAt,modifiedAt);
+int get hashCode => Object.hash(runtimeType,id,sourcePortId,targetPortId,busId,outputMode,gain,isMuted,isGhostConnection,const DeepCollectionEquality().hash(_properties),createdAt,modifiedAt);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, createdAt: $createdAt, modifiedAt: $modifiedAt)';
+  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, properties: $properties, createdAt: $createdAt, modifiedAt: $modifiedAt)';
 }
 
 
@@ -549,7 +559,7 @@ abstract mixin class _$ConnectionCopyWith<$Res> implements $ConnectionCopyWith<$
   factory _$ConnectionCopyWith(_Connection value, $Res Function(_Connection) _then) = __$ConnectionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String sourcePortId, String targetPortId, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, DateTime? createdAt, DateTime? modifiedAt
+ String id, String sourcePortId, String targetPortId, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, Map<String, dynamic>? properties, DateTime? createdAt, DateTime? modifiedAt
 });
 
 
@@ -566,7 +576,7 @@ class __$ConnectionCopyWithImpl<$Res>
 
 /// Create a copy of Connection
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? properties = freezed,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
   return _then(_Connection(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sourcePortId: null == sourcePortId ? _self.sourcePortId : sourcePortId // ignore: cast_nullable_to_non_nullable
@@ -576,7 +586,8 @@ as String?,outputMode: null == outputMode ? _self.outputMode : outputMode // ign
 as OutputMode,gain: null == gain ? _self.gain : gain // ignore: cast_nullable_to_non_nullable
 as double,isMuted: null == isMuted ? _self.isMuted : isMuted // ignore: cast_nullable_to_non_nullable
 as bool,isGhostConnection: null == isGhostConnection ? _self.isGhostConnection : isGhostConnection // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,properties: freezed == properties ? _self._properties : properties // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,modifiedAt: freezed == modifiedAt ? _self.modifiedAt : modifiedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -878,7 +889,12 @@ as DateTime?,
 /// @nodoc
 mixin _$RoutingAlgorithm implements DiagnosticableTreeMixin {
 
- int get index; Algorithm get algorithm; List<Port> get inputPorts; List<Port> get outputPorts;
+/// Stable unique identifier for this algorithm instance
+ String get id;/// Current slot index (0-7), can change when algorithms are reordered
+ int get index;/// The algorithm definition
+ Algorithm get algorithm;/// Input ports for this algorithm
+ List<Port> get inputPorts;/// Output ports for this algorithm
+ List<Port> get outputPorts;
 /// Create a copy of RoutingAlgorithm
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -890,21 +906,21 @@ $RoutingAlgorithmCopyWith<RoutingAlgorithm> get copyWith => _$RoutingAlgorithmCo
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'RoutingAlgorithm'))
-    ..add(DiagnosticsProperty('index', index))..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('inputPorts', inputPorts))..add(DiagnosticsProperty('outputPorts', outputPorts));
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('index', index))..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('inputPorts', inputPorts))..add(DiagnosticsProperty('outputPorts', outputPorts));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingAlgorithm&&(identical(other.index, index) || other.index == index)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&const DeepCollectionEquality().equals(other.inputPorts, inputPorts)&&const DeepCollectionEquality().equals(other.outputPorts, outputPorts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingAlgorithm&&(identical(other.id, id) || other.id == id)&&(identical(other.index, index) || other.index == index)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&const DeepCollectionEquality().equals(other.inputPorts, inputPorts)&&const DeepCollectionEquality().equals(other.outputPorts, outputPorts));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index,algorithm,const DeepCollectionEquality().hash(inputPorts),const DeepCollectionEquality().hash(outputPorts));
+int get hashCode => Object.hash(runtimeType,id,index,algorithm,const DeepCollectionEquality().hash(inputPorts),const DeepCollectionEquality().hash(outputPorts));
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'RoutingAlgorithm(index: $index, algorithm: $algorithm, inputPorts: $inputPorts, outputPorts: $outputPorts)';
+  return 'RoutingAlgorithm(id: $id, index: $index, algorithm: $algorithm, inputPorts: $inputPorts, outputPorts: $outputPorts)';
 }
 
 
@@ -915,7 +931,7 @@ abstract mixin class $RoutingAlgorithmCopyWith<$Res>  {
   factory $RoutingAlgorithmCopyWith(RoutingAlgorithm value, $Res Function(RoutingAlgorithm) _then) = _$RoutingAlgorithmCopyWithImpl;
 @useResult
 $Res call({
- int index, Algorithm algorithm, List<Port> inputPorts, List<Port> outputPorts
+ String id, int index, Algorithm algorithm, List<Port> inputPorts, List<Port> outputPorts
 });
 
 
@@ -932,9 +948,10 @@ class _$RoutingAlgorithmCopyWithImpl<$Res>
 
 /// Create a copy of RoutingAlgorithm
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? algorithm = null,Object? inputPorts = null,Object? outputPorts = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? index = null,Object? algorithm = null,Object? inputPorts = null,Object? outputPorts = null,}) {
   return _then(_self.copyWith(
-index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,algorithm: null == algorithm ? _self.algorithm : algorithm // ignore: cast_nullable_to_non_nullable
 as Algorithm,inputPorts: null == inputPorts ? _self.inputPorts : inputPorts // ignore: cast_nullable_to_non_nullable
 as List<Port>,outputPorts: null == outputPorts ? _self.outputPorts : outputPorts // ignore: cast_nullable_to_non_nullable
@@ -1020,10 +1037,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int index,  Algorithm algorithm,  List<Port> inputPorts,  List<Port> outputPorts)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int index,  Algorithm algorithm,  List<Port> inputPorts,  List<Port> outputPorts)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RoutingAlgorithm() when $default != null:
-return $default(_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);case _:
+return $default(_that.id,_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);case _:
   return orElse();
 
 }
@@ -1041,10 +1058,10 @@ return $default(_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int index,  Algorithm algorithm,  List<Port> inputPorts,  List<Port> outputPorts)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int index,  Algorithm algorithm,  List<Port> inputPorts,  List<Port> outputPorts)  $default,) {final _that = this;
 switch (_that) {
 case _RoutingAlgorithm():
-return $default(_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);}
+return $default(_that.id,_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1058,10 +1075,10 @@ return $default(_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int index,  Algorithm algorithm,  List<Port> inputPorts,  List<Port> outputPorts)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int index,  Algorithm algorithm,  List<Port> inputPorts,  List<Port> outputPorts)?  $default,) {final _that = this;
 switch (_that) {
 case _RoutingAlgorithm() when $default != null:
-return $default(_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);case _:
+return $default(_that.id,_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);case _:
   return null;
 
 }
@@ -1073,19 +1090,27 @@ return $default(_that.index,_that.algorithm,_that.inputPorts,_that.outputPorts);
 
 
 class _RoutingAlgorithm with DiagnosticableTreeMixin implements RoutingAlgorithm {
-  const _RoutingAlgorithm({required this.index, required this.algorithm, required final  List<Port> inputPorts, required final  List<Port> outputPorts}): _inputPorts = inputPorts,_outputPorts = outputPorts;
+  const _RoutingAlgorithm({required this.id, required this.index, required this.algorithm, required final  List<Port> inputPorts, required final  List<Port> outputPorts}): _inputPorts = inputPorts,_outputPorts = outputPorts;
   
 
+/// Stable unique identifier for this algorithm instance
+@override final  String id;
+/// Current slot index (0-7), can change when algorithms are reordered
 @override final  int index;
+/// The algorithm definition
 @override final  Algorithm algorithm;
+/// Input ports for this algorithm
  final  List<Port> _inputPorts;
+/// Input ports for this algorithm
 @override List<Port> get inputPorts {
   if (_inputPorts is EqualUnmodifiableListView) return _inputPorts;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_inputPorts);
 }
 
+/// Output ports for this algorithm
  final  List<Port> _outputPorts;
+/// Output ports for this algorithm
 @override List<Port> get outputPorts {
   if (_outputPorts is EqualUnmodifiableListView) return _outputPorts;
   // ignore: implicit_dynamic_type
@@ -1104,21 +1129,21 @@ _$RoutingAlgorithmCopyWith<_RoutingAlgorithm> get copyWith => __$RoutingAlgorith
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'RoutingAlgorithm'))
-    ..add(DiagnosticsProperty('index', index))..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('inputPorts', inputPorts))..add(DiagnosticsProperty('outputPorts', outputPorts));
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('index', index))..add(DiagnosticsProperty('algorithm', algorithm))..add(DiagnosticsProperty('inputPorts', inputPorts))..add(DiagnosticsProperty('outputPorts', outputPorts));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RoutingAlgorithm&&(identical(other.index, index) || other.index == index)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&const DeepCollectionEquality().equals(other._inputPorts, _inputPorts)&&const DeepCollectionEquality().equals(other._outputPorts, _outputPorts));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RoutingAlgorithm&&(identical(other.id, id) || other.id == id)&&(identical(other.index, index) || other.index == index)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&const DeepCollectionEquality().equals(other._inputPorts, _inputPorts)&&const DeepCollectionEquality().equals(other._outputPorts, _outputPorts));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,index,algorithm,const DeepCollectionEquality().hash(_inputPorts),const DeepCollectionEquality().hash(_outputPorts));
+int get hashCode => Object.hash(runtimeType,id,index,algorithm,const DeepCollectionEquality().hash(_inputPorts),const DeepCollectionEquality().hash(_outputPorts));
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'RoutingAlgorithm(index: $index, algorithm: $algorithm, inputPorts: $inputPorts, outputPorts: $outputPorts)';
+  return 'RoutingAlgorithm(id: $id, index: $index, algorithm: $algorithm, inputPorts: $inputPorts, outputPorts: $outputPorts)';
 }
 
 
@@ -1129,7 +1154,7 @@ abstract mixin class _$RoutingAlgorithmCopyWith<$Res> implements $RoutingAlgorit
   factory _$RoutingAlgorithmCopyWith(_RoutingAlgorithm value, $Res Function(_RoutingAlgorithm) _then) = __$RoutingAlgorithmCopyWithImpl;
 @override @useResult
 $Res call({
- int index, Algorithm algorithm, List<Port> inputPorts, List<Port> outputPorts
+ String id, int index, Algorithm algorithm, List<Port> inputPorts, List<Port> outputPorts
 });
 
 
@@ -1146,9 +1171,10 @@ class __$RoutingAlgorithmCopyWithImpl<$Res>
 
 /// Create a copy of RoutingAlgorithm
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? index = null,Object? algorithm = null,Object? inputPorts = null,Object? outputPorts = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? index = null,Object? algorithm = null,Object? inputPorts = null,Object? outputPorts = null,}) {
   return _then(_RoutingAlgorithm(
-index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,algorithm: null == algorithm ? _self.algorithm : algorithm // ignore: cast_nullable_to_non_nullable
 as Algorithm,inputPorts: null == inputPorts ? _self._inputPorts : inputPorts // ignore: cast_nullable_to_non_nullable
 as List<Port>,outputPorts: null == outputPorts ? _self._outputPorts : outputPorts // ignore: cast_nullable_to_non_nullable
@@ -1291,7 +1317,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<PhysicalConnection> physicalConnections,  List<AlgorithmConnection> algorithmConnections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -1300,7 +1326,7 @@ return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
 return refreshing();case RoutingEditorStatePersisting() when persisting != null:
 return persisting();case RoutingEditorStateSyncing() when syncing != null:
 return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.physicalConnections,_that.algorithmConnections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
 return error(_that.message);case _:
   return orElse();
 
@@ -1319,7 +1345,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<PhysicalConnection> physicalConnections,  List<AlgorithmConnection> algorithmConnections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial();case RoutingEditorStateDisconnected():
@@ -1328,7 +1354,7 @@ return connecting();case RoutingEditorStateRefreshing():
 return refreshing();case RoutingEditorStatePersisting():
 return persisting();case RoutingEditorStateSyncing():
 return syncing();case RoutingEditorStateLoaded():
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.physicalConnections,_that.algorithmConnections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError():
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError():
 return error(_that.message);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -1343,7 +1369,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<PhysicalConnection> physicalConnections,  List<AlgorithmConnection> algorithmConnections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -1352,7 +1378,7 @@ return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
 return refreshing();case RoutingEditorStatePersisting() when persisting != null:
 return persisting();case RoutingEditorStateSyncing() when syncing != null:
 return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.physicalConnections,_that.algorithmConnections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
 return error(_that.message);case _:
   return null;
 
@@ -1593,7 +1619,7 @@ String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
 
 
 class RoutingEditorStateLoaded with DiagnosticableTreeMixin implements RoutingEditorState {
-  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<PhysicalConnection> physicalConnections = const [], final  List<AlgorithmConnection> algorithmConnections = const [], final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_physicalConnections = physicalConnections,_algorithmConnections = algorithmConnections,_buses = buses,_portOutputModes = portOutputModes;
+  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
   
 
  final  List<Port> _physicalInputs;
@@ -1631,26 +1657,8 @@ class RoutingEditorStateLoaded with DiagnosticableTreeMixin implements RoutingEd
 }
 
 // All routing connections
- final  List<PhysicalConnection> _physicalConnections;
-// All routing connections
-@JsonKey() List<PhysicalConnection> get physicalConnections {
-  if (_physicalConnections is EqualUnmodifiableListView) return _physicalConnections;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_physicalConnections);
-}
-
-// Discovered physical connections
- final  List<AlgorithmConnection> _algorithmConnections;
-// Discovered physical connections
-@JsonKey() List<AlgorithmConnection> get algorithmConnections {
-  if (_algorithmConnections is EqualUnmodifiableListView) return _algorithmConnections;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_algorithmConnections);
-}
-
-// Discovered algorithm-to-algorithm connections
  final  List<RoutingBus> _buses;
-// Discovered algorithm-to-algorithm connections
+// All routing connections
 @JsonKey() List<RoutingBus> get buses {
   if (_buses is EqualUnmodifiableListView) return _buses;
   // ignore: implicit_dynamic_type
@@ -1688,21 +1696,21 @@ $RoutingEditorStateLoadedCopyWith<RoutingEditorStateLoaded> get copyWith => _$Ro
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'RoutingEditorState.loaded'))
-    ..add(DiagnosticsProperty('physicalInputs', physicalInputs))..add(DiagnosticsProperty('physicalOutputs', physicalOutputs))..add(DiagnosticsProperty('algorithms', algorithms))..add(DiagnosticsProperty('connections', connections))..add(DiagnosticsProperty('physicalConnections', physicalConnections))..add(DiagnosticsProperty('algorithmConnections', algorithmConnections))..add(DiagnosticsProperty('buses', buses))..add(DiagnosticsProperty('portOutputModes', portOutputModes))..add(DiagnosticsProperty('isHardwareSynced', isHardwareSynced))..add(DiagnosticsProperty('isPersistenceEnabled', isPersistenceEnabled))..add(DiagnosticsProperty('lastSyncTime', lastSyncTime))..add(DiagnosticsProperty('lastPersistTime', lastPersistTime))..add(DiagnosticsProperty('lastError', lastError));
+    ..add(DiagnosticsProperty('physicalInputs', physicalInputs))..add(DiagnosticsProperty('physicalOutputs', physicalOutputs))..add(DiagnosticsProperty('algorithms', algorithms))..add(DiagnosticsProperty('connections', connections))..add(DiagnosticsProperty('buses', buses))..add(DiagnosticsProperty('portOutputModes', portOutputModes))..add(DiagnosticsProperty('isHardwareSynced', isHardwareSynced))..add(DiagnosticsProperty('isPersistenceEnabled', isPersistenceEnabled))..add(DiagnosticsProperty('lastSyncTime', lastSyncTime))..add(DiagnosticsProperty('lastPersistTime', lastPersistTime))..add(DiagnosticsProperty('lastError', lastError));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._physicalConnections, _physicalConnections)&&const DeepCollectionEquality().equals(other._algorithmConnections, _algorithmConnections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_physicalConnections),const DeepCollectionEquality().hash(_algorithmConnections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, physicalConnections: $physicalConnections, algorithmConnections: $algorithmConnections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError)';
+  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError)';
 }
 
 
@@ -1713,7 +1721,7 @@ abstract mixin class $RoutingEditorStateLoadedCopyWith<$Res> implements $Routing
   factory $RoutingEditorStateLoadedCopyWith(RoutingEditorStateLoaded value, $Res Function(RoutingEditorStateLoaded) _then) = _$RoutingEditorStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<PhysicalConnection> physicalConnections, List<AlgorithmConnection> algorithmConnections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
+ List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
 });
 
 
@@ -1730,15 +1738,13 @@ class _$RoutingEditorStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? physicalConnections = null,Object? algorithmConnections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,}) {
   return _then(RoutingEditorStateLoaded(
 physicalInputs: null == physicalInputs ? _self._physicalInputs : physicalInputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,physicalOutputs: null == physicalOutputs ? _self._physicalOutputs : physicalOutputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,algorithms: null == algorithms ? _self._algorithms : algorithms // ignore: cast_nullable_to_non_nullable
 as List<RoutingAlgorithm>,connections: null == connections ? _self._connections : connections // ignore: cast_nullable_to_non_nullable
-as List<Connection>,physicalConnections: null == physicalConnections ? _self._physicalConnections : physicalConnections // ignore: cast_nullable_to_non_nullable
-as List<PhysicalConnection>,algorithmConnections: null == algorithmConnections ? _self._algorithmConnections : algorithmConnections // ignore: cast_nullable_to_non_nullable
-as List<AlgorithmConnection>,buses: null == buses ? _self._buses : buses // ignore: cast_nullable_to_non_nullable
+as List<Connection>,buses: null == buses ? _self._buses : buses // ignore: cast_nullable_to_non_nullable
 as List<RoutingBus>,portOutputModes: null == portOutputModes ? _self._portOutputModes : portOutputModes // ignore: cast_nullable_to_non_nullable
 as Map<String, OutputMode>,isHardwareSynced: null == isHardwareSynced ? _self.isHardwareSynced : isHardwareSynced // ignore: cast_nullable_to_non_nullable
 as bool,isPersistenceEnabled: null == isPersistenceEnabled ? _self.isPersistenceEnabled : isPersistenceEnabled // ignore: cast_nullable_to_non_nullable

@@ -1,8 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
 import 'port_compatibility_validator.dart';
+import 'poly_algorithm_routing.dart';
+import 'multi_channel_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 /// 
@@ -233,5 +237,110 @@ abstract class AlgorithmRouting {
   @mustCallSuper
   void dispose() {
     debugPrint('AlgorithmRouting: Disposing routing algorithm');
+  }
+  
+  /// Factory method to create the appropriate AlgorithmRouting from a Slot.
+  /// 
+  /// This method asks each concrete implementation if it can handle the slot,
+  /// then delegates creation to the appropriate subclass.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot containing algorithm and parameter information
+  /// - [algorithmUuid]: Optional UUID for the algorithm instance
+  /// 
+  /// Returns an appropriate AlgorithmRouting implementation
+  static AlgorithmRouting fromSlot(Slot slot, {String? algorithmUuid}) {
+    // Extract routing parameters once for all implementations
+    final routingParams = extractRoutingParameters(slot);
+    
+    // Ask each implementation if it can handle this slot
+    if (PolyAlgorithmRouting.canHandle(slot)) {
+      return PolyAlgorithmRouting.createFromSlot(
+        slot, 
+        routingParams: routingParams,
+        algorithmUuid: algorithmUuid,
+      );
+    }
+    
+    // MultiChannelAlgorithmRouting is the fallback for everything else
+    return MultiChannelAlgorithmRouting.createFromSlot(
+      slot,
+      routingParams: routingParams, 
+      algorithmUuid: algorithmUuid,
+    );
+  }
+  
+  /// Helper method to extract routing-related parameters from a slot.
+  /// 
+  /// Identifies parameters that represent bus assignments for routing.
+  /// These are parameters with:
+  /// - unit == 1 (enum type)
+  /// - min is 0 or 1
+  /// - max is 27 or 28
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot to analyze
+  /// 
+  /// Returns a map of parameter names to their bus values
+  static Map<String, int> extractRoutingParameters(Slot slot) {
+    final routingParams = <String, int>{};
+    
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+    
+    for (final param in slot.parameters) {
+      // Bus parameters are identified by:
+      // - unit == 1 (enum type)
+      // - min is 0 or 1
+      // - max is 27 or 28
+      final isBusParameter = param.unit == 1 && 
+          (param.min == 0 || param.min == 1) &&
+          (param.max == 27 || param.max == 28);
+      
+      if (isBusParameter) {
+        final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
+        // Include all bus parameters, even if not connected (value 0)
+        // The subclass will decide how to handle them
+        routingParams[param.name] = value;
+      }
+    }
+    
+    return routingParams;
+  }
+  
+  /// Helper method to get parameter value from a slot.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot to extract value from
+  /// - [parameterName]: Name of the parameter to find
+  /// 
+  /// Returns the parameter value or default value if not set
+  @protected
+  static int getParameterValue(Slot slot, String parameterName) {
+    final param = slot.parameters.firstWhere(
+      (p) => p.name == parameterName,
+      orElse: () => ParameterInfo.filler(),
+    );
+    
+    if (param.parameterNumber < 0) return 0;
+    
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+    
+    return valueByParam[param.parameterNumber] ?? param.defaultValue;
+  }
+  
+  /// Helper method to check if a parameter exists in a slot.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot to check
+  /// - [parameterName]: Name of the parameter to find
+  /// 
+  /// Returns true if the parameter exists
+  @protected
+  static bool hasParameter(Slot slot, String parameterName) {
+    return slot.parameters.any((p) => p.name == parameterName);
   }
 }

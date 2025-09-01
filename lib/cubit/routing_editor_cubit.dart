@@ -12,6 +12,8 @@ import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/core/routing/routing_factory.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/routing/models/connection.dart' as core_connection;
+import 'package:nt_helper/core/routing/models/connection_metadata.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/algorithm_connection.dart';
 import 'package:nt_helper/models/physical_connection.dart';
@@ -21,12 +23,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 part 'routing_editor_cubit.freezed.dart';
 part 'routing_editor_state.dart';
 
+// Helper class for bus assignments
+class _BusAssignment {
+  final String algorithmId;
+  final int algorithmIndex;
+  final String portId;
+  final int parameterNumber;
+  final String parameterName;
+  final bool isOutput;
+  final PortType portType;
+  
+  _BusAssignment({
+    required this.algorithmId,
+    required this.algorithmIndex,
+    required this.portId,
+    required this.parameterNumber,
+    required this.parameterName,
+    required this.isOutput,
+    required this.portType,
+  });
+}
+
 /// Cubit that manages the state of the routing editor.
 /// 
 /// Watches the DistingCubit's synchronized state and processes routing 
 /// information into a visual representation for the routing canvas.
 class RoutingEditorCubit extends Cubit<RoutingEditorState> {
-  final DistingCubit _distingCubit;
+  final DistingCubit? _distingCubit;
   final Future<SharedPreferences> _prefs;
   final AlgorithmConnectionService _algorithmConnectionService;
   StreamSubscription<DistingState>? _distingStateSubscription;
@@ -35,19 +58,255 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       : _prefs = SharedPreferences.getInstance(),
         _algorithmConnectionService = algorithmConnectionService ?? AlgorithmConnectionService(),
         super(const RoutingEditorState.initial()) {
-    _initializeStateWatcher();
-    _loadPersistedState();
+    if (_distingCubit != null) {
+      _initializeStateWatcher();
+      _loadPersistedState();
+    }
   }
 
   /// Initialize watching the disting cubit state changes
   void _initializeStateWatcher() {
-    _distingStateSubscription = _distingCubit.stream.listen((distingState) {
+    if (_distingCubit == null) return;
+    
+    _distingStateSubscription = _distingCubit!.stream.listen((distingState) {
       _processDistingState(distingState);
     });
     
     // Process current state if already synchronized
-    final currentState = _distingCubit.state;
+    final currentState = _distingCubit!.state;
     _processDistingState(currentState);
+  }
+
+  /// Generate stable algorithm IDs based on GUID and instance counter
+  /// 
+  /// Creates IDs in the format `algo_${guid}_${instanceCounter}` where
+  /// instanceCounter increments for duplicate algorithms to ensure uniqueness.
+  /// These IDs remain stable regardless of slot position changes.
+  List<String> generateStableAlgorithmIds(List<Slot> slots) {
+    final algorithmIds = <String>[];
+    final guidCounters = <String, int>{};
+    
+    for (final slot in slots) {
+      final guid = slot.algorithm.guid;
+      final counter = guidCounters[guid] ?? 0;
+      guidCounters[guid] = counter + 1;
+      
+      // Create stable ID without slot index
+      algorithmIds.add('algo_${guid}_${counter + 1}');
+    }
+    
+    return algorithmIds;
+  }
+
+  /// Generate a stable port ID using algorithm UUID and parameter number
+  /// 
+  /// Creates simple, opaque IDs with semantic information in metadata
+  String generatePortId({
+    required String algorithmId,
+    required int parameterNumber,
+    required String portType,
+  }) {
+    return '${algorithmId}_port_$parameterNumber';
+  }
+
+  /// Discover all connections from bus assignments using unified Connection model
+  /// 
+  /// This method replaces the separate physical and algorithm connection discovery
+  /// with a single unified approach. All connections use the Connection class with
+  /// enriched metadata to distinguish between types.
+  static List<core_connection.Connection> discoverUnifiedConnections({
+    required List<Slot> slots,
+    required List<RoutingAlgorithm> algorithms,
+    required List<String> algorithmIds,
+  }) {
+    final connections = <core_connection.Connection>[];
+    
+    // Build a bus registry mapping bus numbers to ports
+    final busRegistry = <int, List<_BusAssignment>>{};
+    
+    debugPrint('[DIAG] Starting connection discovery for ${algorithms.length} algorithms');
+    
+    // Process all algorithms to build the bus registry
+    for (int i = 0; i < algorithms.length; i++) {
+      final algorithm = algorithms[i];
+      final algorithmId = algorithmIds[i];
+      
+      // Register input ports
+      debugPrint('[DIAG] Algorithm $i (${algorithm.id}): ${algorithm.algorithm.name}');
+      for (final port in algorithm.inputPorts) {
+        final busNumber = port.busNumber;
+        debugPrint('[DIAG]   Input port ${port.id}: bus=$busNumber, param=${port.parameterName}');
+        if (busNumber != null && busNumber > 0) {
+          debugPrint('[DIAG]     -> Registered on bus $busNumber');
+          busRegistry.putIfAbsent(busNumber, () => []).add(
+            _BusAssignment(
+              algorithmId: algorithmId,
+              algorithmIndex: i,
+              portId: port.id,
+              parameterNumber: _extractParameterNumber(port),
+              parameterName: port.parameterName ?? '',
+              isOutput: false,
+              portType: port.type,
+            ),
+          );
+        }
+      }
+      
+      // Register output ports
+      for (final port in algorithm.outputPorts) {
+        final busNumber = port.busNumber;
+        debugPrint('[DIAG]   Output port ${port.id}: bus=$busNumber, param=${port.parameterName}');
+        if (busNumber != null && busNumber > 0) {
+          debugPrint('[DIAG]     -> Registered on bus $busNumber');
+          busRegistry.putIfAbsent(busNumber, () => []).add(
+            _BusAssignment(
+              algorithmId: algorithmId,
+              algorithmIndex: i,
+              portId: port.id,
+              parameterNumber: _extractParameterNumber(port),
+              parameterName: port.parameterName ?? '',
+              isOutput: true,
+              portType: port.type,
+            ),
+          );
+        }
+      }
+    }
+    
+    // Debug: Print bus registry summary
+    debugPrint('[DIAG] Bus registry summary:');
+    for (final entry in busRegistry.entries) {
+      final busNumber = entry.key;
+      final assignments = entry.value;
+      final outputs = assignments.where((a) => a.isOutput).length;
+      final inputs = assignments.where((a) => !a.isOutput).length;
+      debugPrint('[DIAG]   Bus $busNumber: $outputs outputs, $inputs inputs');
+    }
+    
+    // Create connections based on bus assignments
+    for (final entry in busRegistry.entries) {
+      final busNumber = entry.key;
+      final assignments = entry.value;
+      
+      // Separate outputs and inputs
+      final outputs = assignments.where((a) => a.isOutput).toList();
+      final inputs = assignments.where((a) => !a.isOutput).toList();
+      
+      // Determine if this is a hardware bus (1-12 for inputs, 13-20 for outputs)
+      final isHardwareInput = busNumber >= 1 && busNumber <= 12;
+      final isHardwareOutput = busNumber >= 13 && busNumber <= 20;
+      
+      // Hardware input connections (buses 1-12)
+      if (isHardwareInput && inputs.isNotEmpty) {
+        final hwPortId = 'hw_in_$busNumber';
+        for (final input in inputs) {
+          connections.add(core_connection.Connection(
+            id: 'conn_${hwPortId}_to_${input.portId}',
+            sourcePortId: hwPortId,
+            destinationPortId: input.portId,
+            properties: {
+              'metadata': ConnectionMetadata(
+                connectionClass: ConnectionClass.hardware,
+                busNumber: busNumber,
+                signalType: _toSignalType(input.portType),
+                targetAlgorithmId: input.algorithmId,
+                targetParameterNumber: input.parameterNumber,
+              ),
+            },
+          ));
+        }
+      }
+      
+      // Hardware output connections (buses 13-20)
+      if (isHardwareOutput && outputs.isNotEmpty) {
+        final hwPortId = 'hw_out_${busNumber - 12}';
+        for (final output in outputs) {
+          connections.add(core_connection.Connection(
+            id: 'conn_${output.portId}_to_$hwPortId',
+            sourcePortId: output.portId,
+            destinationPortId: hwPortId,
+            properties: {
+              'metadata': ConnectionMetadata(
+                connectionClass: ConnectionClass.hardware,
+                busNumber: busNumber,
+                signalType: _toSignalType(output.portType),
+                sourceAlgorithmId: output.algorithmId,
+                sourceParameterNumber: output.parameterNumber,
+              ),
+            },
+          ));
+        }
+      }
+      
+      // Algorithm-to-algorithm connections (ANY bus with both inputs and outputs)
+      if (outputs.isNotEmpty && inputs.isNotEmpty) {
+        debugPrint('[DIAG] Bus $busNumber has potential algo-to-algo connections');
+        for (final output in outputs) {
+          for (final input in inputs) {
+            debugPrint('[DIAG]   Checking: ${output.algorithmId} -> ${input.algorithmId}');
+            // Skip self-connections
+            if (output.algorithmId != input.algorithmId) {
+              debugPrint('[DIAG]     -> Creating algo connection!');
+              // Check for backward edge (output from later slot to earlier slot)
+              final isBackwardEdge = output.algorithmIndex > input.algorithmIndex;
+              
+              connections.add(core_connection.Connection(
+                id: 'conn_${output.portId}_to_${input.portId}',
+                sourcePortId: output.portId,
+                destinationPortId: input.portId,
+                properties: {
+                  'metadata': ConnectionMetadata(
+                    connectionClass: ConnectionClass.algorithm,
+                    busNumber: busNumber,
+                    signalType: _toSignalType(output.portType),
+                    sourceAlgorithmId: output.algorithmId,
+                    targetAlgorithmId: input.algorithmId,
+                    sourceParameterNumber: output.parameterNumber,
+                    targetParameterNumber: input.parameterNumber,
+                    isBackwardEdge: isBackwardEdge,
+                  ),
+                },
+              ));
+            }
+          }
+        }
+      }
+    }
+    
+    debugPrint('[DIAG] Total connections created: ${connections.length}');
+    final algoConns = connections.where((c) {
+      final meta = c.properties?['metadata'] as dynamic;
+      return meta?.connectionClass == ConnectionClass.algorithm;
+    }).length;
+    debugPrint('[DIAG]   Algorithm-to-algorithm: $algoConns');
+    debugPrint('[DIAG]   Hardware connections: ${connections.length - algoConns}');
+    
+    return connections;
+  }
+  
+  static SignalType _toSignalType(PortType portType) {
+    switch (portType) {
+      case PortType.audio:
+        return SignalType.audio;
+      case PortType.cv:
+        return SignalType.cv;
+      case PortType.gate:
+      case PortType.trigger:
+        return SignalType.gate;
+      default:
+        return SignalType.mixed;
+    }
+  }
+  
+  static int _extractParameterNumber(Port port) {
+    // Try to extract from port ID (now in format: algorithmId_param_NUMBER)
+    final idMatch = RegExp(r'_param_(\d+)$').firstMatch(port.id);
+    if (idMatch != null) {
+      return int.parse(idMatch.group(1)!);
+    }
+    
+    // Fallback
+    return 0;
   }
 
   /// Process incoming DistingState and update routing editor state accordingly
@@ -79,23 +338,17 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       
       // Build algorithm representations with ports determined by AlgorithmRouting
       final algorithms = <RoutingAlgorithm>[];
-      final allPhysicalConnections = <PhysicalConnection>[];
       final RoutingFactory factory = RoutingServiceLocator.routingFactory;
       
-      // Generate UUIDs for each algorithm instance
-      final algorithmUuids = <String>[];
-      for (int i = 0; i < slots.length; i++) {
-        // Use a combination of slot index and algorithm guid as a stable identifier
-        // This will remain stable during the session
-        algorithmUuids.add('algo_${i}_${slots[i].algorithm.guid}');
-      }
+      // Generate stable UUIDs for each algorithm instance
+      final algorithmUuids = generateStableAlgorithmIds(slots);
       
       for (int i = 0; i < slots.length; i++) {
         final slot = slots[i];
         final algorithmUuid = algorithmUuids[i];
 
         // Build metadata for this slot purely from slot parameters (data-driven)
-        final metadata = _buildMetadataForSlot(slot);
+        final metadata = _buildMetadataForSlot(slot, algorithmUuid);
 
         // Create routing and generate ports
         core_routing.AlgorithmRouting routing;
@@ -110,6 +363,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final outputPorts = routing.outputPorts;
 
         final routingAlgorithm = RoutingAlgorithm(
+          id: algorithmUuid,
           index: i,
           algorithm: slot.algorithm,
           // Convert core ports to UI model ports
@@ -136,47 +390,44 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         );
         algorithms.add(routingAlgorithm);
         
-        // Discover physical connections for this algorithm
-        final algorithmPhysicalConnections = _createPhysicalConnectionsForAlgorithm(routing, slot, i);
-        allPhysicalConnections.addAll(algorithmPhysicalConnections);
+        // Physical connections are now discovered in the unified method
+        // final algorithmPhysicalConnections = _createPhysicalConnectionsForAlgorithm(routing, slot, i);
+        // allPhysicalConnections.addAll(algorithmPhysicalConnections);
       }
       
-      // Sort all physical connections globally for stable presentation:
-      // 1. By algorithm index
-      // 2. By connection type (input connections first)
-      // 3. By source port ID, then target port ID
-      allPhysicalConnections.sort((a, b) {
-        // First, sort by algorithm index
-        final algorithmComparison = a.algorithmIndex.compareTo(b.algorithmIndex);
-        if (algorithmComparison != 0) {
-          return algorithmComparison;
-        }
-        // Within same algorithm, input connections before output connections
-        if (a.isInputConnection != b.isInputConnection) {
-          return a.isInputConnection ? -1 : 1;
-        }
-        // Within same connection type, sort by source port ID
-        final sourceComparison = a.sourcePortId.compareTo(b.sourcePortId);
-        if (sourceComparison != 0) {
-          return sourceComparison;
-        }
-        // If source ports are same, sort by target port ID
-        return a.targetPortId.compareTo(b.targetPortId);
-      });
+      // Physical connections are now handled by unified connection discovery
+      // No need to sort empty list
       
-      // Build connections directly from parameter bus assignments
-      final algorithmConnections = _buildConnectionsFromBusAssignments(slots, algorithmUuids, algorithms);
+      // Use unified connection discovery instead of separate physical/algorithm connections
+      final unifiedConnections = discoverUnifiedConnections(
+        slots: slots,
+        algorithms: algorithms,
+        algorithmIds: algorithmUuids,
+      );
       
-      // No user connections for now - will be handled by AlgorithmRouting hierarchy
-      final connections = <Connection>[];
+      
+      // Convert core connections to UI connections (temporary compatibility layer)
+      final connections = unifiedConnections.map((coreConn) => Connection(
+        id: coreConn.id,
+        sourcePortId: coreConn.sourcePortId,
+        targetPortId: coreConn.destinationPortId,
+        busId: coreConn.properties?['metadata'] != null 
+            ? 'bus_${(coreConn.properties!['metadata'] as ConnectionMetadata).busNumber}'
+            : null,
+        outputMode: OutputMode.replace,
+        gain: coreConn.gain,
+        isMuted: coreConn.isMuted,
+        isGhostConnection: false,
+      )).toList();
+      
+      // For backward compatibility, keep empty lists for now
+      // These will be removed in the next refactoring step
 
       emit(RoutingEditorState.loaded(
         physicalInputs: physicalInputs,
         physicalOutputs: physicalOutputs,
         algorithms: algorithms,
         connections: connections,
-        physicalConnections: allPhysicalConnections,
-        algorithmConnections: algorithmConnections,
         isHardwareSynced: true,
         lastSyncTime: DateTime.now(),
       ));
@@ -333,7 +584,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   }
 
   /// Build routing metadata for a poly/multi algorithm from Slot parameters
-  AlgorithmRoutingMetadata _buildMetadataForSlot(Slot slot) {
+  AlgorithmRoutingMetadata _buildMetadataForSlot(Slot slot, String algorithmId) {
     // Data-driven poly detection
     final isPoly = slot.parameters.any((p) => p.name.startsWith('Gate input 1')) ||
         slot.parameters.any((p) => p.name.contains('Gate 1 CV count'));
@@ -461,18 +712,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final lower = label.toLowerCase();
         if (lower.contains('trigger') || lower.contains('mark') || lower.contains('stop')) type = 'gate';
         else if (lower.contains('cv')) type = 'cv';
+        // Get the actual parameter number
+        final param = busRef != null ? paramsByName[busRef] : _findParameterByName(slot, label);
+        final paramNumber = param?.parameterNumber ?? 0;
+        
         final inputMap = <String, Object?>{
-          'id': 'in_${label.replaceAll(' ', '_').toLowerCase()}',
+          'id': '${algorithmId}_param_$paramNumber',  // Unique ID with algorithm ID and parameter number
           'name': label,
           'type': type,
+          'parameterNumber': paramNumber,  // Store integer parameter number
           if (busRef != null) 'busParam': busRef,
         };
         // Fallback: if metadata lacks busRef, try to match a parameter with same/similar name
-        if (busRef == null) {
-          final p = _findParameterByName(slot, label);
-          if (p != null && p.parameterNumber >= 0) {
-            inputMap['busParam'] = p.name;
-          }
+        if (busRef == null && param != null && param.parameterNumber >= 0) {
+          inputMap['busParam'] = param.name;
         }
         declaredInputs.add(inputMap);
       }
@@ -485,18 +738,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final busRef = op.busIdRef;
         final labelFromParam = busRef != null && paramsByName.containsKey(busRef) ? busRef : null;
         final label = labelFromParam ?? op.name;
+        // Get the actual parameter number
+        final param = busRef != null ? paramsByName[busRef] : _findParameterByName(slot, label);
+        final paramNumber = param?.parameterNumber ?? 0;
+        
         final outMap = <String, Object?>{
-          'id': 'out_${label.replaceAll(' ', '_').toLowerCase()}',
+          'id': '${algorithmId}_param_$paramNumber',  // Unique ID with algorithm ID and parameter number
           'name': label,
           'type': 'audio',
+          'parameterNumber': paramNumber,  // Store integer parameter number
           if (busRef != null) 'busParam': busRef,
         };
         // Fallback: if metadata lacks busRef, try to match by parameter name
-        if (busRef == null) {
-          final p = _findParameterByName(slot, label);
-          if (p != null && p.parameterNumber >= 0) {
-            outMap['busParam'] = p.name;
-          }
+        if (busRef == null && param != null && param.parameterNumber >= 0) {
+          outMap['busParam'] = param.name;
         }
         declaredOutputs.add(outMap);
       }
@@ -516,9 +771,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           if (lower.contains('cv')) type = 'cv';
           if (lower.contains('gate') || lower.contains('trigger')) type = 'gate';
           declaredInputs.add({
-            'id': 'in_${pname.replaceAll(' ', '_').toLowerCase()}',
+            'id': '${algorithmId}_param_${entry.value.parameterNumber}',  // Use actual parameter number
             'name': pname,
             'type': type,
+            'parameterNumber': entry.value.parameterNumber,  // Store integer parameter number
             'busParam': pname,
           });
         } else {
@@ -541,9 +797,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         final already = declaredOutputs.any((m) => (m['name'] as String).toLowerCase() == lower);
         if (!already) {
           declaredOutputs.add({
-            'id': 'out_${pname.replaceAll(' ', '_').toLowerCase()}',
+            'id': '${algorithmId}_param_${entry.value.parameterNumber}',  // Use actual parameter number
             'name': pname,
             'type': 'audio',
+            'parameterNumber': entry.value.parameterNumber,  // Store integer parameter number
             'busParam': pname,
           });
         } else {
@@ -702,25 +959,30 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   int? _getBusNumberForPort(core_port.Port port, Slot slot) {
     // Strategy 1: Use busParam from port metadata
     final busParam = port.metadata?['busParam'] as String?;
+    debugPrint('[DIAG] _getBusNumberForPort: port=${port.id}, busParam=$busParam');
     if (busParam != null) {
       // Find the parameter in the slot (robust match)
       final paramInfo = _findParameterByName(slot, busParam);
+      debugPrint('[DIAG]   Found param: ${paramInfo?.name} (num=${paramInfo?.parameterNumber})');
       if (paramInfo != null && paramInfo.parameterNumber >= 0) {
         // Get the current value for this parameter
         final paramValue = slot.values
             .where((v) => v.parameterNumber == paramInfo.parameterNumber)
             .firstOrNull;
         
-        // Only use explicitly set parameter values, not defaults
-        // This prevents physical connections from being created based on parameter defaults
-        final busValue = paramValue?.value ?? 0; // Default to 0 (None) if not explicitly set
+        // Check if using default value
+        final busValue = paramValue?.value ?? paramInfo.defaultValue;
+        debugPrint('[DIAG]   Bus value: $busValue (explicit=${paramValue != null}, default=${paramInfo.defaultValue})');
         
-        // Validate bus number range
-        if (busValue > 0 && busValue <= 20) {
+        // For now, accept default values to test algorithm connections
+        // Validate bus number range (1-28 for all buses)
+        if (busValue > 0 && busValue <= 28) {
+          debugPrint('[DIAG]   -> Returning bus $busValue');
           return busValue;
         }
         // Bus 0 means "None" - no physical connection
         if (busValue == 0) {
+          debugPrint('[DIAG]   -> Bus 0 (None)');
           return null;
         }
       }
@@ -1682,7 +1944,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Starting hardware sync from device');
       
       // Trigger hardware routing refresh through DistingCubit
-      await _distingCubit.refreshRouting();
+      await _distingCubit?.refreshRouting();
       
       // The state will be updated through the stream subscription
       // when _processSynchronizedState is called
@@ -1759,7 +2021,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
     
     try {
-      await _distingCubit.refreshRouting();
+      await _distingCubit?.refreshRouting();
       // State will be updated through the stream subscription
     } catch (e) {
       debugPrint('Error refreshing routing: $e');

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'algorithm_routing.dart';
 import 'models/routing_state.dart';
 import 'models/port.dart';
@@ -550,5 +551,117 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     _cachedInputPorts = null;
     _cachedOutputPorts = null;
     debugPrint('MultiChannelAlgorithmRouting: Disposed');
+  }
+  
+  /// Determines if this routing implementation can handle the given slot.
+  /// 
+  /// Returns true for all algorithms (this is the default fallback).
+  /// Poly algorithms are handled by PolyAlgorithmRouting first.
+  static bool canHandle(Slot slot) {
+    // This is the fallback for all non-poly algorithms
+    return true;
+  }
+  
+  /// Creates a MultiChannelAlgorithmRouting instance from a slot.
+  /// 
+  /// Converts all routing parameters to input/output ports based on their names.
+  /// Checks for a 'Width' parameter to determine channel count for multi-channel algorithms.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot containing algorithm and parameter information
+  /// - [routingParams]: Pre-extracted routing parameters (bus assignments)
+  /// - [algorithmUuid]: Optional UUID for the algorithm instance
+  static MultiChannelAlgorithmRouting createFromSlot(
+    Slot slot, {
+    required Map<String, int> routingParams,
+    String? algorithmUuid,
+  }) {
+    // Process routing parameters as regular ports
+    final inputPorts = <Map<String, Object?>>[];
+    final outputPorts = <Map<String, Object?>>[];
+    
+    for (final entry in routingParams.entries) {
+      final paramName = entry.key;
+      final busValue = entry.value;
+      
+      // Skip unconnected parameters (bus value 0 means "None")
+      if (busValue == 0) continue;
+      
+      // Determine if this is an input or output based on parameter name
+      final lowerName = paramName.toLowerCase();
+      final isOutput = lowerName.contains('output') && !lowerName.contains('mode');
+      
+      // Infer port type from parameter name
+      String portType = 'audio';
+      if (lowerName.contains('cv') || lowerName.contains('pitchbend') || lowerName.contains('wave')) {
+        portType = 'cv';
+      } else if (lowerName.contains('gate') || lowerName.contains('reset') || lowerName.contains('trigger')) {
+        portType = 'gate';
+      } else if (lowerName.contains('clock')) {
+        portType = 'clock';
+      }
+      
+      final port = {
+        'id': '${isOutput ? "out" : "in"}_${paramName.replaceAll(' ', '_').toLowerCase()}',
+        'name': paramName,
+        'type': portType,
+        'busParam': paramName,
+        'busValue': busValue,
+      };
+      
+      if (isOutput) {
+        // Add channel metadata for stereo outputs
+        if (lowerName.contains('left')) port['channel'] = 'left';
+        else if (lowerName.contains('right')) port['channel'] = 'right';
+        else if (lowerName.contains('mono')) port['channel'] = 'mono';
+        outputPorts.add(port);
+      } else {
+        inputPorts.add(port);
+      }
+    }
+    
+    // Check for Width parameter to determine channel count
+    int channelCount = 1;
+    final width = AlgorithmRouting.getParameterValue(slot, 'Width');
+    if (width > 0) {
+      channelCount = width;
+    }
+    
+    // Determine if this is a multi-channel algorithm
+    final isMultiChannel = channelCount > 1;
+    
+    // Create appropriate configuration
+    final MultiChannelAlgorithmConfig config;
+    if (isMultiChannel) {
+      config = MultiChannelAlgorithmConfig.widthBased(
+        width: channelCount,
+        supportsStereo: outputPorts.any((p) => p['channel'] == 'left' || p['channel'] == 'right'),
+      );
+    } else {
+      config = MultiChannelAlgorithmConfig.normal();
+    }
+    
+    // Store the ports in algorithm properties
+    final properties = {
+      'algorithmGuid': slot.algorithm.guid,
+      'algorithmName': slot.algorithm.name,
+      'algorithmUuid': algorithmUuid,
+      'inputs': inputPorts,
+      'outputs': outputPorts,
+      'channelCount': channelCount,
+      'isMultiChannel': isMultiChannel,
+    };
+    
+    return MultiChannelAlgorithmRouting(
+      config: MultiChannelAlgorithmConfig(
+        channelCount: config.channelCount,
+        supportsStereoChannels: config.supportsStereoChannels,
+        allowsIndependentChannels: config.allowsIndependentChannels,
+        supportedPortTypes: config.supportedPortTypes,
+        portNamePrefix: config.portNamePrefix,
+        createMasterMix: config.createMasterMix,
+        algorithmProperties: properties,
+      ),
+    );
   }
 }

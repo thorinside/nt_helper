@@ -11,9 +11,6 @@ import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 // Removed unused imports from previous canvas split
-import 'package:nt_helper/ui/widgets/routing/connection_validator.dart';
-import 'package:nt_helper/models/physical_connection.dart';
-import 'package:nt_helper/models/algorithm_connection.dart';
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
 /// It composes the routing canvas and exposes the same API for compatibility.
@@ -43,8 +40,10 @@ class RoutingEditorWidget extends StatefulWidget {
 
 class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   final Map<String, Offset> _nodePositions = {};
+  final Map<String, Offset> _portPositions = {};  // Store actual port positions
   final Set<String> _selectedNodes = {};
   String? _selectedConnectionId;
+  bool _initialPortsResolved = false;  // Track if initial port positions are resolved
   
   String? _connectionSourcePortId;
   Offset? _dragPosition;
@@ -77,14 +76,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Center the view on the canvas after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCanvas();
-      // Give ports time to register their positions
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          setState(() {
-            _portsReady = true;
-          });
-        }
-      });
+      // Ports will set _portsReady when they register their positions
     });
     
     _initializeNodePositions();
@@ -104,18 +96,29 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Position nodes in the center area of the 5000x5000 canvas
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    // Physical port anchors are resolved dynamically by measuring widgets
+    
+    // Physical inputs on the left side (matching _buildPhysicalInputNodes)
+    _nodePositions['physical_inputs'] = const Offset(centerX - 800, centerY - 300);
+    
+    // Physical outputs on the right side (matching _buildPhysicalOutputNodes)
+    _nodePositions['physical_outputs'] = const Offset(centerX + 600, centerY - 300);
+    
     // Algorithm nodes in the center area
-    const double algorithmStartX = centerX - 250;
-    const double algorithmSpacing = 300.0;
-    const double algorithmRowSpacing = 200.0;
-    for (int i = 0; i < 8; i++) {
-      final column = i % 2;
-      final row = i ~/ 2;
-      _nodePositions['algorithm_$i'] = Offset(
-        algorithmStartX + (column * algorithmSpacing),
-        centerY - 300 + (row * algorithmRowSpacing),
-      );
+    // We'll initialize them when we have the actual algorithm IDs
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is RoutingEditorStateLoaded) {
+      const double algorithmStartX = centerX - 250;
+      const double algorithmSpacing = 300.0;
+      const double algorithmRowSpacing = 200.0;
+      for (int i = 0; i < routingState.algorithms.length && i < 8; i++) {
+        final algo = routingState.algorithms[i];
+        final column = i % 2;
+        final row = i ~/ 2;
+        _nodePositions[algo.id] = Offset(
+          algorithmStartX + (column * algorithmSpacing),
+          centerY - 300 + (row * algorithmRowSpacing),
+        );
+      }
     }
   }
 
@@ -129,11 +132,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
-      buildWhen: (previous, current) =>
-          previous.runtimeType != current.runtimeType ||
-          (previous is RoutingEditorStateLoaded &&
-              current is RoutingEditorStateLoaded &&
-              _hasLoadedStateChanged(previous, current)),
+      buildWhen: (previous, current) {
+        final shouldRebuild = previous.runtimeType != current.runtimeType ||
+            (previous is RoutingEditorStateLoaded &&
+                current is RoutingEditorStateLoaded &&
+                _hasLoadedStateChanged(previous, current));
+        
+        // Clear port positions when state changes significantly
+        if (shouldRebuild && current is RoutingEditorStateLoaded) {
+          _portPositions.clear();
+          _portsReady = false;
+          _initialPortsResolved = false;
+        }
+        
+        return shouldRebuild;
+      },
       builder: (context, state) {
         return Container(
           width: widget.canvasSize.width,
@@ -163,8 +176,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       refreshing: () => _buildLoadingOverlay(context),
       persisting: () => _buildLoadingOverlay(context),
       syncing: () => _buildLoadingOverlay(context),
-      loaded: (physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, algorithmConnections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) =>
-          _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections, physicalConnections, algorithmConnections),
+      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) =>
+          _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections),
       error: (message) => _buildErrorState(context, message),
     );
   }
@@ -241,8 +254,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<Port> physicalOutputs,
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
-    List<PhysicalConnection> physicalConnections,
-    List<AlgorithmConnection> algorithmConnections,
   ) {
     return Semantics(
       label: 'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
@@ -321,22 +332,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 if (widget.showPhysicalPorts) ..._buildPhysicalInputNodes(physicalInputs),
                 if (widget.showPhysicalPorts) ..._buildPhysicalOutputNodes(physicalOutputs),
                 ..._buildAlgorithmNodes(algorithms),
-                // Draw connections above nodes so they appear to emanate from ports
-                if (physicalConnections.isNotEmpty)
-                  IgnorePointer(
-                    ignoring: true,
-                    child: _buildPhysicalConnectionCanvas(physicalConnections),
-                  ),
-                if (algorithmConnections.isNotEmpty && _portsReady)
-                  IgnorePointer(
-                    ignoring: true,
-                    child: _buildAlgorithmConnectionCanvas(algorithmConnections),
-                  ),
-                if (connections.isNotEmpty)
-                  IgnorePointer(
-                    ignoring: true,
-                    child: _buildConnectionCanvas(connections),
-                  ),
+                // Draw all connections with unified canvas
+                if (connections.isNotEmpty) ...[
+                  if (_portsReady)
+                    IgnorePointer(
+                      ignoring: true,
+                      child: _buildUnifiedConnectionCanvas(connections),
+                    )
+                  else
+                    IgnorePointer(
+                      ignoring: true,
+                      child: Center(
+                        child: Text('Waiting for ports... (${connections.length} connections ready)'),
+                      ),
+                    ),
+                ],
                 if (_isDraggingConnection && _dragPosition != null) _buildTemporaryConnection(),
               ],
             ),
@@ -353,7 +363,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Position in the center area of the canvas, to the left of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    final nodePosition = Offset(centerX - 800, centerY - 300);
+    final nodePosition = _nodePositions['physical_inputs'] ?? const Offset(centerX - 800, centerY - 300);
     
     return [
       Positioned(
@@ -380,7 +390,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Position in the center area of the canvas, to the right of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    final nodePosition = Offset(centerX + 600, centerY - 300);
+    final nodePosition = _nodePositions['physical_outputs'] ?? const Offset(centerX + 600, centerY - 300);
     
     return [
       Positioned(
@@ -404,7 +414,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   List<Widget> _buildAlgorithmNodes(List<RoutingAlgorithm> algorithms) {
     return algorithms.map((algorithm) {
-      final nodeId = 'algorithm_${algorithm.index}';
+      // Use stable algorithm ID instead of index for consistent positioning
+      final nodeId = algorithm.id;
       // Use a default position in the center area if not yet positioned
       final defaultPosition = Offset(
         _canvasWidth / 2 - 250 + ((algorithm.index % 2) * 300),
@@ -421,7 +432,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         left: position.dx,
         top: position.dy,
         child: AlgorithmNodeWidget(
-          key: ValueKey('algorithm_widget_${algorithm.index}'),
+          key: ValueKey(algorithm.id), // Use stable ID for widget key
           algorithmName: algorithm.algorithm.name,
           slotNumber: algorithm.index + 1, // 1-indexed for display
           position: position,
@@ -469,310 +480,53 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }).toList();
   }
 
-  Widget _buildConnectionCanvas(List<Connection> connections) {
-    // Get the current state to access bus numbers and output modes
-    final state = context.read<RoutingEditorCubit>().state;
-    Map<String, int> busNumbers = {};
-    Map<String, String> outputModes = {};
-    
-    if (state is RoutingEditorStateLoaded) {
-      // Convert buses list to a map of port ID to bus number
-      for (int i = 0; i < state.buses.length; i++) {
-        final bus = state.buses[i];
-        for (final connectionId in bus.connectionIds) {
-          // Extract port ID from connection ID if needed
-          busNumbers[connectionId] = i + 1; // Bus numbers are 1-indexed
-        }
-      }
-      
-      // Convert OutputMode enum to string
-      outputModes = state.portOutputModes.map((key, value) => 
-        MapEntry(key, value == OutputMode.mix ? 'mix' : 'replace'));
-    }
-    
-    // Create ConnectionData objects for each connection
+  Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {
+    // Build ConnectionData list for all connections
     final connectionDataList = <ConnectionData>[];
+    
     for (final connection in connections) {
       final sourcePosition = _getPortPosition(connection.sourcePortId);
       final targetPosition = _getPortPosition(connection.targetPortId);
-      if (sourcePosition == null || targetPosition == null) continue;
       
-      final sourcePort = _findPortById(connection.sourcePortId);
-      final targetPort = _findPortById(connection.targetPortId);
+      if (sourcePosition == null || targetPosition == null) {
+        continue;
+      }
       
-      // Convert to routing.Connection for ConnectionData
-      final routingConnection = Connection(
-        id: '${connection.sourcePortId}->${connection.targetPortId}',
-        sourcePortId: connection.sourcePortId,
-        targetPortId: connection.targetPortId,
-        isGhostConnection: sourcePort != null && targetPort != null 
-            ? ConnectionValidator.isGhostConnection(sourcePort, targetPort)
-            : false,
-      );
+      // Extract metadata to determine connection type
+      final metadata = connection.properties?['metadata'] as dynamic;
+      final isPhysicalConnection = metadata?.connectionClass == 'hardware';
+      final isInputConnection = metadata?.targetAlgorithmId != null;
+      final busNumber = metadata?.busNumber as int?;
       
       connectionDataList.add(ConnectionData(
-        connection: routingConnection,
+        connection: connection,
         sourcePosition: sourcePosition,
         destinationPosition: targetPosition,
-        busNumber: busNumbers[connection.sourcePortId],
-        outputMode: outputModes[connection.sourcePortId],
-        isSelected: _selectedConnectionId == routingConnection.id,
+        busNumber: busNumber,
+        outputMode: connection.outputMode == OutputMode.mix ? 'mix' : 'replace',
+        isSelected: false,
         isHighlighted: false,
+        isPhysicalConnection: isPhysicalConnection,
+        isInputConnection: isInputConnection,
       ));
     }
     
-    // Create theme and state manager
-    final theme = Theme.of(context);
-    final connectionTheme = ConnectionVisualTheme.fromColorScheme(theme.colorScheme);
-    final stateManager = ConnectionStateManager(
-      theme: connectionTheme,
-      selectedConnectionIds: _selectedConnectionId != null ? {_selectedConnectionId!} : {},
-    );
-    
-    // Return ConnectionCanvas widget
-    return ConnectionCanvas(
-      connections: connectionDataList,
-      connectionStateManager: stateManager,
-      enableAntiOverlap: true,
-      showLabels: true,
-      enableAnimations: true,
-      onConnectionTapped: (connectionData) {
-        _handleConnectionTap(connectionData.connection.id);
-      },
-    );
-  }
-
-  Widget _buildPhysicalConnectionCanvas(List<PhysicalConnection> physicalConnections) {
-    // Convert PhysicalConnection objects to ConnectionData for rendering
-    final connectionDataList = <ConnectionData>[];
-    
-    for (final physicalConnection in physicalConnections) {
-      final sourcePosition = _getPortPosition(physicalConnection.sourcePortId);
-      final targetPosition = _getPortPosition(physicalConnection.targetPortId);
-      if (sourcePosition == null || targetPosition == null) continue;
-      
-      // Convert PhysicalConnection to routing.Connection for ConnectionData
-      final routingConnection = Connection(
-        id: physicalConnection.id,
-        sourcePortId: physicalConnection.sourcePortId,
-        targetPortId: physicalConnection.targetPortId,
-        isGhostConnection: false, // Physical connections are solid, not ghost
-      );
-      
-      connectionDataList.add(ConnectionData(
-        connection: routingConnection,
-        sourcePosition: sourcePosition,
-        destinationPosition: targetPosition,
-        busNumber: physicalConnection.busNumber,
-        outputMode: null, // Physical connections ignore output mode styling
-        isSelected: false, // Physical connections are never selected
-        isHighlighted: false,
-        isPhysicalConnection: true, // Mark as physical connection
-        isInputConnection: physicalConnection.isInputConnection, // Pass input/output info
-      ));
+    if (connectionDataList.isEmpty) {
+      return const SizedBox.shrink();
     }
     
-    if (connectionDataList.isEmpty) return const SizedBox.shrink();
-    
-    // Create a custom theme for physical connections with distinct colors
-    final theme = Theme.of(context);
-    final physicalConnectionTheme = ConnectionVisualTheme.fromColorScheme(
-      theme.colorScheme.copyWith(
-        primary: Colors.blue,      // Use blue for input connections
-        secondary: Colors.green,   // Use green for output connections  
-        tertiary: Colors.blueGrey, // Use blue-grey for mixed connections
+    // Use the unified ConnectionPainter
+    return CustomPaint(
+      painter: ConnectionPainter(
+        connections: connectionDataList,
+        theme: Theme.of(context),
+        showLabels: true,
+        enableAnimations: true,
       ),
-    );
-    
-    final stateManager = ConnectionStateManager(
-      theme: physicalConnectionTheme,
-      selectedConnectionIds: {}, // Physical connections are never selected
-    );
-    
-    // Return ConnectionCanvas widget with physical connection styling
-    return ConnectionCanvas(
-      connections: connectionDataList,
-      connectionStateManager: stateManager,
-      enableAntiOverlap: true,
-      showLabels: widget.showBusLabels, // Show I#/O# labels based on widget parameter
-      enableAnimations: false, // Physical connections don't need animations
-      onConnectionTapped: null, // Physical connections are not interactive
+      child: const SizedBox.expand(),
     );
   }
   
-  Widget _buildAlgorithmConnectionCanvas(List<AlgorithmConnection> algorithmConnections) {
-    if (algorithmConnections.isEmpty) return const SizedBox.shrink();
-    
-    // Group connections by execution order direction for different styling
-    final forwardConnections = <AlgorithmConnection>[];
-    final backwardConnections = <AlgorithmConnection>[];
-    
-    for (final connection in algorithmConnections) {
-      if (connection.isBackwardEdge) {
-        backwardConnections.add(connection);
-      } else {
-        forwardConnections.add(connection);
-      }
-    }
-    
-    // Create a stack of connection canvases: backward edges (red) on top of forward edges
-    final canvasLayers = <Widget>[];
-    
-    // Add forward connections first (normal colors, bottom layer)
-    if (forwardConnections.isNotEmpty) {
-      canvasLayers.add(_buildConnectionLayer(forwardConnections, isBackwardEdge: false));
-    }
-    
-    // Add backward connections on top (red highlighting, top layer)
-    if (backwardConnections.isNotEmpty) {
-      canvasLayers.add(_buildConnectionLayer(backwardConnections, isBackwardEdge: true));
-    }
-    
-    return Stack(children: canvasLayers);
-  }
-  
-  /// Build a connection layer for a group of connections with consistent styling
-  Widget _buildConnectionLayer(List<AlgorithmConnection> connections, {required bool isBackwardEdge}) {
-    // Group by connection type within this execution order group
-    final connectionsByType = <AlgorithmConnectionType, List<AlgorithmConnection>>{};
-    for (final connection in connections) {
-      connectionsByType.putIfAbsent(connection.connectionType, () => []).add(connection);
-    }
-    
-    final typeCanvasLayers = <Widget>[];
-    
-    for (final entry in connectionsByType.entries) {
-      final connectionType = entry.key;
-      final connectionsOfType = entry.value;
-      
-      final connectionDataList = <ConnectionData>[];
-      
-      debugPrint('_buildConnectionLayer: Processing ${connectionsOfType.length} connections of type ${connectionsOfType.first.connectionType}');
-      
-      for (final algorithmConnection in connectionsOfType) {
-        // Handle physical output connections differently
-        if (algorithmConnection.isPhysicalOutput) {
-          // Algorithm to physical output connection
-          // Use the port ID directly from the connection
-          final sourcePortId = algorithmConnection.sourcePortId;
-          
-          final sourcePosition = _getPortPosition(sourcePortId);
-          final targetPosition = _getPhysicalOutputPosition(algorithmConnection.busNumber);
-          
-          if (sourcePosition == null || targetPosition == null) {
-            debugPrint('AlgorithmConnection: Could not resolve positions for physical output ${algorithmConnection.id}');
-            debugPrint('  Source port $sourcePortId position: $sourcePosition');
-            debugPrint('  Target bus ${algorithmConnection.busNumber} position: $targetPosition');
-            continue;
-          }
-          
-          // Convert to routing.Connection for rendering
-          final routingConnection = Connection(
-            id: algorithmConnection.id,
-            sourcePortId: sourcePortId,
-            targetPortId: 'physical_output_${algorithmConnection.busNumber}',
-            isGhostConnection: !algorithmConnection.isValid,
-          );
-          
-          connectionDataList.add(ConnectionData(
-            connection: routingConnection,
-            sourcePosition: sourcePosition,
-            destinationPosition: targetPosition,
-            busNumber: algorithmConnection.busNumber,
-            outputMode: null,
-            isSelected: false,
-            isHighlighted: false,
-            isPhysicalConnection: false, // This is an algorithm connection to physical output
-            isInputConnection: null,
-          ));
-        } else {
-          // Algorithm to algorithm connection
-          // The port IDs in AlgorithmConnection are the actual port IDs from the BusRegistry
-          debugPrint('AlgorithmConnection: Processing ${algorithmConnection.id} - source: algo${algorithmConnection.sourceAlgorithmIndex}:${algorithmConnection.sourcePortId} -> target: algo${algorithmConnection.targetAlgorithmIndex}:${algorithmConnection.targetPortId}');
-          
-          // Use the port IDs directly - they're already the correct ones from BusRegistry
-          final sourcePortId = algorithmConnection.sourcePortId;
-          final targetPortId = algorithmConnection.targetPortId;
-          
-          debugPrint('Looking for positions: source=$sourcePortId, target=$targetPortId');
-          debugPrint('  Source algo ${algorithmConnection.sourceAlgorithmIndex}, Target algo ${algorithmConnection.targetAlgorithmIndex}');
-          
-          final sourcePosition = _getPortPosition(sourcePortId);
-          final targetPosition = _getPortPosition(targetPortId);
-          if (sourcePosition == null || targetPosition == null) {
-            debugPrint('AlgorithmConnection: Could not resolve positions for ${algorithmConnection.id}');
-            debugPrint('  Source port $sourcePortId position: $sourcePosition');
-            debugPrint('  Target port $targetPortId position: $targetPosition');
-            
-            // Debug: print what ports are available for these algorithms
-            final routingState = context.read<RoutingEditorCubit>().state;
-            if (routingState is RoutingEditorStateLoaded) {
-              final sourceAlgo = routingState.algorithms.firstWhere(
-                (a) => a.index == algorithmConnection.sourceAlgorithmIndex,
-                orElse: () => throw Exception('Source algo not found'),
-              );
-              final targetAlgo = routingState.algorithms.firstWhere(
-                (a) => a.index == algorithmConnection.targetAlgorithmIndex, 
-                orElse: () => throw Exception('Target algo not found'),
-              );
-              debugPrint('  Available output ports on source algo: ${sourceAlgo.outputPorts.map((p) => p.id).join(", ")}');
-              debugPrint('  Available input ports on target algo: ${targetAlgo.inputPorts.map((p) => p.id).join(", ")}');
-            }
-            continue;
-          }
-          
-          // Convert AlgorithmConnection to routing.Connection for ConnectionData
-          final routingConnection = Connection(
-            id: algorithmConnection.id,
-            sourcePortId: sourcePortId,
-            targetPortId: targetPortId,
-            isGhostConnection: !algorithmConnection.isValid, // Invalid connections are ghost/dashed
-          );
-          
-          connectionDataList.add(ConnectionData(
-            connection: routingConnection,
-            sourcePosition: sourcePosition,
-            destinationPosition: targetPosition,
-            busNumber: algorithmConnection.busNumber,
-            outputMode: null, // Algorithm connections use standard styling
-            isSelected: false, // Algorithm connections are not selectable for now
-            isHighlighted: false,
-            isPhysicalConnection: false, // This is an algorithm connection
-            isInputConnection: null, // Not applicable for algorithm connections
-          ));
-        }
-      }
-      
-      if (connectionDataList.isNotEmpty) {
-        // Create execution order and type-specific connection theme
-        final connectionTheme = isBackwardEdge 
-            ? _createBackwardEdgeTheme(connectionsOfType)
-            : _createConnectionThemeForType(connectionType);
-        
-        // Create state manager for this connection type
-        final stateManager = ConnectionStateManager(
-          theme: connectionTheme,
-          selectedConnectionIds: {}, // Algorithm connections are not selectable for now
-        );
-        
-        // Add canvas layer for this connection type
-        typeCanvasLayers.add(
-          ConnectionCanvas(
-            connections: connectionDataList,
-            connectionStateManager: stateManager,
-            enableAntiOverlap: true,
-            showLabels: widget.showBusLabels, // Show bus labels based on widget parameter
-            enableAnimations: true, // Algorithm connections support animations
-            onConnectionTapped: null, // Algorithm connections are not interactive for now
-          ),
-        );
-      }
-    }
-    
-    // Return a stack of connection canvases for different types within this execution order group
-    return Stack(children: typeCanvasLayers);
-  }
-
   Widget _buildTemporaryConnection() {
     if (_connectionSourcePortId == null || _dragPosition == null) {
       return const SizedBox.shrink();
@@ -861,8 +615,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     if (previous.physicalInputs.length != current.physicalInputs.length ||
         previous.physicalOutputs.length != current.physicalOutputs.length ||
         previous.algorithms.length != current.algorithms.length ||
-        previous.connections.length != current.connections.length ||
-        previous.physicalConnections.length != current.physicalConnections.length) {
+        previous.connections.length != current.connections.length) {
       return true;
     }
     for (int i = 0; i < current.algorithms.length; i++) {
@@ -900,19 +653,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
     
     // Check physical connections for changes
-    if (previous.physicalConnections.length != current.physicalConnections.length) return true;
-    for (int i = 0; i < current.physicalConnections.length; i++) {
-      if (i >= previous.physicalConnections.length) return true;
-      final prev = previous.physicalConnections[i];
-      final curr = current.physicalConnections[i];
-      if (prev.id != curr.id || 
-          prev.sourcePortId != curr.sourcePortId || 
-          prev.targetPortId != curr.targetPortId ||
-          prev.busNumber != curr.busNumber ||
-          prev.algorithmIndex != curr.algorithmIndex) {
-        return true;
-      }
-    }
     
     return false;
   }
@@ -996,22 +736,56 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
   }
   Offset? _getPortPosition(String portId) {
-    // Always calculate port positions based on algorithm positions and port indices
+    // First check if we have a stored position from the actual widget
+    if (_portPositions.containsKey(portId)) {
+      return _portPositions[portId];
+    }
+    
+    // Fallback to calculating port positions based on algorithm positions and port indices
     // This is synchronous and doesn't depend on widget measurement
     
     final routingState = context.read<RoutingEditorCubit>().state;
     if (routingState is! RoutingEditorStateLoaded) return null;
     
+    // Check physical inputs (hw_in_1 through hw_in_12)
+    if (portId.startsWith('hw_in_')) {
+      final inputNum = int.tryParse(portId.substring(6));
+      if (inputNum != null && inputNum >= 1 && inputNum <= 12) {
+        // Physical inputs are on the left side
+        const double centerX = _canvasWidth / 2;
+        const double centerY = _canvasHeight / 2;
+        final nodePos = _nodePositions['physical_inputs'] ?? const Offset(centerX - 800, centerY - 300);
+        // Physical input node width is ~150px, ports are on the right edge
+        final portOffset = Offset(150, 50 + (inputNum - 1) * 30); // Stack vertically
+        return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
+      }
+    }
+    
+    // Check physical outputs (hw_out_1 through hw_out_8)
+    if (portId.startsWith('hw_out_')) {
+      final outputNum = int.tryParse(portId.substring(7));
+      if (outputNum != null && outputNum >= 1 && outputNum <= 8) {
+        // Physical outputs are on the right side
+        const double centerX = _canvasWidth / 2;
+        const double centerY = _canvasHeight / 2;
+        final nodePos = _nodePositions['physical_outputs'] ?? const Offset(centerX + 600, centerY - 300);
+        // Physical output node ports are on the left edge
+        final portOffset = Offset(0, 50 + (outputNum - 1) * 30); // Stack vertically
+        return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
+      }
+    }
+    
     for (final algo in routingState.algorithms) {
       // Check inputs
       final inputIndex = algo.inputPorts.indexWhere((p) => p.id == portId);
       if (inputIndex != -1) {
-        final nodeId = 'algorithm_${algo.index}';
+        final nodeId = algo.id;
         final nodePos = _nodePositions[nodeId];
         if (nodePos != null) {
           // Calculate position based on index
-          // Header is ~40px, each port is ~28px with 4px padding
-          final portOffset = Offset(12, 50 + inputIndex * 32);
+          // Header is ~40px, each port is ~35px height
+          // Adjust for the actual port center position
+          final portOffset = Offset(0, 50 + inputIndex * 35);
           return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
         }
       }
@@ -1019,11 +793,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Check outputs  
       final outputIndex = algo.outputPorts.indexWhere((p) => p.id == portId);
       if (outputIndex != -1) {
-        final nodeId = 'algorithm_${algo.index}';
+        final nodeId = algo.id;
         final nodePos = _nodePositions[nodeId];
         if (nodePos != null) {
           // Outputs are on the right edge (assuming 300px width)
-          final portOffset = Offset(288, 50 + outputIndex * 32);
+          // Adjust for the actual port center position
+          final portOffset = Offset(300, 50 + outputIndex * 35);
           return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
         }
       }
@@ -1057,134 +832,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   /// Create a theme for a specific algorithm connection type
-  ConnectionVisualTheme _createConnectionThemeForType(AlgorithmConnectionType connectionType) {
-    final theme = Theme.of(context);
-    final connectionColor = _getConnectionTypeColor(connectionType);
-    
-    // Create base theme with type-specific styling
-    return ConnectionVisualTheme(
-      // Valid connections: styled with type-specific color
-      directConnection: ConnectionStyle(
-        strokeWidth: 2.5, // Slightly thicker than regular connections for prominence
-        color: connectionColor,
-        dashPattern: null, // Solid lines for valid connections
-        animationEnabled: false,
-        endpointRadius: 3.0,
-        glowEffect: false,
-      ),
-      // Invalid connections: red, dashed (overrides type color)
-      ghostConnection: ConnectionStyle(
-        strokeWidth: 2.0,
-        color: theme.colorScheme.error, // Red for invalid connections
-        dashPattern: [8.0, 4.0], // Dashed pattern for invalid connections
-        animationEnabled: true, // Subtle animation to draw attention
-        endpointRadius: 2.5,
-        glowEffect: true, // Glow effect for better visibility
-      ),
-      // Error connections (same as invalid for algorithm connections)
-      errorConnection: ConnectionStyle(
-        strokeWidth: 2.5,
-        color: theme.colorScheme.error,
-        dashPattern: [6.0, 3.0],
-        animationEnabled: false,
-        endpointRadius: 3.0,
-        glowEffect: false,
-      ),
-      // Selected connections: highlighted with thicker stroke using type color
-      selectedConnection: ConnectionStyle(
-        strokeWidth: 3.5,
-        color: connectionColor,
-        dashPattern: null,
-        animationEnabled: false,
-        endpointRadius: 4.0,
-        glowEffect: true,
-      ),
-      // Hover state: slightly thicker and brighter using type color
-      highlightedConnection: ConnectionStyle(
-        strokeWidth: 3.0,
-        color: connectionColor.withValues(alpha: 0.8), // Slightly transparent for hover
-        dashPattern: null,
-        animationEnabled: false,
-        endpointRadius: 3.5,
-        glowEffect: false,
-      ),
-    );
-  }
-
-  /// Get color based on algorithm connection type
-  Color _getConnectionTypeColor(AlgorithmConnectionType connectionType) {
-    switch (connectionType) {
-      case AlgorithmConnectionType.audioSignal:
-        return Colors.orange; // Orange for audio signals
-      case AlgorithmConnectionType.controlVoltage:
-        return Colors.blue; // Blue for CV signals
-      case AlgorithmConnectionType.gateTrigger:
-        return Colors.green; // Green for gate/trigger signals
-      case AlgorithmConnectionType.clockTiming:
-        return Colors.purple; // Purple for clock signals
-      case AlgorithmConnectionType.mixed:
-        return Colors.grey; // Grey for mixed/unknown signals
-    }
-  }
-
-  /// Create a theme for backward edges (execution order violations) with red highlighting
-  /// and optional dashed pattern for invalid connections (self-connections)
-  ConnectionVisualTheme _createBackwardEdgeTheme(List<AlgorithmConnection> connections) {
-    final theme = Theme.of(context);
-    final redColor = theme.colorScheme.error; // Red for backward edges
-    
-    // Check if any connections in this group are invalid (self-connections)
-    final hasInvalidConnections = connections.any((conn) => !conn.isValid);
-    final dashPattern = hasInvalidConnections ? [8.0, 4.0] : null; // Dashed for invalid connections
-    
-    return ConnectionVisualTheme(
-      // Valid backward connections: solid red (execution order violation warning)
-      directConnection: ConnectionStyle(
-        strokeWidth: 2.5,
-        color: redColor,
-        dashPattern: dashPattern, // Solid for valid backward edges, dashed for invalid
-        animationEnabled: hasInvalidConnections, // Animation for invalid connections
-        endpointRadius: 3.0,
-        glowEffect: hasInvalidConnections, // Glow effect for invalid connections
-      ),
-      // Invalid backward connections: dashed red (double violation: invalid + backward)
-      ghostConnection: ConnectionStyle(
-        strokeWidth: 2.0,
-        color: redColor,
-        dashPattern: [6.0, 3.0], // More pronounced dashing for invalid connections
-        animationEnabled: true, // Animation to draw attention to problems
-        endpointRadius: 2.5,
-        glowEffect: true, // Glow effect for visibility
-      ),
-      // Error connections: same as ghost for algorithm connections
-      errorConnection: ConnectionStyle(
-        strokeWidth: 2.5,
-        color: redColor,
-        dashPattern: [6.0, 3.0],
-        animationEnabled: false,
-        endpointRadius: 3.0,
-        glowEffect: false,
-      ),
-      // Selected backward connections: thicker red
-      selectedConnection: ConnectionStyle(
-        strokeWidth: 3.5,
-        color: redColor,
-        dashPattern: dashPattern,
-        animationEnabled: false,
-        endpointRadius: 4.0,
-        glowEffect: true,
-      ),
-      // Hover state: slightly transparent red
-      highlightedConnection: ConnectionStyle(
-        strokeWidth: 3.0,
-        color: redColor.withValues(alpha: 0.8),
-        dashPattern: dashPattern,
-        animationEnabled: false,
-        endpointRadius: 3.5,
-        glowEffect: false,
-      ),
-    );
-  }
 
   void _updatePortAnchor(String portId, Offset globalCenter) {
     final ctx = _canvasKey.currentContext;
@@ -1192,14 +839,30 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.attached) return;
     final local = box.globalToLocal(globalCenter);
-    // Don't trigger unnecessary rebuilds if position hasn't changed significantly
-    final existingPosition = _nodePositions[portId];
-    if (existingPosition != null && (existingPosition - local).distance < 1.0) {
-      return;
+    // Check if position has changed significantly
+    final existingPosition = _portPositions[portId];
+    final needsUpdate = existingPosition == null || (existingPosition - local).distance > 1.0;
+    
+    if (needsUpdate) {
+      // Store port position
+      _portPositions[portId] = local;
+      
+      // If ports aren't ready yet, check if we have enough positions to start rendering
+      if (!_portsReady && _portPositions.length > 0) {
+        // Delay slightly to collect all port positions in the same frame
+        Future.microtask(() {
+          if (mounted && !_portsReady) {
+            setState(() {
+              _portsReady = true;
+              _initialPortsResolved = true;
+            });
+          }
+        });
+      } else if (_portsReady) {
+        // After initial setup, update immediately
+        setState(() {});
+      }
     }
-    setState(() {
-      _nodePositions[portId] = local;
-    });
   }
 }
 

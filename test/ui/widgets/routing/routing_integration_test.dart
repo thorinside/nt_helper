@@ -204,6 +204,7 @@ void main() {
         // Create multiple algorithms to test performance
         final algorithms = List.generate(5, (index) {
           return RoutingAlgorithm(
+            id: 'algo_test_$index',  // Add the required id parameter
             index: index,
             algorithm: Algorithm(
               algorithmIndex: index,
