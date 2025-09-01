@@ -496,7 +496,25 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final metadata = connection.properties?['metadata'] as dynamic;
       final isPhysicalConnection = metadata?.connectionClass == 'hardware';
       final isInputConnection = metadata?.targetAlgorithmId != null;
-      final busNumber = metadata?.busNumber as int?;
+      
+      // Try to get bus number from multiple possible locations
+      int? busNumber;
+      
+      // First try metadata.busNumber
+      if (metadata != null && metadata.busNumber != null) {
+        busNumber = metadata.busNumber as int?;
+      }
+      // Then try direct properties.busNumber
+      else if (connection.properties?['busNumber'] != null) {
+        busNumber = connection.properties!['busNumber'] as int?;
+      }
+      // Finally try to extract from busId (e.g., "bus_5" -> 5)
+      else if (connection.busId != null) {
+        final busIdMatch = RegExp(r'bus_(\d+)').firstMatch(connection.busId!);
+        if (busIdMatch != null) {
+          busNumber = int.tryParse(busIdMatch.group(1)!);
+        }
+      }
       
       connectionDataList.add(ConnectionData(
         connection: connection,
