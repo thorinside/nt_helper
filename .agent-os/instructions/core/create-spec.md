@@ -13,7 +13,7 @@ encoding: UTF-8
 Generate detailed feature specifications aligned with product roadmap and mission.
 
 <pre_flight_check>
-  EXECUTE: @~/.agent-os/instructions/meta/pre-flight.md
+  EXECUTE: @/Users/nealsanche/.agent-os/instructions/meta/pre-flight.md
 </pre_flight_check>
 
 <process_flow>
@@ -577,7 +577,7 @@ Evaluate readiness to begin implementation after completing all previous steps, 
 
 <execution_flow>
   IF user_confirms_yes:
-    REFERENCE: @~/.agent-os/instructions/core/execute-tasks.md
+    REFERENCE: @/Users/nealsanche/.agent-os/instructions/core/execute-tasks.md
     FOCUS: Only Task 1 and its subtasks
     CONSTRAINT: Do not proceed to additional tasks without explicit user request
   ELSE:

@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Add visual feedback for algorithm-to-algorithm connections that violate Disting NT's slot processing order by rendering them as dotted red lines. This helps users identify routing configurations where higher-numbered algorithm slots attempt to send data to lower-numbered slots, allowing them to correct the algorithm ordering using up/down buttons. Invalid connections remain visible but are clearly marked as non-functional until the slot ordering is fixed.

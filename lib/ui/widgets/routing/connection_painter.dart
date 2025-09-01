@@ -29,6 +29,9 @@ class ConnectionData {
 
   /// Convenience getter for ghost connection status from the connection model
   bool get isGhostConnection => connection.isGhostConnection;
+  
+  /// Convenience getter for invalid order status from the connection properties
+  bool get isInvalidOrder => connection.properties?['isInvalidOrder'] == true;
 }
 
 /// Custom painter for efficiently rendering multiple connection lines
@@ -62,11 +65,14 @@ class ConnectionPainter extends CustomPainter {
     // Group connections by type for batch rendering
     final regularConnections = <ConnectionData>[];
     final ghostConnections = <ConnectionData>[];
+    final invalidConnections = <ConnectionData>[];
     final selectedConnections = <ConnectionData>[];
 
     for (final conn in connections) {
       if (conn.isSelected) {
         selectedConnections.add(conn);
+      } else if (conn.isInvalidOrder) {
+        invalidConnections.add(conn);
       } else if (conn.isGhostConnection) {
         ghostConnections.add(conn);
       } else {
@@ -74,9 +80,10 @@ class ConnectionPainter extends CustomPainter {
       }
     }
 
-    // Draw in order: regular -> ghost -> selected (for proper layering)
+    // Draw in order: regular -> ghost -> invalid -> selected (for proper layering)
     _drawConnectionBatch(canvas, regularConnections, ConnectionType.regular);
     _drawConnectionBatch(canvas, ghostConnections, ConnectionType.ghost);
+    _drawConnectionBatch(canvas, invalidConnections, ConnectionType.invalid);
     _drawConnectionBatch(canvas, selectedConnections, ConnectionType.selected);
 
     // Draw labels last so they appear on top
@@ -117,6 +124,8 @@ class ConnectionPainter extends CustomPainter {
         if (enableAnimations && animationProgress != null) {
           _drawAnimatedFlow(canvas, path, conn);
         }
+      } else if (type == ConnectionType.invalid) {
+        _drawDashedPath(canvas, path, paint);
       } else {
         canvas.drawPath(path, paint);
       }
@@ -227,6 +236,14 @@ class ConnectionPainter extends CustomPainter {
     ConnectionData conn,
     ConnectionType type,
   ) {
+    // Handle invalid connections with error color
+    if (type == ConnectionType.invalid) {
+      paint
+        ..strokeWidth = 2.0
+        ..color = theme.colorScheme.error;
+      return;
+    }
+
     // Get style from theme manager if available, otherwise fall back to defaults
     ConnectionStyle style;
     
@@ -239,7 +256,7 @@ class ConnectionPainter extends CustomPainter {
         connection: conn.connection,
         isSelected: conn.isSelected,
         isHighlighted: conn.isHighlighted,
-        hasError: false,
+        hasError: conn.isInvalidOrder,
       );
     }
 
@@ -448,6 +465,7 @@ class ConnectionPainter extends CustomPainter {
 enum ConnectionType {
   regular,
   ghost,
+  invalid,
   selected,
 }
 

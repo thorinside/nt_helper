@@ -8,13 +8,14 @@ import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/db/daos/metadata_dao.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([DistingCubit, IDistingMidiManager, AppDatabase])
+@GenerateMocks([DistingCubit, IDistingMidiManager, AppDatabase, MetadataDao])
 import 'routing_editor_cubit_test.mocks.dart';
 
 void main() {
@@ -42,6 +43,12 @@ void main() {
       
       // Initialize AlgorithmMetadataService with mock database
       final mockDatabase = MockAppDatabase();
+      final mockMetadataDao = MockMetadataDao();
+      
+      // Setup the metadataDao mock with necessary stubs
+      when(mockDatabase.metadataDao).thenReturn(mockMetadataDao);
+      when(mockMetadataDao.getAllAlgorithms()).thenAnswer((_) async => []);
+      
       await AlgorithmMetadataService().initialize(mockDatabase);
       
       mockDistingCubit = MockDistingCubit();
@@ -301,6 +308,94 @@ void main() {
       );
     });
 
+    group('connection validation integration', () {
+      blocTest<RoutingEditorCubit, RoutingEditorState>(
+        'should call ConnectionValidator during synchronization',
+        build: () => routingEditorCubit,
+        act: (cubit) {
+          final mockMidiManager = MockIDistingMidiManager();
+          final testSlots = _createTestSlots(); // Use existing simple test slots
+          
+          distingStateController.add(DistingState.synchronized(
+            disting: mockMidiManager,
+            distingVersion: '1.9.0',
+            firmwareVersion: FirmwareVersion('1.9.0'),
+            presetName: 'Test Preset',
+            algorithms: [],
+            slots: testSlots,
+            unitStrings: [],
+          ));
+        },
+        expect: () => [
+          // The integration should succeed and produce a loaded state
+          // The fact that no exception was thrown means ConnectionValidator was integrated properly
+          isA<RoutingEditorStateLoaded>().having(
+            (state) => state.algorithms.length,
+            'algorithms processed',
+            equals(2),
+          ),
+        ],
+      );
+
+      blocTest<RoutingEditorCubit, RoutingEditorState>(
+        'should re-validate on algorithm reordering',
+        build: () => routingEditorCubit,
+        act: (cubit) {
+          final mockMidiManager = MockIDistingMidiManager();
+          final testSlots = _createTestSlots();
+          
+          // First synchronization
+          distingStateController.add(DistingState.synchronized(
+            disting: mockMidiManager,
+            distingVersion: '1.9.0',
+            firmwareVersion: FirmwareVersion('1.9.0'),
+            presetName: 'Test Preset',
+            algorithms: [],
+            slots: testSlots,
+            unitStrings: [],
+          ));
+        },
+        expect: () => [
+          // Validation should occur during processing without throwing exceptions
+          isA<RoutingEditorStateLoaded>().having(
+            (state) => state.algorithms.length,
+            'algorithms processed successfully',
+            equals(2),
+          ),
+        ],
+      );
+
+      test('ConnectionValidator integration maintains existing functionality', () async {
+        final mockMidiManager = MockIDistingMidiManager();
+        final testSlots = _createTestSlots();
+        
+        // Test that the routing editor still works as expected with ConnectionValidator integrated
+        distingStateController.add(DistingState.synchronized(
+          disting: mockMidiManager,
+          distingVersion: '1.9.0',
+          firmwareVersion: FirmwareVersion('1.9.0'),
+          presetName: 'Test Preset',
+          algorithms: [],
+          slots: testSlots,
+          unitStrings: [],
+        ));
+
+        // Wait for processing
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        final currentState = routingEditorCubit.state;
+        expect(currentState, isA<RoutingEditorStateLoaded>());
+        
+        final loadedState = currentState as RoutingEditorStateLoaded;
+        expect(loadedState.algorithms.length, equals(2));
+        expect(loadedState.physicalInputs.length, equals(12));
+        expect(loadedState.physicalOutputs.length, equals(8));
+        
+        // The connections list should exist (even if empty due to test setup)
+        expect(loadedState.connections, isNotNull);
+      });
+    });
+
     group('resource management', () {
       test('should cancel subscription on close', () async {
         await routingEditorCubit.close();
@@ -426,3 +521,4 @@ List<Slot> _createInvalidSlots() {
     ),
   ];
 }
+

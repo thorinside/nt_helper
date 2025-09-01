@@ -69,7 +69,7 @@ IF current task involves writing or updating Rust code:
         PROCESS: Returned style rules
       ELSE:
         READ the following style guides (only if not already in context):
-        - @~/.agent-os/standards/code-style/rust-style.md (if not in context)
+        - @/Users/nealsanche/.agent-os/standards/code-style/rust-style.md (if not in context)
     </context_fetcher_strategy>
 ELSE:
   SKIP: Rust style guide not relevant to current task
@@ -88,7 +88,7 @@ IF current task involves writing or updating Flutter/Dart code:
         PROCESS: Returned style rules
       ELSE:
         READ the following style guides (only if not already in context):
-        - @~/.agent-os/standards/code-style/flutter-style.md (if not in context)
+        - @/Users/nealsanche/.agent-os/standards/code-style/flutter-style.md (if not in context)
     </context_fetcher_strategy>
 ELSE:
   SKIP: Flutter style guide not relevant to current task

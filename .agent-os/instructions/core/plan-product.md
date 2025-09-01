@@ -13,7 +13,7 @@ encoding: UTF-8
 Generate product docs for new projects: mission, tech-stack, roadmap, decisions files for AI agent consumption.
 
 <pre_flight_check>
-  EXECUTE: @~/.agent-os/instructions/meta/pre-flight.md
+  EXECUTE: @/Users/nealsanche/.agent-os/instructions/meta/pre-flight.md
 </pre_flight_check>
 
 <process_flow>
@@ -27,8 +27,8 @@ Use the context-fetcher subagent to collect all required inp duts from the user 
 <data_sources>
   <primary>user_direct_input</primary>
   <fallback_sequence>
-    1. @~/.agent-os/standards/tech-stack.md
-    2. @~/.claude/CLAUDE.md
+    1. @/Users/nealsanche/.agent-os/standards/tech-stack.md
+    2. CLAUDE.md (in project root)
     3. Cursor User Rules
   </fallback_sequence>
 </data_sources>
@@ -215,8 +215,8 @@ Use the file-creator subagent to create the file: .agent-os/product/tech-stack.m
     <for_each item="required_items">
       <if_not_in>user_input</if_not_in>
       <then_check>
-        1. @~/.agent-os/standards/tech-stack.md
-        2. @~/.claude/CLAUDE.md
+        1. @/Users/nealsanche/.agent-os/standards/tech-stack.md
+        2. CLAUDE.md (in project root)
         3. Cursor User Rules
       </then_check>
       <else>add_to_missing_list</else>

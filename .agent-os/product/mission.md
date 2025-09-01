@@ -1,7 +1,7 @@
 # Product Mission
 
-> Last Updated: 2025-08-31
-> Version: 1.0.0
+> Last Updated: 2025-09-01
+> Version: 1.1.0
 
 ## Pitch
 
@@ -35,7 +35,7 @@ Eurorack musicians using the Disting NT module face several significant challeng
 - **Cross-Platform Unity**: Single codebase supporting Linux, macOS, iOS, Android, and Windows
 - **Robust MIDI Implementation**: Reliable SysEx communication with comprehensive error handling
 - **Offline Capability**: Full functionality without hardware connection for preparation and planning
-- **Visual Routing Analysis**: Canvas-based routing visualization unique in the Eurorack ecosystem
+- **Visual Routing Analysis**: Advanced OO framework-based routing visualization with automatic connection discovery unique in the Eurorack ecosystem
 
 ### User Experience
 - **Multiple Operation Modes**: Demo, Offline, and Connected modes accommodate different use cases
@@ -54,13 +54,14 @@ Eurorack musicians using the Disting NT module face several significant challeng
 - **MIDI SysEx Communication**: Bidirectional communication with Disting NT hardware
 - **Comprehensive Preset Management**: Load, save, create, and organize presets with full backup/restore
 - **Algorithm Parameter Control**: Specialized UI views for different parameter types (CV, MIDI, I2C)
-- **Visual Routing Editor**: Canvas-based display of signal routing and parameter relationships
+- **Visual Routing Editor**: Advanced visualization of signal routing with automatic bus-based connection discovery and OO framework architecture
 
 ### Advanced Capabilities  
 - **Performance Mode**: Real-time parameter control optimized for live performance scenarios
 - **Cross-Platform Support**: Native performance on desktop and mobile with platform-specific optimizations
 - **Offline Algorithm Management**: Complete algorithm metadata management without hardware dependency
 - **External Tool Integration**: MCP server enables integration with other music production tools
+- **Intelligent Routing System**: Object-oriented routing framework with automatic connection discovery from bus assignments (buses 1-12 for inputs, 13-20 for outputs)
 
 ### User Experience Features
 - **Multiple Operation Modes**: Seamless switching between Demo, Offline, and Connected modes

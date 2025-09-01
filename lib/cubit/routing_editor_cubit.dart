@@ -10,6 +10,7 @@ import 'package:nt_helper/core/routing/models/port.dart' as core_port;
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
+import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'routing_editor_cubit.freezed.dart';
@@ -182,7 +183,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
 
       // Convert core connections to UI connections (temporary compatibility layer)
-      final connections = unifiedConnections
+      final discoveredConnections = unifiedConnections
           .map(
             (coreConn) => Connection(
               id: coreConn.id,
@@ -198,6 +199,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             ),
           )
           .toList();
+
+      // Validate connections for slot ordering violations
+      final connections = ConnectionValidator.validateConnections(
+        discoveredConnections,
+        algorithms,
+      );
 
       // For backward compatibility, keep empty lists for now
       // These will be removed in the next refactoring step

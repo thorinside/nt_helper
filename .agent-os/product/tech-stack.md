@@ -1,7 +1,7 @@
 # Technical Stack
 
-> Last Updated: 2025-08-31
-> Version: 1.0.0
+> Last Updated: 2025-09-01
+> Version: 1.1.0
 
 ## Application Framework
 
@@ -32,7 +32,7 @@
 ## UI Framework
 
 - **Design System:** Material Design with custom components
-- **Routing:** Custom routing visualization with canvas-based rendering
+- **Routing:** Advanced OO routing framework with RoutingEditorWidget visualization
 - **Responsive:** Multi-platform responsive design
 
 ## Development Tools
@@ -61,5 +61,10 @@
 - **State Management:** Cubit pattern with flutter_bloc
 - **Database Layer:** Drift ORM with SQLite
 - **MIDI Layer:** Interface-based design (IMidiService, MockMidiService, LiveMidiService)
-- **UI Components:** Material Design with custom routing visualization
+- **Routing Framework:** Object-oriented architecture in lib/core/routing/
+  - AlgorithmRouting base class with factory pattern
+  - ConnectionDiscoveryService for automatic bus-based connection discovery
+  - PolyAlgorithmRouting and MultiChannelAlgorithmRouting implementations
+  - Port and Connection models with rich metadata support
+- **UI Components:** Material Design with RoutingEditorWidget for pure visualization
 - **Data Classes:** Freezed for immutable state management

@@ -1,7 +1,7 @@
 # Product Roadmap
 
-> Last Updated: 2025-08-31
-> Version: 1.0.0
+> Last Updated: 2025-09-01
+> Version: 1.1.0
 > Status: Active Development
 
 ## Phase 0: Foundation - COMPLETED (3-4 months)
@@ -42,11 +42,14 @@
 ### Current Progress
 
 - **Routing Editor Architecture** ✓
-  - Data-driven routing computation from synchronized Slots
-  - RoutingFactory with AlgorithmRouting implementations
-  - Polyphonic and multi-channel routing support
-  - RoutingCanvas view-only visualization
-  - Auto-refresh when algorithm port lists change
+  - Object-oriented routing framework in lib/core/routing/
+  - AlgorithmRouting base class with factory pattern (.fromSlot())
+  - PolyAlgorithmRouting for gate-driven CV and declared outputs
+  - MultiChannelAlgorithmRouting for width-based routing
+  - ConnectionDiscoveryService for automatic bus-based connection discovery
+  - RoutingEditorWidget for pure visualization (no business logic)
+  - Automatic connection discovery from bus assignments (1-12 inputs, 13-20 outputs)
+  - Auto-refresh when algorithm parameters change
 
 ### Remaining Features
 

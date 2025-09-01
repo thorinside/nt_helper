@@ -13,7 +13,7 @@ encoding: UTF-8
 Initiate execution of one or more tasks for a given spec.
 
 <pre_flight_check>
-  EXECUTE: @~/.agent-os/instructions/meta/pre-flight.md
+  EXECUTE: @/Users/nealsanche/.agent-os/instructions/meta/pre-flight.md
 </pre_flight_check>
 
 <process_flow>
@@ -124,10 +124,10 @@ Use the git-workflow subagent to manage git branches to ensure proper isolation 
 
 ### Step 5: Task Execution Loop
 
-Execute all assigned parent tasks and their subtasks using @~/.agent-os/instructions/core/execute-task.md instructions, continuing until all tasks are complete.
+Execute all assigned parent tasks and their subtasks using @/Users/nealsanche/.agent-os/instructions/core/execute-task.md instructions, continuing until all tasks are complete.
 
 <execution_flow>
-  LOAD @~/.agent-os/instructions/core/execute-task.md ONCE
+  LOAD @/Users/nealsanche/.agent-os/instructions/core/execute-task.md ONCE
 
   FOR each parent_task assigned in Step 1:
     EXECUTE instructions from execute-task.md with:
