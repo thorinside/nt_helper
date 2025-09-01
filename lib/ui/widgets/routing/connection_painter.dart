@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
 import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
+import 'bus_label_formatter.dart';
 
 /// Represents connection data with bus and output mode information
 class ConnectionData {
@@ -366,25 +368,9 @@ class ConnectionPainter extends CustomPainter {
 
     final midPoint = tangent.position;
 
-    // Create label text based on connection type
-    String label;
-    if (conn.isPhysicalConnection && conn.isInputConnection != null) {
-      // Physical connection: format as "I#" for inputs, "O#" for outputs
-      if (conn.isInputConnection!) {
-        // Input connections use bus numbers 1-12
-        label = 'I${conn.busNumber}';
-      } else {
-        // Output connections use bus numbers 13-20, map to output numbers 1-8
-        final outputNumber = conn.busNumber! - 12;
-        label = 'O$outputNumber';
-      }
-    } else {
-      // User connection: format as "Bus #"
-      label = 'Bus ${conn.busNumber}';
-      if (conn.outputMode == 'replace') {
-        label += ' (R)';
-      }
-    }
+    // Use BusLabelFormatter to get the label
+    final label = formatBusLabel(conn.busNumber);
+    if (label.isEmpty) return;
 
     // Draw label background
     final backgroundPaint = Paint()
@@ -398,20 +384,12 @@ class ConnectionPainter extends CustomPainter {
 
     // Create text painter
     final textStyle = theme.textTheme.bodySmall?.copyWith(
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: FontWeight.w500,
-      color: conn.outputMode == 'replace' 
-          ? Colors.blue 
-          : theme.textTheme.bodySmall?.color,
+      color: theme.textTheme.bodySmall?.color,
     );
 
-    final textSpan = TextSpan(text: label, style: textStyle);
-    final textPainter = TextPainter(
-      text: textSpan,
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-
+    final textPainter = createLabelTextPainter(label, textStyle!);
     textPainter.layout();
 
     // Calculate label position
@@ -437,6 +415,62 @@ class ConnectionPainter extends CustomPainter {
       midPoint.dy - textPainter.height / 2,
     );
     textPainter.paint(canvas, textOffset);
+  }
+
+  /// Calculate the midpoint of a Bezier curve path
+  static Offset calculateBezierMidpoint(Offset start, Offset end) {
+    // For simple implementation, use path metrics to find the actual midpoint
+    final path = Path();
+    path.moveTo(start.dx, start.dy);
+    
+    final dx = end.dx - start.dx;
+    final controlOffset = (dx.abs() * 0.5).clamp(30.0, 150.0);
+    
+    final cp1 = Offset(
+      start.dx + (dx > 0 ? controlOffset : -controlOffset),
+      start.dy,
+    );
+    final cp2 = Offset(
+      end.dx - (dx > 0 ? controlOffset : -controlOffset),
+      end.dy,
+    );
+    
+    path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, end.dx, end.dy);
+    
+    final metrics = path.computeMetrics();
+    
+    // Safely iterate through metrics
+    for (final metric in metrics) {
+      final tangent = metric.getTangentForOffset(metric.length * 0.5);
+      if (tangent != null) {
+        return tangent.position;
+      }
+    }
+    
+    // Fallback to simple linear interpolation
+    return Offset.lerp(start, end, 0.5)!;
+  }
+
+  /// Calculate the angle for label rotation based on connection direction
+  static double calculateLabelAngle(Offset start, Offset end) {
+    final dx = end.dx - start.dx;
+    final dy = end.dy - start.dy;
+    return math.atan2(dy, dx);
+  }
+
+  /// Format bus number into label string using BusLabelFormatter
+  static String formatBusLabel(int? busNumber) {
+    return BusLabelFormatter.formatBusNumber(busNumber) ?? '';
+  }
+
+  /// Create a TextPainter for label rendering
+  static TextPainter createLabelTextPainter(String text, TextStyle style) {
+    final textSpan = TextSpan(text: text, style: style);
+    return TextPainter(
+      text: textSpan,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
   }
 
   /// Get color for a port based on its type
