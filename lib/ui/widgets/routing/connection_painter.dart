@@ -355,62 +355,92 @@ class ConnectionPainter extends CustomPainter {
       debugPrint('ConnectionPainter: No bus number for connection ${conn.connection.id}');
       return;
     }
-    debugPrint('ConnectionPainter: Drawing label for bus ${conn.busNumber}');
 
-    // Find midpoint of connection
+    // Calculate midpoint - try path metrics first, fallback to simple calculation
+    Offset midPoint;
+    
     final path = _createDirectPath(conn.sourcePosition, conn.destinationPosition);
     final metrics = path.computeMetrics();
-    if (metrics.isEmpty) return;
-
-    // Safe access to first metric
-    final metricsIterator = metrics.iterator;
-    if (!metricsIterator.moveNext()) return;
-    final metric = metricsIterator.current;
-
-    final midDistance = metric.length * 0.5;
-    final tangent = metric.getTangentForOffset(midDistance);
-    if (tangent == null) return;
-
-    final midPoint = tangent.position;
+    
+    if (metrics.isNotEmpty) {
+      final metricsIterator = metrics.iterator;
+      if (metricsIterator.moveNext()) {
+        final metric = metricsIterator.current;
+        if (metric.length > 0) {
+          final midDistance = metric.length * 0.5;
+          final tangent = metric.getTangentForOffset(midDistance);
+          if (tangent != null) {
+            midPoint = tangent.position;
+          } else {
+            midPoint = Offset(
+              (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
+              (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
+            );
+          }
+        } else {
+          midPoint = Offset(
+            (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
+            (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
+          );
+        }
+      } else {
+        midPoint = Offset(
+          (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
+          (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
+        );
+      }
+    } else {
+      // Fallback to simple midpoint calculation
+      midPoint = Offset(
+        (conn.sourcePosition.dx + conn.destinationPosition.dx) / 2,
+        (conn.sourcePosition.dy + conn.destinationPosition.dy) / 2,
+      );
+    }
 
     // Use BusLabelFormatter to get the label
     final label = formatBusLabel(conn.busNumber);
-    if (label.isEmpty) return;
+    if (label.isEmpty) {
+      debugPrint('ConnectionPainter: Empty label for bus ${conn.busNumber}');
+      return;
+    }
 
-    // Draw label background
-    final backgroundPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = theme.cardColor.withValues(alpha: 0.9);
-
-    final borderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0
-      ..color = theme.dividerColor;
-
-    // Create text painter
-    final textStyle = theme.textTheme.bodySmall?.copyWith(
-      fontSize: 11,
-      fontWeight: FontWeight.w500,
-      color: theme.textTheme.bodySmall?.color,
+    // Create text painter with enhanced text style
+    final textStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+      color: Colors.black, // Explicit black color for visibility
     );
 
-    final textPainter = createLabelTextPainter(label, textStyle!);
+    final textPainter = createLabelTextPainter(label, textStyle);
     textPainter.layout();
 
     // Calculate label position
     final labelRect = Rect.fromCenter(
       center: midPoint,
-      width: textPainter.width + 8,
-      height: textPainter.height + 4,
+      width: textPainter.width + 12,
+      height: textPainter.height + 8,
     );
+
+    // Draw label background with high contrast
+    final backgroundPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.white.withValues(alpha: 0.95); // High contrast white background
+
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..color = Colors.black; // Bold black border
+
+    // Save canvas state
+    canvas.save();
 
     // Draw label background
     canvas.drawRRect(
-      RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
+      RRect.fromRectAndRadius(labelRect, const Radius.circular(6)),
       backgroundPaint,
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
+      RRect.fromRectAndRadius(labelRect, const Radius.circular(6)),
       borderPaint,
     );
 
@@ -419,7 +449,11 @@ class ConnectionPainter extends CustomPainter {
       midPoint.dx - textPainter.width / 2,
       midPoint.dy - textPainter.height / 2,
     );
+    
     textPainter.paint(canvas, textOffset);
+
+    // Restore canvas state
+    canvas.restore();
   }
 
   /// Calculate the midpoint of a Bezier curve path
