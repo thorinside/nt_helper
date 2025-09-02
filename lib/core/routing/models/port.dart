@@ -19,6 +19,16 @@ enum PortType {
   clock,
 }
 
+/// Enum representing the output mode for output ports
+@JsonEnum()
+enum OutputMode {
+  /// Add mode - output is mixed with other outputs on the same bus
+  add,
+  
+  /// Replace mode - output replaces any previous output on the same bus
+  replace,
+}
+
 /// Enum representing the direction of a port
 @JsonEnum()
 enum PortDirection {
@@ -72,6 +82,9 @@ sealed class Port with _$Port {
     
     /// Optional metadata for the port
     Map<String, dynamic>? metadata,
+    
+    /// Optional output mode for output ports (add or replace)
+    OutputMode? outputMode,
   }) = _Port;
 
   /// Creates a Port from JSON

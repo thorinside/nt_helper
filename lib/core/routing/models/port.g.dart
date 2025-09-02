@@ -15,6 +15,7 @@ _Port _$PortFromJson(Map<String, dynamic> json) => _Port(
   constraints: json['constraints'] as Map<String, dynamic>?,
   isActive: json['isActive'] as bool? ?? true,
   metadata: json['metadata'] as Map<String, dynamic>?,
+  outputMode: $enumDecodeNullable(_$OutputModeEnumMap, json['outputMode']),
 );
 
 Map<String, dynamic> _$PortToJson(_Port instance) => <String, dynamic>{
@@ -26,6 +27,7 @@ Map<String, dynamic> _$PortToJson(_Port instance) => <String, dynamic>{
   'constraints': instance.constraints,
   'isActive': instance.isActive,
   'metadata': instance.metadata,
+  'outputMode': _$OutputModeEnumMap[instance.outputMode],
 };
 
 const _$PortTypeEnumMap = {
@@ -39,4 +41,9 @@ const _$PortDirectionEnumMap = {
   PortDirection.input: 'input',
   PortDirection.output: 'output',
   PortDirection.bidirectional: 'bidirectional',
+};
+
+const _$OutputModeEnumMap = {
+  OutputMode.add: 'add',
+  OutputMode.replace: 'replace',
 };

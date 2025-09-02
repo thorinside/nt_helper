@@ -1,3 +1,5 @@
+import '../../../core/routing/models/port.dart';
+
 /// Enum representing the type of bus
 enum BusType {
   /// Physical input buses (1-12)
@@ -59,6 +61,39 @@ class BusLabelFormatter {
         return 'I$localNumber';
       case BusType.output:
         return 'O$localNumber';
+      case BusType.auxiliary:
+        return 'A$localNumber';
+      case null:
+        return null;
+    }
+  }
+
+  /// Formats a bus number into its display label with optional output mode suffix
+  /// 
+  /// For output buses (13-20), adds " R" suffix when outputMode is replace.
+  /// Input and auxiliary buses ignore the output mode parameter.
+  /// 
+  /// Returns:
+  /// - "I1" through "I12" for input buses (mode ignored)
+  /// - "O1" through "O8" for output buses in add mode or null mode
+  /// - "O1 R" through "O8 R" for output buses in replace mode
+  /// - "A1" through "A8" for auxiliary buses (mode ignored)
+  /// - null for invalid bus numbers
+  static String? formatBusLabelWithMode(int? busNumber, OutputMode? outputMode) {
+    if (busNumber == null || !isValidBusNumber(busNumber)) {
+      return null;
+    }
+
+    final localNumber = getLocalBusNumber(busNumber);
+    if (localNumber == null) return null;
+
+    final busType = getBusType(busNumber);
+    switch (busType) {
+      case BusType.input:
+        return 'I$localNumber';
+      case BusType.output:
+        final baseLabel = 'O$localNumber';
+        return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case BusType.auxiliary:
         return 'A$localNumber';
       case null:

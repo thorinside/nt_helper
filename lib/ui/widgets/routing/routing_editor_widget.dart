@@ -534,7 +534,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         sourcePosition: sourcePosition,
         destinationPosition: targetPosition,
         busNumber: busNumber,
-        outputMode: connection.outputMode == OutputMode.mix ? 'mix' : 'replace',
+        outputMode: _mapOutputMode(connection.outputMode),
         isSelected: false,
         isHighlighted: false,
         isPhysicalConnection: isPhysicalConnection,
@@ -893,6 +893,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         // After initial setup, update immediately
         setState(() {});
       }
+    }
+  }
+
+  /// Maps cubit OutputMode to core routing OutputMode
+  core_port.OutputMode? _mapOutputMode(OutputMode outputMode) {
+    switch (outputMode) {
+      case OutputMode.mix:
+        return core_port.OutputMode.add;
+      case OutputMode.replace:
+        return core_port.OutputMode.replace;
     }
   }
 }

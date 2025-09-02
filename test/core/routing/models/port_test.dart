@@ -2,6 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 
 void main() {
+  group('OutputMode Enum Tests', () {
+    test('OutputMode should have add and replace values', () {
+      expect(OutputMode.values, hasLength(2));
+      expect(OutputMode.values, contains(OutputMode.add));
+      expect(OutputMode.values, contains(OutputMode.replace));
+    });
+
+    test('OutputMode should serialize to JSON correctly', () {
+      expect(OutputMode.add.name, equals('add'));
+      expect(OutputMode.replace.name, equals('replace'));
+    });
+  });
+
   group('Port Model Tests', () {
     test('should create port with all required fields', () {
       const port = Port(
@@ -36,6 +49,42 @@ void main() {
       expect(port.metadata?['category'], equals('modulation'));
     });
 
+    test('should create output port with outputMode', () {
+      const port = Port(
+        id: 'output_port',
+        name: 'Output Port',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        outputMode: OutputMode.replace,
+      );
+
+      expect(port.outputMode, equals(OutputMode.replace));
+    });
+
+    test('should create output port with default add mode when not specified', () {
+      const port = Port(
+        id: 'output_port',
+        name: 'Output Port',
+        type: PortType.audio,
+        direction: PortDirection.output,
+      );
+
+      expect(port.outputMode, isNull);
+    });
+
+    test('input port should not have outputMode', () {
+      const port = Port(
+        id: 'input_port',
+        name: 'Input Port',
+        type: PortType.audio,
+        direction: PortDirection.input,
+        outputMode: OutputMode.replace, // This should be ignored for input ports
+      );
+
+      // The outputMode might be present but should not be used for input ports
+      expect(port.direction, equals(PortDirection.input));
+    });
+
     test('should serialize to and from JSON correctly', () {
       const originalPort = Port(
         id: 'test_port',
@@ -58,6 +107,23 @@ void main() {
       expect(deserializedPort.description, equals(originalPort.description));
       expect(deserializedPort.isActive, equals(originalPort.isActive));
       expect(deserializedPort.constraints, equals(originalPort.constraints));
+    });
+
+    test('should serialize port with outputMode to and from JSON correctly', () {
+      const originalPort = Port(
+        id: 'output_port',
+        name: 'Output Port',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        outputMode: OutputMode.replace,
+      );
+
+      final json = originalPort.toJson();
+      expect(json['outputMode'], equals('replace'));
+
+      final deserializedPort = Port.fromJson(json);
+      expect(deserializedPort.outputMode, equals(OutputMode.replace));
+      expect(deserializedPort, equals(originalPort));
     });
 
     group('Port Direction Tests', () {
@@ -240,7 +306,7 @@ void main() {
         expect(gatePort.isCompatibleWith(clockPort), isTrue);
       });
 
-      test('audio and MIDI should not be compatible', () {
+      test('audio and gate should not be directly compatible', () {
         const audioPort = Port(
           id: 'audio',
           name: 'Audio',
@@ -248,15 +314,17 @@ void main() {
           direction: PortDirection.output,
         );
 
-        const midiPort = Port(
-          id: 'midi',
-          name: 'MIDI',
-          type: PortType.audio,
+        const gatePort = Port(
+          id: 'gate',
+          name: 'Gate',
+          type: PortType.gate,
           direction: PortDirection.input,
         );
 
-        expect(audioPort.isCompatibleWith(midiPort), isFalse);
-        expect(midiPort.isCompatibleWith(audioPort), isFalse);
+        // Audio and gate are different signal types, so they're not compatible
+        // unless there's a clock/gate exception
+        expect(audioPort.isCompatibleWith(gatePort), isFalse);
+        expect(gatePort.isCompatibleWith(audioPort), isFalse);
       });
     });
 

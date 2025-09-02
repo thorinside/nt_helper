@@ -250,14 +250,16 @@ abstract class AlgorithmRouting {
   /// 
   /// Returns an appropriate AlgorithmRouting implementation
   static AlgorithmRouting fromSlot(Slot slot, {String? algorithmUuid}) {
-    // Extract routing parameters once for all implementations
+    // Extract both routing and mode parameters once for all implementations
     final ioParameters = extractIOParameters(slot);
+    final modeParameters = extractModeParameters(slot);
     
     // Ask each implementation if it can handle this slot
     if (PolyAlgorithmRouting.canHandle(slot)) {
       return PolyAlgorithmRouting.createFromSlot(
         slot, 
         ioParameters: ioParameters,
+        modeParameters: modeParameters,
         algorithmUuid: algorithmUuid,
       );
     }
@@ -266,6 +268,7 @@ abstract class AlgorithmRouting {
     return MultiChannelAlgorithmRouting.createFromSlot(
       slot,
       ioParameters: ioParameters,
+      modeParameters: modeParameters,
       algorithmUuid: algorithmUuid,
     );
   }
@@ -307,6 +310,55 @@ abstract class AlgorithmRouting {
     }
     
     return ioParameters;
+  }
+  
+  /// Helper method to extract mode-related parameters from a slot.
+  /// 
+  /// Identifies parameters that control output modes (Add/Replace).
+  /// Mode parameters are identified by:
+  /// - Parameter name ending with 'mode' (case-insensitive)
+  /// - unit == 1 (enum type)
+  /// - enumValues containing 'Add' and 'Replace'
+  /// 
+  /// This method follows the same pattern as extractIOParameters but
+  /// specifically targets mode control parameters for output ports.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot to analyze
+  /// 
+  /// Returns a map of parameter names to their mode values (0=Add, 1=Replace)
+  static Map<String, int> extractModeParameters(Slot slot) {
+    final modeParameters = <String, int>{};
+    
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+    
+    // Build enum lookup map
+    final enumsByParam = <int, List<String>>{
+      for (final e in slot.enums) e.parameterNumber: e.values,
+    };
+    
+    for (final param in slot.parameters) {
+      // Mode parameters are identified by:
+      // - name ending with 'mode' (case-insensitive)
+      // - unit == 1 (enum type)
+      // - enum values containing 'Add' and 'Replace'
+      final enumValues = enumsByParam[param.parameterNumber];
+      final isModeParameter = param.name.toLowerCase().endsWith('mode') &&
+          param.unit == 1 &&
+          enumValues != null &&
+          enumValues.length >= 2 &&
+          enumValues.contains('Add') &&
+          enumValues.contains('Replace');
+
+      if (isModeParameter) {
+        final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
+        modeParameters[param.name] = value;
+      }
+    }
+    
+    return modeParameters;
   }
   
   /// Helper method to get parameter value from a slot.

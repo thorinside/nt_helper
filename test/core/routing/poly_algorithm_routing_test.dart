@@ -4,6 +4,32 @@ import 'package:nt_helper/core/routing/models/routing_state.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/port_compatibility_validator.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+
+// Helper function to create test Slot for PolyAlgorithmRouting
+Slot _createPolyTestSlot({
+  required Map<String, int> ioParameters,
+  Map<String, int> modeParameters = const {},
+  List<ParameterInfo> parameters = const [],
+  List<ParameterValue> values = const [],
+  List<ParameterEnumStrings> enums = const [],
+}) {
+  return Slot(
+    algorithm: Algorithm(
+      algorithmIndex: 0,
+      guid: 'poly-test-algo',
+      name: 'Poly Test Algorithm',
+    ),
+    routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
+    pages: ParameterPages(algorithmIndex: 0, pages: []),
+    parameters: parameters,
+    values: values,
+    enums: enums,
+    mappings: const [],
+    valueStrings: const [],
+  );
+}
 
 void main() {
   group('PolyAlgorithmConfig', () {
@@ -436,6 +462,157 @@ void main() {
       expect(routing.state.status, equals(RoutingSystemStatus.ready));
       
       routing.dispose();
+    });
+
+    group('Mode Parameter Handling', () {
+      test('should apply OutputMode.replace to output ports when mode parameter is 1', () {
+        final ioParameters = {
+          'Gate input 1': 1,
+          'Gate CV count 1': 2,
+          'Output 1': 13,
+          'Output 2': 14,
+        };
+        
+        final modeParameters = {
+          'Output 1 mode': 1, // Replace
+          'Output 2 mode': 0, // Add
+        };
+        
+        final routing = PolyAlgorithmRouting.createFromSlot(
+          _createPolyTestSlot(
+            ioParameters: ioParameters,
+            modeParameters: modeParameters,
+          ),
+          ioParameters: ioParameters,
+          modeParameters: modeParameters,
+        );
+        
+        final outputPorts = routing.outputPorts;
+        
+        // Find output ports for buses 13 and 14
+        final output1Port = outputPorts.firstWhere(
+          (p) => p.metadata?['busNumber'] == 13,
+          orElse: () => const Port(
+            id: 'not_found',
+            name: 'Not Found',
+            type: PortType.audio,
+            direction: PortDirection.output,
+          ),
+        );
+        
+        final output2Port = outputPorts.firstWhere(
+          (p) => p.metadata?['busNumber'] == 14,
+          orElse: () => const Port(
+            id: 'not_found',
+            name: 'Not Found',
+            type: PortType.audio,
+            direction: PortDirection.output,
+          ),
+        );
+        
+        // Output 1 should have Replace mode
+        expect(output1Port.outputMode, equals(OutputMode.replace));
+        
+        // Output 2 should have Add mode (or null for default)
+        expect(output2Port.outputMode ?? OutputMode.add, equals(OutputMode.add));
+        
+        routing.dispose();
+      });
+
+      test('should handle missing mode parameters gracefully', () {
+        final ioParameters = {
+          'Gate input 1': 1,
+          'Gate CV count 1': 2,
+          'Output 1': 13,
+        };
+        
+        // No mode parameters provided
+        final routing = PolyAlgorithmRouting.createFromSlot(
+          _createPolyTestSlot(ioParameters: ioParameters),
+          ioParameters: ioParameters,
+        );
+        
+        final outputPorts = routing.outputPorts;
+        
+        // Find output port for bus 13
+        final outputPort = outputPorts.firstWhere(
+          (p) => p.metadata?['busNumber'] == 13,
+          orElse: () => const Port(
+            id: 'not_found',
+            name: 'Not Found',
+            type: PortType.audio,
+            direction: PortDirection.output,
+          ),
+        );
+        
+        // Should default to null (which means Add mode)
+        expect(outputPort.outputMode, isNull);
+        
+        routing.dispose();
+      });
+
+      test('should apply mode to all output ports based on parameter pattern', () {
+        final ioParameters = {
+          'Gate input 1': 1,
+          'Gate CV count 1': 0,
+          'Gate input 2': 2,
+          'Gate CV count 2': 0,
+          'Output 1': 13,
+          'Output 2': 14,
+          'Output 3': 15,
+          'Output 4': 16,
+        };
+        
+        final modeParameters = {
+          'Output 1 mode': 1, // Replace
+          'Output 2 mode': 1, // Replace
+          'Output 3 mode': 0, // Add
+          'Output 4 mode': 0, // Add
+        };
+        
+        final routing = PolyAlgorithmRouting.createFromSlot(
+          _createPolyTestSlot(
+            ioParameters: ioParameters,
+            modeParameters: modeParameters,
+          ),
+          ioParameters: ioParameters,
+          modeParameters: modeParameters,
+        );
+        
+        final outputPorts = routing.outputPorts;
+        
+        // Check that outputs 1 and 2 have Replace mode
+        for (int bus in [13, 14]) {
+          final port = outputPorts.firstWhere(
+            (p) => p.metadata?['busNumber'] == bus,
+            orElse: () => const Port(
+              id: 'not_found',
+              name: 'Not Found',
+              type: PortType.audio,
+              direction: PortDirection.output,
+            ),
+          );
+          expect(port.outputMode, equals(OutputMode.replace),
+            reason: 'Output on bus $bus should have Replace mode');
+        }
+        
+        // Check that outputs 3 and 4 have Add mode (or null)
+        for (int bus in [15, 16]) {
+          final port = outputPorts.firstWhere(
+            (p) => p.metadata?['busNumber'] == bus,
+            orElse: () => const Port(
+              id: 'not_found',
+              name: 'Not Found',
+              type: PortType.audio,
+              direction: PortDirection.output,
+            ),
+          );
+          expect(port.outputMode ?? OutputMode.add, equals(OutputMode.add),
+            reason: 'Output on bus $bus should have Add mode');
+        }
+        
+        routing.dispose();
+      });
     });
   });
 }

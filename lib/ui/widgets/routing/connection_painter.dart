@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
 import 'bus_label_formatter.dart';
@@ -12,7 +13,7 @@ class ConnectionData {
   final Offset sourcePosition;
   final Offset destinationPosition;
   final int? busNumber;
-  final String? outputMode; // 'mix' or 'replace'
+  final OutputMode? outputMode; // Output mode from source port
   final bool isSelected;
   final bool isHighlighted;
   final bool isPhysicalConnection; // True if this is a physical connection
@@ -268,7 +269,7 @@ class ConnectionPainter extends CustomPainter {
     Color finalColor = Color.lerp(baseColor, style.color, 0.7) ?? style.color;
 
     // Apply replace mode styling
-    if (conn.outputMode == 'replace') {
+    if (conn.outputMode == OutputMode.replace) {
       finalColor = Colors.blue.withValues(alpha: finalColor.a);
     }
 
@@ -397,8 +398,8 @@ class ConnectionPainter extends CustomPainter {
       );
     }
 
-    // Use BusLabelFormatter to get the label
-    final label = formatBusLabel(conn.busNumber);
+    // Use BusLabelFormatter to get the label with mode-aware formatting
+    final label = formatBusLabelWithMode(conn.busNumber, conn.outputMode);
     if (label.isEmpty) {
       debugPrint('ConnectionPainter: Empty label for bus ${conn.busNumber}');
       return;
@@ -500,6 +501,11 @@ class ConnectionPainter extends CustomPainter {
   /// Format bus number into label string using BusLabelFormatter
   static String formatBusLabel(int? busNumber) {
     return BusLabelFormatter.formatBusNumber(busNumber) ?? '';
+  }
+
+  /// Format bus number into label string with mode-aware formatting using BusLabelFormatter
+  static String formatBusLabelWithMode(int? busNumber, OutputMode? outputMode) {
+    return BusLabelFormatter.formatBusLabelWithMode(busNumber, outputMode) ?? '';
   }
 
   /// Create a TextPainter for label rendering

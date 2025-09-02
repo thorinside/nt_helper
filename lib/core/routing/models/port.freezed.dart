@@ -23,7 +23,8 @@ mixin _$Port {
  String? get description;/// Optional constraints for this port (e.g., voltage range, frequency)
  Map<String, dynamic>? get constraints;/// Whether this port is currently active/enabled
  bool get isActive;/// Optional metadata for the port
- Map<String, dynamic>? get metadata;
+ Map<String, dynamic>? get metadata;/// Optional output mode for output ports (add or replace)
+ OutputMode? get outputMode;
 /// Create a copy of Port
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -36,16 +37,16 @@ $PortCopyWith<Port> get copyWith => _$PortCopyWithImpl<Port>(this as Port, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Port&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.constraints, constraints)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other.metadata, metadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Port&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.constraints, constraints)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,direction,description,const DeepCollectionEquality().hash(constraints),isActive,const DeepCollectionEquality().hash(metadata));
+int get hashCode => Object.hash(runtimeType,id,name,type,direction,description,const DeepCollectionEquality().hash(constraints),isActive,const DeepCollectionEquality().hash(metadata),outputMode);
 
 @override
 String toString() {
-  return 'Port(id: $id, name: $name, type: $type, direction: $direction, description: $description, constraints: $constraints, isActive: $isActive, metadata: $metadata)';
+  return 'Port(id: $id, name: $name, type: $type, direction: $direction, description: $description, constraints: $constraints, isActive: $isActive, metadata: $metadata, outputMode: $outputMode)';
 }
 
 
@@ -56,7 +57,7 @@ abstract mixin class $PortCopyWith<$Res>  {
   factory $PortCopyWith(Port value, $Res Function(Port) _then) = _$PortCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, PortType type, PortDirection direction, String? description, Map<String, dynamic>? constraints, bool isActive, Map<String, dynamic>? metadata
+ String id, String name, PortType type, PortDirection direction, String? description, Map<String, dynamic>? constraints, bool isActive, Map<String, dynamic>? metadata, OutputMode? outputMode
 });
 
 
@@ -73,7 +74,7 @@ class _$PortCopyWithImpl<$Res>
 
 /// Create a copy of Port
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? direction = null,Object? description = freezed,Object? constraints = freezed,Object? isActive = null,Object? metadata = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? direction = null,Object? description = freezed,Object? constraints = freezed,Object? isActive = null,Object? metadata = freezed,Object? outputMode = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -83,7 +84,8 @@ as PortDirection,description: freezed == description ? _self.description : descr
 as String?,constraints: freezed == constraints ? _self.constraints : constraints // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,metadata: freezed == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,
+as Map<String, dynamic>?,outputMode: freezed == outputMode ? _self.outputMode : outputMode // ignore: cast_nullable_to_non_nullable
+as OutputMode?,
   ));
 }
 
@@ -165,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  PortType type,  PortDirection direction,  String? description,  Map<String, dynamic>? constraints,  bool isActive,  Map<String, dynamic>? metadata)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  PortType type,  PortDirection direction,  String? description,  Map<String, dynamic>? constraints,  bool isActive,  Map<String, dynamic>? metadata,  OutputMode? outputMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Port() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.direction,_that.description,_that.constraints,_that.isActive,_that.metadata);case _:
+return $default(_that.id,_that.name,_that.type,_that.direction,_that.description,_that.constraints,_that.isActive,_that.metadata,_that.outputMode);case _:
   return orElse();
 
 }
@@ -186,10 +188,10 @@ return $default(_that.id,_that.name,_that.type,_that.direction,_that.description
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  PortType type,  PortDirection direction,  String? description,  Map<String, dynamic>? constraints,  bool isActive,  Map<String, dynamic>? metadata)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  PortType type,  PortDirection direction,  String? description,  Map<String, dynamic>? constraints,  bool isActive,  Map<String, dynamic>? metadata,  OutputMode? outputMode)  $default,) {final _that = this;
 switch (_that) {
 case _Port():
-return $default(_that.id,_that.name,_that.type,_that.direction,_that.description,_that.constraints,_that.isActive,_that.metadata);}
+return $default(_that.id,_that.name,_that.type,_that.direction,_that.description,_that.constraints,_that.isActive,_that.metadata,_that.outputMode);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -203,10 +205,10 @@ return $default(_that.id,_that.name,_that.type,_that.direction,_that.description
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  PortType type,  PortDirection direction,  String? description,  Map<String, dynamic>? constraints,  bool isActive,  Map<String, dynamic>? metadata)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  PortType type,  PortDirection direction,  String? description,  Map<String, dynamic>? constraints,  bool isActive,  Map<String, dynamic>? metadata,  OutputMode? outputMode)?  $default,) {final _that = this;
 switch (_that) {
 case _Port() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.direction,_that.description,_that.constraints,_that.isActive,_that.metadata);case _:
+return $default(_that.id,_that.name,_that.type,_that.direction,_that.description,_that.constraints,_that.isActive,_that.metadata,_that.outputMode);case _:
   return null;
 
 }
@@ -218,7 +220,7 @@ return $default(_that.id,_that.name,_that.type,_that.direction,_that.description
 @JsonSerializable()
 
 class _Port extends Port {
-  const _Port({required this.id, required this.name, required this.type, required this.direction, this.description, final  Map<String, dynamic>? constraints, this.isActive = true, final  Map<String, dynamic>? metadata}): _constraints = constraints,_metadata = metadata,super._();
+  const _Port({required this.id, required this.name, required this.type, required this.direction, this.description, final  Map<String, dynamic>? constraints, this.isActive = true, final  Map<String, dynamic>? metadata, this.outputMode}): _constraints = constraints,_metadata = metadata,super._();
   factory _Port.fromJson(Map<String, dynamic> json) => _$PortFromJson(json);
 
 /// Unique identifier for this port
@@ -255,6 +257,8 @@ class _Port extends Port {
   return EqualUnmodifiableMapView(value);
 }
 
+/// Optional output mode for output ports (add or replace)
+@override final  OutputMode? outputMode;
 
 /// Create a copy of Port
 /// with the given fields replaced by the non-null parameter values.
@@ -269,16 +273,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Port&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._constraints, _constraints)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other._metadata, _metadata));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Port&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._constraints, _constraints)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,direction,description,const DeepCollectionEquality().hash(_constraints),isActive,const DeepCollectionEquality().hash(_metadata));
+int get hashCode => Object.hash(runtimeType,id,name,type,direction,description,const DeepCollectionEquality().hash(_constraints),isActive,const DeepCollectionEquality().hash(_metadata),outputMode);
 
 @override
 String toString() {
-  return 'Port(id: $id, name: $name, type: $type, direction: $direction, description: $description, constraints: $constraints, isActive: $isActive, metadata: $metadata)';
+  return 'Port(id: $id, name: $name, type: $type, direction: $direction, description: $description, constraints: $constraints, isActive: $isActive, metadata: $metadata, outputMode: $outputMode)';
 }
 
 
@@ -289,7 +293,7 @@ abstract mixin class _$PortCopyWith<$Res> implements $PortCopyWith<$Res> {
   factory _$PortCopyWith(_Port value, $Res Function(_Port) _then) = __$PortCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, PortType type, PortDirection direction, String? description, Map<String, dynamic>? constraints, bool isActive, Map<String, dynamic>? metadata
+ String id, String name, PortType type, PortDirection direction, String? description, Map<String, dynamic>? constraints, bool isActive, Map<String, dynamic>? metadata, OutputMode? outputMode
 });
 
 
@@ -306,7 +310,7 @@ class __$PortCopyWithImpl<$Res>
 
 /// Create a copy of Port
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? direction = null,Object? description = freezed,Object? constraints = freezed,Object? isActive = null,Object? metadata = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? direction = null,Object? description = freezed,Object? constraints = freezed,Object? isActive = null,Object? metadata = freezed,Object? outputMode = freezed,}) {
   return _then(_Port(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -316,7 +320,8 @@ as PortDirection,description: freezed == description ? _self.description : descr
 as String?,constraints: freezed == constraints ? _self._constraints : constraints // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,metadata: freezed == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,
+as Map<String, dynamic>?,outputMode: freezed == outputMode ? _self.outputMode : outputMode // ignore: cast_nullable_to_non_nullable
+as OutputMode?,
   ));
 }
 

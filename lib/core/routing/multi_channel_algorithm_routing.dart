@@ -263,6 +263,17 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           final name = item['name']?.toString() ?? 'Output';
           final typeStr = item['type']?.toString().toLowerCase();
           final type = _parsePortType(typeStr) ?? PortType.audio;
+          // Determine output mode if available
+          OutputMode? outputMode;
+          if (item['outputMode'] != null) {
+            final modeStr = item['outputMode'].toString().toLowerCase();
+            if (modeStr == 'replace') {
+              outputMode = OutputMode.replace;
+            } else if (modeStr == 'add') {
+              outputMode = OutputMode.add;
+            }
+          }
+          
           ports.add(
             Port(
               id: id,
@@ -270,10 +281,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: type,
               direction: PortDirection.output,
               description: item['description']?.toString(),
+              outputMode: outputMode,
               metadata: {
                 'isDeclaredOutput': true,
                 if (item['busParam'] != null) 'busParam': item['busParam'],
                 if (item['busValue'] != null) 'busValue': item['busValue'],
+                if (item['busValue'] != null) 'busNumber': item['busValue'],  // Also store as busNumber for easier lookup
                 if (item['channel'] != null) 'channel': item['channel'],
                 if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
               },
@@ -644,10 +657,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// Parameters:
   /// - [slot]: The slot containing algorithm and parameter information
   /// - [ioParameters]: Pre-extracted routing parameters (bus assignments)
+  /// - [modeParameters]: Pre-extracted mode parameters (Add/Replace modes)
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
   static MultiChannelAlgorithmRouting createFromSlot(
     Slot slot, {
     required Map<String, int> ioParameters,
+    Map<String, int>? modeParameters,
     String? algorithmUuid,
   }) {
     // Process routing parameters as regular ports
@@ -707,6 +722,22 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         } else if (lowerName.contains('mono')) {
           port['channel'] = 'mono';
         }
+        
+        // Apply output mode if available
+        if (modeParameters != null) {
+          // Look for corresponding mode parameter (e.g., "Output 1 mode" for "Output 1")
+          final modeName = '$paramName mode';
+          if (modeParameters.containsKey(modeName)) {
+            final modeValue = modeParameters[modeName];
+            // 0 = Add, 1 = Replace
+            if (modeValue == 1) {
+              port['outputMode'] = 'replace';
+            } else {
+              port['outputMode'] = 'add';
+            }
+          }
+        }
+        
         outputPorts.add(port);
       } else {
         inputPorts.add(port);

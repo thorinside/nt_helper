@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
+import 'package:nt_helper/core/routing/models/port.dart';
 
 void main() {
   group('ConnectionData Label Formatting Tests', () {
@@ -65,8 +66,8 @@ void main() {
       // Test user connections (not physical)
       final testCases = [
         (1, null, 'Bus 1'), // No output mode
-        (3, 'mix', 'Bus 3'), // Mix mode (no suffix)
-        (5, 'replace', 'Bus 5 (R)'), // Replace mode (with suffix)
+        (3, OutputMode.add, 'Bus 3'), // Add mode (no suffix)
+        (5, OutputMode.replace, 'Bus 5 (R)'), // Replace mode (with suffix)
       ];
 
       for (final (busNumber, outputMode, expectedLabel) in testCases) {
@@ -124,7 +125,7 @@ void main() {
         sourcePosition: const Offset(10, 20),
         destinationPosition: const Offset(100, 200),
         busNumber: 3,
-        outputMode: 'mix',
+        outputMode: OutputMode.add,
         isSelected: false,
         isHighlighted: true,
         isPhysicalConnection: true,
@@ -135,7 +136,7 @@ void main() {
       expect(fullConnectionData.sourcePosition, const Offset(10, 20));
       expect(fullConnectionData.destinationPosition, const Offset(100, 200));
       expect(fullConnectionData.busNumber, 3);
-      expect(fullConnectionData.outputMode, 'mix');
+      expect(fullConnectionData.outputMode, OutputMode.add);
       expect(fullConnectionData.isSelected, isFalse);
       expect(fullConnectionData.isHighlighted, isTrue);
       expect(fullConnectionData.isPhysicalConnection, isTrue);

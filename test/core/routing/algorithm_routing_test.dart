@@ -4,6 +4,30 @@ import 'package:nt_helper/core/routing/models/routing_state.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/port_compatibility_validator.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+
+// Helper function to create test Slot
+Slot _createTestSlot({
+  required List<ParameterInfo> parameters,
+  List<ParameterValue> values = const [],
+  List<ParameterEnumStrings> enums = const [],
+}) {
+  return Slot(
+    algorithm: Algorithm(
+      algorithmIndex: 0,
+      guid: 'test-algo',
+      name: 'Test Algorithm',
+    ),
+    routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
+    pages: ParameterPages(algorithmIndex: 0, pages: []),
+    parameters: parameters,
+    values: values,
+    enums: enums,
+    mappings: const [],
+    valueStrings: const [],
+  );
+}
 
 // Test implementation of the abstract AlgorithmRouting class
 class TestAlgorithmRouting extends AlgorithmRouting {
@@ -401,6 +425,248 @@ void main() {
         final isValid = algorithm.validateConnection(audioOutputPort, audioInputPort);
         
         expect(isValid, isTrue);
+      });
+    });
+
+    group('extractModeParameters Tests', () {
+      test('should extract mode parameters with enum values Add and Replace', () {
+        final slot = _createTestSlot(
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Output 1 mode',
+              unit: 1, // enum type
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              name: 'Output 2 mode',
+              unit: 1, // enum type
+              min: 0,
+              max: 1,
+              defaultValue: 1,
+              powerOfTen: 0,
+            ),
+            // Non-mode parameter should be ignored
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              name: 'Some other param',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          enums: [
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              values: ['Add', 'Replace'],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              values: ['Add', 'Replace'],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              values: ['Option1', 'Option2'],
+            ),
+          ],
+          values: [
+            ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              value: 1, // Replace
+            ),
+            ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              value: 0, // Add
+            ),
+          ],
+        );
+
+        final modeParameters = AlgorithmRouting.extractModeParameters(slot);
+
+        expect(modeParameters, hasLength(2));
+        expect(modeParameters['Output 1 mode'], equals(1)); // Replace
+        expect(modeParameters['Output 2 mode'], equals(0)); // Add
+        expect(modeParameters.containsKey('Some other param'), isFalse);
+      });
+
+      test('should use default values when no value is provided', () {
+        final slot = _createTestSlot(
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Output mode',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0, // Default to Add
+              powerOfTen: 0,
+            ),
+          ],
+          enums: [
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              values: ['Add', 'Replace'],
+            ),
+          ],
+          values: [], // No values provided
+        );
+
+        final modeParameters = AlgorithmRouting.extractModeParameters(slot);
+
+        expect(modeParameters['Output mode'], equals(0)); // Should use default
+      });
+
+      test('should only extract parameters ending with "mode"', () {
+        final slot = _createTestSlot(
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Output mode',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              name: 'Modulation',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              name: 'Input mode',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          enums: [
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              values: ['Add', 'Replace'],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              values: ['Add', 'Replace'],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              values: ['Add', 'Replace'],
+            ),
+          ],
+          values: [],
+        );
+
+        final modeParameters = AlgorithmRouting.extractModeParameters(slot);
+
+        expect(modeParameters, hasLength(2));
+        expect(modeParameters.containsKey('Output mode'), isTrue);
+        expect(modeParameters.containsKey('Input mode'), isTrue);
+        expect(modeParameters.containsKey('Modulation'), isFalse);
+      });
+
+      test('should ignore parameters not meeting all criteria', () {
+        final slot = _createTestSlot(
+          parameters: [
+            // Wrong unit type
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              name: 'Output mode',
+              unit: 0, // Not enum
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+            // Wrong enum values
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              name: 'Another mode',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+            // Correct mode parameter
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              name: 'Valid mode',
+              unit: 1,
+              min: 0,
+              max: 1,
+              defaultValue: 0,
+              powerOfTen: 0,
+            ),
+          ],
+          enums: [
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              values: ['Add', 'Replace'],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 2,
+              values: ['Option1', 'Option2'],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 3,
+              values: ['Add', 'Replace'],
+            ),
+          ],
+          values: [],
+        );
+
+        final modeParameters = AlgorithmRouting.extractModeParameters(slot);
+
+        expect(modeParameters, hasLength(1));
+        expect(modeParameters.containsKey('Valid mode'), isTrue);
+      });
+
+      test('should handle empty slot parameters', () {
+        final slot = _createTestSlot(
+          parameters: [],
+          enums: [],
+          values: [],
+        );
+
+        final modeParameters = AlgorithmRouting.extractModeParameters(slot);
+
+        expect(modeParameters, isEmpty);
       });
     });
   });

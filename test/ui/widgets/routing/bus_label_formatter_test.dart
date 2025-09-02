@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/ui/widgets/routing/bus_label_formatter.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
 
 void main() {
   group('BusLabelFormatter', () {
@@ -124,6 +125,50 @@ void main() {
         expect(BusLabelFormatter.getLocalBusNumber(0), null);
         expect(BusLabelFormatter.getLocalBusNumber(29), null);
         expect(BusLabelFormatter.getLocalBusNumber(null), null);
+      });
+    });
+
+    group('formatBusLabelWithMode', () {
+      test('should format input buses without mode suffix (inputs do not have output modes)', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(1, null), 'I1');
+        expect(BusLabelFormatter.formatBusLabelWithMode(6, OutputMode.add), 'I6');
+        expect(BusLabelFormatter.formatBusLabelWithMode(12, OutputMode.replace), 'I12');
+      });
+
+      test('should format output buses with add mode (no suffix)', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(13, OutputMode.add), 'O1');
+        expect(BusLabelFormatter.formatBusLabelWithMode(16, OutputMode.add), 'O4');
+        expect(BusLabelFormatter.formatBusLabelWithMode(20, OutputMode.add), 'O8');
+      });
+
+      test('should format output buses with replace mode (R suffix)', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(13, OutputMode.replace), 'O1 R');
+        expect(BusLabelFormatter.formatBusLabelWithMode(16, OutputMode.replace), 'O4 R');
+        expect(BusLabelFormatter.formatBusLabelWithMode(20, OutputMode.replace), 'O8 R');
+      });
+
+      test('should format output buses without mode (no suffix)', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(13, null), 'O1');
+        expect(BusLabelFormatter.formatBusLabelWithMode(16, null), 'O4');
+        expect(BusLabelFormatter.formatBusLabelWithMode(20, null), 'O8');
+      });
+
+      test('should format auxiliary buses without mode suffix (aux buses do not have output modes)', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(21, null), 'A1');
+        expect(BusLabelFormatter.formatBusLabelWithMode(24, OutputMode.add), 'A4');
+        expect(BusLabelFormatter.formatBusLabelWithMode(28, OutputMode.replace), 'A8');
+      });
+
+      test('should return null for invalid bus numbers', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(0, OutputMode.add), null);
+        expect(BusLabelFormatter.formatBusLabelWithMode(-1, OutputMode.replace), null);
+        expect(BusLabelFormatter.formatBusLabelWithMode(29, OutputMode.add), null);
+        expect(BusLabelFormatter.formatBusLabelWithMode(100, OutputMode.replace), null);
+      });
+
+      test('should handle null bus number', () {
+        expect(BusLabelFormatter.formatBusLabelWithMode(null, OutputMode.add), null);
+        expect(BusLabelFormatter.formatBusLabelWithMode(null, OutputMode.replace), null);
       });
     });
   });
