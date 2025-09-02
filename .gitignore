@@ -67,9 +67,6 @@ node_modules/
 *.sln
 *.sw?
 # OS specific
-# Task files
-tasks.json
-tasks/ 
 # Python virtual environment
 .venv/
 
@@ -81,3 +78,7 @@ tasks/
 
 # FVM Version Cache
 .fvm/
+
+# Task files
+# tasks.json
+# tasks/ 

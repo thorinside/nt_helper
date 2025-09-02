@@ -1,0 +1,257 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Algorithm Metadata",
+  "description": "Schema for Disting NT algorithm metadata JSON files",
+  "type": "object",
+  "required": ["guid", "name", "categories", "description"],
+  "properties": {
+    "guid": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9 ]{4}$",
+      "description": "4-character algorithm identifier (letters, numbers, spaces allowed - case insensitive)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human readable algorithm name"
+    },
+    "short_description": {
+      "type": "string",
+      "description": "Brief description of algorithm functionality"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed algorithm description"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of algorithm categories"
+    },
+    "use_cases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of use cases for the algorithm"
+    },
+    "gui_description": {
+      "type": ["string", "null"],
+      "description": "Description of the algorithm's display/interface"
+    },
+    "specifications": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AlgorithmSpecification"
+      },
+      "description": "Algorithm specifications and constraints"
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/ParameterPage"
+          },
+          {
+            "$ref": "#/definitions/AlgorithmParameter"
+          }
+        ]
+      },
+      "description": "Algorithm parameters, organized by pages or as flat list"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of feature GUIDs used by this algorithm"
+    },
+    "input_ports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AlgorithmPort"
+      },
+      "description": "Algorithm input ports"
+    },
+    "output_ports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AlgorithmPort"
+      },
+      "description": "Algorithm output ports"
+    }
+  },
+  "definitions": {
+    "AlgorithmSpecification": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Specification name"
+        },
+        "unit": {
+          "type": ["string", "null"],
+          "description": "Unit of measurement"
+        },
+        "value": {
+          "description": "Specification value - can be various types"
+        },
+        "description": {
+          "type": "string",
+          "description": "Specification description"
+        },
+        "min": {
+          "description": "Minimum value (for older format)"
+        },
+        "max": {
+          "description": "Maximum value (for older format)"
+        }
+      }
+    },
+    "ParameterPage": {
+      "type": "object",
+      "required": ["page", "params"],
+      "properties": {
+        "page": {
+          "type": "string",
+          "description": "Page name"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AlgorithmParameter"
+          },
+          "description": "Parameters on this page"
+        }
+      }
+    },
+    "AlgorithmParameter": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter name"
+        },
+        "unit": {
+          "type": ["string", "null"],
+          "description": "Parameter unit"
+        },
+        "min": {
+          "description": "Minimum value - can be number or null"
+        },
+        "max": {
+          "description": "Maximum value - can be number or null"
+        },
+        "default": {
+          "description": "Default value - can be various types"
+        },
+        "defaultValue": {
+          "description": "Default value (alternative field name)"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "animate", "channel", "channel 1", "channel 2", "channel 3", "channel 4", 
+            "channel 5", "channel 6", "channel 7", "channel 8", "channel-send", 
+            "common", "controls", "converter", "countdown", "cv", "expression", 
+            "filter", "gain", "global", "harmony", "loop", "MIDI", "mix", "noise", 
+            "operator", "per-channel", "per-trigger", "per-trigger envelope", 
+            "per-trigger setup", "per-voice", "program", "randomise", "register", 
+            "routing", "sample rate", "send", "sequencer", "setup", "step", 
+            "switch", "timbre", "track", "tracker", "trigger", "VCO", "vocoder"
+          ],
+          "description": "Parameter scope - defines the functional grouping or context of the parameter"
+        },
+        "description": {
+          "type": "string",
+          "description": "Parameter description"
+        },
+        "enum_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Enumeration values for discrete parameters"
+        },
+        "enumValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Enumeration values (alternative field name)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["file", "folder", "toggle", "bus", "scaled", "enum", "trigger", "trigger/gate", "string"],
+          "description": "Parameter type"
+        },
+        "busIdRef": {
+          "type": "string",
+          "description": "Reference to bus ID parameter"
+        },
+        "channelCountRef": {
+          "type": "string", 
+          "description": "Reference to channel count parameter"
+        },
+        "isPerChannel": {
+          "type": "boolean",
+          "description": "Whether parameter is per-channel"
+        },
+        "is_per_channel": {
+          "type": "boolean",
+          "description": "Whether parameter is per-channel (alternative field name)"
+        },
+        "isCommon": {
+          "type": "boolean",
+          "description": "Whether parameter is common across algorithms"
+        },
+        "is_common": {
+          "type": "boolean",
+          "description": "Whether parameter is common (alternative field name)"
+        },
+        "is_bus": {
+          "type": "boolean",
+          "description": "Whether parameter represents a bus"
+        },
+        "parameterNumber": {
+          "type": "integer",
+          "description": "Parameter number in hardware"
+        }
+      }
+    },
+    "AlgorithmPort": {
+      "type": "object", 
+      "required": ["name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Port identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Port name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Port description"
+        },
+        "busIdRef": {
+          "type": "string",
+          "description": "Reference to bus parameter"
+        },
+        "channelCountRef": {
+          "type": "string",
+          "description": "Reference to channel count parameter"
+        },
+        "isPerChannel": {
+          "type": "boolean",
+          "description": "Whether port is per-channel"
+        }
+      }
+    }
+  }
+}

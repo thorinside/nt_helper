@@ -20,9 +20,9 @@
     {
       "name": "Sweep",
       "unit": "ST",
-      "min": -36.00,
-      "max": 84.00,
-      "default": 0.00,
+      "min": -36.0,
+      "max": 84.0,
+      "default": 0.0,
       "scope": "filter",
       "description": "Manual frequency sweep control (offsets frequency CV)."
     },
@@ -203,17 +203,68 @@
       ],
       "scope": "routing",
       "description": "Add/replace mode for the highpass signal."
+    },
+    {
+      "name": "0.00 ST A manual frequency sweep control; offsets the frequency CV. Resonance",
+      "min": 0,
+      "max": 100,
+      "default": 20,
+      "description": "Sets the filter resonance."
+    },
+    {
+      "name": "0 28 0 The resonance CV input bus. Scaled such that 5V corresponds to the full range. Blended output",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "description": "The output bus for the blended signal.",
+      "scope": "routing"
+    },
+    {
+      "name": "0.00 ST A manual frequency sweep control; offsets the frequency CV. Resonance",
+      "min": 0,
+      "max": 100,
+      "default": 20,
+      "description": "Sets the filter resonance."
+    },
+    {
+      "name": "0 28 0 The resonance CV input bus. Scaled such that 5V corresponds to the full range. Blended output",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "description": "The output bus for the blended signal.",
+      "scope": "routing"
     }
   ],
   "input_ports": [
-    "Audio",
-    "CV (Frequency)",
-    "CV (Resonance)"
+    {
+      "name": "Audio",
+      "busIdRef": "Audio input"
+    },
+    {
+      "name": "CV (Frequency)",
+      "busIdRef": "CV (Frequency) input"
+    },
+    {
+      "name": "CV (Resonance)",
+      "busIdRef": "CV (Resonance) input"
+    }
   ],
   "output_ports": [
-    "Audio (Blended)",
-    "Audio (Lowpass)",
-    "Audio (Bandpass)",
-    "Audio (Highpass)"
+    {
+      "name": "Audio (Blended)",
+      "busIdRef": "Blended output"
+    },
+    {
+      "name": "Audio (Lowpass)",
+      "busIdRef": "Lowpass output"
+    },
+    {
+      "name": "Audio (Bandpass)",
+      "busIdRef": "Bandpass output"
+    },
+    {
+      "name": "Audio (Highpass)",
+      "busIdRef": "Highpass output"
+    }
   ]
 }

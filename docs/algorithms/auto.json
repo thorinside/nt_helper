@@ -10,8 +10,8 @@
   ],
   "gui_description": "While sampling, the display shows a level meter, the filename of the sample currently being recorded, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card.",
   "categories": [
-    "Utility",
-    "Tuning"
+    "Recording",
+    "Sampling"
   ],
   "specifications": [],
   "parameters": [
@@ -239,6 +239,26 @@
           ]
         }
       ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "name": "Right input",
+      "busIdRef": "Right input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "CV output",
+      "busIdRef": "CV output"
+    },
+    {
+      "name": "Gate output",
+      "busIdRef": "Gate output"
     }
   ]
 }

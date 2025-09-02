@@ -144,8 +144,7 @@ class _DraggableResizableOverlayState extends State<DraggableResizableOverlay> {
     return Positioned(
       left: _x,
       top: _y,
-      child: Container(
-        // ignore: sized_box_for_whitespace - Container needed for width/height
+      child: SizedBox(
         width: _width,
         height: _height,
         child: Stack(

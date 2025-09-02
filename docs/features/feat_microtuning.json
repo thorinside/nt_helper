@@ -1,0 +1,66 @@
+{
+  "guid": "feat_microtuning",
+  "name": "Microtuning Support",
+  "description": "Microtuning functionality supporting both Scala files (.scl/.kbm) and MTS (MIDI Tuning Standard) for custom tuning systems. Files can be loaded from MicroSD card or received via MIDI SysEx.",
+  "parameters": [
+    {
+      "name": "Microtuning",
+      "unit": "enum",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
+      "enumValues": [
+        "None",
+        "Scala",
+        "MTS"
+      ],
+      "description": "Selects the microtuning system to use.",
+      "scope": "global"
+    },
+    {
+      "name": "Scala .scl",
+      "unit": "file",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 99,
+      "description": "Scala scale file selection. Special value 'From SysEx' uses file sent over MIDI.",
+      "scope": "global"
+    },
+    {
+      "name": "Scala .kbm",
+      "unit": "file",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 99,
+      "description": "Scala keyboard mapping file selection. 'Automatic' generates mapping from Auto kbm parameters.",
+      "scope": "global"
+    },
+    {
+      "name": "Auto kbm root",
+      "unit": "note",
+      "defaultValue": 60,
+      "minValue": 0,
+      "maxValue": 127,
+      "description": "MIDI note number for automatic keyboard mapping root when Scala .kbm is set to 'Automatic'.",
+      "scope": "global"
+    },
+    {
+      "name": "Auto kbm Hz",
+      "unit": "Hz",
+      "defaultValue": 440.0,
+      "minValue": 20.0,
+      "maxValue": 20000.0,
+      "description": "Frequency for automatic keyboard mapping root note when Scala .kbm is set to 'Automatic'.",
+      "scope": "global"
+    },
+    {
+      "name": "MTS .syx",
+      "unit": "file",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 99,
+      "description": "MTS SysEx dump file selection. 'From SysEx' uses tuning received over MIDI.",
+      "scope": "global"
+    }
+  ]
+}

@@ -21,7 +21,7 @@ class MCPAlgorithmTools {
   ///   - algorithm_name (string): The name of the algorithm (alternative to GUID).
   ///   - expand_features (bool, optional, default: false): Expand feature parameters.
   /// Returns:
-  ///   A JSON string representing the AlgorithmMetadata, or an error JSON if not found or ambiguous.
+  ///   A JSON string representing the AlgorithmMetaor an error JSON if not found or ambiguous.
   Future<String> getAlgorithmDetails(Map<String, dynamic> params) async {
     final String? algorithmGuid = params['algorithm_guid'];
     final String? algorithmName = params['algorithm_name'];

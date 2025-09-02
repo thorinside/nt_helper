@@ -48,7 +48,10 @@
         "Held"
       ],
       "description": "Record/Overdub command trigger.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 55
     },
     {
       "name": "Play",
@@ -61,7 +64,10 @@
         "Held"
       ],
       "description": "Play/Pause/Mute/Retrigger command trigger.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Retrigger",
@@ -87,7 +93,10 @@
         "Held"
       ],
       "description": "Undo command trigger (moves to previous layer).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 72
     },
     {
       "name": "Redo",
@@ -100,7 +109,10 @@
         "Held"
       ],
       "description": "Redo command trigger (moves to next layer).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Target 1",
@@ -165,7 +177,10 @@
         "Held"
       ],
       "description": "Target next loop command trigger (on release). Also has long hold function.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Stop all",
@@ -178,7 +193,10 @@
         "Held"
       ],
       "description": "Stop all command trigger.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Next hold time",
@@ -286,7 +304,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Plays the loop in reverse.",
-      "scope": "loop"
+      "scope": "loop",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Half speed",
@@ -322,7 +343,10 @@
         "Stereo"
       ],
       "description": "Sets the loop as mono or stereo (affects max length).",
-      "scope": "loop"
+      "scope": "loop",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Bit depth",
@@ -336,7 +360,10 @@
         "32 bit float"
       ],
       "description": "Recording bit depth (affects max length and potential clipping).",
-      "scope": "loop"
+      "scope": "loop",
+      "min": 0,
+      "max": 2,
+      "default": 0
     },
     {
       "name": "Input L",
@@ -385,7 +412,10 @@
         "Replace"
       ],
       "description": "Output mode (Add/Replace).",
-      "scope": "loop"
+      "scope": "loop",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Clock source",
@@ -408,7 +438,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Input bus for analogue clock sync.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 3
     },
     {
       "name": "Lock range",
@@ -426,7 +459,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Temporarily ignore clock sync for commands.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 71
     },
     {
       "name": "MIDI transport",
@@ -444,7 +480,10 @@
       "minValue": 0,
       "maxValue": 48,
       "description": "Pulses per quarter note for generated clock output.",
-      "scope": "loop"
+      "scope": "loop",
+      "min": 1,
+      "max": 48,
+      "default": 1
     },
     {
       "name": "1/4 notes (out)",
@@ -531,6 +570,360 @@
       "maxValue": 127,
       "description": "MIDI note number for Play/Pause/Mute/Retrigger command.",
       "scope": "global"
+    },
+    {
+      "name": "Input right",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "0 1 0 Activates ‘octave down’ (toggles the target loops between playing at normal speed and half speed). Retrigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates retrigger."
+    },
+    {
+      "name": "0 1 0 While this parameter is held, commands such as Record, Play, etc. behave as if the ‘Clock source’ parameters were ‘None’. Undo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates ‘Undo’. See Layers, above."
+    },
+    {
+      "name": "Target",
+      "min": 1,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 1 as a target loop."
+    },
+    {
+      "name": "Target",
+      "min": 2,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 2 as a target loop."
+    },
+    {
+      "name": "Target",
+      "min": 3,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 3 as a target loop."
+    },
+    {
+      "name": "Target",
+      "min": 4,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 4 as a target loop."
+    },
+    {
+      "name": "0 1000 0 The overdub envelope attack time. The scale is exponential, from 1ms to 30s. Overdub decay time",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "The overdub envelope attack time. The scale is"
+    },
+    {
+      "name": "exponential, from 1ms to 30s. Overdub fade",
+      "unit": "dB",
+      "min": -24,
+      "max": 0,
+      "default": 0,
+      "description": "Sets how much the previous loop content will fade"
+    },
+    {
+      "name": "2.0 ms Sets the duration of the crossfade applied when retriggering. Layer fade",
+      "unit": "ms",
+      "min": 1,
+      "max": 1000,
+      "default": 10,
+      "description": "Sets the duration of the crossfade when changing"
+    },
+    {
+      "name": "layers. Clear hold time",
+      "unit": "s",
+      "min": 0.5,
+      "max": 5,
+      "default": 1,
+      "description": "Sets how long Record needs to be held before a"
+    },
+    {
+      "name": "0 2 0 The clock source for synchronisation – one of ‘None’, ‘Clock input’, or ‘MIDI clock’. Clock input",
+      "min": 1,
+      "max": 28,
+      "default": 3,
+      "description": "The input bus to use as clock if the ‘Clock source’ is",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 If enabled, MIDI clock start will start (or retrigger) loop playback, and MIDI clock stop will stop playback. Lock range",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "See ‘Clocked operation’, above."
+    },
+    {
+      "name": "2nd press cancels",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "If enabled, issuing a command a second time while"
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables internal MIDI output – that is, MIDI is sent",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1000 70 Sets the loop crossfade time. The scale is exponential, from 0.5ms to 5s. Minimum layers",
+      "min": 0,
+      "max": 8,
+      "default": 0,
+      "description": "The minimum number of layers the loop should"
+    },
+    {
+      "name": "1 28 1 The input bus for the left (if stereo) or mono signal. Input right",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "description": "The input bus for the right signal, if stereo.",
+      "scope": "routing"
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "description": "The MIDI channel on which to receive notes."
+    },
+    {
+      "name": "Target",
+      "min": 1,
+      "max": 0,
+      "default": 127,
+      "description": "48 The MIDI note to automate ‘Target 1’."
+    },
+    {
+      "name": "Target",
+      "min": 2,
+      "max": 0,
+      "default": 127,
+      "description": "50 The MIDI note to automate ‘Target 2’."
+    },
+    {
+      "name": "Target",
+      "min": 3,
+      "max": 0,
+      "default": 127,
+      "description": "52 The MIDI note to automate ‘Target 3’."
+    },
+    {
+      "name": "Target",
+      "min": 4,
+      "max": 0,
+      "default": 127,
+      "description": "53 The MIDI note to automate ‘Target 4’."
+    },
+    {
+      "name": "0 127 60 The MIDI note to automate ‘Octave down’. Retrigger",
+      "min": 0,
+      "max": 127,
+      "default": 58,
+      "description": "The MIDI note to automate ‘Retrigger’."
+    },
+    {
+      "name": "0 127 71 The MIDI note to automate ‘Bypass clock’. Undo",
+      "min": 0,
+      "max": 127,
+      "default": 72,
+      "description": "The MIDI note to automate ‘Undo’."
+    },
+    {
+      "name": "Fade to clear",
+      "min": 0,
+      "max": 127,
+      "default": 76,
+      "description": "The MIDI note to automate ‘Fade to clear’."
+    },
+    {
+      "name": "0 1 0 Activates ‘octave down’ (toggles the target loops between playing at normal speed and half speed). Retrigger",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates retrigger."
+    },
+    {
+      "name": "0 1 0 While this parameter is held, commands such as Record, Play, etc. behave as if the ‘Clock source’ parameters were ‘None’. Undo",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Activates ‘Undo’. See Layers, above."
+    },
+    {
+      "name": "Target",
+      "min": 1,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 1 as a target loop."
+    },
+    {
+      "name": "Target",
+      "min": 2,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 2 as a target loop."
+    },
+    {
+      "name": "Target",
+      "min": 3,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 3 as a target loop."
+    },
+    {
+      "name": "Target",
+      "min": 4,
+      "max": 0,
+      "default": 1,
+      "description": "0 Activates loop 4 as a target loop."
+    },
+    {
+      "name": "0 1000 0 The overdub envelope attack time. The scale is exponential, from 1ms to 30s. Overdub decay time",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "The overdub envelope attack time. The scale is"
+    },
+    {
+      "name": "exponential, from 1ms to 30s. Overdub fade",
+      "unit": "dB",
+      "min": -24,
+      "max": 0,
+      "default": 0,
+      "description": "Sets how much the previous loop content will fade"
+    },
+    {
+      "name": "2.0 ms Sets the duration of the crossfade applied when retriggering. Layer fade",
+      "unit": "ms",
+      "min": 1,
+      "max": 1000,
+      "default": 10,
+      "description": "Sets the duration of the crossfade when changing"
+    },
+    {
+      "name": "layers. Clear hold time",
+      "unit": "s",
+      "min": 0.5,
+      "max": 5,
+      "default": 1,
+      "description": "Sets how long Record needs to be held before a"
+    },
+    {
+      "name": "0 2 0 The clock source for synchronisation – one of ‘None’, ‘Clock input’, or ‘MIDI clock’. Clock input",
+      "min": 1,
+      "max": 28,
+      "default": 3,
+      "description": "The input bus to use as clock if the ‘Clock source’ is",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 If enabled, MIDI clock start will start (or retrigger) loop playback, and MIDI clock stop will stop playback. Lock range",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "See ‘Clocked operation’, above."
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to USB.",
+      "scope": "routing"
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables internal MIDI output – that is, MIDI is sent",
+      "scope": "routing"
+    },
+    {
+      "name": "Crossfade time",
+      "min": 0,
+      "max": 1000,
+      "default": 70,
+      "description": "Sets the loop crossfade time. The scale is"
+    },
+    {
+      "name": "exponential, from 0.5ms to 5s. Minimum layers",
+      "min": 0,
+      "max": 8,
+      "default": 0,
+      "description": "The minimum number of layers the loop should"
+    },
+    {
+      "name": "1 28 1 The input bus for the left (if stereo) or mono signal. Input right",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "description": "The input bus for the right signal, if stereo.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the loop outputs. Trigger output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The output bus for an end-of-loop trigger pulse or",
+      "scope": "routing"
+    },
+    {
+      "name": "Target",
+      "min": 1,
+      "max": 0,
+      "default": 127,
+      "description": "48 The MIDI note to automate ‘Target 1’."
+    },
+    {
+      "name": "Target",
+      "min": 2,
+      "max": 0,
+      "default": 127,
+      "description": "50 The MIDI note to automate ‘Target 2’."
+    },
+    {
+      "name": "Target",
+      "min": 3,
+      "max": 0,
+      "default": 127,
+      "description": "52 The MIDI note to automate ‘Target 3’."
+    },
+    {
+      "name": "Target",
+      "min": 4,
+      "max": 0,
+      "default": 127,
+      "description": "53 The MIDI note to automate ‘Target 4’."
+    },
+    {
+      "name": "0 127 60 The MIDI note to automate ‘Octave down’. Retrigger",
+      "min": 0,
+      "max": 127,
+      "default": 58,
+      "description": "The MIDI note to automate ‘Retrigger’."
     }
   ],
   "input_ports": [
@@ -551,6 +944,10 @@
       "name": "Clock In",
       "description": "External clock input for sync.",
       "busIdRef": "Clock input"
+    },
+    {
+      "name": "Input right",
+      "busIdRef": "Input right"
     }
   ],
   "output_ports": [

@@ -99,7 +99,10 @@
       "minValue": -10,
       "maxValue": 10,
       "scope": "global",
-      "description": "Transposes the sequence in octaves."
+      "description": "Transposes the sequence in octaves.",
+      "min": -10,
+      "max": 10,
+      "default": 0
     },
     {
       "name": "Transpose",
@@ -108,7 +111,152 @@
       "minValue": -60,
       "maxValue": 60,
       "scope": "global",
-      "description": "Transposes the sequence in semitones."
+      "description": "Transposes the sequence in semitones.",
+      "min": -60,
+      "max": 60,
+      "default": 0
+    },
+    {
+      "name": "Clock input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Reset input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Pitch output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Gate output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 16,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Mod output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Step output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "1 100 10 ms Sets the length of the gate output if the type is “Trigger”. Glide",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the glide time for tied notes.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the pitch CV output. Gate output",
+      "min": 0,
+      "max": 28,
+      "default": 16,
+      "description": "The bus to use for the gate output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the velocity output. Mod output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the modulation CV output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the modulation CV output. Step output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the step CV output. This",
+      "scope": "routing"
+    },
+    {
+      "name": "represents the current sequencer step number scaled as 1/12th of a Volt per step. Step output mode",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "description": "The standard Add/Replace mode selector as",
+      "scope": "routing"
+    },
+    {
+      "name": "Follow MIDI clock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the sequencer follows MIDI clock."
+    },
+    {
+      "name": "1 100 10 ms Sets the length of the gate output if the type is “Trigger”. Glide",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the glide time for tied notes.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the pitch CV output. Gate output",
+      "min": 0,
+      "max": 28,
+      "default": 16,
+      "description": "The bus to use for the gate output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the velocity output. Mod output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the modulation CV output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the modulation CV output. Sequence CV input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use to select the sequence. See above.",
+      "scope": "routing"
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "description": "Sets the clock divisor when following MIDI clock."
     }
   ],
   "input_ports": [
@@ -191,5 +339,22 @@
       "busIdRef": "0"
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "Pitch output",
+      "busIdRef": "Pitch output"
+    },
+    {
+      "name": "Gate output",
+      "busIdRef": "Gate output"
+    },
+    {
+      "name": "Mod output",
+      "busIdRef": "Mod output"
+    },
+    {
+      "name": "Step output",
+      "busIdRef": "Step output"
+    }
+  ]
 }

@@ -31,7 +31,10 @@
         "Warped"
       ],
       "description": "Sets the quantization mode (Nearest/Mapped/Warped).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 2,
+      "default": 0
     },
     {
       "name": "Input transpose",
@@ -58,7 +61,10 @@
       "minValue": -12,
       "maxValue": 12,
       "description": "Sets the key (root note) of the scale.",
-      "scope": "global"
+      "scope": "global",
+      "min": -12,
+      "max": 12,
+      "default": 0
     },
     {
       "name": "Mode",
@@ -76,7 +82,10 @@
       "minValue": 0,
       "maxValue": 10,
       "description": "The scale to quantize into (Chromatic, Major, Minor, etc., plus MIDI input options).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 10,
+      "default": 2
     },
     {
       "name": "Output transpose",
@@ -126,7 +135,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Pitch CV input bus for the channel (0=None).",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Gate input",
@@ -135,7 +147,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Optional gate input bus for the channel (0=None). Samples CV on high gate.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "CV output",
@@ -144,7 +159,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Pitch CV output bus for the channel (0=None). Always uses 'Replace' mode.",
-      "scope": "channel"
+      "scope": "channel",
+      "min": 0,
+      "max": 28,
+      "default": 15
     },
     {
       "name": "Gate output",
@@ -198,7 +216,10 @@
       "minValue": 0,
       "maxValue": 1,
       "description": "Enable MIDI output to USB.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Output to internal",
@@ -208,6 +229,54 @@
       "maxValue": 1,
       "description": "Enable internal MIDI output (to other algorithms).",
       "scope": "global"
+    },
+    {
+      "name": "-48 48 0 ST Sets the input transposition, in 12-TET semitones. Shift",
+      "min": -48,
+      "max": 48,
+      "default": 0,
+      "description": "Sets the in-scale shift.",
+      "scope": "routing"
+    },
+    {
+      "name": "See above. Mode",
+      "min": 1,
+      "max": 12,
+      "default": 1,
+      "description": "Sets the mode, that is, the rotation of the notes within"
+    },
+    {
+      "name": "0 2 0 Sets the behaviour of the gate/trigger outputs. The options are: ‘Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output. Gate offset",
+      "unit": "ms",
+      "min": 0,
+      "max": 10,
+      "default": 2,
+      "description": "Offsets (delays) the gate inputs relative to the pitch",
+      "scope": "routing"
+    },
+    {
+      "name": "-48 48 0 ST Sets the input transposition, in 12-TET semitones. Shift",
+      "min": -48,
+      "max": 48,
+      "default": 0,
+      "description": "Sets the in-scale shift.",
+      "scope": "routing"
+    },
+    {
+      "name": "See above. Mode",
+      "min": 1,
+      "max": 12,
+      "default": 1,
+      "description": "Sets the mode, that is, the rotation of the notes within"
+    },
+    {
+      "name": "0 2 0 Sets the behaviour of the gate/trigger outputs. The options are: ‘Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output. Gate offset",
+      "unit": "ms",
+      "min": 0,
+      "max": 10,
+      "default": 2,
+      "description": "Offsets (delays) the gate inputs relative to the pitch",
+      "scope": "routing"
     }
   ],
   "input_ports": [

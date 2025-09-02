@@ -14,7 +14,10 @@
       "minValue": 50.0,
       "maxValue": 200.0,
       "scope": "global",
-      "description": "Adjusts the playback speed, relative to the one calculated by the algorithm."
+      "description": "Adjusts the playback speed, relative to the one calculated by the algorithm.",
+      "min": 50,
+      "max": 200,
+      "default": 100
     },
     {
       "name": "Input clock div",
@@ -32,7 +35,10 @@
       "minValue": 1,
       "maxValue": 99,
       "scope": "global",
-      "description": "The time signature numerator."
+      "description": "The time signature numerator.",
+      "min": 1,
+      "max": 99,
+      "default": 4
     },
     {
       "name": "Time sig denom",
@@ -68,7 +74,10 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "global",
-      "description": "Whether to follow MIDI clock."
+      "description": "Whether to follow MIDI clock.",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Clock divisor",
@@ -86,16 +95,22 @@
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use as the clock input."
+      "description": "The bus to use as the clock input.",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Reset input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use as the reset input."
+      "description": "The bus to use as the reset input.",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Reset mode",
@@ -107,6 +122,11 @@
       "description": "Sets the type of reset signal: ‘Trigger’ or ‘Run/stop’."
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Reset input",
+      "busIdRef": "Reset input"
+    }
+  ],
   "output_ports": []
 }

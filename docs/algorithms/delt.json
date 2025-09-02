@@ -146,6 +146,167 @@
           "is_bus": true
         }
       ]
+    },
+    {
+      "name": "Left/mono input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Right input",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Left/mono output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 1,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Speed input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Mix mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets how the delay and dry signals are mixed. See"
+    },
+    {
+      "name": "above. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Controls the wet/dry mix, unless the ‘Mix mode’ is"
+    },
+    {
+      "name": "‘With feedback’. Feedback",
+      "unit": "%",
+      "min": 0,
+      "max": 110,
+      "default": 50,
+      "description": "The delay feedback."
+    },
+    {
+      "name": "Tape length 1 250 ms Sets the length of the tape i.e. the delay time at 1x speed. Tape speed",
+      "min": -500,
+      "max": 1000,
+      "default": 0,
+      "description": "Sets the tape speed (in conjunction with the CV"
+    },
+    {
+      "name": "1 28 1 The left input bus. Right input",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "description": "The right input bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as",
+      "scope": "routing"
+    },
+    {
+      "name": "Mix mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets how the delay and dry signals are mixed. See"
+    },
+    {
+      "name": "above. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Controls the wet/dry mix, unless the ‘Mix mode’ is"
+    },
+    {
+      "name": "‘With feedback’. Feedback",
+      "unit": "%",
+      "min": 0,
+      "max": 110,
+      "default": 50,
+      "description": "The delay feedback."
+    },
+    {
+      "name": "Tape length 1 250 ms Sets the length of the tape i.e. the delay time at 1x speed. Tape speed",
+      "min": -500,
+      "max": 1000,
+      "default": 0,
+      "description": "Sets the tape speed (in conjunction with the CV"
+    },
+    {
+      "name": "1 28 1 The left input bus. Right input",
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "description": "The right input bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as",
+      "scope": "routing"
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "name": "Right input",
+      "busIdRef": "Right input"
+    },
+    {
+      "name": "Speed input",
+      "busIdRef": "Speed input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "busIdRef": "Left/mono output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
     }
   ]
 }

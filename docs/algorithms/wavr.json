@@ -24,7 +24,7 @@
   ],
   "parameters": [
     {
-      "page": "Globals",
+      "page": "Recording",
       "params": [
         {
           "name": "Record",
@@ -34,8 +34,8 @@
           "unit": null,
           "description": "Starts/stops recording.",
           "enum_values": [
-            "Stop",
-            "Start"
+            "Off",
+            "On"
           ]
         },
         {
@@ -46,8 +46,8 @@
           "unit": null,
           "description": "Starts/stops playback.",
           "enum_values": [
-            "Stop",
-            "Start"
+            "Off",
+            "On"
           ]
         },
         {
@@ -101,9 +101,9 @@
         },
         {
           "name": "Which recording",
-          "min": null,
-          "max": null,
-          "default": null,
+          "min": 0,
+          "max": 9999,
+          "default": 0,
           "unit": null,
           "description": "Selects the recording to play."
         },
@@ -118,8 +118,7 @@
       ]
     },
     {
-      "page": "File {i+1}",
-      "is_per_channel": true,
+      "page": "Per-file",
       "params": [
         {
           "name": "Enable",
@@ -164,6 +163,26 @@
           ]
         }
       ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "Left/mono input",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "name": "Right input",
+      "busIdRef": "Right input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/mono output",
+      "busIdRef": "Left/mono input"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right input"
     }
   ]
 }

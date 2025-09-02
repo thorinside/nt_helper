@@ -497,5 +497,25 @@
         }
       ]
     }
+  ],
+  "input_ports": [
+    {
+      "name": "Left input",
+      "busIdRef": "Left input"
+    },
+    {
+      "name": "Right input",
+      "busIdRef": "Right input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left output",
+      "busIdRef": "Left output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
+    }
   ]
 }

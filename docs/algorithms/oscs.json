@@ -74,7 +74,10 @@
         "XY"
       ],
       "description": "Sets which waveforms are displayed and how.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 4,
+      "default": 2
     },
     {
       "name": "Draw mode",
@@ -119,6 +122,84 @@
       ],
       "description": "Sets the vertical scale (volts per division) for channel 2.",
       "scope": "global"
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 1,
+      "default": 28,
+      "description": "1 The bus for input 1.",
+      "scope": "routing"
+    },
+    {
+      "name": "Input",
+      "min": 2,
+      "max": 1,
+      "default": 28,
+      "description": "2 The bus for input 2.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 4 0 The type of trigger, to synchronise the display to the waveform. The options are: ● Free running. ● “1 rising” - trigger on the rising edge of input 1. ● “1 falling” - trigger on the falling edge of input 1. ● “2 rising” - trigger on the rising edge of input 2. ● “2 falling” - trigger on the falling edge of input 2. Trigger",
+      "unit": "V",
+      "min": -11,
+      "max": 11,
+      "default": 0,
+      "description": "Set the trigger voltage - the voltage the input signal",
+      "scope": "routing"
+    },
+    {
+      "name": "voltage has to cross to trigger the oscilloscope. Time range",
+      "min": 0,
+      "max": 13,
+      "default": 7,
+      "description": "Sets the time range corresponding to the full width"
+    },
+    {
+      "name": "0 4 2 Sets which waveforms are displayed and how. The options are “Overlaid”, “Split”, “Channel 1”, “Channel 2”, and “XY”. In “XY” mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets how the waveform signals are drawn. The",
+      "scope": "routing"
+    },
+    {
+      "name": "0 3 0 Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V. Vertical scale 2",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Sets the vertical scale for channel 2."
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 1,
+      "default": 28,
+      "description": "1 The bus for input 1.",
+      "scope": "routing"
+    },
+    {
+      "name": "Input",
+      "min": 2,
+      "max": 1,
+      "default": 28,
+      "description": "2 The bus for input 2.",
+      "scope": "routing"
+    },
+    {
+      "name": "options are “Overlaid”, “Split”, “Channel 1”, “Channel 2”, and “XY”. In “XY” mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets how the waveform signals are drawn. The",
+      "scope": "routing"
+    },
+    {
+      "name": "options are “Lines (antialiased)”, “Lines”, and “Points”. Vertical scale 1",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Sets the vertical scale for channel 1. The options are"
     }
   ],
   "input_ports": [

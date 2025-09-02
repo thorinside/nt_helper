@@ -9,7 +9,7 @@
     "Matching pitch across multiple oscillators",
     "Automated tuning without manual adjustment"
   ],
-  "gui_description": "While calibrating, the display draws a graph of the measured pitch vs output voltage.",
+  "gui_description": "During calibration, the algorithm will output a series of voltages, ranging from -4 Volts up to +6 Volts, and analyse the pitch of the resulting signal from the VCO. As it does so, it will draw a graph of the results, which will ideally look like a nice straight line.",
   "categories": [
     "Utility",
     "Tuning"
@@ -71,6 +71,18 @@
           "is_bus": true
         }
       ]
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "CV input",
+      "busIdRef": "CV input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "CV output",
+      "busIdRef": "CV output"
     }
   ]
 }

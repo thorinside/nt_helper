@@ -91,6 +91,78 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The input bus from which to drive output 8."
+    },
+    {
+      "name": "1",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "2",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 2,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "3",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 3,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "4",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 4,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "5",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 5,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "6",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 6,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "7",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 7,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "8",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 8,
+      "scope": "routing",
+      "description": ""
     }
   ],
   "input_ports": [
@@ -143,5 +215,38 @@
       "busIdRef": "Input 8"
     }
   ],
-  "output_ports": []
+  "output_ports": [
+    {
+      "name": "1",
+      "busIdRef": "1"
+    },
+    {
+      "name": "2",
+      "busIdRef": "2"
+    },
+    {
+      "name": "3",
+      "busIdRef": "3"
+    },
+    {
+      "name": "4",
+      "busIdRef": "4"
+    },
+    {
+      "name": "5",
+      "busIdRef": "5"
+    },
+    {
+      "name": "6",
+      "busIdRef": "6"
+    },
+    {
+      "name": "7",
+      "busIdRef": "7"
+    },
+    {
+      "name": "8",
+      "busIdRef": "8"
+    }
+  ]
 }

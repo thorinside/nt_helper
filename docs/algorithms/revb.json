@@ -56,9 +56,9 @@
     {
       "name": "Modulation speed",
       "unit": "Hz",
-      "defaultValue": 2.50,
+      "defaultValue": 2.5,
       "minValue": 0.01,
-      "maxValue": 5.00,
+      "maxValue": 5.0,
       "description": "Sets the speed of internal reverb modulation.",
       "scope": "global"
     },
@@ -78,7 +78,10 @@
       "minValue": -40,
       "maxValue": 6,
       "description": "Output level of the early reflections.",
-      "scope": "global"
+      "scope": "global",
+      "min": -40,
+      "max": 6,
+      "default": -12
     },
     {
       "name": "Diffuse gain",
@@ -96,7 +99,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "The left audio input bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Right input",
@@ -105,7 +111,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "The right audio input bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 2
     },
     {
       "name": "Left output",
@@ -114,7 +123,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "The left audio output bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Right output",

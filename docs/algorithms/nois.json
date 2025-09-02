@@ -3,23 +3,23 @@
   "name": "Noise generator",
   "categories": [
     "Source",
-    "Noise"
+    "Noise",
+    "Generator"
   ],
-  "description": "Generates various standard \"colours\" of noise (Violet, White, Pink, Red, Blended).",
+  "description": "Generates various standard colours of noise (Violet, White, Pink, Red, Blended) with configurable amplitude and gain per channel.",
   "specifications": [
     {
       "name": "Channels",
-      "value": {
-        "minValue": 1,
-        "maxValue": 8,
-        "defaultValue": 1
-      },
+      "unit": null,
+      "defaultValue": null,
+      "minValue": 1,
+      "maxValue": 8,
       "description": "The number of output channels."
     }
   ],
   "parameters": [
     {
-      "name": "Global Gain",
+      "name": "Gain",
       "unit": "dB",
       "defaultValue": 0,
       "minValue": -40,
@@ -33,8 +33,8 @@
       "defaultValue": 13,
       "minValue": 0,
       "maxValue": 28,
-      "description": "The output bus. Indexed per channel. (0=None)",
-      "scope": "channel"
+      "description": "The output bus.",
+      "scope": "routing"
     },
     {
       "name": "Output mode",
@@ -46,16 +46,16 @@
         "Add",
         "Replace"
       ],
-      "description": "Output mode (Add/Replace). Indexed per channel.",
-      "scope": "channel"
+      "description": "The standard Add/Replace mode selector as described above.",
+      "scope": "routing"
     },
     {
       "name": "Amplitude",
       "unit": "V",
-      "defaultValue": 10.00,
-      "minValue": 0.00,
-      "maxValue": 10.00,
-      "description": "The amplitude of the noise signal (before the gain is applied). Indexed per channel.",
+      "defaultValue": 10.0,
+      "minValue": 0.0,
+      "maxValue": 10.0,
+      "description": "The amplitude of the noise signal (before the gain is applied).",
       "scope": "channel"
     },
     {
@@ -64,7 +64,7 @@
       "defaultValue": 0,
       "minValue": -40,
       "maxValue": 6,
-      "description": "The output level. Indexed per channel.",
+      "description": "The output level.",
       "scope": "channel"
     },
     {
@@ -80,7 +80,7 @@
         "Pink",
         "Red"
       ],
-      "description": "The noise colour. Indexed per channel.",
+      "description": "The noise colour. The options are Blended, Violet, White, Pink, and Red.",
       "scope": "channel"
     },
     {
@@ -89,16 +89,16 @@
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 300,
-      "description": "If \"Blended\" colour is selected, sets the blend between noise colours. Indexed per channel.",
+      "description": "If Blended is selected, sets the blend between noise colours.",
       "scope": "channel"
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
-      "id": "out",
-      "name": "Noise Output",
-      "description": "Noise signal output. Use busIdRef based on channel index.",
+      "id": "noise_out",
+      "name": "Noise Out",
+      "description": "Noise signal output.",
       "busIdRef": "Output"
     }
   ]

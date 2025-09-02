@@ -16,7 +16,10 @@
       "minValue": -32.0,
       "maxValue": 32.0,
       "scope": "global",
-      "description": "The input gain. Negative values invert the signal."
+      "description": "The input gain. Negative values invert the signal.",
+      "min": -32,
+      "max": 32,
+      "default": 1
     },
     {
       "name": "Mode",
@@ -29,7 +32,10 @@
       "enumValues": [
         "Wavefolder",
         "Tri-to-sine shaper"
-      ]
+      ],
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Mix",
@@ -47,25 +53,34 @@
       "minValue": -40,
       "maxValue": 0,
       "scope": "global",
-      "description": "The output gain applied to the shaped signal."
+      "description": "The output gain applied to the shaped signal.",
+      "min": -40,
+      "max": 0,
+      "default": 0
     },
     {
       "name": "Gain input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use to control the input gain. Scaled such that a 5V CV gives 32x gain."
+      "description": "The bus to use to control the input gain. Scaled such that a 5V CV gives 32x gain.",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The first input bus to process."
+      "description": "The first input bus to process.",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Width",
@@ -78,12 +93,15 @@
     },
     {
       "name": "Output",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 13,
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The first output bus."
+      "description": "The first output bus.",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Output mode",
@@ -97,8 +115,89 @@
         "Add",
         "Replace"
       ]
+    },
+    {
+      "name": "shaper’. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "shaper’. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The output wet/dry mix."
+    },
+    {
+      "name": "0 3 3 In ‘SATB’ mode: which voice (soprano/alto/tenor/bass) corresponds to the original note. Position",
+      "min": 0,
+      "max": 5,
+      "default": 0,
+      "description": "In SATB mode: chooses Close or Open position, or"
+    },
+    {
+      "name": "one of the T-voice options. See below. Arpeggio",
+      "min": 0,
+      "max": 14,
+      "default": 0,
+      "description": "Enables the arpeggiator and chooses the"
+    },
+    {
+      "name": "arpeggiation mode. See below. Range",
+      "min": 1,
+      "max": 3,
+      "default": 1,
+      "description": "When set to 1, the arpeggio is simply the notes"
+    },
+    {
+      "name": "formed by the chord. When set to 2 or 3, a copy of the chord is appended to the pattern, one or two octaves higher, creating a longer pattern that spans multiple octaves. Arp reset",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The input bus to use as the arpeggiator reset. A"
+    },
+    {
+      "name": "Break time",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 0,
+      "description": "The 'break' time for chords. See below."
+    },
+    {
+      "name": "Break dir",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The 'break' direction. See below."
+    },
+    {
+      "name": "shaper’. Mix",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "The output wet/dry mix."
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Gain input",
+      "busIdRef": "Gain input"
+    },
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
+  ]
 }

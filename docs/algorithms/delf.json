@@ -218,6 +218,59 @@
           "description": "The MIDI or I2C note number that will trigger the function generator, or '-1' for 'Any'."
         }
       ]
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "0 6 0 Sets a multiplier for the delay time, one of x1, x2, x5, x10, x20, x50, or x100. Time",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the function duration."
+    },
+    {
+      "name": "0 28 1 The bus to use for the trigger input. Output",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "description": "The bus to use for the channel output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 6 0 Sets a multiplier for the delay time, one of x1, x2, x5, x10, x20, x50, or x100. Time",
+      "min": 1,
+      "max": 1000,
+      "default": 100,
+      "description": "Sets the function duration."
+    },
+    {
+      "name": "0 28 1 The bus to use for the trigger input. Output",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "description": "The bus to use for the channel output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 16 0 The MIDI channel on which notes can trigger the function generator. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "The I2C channel on which notes can trigger the"
+    }
+  ],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
     }
   ]
 }

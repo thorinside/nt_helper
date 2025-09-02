@@ -1,0 +1,412 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
+// No direct dependency on RoutingEditorWidget static members
+
+/// A draggable widget representing an algorithm node in the routing editor.
+/// 
+/// Features:
+/// - Draggable with precise coordinate transforms
+/// - Title bar showing algorithm name and slot number
+/// - Toolbar with up/down/delete actions
+/// - Input and output connection points
+/// - Theme-aware styling
+class AlgorithmNodeWidget extends StatefulWidget {
+  final String algorithmName;
+  final int slotNumber;
+  // Position is now handled by parent Positioned widget
+  final Offset position;
+  // Optional leading icon for the top bar
+  final Widget? leadingIcon;
+  final bool isSelected;
+  final Function(Offset)? onPositionChanged;
+  final VoidCallback? onDragStart;
+  final VoidCallback? onDragEnd;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback? onDelete;
+  final VoidCallback? onTap;
+  final List<String> inputLabels;
+  final List<String> outputLabels;
+  // Port IDs aligned with labels, used for accurate connection anchors
+  final List<String>? inputPortIds;
+  final List<String>? outputPortIds;
+  // Callback to report per-port anchor global position
+  final void Function(String portId, Offset globalCenter, bool isInput)? onPortPositionResolved;
+  
+  const AlgorithmNodeWidget({
+    super.key,
+    required this.algorithmName,
+    required this.slotNumber,
+    required this.position,
+    this.leadingIcon,
+    this.isSelected = false,
+    this.onPositionChanged,
+    this.onDragStart,
+    this.onDragEnd,
+    this.onMoveUp,
+    this.onMoveDown,
+    this.onDelete,
+    this.onTap,
+    this.inputLabels = const [],
+    this.outputLabels = const [],
+    this.inputPortIds,
+    this.outputPortIds,
+    this.onPortPositionResolved,
+  });
+  
+  @override
+  State<AlgorithmNodeWidget> createState() => _AlgorithmNodeWidgetState();
+}
+
+class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
+  bool _isDragging = false;
+  // Track drag start and initial position for stable deltas
+  Offset _dragStartGlobal = Offset.zero;
+  Offset _initialPosition = Offset.zero;
+  
+  @override
+  void initState() {
+    super.initState();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+        onTap: () {
+          widget.onTap?.call();
+        },
+        onPanStart: _handleDragStart,
+        onPanUpdate: _handleDragUpdate,
+        onPanEnd: _handleDragEnd,
+        child: AnimatedContainer(
+          duration: _isDragging ? Duration.zero : const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: widget.isSelected 
+                ? AccessibilityColors.ensureContrast(
+                    theme.colorScheme.primary,
+                    theme.colorScheme.surface,
+                    minRatio: AccessibilityColors.wcagAANormal,
+                  )
+                : theme.colorScheme.outline.withValues(alpha: 0.7), // Higher alpha for better visibility
+              width: widget.isSelected ? 3 : 1, // Thicker border when selected
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
+                blurRadius: _isDragging ? 8 : 4,
+                offset: Offset(0, _isDragging ? 4 : 2),
+              ),
+            ],
+          ),
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTitleBar(theme),
+                _buildPorts(theme),
+              ],
+            ),
+          ),
+        ),
+      );
+  }
+  
+  Widget _buildTitleBar(ThemeData theme) {
+    // Use app bar theming for better readability and consistency
+    final backgroundColor = theme.appBarTheme.backgroundColor ?? theme.colorScheme.surfaceContainerHigh;
+    final foregroundColor = theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.leadingIcon != null) ...[
+            IconTheme(
+              data: IconThemeData(color: foregroundColor, size: 18),
+              child: widget.leadingIcon!,
+            ),
+            const SizedBox(width: 8),
+          ],
+          // Title with slot number pre-pended
+          Expanded(
+            child: Text(
+              '#${widget.slotNumber} ${_truncateWithEllipsis(widget.algorithmName, 25)}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: foregroundColor,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+              softWrap: false,
+            ),
+          ),
+          // Up/Down actions always present; disabled when not applicable
+          IconButton(
+            tooltip: 'Move Up',
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            onPressed: widget.onMoveUp,
+          ),
+          IconButton(
+            tooltip: 'Move Down',
+            icon: const Icon(Icons.arrow_downward, size: 18),
+            onPressed: widget.onMoveDown,
+          ),
+          // Overflow menu: only delete here
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: Icon(Icons.more_vert, size: 18, color: foregroundColor),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'delete',
+                enabled: widget.onDelete != null,
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 18, color: theme.colorScheme.error),
+                    const SizedBox(width: 8),
+                    Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'delete') {
+                _handleDelete();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Removed old overflow-only toolbar; actions are now visible icon buttons with delete in overflow
+  
+  Widget _buildPorts(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Inputs (natural width)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(widget.inputLabels.length, (index) =>
+              _buildPort(
+                theme,
+                widget.inputLabels[index],
+                true,
+                portId: (widget.inputPortIds != null && index < widget.inputPortIds!.length)
+                    ? widget.inputPortIds![index]
+                    : null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Flexible spacer pushes outputs to the far right edge
+          const Expanded(child: SizedBox.shrink()),
+          // Outputs (flush right)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(widget.outputLabels.length, (index) =>
+              _buildPort(
+                theme,
+                widget.outputLabels[index],
+                false,
+                portId: (widget.outputPortIds != null && index < widget.outputPortIds!.length)
+                    ? widget.outputPortIds![index]
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildPort(ThemeData theme, String label, bool isInput, {bool alignEnd = false, String? portId}) {
+    // Key to measure the dot center position
+    final dotKey = GlobalKey();
+    final widgetRow = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          if (!isInput) ...[
+            Text(
+              label,
+              style: theme.textTheme.labelSmall,
+            ),
+            const SizedBox(width: 4),
+          ],
+          Container(
+            key: dotKey,
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isInput ? theme.colorScheme.primary : theme.colorScheme.secondary,
+              border: Border.all(
+                color: theme.colorScheme.outline,
+                width: 1,
+              ),
+            ),
+          ),
+          if (isInput) ...[
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall,
+            ),
+          ],
+        ],
+      ),
+    );
+    // Schedule anchor resolution after layout
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.onPortPositionResolved == null || portId == null) return;
+      final ctx = dotKey.currentContext;
+      if (ctx == null) return;
+      final render = ctx.findRenderObject() as RenderBox?;
+      if (render == null || !render.attached) return;
+      final topLeft = render.localToGlobal(Offset.zero);
+      final size = render.size; // 12x12
+      final center = topLeft + Offset(size.width / 2, size.height / 2);
+      widget.onPortPositionResolved!(portId, center, isInput);
+    });
+    return widgetRow;
+  }
+
+  String _truncateWithEllipsis(String text, int maxChars) {
+    if (text.length <= maxChars) return text;
+    return '${text.substring(0, maxChars)}…';
+  }
+  
+  void _handleDragStart(DragStartDetails details) {
+    // Intentionally no haptic/audio/visual feedback on drag start
+    
+    setState(() {
+      _isDragging = true;
+      _dragStartGlobal = details.globalPosition;
+      _initialPosition = widget.position;
+    });
+
+    // Notify parent that a drag has begun
+    widget.onDragStart?.call();
+  }
+  
+  // Toolbar action handlers removed; actions call callbacks directly
+  
+  void _handleDelete() async {
+    debugPrint('AlgorithmNodeWidget: Deleting algorithm #${widget.slotNumber}');
+    
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Algorithm'),
+        content: Text('Are you sure you want to delete "${widget.algorithmName}" from slot #${widget.slotNumber}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed != true) {
+      debugPrint('AlgorithmNodeWidget: Delete cancelled by user');
+      return;
+    }
+    
+    if (!mounted) return;
+    final cubit = context.read<DistingCubit>();
+    try {
+      // Slot numbers are 1-indexed, but the cubit uses 0-indexed
+      final algorithmIndex = widget.slotNumber - 1;
+      
+      await cubit.onRemoveAlgorithm(algorithmIndex);
+      widget.onDelete?.call();
+      _showFeedback('Algorithm deleted');
+      debugPrint('AlgorithmNodeWidget: Successfully deleted algorithm');
+    } catch (e) {
+      debugPrint('AlgorithmNodeWidget: Error deleting algorithm: $e');
+      _showFeedback('Failed to delete algorithm: $e', isError: true);
+    }
+  }
+  
+  void _showFeedback(String message, {bool isError = false}) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError 
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+  
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (!_isDragging) return;
+    // Compute new position from drag delta relative to drag start
+    final dragDelta = details.globalPosition - _dragStartGlobal;
+    final newPosition = _initialPosition + dragDelta;
+    
+    // Snap to grid
+    const double gridSize = 50.0;
+    final snappedPosition = Offset(
+      (newPosition.dx / gridSize).round() * gridSize,
+      (newPosition.dy / gridSize).round() * gridSize,
+    );
+    
+    // Constrain to canvas bounds
+    const double canvasSize = 5000.0;
+    final constrainedPosition = Offset(
+      snappedPosition.dx.clamp(0.0, canvasSize - 200),
+      snappedPosition.dy.clamp(0.0, canvasSize - 100),
+    );
+    
+    widget.onPositionChanged?.call(constrainedPosition);
+  }
+  
+  void _handleDragEnd(DragEndDetails details) {
+    setState(() {
+      _isDragging = false;
+    });
+
+    // Notify parent that drag ended
+    widget.onDragEnd?.call();
+  }
+}
+
+// Removed dependency on RoutingEditorWidget static values

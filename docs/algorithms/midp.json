@@ -78,7 +78,10 @@
         "Muted"
       ],
       "description": "Set the playback mode for the track (1-24).",
-      "scope": "track"
+      "scope": "track",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "1-4 MIDI channel",
@@ -87,7 +90,10 @@
       "minValue": 1,
       "maxValue": 16,
       "description": "MIDI channel for the MIDI/CV converter (1-4).",
-      "scope": "converter"
+      "scope": "converter",
+      "min": 1,
+      "max": 16,
+      "default": 1
     },
     {
       "name": "1-4 Pitch output",
@@ -96,7 +102,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Bus for the MIDI/CV converter pitch output (1-4). (0=None)",
-      "scope": "converter"
+      "scope": "converter",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "1-4 Gate output",
@@ -123,7 +132,10 @@
       "minValue": 0,
       "maxValue": 16,
       "description": "MIDI channel for the drum converter (0=Off).",
-      "scope": "converter"
+      "scope": "converter",
+      "min": 0,
+      "max": 16,
+      "default": 0
     },
     {
       "name": "Trigger length",
@@ -132,7 +144,10 @@
       "minValue": 1,
       "maxValue": 100,
       "description": "Sets the length of output trigger pulses.",
-      "scope": "converter"
+      "scope": "converter",
+      "min": 1,
+      "max": 100,
+      "default": 10
     },
     {
       "name": "Convert live MIDI",
@@ -175,7 +190,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "The bus to use as the reset input (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Reset mode",
@@ -188,7 +206,10 @@
         "Run/Stop signal"
       ],
       "description": "Sets the mode for the reset input.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Follow MIDI clock",
@@ -243,6 +264,50 @@
       "maxValue": 1,
       "description": "Enables internal MIDI output (sent to other algorithms).",
       "scope": "global"
+    },
+    {
+      "name": "1 256 1 Sets the bar number within the file from which to start playback. File change",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the behaviour when a new file is chosen. The"
+    },
+    {
+      "name": "options are: ● Wait until the end of the bar and then change to the new file. ● Wait until the end of the file and then change to the new file. ● Change immediately. File restart",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets how the file position changes when switching to"
+    },
+    {
+      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are: ● clock is interpreted as 24ppqn. ● clock is interpreted as 1/32 notes. ● clock is interpreted as 1/16 notes. ● clock is interpreted as 1/8 notes. ● clock is interpreted as 1/4 notes. Clock input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use as the clock input.",
+      "scope": "routing"
+    },
+    {
+      "name": "1 256 1 Sets the bar number within the file from which to start playback. File change",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the behaviour when a new file is chosen. The"
+    },
+    {
+      "name": "options are: ● Wait until the end of the bar and then change to the new file. ● Wait until the end of the file and then change to the new file. ● Change immediately. File restart",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets how the file position changes when switching to"
+    },
+    {
+      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are: ● clock is interpreted as 24ppqn. ● clock is interpreted as 1/32 notes. ● clock is interpreted as 1/16 notes. ● clock is interpreted as 1/8 notes. ● clock is interpreted as 1/4 notes. Clock input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use as the clock input.",
+      "scope": "routing"
     }
   ],
   "input_ports": [

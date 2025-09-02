@@ -51,10 +51,23 @@
       "default": 0,
       "scope": "per-channel",
       "description": "Enables saturation on this channel."
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 12,
+      "default": 1,
+      "description": "The number of busses to process, starting from the"
     }
   ],
   "input_ports": [
-    "Audio"
+    {
+      "name": "Audio"
+    },
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
   ],
   "output_ports": [
     "Audio"

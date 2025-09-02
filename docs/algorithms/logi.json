@@ -3,9 +3,10 @@
   "name": "Logic",
   "categories": [
     "Logic",
-    "Utility"
+    "Utility",
+    "Digital"
   ],
-  "description": "Performs logical operations (AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop) on pairs of inputs, based on the disting mk4 algorithm.",
+  "description": "Performs logical operations (AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop) on pairs of inputs. Each channel operates independently with configurable input thresholds and hysteresis.",
   "specifications": [
     {
       "name": "Channels",
@@ -20,29 +21,29 @@
     {
       "name": "Threshold",
       "unit": "V",
-      "defaultValue": 1.00,
-      "minValue": 0.00,
-      "maxValue": 10.00,
+      "defaultValue": 1.0,
+      "minValue": 0.0,
+      "maxValue": 10.0,
       "scope": "global",
-      "description": "Signals above this voltage are treated as a logic ‘1’/true."
+      "description": "Sets the input threshold. Signals above this voltage are treated as a logic '1'/true."
     },
     {
       "name": "Hysteresis",
       "unit": "V",
-      "defaultValue": 0.50,
-      "minValue": 0.00,
-      "maxValue": 10.00,
+      "defaultValue": 0.5,
+      "minValue": 0.0,
+      "maxValue": 10.0,
       "scope": "global",
-      "description": "Once over the threshold, signals must fall by this amount before being treated as a logic ‘0’/false."
+      "description": "Sets the input hysteresis. Once over the threshold, signals must fall by this amount before being treated as a logic '0'/false."
     },
     {
       "name": "Output true",
       "unit": "V",
-      "defaultValue": 5.00,
-      "minValue": -10.00,
-      "maxValue": 10.00,
+      "defaultValue": 5.0,
+      "minValue": -10.0,
+      "maxValue": 10.0,
       "scope": "global",
-      "description": "The output voltage for logic ‘1’/true; logic ‘0’/false is always output as 0V."
+      "description": "The output voltage for logic '1'/true. Logic '0'/false is always output as 0V."
     },
     {
       "name": "Enable",
@@ -74,7 +75,7 @@
         "D flip-flop"
       ],
       "scope": "channel",
-      "description": "Selects the logical operation."
+      "description": "Selects the logical operation from the table above."
     },
     {
       "name": "Input X",
@@ -82,8 +83,8 @@
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
-      "scope": "channel",
-      "description": "Chooses the X input bus."
+      "scope": "routing",
+      "description": "Chooses the X input bus for the operation."
     },
     {
       "name": "Input Y",
@@ -91,8 +92,8 @@
       "defaultValue": 2,
       "minValue": 1,
       "maxValue": 28,
-      "scope": "channel",
-      "description": "Chooses the Y input bus."
+      "scope": "routing",
+      "description": "Chooses the Y input bus for the operation."
     },
     {
       "name": "Output",
@@ -100,7 +101,7 @@
       "defaultValue": 15,
       "minValue": 1,
       "maxValue": 28,
-      "scope": "channel",
+      "scope": "routing",
       "description": "Chooses the output bus."
     },
     {
@@ -113,27 +114,27 @@
         "Add",
         "Replace"
       ],
-      "scope": "channel",
-      "description": "The standard Add/Replace mode selector."
+      "scope": "routing",
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ],
   "input_ports": [
     {
-      "id": "in_x",
+      "id": "input_x",
       "name": "Input X",
-      "description": "First logic input.",
+      "description": "First logic input (X).",
       "busIdRef": "Input X"
     },
     {
-      "id": "in_y",
+      "id": "input_y",
       "name": "Input Y",
-      "description": "Second logic input.",
+      "description": "Second logic input (Y).",
       "busIdRef": "Input Y"
     }
   ],
   "output_ports": [
     {
-      "id": "out",
+      "id": "output",
       "name": "Output",
       "description": "Logic function result.",
       "busIdRef": "Output"

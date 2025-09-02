@@ -49,9 +49,9 @@
     {
       "name": "Operator N Ratio",
       "unit": null,
-      "defaultValue": 1.000,
+      "defaultValue": 1.0,
       "minValue": 0.001,
-      "maxValue": 16.000,
+      "maxValue": 16.0,
       "description": "Frequency ratio for operator N relative to the base frequency.",
       "scope": "operator"
     },
@@ -157,6 +157,152 @@
       "maxValue": 1,
       "description": "The I2C channel to listen on (0=Off).",
       "scope": "global"
+    },
+    {
+      "name": "Left output",
+      "unit": "bus",
+      "defaultValue": 13,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The left output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "defaultValue": 14,
+      "minValue": 1,
+      "maxValue": 28,
+      "description": "The right output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "Global gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "A global gain adjustment applied to all timbres (in"
+    },
+    {
+      "name": "Bank Chooses the voice bank. Voice",
+      "min": 1,
+      "max": 32,
+      "default": 1,
+      "description": "Chooses the voice within the bank."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "cents Fine tuning control."
+    },
+    {
+      "name": "Brightness",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "An overall scaling on the modulator depths."
+    },
+    {
+      "name": "-100 100 0 % An overall scaling on the envelope times. Corresponds to the Plaits 'Morph'. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Sets the output level."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on."
+    },
+    {
+      "name": "Bend range",
+      "unit": "ST",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Global gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "A global gain adjustment applied to all timbres (in"
+    },
+    {
+      "name": "Bank Chooses the voice bank. Voice",
+      "min": 1,
+      "max": 32,
+      "default": 1,
+      "description": "Chooses the voice within the bank."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "cents Fine tuning control."
+    },
+    {
+      "name": "Brightness",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "An overall scaling on the modulator depths."
+    },
+    {
+      "name": "-100 100 0 % An overall scaling on the envelope times. Corresponds to the Plaits 'Morph'. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Sets the output level."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel to listen on."
     }
   ],
   "features": [
@@ -169,6 +315,14 @@
       "name": "Audio Output",
       "description": "Main audio output.",
       "busIdRef": "Output bus"
+    },
+    {
+      "name": "Left output",
+      "busIdRef": "Left output"
+    },
+    {
+      "name": "Right output",
+      "busIdRef": "Right output"
     }
   ]
 }

@@ -1,0 +1,27 @@
+{
+  "guid": "feat_chord_scales",
+  "name": "Chord/Quantizer Scales",
+  "description": "Standard musical scales available for chord generation and quantization functions. Includes major, minor, and various modal and harmonic scales.",
+  "parameters": [
+    {
+      "name": "Scale",
+      "unit": "enum",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 8,
+      "enumValues": [
+        "Chromatic",
+        "Major", 
+        "Natural Minor",
+        "Harmonic Minor",
+        "Dominant",
+        "Fully Diminished",
+        "Dominant Dim",
+        "Augmented",
+        "Whole Tone"
+      ],
+      "description": "Musical scale to use for chord generation or quantization.",
+      "scope": "global"
+    }
+  ]
+}

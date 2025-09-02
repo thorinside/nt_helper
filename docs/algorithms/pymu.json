@@ -1,0 +1,181 @@
+{
+  "guid": "pymu",
+  "name": "Poly Multisample",
+  "categories": [
+    "Sampler",
+    "Polyphonic"
+  ],
+  "description": "Polyphonic sample player (records and plays WAV files), controllable via CV/gate, MIDI, or I2C.",
+  "specifications": [
+    {
+      "name": "Voices",
+      "value": {
+        "minValue": 1,
+        "maxValue": 16,
+        "defaultValue": 8
+      },
+      "description": "Number of simultaneous voices."
+    },
+    {
+      "name": "Record time",
+      "unit": "s",
+      "value": {
+        "minValue": 0,
+        "maxValue": 60,
+        "defaultValue": 0
+      },
+      "description": "Maximum audio length for recording."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Left/mono output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "Left or mono output bus (0=None)."
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": "Right output bus for stereo (0=None)."
+    },
+    {
+      "name": "Sample -1 -1 Allows you to choose a single sample within the folder to play, or “<MULTISAMPLE>” for the usual case where you want the algorithm to choose the sample automatically based on the note pitch. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "Sets the output level."
+    },
+    {
+      "name": "Pan",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the stereo pan position."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Adjusts the tuning in semitones."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "cents Adjusts the tuning in cents."
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "pedal). Gate offset",
+      "unit": "ms",
+      "min": 0,
+      "max": 10,
+      "default": 0.2,
+      "description": "Offsets (delays) the gate inputs relative to the pitch"
+    },
+    {
+      "name": "0 3 0 The round-robin mode. See above. Loop",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets whether the sample will loop. ‘From WAV file’"
+    },
+    {
+      "name": "will loop if the sample has loop points defined in the file – see above – and not otherwise. ‘Off’ and ‘On’ force the sample to loop or not. Bend range",
+      "unit": "ST",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Confirm change",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "description": "Sets whether the folder and/or sample changes"
+    },
+    {
+      "name": "Envelope",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables an ADSR volume envelope. If the"
+    },
+    {
+      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "Sets the envelope attack time (from 1ms to 15s,"
+    },
+    {
+      "name": "exponential response). Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Sets the envelope decay time (from 20ms to 15s,"
+    },
+    {
+      "name": "exponential response). Sustain",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the envelope sustain level."
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 77,
+      "description": "Sets the envelope release time (from 10ms to 30s,"
+    },
+    {
+      "name": "exponential response). Velocity",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "description": "Sets the amount by which the note velocity affects"
+    },
+    {
+      "name": "MPE channels",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "Controls how the algorithm will respond to MPE."
+    }
+  ],
+  "features": [],
+  "input_ports": [],
+  "output_ports": [
+    {
+      "name": "Left/Mono Output",
+      "busIdRef": "Left/mono output"
+    },
+    {
+      "name": "Right Output",
+      "busIdRef": "Right output"
+    }
+  ]
+}

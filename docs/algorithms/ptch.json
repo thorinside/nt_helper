@@ -19,7 +19,10 @@
         "Frequency"
       ],
       "description": "Sets the mode for specifying the reference tone.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Note",
@@ -28,7 +31,10 @@
       "minValue": 0,
       "maxValue": 127,
       "description": "Sets the note pitch (MIDI note number) if Pitch mode is 'Pitch'. Respects global tuning.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 127,
+      "default": 69
     },
     {
       "name": "Frequency",
@@ -46,7 +52,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "The output bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Output mode",
@@ -64,9 +73,9 @@
     {
       "name": "Amplitude",
       "unit": "V",
-      "defaultValue": 10.00,
-      "minValue": 0.00,
-      "maxValue": 10.00,
+      "defaultValue": 10.0,
+      "minValue": 0.0,
+      "maxValue": 10.0,
       "description": "The amplitude of the signal (before gain is applied).",
       "scope": "global"
     },
@@ -78,6 +87,22 @@
       "maxValue": 6,
       "description": "The level of the output signal.",
       "scope": "global"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Amplitude",
+      "unit": "V",
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "description": "The amplitude of the signal (before the gain is"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Amplitude",
+      "unit": "V",
+      "min": 0,
+      "max": 10,
+      "default": 10,
+      "description": "The amplitude of the signal (before the gain is"
     }
   ],
   "input_ports": [],

@@ -74,13 +74,45 @@
       ],
       "scope": "per-channel",
       "description": "The standard Add/Replace mode selector."
+    },
+    {
+      "name": "0 1 1 Whether to clamp the common input to 0V (typical VCA usage) or not (four quadrant multiplier usage). Divider",
+      "unit": "V",
+      "min": 1,
+      "max": 12,
+      "default": 8,
+      "description": "Sets the scaling of the input CV that corresponds to",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 1 Whether to clamp the common input to 0V (typical VCA usage) or not (four quadrant multiplier usage). Divider",
+      "unit": "V",
+      "min": 1,
+      "max": 12,
+      "default": 8,
+      "description": "Sets the scaling of the input CV that corresponds to",
+      "scope": "routing"
     }
   ],
   "input_ports": [
-    "CV (Multiplier)",
-    "Audio/CV (Signal)"
+    {
+      "name": "CV (Multiplier)"
+    },
+    {
+      "name": "Audio/CV (Signal)"
+    },
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
   ],
   "output_ports": [
-    "Audio/CV"
+    {
+      "name": "Audio/CV"
+    },
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
   ]
 }

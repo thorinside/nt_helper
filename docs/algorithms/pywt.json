@@ -52,7 +52,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Input bus to control wavetable position (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Envelope 1 Attack",
@@ -175,7 +178,10 @@
         "Highpass"
       ],
       "description": "Filter type.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 3,
+      "default": 0
     },
     {
       "name": "Filter freq",
@@ -225,7 +231,10 @@
       "minValue": 0,
       "maxValue": 90,
       "description": "LFO phase spread/retrigger phase (degrees).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 90,
+      "default": 0
     },
     {
       "name": "Veloc -> volume",
@@ -365,7 +374,10 @@
       "minValue": -40,
       "maxValue": 24,
       "description": "Overall output gain.",
-      "scope": "global"
+      "scope": "global",
+      "min": -40,
+      "max": 24,
+      "default": 0
     },
     {
       "name": "Left output",
@@ -374,7 +386,10 @@
       "minValue": 1,
       "maxValue": 28,
       "description": "Left output bus.",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Right output",
@@ -383,7 +398,10 @@
       "minValue": 0,
       "maxValue": 28,
       "description": "Right output bus (0=None).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 28,
+      "default": 14
     },
     {
       "name": "Output mode",
@@ -396,7 +414,10 @@
         "Replace"
       ],
       "description": "Output mode (Add/Replace).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "MIDI channel",
@@ -433,6 +454,238 @@
       "maxValue": 28,
       "description": "Input bus for pitch bend CV (0=None).",
       "scope": "global"
+    },
+    {
+      "name": "Wavetable 0 0 Chooses the wavetable from those installed on the MicroSD card. Wave offset",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "An offset for the wavetable position, added to that"
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 127,
+      "default": 20,
+      "description": "Envelope attack time. Range 1ms-15s."
+    },
+    {
+      "name": "Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Envelope decay time. Range 20ms-15s."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 127,
+      "default": 80,
+      "description": "Envelope sustain level."
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Envelope release time. Range 10ms-30s."
+    },
+    {
+      "name": "'Highpass'. Filter freq",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "The filter frequency, specified as a MIDI note"
+    },
+    {
+      "name": "number. Filter Q",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "The filter resonance."
+    },
+    {
+      "name": "0 100 100 % The amount by which the note velocity affects the note volume. Veloc -> wave",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note velocity affects the"
+    },
+    {
+      "name": "-100 100 0 % The amount by which the note pitch affects the filter frequency. Env-1 -> wave",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which envelope 1 affects the"
+    },
+    {
+      "name": "-100 100 0 % The amount by which envelope 2 affects the wavetable position. Env-2 -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which envelope 2 affects the filter"
+    },
+    {
+      "name": "-100 100 0 % The amount by which the LFO affects the wavetable position. LFO -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which the LFO affects the filter"
+    },
+    {
+      "name": "Output spread",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount of output spread.",
+      "scope": "routing"
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Max voices",
+      "min": 1,
+      "max": 24,
+      "default": 24,
+      "description": "Sets the maximum number of simultaneous voices."
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "pedal). Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Wavetable 0 0 Chooses the wavetable from those installed on the MicroSD card. Wave offset",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "An offset for the wavetable position, added to that"
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 127,
+      "default": 20,
+      "description": "Envelope attack time. Range 1ms-15s."
+    },
+    {
+      "name": "Decay",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Envelope decay time. Range 20ms-15s."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 127,
+      "default": 80,
+      "description": "Envelope sustain level."
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "description": "Envelope release time. Range 10ms-30s."
+    },
+    {
+      "name": "'Highpass'. Filter freq",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "The filter frequency, specified as a MIDI note"
+    },
+    {
+      "name": "number. Filter Q",
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "description": "The filter resonance."
+    },
+    {
+      "name": "0 100 100 % The amount by which the note velocity affects the note volume. Veloc -> wave",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which the note velocity affects the"
+    },
+    {
+      "name": "-100 100 0 % The amount by which the note pitch affects the filter frequency. Env-1 -> wave",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount by which envelope 1 affects the"
+    },
+    {
+      "name": "-100 100 0 % The amount by which envelope 2 affects the wavetable position. Env-2 -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which envelope 2 affects the filter"
+    },
+    {
+      "name": "-100 100 0 % The amount by which the LFO affects the wavetable position. LFO -> filter",
+      "min": -127,
+      "max": 127,
+      "default": 0,
+      "description": "The amount by which the LFO affects the filter"
+    },
+    {
+      "name": "Output spread",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "The amount of output spread.",
+      "scope": "routing"
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Max voices",
+      "min": 1,
+      "max": 24,
+      "default": 24,
+      "description": "Sets the maximum number of simultaneous voices."
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "pedal). Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
     }
   ],
   "features": [

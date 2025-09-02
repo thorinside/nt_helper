@@ -138,5 +138,17 @@
         }
       ]
     }
+  ],
+  "input_ports": [
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
   ]
 }

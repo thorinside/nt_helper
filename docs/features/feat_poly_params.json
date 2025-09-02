@@ -46,10 +46,10 @@
       "minValue": 0,
       "maxValue": 1,
       "enumValues": [
-        "Sustain",
-        "Sostenuto"
+        "Synth",
+        "Piano"
       ],
-      "description": "Standard polysynth sustain mode.",
+      "description": "Sustain behavior: 'Synth' (sustained notes cannot be retriggered) or 'Piano' (sustained notes can be retriggered).",
       "scope": "global"
     },
     {

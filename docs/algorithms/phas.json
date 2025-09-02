@@ -83,12 +83,15 @@
     },
     {
       "name": "Input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The first audio input bus."
+      "description": "The first audio input bus.",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Width",
@@ -97,16 +100,22 @@
       "minValue": 1,
       "maxValue": 8,
       "scope": "global",
-      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2.",
+      "min": 1,
+      "max": 8,
+      "default": 1
     },
     {
       "name": "Output",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 13,
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The first output bus."
+      "description": "The first output bus.",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Output mode",
@@ -116,6 +125,22 @@
       "maxValue": 1,
       "scope": "global",
       "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "0 28 0 The bus to use for the sweep CV. Input",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "description": "The first audio input bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 28 0 The bus to use for the sweep CV. Input",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "description": "The first audio input bus.",
+      "scope": "routing"
     }
   ],
   "input_ports": [

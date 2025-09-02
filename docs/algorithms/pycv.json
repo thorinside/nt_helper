@@ -62,7 +62,10 @@
       "minValue": -100,
       "maxValue": 100,
       "description": "Fine tuning control.",
-      "scope": "global"
+      "scope": "global",
+      "min": -100,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Bend range",
@@ -71,7 +74,10 @@
       "minValue": 0,
       "maxValue": 48,
       "description": "The MIDI pitch bend range in semitones.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 48,
+      "default": 2
     },
     {
       "name": "Min vel gate",
@@ -80,7 +86,10 @@
       "minValue": 0.0,
       "maxValue": 5.0,
       "description": "Minimum gate voltage if gates are scaled by velocity (Velocity=0). Max is 5V (Velocity=127).",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 5,
+      "default": 1
     },
     {
       "name": "Voices",
@@ -89,7 +98,10 @@
       "minValue": 1,
       "maxValue": 14,
       "description": "The number of voices to use (up to the specification limit).",
-      "scope": "global"
+      "scope": "global",
+      "min": 1,
+      "max": 14,
+      "default": 1
     },
     {
       "name": "First output",
@@ -143,7 +155,10 @@
         "Replace"
       ],
       "description": "Add/Replace mode for gate outputs.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 1
     },
     {
       "name": "Pitch mode",
@@ -156,7 +171,10 @@
         "Replace"
       ],
       "description": "Add/Replace mode for pitch CV outputs.",
-      "scope": "global"
+      "scope": "global",
+      "min": 0,
+      "max": 1,
+      "default": 1
     },
     {
       "name": "Velocity mode",
@@ -170,6 +188,66 @@
       ],
       "description": "Add/Replace mode for velocity outputs.",
       "scope": "global"
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "pedal). Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "set by the specification). First output",
+      "min": 1,
+      "max": 28,
+      "default": 15,
+      "description": "The first output bus to use.",
+      "scope": "routing"
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "pedal). Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "set by the specification). First output",
+      "min": 1,
+      "max": 28,
+      "default": 15,
+      "description": "The first output bus to use.",
+      "scope": "routing"
     }
   ],
   "features": [

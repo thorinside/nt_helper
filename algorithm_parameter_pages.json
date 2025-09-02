@@ -1,0 +1,505 @@
+{
+  "acsw": {
+    "Routing": [
+      "Input",
+      "Output",
+      "Output mode"
+    ],
+    "Envelope": [
+      "Input mode",
+      "Trigger length",
+      "Trigger voltage",
+      "Shape",
+      "Gain",
+      "Charge",
+      "Discharge",
+      "Pot",
+      "Capacitance"
+    ]
+  },
+  "wavr": {
+    "Per-file": [
+      "Enable",
+      "Right input",
+      "Playback"
+    ]
+  },
+  "augu": {
+    "Routing": [
+      "Left input",
+      "Right input",
+      "Left output"
+    ]
+  },
+  "auto": {
+    "Outputs": [
+      "CV output"
+    ],
+    "Activate": [
+      "Activate",
+      "Test"
+    ]
+  },
+  "btcr": {
+    "Crush": [
+      "Bit reduce",
+      "Symmetric",
+      "Reduction",
+      "Mangling",
+      "Downsample"
+    ]
+  },
+  "xaoc": {
+    "Reset": [
+      "Reset",
+      "Reset X",
+      "Reset Y",
+      "Reset Z"
+    ]
+  },
+  "junc": {
+    "Routing": [
+      "Right input",
+      "Left output"
+    ]
+  },
+  "clkd": {
+    "Common": [
+      "Reset input"
+    ]
+  },
+  "comp": {
+    "Per-channel routing": [
+      "Right input"
+    ]
+  },
+  "conv": {
+    "Mix": [
+      "Dry gain"
+    ],
+    "Routing": [
+      "Right input",
+      "Left output"
+    ]
+  },
+  "xfad": {
+    "Routing": [
+      "Input A",
+      "Input B",
+      "Output"
+    ]
+  },
+  "debo": {
+    "Globals": [
+      "Time"
+    ]
+  },
+  "delt": {
+    "Routing": [
+      "Right input"
+    ]
+  },
+  "delf": {
+    "Common": [
+      "Disable all",
+      "Detection"
+    ],
+    "Per-channel": [
+      "Enable",
+      "Function",
+      "Delay"
+    ]
+  },
+  "eqpa": {
+    "Per-channel": [
+      "Input",
+      "Width",
+      "Output"
+    ],
+    "Per-channel per-band": [
+      "Enable",
+      "Type",
+      "Frequency",
+      "Gain"
+    ]
+  },
+  "env2": {
+    "Per-channel": [
+      "Enable"
+    ]
+  },
+  "envq": {
+    "Per-channel": [
+      "Enable",
+      "Shape"
+    ]
+  },
+  "ensq": {
+    "Step": [
+      "Curve",
+      "Scale",
+      "Offset",
+      "Division",
+      "Mute",
+      "Skip",
+      "Reset",
+      "Repeat"
+    ],
+    "sequence steps between the current start and end\nsteps will be randomised according to the": [
+      "Levels",
+      "Curves",
+      "Repeats",
+      "Min repeat",
+      "Max repeat",
+      "Min ratchet",
+      "Max ratchet"
+    ]
+  },
+  "eucp": {
+    "Globals": [
+      "Clock input",
+      "Reset input"
+    ],
+    "Per-channel": [
+      "Enable",
+      "Steps",
+      "Pulses",
+      "Rotation",
+      "Repeat"
+    ]
+  },
+  "fbnk": {
+    "Per-channel": [
+      "Pitch",
+      "Gate",
+      "Output"
+    ]
+  },
+  "fqsh": {
+    "Routing": [
+      "Shift input",
+      "Input",
+      "Width"
+    ]
+  },
+  "krby": {
+    "Probabilities": [
+      "Pitch up",
+      "Pitch down",
+      "Fifths",
+      "Reverse",
+      "Glide",
+      "Stutter",
+      "Triplet",
+      "Play"
+    ],
+    "Transients": [
+      "Detect",
+      "Sensitivity"
+    ]
+  },
+  "logi": {
+    "Globals": [
+      "Threshold",
+      "Hysteresis",
+      "Output true"
+    ]
+  },
+  "loop": {
+    "Controls": [
+      "Record",
+      "Play",
+      "Reverse"
+    ],
+    "Globals": [
+      "Pause/mute",
+      "Attack time",
+      "Decay time"
+    ]
+  },
+  "midp": {
+    "Transport": [
+      "Play"
+    ]
+  },
+  "mix1": {
+    "Per-send": [
+      "Destination",
+      "Pre/post"
+    ],
+    "Per-channel per-send": [
+      "Send gain"
+    ]
+  },
+  "mix2": {
+    "Common": [
+      "Left output"
+    ]
+  },
+  "nois": {
+    "Globals": [
+      "Gain"
+    ]
+  },
+  "phsh": {
+    "Shift": [
+      "Shift",
+      "Mix",
+      "Level"
+    ],
+    "Routing": [
+      "Shift input",
+      "Input",
+      "Width"
+    ]
+  },
+  "phas": {
+    "Phaser": [
+      "Sweep",
+      "Stages",
+      "Feedback",
+      "Warp",
+      "Input scale",
+      "Mix",
+      "Level"
+    ]
+  },
+  "ptsh": {
+    "Routing": [
+      "Audio input",
+      "Shift input",
+      "Output"
+    ]
+  },
+  "pymu": {
+    "Envelope": [
+      "Envelope",
+      "Attack",
+      "Decay",
+      "Sustain",
+      "Release",
+      "Velocity"
+    ]
+  },
+  "pyms": {
+    "Globals": [
+      "Global gain"
+    ]
+  },
+  "pyri": {
+    "Rings": [
+      "Mode",
+      "Synth effect",
+      "Coarse tune",
+      "Fine tune",
+      "Resolution",
+      "Structure",
+      "Brightness",
+      "Damping",
+      "Position"
+    ]
+  },
+  "pywt": {
+    "LFO": [
+      "LFO speed"
+    ]
+  },
+  "revb": {
+    "Reverb": [
+      "Mix"
+    ]
+  },
+  "samp": {
+    "Per-trigger": [
+      "Transpose",
+      "Fine tune",
+      "Gain",
+      "Pan"
+    ],
+    "Per-trigger setup": [
+      "Left output"
+    ]
+  },
+  "satu": {
+    "Globals": [
+      "Pre gain",
+      "Post gain"
+    ]
+  },
+  "ssjw": {
+    "Tweaks": [
+      "Damping",
+      "Length"
+    ]
+  },
+  "slew": {
+    "Common": [
+      "Through",
+      "Down slew"
+    ]
+  },
+  "spfz": {
+    "Routing": [
+      "Input"
+    ]
+  },
+  "ssbm": {
+    "Mix": [
+      "Mix",
+      "Level"
+    ]
+  },
+  "spsq": {
+    "Randomise": [
+      "Randomise"
+    ],
+    "Routing": [
+      "Clock input",
+      "Reset input",
+      "Reset mode",
+      "Pitch output"
+    ]
+  },
+  "spsh": {
+    "Sequencer": [
+      "Sequence",
+      "Start",
+      "End",
+      "Direction",
+      "Permutation",
+      "Gate type",
+      "Gate length"
+    ],
+    "Routing": [
+      "Clock input",
+      "Reset input",
+      "Reset mode",
+      "Pitch output"
+    ]
+  },
+  "stpw": {
+    "Controls": [
+      "Start/stop",
+      "Reset"
+    ]
+  },
+  "tmqn": {
+    "Per-channel": [
+      "Enable"
+    ]
+  },
+  "spin": {
+    "Mix": [
+      "Mix style",
+      "Mix",
+      "Dry gain",
+      "Wet gain"
+    ],
+    "Routing": [
+      "Left input",
+      "Right input",
+      "Left output"
+    ]
+  },
+  "vcam": {
+    "Per-channel": [
+      "Input",
+      "Output"
+    ]
+  },
+  "vcop": {
+    "VCO": [
+      "Wave offset",
+      "Window"
+    ],
+    "Gain": [
+      "Amplitude",
+      "Gain"
+    ]
+  },
+  "vcow": {
+    "Routing": [
+      "Pitch input"
+    ]
+  },
+  "vcot": {
+    "Gain": [
+      "Amplitude",
+      "Gain"
+    ]
+  },
+  "voco": {
+    "Noise": [
+      "Noise"
+    ]
+  },
+  "wfan": {
+    "Animate": [
+      "Threshold",
+      "Track",
+      "Amplitude",
+      "Squares",
+      "Separation",
+      "Mix",
+      "LFO rate",
+      "LFO depth"
+    ]
+  },
+  "wavs": {
+    "Routing": [
+      "Gain input",
+      "Input",
+      "Width",
+      "Output"
+    ]
+  },
+  "arpg": {
+    "Arp": [
+      "Mode",
+      "Range",
+      "Latch",
+      "Truncate",
+      "Gate type",
+      "Length (ms)",
+      "Length (%)"
+    ],
+    "Commands": [
+      "Add",
+      "Remove",
+      "Rest",
+      "Transpose",
+      "Transpose in key",
+      "Root note"
+    ],
+    "MIDI/I2C": [
+      "MIDI channel",
+      "MPE channels",
+      "I2C channel",
+      "Sustain",
+      "Sustain mode"
+    ],
+    "Sync": [
+      "Clock input",
+      "Reset input",
+      "Reset mode",
+      "Follow MIDI clock",
+      "Divisor",
+      "Auto reset"
+    ],
+    "MIDI out": [
+      "MIDI channel",
+      "Output to breakout",
+      "Output to Select Bus",
+      "Output to USB",
+      "Output to internal"
+    ],
+    "CV/gate out": [
+      "Gate output",
+      "Gate mode",
+      "Pitch output",
+      "Pitch mode",
+      "Velocity output",
+      "Velocity mode"
+    ]
+  }
+}

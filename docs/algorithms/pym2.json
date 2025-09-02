@@ -1,0 +1,236 @@
+{
+  "guid": "pym2",
+  "name": "Poly Macro Oscillator 2",
+  "categories": [
+    "VCO",
+    "Polyphonic"
+  ],
+  "description": "Polysynth with multiple Plaits-based voices; provides Main and Aux outputs per voice.",
+  "specifications": [
+    {
+      "name": "Voices",
+      "value": {
+        "minValue": 1,
+        "maxValue": 8,
+        "defaultValue": 4
+      },
+      "description": "Number of simultaneous voices."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Left/mono output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "Left or mono output bus (0=None)."
+    },
+    {
+      "name": "Right output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 14,
+      "scope": "routing",
+      "description": "Right output bus for stereo (0=None)."
+    },
+    {
+      "name": "FM input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Aux output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Model",
+      "min": 0,
+      "max": 23,
+      "default": 0,
+      "description": "Chooses the synthesis model."
+    },
+    {
+      "name": "Coarse tune",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "cents Fine tuning control."
+    },
+    {
+      "name": "Harmonics",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Sets the harmonics control."
+    },
+    {
+      "name": "Timbre",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Sets the timbre control."
+    },
+    {
+      "name": "Morph",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Sets the morph control."
+    },
+    {
+      "name": "FM",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the FM depth."
+    },
+    {
+      "name": "Timbre mod",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the timbre modulation depth."
+    },
+    {
+      "name": "Morph mod",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "Sets the morph modulation depth."
+    },
+    {
+      "name": "Low-pass gate",
+      "min": 0,
+      "max": 127,
+      "default": 127,
+      "description": "Sets the LPG colour (VCFA-VCA blend)."
+    },
+    {
+      "name": "Time/decay",
+      "min": 0,
+      "max": 127,
+      "default": 64,
+      "description": "Sets the envelope decay time."
+    },
+    {
+      "name": "Level input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "Selects which bus is used as the level input.",
+      "scope": "routing"
+    },
+    {
+      "name": "Harmonics input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "Selects which bus is used as the harmonics input.",
+      "scope": "routing"
+    },
+    {
+      "name": "Timbre input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "Selects which bus is used as the timbre input.",
+      "scope": "routing"
+    },
+    {
+      "name": "Main output",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "description": "The bus for the ‘Main’ output.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Main gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "The level of the ‘Main’ output signal."
+    },
+    {
+      "name": "Aux gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "The level of the ‘Aux’ output signal."
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Bend range",
+      "min": 0,
+      "max": 48,
+      "default": 2,
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard polysynth sustain mode parameter. See"
+    },
+    {
+      "name": "above. Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    }
+  ],
+  "features": [],
+  "input_ports": [
+    {
+      "name": "FM input",
+      "busIdRef": "FM input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Left/Mono Output",
+      "busIdRef": "Left/mono output"
+    },
+    {
+      "name": "Right Output",
+      "busIdRef": "Right output"
+    },
+    {
+      "name": "Aux output",
+      "busIdRef": "Aux output"
+    }
+  ]
+}

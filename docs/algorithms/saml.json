@@ -14,7 +14,10 @@
       "minValue": 1,
       "maxValue": 24,
       "scope": "global",
-      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the ‘Play’ parameter."
+      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the ‘Play’ parameter.",
+      "min": 1,
+      "max": 24,
+      "default": 1
     },
     {
       "name": "Slices",
@@ -32,7 +35,10 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "global",
-      "description": "If enabled, playback will stop when it reaches the next slice. Otherwise, playback continues to the end of the sample."
+      "description": "If enabled, playback will stop when it reaches the next slice. Otherwise, playback continues to the end of the sample.",
+      "min": 0,
+      "max": 1,
+      "default": 0
     },
     {
       "name": "Clock source",
@@ -41,7 +47,10 @@
       "minValue": 0,
       "maxValue": 2,
       "scope": "global",
-      "description": "Sets the clock source: ‘Off’, ‘External’, or ‘MIDI’."
+      "description": "Sets the clock source: ‘Off’, ‘External’, or ‘MIDI’.",
+      "min": 0,
+      "max": 2,
+      "default": 0
     },
     {
       "name": "Auto trigger",
@@ -50,7 +59,10 @@
       "minValue": 0,
       "maxValue": 2,
       "scope": "global",
-      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop."
+      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop.",
+      "min": 0,
+      "max": 2,
+      "default": 0
     },
     {
       "name": "Auto divisor",
@@ -77,16 +89,22 @@
       "minValue": 0,
       "maxValue": 4,
       "scope": "global",
-      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
+      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16.",
+      "min": 0,
+      "max": 4,
+      "default": 2
     },
     {
       "name": "Slice input",
-      "unit": null,
+      "unit": "bus",
       "defaultValue": 0,
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use for the slice CV input (V/oct, scaled at one semitone per slice)."
+      "description": "The bus to use for the slice CV input (V/oct, scaled at one semitone per slice).",
+      "min": 0,
+      "max": 28,
+      "default": 0
     },
     {
       "name": "Clock input",
@@ -104,7 +122,10 @@
       "minValue": 0,
       "maxValue": 28,
       "scope": "global",
-      "description": "The bus to use for the run/stop input."
+      "description": "The bus to use for the run/stop input.",
+      "min": 0,
+      "max": 28,
+      "default": 2
     },
     {
       "name": "Coarse",
@@ -113,7 +134,10 @@
       "minValue": 0.0,
       "maxValue": 100.0,
       "scope": "global",
-      "description": "The coarse slice position, as a percentage of the sample length."
+      "description": "The coarse slice position, as a percentage of the sample length.",
+      "min": 0,
+      "max": 100,
+      "default": 0
     },
     {
       "name": "Fine",
@@ -131,9 +155,66 @@
       "minValue": -200.0,
       "maxValue": 200.0,
       "scope": "global",
-      "description": "The playback speed for the slice."
+      "description": "The playback speed for the slice.",
+      "min": -200,
+      "max": 200,
+      "default": 100
+    },
+    {
+      "name": "Reset input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "as a convenience when triggering playback with the ‘Play’ parameter. Slices",
+      "min": 1,
+      "max": 24,
+      "default": 24,
+      "description": "Sets the number of slices in use."
+    },
+    {
+      "name": "at one semitone per slice). Clock input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the clock input (24 ppqn).",
+      "scope": "routing"
+    },
+    {
+      "name": "sample length. Fine",
+      "min": -500,
+      "max": 500,
+      "default": 0,
+      "description": "The fine slice position, in sample frames."
+    },
+    {
+      "name": "as a convenience when triggering playback with the ‘Play’ parameter. Slices",
+      "min": 1,
+      "max": 24,
+      "default": 24,
+      "description": "Sets the number of slices in use."
+    },
+    {
+      "name": "0 19 15 Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’. Time sig num",
+      "min": 1,
+      "max": 99,
+      "default": 4,
+      "description": "The time signature numerator."
     }
   ],
-  "input_ports": [],
+  "input_ports": [
+    {
+      "name": "Slice input",
+      "busIdRef": "Slice input"
+    },
+    {
+      "name": "Reset input",
+      "busIdRef": "Reset input"
+    }
+  ],
   "output_ports": []
 }

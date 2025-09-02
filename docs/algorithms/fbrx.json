@@ -70,6 +70,38 @@
       "maxValue": 28,
       "scope": "channel",
       "description": "The bus to send."
+    },
+    {
+      "name": "Output 1 28 The bus on which to output the received signal. Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as",
+      "scope": "routing"
+    },
+    {
+      "name": "described above. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "description": "The gain applied to the received signal."
+    },
+    {
+      "name": "Output 1 28 The bus on which to output the received signal. Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as",
+      "scope": "routing"
+    },
+    {
+      "name": "described above. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": -40,
+      "description": "The gain applied to the received signal."
     }
   ],
   "input_ports": [],

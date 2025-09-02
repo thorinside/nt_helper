@@ -248,7 +248,7 @@ class MetadataSyncPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Body uses MetadataSyncCubit for DB data, DistingCubit for state
+                    // Body uses MetadataSyncCubit for DB DistingCubit for state
                     body: BlocBuilder<MetadataSyncCubit, MetadataSyncState>(
                       builder: (metaCtx, metaState) {
                         final isOperationInProgress =

@@ -5,28 +5,257 @@
     "VCO",
     "Oscillator"
   ],
-  "description": "This algorithm based on the Pulsar VCO algorithm on the disting mk4. You might like to watch the video on that algorithm here^102. It is an implementation of pulsar synthesis, inspired by the description in Curtis Roads's book Microsound (MIT Press) pp137-157. In pulsar synthesis, a small grain of sound (known as a _pulsaret_ , typically a pulse or single cycle waveform) is repeated periodically, followed by a small section of silence. The length of the sound within the repeating period (equivalently, the speed at which it is played) offers a means of control the timbre without affecting the perceived pitch of the sound. By the same token, changing the fundamental pitch without changing the speed at which the grain of sound is played offers pitch change without simply shifting the entire spectrum up and down, an effect reminiscent of 'vocal' or 'formant' synthesis. There are therefore two pitch inputs:",
+  "description": "A pulsar VCO implementing pulsar synthesis. Two pitch inputs (fundamental + formant). Uses wavetables from the SD card and provides a main and inverse output.",
   "specifications": [],
   "parameters": [
     {
-      "name": "Wavetable 0 Chooses the wavetable. Wave offset -100.0 100.0 0.0 % Sets the position within the wavetable. Window 0 3 0 Sets the window applied to the pulsarets: one of Rectangular, Linear attack, Linear decay, or Gaussian. Pitch mode 0 1 0 Sets whether the formant frequency is independent of the fundamental frequency or linked. Masking mode",
-      "unit": "Sets",
-      "minValue": 0,
-      "maxValue": 1,
-      "defaultValue": 0,
-      "description": "the masking mode: Stochastic or Burst. Masking 0 100 0 % Sets the amount of masking. Burst length",
-      "scope": "global"
+      "name": "Wavetable",
+      "unit": "enum",
+      "min": 0,
+      "max": 0,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Chooses the wavetable."
     },
     {
-      "name": "",
-      "unit": "Sets",
-      "minValue": 2,
-      "maxValue": 100,
-      "defaultValue": 2,
-      "description": "the burst length, if the masking mode is Burst. Octave -16 8 0 Adjusts the VCO tuning in octaves. Transpose -60 60 0 ST Adjusts the VCO tuning in semitones. Fine tune -100 100 0 cents Adjusts the VCO tuning in cents.",
-      "scope": "global"
+      "name": "Wave offset",
+      "unit": "%",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Sets the position within the wavetable."
+    },
+    {
+      "name": "Window",
+      "unit": "enum",
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "values": [
+        "Rectangular",
+        "Linear attack",
+        "Linear decay",
+        "Gaussian"
+      ],
+      "scope": "VCO",
+      "description": "Window applied to the pulsarets."
+    },
+    {
+      "name": "Pitch mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Independent",
+        "Tracking"
+      ],
+      "scope": "VCO",
+      "description": "Whether formant frequency is independent or tracks the fundamental."
+    },
+    {
+      "name": "Masking mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Stochastic",
+        "Burst"
+      ],
+      "scope": "VCO",
+      "description": "Masking mode for pulsarets."
+    },
+    {
+      "name": "Masking",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Amount of masking when enabled."
+    },
+    {
+      "name": "Burst length",
+      "unit": null,
+      "min": 2,
+      "max": 100,
+      "default": 2,
+      "scope": "VCO",
+      "description": "Burst length when masking mode is Burst."
+    },
+    {
+      "name": "Octave",
+      "unit": null,
+      "min": -16,
+      "max": 8,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Adjusts the VCO tuning in octaves."
+    },
+    {
+      "name": "Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Adjusts the VCO tuning in semitones."
+    },
+    {
+      "name": "Fine tune",
+      "unit": "cents",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "scope": "VCO",
+      "description": "Adjusts the VCO tuning in cents."
+    },
+    {
+      "name": "Amplitude",
+      "unit": "V",
+      "min": 0.0,
+      "max": 10.0,
+      "default": 10.0,
+      "scope": "gain",
+      "description": "Amplitude of the output before gain."
+    },
+    {
+      "name": "Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "scope": "gain",
+      "description": "Level of the output."
+    },
+    {
+      "name": "Pitch input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "routing",
+      "description": "The pitch CV input (1V/octave)."
+    },
+    {
+      "name": "Formant input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "The formant CV input (1V/octave)."
+    },
+    {
+      "name": "Wave input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "Input bus to modulate the wave offset."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "scope": "routing",
+      "description": "The output bus."
+    },
+    {
+      "name": "Output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "Add/Replace mode for the main output."
+    },
+    {
+      "name": "Inverse output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": "The output bus with inverse masking."
+    },
+    {
+      "name": "Inverse output mode",
+      "unit": "enum",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "values": [
+        "Add",
+        "Replace"
+      ],
+      "scope": "routing",
+      "description": "Add/Replace mode for the inverse output."
+    },
+    {
+      "name": "affected by the gain). Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Sets the level of the output."
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above for the main output. Inverse output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The output bus with inverse masking.",
+      "scope": "routing"
+    },
+    {
+      "name": "affected by the gain). Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "description": "Sets the level of the output."
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above for the main output. Inverse output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The output bus with inverse masking.",
+      "scope": "routing"
     }
   ],
-  "input_ports": [],
-  "output_ports": []
+  "input_ports": [
+    {
+      "name": "Pitch input",
+      "busIdRef": "Pitch input"
+    },
+    {
+      "name": "Formant input",
+      "busIdRef": "Formant input"
+    },
+    {
+      "name": "Wave input",
+      "busIdRef": "Wave input"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    },
+    {
+      "name": "Inverse output",
+      "busIdRef": "Inverse output"
+    }
+  ]
 }

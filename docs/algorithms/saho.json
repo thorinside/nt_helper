@@ -78,13 +78,57 @@
       ],
       "scope": "per-channel",
       "description": "Chooses between 'Sample and hold' and 'Track and hold'."
+    },
+    {
+      "name": "Input 1 28 The signal input bus to sample/track. Output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "described above. Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Chooses between ‘Sample and hold’ and ‘Track"
+    },
+    {
+      "name": "Input 1 28 The signal input bus to sample/track. Output",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The output bus.",
+      "scope": "routing"
+    },
+    {
+      "name": "described above. Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Chooses between ‘Sample and hold’ and ‘Track"
     }
   ],
   "input_ports": [
-    "CV (Signal)",
-    "Gate"
+    {
+      "name": "CV (Signal)"
+    },
+    {
+      "name": "Gate"
+    },
+    {
+      "name": "Gate input",
+      "busIdRef": "Gate input"
+    }
   ],
   "output_ports": [
-    "CV"
+    {
+      "name": "CV"
+    },
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    }
   ]
 }

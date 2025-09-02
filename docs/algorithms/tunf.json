@@ -70,6 +70,94 @@
       "default": -40,
       "scope": "global",
       "description": "Signal threshold (dB) below which pitch tracking is disabled."
+    },
+    {
+      "name": "Channel",
+      "min": 1,
+      "max": 0,
+      "default": 28,
+      "description": "1 The input bus for tuner number 1."
+    },
+    {
+      "name": "Channel",
+      "min": 2,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 2."
+    },
+    {
+      "name": "Channel",
+      "min": 3,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 3."
+    },
+    {
+      "name": "Channel",
+      "min": 4,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 4."
+    },
+    {
+      "name": "this appropriately for the lowest note that you need to tune. Track bias",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "An internal parameter of the pitch tracking"
+    },
+    {
+      "name": "recommended in most cases. Env threshold",
+      "unit": "dB",
+      "min": -80,
+      "max": 0,
+      "default": -40,
+      "description": "Sets a signal threshold below which no attempt is"
+    },
+    {
+      "name": "Channel",
+      "min": 1,
+      "max": 0,
+      "default": 28,
+      "description": "1 The input bus for tuner number 1."
+    },
+    {
+      "name": "Channel",
+      "min": 2,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 2."
+    },
+    {
+      "name": "Channel",
+      "min": 3,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 3."
+    },
+    {
+      "name": "Channel",
+      "min": 4,
+      "max": 0,
+      "default": 28,
+      "description": "0 The input bus for tuner number 4."
+    },
+    {
+      "name": "this appropriately for the lowest note that you need to tune. Track bias",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "An internal parameter of the pitch tracking"
+    },
+    {
+      "name": "recommended in most cases. Env threshold",
+      "unit": "dB",
+      "min": -80,
+      "max": 0,
+      "default": -40,
+      "description": "Sets a signal threshold below which no attempt is"
     }
   ],
   "input_ports": [

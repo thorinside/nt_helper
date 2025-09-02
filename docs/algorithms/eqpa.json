@@ -52,7 +52,11 @@
       "defaultValue": 1,
       "minValue": 1,
       "maxValue": 28,
-      "description": "The input bus."
+      "description": "The input bus.",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "routing"
     },
     {
       "name": "Width",
@@ -68,7 +72,11 @@
       "defaultValue": 13,
       "minValue": 1,
       "maxValue": 28,
-      "description": "The output bus."
+      "description": "The output bus.",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing"
     },
     {
       "name": "Output mode",

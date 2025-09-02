@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Implement visualization of physical input/output connections in the routing editor widget to show users how their algorithms connect to the Disting NT's physical hardware jacks based on bus assignments. Physical connections are automatically discovered from parameter values (buses 1-12 for inputs, 13-20 for outputs) and rendered with distinct visual styling that updates dynamically when nodes move or parameters change.

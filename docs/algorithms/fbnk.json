@@ -24,7 +24,10 @@
       "minValue": 1,
       "maxValue": 28,
       "scope": "global",
-      "description": "The first audio input bus."
+      "description": "The first audio input bus.",
+      "min": 1,
+      "max": 28,
+      "default": 1
     },
     {
       "name": "Width",
@@ -33,7 +36,10 @@
       "minValue": 1,
       "maxValue": 8,
       "scope": "global",
-      "description": "The number of audio input busses (e.g., set to 2 for stereo)."
+      "description": "The number of audio input busses (e.g., set to 2 for stereo).",
+      "min": 1,
+      "max": 8,
+      "default": 1
     },
     {
       "name": "Mode",
@@ -114,7 +120,10 @@
       "minValue": 1,
       "maxValue": 28,
       "scope": "channel",
-      "description": "The filter's (first) output bus."
+      "description": "The filter's (first) output bus.",
+      "min": 1,
+      "max": 28,
+      "default": 13
     },
     {
       "name": "Output mode",
@@ -146,6 +155,152 @@
       "maxValue": 15,
       "scope": "channel",
       "description": "The MIDI channel on which to receive notes (0 = Off)."
+    },
+    {
+      "name": "stereo). Mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The filter mode – see above."
+    },
+    {
+      "name": "1 100 50 % Sets the filter gain (for resonators) or resonance (for bandpass/multiband). Attack time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "The envelope attack time. The scale is exponential,"
+    },
+    {
+      "name": "0 1023 64 The envelope release time. The scale is exponential, from 1ms up to 4s. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "An overall gain control."
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "The filter’s gain."
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "1 12 12 Sets the number of filters that will be controlled by MIDI or CV/gate. By reducing this, you can elect to control some filters by MIDI while the rest remain under manual control. Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "cents Fine tuning control."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "0 48 2 The MIDI pitch bend range. Unison",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of voices to play simultaneously for"
+    },
+    {
+      "name": "each note triggered. Unison detune",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "cents The detune amount when Unison is active."
+    },
+    {
+      "name": "stereo). Mode",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "The filter mode – see above."
+    },
+    {
+      "name": "1 100 50 % Sets the filter gain (for resonators) or resonance (for bandpass/multiband). Attack time",
+      "min": 0,
+      "max": 1023,
+      "default": 64,
+      "description": "The envelope attack time. The scale is exponential,"
+    },
+    {
+      "name": "0 1023 64 The envelope release time. The scale is exponential, from 1ms up to 4s. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "An overall gain control."
+    },
+    {
+      "name": "0 1 0 The standard Add/Replace mode selector as described above. Gain",
+      "unit": "dB",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "description": "The filter’s gain."
+    },
+    {
+      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "1 12 12 Sets the number of filters that will be controlled by MIDI or CV/gate. By reducing this, you can elect to control some filters by MIDI while the rest remain under manual control. Transpose",
+      "unit": "ST",
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "Fine tune",
+      "min": -100,
+      "max": 100,
+      "default": 0,
+      "description": "cents Fine tuning control."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Directly controls the sustain (like a MIDI sustain"
+    },
+    {
+      "name": "0 48 2 The MIDI pitch bend range. Unison",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of voices to play simultaneously for"
+    },
+    {
+      "name": "each note triggered. Unison detune",
+      "min": 0,
+      "max": 100,
+      "default": 10,
+      "description": "cents The detune amount when Unison is active."
     }
   ],
   "features": [

@@ -1,0 +1,134 @@
+{
+  "guid": "musw",
+  "name": "Multi-Switch",
+  "categories": [
+    "Utility",
+    "Routing"
+  ],
+  "description": "Sequential or CV-controlled switch with up to six configurable switches; DC-coupled for audio or CV.",
+  "specifications": [
+    {
+      "name": "Switches",
+      "value": {
+        "minValue": 1,
+        "maxValue": 6,
+        "defaultValue": 2
+      },
+      "description": "Number of switches."
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Input",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 1,
+      "scope": "switch",
+      "description": "Selected input bus for the switch (0=None)."
+    },
+    {
+      "name": "Output",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 15,
+      "scope": "switch",
+      "description": "Selected output bus for the switch (0=None)."
+    },
+    {
+      "name": "Crossfade",
+      "unit": "ms",
+      "min": 0,
+      "max": 5000,
+      "default": 0,
+      "scope": "switch",
+      "description": "Crossfade time when switching."
+    },
+    {
+      "name": "Input A-L",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Output A-H",
+      "unit": "bus",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "scope": "routing",
+      "description": ""
+    },
+    {
+      "name": "Macro 1",
+      "min": -6,
+      "max": 0,
+      "default": 127,
+      "description": "0 A macro parameter that can be chosen as a sub-"
+    },
+    {
+      "name": "switch control source. Output mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as",
+      "scope": "routing"
+    },
+    {
+      "name": "0 34 0 The control source for the input switch – one of the 28 busses, or one of the 6 macro parameters. In link switch",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "description": "The linked switch, if the ‘In control type’ is ‘Link’.",
+      "scope": "routing"
+    },
+    {
+      "name": "0 11 0 The linked switch offset, if the ‘Out control type’ is ‘Link’. Reset source",
+      "min": 0,
+      "max": 34,
+      "default": 0,
+      "description": "The reset source for the switch – one of the 28"
+    },
+    {
+      "name": "busses, or one of the 6 macro parameters. Fade",
+      "unit": "ms",
+      "min": 0,
+      "max": 1000,
+      "default": 1,
+      "description": "The switch's crossfade time, in milliseconds."
+    },
+    {
+      "name": "input sub-switch. Output A-H",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "description": "The bus to use for the 8 possible outputs of the",
+      "scope": "routing"
+    }
+  ],
+  "features": [],
+  "input_ports": [
+    {
+      "name": "Input",
+      "busIdRef": "Input"
+    },
+    {
+      "name": "Input A-L",
+      "busIdRef": "Input A-L"
+    }
+  ],
+  "output_ports": [
+    {
+      "name": "Output",
+      "busIdRef": "Output"
+    },
+    {
+      "name": "Output A-H",
+      "busIdRef": "Output A-H"
+    }
+  ]
+}
