@@ -196,6 +196,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               gain: coreConn.gain,
               isMuted: coreConn.isMuted,
               isGhostConnection: false,
+              properties: coreConn.properties, // Preserve properties including busNumber
             ),
           )
           .toList();
