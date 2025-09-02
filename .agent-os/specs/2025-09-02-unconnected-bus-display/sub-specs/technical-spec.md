@@ -2,84 +2,75 @@
 
 This is the technical specification for the spec detailed in @.agent-os/specs/2025-09-02-unconnected-bus-display/spec.md
 
-> Created: 2025-09-02
-> Version: 1.0.0
-
 ## Technical Requirements
 
-### Connection Discovery Enhancement
-- Extend `ConnectionDiscoveryService` to identify ports with bus assignments that have no matching connections
-- Add method to detect "orphaned" bus assignments (buses assigned but no other port shares the same bus)
+### Implementation Approach
+- This feature should be a natural extension of the existing connection discovery algorithm
+- Minimal new code - leverage existing connection infrastructure
+- The core logic: when discovering connections, any port with a non-zero bus that doesn't match another port automatically becomes a partial connection
+- Think of it as: full connections are ports that found a match, partial connections are ports that didn't - both discovered in the same pass
+
+### Connection Model Enhancement
+- Minimal change to existing `Connection` model - add a simple flag for partial connections
+- A partial connection is just a regular connection with one endpoint being a bus label position instead of another port
+- The existing connection already stores bus information, just mark when there's no matching port
 - Differentiate between truly unconnected ports (bus value 0) and ports with active bus assignments lacking connections
 
-### Visual Representation Implementation
-- Create new visual components in `RoutingEditorWidget` for rendering unconnected bus indicators
-- Implement short connection line rendering with appropriate directional indicators
-- Add bus label rendering with proper formatting (e.g., [A1], [B3], etc.)
-- Position indicators appropriately relative to port positions:
-  - Output ports: line extends from port with label at end (o----[A1])
-  - Input ports: label at start with line extending to port ([A3]---o)
+### Integration with Existing Connection Drawing
+- Modify the existing connection drawing logic in `RoutingEditorWidget` to handle partial connections
+- Reuse existing connection line rendering code with modifications for partial connections
+- Extend connection path calculation to terminate at bus label position instead of another port
+- Position partial connections to indicate signal flow direction:
+  - Output ports: line extends outward from port to bus label position
+  - Input ports: bus label positioned with line extending inward to port
+  - Visual representation shows connection directionality (not literal ASCII art)
+- Ensure partial connections use the same rendering pipeline as full connections for consistency
 
-### State Management Updates
-- Extend `RoutingEditorState` to include unconnected bus information
-- Add data structures to track:
-  - Ports with non-zero bus assignments
-  - Bus assignments without matching connections
-  - Visual positioning data for unconnected indicators
-- Ensure state updates trigger appropriate re-renders
+### Connection Discovery Service Updates
+- Integrate partial connection detection directly into existing `discoverConnections()` method
+- During the regular connection discovery process:
+  - Track which ports with non-zero bus values get matched to other ports
+  - Any port with a non-zero bus value that doesn't get matched becomes a partial connection
+  - Create partial connections as a natural byproduct of the discovery algorithm
+- Return both full and partial connections from the same discovery pass
+- No need for separate discovery methods - this is a single-pass enhancement
 
-### Bus Label Formatting
-- Implement bus naming convention consistent with existing system
-- Hardware input buses (1-12): Format as appropriate short names
-- Hardware output buses (13-20): Format as appropriate short names  
-- Algorithm buses: Use existing naming conventions
+### State Management Integration
+- Store partial connections in the same `connections` list in `RoutingEditorState`
+- Add a simple boolean flag or enum to Connection model to indicate partial status
+- No changes needed to state update logic - partial connections flow through existing pipeline
+- Maintain consistent data structures to simplify future interactive connection features
+
+### Bus Label Rendering
+- Implement bus label rendering as part of the connection drawing process
+- Create label components that can be positioned at connection endpoints
+- Format bus labels consistently with system conventions:
+  - Hardware input buses (1-12): Use system-defined bus names
+  - Hardware output buses (13-20): Use system-defined bus names  
+  - Algorithm buses: Follow existing naming patterns
+  - Note: Labels should display actual bus identifiers, not placeholder text
+- Design label rendering to be extensible for future interactive features
 
 ### Zero-Value Handling
-- Implement logic to identify ports with value 0
-- Exclude zero-value ports from visual representation
-- Maintain internal tracking for completeness
+- During connection discovery, treat ports with bus value 0 as truly unconnected
+- These ports are simply skipped - no partial connection needed
+- This is a simple check during the existing discovery loop
 
-### Visual Styling
-- Use consistent color scheme with existing routing visualization
-- Apply appropriate opacity/styling to indicate warning nature (not error)
-- Ensure visual elements don't interfere with existing connection lines
-- Maintain readability at various zoom levels
+### Visual Styling Integration
+- Apply existing connection styling to partial connections with modifications
+- Use consistent color scheme with slight variation to indicate partial state
+- Consider using dashed lines or reduced opacity for partial connections
+- Ensure visual hierarchy shows partial connections as informational, not errors
+- Maintain visual consistency at all zoom levels
+
+### Future-Proofing for Interactivity
+- Structure partial connections to easily convert to full connections
+- Store sufficient metadata (bus assignment, port info) for future drag operations
+- Design connection data model to support state transitions (partial → full)
+- Keep connection endpoints accessible for future hit-testing requirements
 
 ### Performance Considerations
-- Optimize connection discovery for real-time updates
-- Minimize computational overhead during rendering
-- Cache unconnected bus calculations where appropriate
-- Update only affected visual elements on state changes
-
-## Approach
-
-### 1. ConnectionDiscoveryService Enhancement
-Extend the existing service to identify unconnected buses:
-```dart
-class ConnectionDiscoveryService {
-  List<UnconnectedBus> discoverUnconnectedBuses(List<Port> allPorts) {
-    // Implementation to find ports with bus assignments but no connections
-  }
-}
-```
-
-### 2. Data Model Extension
-Add new models to represent unconnected bus information:
-```dart
-class UnconnectedBus {
-  final Port port;
-  final int busNumber;
-  final String busLabel;
-  final UnconnectedBusType type;
-}
-```
-
-### 3. State Management Integration
-Update `RoutingEditorCubit` to include unconnected bus discovery in the existing routing calculation flow.
-
-### 4. Visual Component Development
-Create dedicated widgets for rendering unconnected bus indicators within the existing canvas rendering system.
-
-## External Dependencies
-
-No new external dependencies required. Implementation will use existing Flutter rendering capabilities and the established routing framework architecture.
+- Leverage existing connection rendering optimizations
+- Minimize additional overhead by reusing connection drawing infrastructure
+- Update only affected connections on state changes
+- Cache bus label formatting where appropriate

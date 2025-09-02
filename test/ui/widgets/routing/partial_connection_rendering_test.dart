@@ -11,13 +11,10 @@ void main() {
         id: 'partial_output_test',
         sourcePortId: 'algo_1_output_1', // The actual output port
         targetPortId: 'bus_21_endpoint', // Virtual bus endpoint
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 21,
+        busNumber: 21,
         busLabel: 'A1', // Should display "A1", not "Bus21"
-        properties: {
-          'connectionType': 'partial_output_to_bus',
-          'busNumber': 21,
-        },
       );
 
       // Create connection data for rendering
@@ -44,13 +41,10 @@ void main() {
         id: 'partial_input_test',
         sourcePortId: 'bus_21_endpoint', // Virtual bus endpoint
         targetPortId: 'algo_1_input_1', // The actual input port
+        connectionType: cubit.ConnectionType.partialBusToInput,
         isPartial: true,
-        busValue: 21,
+        busNumber: 21,
         busLabel: 'A1',
-        properties: {
-          'connectionType': 'partial_bus_to_input',
-          'busNumber': 21,
-        },
       );
 
       // Create connection data for rendering
@@ -75,8 +69,9 @@ void main() {
         id: 'test_21',
         sourcePortId: 'output_port',
         targetPortId: 'bus_21_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 21,
+        busNumber: 21,
         busLabel: 'A1', // Aux port 1
       );
       expect(auxBus21Connection.busLabel, equals('A1'));
@@ -86,8 +81,9 @@ void main() {
         id: 'test_24',
         sourcePortId: 'output_port',
         targetPortId: 'bus_24_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 24,
+        busNumber: 24,
         busLabel: 'A4', // Aux port 4
       );
       expect(auxBus24Connection.busLabel, equals('A4'));
@@ -97,8 +93,9 @@ void main() {
         id: 'test_28',
         sourcePortId: 'output_port',
         targetPortId: 'bus_28_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 28,
+        busNumber: 28,
         busLabel: 'A8', // Aux port 8
       );
       expect(auxBus28Connection.busLabel, equals('A8'));
@@ -110,13 +107,10 @@ void main() {
         id: 'partial_test',
         sourcePortId: 'output_port',
         targetPortId: 'bus_21_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 21,
+        busNumber: 21,
         busLabel: 'A1',
-        properties: {
-          'connectionType': 'partial_output_to_bus',
-          'busNumber': 21,
-        },
       );
 
       final connectionData = ConnectionData(
@@ -208,12 +202,10 @@ void main() {
         id: 'length_test',
         sourcePortId: 'output_port',
         targetPortId: 'bus_21_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 21,
+        busNumber: 21,
         busLabel: 'A1',
-        properties: {
-          'connectionType': 'partial_output_to_bus',
-        },
       );
 
       final connectionData = ConnectionData(
@@ -236,13 +228,10 @@ void main() {
         id: 'bus_21_test',
         sourcePortId: 'output_port',
         targetPortId: 'bus_21_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 21, // Bus 21 is aux port 1
+        busNumber: 21, // Bus 21 is aux port 1
         busLabel: 'A1', // Should be A1 for aux port 1
-        properties: {
-          'connectionType': 'partial_output_to_bus',
-          'busNumber': 21,
-        },
       );
 
       expect(bus21Connection.busValue, equals(21));
@@ -253,13 +242,10 @@ void main() {
         id: 'bus_22_test',
         sourcePortId: 'output_port',
         targetPortId: 'bus_22_endpoint',
+        connectionType: cubit.ConnectionType.partialOutputToBus,
         isPartial: true,
-        busValue: 22, // Bus 22 is aux port 2
+        busNumber: 22, // Bus 22 is aux port 2
         busLabel: 'A2', // Should be A2 for aux port 2
-        properties: {
-          'connectionType': 'partial_output_to_bus',
-          'busNumber': 22,
-        },
       );
 
       expect(bus22Connection.busValue, equals(22));

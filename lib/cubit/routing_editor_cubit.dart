@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/routing/models/connection.dart' as core_routing;
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
@@ -182,21 +183,32 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         routings,
       );
 
-      // Convert core connections to UI connections (temporary compatibility layer)
+      // Convert core connections to UI connections
       final discoveredConnections = unifiedConnections
           .map(
             (coreConn) => Connection(
               id: coreConn.id,
               sourcePortId: coreConn.sourcePortId,
               targetPortId: coreConn.destinationPortId,
-              busId: coreConn.properties?['busNumber'] != null
-                  ? 'bus_${coreConn.properties!['busNumber']}'
+              connectionType: _mapConnectionType(coreConn.connectionType),
+              busId: coreConn.busNumber != null
+                  ? 'bus_${coreConn.busNumber}'
                   : null,
               outputMode: OutputMode.replace,
               gain: coreConn.gain,
               isMuted: coreConn.isMuted,
               isGhostConnection: false,
-              properties: coreConn.properties, // Preserve properties including busNumber
+              isPartial: coreConn.isPartial,
+              busNumber: coreConn.busNumber,
+              busLabel: coreConn.busLabel,
+              algorithmId: coreConn.algorithmId,
+              algorithmIndex: coreConn.algorithmIndex,
+              parameterNumber: coreConn.parameterNumber,
+              parameterName: coreConn.parameterName,
+              portName: coreConn.portName,
+              signalType: _mapSignalType(coreConn.signalType),
+              isOutput: coreConn.isOutput,
+              isBackwardEdge: coreConn.isBackwardEdge,
             ),
           )
           .toList();
@@ -437,12 +449,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Determine if this is a ghost connection (algorithm output to physical input)
       final isGhostConnection = _isGhostConnection(sourcePort, targetPort);
+      
+      // Determine connection type
+      final connectionType = _determineConnectionType(sourcePortId, targetPortId);
 
       // Create new connection
       final newConnection = Connection(
         id: connectionId,
         sourcePortId: sourcePortId,
         targetPortId: targetPortId,
+        connectionType: connectionType,
         busId: busId,
         outputMode: outputMode,
         gain: gain,
@@ -624,6 +640,39 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
+  /// Maps core ConnectionType to UI ConnectionType
+  ConnectionType _mapConnectionType(core_routing.ConnectionType coreType) {
+    switch (coreType) {
+      case core_routing.ConnectionType.hardwareInput:
+        return ConnectionType.hardwareInput;
+      case core_routing.ConnectionType.hardwareOutput:
+        return ConnectionType.hardwareOutput;
+      case core_routing.ConnectionType.algorithmToAlgorithm:
+        return ConnectionType.algorithmToAlgorithm;
+      case core_routing.ConnectionType.partialOutputToBus:
+        return ConnectionType.partialOutputToBus;
+      case core_routing.ConnectionType.partialBusToInput:
+        return ConnectionType.partialBusToInput;
+    }
+  }
+
+  /// Maps core SignalType to UI SignalType
+  SignalType? _mapSignalType(core_routing.SignalType? coreType) {
+    if (coreType == null) return null;
+    switch (coreType) {
+      case core_routing.SignalType.audio:
+        return SignalType.audio;
+      case core_routing.SignalType.cv:
+        return SignalType.cv;
+      case core_routing.SignalType.gate:
+        return SignalType.gate;
+      case core_routing.SignalType.trigger:
+        return SignalType.trigger;
+      case core_routing.SignalType.unknown:
+        return SignalType.unknown;
+    }
+  }
+
   /// Helper method to find a port by ID across all port lists
   Port? _findPortById(RoutingEditorStateLoaded state, String portId) {
     // Check physical inputs
@@ -695,6 +744,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Ghost connection: algorithm output -> physical input
     return isSourceAlgorithmOutput && isTargetPhysicalInput;
+  }
+  
+  /// Helper method to determine the type of connection based on port IDs
+  ConnectionType _determineConnectionType(String sourcePortId, String targetPortId) {
+    final isSourceHardware = sourcePortId.startsWith('hw_in_');
+    final isTargetHardware = targetPortId.startsWith('hw_out_');
+    
+    if (isSourceHardware) {
+      return ConnectionType.hardwareInput;
+    } else if (isTargetHardware) {
+      return ConnectionType.hardwareOutput;
+    } else {
+      return ConnectionType.algorithmToAlgorithm;
+    }
   }
 
   /// Helper method to find existing connection between two ports
@@ -1374,6 +1437,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             id: connectionMap['id'] as String,
             sourcePortId: connectionMap['sourcePortId'] as String,
             targetPortId: connectionMap['targetPortId'] as String,
+            connectionType: ConnectionType.values.firstWhere(
+              (type) => type.name == connectionMap['connectionType'],
+              orElse: () => ConnectionType.algorithmToAlgorithm,
+            ),
             busId: connectionMap['busId'] as String?,
             outputMode: OutputMode.values.firstWhere(
               (mode) => mode.name == connectionMap['outputMode'],

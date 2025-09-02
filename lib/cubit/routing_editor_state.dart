@@ -45,6 +45,24 @@ sealed class Port with _$Port {
   }) = _Port;
 }
 
+/// Type of connection in the routing system
+enum ConnectionType {
+  hardwareInput,
+  hardwareOutput,
+  algorithmToAlgorithm,
+  partialOutputToBus,
+  partialBusToInput,
+}
+
+/// Type of signal 
+enum SignalType {
+  audio,
+  cv,
+  gate,
+  trigger,
+  unknown,
+}
+
 /// Represents a connection between two ports
 @freezed
 sealed class Connection with _$Connection {
@@ -52,12 +70,23 @@ sealed class Connection with _$Connection {
     required String id,
     required String sourcePortId,
     required String targetPortId,
+    required ConnectionType connectionType,
     String? busId,
     @Default(OutputMode.replace) OutputMode outputMode,
     @Default(1.0) double gain,
     @Default(false) bool isMuted,
     @Default(false) bool isGhostConnection,
-    Map<String, dynamic>? properties,
+    @Default(false) bool isPartial, // Whether this is a partial connection
+    int? busNumber, // Bus number (1-12 for inputs, 13-20 for outputs, 21+ for algorithm buses)
+    String? busLabel, // Bus label for partial connections (e.g., "A1", "Out3")
+    String? algorithmId, // Algorithm identifier
+    int? algorithmIndex, // Algorithm slot index (0-7)
+    int? parameterNumber, // Parameter number for the port
+    String? parameterName, // Parameter name
+    String? portName, // Name of the port
+    SignalType? signalType, // Type of signal
+    @Default(false) bool isOutput, // Whether this is an output connection
+    @Default(false) bool isBackwardEdge, // Whether this is a backward edge
     DateTime? createdAt,
     DateTime? modifiedAt,
   }) = _Connection;

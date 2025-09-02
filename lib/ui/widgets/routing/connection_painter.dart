@@ -18,6 +18,7 @@ class ConnectionData {
   final bool isHighlighted;
   final bool isPhysicalConnection; // True if this is a physical connection
   final bool? isInputConnection; // True if physical input connection, false if output, null if not physical
+  final String? busLabel; // Bus label for partial connections
 
   const ConnectionData({
     required this.connection,
@@ -29,13 +30,17 @@ class ConnectionData {
     this.isHighlighted = false,
     this.isPhysicalConnection = false,
     this.isInputConnection,
+    this.busLabel,
   });
 
   /// Convenience getter for ghost connection status from the connection model
   bool get isGhostConnection => connection.isGhostConnection;
   
-  /// Convenience getter for invalid order status from the connection properties
-  bool get isInvalidOrder => connection.properties?['isInvalidOrder'] == true;
+  /// Convenience getter for invalid order status (backward edge)
+  bool get isInvalidOrder => connection.isBackwardEdge;
+  
+  /// Convenience getter for partial connection status from the connection model
+  bool get isPartial => connection.isPartial;
 }
 
 /// Custom painter for efficiently rendering multiple connection lines
@@ -71,10 +76,13 @@ class ConnectionPainter extends CustomPainter {
     final ghostConnections = <ConnectionData>[];
     final invalidConnections = <ConnectionData>[];
     final selectedConnections = <ConnectionData>[];
+    final partialConnections = <ConnectionData>[];
 
     for (final conn in connections) {
       if (conn.isSelected) {
         selectedConnections.add(conn);
+      } else if (conn.isPartial) {
+        partialConnections.add(conn);
       } else if (conn.isInvalidOrder) {
         invalidConnections.add(conn);
       } else if (conn.isGhostConnection) {
@@ -84,16 +92,20 @@ class ConnectionPainter extends CustomPainter {
       }
     }
 
-    // Draw in order: regular -> ghost -> invalid -> selected (for proper layering)
+    // Draw in order: regular -> ghost -> invalid -> partial -> selected (for proper layering)
     _drawConnectionBatch(canvas, regularConnections, ConnectionType.regular);
     _drawConnectionBatch(canvas, ghostConnections, ConnectionType.ghost);
     _drawConnectionBatch(canvas, invalidConnections, ConnectionType.invalid);
+    _drawConnectionBatch(canvas, partialConnections, ConnectionType.partial);
     _drawConnectionBatch(canvas, selectedConnections, ConnectionType.selected);
 
-    // Draw labels last so they appear on top
+    // Draw labels last so they appear on top (skip partial connections as they have their own labels)
     if (showLabels) {
       for (final conn in connections) {
-        _drawConnectionLabel(canvas, conn);
+        // Skip partial connections - they have their own label handling
+        if (!conn.isPartial) {
+          _drawConnectionLabel(canvas, conn);
+        }
       }
     }
   }
@@ -112,10 +124,17 @@ class ConnectionPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     for (final conn in batch) {
-      // Calculate path with anti-overlap if enabled
-      final path = enableAntiOverlap
-          ? _createRoutedPath(conn, batch)
-          : _createDirectPath(conn.sourcePosition, conn.destinationPosition);
+      // Calculate path - special handling for partial connections
+      Path path;
+      if (type == ConnectionType.partial) {
+        // For partial connections, create a short straight line to the label
+        path = _createPartialConnectionPath(conn);
+      } else {
+        // Regular path calculation for other connection types
+        path = enableAntiOverlap
+            ? _createRoutedPath(conn, batch)
+            : _createDirectPath(conn.sourcePosition, conn.destinationPosition);
+      }
 
       // Apply visual style based on connection type
       _applyConnectionStyle(paint, conn, type);
@@ -130,12 +149,19 @@ class ConnectionPainter extends CustomPainter {
         }
       } else if (type == ConnectionType.invalid) {
         _drawDashedPath(canvas, path, paint);
+      } else if (type == ConnectionType.partial) {
+        _drawDashedPath(canvas, path, paint);
+        
+        // Draw bus label at the endpoint for partial connections
+        _drawPartialConnectionBusLabel(canvas, conn);
       } else {
         canvas.drawPath(path, paint);
       }
 
-      // Draw endpoints
-      _drawEndpoints(canvas, conn);
+      // Draw endpoints (skip for partial connections)
+      if (type != ConnectionType.partial) {
+        _drawEndpoints(canvas, conn);
+      }
     }
   }
 
@@ -234,6 +260,20 @@ class ConnectionPainter extends CustomPainter {
     return path;
   }
 
+  /// Create a short straight path for partial connections
+  Path _createPartialConnectionPath(ConnectionData conn) {
+    final path = Path();
+    
+    // For partial connections, we already have the correct positions:
+    // - sourcePosition is the port (or label for inputs)
+    // - destinationPosition is the label (or port for inputs)
+    // Just draw a straight line between them
+    path.moveTo(conn.sourcePosition.dx, conn.sourcePosition.dy);
+    path.lineTo(conn.destinationPosition.dx, conn.destinationPosition.dy);
+    
+    return path;
+  }
+
   /// Apply visual style to paint based on connection properties
   void _applyConnectionStyle(
     Paint paint,
@@ -245,6 +285,14 @@ class ConnectionPainter extends CustomPainter {
       paint
         ..strokeWidth = 2.0
         ..color = theme.colorScheme.error;
+      return;
+    }
+    
+    // Handle partial connections with distinctive styling
+    if (type == ConnectionType.partial) {
+      paint
+        ..strokeWidth = 2.0
+        ..color = theme.colorScheme.onSurface.withValues(alpha: 0.6);
       return;
     }
 
@@ -457,6 +505,66 @@ class ConnectionPainter extends CustomPainter {
     canvas.restore();
   }
 
+  /// Draw bus label at the endpoint of a partial connection
+  void _drawPartialConnectionBusLabel(Canvas canvas, ConnectionData conn) {
+    if (conn.busLabel == null || conn.busLabel!.isEmpty) {
+      return;
+    }
+
+    // Determine which end has the label
+    final connectionType = conn.connection.connectionType;
+    final isOutputTobus = connectionType == routing.ConnectionType.partialOutputToBus;
+    
+    // The label position is at the destination for outputs, source for inputs
+    final labelCenter = isOutputTobus ? conn.destinationPosition : conn.sourcePosition;
+
+    // Create text painter for bus label
+    final textStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.bold,
+      color: theme.colorScheme.onSurface,
+    );
+
+    final textPainter = createLabelTextPainter(conn.busLabel!, textStyle);
+    textPainter.layout();
+
+    // Calculate label position centered at the endpoint
+    final labelOffset = Offset(
+      labelCenter.dx - textPainter.width / 2,
+      labelCenter.dy - textPainter.height / 2,
+    );
+
+    // Create label background with padding
+    final labelRect = Rect.fromLTWH(
+      labelOffset.dx - 4,
+      labelOffset.dy - 2,
+      textPainter.width + 8,
+      textPainter.height + 4,
+    );
+
+    // Draw label background with subtle styling
+    final backgroundPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = theme.colorScheme.surface.withValues(alpha: 0.9);
+
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..color = theme.colorScheme.outline.withValues(alpha: 0.5);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
+      backgroundPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(labelRect, const Radius.circular(4)),
+      borderPaint,
+    );
+
+    // Draw the text
+    textPainter.paint(canvas, labelOffset);
+  }
+
   /// Calculate the midpoint of a Bezier curve path
   static Offset calculateBezierMidpoint(Offset start, Offset end) {
     // For simple implementation, use path metrics to find the actual midpoint
@@ -545,6 +653,7 @@ enum ConnectionType {
   regular,
   ghost,
   invalid,
+  partial,
   selected,
 }
 

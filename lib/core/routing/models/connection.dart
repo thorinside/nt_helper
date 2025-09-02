@@ -19,6 +19,44 @@ enum ConnectionStatus {
   connecting,
 }
 
+/// Enum representing the type of connection
+@JsonEnum()
+enum ConnectionType {
+  /// Hardware input to algorithm
+  hardwareInput,
+  
+  /// Algorithm to hardware output
+  hardwareOutput,
+  
+  /// Algorithm to algorithm
+  algorithmToAlgorithm,
+  
+  /// Partial connection from output to bus
+  partialOutputToBus,
+  
+  /// Partial connection from bus to input
+  partialBusToInput,
+}
+
+/// Type of signal transmitted through connections
+@JsonEnum()
+enum SignalType {
+  /// Audio signal
+  audio,
+  
+  /// Control voltage signal
+  cv,
+  
+  /// Gate signal
+  gate,
+  
+  /// Trigger signal
+  trigger,
+  
+  /// Unknown signal type
+  unknown,
+}
+
 /// Immutable data class representing a connection between two ports.
 /// 
 /// A connection represents a signal path from a source port to a destination port.
@@ -43,11 +81,47 @@ sealed class Connection with _$Connection {
     /// ID of the source port
     required String sourcePortId,
     
-    /// ID of the destination port
+    /// ID of the destination port  
     required String destinationPortId,
+    
+    /// Type of connection
+    required ConnectionType connectionType,
     
     /// Current status of the connection
     @Default(ConnectionStatus.active) ConnectionStatus status,
+    
+    /// Whether this is a partial connection (one endpoint is a bus without match)
+    @Default(false) bool isPartial,
+    
+    /// Bus number for connections (1-12 for inputs, 13-20 for outputs, 21+ for algorithm buses)
+    int? busNumber,
+    
+    /// Bus label for rendering (e.g., "A1", "Out3")
+    String? busLabel,
+    
+    /// Algorithm identifier for the connection
+    String? algorithmId,
+    
+    /// Algorithm slot index (0-7)
+    int? algorithmIndex,
+    
+    /// Parameter number for the port
+    int? parameterNumber,
+    
+    /// Parameter name
+    String? parameterName,
+    
+    /// Name of the port
+    String? portName,
+    
+    /// Type of signal carried by this connection
+    SignalType? signalType,
+    
+    /// Whether this is an output connection
+    @Default(false) bool isOutput,
+    
+    /// Whether this is a backward edge (for algorithm connections)
+    @Default(false) bool isBackwardEdge,
     
     /// Optional name for the connection
     String? name,
@@ -66,9 +140,6 @@ sealed class Connection with _$Connection {
     
     /// Optional delay in milliseconds
     @Default(0.0) double delayMs,
-    
-    /// Additional connection properties
-    Map<String, dynamic>? properties,
     
     /// Timestamp when the connection was created
     DateTime? createdAt,
@@ -100,6 +171,9 @@ sealed class Connection with _$Connection {
     return isInverted ? -gain : gain;
   }
   
+  /// Returns true if this connection has an unconnected bus endpoint
+  bool get hasUnconnectedBus => isPartial && busNumber != null && busNumber! > 0;
+  
   /// Creates a copy of this connection with a new status
   Connection withStatus(ConnectionStatus newStatus) {
     return copyWith(
@@ -108,13 +182,6 @@ sealed class Connection with _$Connection {
     );
   }
   
-  /// Creates a copy of this connection with updated properties
-  Connection withProperties(Map<String, dynamic> newProperties) {
-    return copyWith(
-      properties: newProperties,
-      modifiedAt: DateTime.now(),
-    );
-  }
   
   /// Creates a copy of this connection with updated gain
   Connection withGain(double newGain) {

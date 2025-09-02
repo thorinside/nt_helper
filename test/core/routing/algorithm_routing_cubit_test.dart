@@ -269,7 +269,6 @@ void main() {
           connectionId,
           gain: 0.5,
           isMuted: true,
-          properties: {'test': 'value'},
         );
 
         // Wait for update to complete
@@ -284,7 +283,7 @@ void main() {
         expect(updatedConnection!.gain, equals(0.5));
         expect(updatedConnection.gain, isNot(equals(originalGain)));
         expect(updatedConnection.isMuted, isTrue);
-        expect(updatedConnection.properties?['test'], equals('value'));
+        // Properties field removed from Connection model
 
         await subscription.cancel();
       });

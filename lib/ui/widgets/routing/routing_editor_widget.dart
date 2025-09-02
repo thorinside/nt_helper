@@ -4,9 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
-import 'package:nt_helper/core/routing/models/connection_metadata.dart';
 // Haptics can be reintroduced later if needed
-import 'package:nt_helper/ui/widgets/routing/connection_painter.dart';
+import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
@@ -482,40 +481,55 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {
     // Build ConnectionData list for all connections
-    final connectionDataList = <ConnectionData>[];
+    final connectionDataList = <painter.ConnectionData>[];
     
     for (final connection in connections) {
-      final sourcePosition = _getPortPosition(connection.sourcePortId);
-      final targetPosition = _getPortPosition(connection.targetPortId);
+      // For partial connections, we need special handling
+      Offset? sourcePosition;
+      Offset? targetPosition;
+      
+      if (connection.isPartial) {
+        // For partial connections, one endpoint is a virtual bus endpoint
+        // We only need the actual port position
+        final connectionType = connection.connectionType;
+        if (connectionType == ConnectionType.partialOutputToBus) {
+          // Source is the actual output port
+          sourcePosition = _getPortPosition(connection.sourcePortId);
+          // For destination, create a position 75px to the right for the label
+          if (sourcePosition != null) {
+            targetPosition = Offset(sourcePosition.dx + 75, sourcePosition.dy);
+          }
+        } else if (connectionType == ConnectionType.partialBusToInput) {
+          // Destination is the actual input port
+          targetPosition = _getPortPosition(connection.targetPortId);
+          // For source, create a position 75px to the left for the label
+          if (targetPosition != null) {
+            sourcePosition = Offset(targetPosition.dx - 75, targetPosition.dy);
+          }
+        }
+      } else {
+        // Regular connection handling
+        sourcePosition = _getPortPosition(connection.sourcePortId);
+        targetPosition = _getPortPosition(connection.targetPortId);
+      }
       
       if (sourcePosition == null || targetPosition == null) {
         continue;
       }
       
       // Extract connection metadata to determine connection type
-      // Check if properties contain a ConnectionMetadata object or individual properties
-      final metadata = connection.properties?['metadata'] as ConnectionMetadata?;
-      final connectionType = connection.properties?['connectionType'] as String?;
+      final connectionType = connection.connectionType;
       
-      final isPhysicalConnection = (metadata?.connectionClass == ConnectionClass.hardware) ||
-          (connectionType == 'hardware_input' || connectionType == 'hardware_output');
-      final isInputConnection = connection.properties?['targetAlgorithmId'] != null;
+      final isPhysicalConnection = connectionType == ConnectionType.hardwareInput || 
+          connectionType == ConnectionType.hardwareOutput;
+      final isInputConnection = connectionType == ConnectionType.hardwareInput || 
+          connectionType == ConnectionType.partialBusToInput;
       
-      // Try to get bus number from multiple possible locations
-      int? busNumber;
+      // Get bus number directly from the connection
+      int? busNumber = connection.busNumber;
       
-      // First try metadata.busNumber (for ConnectionMetadata objects)
-      if (metadata != null) {
-        busNumber = metadata.busNumber;
-        debugPrint('RoutingEditorWidget: Got bus number from ConnectionMetadata: $busNumber');
-      }
-      // Then try direct properties.busNumber (for connection discovery service properties)
-      else if (connection.properties?['busNumber'] != null) {
-        busNumber = connection.properties!['busNumber'] as int?;
-        debugPrint('RoutingEditorWidget: Got bus number from properties: $busNumber');
-      }
-      // Finally try to extract from busId (e.g., "bus_5" -> 5)
-      else if (connection.busId != null) {
+      // Fallback to extracting from busId if needed (e.g., "bus_5" -> 5)
+      if (busNumber == null && connection.busId != null) {
         final busIdMatch = RegExp(r'bus_(\d+)').firstMatch(connection.busId!);
         if (busIdMatch != null) {
           busNumber = int.tryParse(busIdMatch.group(1)!);
@@ -525,11 +539,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       
       if (busNumber == null) {
         debugPrint('RoutingEditorWidget: No bus number found for connection ${connection.id}');
-        debugPrint('  - properties: ${connection.properties}');
+        debugPrint('  - busNumber: ${connection.busNumber}');
         debugPrint('  - busId: ${connection.busId}');
       }
       
-      connectionDataList.add(ConnectionData(
+      connectionDataList.add(painter.ConnectionData(
         connection: connection,
         sourcePosition: sourcePosition,
         destinationPosition: targetPosition,
@@ -539,6 +553,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         isHighlighted: false,
         isPhysicalConnection: isPhysicalConnection,
         isInputConnection: isInputConnection,
+        busLabel: connection.busLabel, // Pass through bus label for partial connections
       ));
     }
     
@@ -548,7 +563,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     
     // Use the unified ConnectionPainter
     return CustomPaint(
-      painter: ConnectionPainter(
+      painter: painter.ConnectionPainter(
         connections: connectionDataList,
         theme: Theme.of(context),
         showLabels: true,
@@ -570,10 +585,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       id: 'temp_connection',
       sourcePortId: _connectionSourcePortId!,
       targetPortId: 'temp_target',
+      connectionType: ConnectionType.algorithmToAlgorithm,
       isGhostConnection: true, // Show as dashed line during drag
     );
     
-    final connectionData = ConnectionData(
+    final connectionData = painter.ConnectionData(
       connection: tempConnection,
       sourcePosition: sourcePosition,
       destinationPosition: _dragPosition!,
@@ -582,7 +598,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     
     // Use ConnectionPainter directly for the temporary connection
     return CustomPaint(
-      painter: ConnectionPainter(
+      painter: painter.ConnectionPainter(
         connections: [connectionData],
         theme: Theme.of(context),
         enableAntiOverlap: false,
@@ -804,6 +820,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final portOffset = Offset(0, 50 + (outputNum - 1) * 30); // Stack vertically
         return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
       }
+    }
+    
+    // Skip virtual bus endpoint positions - we handle these differently for partial connections
+    if (portId.startsWith('bus_') && portId.endsWith('_endpoint')) {
+      // Return null for virtual bus endpoints - they shouldn't be used directly
+      return null;
     }
     
     for (final algo in routingState.algorithms) {

@@ -145,6 +145,7 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
           id: '${sourcePort.id}_${destinationPort.id}',
           sourcePortId: sourcePort.id,
           destinationPortId: destinationPort.id,
+          connectionType: ConnectionType.algorithmToAlgorithm,
           createdAt: DateTime.now(),
         );
         
@@ -242,7 +243,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
     double? gain,
     bool? isMuted,
     bool? isInverted,
-    Map<String, dynamic>? properties,
   }) {
     if (!state.isReady) {
       debugPrint('AlgorithmRoutingCubit: Cannot update connection - system not ready');
@@ -275,10 +275,6 @@ class AlgorithmRoutingCubit extends Cubit<RoutingState> {
       
       if (isInverted != null) {
         updatedConnection = updatedConnection.copyWith(isInverted: isInverted);
-      }
-      
-      if (properties != null) {
-        updatedConnection = updatedConnection.withProperties(properties);
       }
       
       // Update state with modified connection

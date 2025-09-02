@@ -142,13 +142,12 @@ class ConnectionDiscoveryService {
         id: 'conn_${hwPortId}_to_${input.portId}',
         sourcePortId: hwPortId,
         destinationPortId: input.portId,
-        properties: {
-          'connectionType': 'hardware_input',
-          'busNumber': busNumber,
-          'targetAlgorithmId': input.algorithmId,
-          'targetParameterNumber': input.parameterNumber,
-          'signalType': _toSignalTypeName(input.portType),
-        },
+        connectionType: ConnectionType.hardwareInput,
+        busNumber: busNumber,
+        algorithmId: input.algorithmId,
+        algorithmIndex: input.algorithmIndex,
+        parameterNumber: input.parameterNumber,
+        signalType: _toSignalType(input.portType),
       ));
     }
     
@@ -165,13 +164,13 @@ class ConnectionDiscoveryService {
         id: 'conn_${output.portId}_to_$hwPortId',
         sourcePortId: output.portId,
         destinationPortId: hwPortId,
-        properties: {
-          'connectionType': 'hardware_output',
-          'busNumber': busNumber,
-          'sourceAlgorithmId': output.algorithmId,
-          'sourceParameterNumber': output.parameterNumber,
-          'signalType': _toSignalTypeName(output.portType),
-        },
+        connectionType: ConnectionType.hardwareOutput,
+        busNumber: busNumber,
+        algorithmId: output.algorithmId,
+        algorithmIndex: output.algorithmIndex,
+        parameterNumber: output.parameterNumber,
+        signalType: _toSignalType(output.portType),
+        isOutput: true,
       ));
     }
     
@@ -200,16 +199,14 @@ class ConnectionDiscoveryService {
             id: 'conn_${output.portId}_to_${input.portId}',
             sourcePortId: output.portId,
             destinationPortId: input.portId,
-            properties: {
-              'connectionType': 'algorithm_to_algorithm',
-              'busNumber': busNumber,
-              'sourceAlgorithmId': output.algorithmId,
-              'targetAlgorithmId': input.algorithmId,
-              'sourceParameterNumber': output.parameterNumber,
-              'targetParameterNumber': input.parameterNumber,
-              'isBackwardEdge': isBackwardEdge,
-              'signalType': _toSignalTypeName(output.portType),
-            },
+            connectionType: ConnectionType.algorithmToAlgorithm,
+            busNumber: busNumber,
+            algorithmId: output.algorithmId,
+            algorithmIndex: output.algorithmIndex,
+            parameterNumber: output.parameterNumber,
+            signalType: _toSignalType(output.portType),
+            isBackwardEdge: isBackwardEdge,
+            isOutput: true,
           ));
         }
       }
@@ -252,6 +249,20 @@ class ConnectionDiscoveryService {
     }
   }
   
+  /// Converts PortType to SignalType enum
+  static SignalType _toSignalType(PortType type) {
+    switch (type) {
+      case PortType.audio:
+        return SignalType.audio;
+      case PortType.cv:
+        return SignalType.cv;
+      case PortType.gate:
+        return SignalType.gate;
+      case PortType.clock:
+        return SignalType.trigger; // Map clock to trigger
+    }
+  }
+  
   /// Logs bus registry summary for debugging
   static void _logBusRegistrySummary(Map<int, List<_PortAssignment>> busRegistry) {
     debugPrint('[ConnectionDiscovery] Bus registry summary:');
@@ -267,11 +278,11 @@ class ConnectionDiscoveryService {
   /// Logs connection summary for debugging
   static void _logConnectionSummary(List<Connection> connections) {
     final hwConnections = connections.where((c) => 
-      c.properties?['connectionType'] == 'hardware_input' ||
-      c.properties?['connectionType'] == 'hardware_output'
+      c.connectionType == ConnectionType.hardwareInput ||
+      c.connectionType == ConnectionType.hardwareOutput
     ).length;
     final algoConnections = connections.where((c) => 
-      c.properties?['connectionType'] == 'algorithm_to_algorithm'
+      c.connectionType == ConnectionType.algorithmToAlgorithm
     ).length;
     final partialConnections = connections.where((c) => c.isPartial).length;
     
@@ -328,38 +339,35 @@ class ConnectionDiscoveryService {
     // Determine connection direction based on port type
     final String sourcePortId;
     final String destinationPortId;
-    final String connectionType;
+    final ConnectionType connectionType;
     
     if (portAssignment.isOutput) {
       // Output port connects TO bus
       sourcePortId = portAssignment.portId;
       destinationPortId = busPortId;
-      connectionType = 'partial_output_to_bus';
+      connectionType = ConnectionType.partialOutputToBus;
     } else {
       // Input port connects FROM bus  
       sourcePortId = busPortId;
       destinationPortId = portAssignment.portId;
-      connectionType = 'partial_bus_to_input';
+      connectionType = ConnectionType.partialBusToInput;
     }
     
     return Connection(
       id: 'partial_conn_${portAssignment.portId}_bus_$busNumber',
       sourcePortId: sourcePortId,
       destinationPortId: destinationPortId,
+      connectionType: connectionType,
       isPartial: true,
-      busValue: busNumber,
+      busNumber: busNumber,
       busLabel: busLabel,
-      properties: {
-        'connectionType': connectionType,
-        'busNumber': busNumber,
-        'algorithmId': portAssignment.algorithmId,
-        'algorithmIndex': portAssignment.algorithmIndex,
-        'parameterNumber': portAssignment.parameterNumber,
-        'parameterName': portAssignment.parameterName,
-        'portName': portAssignment.portName,
-        'signalType': _toSignalTypeName(portAssignment.portType),
-        'isOutput': portAssignment.isOutput,
-      },
+      algorithmId: portAssignment.algorithmId,
+      algorithmIndex: portAssignment.algorithmIndex,
+      parameterNumber: portAssignment.parameterNumber,
+      parameterName: portAssignment.parameterName,
+      portName: portAssignment.portName,
+      signalType: _toSignalType(portAssignment.portType),
+      isOutput: portAssignment.isOutput,
     );
   }
   

@@ -87,9 +87,8 @@ void main() {
             id: 'aux_connection_$bus',
             sourcePortId: 'algo1_out',
             targetPortId: 'algo2_in',
-            properties: {
-              'busNumber': bus,
-            },
+            connectionType: routing.ConnectionType.algorithmToAlgorithm,
+            busNumber: bus,
           );
 
           final connectionData = ConnectionData(

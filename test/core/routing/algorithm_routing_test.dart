@@ -273,6 +273,7 @@ void main() {
           id: 'test_connection',
           sourcePortId: 'source',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
         algorithm.addTestConnection(testConnection);
         
@@ -322,6 +323,7 @@ void main() {
           id: 'valid',
           sourcePortId: 'audio_out',
           destinationPortId: 'audio_in',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
         algorithm.addTestConnection(validConnection);
         
@@ -338,6 +340,7 @@ void main() {
           id: 'invalid',
           sourcePortId: 'nonexistent_source',
           destinationPortId: 'audio_in',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
         algorithm.addTestConnection(invalidConnection);
         
@@ -354,6 +357,7 @@ void main() {
           id: 'invalid',
           sourcePortId: 'audio_out',
           destinationPortId: 'nonexistent_dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
         algorithm.addTestConnection(invalidConnection);
         
@@ -370,6 +374,7 @@ void main() {
           id: 'incompatible',
           sourcePortId: 'audio_out',
           destinationPortId: 'midi_in',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
         algorithm.addTestConnection(incompatibleConnection);
         
@@ -406,6 +411,7 @@ void main() {
           id: 'existing',
           sourcePortId: 'audio_out',
           destinationPortId: 'cv_in',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
         algorithm.addTestConnection(existingConnection);
         

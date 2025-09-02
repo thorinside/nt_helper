@@ -46,15 +46,10 @@ class ConnectionValidator {
       if (sourceIndex != null && 
           targetIndex != null && 
           sourceIndex > targetIndex) {
-        // Add validation flags to properties
-        final updatedProperties = {
-          ...?connection.properties,
-          'isInvalidOrder': true,
-          'sourceSlotIndex': sourceIndex,
-          'targetSlotIndex': targetIndex,
-        };
-        
-        return connection.copyWith(properties: updatedProperties);
+        // Mark connection as backward edge (violates slot ordering)
+        return connection.copyWith(
+          isBackwardEdge: true,
+        );
       }
       
       // Connection is valid or involves unknown ports

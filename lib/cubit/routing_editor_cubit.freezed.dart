@@ -298,7 +298,18 @@ as String?,
 /// @nodoc
 mixin _$Connection implements DiagnosticableTreeMixin {
 
- String get id; String get sourcePortId; String get targetPortId; String? get busId; OutputMode get outputMode; double get gain; bool get isMuted; bool get isGhostConnection; Map<String, dynamic>? get properties; DateTime? get createdAt; DateTime? get modifiedAt;
+ String get id; String get sourcePortId; String get targetPortId; ConnectionType get connectionType; String? get busId; OutputMode get outputMode; double get gain; bool get isMuted; bool get isGhostConnection; bool get isPartial;// Whether this is a partial connection
+ int? get busNumber;// Bus number (1-12 for inputs, 13-20 for outputs, 21+ for algorithm buses)
+ String? get busLabel;// Bus label for partial connections (e.g., "A1", "Out3")
+ String? get algorithmId;// Algorithm identifier
+ int? get algorithmIndex;// Algorithm slot index (0-7)
+ int? get parameterNumber;// Parameter number for the port
+ String? get parameterName;// Parameter name
+ String? get portName;// Name of the port
+ SignalType? get signalType;// Type of signal
+ bool get isOutput;// Whether this is an output connection
+ bool get isBackwardEdge;// Whether this is a backward edge
+ DateTime? get createdAt; DateTime? get modifiedAt;
 /// Create a copy of Connection
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -310,21 +321,21 @@ $ConnectionCopyWith<Connection> get copyWith => _$ConnectionCopyWithImpl<Connect
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'Connection'))
-    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('properties', properties))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('connectionType', connectionType))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('isPartial', isPartial))..add(DiagnosticsProperty('busNumber', busNumber))..add(DiagnosticsProperty('busLabel', busLabel))..add(DiagnosticsProperty('algorithmId', algorithmId))..add(DiagnosticsProperty('algorithmIndex', algorithmIndex))..add(DiagnosticsProperty('parameterNumber', parameterNumber))..add(DiagnosticsProperty('parameterName', parameterName))..add(DiagnosticsProperty('portName', portName))..add(DiagnosticsProperty('signalType', signalType))..add(DiagnosticsProperty('isOutput', isOutput))..add(DiagnosticsProperty('isBackwardEdge', isBackwardEdge))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&const DeepCollectionEquality().equals(other.properties, properties)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.connectionType, connectionType) || other.connectionType == connectionType)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&(identical(other.isPartial, isPartial) || other.isPartial == isPartial)&&(identical(other.busNumber, busNumber) || other.busNumber == busNumber)&&(identical(other.busLabel, busLabel) || other.busLabel == busLabel)&&(identical(other.algorithmId, algorithmId) || other.algorithmId == algorithmId)&&(identical(other.algorithmIndex, algorithmIndex) || other.algorithmIndex == algorithmIndex)&&(identical(other.parameterNumber, parameterNumber) || other.parameterNumber == parameterNumber)&&(identical(other.parameterName, parameterName) || other.parameterName == parameterName)&&(identical(other.portName, portName) || other.portName == portName)&&(identical(other.signalType, signalType) || other.signalType == signalType)&&(identical(other.isOutput, isOutput) || other.isOutput == isOutput)&&(identical(other.isBackwardEdge, isBackwardEdge) || other.isBackwardEdge == isBackwardEdge)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,sourcePortId,targetPortId,busId,outputMode,gain,isMuted,isGhostConnection,const DeepCollectionEquality().hash(properties),createdAt,modifiedAt);
+int get hashCode => Object.hashAll([runtimeType,id,sourcePortId,targetPortId,connectionType,busId,outputMode,gain,isMuted,isGhostConnection,isPartial,busNumber,busLabel,algorithmId,algorithmIndex,parameterNumber,parameterName,portName,signalType,isOutput,isBackwardEdge,createdAt,modifiedAt]);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, properties: $properties, createdAt: $createdAt, modifiedAt: $modifiedAt)';
+  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, connectionType: $connectionType, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, isPartial: $isPartial, busNumber: $busNumber, busLabel: $busLabel, algorithmId: $algorithmId, algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, parameterName: $parameterName, portName: $portName, signalType: $signalType, isOutput: $isOutput, isBackwardEdge: $isBackwardEdge, createdAt: $createdAt, modifiedAt: $modifiedAt)';
 }
 
 
@@ -335,7 +346,7 @@ abstract mixin class $ConnectionCopyWith<$Res>  {
   factory $ConnectionCopyWith(Connection value, $Res Function(Connection) _then) = _$ConnectionCopyWithImpl;
 @useResult
 $Res call({
- String id, String sourcePortId, String targetPortId, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, Map<String, dynamic>? properties, DateTime? createdAt, DateTime? modifiedAt
+ String id, String sourcePortId, String targetPortId, ConnectionType connectionType, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, bool isPartial, int? busNumber, String? busLabel, String? algorithmId, int? algorithmIndex, int? parameterNumber, String? parameterName, String? portName, SignalType? signalType, bool isOutput, bool isBackwardEdge, DateTime? createdAt, DateTime? modifiedAt
 });
 
 
@@ -352,18 +363,29 @@ class _$ConnectionCopyWithImpl<$Res>
 
 /// Create a copy of Connection
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? properties = freezed,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? connectionType = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? isPartial = null,Object? busNumber = freezed,Object? busLabel = freezed,Object? algorithmId = freezed,Object? algorithmIndex = freezed,Object? parameterNumber = freezed,Object? parameterName = freezed,Object? portName = freezed,Object? signalType = freezed,Object? isOutput = null,Object? isBackwardEdge = null,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sourcePortId: null == sourcePortId ? _self.sourcePortId : sourcePortId // ignore: cast_nullable_to_non_nullable
 as String,targetPortId: null == targetPortId ? _self.targetPortId : targetPortId // ignore: cast_nullable_to_non_nullable
-as String,busId: freezed == busId ? _self.busId : busId // ignore: cast_nullable_to_non_nullable
+as String,connectionType: null == connectionType ? _self.connectionType : connectionType // ignore: cast_nullable_to_non_nullable
+as ConnectionType,busId: freezed == busId ? _self.busId : busId // ignore: cast_nullable_to_non_nullable
 as String?,outputMode: null == outputMode ? _self.outputMode : outputMode // ignore: cast_nullable_to_non_nullable
 as OutputMode,gain: null == gain ? _self.gain : gain // ignore: cast_nullable_to_non_nullable
 as double,isMuted: null == isMuted ? _self.isMuted : isMuted // ignore: cast_nullable_to_non_nullable
 as bool,isGhostConnection: null == isGhostConnection ? _self.isGhostConnection : isGhostConnection // ignore: cast_nullable_to_non_nullable
-as bool,properties: freezed == properties ? _self.properties : properties // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,isPartial: null == isPartial ? _self.isPartial : isPartial // ignore: cast_nullable_to_non_nullable
+as bool,busNumber: freezed == busNumber ? _self.busNumber : busNumber // ignore: cast_nullable_to_non_nullable
+as int?,busLabel: freezed == busLabel ? _self.busLabel : busLabel // ignore: cast_nullable_to_non_nullable
+as String?,algorithmId: freezed == algorithmId ? _self.algorithmId : algorithmId // ignore: cast_nullable_to_non_nullable
+as String?,algorithmIndex: freezed == algorithmIndex ? _self.algorithmIndex : algorithmIndex // ignore: cast_nullable_to_non_nullable
+as int?,parameterNumber: freezed == parameterNumber ? _self.parameterNumber : parameterNumber // ignore: cast_nullable_to_non_nullable
+as int?,parameterName: freezed == parameterName ? _self.parameterName : parameterName // ignore: cast_nullable_to_non_nullable
+as String?,portName: freezed == portName ? _self.portName : portName // ignore: cast_nullable_to_non_nullable
+as String?,signalType: freezed == signalType ? _self.signalType : signalType // ignore: cast_nullable_to_non_nullable
+as SignalType?,isOutput: null == isOutput ? _self.isOutput : isOutput // ignore: cast_nullable_to_non_nullable
+as bool,isBackwardEdge: null == isBackwardEdge ? _self.isBackwardEdge : isBackwardEdge // ignore: cast_nullable_to_non_nullable
+as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,modifiedAt: freezed == modifiedAt ? _self.modifiedAt : modifiedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -447,10 +469,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  Map<String, dynamic>? properties,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  ConnectionType connectionType,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  bool isPartial,  int? busNumber,  String? busLabel,  String? algorithmId,  int? algorithmIndex,  int? parameterNumber,  String? parameterName,  String? portName,  SignalType? signalType,  bool isOutput,  bool isBackwardEdge,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Connection() when $default != null:
-return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.properties,_that.createdAt,_that.modifiedAt);case _:
+return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.connectionType,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.isPartial,_that.busNumber,_that.busLabel,_that.algorithmId,_that.algorithmIndex,_that.parameterNumber,_that.parameterName,_that.portName,_that.signalType,_that.isOutput,_that.isBackwardEdge,_that.createdAt,_that.modifiedAt);case _:
   return orElse();
 
 }
@@ -468,10 +490,10 @@ return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  Map<String, dynamic>? properties,  DateTime? createdAt,  DateTime? modifiedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String sourcePortId,  String targetPortId,  ConnectionType connectionType,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  bool isPartial,  int? busNumber,  String? busLabel,  String? algorithmId,  int? algorithmIndex,  int? parameterNumber,  String? parameterName,  String? portName,  SignalType? signalType,  bool isOutput,  bool isBackwardEdge,  DateTime? createdAt,  DateTime? modifiedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Connection():
-return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.properties,_that.createdAt,_that.modifiedAt);}
+return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.connectionType,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.isPartial,_that.busNumber,_that.busLabel,_that.algorithmId,_that.algorithmIndex,_that.parameterNumber,_that.parameterName,_that.portName,_that.signalType,_that.isOutput,_that.isBackwardEdge,_that.createdAt,_that.modifiedAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -485,10 +507,10 @@ return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String sourcePortId,  String targetPortId,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  Map<String, dynamic>? properties,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String sourcePortId,  String targetPortId,  ConnectionType connectionType,  String? busId,  OutputMode outputMode,  double gain,  bool isMuted,  bool isGhostConnection,  bool isPartial,  int? busNumber,  String? busLabel,  String? algorithmId,  int? algorithmIndex,  int? parameterNumber,  String? parameterName,  String? portName,  SignalType? signalType,  bool isOutput,  bool isBackwardEdge,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Connection() when $default != null:
-return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.properties,_that.createdAt,_that.modifiedAt);case _:
+return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.connectionType,_that.busId,_that.outputMode,_that.gain,_that.isMuted,_that.isGhostConnection,_that.isPartial,_that.busNumber,_that.busLabel,_that.algorithmId,_that.algorithmIndex,_that.parameterNumber,_that.parameterName,_that.portName,_that.signalType,_that.isOutput,_that.isBackwardEdge,_that.createdAt,_that.modifiedAt);case _:
   return null;
 
 }
@@ -500,26 +522,40 @@ return $default(_that.id,_that.sourcePortId,_that.targetPortId,_that.busId,_that
 
 
 class _Connection with DiagnosticableTreeMixin implements Connection {
-  const _Connection({required this.id, required this.sourcePortId, required this.targetPortId, this.busId, this.outputMode = OutputMode.replace, this.gain = 1.0, this.isMuted = false, this.isGhostConnection = false, final  Map<String, dynamic>? properties, this.createdAt, this.modifiedAt}): _properties = properties;
+  const _Connection({required this.id, required this.sourcePortId, required this.targetPortId, required this.connectionType, this.busId, this.outputMode = OutputMode.replace, this.gain = 1.0, this.isMuted = false, this.isGhostConnection = false, this.isPartial = false, this.busNumber, this.busLabel, this.algorithmId, this.algorithmIndex, this.parameterNumber, this.parameterName, this.portName, this.signalType, this.isOutput = false, this.isBackwardEdge = false, this.createdAt, this.modifiedAt});
   
 
 @override final  String id;
 @override final  String sourcePortId;
 @override final  String targetPortId;
+@override final  ConnectionType connectionType;
 @override final  String? busId;
 @override@JsonKey() final  OutputMode outputMode;
 @override@JsonKey() final  double gain;
 @override@JsonKey() final  bool isMuted;
 @override@JsonKey() final  bool isGhostConnection;
- final  Map<String, dynamic>? _properties;
-@override Map<String, dynamic>? get properties {
-  final value = _properties;
-  if (value == null) return null;
-  if (_properties is EqualUnmodifiableMapView) return _properties;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(value);
-}
-
+@override@JsonKey() final  bool isPartial;
+// Whether this is a partial connection
+@override final  int? busNumber;
+// Bus number (1-12 for inputs, 13-20 for outputs, 21+ for algorithm buses)
+@override final  String? busLabel;
+// Bus label for partial connections (e.g., "A1", "Out3")
+@override final  String? algorithmId;
+// Algorithm identifier
+@override final  int? algorithmIndex;
+// Algorithm slot index (0-7)
+@override final  int? parameterNumber;
+// Parameter number for the port
+@override final  String? parameterName;
+// Parameter name
+@override final  String? portName;
+// Name of the port
+@override final  SignalType? signalType;
+// Type of signal
+@override@JsonKey() final  bool isOutput;
+// Whether this is an output connection
+@override@JsonKey() final  bool isBackwardEdge;
+// Whether this is a backward edge
 @override final  DateTime? createdAt;
 @override final  DateTime? modifiedAt;
 
@@ -534,21 +570,21 @@ _$ConnectionCopyWith<_Connection> get copyWith => __$ConnectionCopyWithImpl<_Con
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'Connection'))
-    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('properties', properties))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('sourcePortId', sourcePortId))..add(DiagnosticsProperty('targetPortId', targetPortId))..add(DiagnosticsProperty('connectionType', connectionType))..add(DiagnosticsProperty('busId', busId))..add(DiagnosticsProperty('outputMode', outputMode))..add(DiagnosticsProperty('gain', gain))..add(DiagnosticsProperty('isMuted', isMuted))..add(DiagnosticsProperty('isGhostConnection', isGhostConnection))..add(DiagnosticsProperty('isPartial', isPartial))..add(DiagnosticsProperty('busNumber', busNumber))..add(DiagnosticsProperty('busLabel', busLabel))..add(DiagnosticsProperty('algorithmId', algorithmId))..add(DiagnosticsProperty('algorithmIndex', algorithmIndex))..add(DiagnosticsProperty('parameterNumber', parameterNumber))..add(DiagnosticsProperty('parameterName', parameterName))..add(DiagnosticsProperty('portName', portName))..add(DiagnosticsProperty('signalType', signalType))..add(DiagnosticsProperty('isOutput', isOutput))..add(DiagnosticsProperty('isBackwardEdge', isBackwardEdge))..add(DiagnosticsProperty('createdAt', createdAt))..add(DiagnosticsProperty('modifiedAt', modifiedAt));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&const DeepCollectionEquality().equals(other._properties, _properties)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Connection&&(identical(other.id, id) || other.id == id)&&(identical(other.sourcePortId, sourcePortId) || other.sourcePortId == sourcePortId)&&(identical(other.targetPortId, targetPortId) || other.targetPortId == targetPortId)&&(identical(other.connectionType, connectionType) || other.connectionType == connectionType)&&(identical(other.busId, busId) || other.busId == busId)&&(identical(other.outputMode, outputMode) || other.outputMode == outputMode)&&(identical(other.gain, gain) || other.gain == gain)&&(identical(other.isMuted, isMuted) || other.isMuted == isMuted)&&(identical(other.isGhostConnection, isGhostConnection) || other.isGhostConnection == isGhostConnection)&&(identical(other.isPartial, isPartial) || other.isPartial == isPartial)&&(identical(other.busNumber, busNumber) || other.busNumber == busNumber)&&(identical(other.busLabel, busLabel) || other.busLabel == busLabel)&&(identical(other.algorithmId, algorithmId) || other.algorithmId == algorithmId)&&(identical(other.algorithmIndex, algorithmIndex) || other.algorithmIndex == algorithmIndex)&&(identical(other.parameterNumber, parameterNumber) || other.parameterNumber == parameterNumber)&&(identical(other.parameterName, parameterName) || other.parameterName == parameterName)&&(identical(other.portName, portName) || other.portName == portName)&&(identical(other.signalType, signalType) || other.signalType == signalType)&&(identical(other.isOutput, isOutput) || other.isOutput == isOutput)&&(identical(other.isBackwardEdge, isBackwardEdge) || other.isBackwardEdge == isBackwardEdge)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.modifiedAt, modifiedAt) || other.modifiedAt == modifiedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,sourcePortId,targetPortId,busId,outputMode,gain,isMuted,isGhostConnection,const DeepCollectionEquality().hash(_properties),createdAt,modifiedAt);
+int get hashCode => Object.hashAll([runtimeType,id,sourcePortId,targetPortId,connectionType,busId,outputMode,gain,isMuted,isGhostConnection,isPartial,busNumber,busLabel,algorithmId,algorithmIndex,parameterNumber,parameterName,portName,signalType,isOutput,isBackwardEdge,createdAt,modifiedAt]);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, properties: $properties, createdAt: $createdAt, modifiedAt: $modifiedAt)';
+  return 'Connection(id: $id, sourcePortId: $sourcePortId, targetPortId: $targetPortId, connectionType: $connectionType, busId: $busId, outputMode: $outputMode, gain: $gain, isMuted: $isMuted, isGhostConnection: $isGhostConnection, isPartial: $isPartial, busNumber: $busNumber, busLabel: $busLabel, algorithmId: $algorithmId, algorithmIndex: $algorithmIndex, parameterNumber: $parameterNumber, parameterName: $parameterName, portName: $portName, signalType: $signalType, isOutput: $isOutput, isBackwardEdge: $isBackwardEdge, createdAt: $createdAt, modifiedAt: $modifiedAt)';
 }
 
 
@@ -559,7 +595,7 @@ abstract mixin class _$ConnectionCopyWith<$Res> implements $ConnectionCopyWith<$
   factory _$ConnectionCopyWith(_Connection value, $Res Function(_Connection) _then) = __$ConnectionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String sourcePortId, String targetPortId, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, Map<String, dynamic>? properties, DateTime? createdAt, DateTime? modifiedAt
+ String id, String sourcePortId, String targetPortId, ConnectionType connectionType, String? busId, OutputMode outputMode, double gain, bool isMuted, bool isGhostConnection, bool isPartial, int? busNumber, String? busLabel, String? algorithmId, int? algorithmIndex, int? parameterNumber, String? parameterName, String? portName, SignalType? signalType, bool isOutput, bool isBackwardEdge, DateTime? createdAt, DateTime? modifiedAt
 });
 
 
@@ -576,18 +612,29 @@ class __$ConnectionCopyWithImpl<$Res>
 
 /// Create a copy of Connection
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? properties = freezed,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sourcePortId = null,Object? targetPortId = null,Object? connectionType = null,Object? busId = freezed,Object? outputMode = null,Object? gain = null,Object? isMuted = null,Object? isGhostConnection = null,Object? isPartial = null,Object? busNumber = freezed,Object? busLabel = freezed,Object? algorithmId = freezed,Object? algorithmIndex = freezed,Object? parameterNumber = freezed,Object? parameterName = freezed,Object? portName = freezed,Object? signalType = freezed,Object? isOutput = null,Object? isBackwardEdge = null,Object? createdAt = freezed,Object? modifiedAt = freezed,}) {
   return _then(_Connection(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sourcePortId: null == sourcePortId ? _self.sourcePortId : sourcePortId // ignore: cast_nullable_to_non_nullable
 as String,targetPortId: null == targetPortId ? _self.targetPortId : targetPortId // ignore: cast_nullable_to_non_nullable
-as String,busId: freezed == busId ? _self.busId : busId // ignore: cast_nullable_to_non_nullable
+as String,connectionType: null == connectionType ? _self.connectionType : connectionType // ignore: cast_nullable_to_non_nullable
+as ConnectionType,busId: freezed == busId ? _self.busId : busId // ignore: cast_nullable_to_non_nullable
 as String?,outputMode: null == outputMode ? _self.outputMode : outputMode // ignore: cast_nullable_to_non_nullable
 as OutputMode,gain: null == gain ? _self.gain : gain // ignore: cast_nullable_to_non_nullable
 as double,isMuted: null == isMuted ? _self.isMuted : isMuted // ignore: cast_nullable_to_non_nullable
 as bool,isGhostConnection: null == isGhostConnection ? _self.isGhostConnection : isGhostConnection // ignore: cast_nullable_to_non_nullable
-as bool,properties: freezed == properties ? _self._properties : properties // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,isPartial: null == isPartial ? _self.isPartial : isPartial // ignore: cast_nullable_to_non_nullable
+as bool,busNumber: freezed == busNumber ? _self.busNumber : busNumber // ignore: cast_nullable_to_non_nullable
+as int?,busLabel: freezed == busLabel ? _self.busLabel : busLabel // ignore: cast_nullable_to_non_nullable
+as String?,algorithmId: freezed == algorithmId ? _self.algorithmId : algorithmId // ignore: cast_nullable_to_non_nullable
+as String?,algorithmIndex: freezed == algorithmIndex ? _self.algorithmIndex : algorithmIndex // ignore: cast_nullable_to_non_nullable
+as int?,parameterNumber: freezed == parameterNumber ? _self.parameterNumber : parameterNumber // ignore: cast_nullable_to_non_nullable
+as int?,parameterName: freezed == parameterName ? _self.parameterName : parameterName // ignore: cast_nullable_to_non_nullable
+as String?,portName: freezed == portName ? _self.portName : portName // ignore: cast_nullable_to_non_nullable
+as String?,signalType: freezed == signalType ? _self.signalType : signalType // ignore: cast_nullable_to_non_nullable
+as SignalType?,isOutput: null == isOutput ? _self.isOutput : isOutput // ignore: cast_nullable_to_non_nullable
+as bool,isBackwardEdge: null == isBackwardEdge ? _self.isBackwardEdge : isBackwardEdge // ignore: cast_nullable_to_non_nullable
+as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,modifiedAt: freezed == modifiedAt ? _self.modifiedAt : modifiedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

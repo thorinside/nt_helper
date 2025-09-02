@@ -147,6 +147,7 @@ abstract class AlgorithmRouting {
       id: '${source.id}_${destination.id}',
       sourcePortId: source.id,
       destinationPortId: destination.id,
+      connectionType: ConnectionType.algorithmToAlgorithm,
     );
     
     debugPrint(

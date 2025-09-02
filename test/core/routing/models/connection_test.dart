@@ -8,6 +8,7 @@ void main() {
         id: 'test_connection',
         sourcePortId: 'source_port',
         destinationPortId: 'dest_port',
+        connectionType: ConnectionType.algorithmToAlgorithm,
       );
 
       expect(connection.id, equals('test_connection'));
@@ -26,6 +27,7 @@ void main() {
         id: 'test_connection',
         sourcePortId: 'source_port',
         destinationPortId: 'dest_port',
+        connectionType: ConnectionType.algorithmToAlgorithm,
         status: ConnectionStatus.disabled,
         name: 'Test Connection',
         description: 'A test connection',
@@ -33,7 +35,6 @@ void main() {
         isMuted: true,
         isInverted: true,
         delayMs: 10.5,
-        properties: {'custom': 'value'},
         createdAt: now,
         modifiedAt: now,
       );
@@ -44,7 +45,7 @@ void main() {
       expect(connection.isMuted, isTrue);
       expect(connection.isInverted, isTrue);
       expect(connection.delayMs, equals(10.5));
-      expect(connection.properties?['custom'], equals('value'));
+      // Properties field removed from Connection model
       expect(connection.createdAt, equals(now));
       expect(connection.modifiedAt, equals(now));
     });
@@ -55,13 +56,13 @@ void main() {
         id: 'test_connection',
         sourcePortId: 'source_port',
         destinationPortId: 'dest_port',
+        connectionType: ConnectionType.algorithmToAlgorithm,
         status: ConnectionStatus.error,
         name: 'Test Connection',
         gain: 0.5,
         isMuted: false,
         isInverted: true,
         delayMs: 5.0,
-        properties: {'test': true},
         createdAt: now,
         modifiedAt: now,
       );
@@ -78,7 +79,6 @@ void main() {
       expect(deserializedConnection.isMuted, equals(originalConnection.isMuted));
       expect(deserializedConnection.isInverted, equals(originalConnection.isInverted));
       expect(deserializedConnection.delayMs, equals(originalConnection.delayMs));
-      expect(deserializedConnection.properties, equals(originalConnection.properties));
     });
 
     group('Connection Status Tests', () {
@@ -87,6 +87,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.active,
         );
 
@@ -101,6 +102,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.error,
         );
 
@@ -115,6 +117,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.connecting,
         );
 
@@ -129,6 +132,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.disabled,
         );
 
@@ -145,6 +149,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 0.8,
           isMuted: false,
           isInverted: false,
@@ -158,6 +163,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 0.8,
           isMuted: true,
           isInverted: false,
@@ -171,6 +177,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 0.8,
           isMuted: false,
           isInverted: true,
@@ -184,6 +191,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 0.8,
           isMuted: true,
           isInverted: true,
@@ -199,6 +207,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.active,
           modifiedAt: DateTime(2023, 1, 1),
         );
@@ -215,28 +224,14 @@ void main() {
         expect(updatedConnection.destinationPortId, equals(originalConnection.destinationPortId));
       });
 
-      test('withProperties should update properties and modifiedAt', () {
-        final originalConnection = Connection(
-          id: 'test',
-          sourcePortId: 'src',
-          destinationPortId: 'dest',
-          properties: {'old': 'value'},
-          modifiedAt: DateTime(2023, 1, 1),
-        );
-
-        final newProperties = {'new': 'value', 'another': 42};
-        final updatedConnection = originalConnection.withProperties(newProperties);
-
-        expect(updatedConnection.properties, equals(newProperties));
-        expect(updatedConnection.modifiedAt, isNot(equals(originalConnection.modifiedAt)));
-        expect(updatedConnection.modifiedAt!.isAfter(originalConnection.modifiedAt!), isTrue);
-      });
+      // withProperties method was removed in the Connection refactor
 
       test('withGain should update gain and modifiedAt', () {
         final originalConnection = Connection(
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 1.0,
           modifiedAt: DateTime(2023, 1, 1),
         );
@@ -255,6 +250,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 0.8,
         );
 
@@ -262,6 +258,7 @@ void main() {
           id: 'test',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           gain: 0.8,
         );
 
@@ -274,12 +271,14 @@ void main() {
           id: 'test1',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
 
         const connection2 = Connection(
           id: 'test2',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
 
         expect(connection1, isNot(equals(connection2)));
@@ -292,6 +291,7 @@ void main() {
           id: 'original',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.active,
           gain: 1.0,
           isMuted: false,
@@ -309,6 +309,139 @@ void main() {
         expect(modifiedConnection.status, equals(ConnectionStatus.disabled));
         expect(modifiedConnection.gain, equals(0.5));
         expect(modifiedConnection.isMuted, isTrue);
+      });
+    });
+
+    group('Partial Connection Tests', () {
+      test('should create partial connection with bus endpoint', () {
+        const connection = Connection(
+          id: 'partial_connection',
+          sourcePortId: 'output_port',
+          destinationPortId: '', // Empty indicates bus label endpoint
+          connectionType: ConnectionType.partialOutputToBus,
+          isPartial: true,
+          busNumber: 5, // Bus A5
+        );
+
+        expect(connection.id, equals('partial_connection'));
+        expect(connection.sourcePortId, equals('output_port'));
+        expect(connection.destinationPortId, equals(''));
+        expect(connection.isPartial, isTrue);
+        expect(connection.busNumber, equals(5));
+      });
+
+      test('should identify partial connections correctly', () {
+        const fullConnection = Connection(
+          id: 'full',
+          sourcePortId: 'src',
+          destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        );
+
+        const partialConnection = Connection(
+          id: 'partial',
+          sourcePortId: 'src',
+          destinationPortId: '',
+          connectionType: ConnectionType.partialOutputToBus,
+          isPartial: true,
+          busNumber: 3,
+        );
+
+        expect(fullConnection.isPartial, isFalse);
+        expect(partialConnection.isPartial, isTrue);
+      });
+
+      test('should serialize partial connection to JSON correctly', () {
+        const originalConnection = Connection(
+          id: 'partial_test',
+          sourcePortId: 'port1',
+          destinationPortId: '',
+          connectionType: ConnectionType.partialOutputToBus,
+          isPartial: true,
+          busNumber: 7,
+          busLabel: 'A7',
+        );
+
+        final json = originalConnection.toJson();
+        final deserializedConnection = Connection.fromJson(json);
+
+        expect(deserializedConnection, equals(originalConnection));
+        expect(deserializedConnection.isPartial, isTrue);
+        expect(deserializedConnection.busNumber, equals(7));
+        expect(deserializedConnection.busLabel, equals('A7'));
+      });
+
+      test('should handle partial connection with input port', () {
+        const connection = Connection(
+          id: 'partial_input',
+          sourcePortId: '', // Empty for bus label source
+          destinationPortId: 'input_port',
+          connectionType: ConnectionType.partialBusToInput,
+          isPartial: true,
+          busNumber: 12,
+          busLabel: 'B4',
+        );
+
+        expect(connection.sourcePortId, equals(''));
+        expect(connection.destinationPortId, equals('input_port'));
+        expect(connection.isPartial, isTrue);
+        expect(connection.busNumber, equals(12));
+        expect(connection.busLabel, equals('B4'));
+      });
+
+      test('should maintain partial status through copyWith', () {
+        const originalConnection = Connection(
+          id: 'partial',
+          sourcePortId: 'src',
+          destinationPortId: '',
+          connectionType: ConnectionType.partialOutputToBus,
+          isPartial: true,
+          busNumber: 4,
+        );
+
+        final modifiedConnection = originalConnection.copyWith(
+          gain: 0.8,
+        );
+
+        expect(modifiedConnection.isPartial, isTrue);
+        expect(modifiedConnection.busNumber, equals(4));
+        expect(modifiedConnection.gain, equals(0.8));
+      });
+
+      test('should handle bus label for rendering', () {
+        const connection = Connection(
+          id: 'partial_with_label',
+          sourcePortId: 'output',
+          destinationPortId: '',
+          connectionType: ConnectionType.partialOutputToBus,
+          isPartial: true,
+          busNumber: 15,
+          busLabel: 'Out3',
+        );
+
+        expect(connection.busLabel, equals('Out3'));
+        expect(connection.hasUnconnectedBus, isTrue);
+      });
+
+      test('should differentiate between partial and full connections in equality', () {
+        const partialConnection = Connection(
+          id: 'test',
+          sourcePortId: 'src',
+          destinationPortId: '',
+          connectionType: ConnectionType.partialOutputToBus,
+          isPartial: true,
+          busNumber: 5,
+        );
+
+        const fullConnection = Connection(
+          id: 'test',
+          sourcePortId: 'src',
+          destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+          isPartial: false,
+        );
+
+        expect(partialConnection, isNot(equals(fullConnection)));
       });
     });
   });
