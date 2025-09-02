@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
 import 'ghost_connection_tooltip.dart';
@@ -350,7 +351,11 @@ class ConnectionPainter extends CustomPainter {
 
   /// Draw connection label with bus number and output mode
   void _drawConnectionLabel(Canvas canvas, ConnectionData conn) {
-    if (conn.busNumber == null) return;
+    if (conn.busNumber == null) {
+      debugPrint('ConnectionPainter: No bus number for connection ${conn.connection.id}');
+      return;
+    }
+    debugPrint('ConnectionPainter: Drawing label for bus ${conn.busNumber}');
 
     // Find midpoint of connection
     final path = _createDirectPath(conn.sourcePosition, conn.destinationPosition);

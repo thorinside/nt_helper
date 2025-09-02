@@ -4,9 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/routing/models/connection_metadata.dart';
 // Haptics can be reintroduced later if needed
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart';
-import 'package:nt_helper/ui/widgets/routing/connection_theme.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
@@ -492,28 +492,41 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         continue;
       }
       
-      // Extract metadata to determine connection type
-      final metadata = connection.properties?['metadata'] as dynamic;
-      final isPhysicalConnection = metadata?.connectionClass == 'hardware';
-      final isInputConnection = metadata?.targetAlgorithmId != null;
+      // Extract connection metadata to determine connection type
+      // Check if properties contain a ConnectionMetadata object or individual properties
+      final metadata = connection.properties?['metadata'] as ConnectionMetadata?;
+      final connectionType = connection.properties?['connectionType'] as String?;
+      
+      final isPhysicalConnection = (metadata?.connectionClass == ConnectionClass.hardware) ||
+          (connectionType == 'hardware_input' || connectionType == 'hardware_output');
+      final isInputConnection = connection.properties?['targetAlgorithmId'] != null;
       
       // Try to get bus number from multiple possible locations
       int? busNumber;
       
-      // First try metadata.busNumber
-      if (metadata != null && metadata.busNumber != null) {
-        busNumber = metadata.busNumber as int?;
+      // First try metadata.busNumber (for ConnectionMetadata objects)
+      if (metadata != null) {
+        busNumber = metadata.busNumber;
+        debugPrint('RoutingEditorWidget: Got bus number from ConnectionMetadata: $busNumber');
       }
-      // Then try direct properties.busNumber
+      // Then try direct properties.busNumber (for connection discovery service properties)
       else if (connection.properties?['busNumber'] != null) {
         busNumber = connection.properties!['busNumber'] as int?;
+        debugPrint('RoutingEditorWidget: Got bus number from properties: $busNumber');
       }
       // Finally try to extract from busId (e.g., "bus_5" -> 5)
       else if (connection.busId != null) {
         final busIdMatch = RegExp(r'bus_(\d+)').firstMatch(connection.busId!);
         if (busIdMatch != null) {
           busNumber = int.tryParse(busIdMatch.group(1)!);
+          debugPrint('RoutingEditorWidget: Got bus number from busId: $busNumber');
         }
+      }
+      
+      if (busNumber == null) {
+        debugPrint('RoutingEditorWidget: No bus number found for connection ${connection.id}');
+        debugPrint('  - properties: ${connection.properties}');
+        debugPrint('  - busId: ${connection.busId}');
       }
       
       connectionDataList.add(ConnectionData(
