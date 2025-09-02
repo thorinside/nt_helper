@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:nt_helper/ui/widgets/routing/bus_label_formatter.dart';
 
 part 'algorithm_connection.freezed.dart';
 part 'algorithm_connection.g.dart';
@@ -167,15 +168,8 @@ extension AlgorithmConnectionHelpers on AlgorithmConnection {
   
   /// Generate a bus label based on the bus number and connection type
   String get busLabel {
-    if (busNumber >= 1 && busNumber <= 12) {
-      return 'I$busNumber';
-    } else if (busNumber >= 13 && busNumber <= 20) {
-      return 'O${busNumber - 12}';
-    } else if (busNumber >= 21 && busNumber <= 28) {
-      return 'A${busNumber - 20}';
-    } else {
-      return 'Bus $busNumber';
-    }
+    // Use the centralized BusLabelFormatter for consistent labeling
+    return BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber';
   }
   
   /// Get the edge label for display on the connection line

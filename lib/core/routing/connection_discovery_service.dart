@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'algorithm_routing.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
+import '../../ui/widgets/routing/bus_label_formatter.dart';
 
 /// Service for discovering connections between algorithms based on shared bus assignments.
 /// 
@@ -41,6 +42,9 @@ class ConnectionDiscoveryService {
     // Debug: Print bus registry summary
     _logBusRegistrySummary(busRegistry);
     
+    // Track matched ports to identify unmatched ones for partial connections
+    final matchedPorts = <String>{};
+    
     // Create connections based on bus assignments
     for (final entry in busRegistry.entries) {
       final busNumber = entry.key;
@@ -57,20 +61,43 @@ class ConnectionDiscoveryService {
       // Create hardware input connections (buses 1-12)
       if (isHardwareInput && inputs.isNotEmpty) {
         connections.addAll(_createHardwareInputConnections(busNumber, inputs));
+        // Mark these input ports as matched
+        for (final input in inputs) {
+          matchedPorts.add(input.portId);
+        }
       }
       
       // Create hardware output connections (buses 13-20)
       if (isHardwareOutput && outputs.isNotEmpty) {
         connections.addAll(_createHardwareOutputConnections(busNumber, outputs));
+        // Mark these output ports as matched
+        for (final output in outputs) {
+          matchedPorts.add(output.portId);
+        }
       }
       
       // Create algorithm-to-algorithm connections (ANY bus with both inputs and outputs)
       if (outputs.isNotEmpty && inputs.isNotEmpty) {
         connections.addAll(_createAlgorithmConnections(busNumber, outputs, inputs));
+        // Mark all algorithm ports involved in connections as matched
+        for (final output in outputs) {
+          for (final input in inputs) {
+            if (output.algorithmId != input.algorithmId) {
+              matchedPorts.add(output.portId);
+              matchedPorts.add(input.portId);
+            }
+          }
+        }
       }
     }
     
-    debugPrint('[ConnectionDiscovery] Created ${connections.length} total connections');
+    // Create partial connections for unmatched ports with non-zero bus values
+    final partialConnections = _createPartialConnections(busRegistry, matchedPorts);
+    connections.addAll(partialConnections);
+    
+    debugPrint('[ConnectionDiscovery] Created ${connections.length - partialConnections.length} full connections');
+    debugPrint('[ConnectionDiscovery] Created ${partialConnections.length} partial connections');
+    debugPrint('[ConnectionDiscovery] Total connections: ${connections.length}');
     _logConnectionSummary(connections);
     
     return connections;
@@ -246,9 +273,101 @@ class ConnectionDiscoveryService {
     final algoConnections = connections.where((c) => 
       c.properties?['connectionType'] == 'algorithm_to_algorithm'
     ).length;
+    final partialConnections = connections.where((c) => c.isPartial).length;
     
     debugPrint('[ConnectionDiscovery]   Hardware connections: $hwConnections');
     debugPrint('[ConnectionDiscovery]   Algorithm-to-algorithm: $algoConnections');
+    debugPrint('[ConnectionDiscovery]   Partial connections: $partialConnections');
+  }
+  
+  /// Creates partial connections for unmatched ports with non-zero bus values
+  static List<Connection> _createPartialConnections(
+    Map<int, List<_PortAssignment>> busRegistry,
+    Set<String> matchedPorts,
+  ) {
+    final partialConnections = <Connection>[];
+    
+    debugPrint('[ConnectionDiscovery] Creating partial connections for unmatched ports');
+    
+    // Process each bus to find unmatched ports
+    for (final entry in busRegistry.entries) {
+      final busNumber = entry.key;
+      final assignments = entry.value;
+      
+      // Find unmatched ports (those with non-zero bus values that weren't matched)
+      final unmatchedPorts = assignments.where((assignment) => 
+        !matchedPorts.contains(assignment.portId)
+      ).toList();
+      
+      if (unmatchedPorts.isEmpty) continue;
+      
+      debugPrint('[ConnectionDiscovery] Bus $busNumber has ${unmatchedPorts.length} unmatched ports');
+      
+      // Create partial connections for each unmatched port
+      for (final port in unmatchedPorts) {
+        final busLabel = _generateBusLabel(busNumber);
+        final partialConnection = _createPartialConnection(port, busNumber, busLabel);
+        partialConnections.add(partialConnection);
+        
+        debugPrint('[ConnectionDiscovery]   Created partial connection: ${port.portId} -> $busLabel');
+      }
+    }
+    
+    return partialConnections;
+  }
+  
+  /// Creates a single partial connection for an unmatched port
+  static Connection _createPartialConnection(
+    _PortAssignment portAssignment,
+    int busNumber,
+    String busLabel,
+  ) {
+    // Create unique IDs for the bus endpoint
+    final busPortId = 'bus_${busNumber}_endpoint';
+    
+    // Determine connection direction based on port type
+    final String sourcePortId;
+    final String destinationPortId;
+    final String connectionType;
+    
+    if (portAssignment.isOutput) {
+      // Output port connects TO bus
+      sourcePortId = portAssignment.portId;
+      destinationPortId = busPortId;
+      connectionType = 'partial_output_to_bus';
+    } else {
+      // Input port connects FROM bus  
+      sourcePortId = busPortId;
+      destinationPortId = portAssignment.portId;
+      connectionType = 'partial_bus_to_input';
+    }
+    
+    return Connection(
+      id: 'partial_conn_${portAssignment.portId}_bus_$busNumber',
+      sourcePortId: sourcePortId,
+      destinationPortId: destinationPortId,
+      isPartial: true,
+      busValue: busNumber,
+      busLabel: busLabel,
+      properties: {
+        'connectionType': connectionType,
+        'busNumber': busNumber,
+        'algorithmId': portAssignment.algorithmId,
+        'algorithmIndex': portAssignment.algorithmIndex,
+        'parameterNumber': portAssignment.parameterNumber,
+        'parameterName': portAssignment.parameterName,
+        'portName': portAssignment.portName,
+        'signalType': _toSignalTypeName(portAssignment.portType),
+        'isOutput': portAssignment.isOutput,
+      },
+    );
+  }
+  
+  /// Generates a human-readable bus label for the given bus number
+  static String _generateBusLabel(int busNumber) {
+    // Use the centralized BusLabelFormatter for consistent labeling across the app
+    // This ensures all bus labels follow the same format: I1-I12, O1-O8, A1-A8
+    return BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber';
   }
 }
 
