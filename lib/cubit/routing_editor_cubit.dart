@@ -415,9 +415,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final connectionId =
           'conn_${sourcePortId}_${targetPortId}_${DateTime.now().millisecondsSinceEpoch}';
 
-      // Determine if this is a ghost connection (algorithm output to physical input)
-      final isGhostConnection = _isGhostConnection(sourcePort, targetPort);
-      
       // Determine connection type
       final connectionType = _determineConnectionType(sourcePortId, targetPortId);
 
@@ -665,20 +662,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Helper method to determine if a connection is a ghost connection
   /// Ghost connections occur when an algorithm output connects to a physical input
-  bool _isGhostConnection(Port sourcePort, Port targetPort) {
-    // Check if source is an algorithm output port
-    final isSourceAlgorithmOutput =
-        sourcePort.id.startsWith('algo_') &&
-        sourcePort.direction == PortDirection.output;
-
-    // Check if target is a physical input port
-    final isTargetPhysicalInput =
-        targetPort.id.startsWith('hw_in_') &&
-        targetPort.direction == PortDirection.input;
-
-    // Ghost connection: algorithm output -> physical input
-    return isSourceAlgorithmOutput && isTargetPhysicalInput;
-  }
   
   /// Helper method to determine the type of connection based on port IDs
   ConnectionType _determineConnectionType(String sourcePortId, String targetPortId) {

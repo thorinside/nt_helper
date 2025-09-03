@@ -242,7 +242,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     );
   }
   
-  Widget _buildPort(ThemeData theme, String label, bool isInput, {bool alignEnd = false, String? portId}) {
+  Widget _buildPort(ThemeData theme, String label, bool isInput, {String? portId}) {
     // Key to measure the dot center position
     final dotKey = GlobalKey();
     final widgetRow = Padding(

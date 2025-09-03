@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/algorithm_connection.dart';
 
 /// Service for discovering connections between algorithm slots based on 
@@ -131,10 +130,6 @@ class AlgorithmConnectionService {
   
   /// Extracts bus assignment information from a slot.
   _SlotBusInfo _extractBusInfo(Slot slot, int algorithmIndex) {
-    final paramsByName = <String, ParameterInfo>{
-      for (final p in slot.parameters) p.name: p,
-    };
-    
     final valueByParam = <int, int>{
       for (final v in slot.values) v.parameterNumber: v.value,
     };

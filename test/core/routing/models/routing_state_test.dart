@@ -45,12 +45,14 @@ void main() {
           id: 'conn1',
           sourcePortId: 'output1',
           destinationPortId: 'input1',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.active,
         ),
         const Connection(
           id: 'conn2',
           sourcePortId: 'output2',
           destinationPortId: 'input2',
+          connectionType: ConnectionType.algorithmToAlgorithm,
           status: ConnectionStatus.error,
         ),
       ];
@@ -256,6 +258,7 @@ void main() {
           id: 'new_conn',
           sourcePortId: 'src',
           destinationPortId: 'dest',
+          connectionType: ConnectionType.algorithmToAlgorithm,
         );
 
         final updatedState = originalState.withAddedConnection(newConnection);
@@ -337,6 +340,7 @@ void main() {
             id: 'invalid',
             sourcePortId: 'nonexistent_source',
             destinationPortId: 'input1',
+            connectionType: ConnectionType.algorithmToAlgorithm,
           ),
         ];
 

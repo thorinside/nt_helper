@@ -238,19 +238,6 @@ class ConnectionDiscoveryService {
     return 'algo_${routing.hashCode}';
   }
   
-  /// Converts PortType to signal type name
-  static String _toSignalTypeName(PortType portType) {
-    switch (portType) {
-      case PortType.audio:
-        return 'audio';
-      case PortType.cv:
-        return 'cv';
-      case PortType.gate:
-        return 'gate';
-      case PortType.clock:
-        return 'clock';
-    }
-  }
   
   /// Converts PortType to SignalType enum
   static SignalType _toSignalType(PortType type) {

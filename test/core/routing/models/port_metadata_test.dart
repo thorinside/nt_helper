@@ -18,7 +18,7 @@ void main() {
             expect(isInput, true);
             expect(jackNumber, 1);
           },
-          algorithm: (_, __, ___, ____, _____, ______) {
+          algorithm: (_, _, _, _, _, _) {
             fail('Should be hardware metadata');
           },
         );
@@ -38,7 +38,7 @@ void main() {
             expect(isInput, false);
             expect(jackNumber, 1);
           },
-          algorithm: (_, __, ___, ____, _____, ______) {
+          algorithm: (_, _, _, _, _, _) {
             fail('Should be hardware metadata');
           },
         );
@@ -58,7 +58,7 @@ void main() {
 
         expect(metadata, isA<AlgorithmPortMetadata>());
         metadata.when(
-          hardware: (_, __, ___) {
+          hardware: (_, _, _) {
             fail('Should be algorithm metadata');
           },
           algorithm: (algorithmId, parameterNumber, parameterName, busNumber, voiceNumber, channel) {
@@ -81,7 +81,7 @@ void main() {
 
         expect(metadata, isA<AlgorithmPortMetadata>());
         metadata.when(
-          hardware: (_, __, ___) {
+          hardware: (_, _, _) {
             fail('Should be algorithm metadata');
           },
           algorithm: (algorithmId, parameterNumber, parameterName, busNumber, voiceNumber, channel) {
@@ -106,7 +106,7 @@ void main() {
 
         final result = metadata.when(
           hardware: (busNumber, isInput, jackNumber) => 'hardware:$busNumber',
-          algorithm: (_, __, ___, ____, _____, ______) => 'algorithm',
+          algorithm: (_, _, _, _, _, _) => 'algorithm',
         );
 
         expect(result, 'hardware:5');
@@ -120,8 +120,8 @@ void main() {
         );
 
         final result = metadata.when(
-          hardware: (_, __, ___) => 'hardware',
-          algorithm: (algorithmId, _, __, ___, ____, _____) => 'algorithm:$algorithmId',
+          hardware: (_, _, _) => 'hardware',
+          algorithm: (algorithmId, _, _, _, _, _) => 'algorithm:$algorithmId',
         );
 
         expect(result, 'algorithm:algo_test');
@@ -135,7 +135,7 @@ void main() {
         );
 
         final hwResult = hwMetadata.maybeWhen(
-          hardware: (busNumber, _, __) => 'bus:$busNumber',
+          hardware: (busNumber, _, _) => 'bus:$busNumber',
           orElse: () => 'other',
         );
 
@@ -148,7 +148,7 @@ void main() {
         );
 
         final algoResult = algoMetadata.maybeWhen(
-          hardware: (_, __, ___) => 'hardware',
+          hardware: (_, _, _) => 'hardware',
           orElse: () => 'other',
         );
 

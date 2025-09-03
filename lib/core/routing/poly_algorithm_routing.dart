@@ -526,9 +526,13 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       
       if (isOutput) {
         // Add channel metadata for stereo outputs
-        if (lowerName.contains('left')) port['channel'] = 'left';
-        else if (lowerName.contains('right')) port['channel'] = 'right';
-        else if (lowerName.contains('mono')) port['channel'] = 'mono';
+        if (lowerName.contains('left')) {
+          port['channel'] = 'left';
+        } else if (lowerName.contains('right')) {
+          port['channel'] = 'right';
+        } else if (lowerName.contains('mono')) {
+          port['channel'] = 'mono';
+        }
         
         // Apply output mode if available
         if (modeParameters != null) {

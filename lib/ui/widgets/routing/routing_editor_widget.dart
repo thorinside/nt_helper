@@ -43,8 +43,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   final Map<String, Offset> _nodePositions = {};
   final Map<String, Offset> _portPositions = {};  // Store actual port positions
   final Set<String> _selectedNodes = {};
-  String? _selectedConnectionId;
-  bool _initialPortsResolved = false;  // Track if initial port positions are resolved
   
   String? _connectionSourcePortId;
   Offset? _dragPosition;
@@ -143,7 +141,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         if (shouldRebuild && current is RoutingEditorStateLoaded) {
           _portPositions.clear();
           _portsReady = false;
-          _initialPortsResolved = false;
         }
         
         return shouldRebuild;
@@ -656,7 +653,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   void _handlePortDragUpdate(core_port.Port port, Offset position) { /* same logic */ }
   void _handlePortDragEnd(core_port.Port port, Offset position) { /* same logic */ }
   void _handleNodeTap(String nodeId) { /* same logic */ }
-  void _handleConnectionTap(String connectionId) { /* same logic */ }
   // Haptic feedback suppressed to reduce complexity
 
   bool _hasLoadedStateChanged(RoutingEditorStateLoaded previous, RoutingEditorStateLoaded current) { /* same as RoutingCanvas */
@@ -727,68 +723,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     cubit.onRemoveAlgorithm(algorithmIndex);
   }
 
-  core_port.Port? _findPortById(String portId) {
-    final state = context.read<RoutingEditorCubit>().state;
-    if (state is! RoutingEditorStateLoaded) return null;
-    for (final port in state.physicalInputs) {
-      if (port.id == portId) {
-        return core_port.Port(
-          id: port.id,
-          name: port.name,
-          type: _mapUiToCoreType(port.type),
-          direction: core_port.PortDirection.output,
-          metadata: {'isPhysical': true, 'jackType': 'input'},
-        );
-      }
-    }
-    for (final port in state.physicalOutputs) {
-      if (port.id == portId) {
-        return core_port.Port(
-          id: port.id,
-          name: port.name,
-          type: _mapUiToCoreType(port.type),
-          direction: core_port.PortDirection.input,
-          metadata: {'isPhysical': true, 'jackType': 'output'},
-        );
-      }
-    }
-    // Algorithm ports
-    for (final algo in state.algorithms) {
-      for (final p in algo.inputPorts) {
-        if (p.id == portId) {
-          return core_port.Port(
-            id: p.id,
-            name: p.name,
-            type: _mapUiToCoreType(p.type),
-            direction: core_port.PortDirection.input,
-          );
-        }
-      }
-      for (final p in algo.outputPorts) {
-        if (p.id == portId) {
-          return core_port.Port(
-            id: p.id,
-            name: p.name,
-            type: _mapUiToCoreType(p.type),
-            direction: core_port.PortDirection.output,
-          );
-        }
-      }
-    }
-    return null;
-  }
-  core_port.PortType _mapUiToCoreType(PortType type) { /* same mapping as canvas */
-    switch (type) {
-      case PortType.audio:
-        return core_port.PortType.audio;
-      case PortType.cv:
-        return core_port.PortType.cv;
-      case PortType.gate:
-        return core_port.PortType.gate;
-      case PortType.trigger:
-        return core_port.PortType.clock;
-    }
-  }
   Offset? _getPortPosition(String portId) {
     // First check if we have a stored position from the actual widget
     if (_portPositions.containsKey(portId)) {
@@ -868,28 +802,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
 
-  /// Get the position for a physical output based on bus number
-  Offset? _getPhysicalOutputPosition(int busNumber) {
-    // Physical outputs use bus numbers to determine which output port
-    // For buses 13-20: map to physical outputs O1-O8
-    if (busNumber >= 13 && busNumber <= 20) {
-      final outputIndex = busNumber - 13; // Convert to 0-7 index
-      final outputPortId = 'output_${outputIndex + 1}'; // O1, O2, ... O8
-      return _getPortPosition(outputPortId);
-    }
-    
-    // For other bus numbers, try direct mapping to physical outputs
-    // This handles cases where algorithms output directly to numbered buses
-    final physicalOutputId = 'physical_output_$busNumber';
-    final position = _getPortPosition(physicalOutputId);
-    if (position != null) {
-      return position;
-    }
-    
-    // Fallback: try to find any physical output port
-    final outputPortId = 'output_$busNumber';
-    return _getPortPosition(outputPortId);
-  }
 
   /// Create a theme for a specific algorithm connection type
 
@@ -908,13 +820,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       _portPositions[portId] = local;
       
       // If ports aren't ready yet, check if we have enough positions to start rendering
-      if (!_portsReady && _portPositions.length > 0) {
+      if (!_portsReady && _portPositions.isNotEmpty) {
         // Delay slightly to collect all port positions in the same frame
         Future.microtask(() {
           if (mounted && !_portsReady) {
             setState(() {
               _portsReady = true;
-              _initialPortsResolved = true;
             });
           }
         });

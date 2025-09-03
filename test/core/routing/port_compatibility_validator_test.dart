@@ -243,11 +243,13 @@ void main() {
             id: 'existing1',
             sourcePortId: 'audio_out',
             destinationPortId: 'other_input',
+            connectionType: ConnectionType.algorithmToAlgorithm,
           ),
           Connection(
             id: 'existing2',
             sourcePortId: 'other_output',
             destinationPortId: 'audio_in',
+            connectionType: ConnectionType.algorithmToAlgorithm,
           ),
         ];
 
