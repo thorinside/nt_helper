@@ -1,4 +1,9 @@
-part of 'routing_editor_cubit.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+
+part 'routing_editor_state.freezed.dart';
 
 /// Represents different types of ports in the routing system
 enum PortType {
@@ -14,13 +19,6 @@ enum PortDirection {
   output,
 }
 
-/// Represents output modes for bus assignments
-enum OutputMode {
-  /// Replace existing output signal
-  replace,
-  /// Mix with existing output signal
-  mix,
-}
 
 /// Represents status of a routing bus
 enum BusStatus {
@@ -45,52 +43,6 @@ sealed class Port with _$Port {
   }) = _Port;
 }
 
-/// Type of connection in the routing system
-enum ConnectionType {
-  hardwareInput,
-  hardwareOutput,
-  algorithmToAlgorithm,
-  partialOutputToBus,
-  partialBusToInput,
-}
-
-/// Type of signal 
-enum SignalType {
-  audio,
-  cv,
-  gate,
-  trigger,
-  unknown,
-}
-
-/// Represents a connection between two ports
-@freezed
-sealed class Connection with _$Connection {
-  const factory Connection({
-    required String id,
-    required String sourcePortId,
-    required String targetPortId,
-    required ConnectionType connectionType,
-    String? busId,
-    @Default(OutputMode.replace) OutputMode outputMode,
-    @Default(1.0) double gain,
-    @Default(false) bool isMuted,
-    @Default(false) bool isGhostConnection,
-    @Default(false) bool isPartial, // Whether this is a partial connection
-    int? busNumber, // Bus number (1-12 for inputs, 13-20 for outputs, 21+ for algorithm buses)
-    String? busLabel, // Bus label for partial connections (e.g., "A1", "Out3")
-    String? algorithmId, // Algorithm identifier
-    int? algorithmIndex, // Algorithm slot index (0-7)
-    int? parameterNumber, // Parameter number for the port
-    String? parameterName, // Parameter name
-    String? portName, // Name of the port
-    SignalType? signalType, // Type of signal
-    @Default(false) bool isOutput, // Whether this is an output connection
-    @Default(false) bool isBackwardEdge, // Whether this is a backward edge
-    DateTime? createdAt,
-    DateTime? modifiedAt,
-  }) = _Connection;
-}
 
 /// Represents a routing bus for signal distribution
 @freezed
@@ -100,7 +52,7 @@ sealed class RoutingBus with _$RoutingBus {
     required String name,
     required BusStatus status,
     @Default([]) List<String> connectionIds,
-    @Default(OutputMode.replace) OutputMode defaultOutputMode,
+    @Default(core_port.OutputMode.replace) core_port.OutputMode defaultOutputMode,
     @Default(1.0) double masterGain,
     DateTime? createdAt,
     DateTime? modifiedAt,
@@ -152,7 +104,7 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     required List<RoutingAlgorithm> algorithms, // Algorithms with their ports
     required List<Connection> connections, // All routing connections
     @Default([]) List<RoutingBus> buses, // Available routing buses
-    @Default({}) Map<String, OutputMode> portOutputModes, // Output modes per port
+    @Default({}) Map<String, core_port.OutputMode> portOutputModes, // Output modes per port
     @Default(false) bool isHardwareSynced, // Hardware sync status
     @Default(false) bool isPersistenceEnabled, // State persistence status
     DateTime? lastSyncTime, // Last hardware sync timestamp
@@ -162,4 +114,5 @@ sealed class RoutingEditorState with _$RoutingEditorState {
 
   /// State when an error occurs
   const factory RoutingEditorState.error(String message) = RoutingEditorStateError;
+
 }

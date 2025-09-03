@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'port.dart';
 
 part 'connection.freezed.dart';
 part 'connection.g.dart';
@@ -96,6 +97,9 @@ sealed class Connection with _$Connection {
     /// Bus number for connections (1-12 for inputs, 13-20 for outputs, 21+ for algorithm buses)
     int? busNumber,
     
+    /// Optional bus ID for UI routing buses
+    String? busId,
+    
     /// Bus label for rendering (e.g., "A1", "Out3")
     String? busLabel,
     
@@ -123,6 +127,9 @@ sealed class Connection with _$Connection {
     /// Whether this is a backward edge (for algorithm connections)
     @Default(false) bool isBackwardEdge,
     
+    /// Output mode for the source port (add or replace)
+    OutputMode? outputMode,
+    
     /// Optional name for the connection
     String? name,
     
@@ -134,6 +141,9 @@ sealed class Connection with _$Connection {
     
     /// Whether the connection is muted
     @Default(false) bool isMuted,
+    
+    /// Whether this is a ghost connection (for UI visualization)
+    @Default(false) bool isGhostConnection,
     
     /// Whether the connection is inverted
     @Default(false) bool isInverted,

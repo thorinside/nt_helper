@@ -114,7 +114,7 @@ class ConnectionDiscoveryService {
     for (final port in ports) {
       final busValue = port.metadata?['busValue'] as int?;
       if (busValue != null && busValue > 0) {
-        debugPrint('[ConnectionDiscovery]   ${isOutput ? 'Output' : 'Input'} port ${port.id}: bus=$busValue');
+        debugPrint('[ConnectionDiscovery]   ${isOutput ? 'Output' : 'Input'} port ${port.id}: bus=$busValue, outputMode=${port.outputMode}');
         busRegistry.putIfAbsent(busValue, () => []).add(
           _PortAssignment(
             algorithmId: algorithmId,
@@ -126,6 +126,7 @@ class ConnectionDiscoveryService {
             isOutput: isOutput,
             portType: port.type,
             busValue: busValue,
+            outputMode: port.outputMode,
           ),
         );
       }
@@ -171,6 +172,7 @@ class ConnectionDiscoveryService {
         parameterNumber: output.parameterNumber,
         signalType: _toSignalType(output.portType),
         isOutput: true,
+        outputMode: output.outputMode,
       ));
     }
     
@@ -207,6 +209,7 @@ class ConnectionDiscoveryService {
             signalType: _toSignalType(output.portType),
             isBackwardEdge: isBackwardEdge,
             isOutput: true,
+            outputMode: output.outputMode,
           ));
         }
       }
@@ -390,6 +393,7 @@ class _PortAssignment {
   final bool isOutput;
   final PortType portType;
   final int busValue;
+  final OutputMode? outputMode;
   
   _PortAssignment({
     required this.algorithmId,
@@ -401,5 +405,6 @@ class _PortAssignment {
     required this.isOutput,
     required this.portType,
     required this.busValue,
+    this.outputMode,
   });
 }

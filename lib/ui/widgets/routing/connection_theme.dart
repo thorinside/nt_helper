@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
+import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 
 /// Visual styling configuration for different connection types
@@ -77,7 +77,7 @@ class ConnectionVisualTheme {
 
   /// Get the appropriate style for a connection based on its state
   ConnectionStyle getStyleForConnection({
-    required routing.Connection connection,
+    required Connection connection,
     required bool isSelected,
     required bool isHighlighted,
     required bool hasError,
@@ -223,7 +223,7 @@ class ConnectionStateManager {
         errorConnectionIds = errorConnectionIds ?? {};
 
   /// Get the visual style for a specific connection
-  ConnectionStyle getConnectionStyle(routing.Connection connection) {
+  ConnectionStyle getConnectionStyle(Connection connection) {
     return theme.getStyleForConnection(
       connection: connection,
       isSelected: selectedConnectionIds.contains(connection.id),

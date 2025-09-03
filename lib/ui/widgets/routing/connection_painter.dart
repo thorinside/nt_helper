@@ -1,7 +1,7 @@
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
+import 'package:nt_helper/core/routing/models/connection.dart'
+  show Connection, ConnectionType;
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'ghost_connection_tooltip.dart';
 import 'connection_theme.dart';
@@ -9,7 +9,7 @@ import 'bus_label_formatter.dart';
 
 /// Represents connection data with bus and output mode information
 class ConnectionData {
-  final routing.Connection connection;
+  final Connection connection;
   final Offset sourcePosition;
   final Offset destinationPosition;
   final int? busNumber;
@@ -93,11 +93,11 @@ class ConnectionPainter extends CustomPainter {
     }
 
     // Draw in order: regular -> ghost -> invalid -> partial -> selected (for proper layering)
-    _drawConnectionBatch(canvas, regularConnections, ConnectionType.regular);
-    _drawConnectionBatch(canvas, ghostConnections, ConnectionType.ghost);
-    _drawConnectionBatch(canvas, invalidConnections, ConnectionType.invalid);
-    _drawConnectionBatch(canvas, partialConnections, ConnectionType.partial);
-    _drawConnectionBatch(canvas, selectedConnections, ConnectionType.selected);
+    _drawConnectionBatch(canvas, regularConnections, ConnectionVisualType.regular);
+    _drawConnectionBatch(canvas, ghostConnections, ConnectionVisualType.ghost);
+    _drawConnectionBatch(canvas, invalidConnections, ConnectionVisualType.invalid);
+    _drawConnectionBatch(canvas, partialConnections, ConnectionVisualType.partial);
+    _drawConnectionBatch(canvas, selectedConnections, ConnectionVisualType.selected);
 
     // Draw labels last so they appear on top (skip partial connections as they have their own labels)
     if (showLabels) {
@@ -114,7 +114,7 @@ class ConnectionPainter extends CustomPainter {
   void _drawConnectionBatch(
     Canvas canvas,
     List<ConnectionData> batch,
-    ConnectionType type,
+    ConnectionVisualType type,
   ) {
     if (batch.isEmpty) return;
 
@@ -126,7 +126,7 @@ class ConnectionPainter extends CustomPainter {
     for (final conn in batch) {
       // Calculate path - special handling for partial connections
       Path path;
-      if (type == ConnectionType.partial) {
+      if (type == ConnectionVisualType.partial) {
         // For partial connections, create a short straight line to the label
         path = _createPartialConnectionPath(conn);
       } else {
@@ -140,16 +140,16 @@ class ConnectionPainter extends CustomPainter {
       _applyConnectionStyle(paint, conn, type);
 
       // Draw the connection
-      if (type == ConnectionType.ghost) {
+      if (type == ConnectionVisualType.ghost) {
         _drawDashedPath(canvas, path, paint);
         
         // Draw animated flow effects if enabled
         if (enableAnimations && animationProgress != null) {
           _drawAnimatedFlow(canvas, path, conn);
         }
-      } else if (type == ConnectionType.invalid) {
+      } else if (type == ConnectionVisualType.invalid) {
         _drawDashedPath(canvas, path, paint);
-      } else if (type == ConnectionType.partial) {
+      } else if (type == ConnectionVisualType.partial) {
         _drawDashedPath(canvas, path, paint);
         
         // Draw bus label at the endpoint for partial connections
@@ -159,7 +159,7 @@ class ConnectionPainter extends CustomPainter {
       }
 
       // Draw endpoints (skip for partial connections)
-      if (type != ConnectionType.partial) {
+      if (type != ConnectionVisualType.partial) {
         _drawEndpoints(canvas, conn);
       }
     }
@@ -278,10 +278,10 @@ class ConnectionPainter extends CustomPainter {
   void _applyConnectionStyle(
     Paint paint,
     ConnectionData conn,
-    ConnectionType type,
+    ConnectionVisualType type,
   ) {
     // Handle invalid connections with error color
-    if (type == ConnectionType.invalid) {
+    if (type == ConnectionVisualType.invalid) {
       paint
         ..strokeWidth = 2.0
         ..color = theme.colorScheme.error;
@@ -289,7 +289,7 @@ class ConnectionPainter extends CustomPainter {
     }
     
     // Handle partial connections with distinctive styling
-    if (type == ConnectionType.partial) {
+    if (type == ConnectionVisualType.partial) {
       paint
         ..strokeWidth = 2.0
         ..color = theme.colorScheme.onSurface.withValues(alpha: 0.6);
@@ -447,7 +447,9 @@ class ConnectionPainter extends CustomPainter {
     }
 
     // Use BusLabelFormatter to get the label with mode-aware formatting
+    debugPrint('ConnectionPainter: Formatting label for bus ${conn.busNumber} with outputMode ${conn.outputMode}');
     final label = formatBusLabelWithMode(conn.busNumber, conn.outputMode);
+    debugPrint('ConnectionPainter: Generated label: "$label"');
     if (label.isEmpty) {
       debugPrint('ConnectionPainter: Empty label for bus ${conn.busNumber}');
       return;
@@ -513,7 +515,7 @@ class ConnectionPainter extends CustomPainter {
 
     // Determine which end has the label
     final connectionType = conn.connection.connectionType;
-    final isOutputTobus = connectionType == routing.ConnectionType.partialOutputToBus;
+    final isOutputTobus = connectionType == ConnectionType.partialOutputToBus;
     
     // The label position is at the destination for outputs, source for inputs
     final labelCenter = isOutputTobus ? conn.destinationPosition : conn.sourcePosition;
@@ -649,7 +651,7 @@ class ConnectionPainter extends CustomPainter {
 }
 
 /// Connection type for visual styling
-enum ConnectionType {
+enum ConnectionVisualType {
   regular,
   ghost,
   invalid,

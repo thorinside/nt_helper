@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/routing/models/connection.dart';
 // Haptics can be reintroduced later if needed
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
@@ -501,7 +503,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           }
         } else if (connectionType == ConnectionType.partialBusToInput) {
           // Destination is the actual input port
-          targetPosition = _getPortPosition(connection.targetPortId);
+          targetPosition = _getPortPosition(connection.destinationPortId);
           // For source, create a position 75px to the left for the label
           if (targetPosition != null) {
             sourcePosition = Offset(targetPosition.dx - 75, targetPosition.dy);
@@ -510,7 +512,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       } else {
         // Regular connection handling
         sourcePosition = _getPortPosition(connection.sourcePortId);
-        targetPosition = _getPortPosition(connection.targetPortId);
+        targetPosition = _getPortPosition(connection.destinationPortId);
       }
       
       if (sourcePosition == null || targetPosition == null) {
@@ -548,7 +550,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         sourcePosition: sourcePosition,
         destinationPosition: targetPosition,
         busNumber: busNumber,
-        outputMode: _mapOutputMode(connection.outputMode),
+        outputMode: connection.outputMode,
         isSelected: false,
         isHighlighted: false,
         isPhysicalConnection: isPhysicalConnection,
@@ -584,9 +586,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final tempConnection = Connection(
       id: 'temp_connection',
       sourcePortId: _connectionSourcePortId!,
-      targetPortId: 'temp_target',
+      destinationPortId: 'temp_target',
       connectionType: ConnectionType.algorithmToAlgorithm,
-      isGhostConnection: true, // Show as dashed line during drag
     );
     
     final connectionData = painter.ConnectionData(
@@ -694,7 +695,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (i >= previous.connections.length) return true;
       final prev = previous.connections[i];
       final curr = current.connections[i];
-      if (prev.sourcePortId != curr.sourcePortId || prev.targetPortId != curr.targetPortId) {
+      if (prev.sourcePortId != curr.sourcePortId || prev.destinationPortId != curr.destinationPortId) {
         return true;
       }
     }
@@ -918,15 +919,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
   }
 
-  /// Maps cubit OutputMode to core routing OutputMode
-  core_port.OutputMode? _mapOutputMode(OutputMode outputMode) {
-    switch (outputMode) {
-      case OutputMode.mix:
-        return core_port.OutputMode.add;
-      case OutputMode.replace:
-        return core_port.OutputMode.replace;
-    }
-  }
 }
 
 class _CanvasGridPainter extends CustomPainter { /* same as canvas */

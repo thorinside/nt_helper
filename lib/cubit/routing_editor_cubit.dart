@@ -3,20 +3,17 @@ import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
-import 'package:nt_helper/core/routing/models/connection.dart' as core_routing;
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-part 'routing_editor_cubit.freezed.dart';
+import 'routing_editor_state.dart';
 
-part 'routing_editor_state.dart';
 
 /// Cubit that manages the state of the routing editor.
 ///
@@ -119,6 +116,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// DistingCubit's synchronized state changes, ensuring physical connection discovery
   /// only runs when algorithm parameters or slots change, not on every UI rebuild.
   void _processSynchronizedState(List<Slot> slots) {
+    debugPrint('[RoutingEditor] Processing synchronized state with ${slots.length} slots');
     try {
       // Create physical hardware ports
       final physicalInputs = _createPhysicalInputPorts();
@@ -179,39 +177,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Use the ConnectionDiscoveryService to discover connections from AlgorithmRouting instances
-      final unifiedConnections = ConnectionDiscoveryService.discoverConnections(
+      final discoveredConnections = ConnectionDiscoveryService.discoverConnections(
         routings,
       );
-
-      // Convert core connections to UI connections
-      final discoveredConnections = unifiedConnections
-          .map(
-            (coreConn) => Connection(
-              id: coreConn.id,
-              sourcePortId: coreConn.sourcePortId,
-              targetPortId: coreConn.destinationPortId,
-              connectionType: _mapConnectionType(coreConn.connectionType),
-              busId: coreConn.busNumber != null
-                  ? 'bus_${coreConn.busNumber}'
-                  : null,
-              outputMode: OutputMode.replace,
-              gain: coreConn.gain,
-              isMuted: coreConn.isMuted,
-              isGhostConnection: false,
-              isPartial: coreConn.isPartial,
-              busNumber: coreConn.busNumber,
-              busLabel: coreConn.busLabel,
-              algorithmId: coreConn.algorithmId,
-              algorithmIndex: coreConn.algorithmIndex,
-              parameterNumber: coreConn.parameterNumber,
-              parameterName: coreConn.parameterName,
-              portName: coreConn.portName,
-              signalType: _mapSignalType(coreConn.signalType),
-              isOutput: coreConn.isOutput,
-              isBackwardEdge: coreConn.isBackwardEdge,
-            ),
-          )
-          .toList();
 
       // Validate connections for slot ordering violations
       final connections = ConnectionValidator.validateConnections(
@@ -392,7 +360,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     required String sourcePortId,
     required String targetPortId,
     String? busId,
-    OutputMode outputMode = OutputMode.replace,
+    core_port.OutputMode outputMode = core_port.OutputMode.replace,
     double gain = 1.0,
   }) async {
     final currentState = state;
@@ -457,12 +425,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final newConnection = Connection(
         id: connectionId,
         sourcePortId: sourcePortId,
-        targetPortId: targetPortId,
+        destinationPortId: targetPortId,
         connectionType: connectionType,
-        busId: busId,
         outputMode: outputMode,
         gain: gain,
-        isGhostConnection: isGhostConnection,
         createdAt: DateTime.now(),
       );
 
@@ -540,7 +506,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
       final targetPort = _findPortById(
         currentState,
-        connectionToDelete.targetPortId,
+        connectionToDelete.destinationPortId,
       );
       debugPrint(
         'Connection deleted: ${sourcePort?.name} -> ${targetPort?.name}',
@@ -567,7 +533,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           .where(
             (connection) =>
                 connection.sourcePortId == portId ||
-                connection.targetPortId == portId,
+                connection.destinationPortId == portId,
           )
           .toList();
 
@@ -596,7 +562,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   Future<void> updateConnection({
     required String connectionId,
     String? busId,
-    OutputMode? outputMode,
+    core_port.OutputMode? outputMode,
     double? gain,
     bool? isMuted,
   }) async {
@@ -640,38 +606,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
-  /// Maps core ConnectionType to UI ConnectionType
-  ConnectionType _mapConnectionType(core_routing.ConnectionType coreType) {
-    switch (coreType) {
-      case core_routing.ConnectionType.hardwareInput:
-        return ConnectionType.hardwareInput;
-      case core_routing.ConnectionType.hardwareOutput:
-        return ConnectionType.hardwareOutput;
-      case core_routing.ConnectionType.algorithmToAlgorithm:
-        return ConnectionType.algorithmToAlgorithm;
-      case core_routing.ConnectionType.partialOutputToBus:
-        return ConnectionType.partialOutputToBus;
-      case core_routing.ConnectionType.partialBusToInput:
-        return ConnectionType.partialBusToInput;
-    }
-  }
-
-  /// Maps core SignalType to UI SignalType
-  SignalType? _mapSignalType(core_routing.SignalType? coreType) {
-    if (coreType == null) return null;
-    switch (coreType) {
-      case core_routing.SignalType.audio:
-        return SignalType.audio;
-      case core_routing.SignalType.cv:
-        return SignalType.cv;
-      case core_routing.SignalType.gate:
-        return SignalType.gate;
-      case core_routing.SignalType.trigger:
-        return SignalType.trigger;
-      case core_routing.SignalType.unknown:
-        return SignalType.unknown;
-    }
-  }
 
   /// Helper method to find a port by ID across all port lists
   Port? _findPortById(RoutingEditorStateLoaded state, String portId) {
@@ -770,7 +704,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return state.connections.firstWhere(
         (connection) =>
             connection.sourcePortId == sourcePortId &&
-            connection.targetPortId == targetPortId,
+            connection.destinationPortId == targetPortId,
       );
     } catch (e) {
       return null;
@@ -780,7 +714,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Create a new routing bus
   Future<void> createBus({
     required String name,
-    OutputMode defaultOutputMode = OutputMode.replace,
+    core_port.OutputMode defaultOutputMode = core_port.OutputMode.replace,
     double masterGain = 1.0,
   }) async {
     final currentState = state;
@@ -867,7 +801,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   Future<void> assignConnectionToBus({
     required String connectionId,
     required String busId,
-    OutputMode? outputMode,
+    core_port.OutputMode? outputMode,
   }) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) {
@@ -1029,7 +963,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Set output mode for a specific port
   Future<void> setPortOutputMode({
     required String portId,
-    required OutputMode outputMode,
+    required core_port.OutputMode outputMode,
   }) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) {
@@ -1058,17 +992,26 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Update port output modes
-      final updatedPortOutputModes = Map<String, OutputMode>.from(
+      final updatedPortOutputModes = Map<String, core_port.OutputMode>.from(
         currentState.portOutputModes,
       );
       updatedPortOutputModes[portId] = outputMode;
 
-      emit(
-        currentState.copyWith(
-          portOutputModes: updatedPortOutputModes,
-          lastError: null,
-        ),
-      );
+        // Update connections that use this port as source
+        final updatedConnections = currentState.connections.map((conn) {
+          if (conn.sourcePortId == portId) {
+            return conn.copyWith(outputMode: outputMode);
+          }
+          return conn;
+        }).toList();
+
+        emit(
+          currentState.copyWith(
+            portOutputModes: updatedPortOutputModes,
+            connections: updatedConnections,
+            lastError: null,
+          ),
+        );
 
       debugPrint('Port output mode set: ${port.name} -> $outputMode');
     } catch (e) {
@@ -1078,19 +1021,19 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   }
 
   /// Get output mode for a specific port
-  OutputMode getPortOutputMode(String portId) {
+  core_port.OutputMode getPortOutputMode(String portId) {
     final currentState = state;
     if (currentState is RoutingEditorStateLoaded) {
-      return currentState.portOutputModes[portId] ?? OutputMode.replace;
+      return currentState.portOutputModes[portId] ?? core_port.OutputMode.replace;
     }
-    return OutputMode.replace;
+    return core_port.OutputMode.replace;
   }
 
   /// Update bus properties
   Future<void> updateBus({
     required String busId,
     String? name,
-    OutputMode? defaultOutputMode,
+    core_port.OutputMode? defaultOutputMode,
     double? masterGain,
   }) async {
     final currentState = state;
@@ -1166,7 +1109,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           id: 'bus_audio_main',
           name: 'Audio Main',
           status: BusStatus.available,
-          defaultOutputMode: OutputMode.mix,
+          defaultOutputMode: core_port.OutputMode.add,
           masterGain: 1.0,
           createdAt: DateTime.now(),
         ),
@@ -1174,7 +1117,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           id: 'bus_cv_main',
           name: 'CV Main',
           status: BusStatus.available,
-          defaultOutputMode: OutputMode.replace,
+          defaultOutputMode: core_port.OutputMode.replace,
           masterGain: 1.0,
           createdAt: DateTime.now(),
         ),
@@ -1182,7 +1125,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           id: 'bus_gate_main',
           name: 'Gate/Trigger Main',
           status: BusStatus.available,
-          defaultOutputMode: OutputMode.replace,
+          defaultOutputMode: core_port.OutputMode.replace,
           masterGain: 1.0,
           createdAt: DateTime.now(),
         ),
@@ -1361,9 +1304,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               (connection) => {
                 'id': connection.id,
                 'sourcePortId': connection.sourcePortId,
-                'targetPortId': connection.targetPortId,
+                'targetPortId': connection.destinationPortId,
                 'busId': connection.busId,
-                'outputMode': connection.outputMode.name,
+                'outputMode': connection.outputMode?.name,
                 'gain': connection.gain,
                 'isMuted': connection.isMuted,
                 'createdAt': connection.createdAt?.toIso8601String(),
@@ -1436,15 +1379,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           Connection(
             id: connectionMap['id'] as String,
             sourcePortId: connectionMap['sourcePortId'] as String,
-            targetPortId: connectionMap['targetPortId'] as String,
+            destinationPortId: connectionMap['targetPortId'] as String,
             connectionType: ConnectionType.values.firstWhere(
               (type) => type.name == connectionMap['connectionType'],
               orElse: () => ConnectionType.algorithmToAlgorithm,
             ),
-            busId: connectionMap['busId'] as String?,
-            outputMode: OutputMode.values.firstWhere(
+            outputMode: core_port.OutputMode.values.firstWhere(
               (mode) => mode.name == connectionMap['outputMode'],
-              orElse: () => OutputMode.replace,
+              orElse: () => core_port.OutputMode.replace,
             ),
             gain: (connectionMap['gain'] as num?)?.toDouble() ?? 1.0,
             isMuted: connectionMap['isMuted'] as bool? ?? false,
@@ -1471,9 +1413,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               orElse: () => BusStatus.available,
             ),
             connectionIds: (busMap['connectionIds'] as List).cast<String>(),
-            defaultOutputMode: OutputMode.values.firstWhere(
+            defaultOutputMode: core_port.OutputMode.values.firstWhere(
               (mode) => mode.name == busMap['defaultOutputMode'],
-              orElse: () => OutputMode.replace,
+              orElse: () => core_port.OutputMode.replace,
             ),
             masterGain: (busMap['masterGain'] as num?)?.toDouble() ?? 1.0,
             createdAt: busMap['createdAt'] != null
@@ -1487,14 +1429,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Parse port output modes
-      final portOutputModes = <String, OutputMode>{};
+      final portOutputModes = <String, core_port.OutputMode>{};
       final portModeData =
           stateData['portOutputModes'] as Map<String, dynamic>?;
       if (portModeData != null) {
         for (final entry in portModeData.entries) {
-          portOutputModes[entry.key] = OutputMode.values.firstWhere(
+          portOutputModes[entry.key] = core_port.OutputMode.values.firstWhere(
             (mode) => mode.name == entry.value,
-            orElse: () => OutputMode.replace,
+            orElse: () => core_port.OutputMode.replace,
           );
         }
       }

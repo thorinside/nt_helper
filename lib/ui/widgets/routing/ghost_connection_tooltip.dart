@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
+import 'package:nt_helper/core/routing/models/connection.dart';
 
 /// A specialized tooltip widget for explaining ghost connections
 /// 
@@ -8,7 +8,7 @@ import 'package:nt_helper/cubit/routing_editor_cubit.dart' as routing;
 /// to help users understand the difference between ghost and direct connections.
 class GhostConnectionTooltip extends StatefulWidget {
   /// The connection to show tooltip information for
-  final routing.Connection connection;
+  final Connection connection;
   
   /// The child widget that triggers the tooltip on hover
   final Widget child;

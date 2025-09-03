@@ -1,4 +1,5 @@
-import 'package:nt_helper/cubit/routing_editor_cubit.dart';
+import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/cubit/routing_editor_state.dart';
 
 /// Validates connections for slot ordering violations.
 /// 
@@ -38,7 +39,7 @@ class ConnectionValidator {
         algorithms,
       );
       final targetIndex = findAlgorithmIndex(
-        connection.targetPortId,
+        connection.destinationPortId,
         algorithms,
       );
       
@@ -67,8 +68,8 @@ class ConnectionValidator {
   static bool isPhysicalConnection(Connection connection) {
     return connection.sourcePortId.startsWith('hw_in_') ||
            connection.sourcePortId.startsWith('hw_out_') ||
-           connection.targetPortId.startsWith('hw_in_') ||
-           connection.targetPortId.startsWith('hw_out_');
+           connection.destinationPortId.startsWith('hw_in_') ||
+           connection.destinationPortId.startsWith('hw_out_');
   }
   
   /// Finds the algorithm index (slot number) for a given port ID.
