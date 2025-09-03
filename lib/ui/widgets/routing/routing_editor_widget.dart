@@ -695,7 +695,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (i >= previous.connections.length) return true;
       final prev = previous.connections[i];
       final curr = current.connections[i];
-      if (prev.sourcePortId != curr.sourcePortId || prev.destinationPortId != curr.destinationPortId) {
+      if (prev.sourcePortId != curr.sourcePortId || 
+          prev.destinationPortId != curr.destinationPortId ||
+          prev.outputMode != curr.outputMode ||
+          prev.gain != curr.gain ||
+          prev.isMuted != curr.isMuted ||
+          prev.busNumber != curr.busNumber ||
+          prev.busLabel != curr.busLabel) {
         return true;
       }
     }
