@@ -1143,6 +1143,12 @@ class DistingCubit extends Cubit<DistingState> {
     }();
   }
 
+  // Public method to trigger algorithm list refresh from UI
+  void refreshAlgorithms() {
+    debugPrint("[DistingCubit] Manual algorithm refresh requested from UI");
+    _refreshAlgorithmsInBackground();
+  }
+
   // Handle parameter string updates from the queue
   void _onParameterStringUpdated(
     int algorithmIndex,
