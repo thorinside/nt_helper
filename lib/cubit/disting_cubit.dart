@@ -3469,6 +3469,10 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     debugPrint("[DistingCubit] Successfully uploaded $fileName to $targetPath");
+    
+    // Refresh algorithm list to include newly installed plugin
+    _refreshAlgorithmsInBackground();
+    debugPrint("[DistingCubit] Triggered algorithm refresh after plugin installation");
   }
 
   /// Uploads a single chunk of file data.
