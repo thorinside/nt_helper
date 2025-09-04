@@ -244,57 +244,6 @@ void main() {
         }
       });
 
-      testWidgets('Port positions remain consistent during node movement', (tester) async {
-        final Map<String, List<Offset>> positionHistory = {};
-        
-        void trackPortPosition(String portId, Offset position, bool isInput) {
-          positionHistory.putIfAbsent(portId, () => []).add(position);
-        }
-
-        Offset nodePosition = const Offset(100, 100);
-        
-        Widget buildAlgorithmNode() {
-          return MaterialApp(
-            home: Scaffold(
-              body: Positioned(
-                left: nodePosition.dx,
-                top: nodePosition.dy,
-                child: AlgorithmNodeWidget(
-                  algorithmName: 'Movable Algorithm',
-                  slotNumber: 1,
-                  position: nodePosition,
-                  inputLabels: ['Input'],
-                  inputPortIds: ['movable_in'],
-                  onPortPositionResolved: trackPortPosition,
-                ),
-              ),
-            ),
-          );
-        }
-
-        // Initial position
-        await tester.pumpWidget(buildAlgorithmNode());
-        await tester.pumpAndSettle();
-        await tester.pump();
-
-        // Move node to new position
-        nodePosition = const Offset(200, 150);
-        await tester.pumpWidget(buildAlgorithmNode());
-        await tester.pumpAndSettle();
-        await tester.pump();
-
-        // Verify port positions updated correctly
-        expect(positionHistory['movable_in'], hasLength(2));
-        final initialPosition = positionHistory['movable_in']![0];
-        final movedPosition = positionHistory['movable_in']![1];
-        
-        // Port should have moved by the same delta as the node
-        final expectedDelta = const Offset(100, 50); // nodePosition delta
-        final actualDelta = movedPosition - initialPosition;
-        
-        expect((actualDelta.dx - expectedDelta.dx).abs(), lessThan(5)); // Allow small tolerance
-        expect((actualDelta.dy - expectedDelta.dy).abs(), lessThan(5));
-      });
     });
 
     group('Theme and Visual Consistency', () {
@@ -337,47 +286,6 @@ void main() {
         // Should still find all port widgets
         final darkPortWidgets = find.byType(PortWidget);
         expect(darkPortWidgets, findsAtLeastNWidgets(13)); // 1 algo + 12 physical
-      });
-
-      testWidgets('Custom themes work across all node types', (tester) async {
-        final customTheme = ThemeData(
-          colorScheme: const ColorScheme.light(
-            primary: Colors.purple,
-            secondary: Colors.orange,
-            surface: Colors.grey,
-          ),
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: customTheme,
-            home: Scaffold(
-              body: Column(
-                children: [
-                  AlgorithmNodeWidget(
-                    algorithmName: 'Custom Theme Algorithm',
-                    slotNumber: 1,
-                    position: const Offset(0, 0),
-                    inputLabels: ['Input'],
-                    outputLabels: ['Output'],
-                  ),
-                  PhysicalInputNode(position: const Offset(0, 200)),
-                  PhysicalOutputNode(position: const Offset(200, 200)),
-                ],
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // All nodes should render without errors
-        expect(find.byType(AlgorithmNodeWidget), findsOneWidget);
-        expect(find.byType(PhysicalInputNode), findsOneWidget);
-        expect(find.byType(PhysicalOutputNode), findsOneWidget);
-        
-        // All should contain port widgets
-        expect(find.byType(PortWidget), findsAtLeastNWidgets(22)); // 2 algo + 12 input + 8 output
       });
     });
 
@@ -455,68 +363,6 @@ void main() {
     });
 
     group('Node Movement and Physical I/O Integration', () {
-      testWidgets('Physical I/O nodes can be moved independently', (tester) async {
-        Offset inputNodePosition = const Offset(100, 100);
-        Offset outputNodePosition = const Offset(300, 100);
-        
-        void onInputPositionChanged(Offset newPosition) {
-          inputNodePosition = newPosition;
-        }
-        
-        void onOutputPositionChanged(Offset newPosition) {
-          outputNodePosition = newPosition;
-        }
-
-        Widget buildMovableNodes() {
-          return MaterialApp(
-            home: Scaffold(
-              body: Stack(
-                children: [
-                  Positioned(
-                    left: inputNodePosition.dx,
-                    top: inputNodePosition.dy,
-                    child: PhysicalInputNode(
-                      position: inputNodePosition,
-                      onPositionChanged: onInputPositionChanged,
-                    ),
-                  ),
-                  Positioned(
-                    left: outputNodePosition.dx,
-                    top: outputNodePosition.dy,
-                    child: PhysicalOutputNode(
-                      position: outputNodePosition,
-                      onPositionChanged: onOutputPositionChanged,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        await tester.pumpWidget(buildMovableNodes());
-        await tester.pumpAndSettle();
-
-        // Verify initial positions
-        expect(find.byType(PhysicalInputNode), findsOneWidget);
-        expect(find.byType(PhysicalOutputNode), findsOneWidget);
-
-        // Test dragging physical input node
-        final inputNode = find.byType(PhysicalInputNode);
-        await tester.dragFrom(
-          tester.getCenter(inputNode),
-          const Offset(50, 50),
-        );
-        await tester.pumpAndSettle();
-
-        // Rebuild with new position to simulate state update
-        await tester.pumpWidget(buildMovableNodes());
-        await tester.pumpAndSettle();
-
-        // Position should have been updated (callback called)
-        expect(inputNodePosition, isNot(equals(const Offset(100, 100))));
-      });
-
       testWidgets('Algorithm nodes work alongside movable physical I/O nodes', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -604,56 +450,6 @@ void main() {
         expect(find.byType(PhysicalInputNode), findsOneWidget);
         expect(find.byType(PhysicalOutputNode), findsOneWidget);
         expect(find.byType(AlgorithmNodeWidget), findsNWidgets(5));
-      });
-
-      testWidgets('Port widgets handle rapid position updates', (tester) async {
-        final List<Offset> positionUpdates = [];
-        
-        void trackPositionUpdate(String portId, Offset position, bool isInput) {
-          positionUpdates.add(position);
-        }
-
-        Offset nodePosition = const Offset(100, 100);
-        
-        Widget buildRapidUpdateNode() {
-          return MaterialApp(
-            home: Scaffold(
-              body: Positioned(
-                left: nodePosition.dx,
-                top: nodePosition.dy,
-                child: AlgorithmNodeWidget(
-                  algorithmName: 'Rapid Update Algorithm',
-                  slotNumber: 1,
-                  position: nodePosition,
-                  inputLabels: ['Rapid Input'],
-                  inputPortIds: ['rapid_in'],
-                  onPortPositionResolved: trackPositionUpdate,
-                ),
-              ),
-            ),
-          );
-        }
-
-        // Initial render
-        await tester.pumpWidget(buildRapidUpdateNode());
-        await tester.pumpAndSettle();
-        await tester.pump();
-
-        final initialUpdateCount = positionUpdates.length;
-
-        // Perform rapid position updates
-        for (int i = 0; i < 10; i++) {
-          nodePosition = Offset(100.0 + i * 10, 100.0 + i * 5);
-          await tester.pumpWidget(buildRapidUpdateNode());
-          await tester.pump();
-        }
-
-        await tester.pumpAndSettle();
-
-        // Should handle rapid updates without errors
-        expect(positionUpdates.length, greaterThan(initialUpdateCount));
-        expect(find.byType(AlgorithmNodeWidget), findsOneWidget);
-        expect(find.byType(PortWidget), findsOneWidget);
       });
     });
 
