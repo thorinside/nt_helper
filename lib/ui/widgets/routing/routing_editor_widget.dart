@@ -370,6 +370,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         top: nodePosition.dy,
         child: PhysicalInputNode(
           position: nodePosition,
+          onPositionChanged: (newPosition) {
+            setState(() {
+              _nodePositions['physical_inputs'] = newPosition;
+            });
+          },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
           onDragStart: (port) => _handlePortDragStart(port),
@@ -377,6 +382,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
           onPortPositionResolved: (port, globalCenter) {
             _updatePortAnchor(port.id, globalCenter);
+          },
+          onNodeDragStart: () {
+            // Node drag start handler (could be used for visual feedback)
+          },
+          onNodeDragEnd: () {
+            // Node drag end handler (could be used for cleanup)
           },
         ),
       ),
@@ -397,6 +408,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         top: nodePosition.dy,
         child: PhysicalOutputNode(
           position: nodePosition,
+          onPositionChanged: (newPosition) {
+            setState(() {
+              _nodePositions['physical_outputs'] = newPosition;
+            });
+          },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
           onDragStart: (port) => _handlePortDragStart(port),
@@ -404,6 +420,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
           onPortPositionResolved: (port, globalCenter) {
             _updatePortAnchor(port.id, globalCenter);
+          },
+          onNodeDragStart: () {
+            // Node drag start handler (could be used for visual feedback)
+          },
+          onNodeDragEnd: () {
+            // Node drag end handler (could be used for cleanup)
           },
         ),
       ),

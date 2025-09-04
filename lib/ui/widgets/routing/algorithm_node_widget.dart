@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
+import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 // No direct dependency on RoutingEditorWidget static members
 
 /// A draggable widget representing an algorithm node in the routing editor.
@@ -243,57 +244,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
   
   Widget _buildPort(ThemeData theme, String label, bool isInput, {String? portId}) {
-    // Key to measure the dot center position
-    final dotKey = GlobalKey();
-    final widgetRow = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          if (!isInput) ...[
-            Text(
-              label,
-              style: theme.textTheme.labelSmall,
-            ),
-            const SizedBox(width: 4),
-          ],
-          Container(
-            key: dotKey,
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isInput ? theme.colorScheme.primary : theme.colorScheme.secondary,
-              border: Border.all(
-                color: theme.colorScheme.outline,
-                width: 1,
-              ),
-            ),
-          ),
-          if (isInput) ...[
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall,
-            ),
-          ],
-        ],
-      ),
+    return PortWidget(
+      label: label,
+      isInput: isInput,
+      portId: portId,
+      labelPosition: isInput ? PortLabelPosition.right : PortLabelPosition.left,
+      theme: theme,
+      onPortPositionResolved: widget.onPortPositionResolved,
     );
-    // Schedule anchor resolution after layout
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.onPortPositionResolved == null || portId == null) return;
-      final ctx = dotKey.currentContext;
-      if (ctx == null) return;
-      final render = ctx.findRenderObject() as RenderBox?;
-      if (render == null || !render.attached) return;
-      final topLeft = render.localToGlobal(Offset.zero);
-      final size = render.size; // 12x12
-      final center = topLeft + Offset(size.width / 2, size.height / 2);
-      widget.onPortPositionResolved!(portId, center, isInput);
-    });
-    return widgetRow;
   }
 
   String _truncateWithEllipsis(String text, int maxChars) {
