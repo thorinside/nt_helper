@@ -1143,6 +1143,12 @@ class DistingCubit extends Cubit<DistingState> {
     }();
   }
 
+  // Public method to trigger algorithm list refresh from UI
+  void refreshAlgorithms() {
+    debugPrint("[DistingCubit] Manual algorithm refresh requested from UI");
+    _refreshAlgorithmsInBackground();
+  }
+
   // Handle parameter string updates from the queue
   void _onParameterStringUpdated(
     int algorithmIndex,
@@ -3469,6 +3475,10 @@ class DistingCubit extends Cubit<DistingState> {
     }
 
     debugPrint("[DistingCubit] Successfully uploaded $fileName to $targetPath");
+    
+    // Refresh algorithm list to include newly installed plugin
+    _refreshAlgorithmsInBackground();
+    debugPrint("[DistingCubit] Triggered algorithm refresh after plugin installation");
   }
 
   /// Uploads a single chunk of file data.

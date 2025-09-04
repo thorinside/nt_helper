@@ -421,6 +421,22 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
         title: const Text('Add Algorithm'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Algorithm List',
+            onPressed: () {
+              // Call the refresh method from DistingCubit
+              context.read<DistingCubit>().refreshAlgorithms();
+              
+              // Show a brief feedback to user
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Refreshing algorithm list...'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () {
               showDialog(
