@@ -4,7 +4,6 @@ import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
-import 'package:nt_helper/core/routing/models/port.dart';
 
 /// Performance tests for drag operations and connection updates
 /// with the universal port widget architecture.
@@ -87,7 +86,7 @@ void main() {
           (find.byType(PhysicalOutputNode), 'physical_output'),
         ];
 
-        for (final (finder, nodeType) in nodes) {
+        for (final (finder, _) in nodes) {
           await tester.dragFrom(tester.getCenter(finder), const Offset(25, 25));
           await tester.pump(const Duration(milliseconds: 10)); // Rapid succession
         }

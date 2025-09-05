@@ -34,7 +34,7 @@ The routing editor uses a comprehensive object-oriented framework for data-drive
     - Hardware outputs: buses 13-20 connect algorithm ports to physical outputs  
     - Algorithm-to-algorithm: any shared bus creates connections between algorithms
   - `RoutingFactory` creates appropriate routing instances based on metadata
-  - `Port` and `Connection` models with rich metadata support
+  - `Port` and `Connection` models with typesafe direct properties
 - **State Management**: `RoutingEditorCubit` uses the OO framework to:
   - Call `AlgorithmRouting.fromSlot()` to create routing instances from live `Slot` data
   - Use `ConnectionDiscoveryService.discoverConnections()` for automatic connection discovery
@@ -118,6 +118,69 @@ Don't
 - Don't put routing decision logic in the visualization layer (`RoutingEditorWidget`)
 - Don't bypass the `AlgorithmRouting.fromSlot()` factory method - it ensures proper routing instance creation
 - Don't create manual connections - trust the automatic bus-based discovery system
+
+### Port Model Direct Properties
+
+The Port model uses typesafe direct properties instead of generic metadata maps. Examples of direct property access:
+
+**Polyphonic Properties:**
+```dart
+final port = Port(
+  id: 'poly_voice_1',
+  name: 'Voice 1 Gate',
+  type: PortType.gate,
+  direction: PortDirection.input,
+  isPolyVoice: true,
+  voiceNumber: 1,
+  busValue: 4,
+  isVirtualCV: false,
+);
+
+// Access properties directly
+if (port.isPolyVoice) {
+  final voice = port.voiceNumber; // Type-safe int?
+  final bus = port.busValue;      // Type-safe int?
+}
+```
+
+**Multi-Channel Properties:**
+```dart
+final stereoPort = Port(
+  id: 'stereo_left',
+  name: 'Channel 1 Left',
+  type: PortType.audio,
+  direction: PortDirection.input,
+  isMultiChannel: true,
+  channelNumber: 1,
+  isStereoChannel: true,
+  stereoSide: 'left',
+  isMasterMix: false,
+);
+
+// Check channel properties
+if (stereoPort.isMultiChannel && stereoPort.isStereoChannel) {
+  final side = stereoPort.stereoSide; // Type-safe String?
+  final channel = stereoPort.channelNumber; // Type-safe int?
+}
+```
+
+**Bus Assignment Properties:**
+```dart
+final busPort = Port(
+  id: 'cv_input',
+  name: 'CV Input',
+  type: PortType.cv,
+  direction: PortDirection.input,
+  busValue: 5,
+  busParam: 'frequency',
+  parameterNumber: 10,
+);
+
+// Access bus information
+final bus = busPort.busValue;           // int?
+final paramName = busPort.busParam;     // String?
+final paramNum = busPort.parameterNumber; // int?
+```
 
 ## Development Standards
 

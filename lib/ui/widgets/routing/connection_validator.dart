@@ -26,8 +26,8 @@ class ConnectionValidator {
       return false;
     }
     
-    final sourceIsPhysical = source.metadata?['isPhysical'] == true;
-    final targetIsPhysical = target.metadata?['isPhysical'] == true;
+    final sourceIsPhysical = source.isPhysical;
+    final targetIsPhysical = target.isPhysical;
     final sourceIsAlgorithm = !sourceIsPhysical;
     final targetIsAlgorithm = !targetIsPhysical;
     
@@ -80,7 +80,7 @@ class ConnectionValidator {
     if (sourceIsAlgorithm && targetIsPhysical &&
         source.direction == PortDirection.output && 
         target.direction == PortDirection.output &&
-        target.metadata?['jackType'] == 'input') {
+        target.jackType == 'input') {
       return true;
     }
     
@@ -105,8 +105,8 @@ class ConnectionValidator {
     // Physical inputs have output direction (they are sources)
     if (source.direction == PortDirection.output && 
         target.direction == PortDirection.output &&
-        target.metadata?['isPhysical'] == true &&
-        target.metadata?['jackType'] == 'input') {
+        target.isPhysical &&
+        target.jackType == 'input') {
       return true;
     }
     
@@ -155,8 +155,8 @@ class ConnectionValidator {
   
   /// Returns a human-readable error message for invalid connection attempts.
   static String getValidationError(Port source, Port target) {
-    final sourceIsPhysical = source.metadata?['isPhysical'] == true;
-    final targetIsPhysical = target.metadata?['isPhysical'] == true;
+    final sourceIsPhysical = source.isPhysical;
+    final targetIsPhysical = target.isPhysical;
     
     // Physical to physical connections
     if (sourceIsPhysical && targetIsPhysical) {
@@ -187,13 +187,13 @@ class ConnectionValidator {
   /// Ghost connections occur when an algorithm output connects to a physical I/O,
   /// making the signal available to other algorithms through that physical port.
   static bool isGhostConnection(Port source, Port target) {
-    final sourceIsAlgorithm = source.metadata?['isPhysical'] != true;
-    final targetIsPhysical = target.metadata?['isPhysical'] == true;
+    final sourceIsAlgorithm = !source.isPhysical;
+    final targetIsPhysical = target.isPhysical;
     
     // Ghost connection: Algorithm output → Physical input
     if (sourceIsAlgorithm && targetIsPhysical && 
         source.direction == PortDirection.output &&
-        target.metadata?['jackType'] == 'input') {
+        target.jackType == 'input') {
       return true;
     }
     
@@ -210,13 +210,13 @@ class ConnectionValidator {
     }
     
     if (isGhostConnection(source, target)) {
-      final targetType = target.metadata?['jackType'] as String? ?? 'port';
-      final targetIndex = target.metadata?['hardwareIndex'] ?? '';
+      final targetType = target.jackType ?? 'port';
+      final targetIndex = target.hardwareIndex ?? '';
       return 'Ghost signal on physical $targetType $targetIndex - available to other algorithms';
     }
     
-    final sourceIsPhysical = source.metadata?['isPhysical'] == true;
-    final targetIsPhysical = target.metadata?['isPhysical'] == true;
+    final sourceIsPhysical = source.isPhysical;
+    final targetIsPhysical = target.isPhysical;
     
     if (sourceIsPhysical && !targetIsPhysical) {
       return 'Hardware input to algorithm';

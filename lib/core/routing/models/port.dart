@@ -80,11 +80,57 @@ sealed class Port with _$Port {
     /// Whether this port is currently active/enabled
     @Default(true) bool isActive,
     
-    /// Optional metadata for the port
-    Map<String, dynamic>? metadata,
-    
     /// Optional output mode for output ports (add or replace)
     OutputMode? outputMode,
+    
+    // Direct properties for polyphonic routing
+    /// Whether this port represents a polyphonic voice
+    @Default(false) bool isPolyVoice,
+    
+    /// The voice number for polyphonic ports (1-based indexing)
+    int? voiceNumber,
+    
+    /// Whether this port is a virtual CV port
+    @Default(false) bool isVirtualCV,
+    
+    // Direct properties for multi-channel routing
+    /// Whether this port is part of a multi-channel configuration
+    @Default(false) bool isMultiChannel,
+    
+    /// The channel number for multi-channel ports (0-based indexing)
+    int? channelNumber,
+    
+    /// Whether this port is part of a stereo channel pair
+    @Default(false) bool isStereoChannel,
+    
+    /// The stereo side for stereo channel ports ('left' or 'right')
+    String? stereoSide,
+    
+    /// Whether this port represents the master mix output
+    @Default(false) bool isMasterMix,
+    
+    // Direct properties for bus and parameter routing
+    /// The bus number this port is connected to (1-20)
+    int? busValue,
+    
+    /// The parameter name associated with this port's bus assignment
+    String? busParam,
+    
+    /// The parameter number associated with this port
+    int? parameterNumber,
+    
+    // Direct properties for physical ports
+    /// Whether this port represents a physical hardware port
+    @Default(false) bool isPhysical,
+    
+    /// The hardware index for physical ports (1-based)
+    int? hardwareIndex,
+    
+    /// The jack type for physical ports ('input' or 'output')
+    String? jackType,
+    
+    /// The node identifier for grouping related ports
+    String? nodeId,
   }) = _Port;
 
   /// Creates a Port from JSON

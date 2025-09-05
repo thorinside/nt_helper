@@ -161,16 +161,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: type,
               direction: PortDirection.input,
               description: item['description']?.toString(),
-              metadata: {
-                'isDeclaredInput': true,
-                if (item['busParam'] != null) 'busParam': item['busParam'],
-                if (item['busValue'] != null) 'busValue': item['busValue'],
-                if (item['channel'] != null) 'channel': item['channel'],
-                if (item['isVirtualPort'] != null) 'isVirtualPort': item['isVirtualPort'],
-                if (item['channelNumber'] != null) 'channelNumber': item['channelNumber'],
-                if (item['basedOn'] != null) 'basedOn': item['basedOn'],
-                if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
-              },
+              // Direct properties
+              busValue: item['busValue'] as int?,
+              busParam: item['busParam']?.toString(),
+              parameterNumber: item['parameterNumber'] as int?,
+              channelNumber: item['channelNumber'] as int?,
+              isMultiChannel: item['channelNumber'] != null,
             ),
           );
         }
@@ -199,12 +195,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               direction: PortDirection.input,
               description:
                   'Left $portTypeName input for channel $channelNumber',
-              metadata: {
-                'channelNumber': channelNumber,
-                'isMultiChannel': true,
-                'isStereoChannel': true,
-                'stereoSide': 'left',
-              },
+              // Direct properties
+              channelNumber: channelNumber,
+              isMultiChannel: true,
+              isStereoChannel: true,
+              stereoSide: 'left',
             ),
           );
 
@@ -216,12 +211,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               direction: PortDirection.input,
               description:
                   'Right $portTypeName input for channel $channelNumber',
-              metadata: {
-                'channelNumber': channelNumber,
-                'isMultiChannel': true,
-                'isStereoChannel': true,
-                'stereoSide': 'right',
-              },
+              // Direct properties
+              channelNumber: channelNumber,
+              isMultiChannel: true,
+              isStereoChannel: true,
+              stereoSide: 'right',
             ),
           );
         } else {
@@ -233,11 +227,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: portType,
               direction: PortDirection.input,
               description: '$portTypeName input for channel $channelNumber',
-              metadata: {
-                'channelNumber': channelNumber,
-                'isMultiChannel': true,
-                'isStereoChannel': false,
-              },
+              // Direct properties
+              channelNumber: channelNumber,
+              isMultiChannel: true,
+              isStereoChannel: false,
             ),
           );
         }
@@ -282,14 +275,13 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               direction: PortDirection.output,
               description: item['description']?.toString(),
               outputMode: outputMode,
-              metadata: {
-                'isDeclaredOutput': true,
-                if (item['busParam'] != null) 'busParam': item['busParam'],
-                if (item['busValue'] != null) 'busValue': item['busValue'],
-                if (item['busValue'] != null) 'busNumber': item['busValue'],  // Also store as busNumber for easier lookup
-                if (item['channel'] != null) 'channel': item['channel'],
-                if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
-              },
+              // Direct properties
+              busValue: item['busValue'] as int?,
+              busParam: item['busParam']?.toString(),
+              parameterNumber: item['parameterNumber'] as int?,
+              channelNumber: item['channel'] as int?,
+              isStereoChannel: item['channel'] != null,
+              stereoSide: item['channel']?.toString(),
             ),
           );
         }
@@ -318,12 +310,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               direction: PortDirection.output,
               description:
                   'Left $portTypeName output for channel $channelNumber',
-              metadata: {
-                'channelNumber': channelNumber,
-                'isMultiChannel': true,
-                'isStereoChannel': true,
-                'stereoSide': 'left',
-              },
+              // Direct properties
+              channelNumber: channelNumber,
+              isMultiChannel: true,
+              isStereoChannel: true,
+              stereoSide: 'left',
             ),
           );
 
@@ -335,12 +326,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               direction: PortDirection.output,
               description:
                   'Right $portTypeName output for channel $channelNumber',
-              metadata: {
-                'channelNumber': channelNumber,
-                'isMultiChannel': true,
-                'isStereoChannel': true,
-                'stereoSide': 'right',
-              },
+              // Direct properties
+              channelNumber: channelNumber,
+              isMultiChannel: true,
+              isStereoChannel: true,
+              stereoSide: 'right',
             ),
           );
         } else {
@@ -352,11 +342,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: portType,
               direction: PortDirection.output,
               description: '$portTypeName output for channel $channelNumber',
-              metadata: {
-                'channelNumber': channelNumber,
-                'isMultiChannel': true,
-                'isStereoChannel': false,
-              },
+              // Direct properties
+              channelNumber: channelNumber,
+              isMultiChannel: true,
+              isStereoChannel: false,
             ),
           );
         }
@@ -377,11 +366,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: portType,
               direction: PortDirection.output,
               description: 'Left master mix $portTypeName output',
-              metadata: {
-                'isMasterMix': true,
-                'channelCount': config.channelCount,
-                'stereoSide': 'left',
-              },
+              // Direct properties
+              isMasterMix: true,
+              isStereoChannel: true,
+              stereoSide: 'left',
             ),
           );
 
@@ -392,11 +380,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: portType,
               direction: PortDirection.output,
               description: 'Right master mix $portTypeName output',
-              metadata: {
-                'isMasterMix': true,
-                'channelCount': config.channelCount,
-                'stereoSide': 'right',
-              },
+              // Direct properties
+              isMasterMix: true,
+              isStereoChannel: true,
+              stereoSide: 'right',
             ),
           );
         } else {
@@ -408,10 +395,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               type: portType,
               direction: PortDirection.output,
               description: 'Master mix $portTypeName output',
-              metadata: {
-                'isMasterMix': true,
-                'channelCount': config.channelCount,
-              },
+              // Direct properties
+              isMasterMix: true,
             ),
           );
         }
@@ -545,27 +530,27 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
 
   /// Checks if a port is a multi-channel port
   bool _isMultiChannelPort(Port port) {
-    return port.metadata?['isMultiChannel'] == true;
+    return port.isMultiChannel;
   }
 
   /// Checks if a port is a stereo port
   bool _isStereoPort(Port port) {
-    return port.metadata?['isStereoChannel'] == true;
+    return port.isStereoChannel;
   }
 
   /// Checks if a port is a master mix port
   bool _isMasterMixPort(Port port) {
-    return port.metadata?['isMasterMix'] == true;
+    return port.isMasterMix;
   }
 
   /// Gets the channel number from a multi-channel port
   int? _getChannelNumber(Port port) {
-    return port.metadata?['channelNumber'] as int?;
+    return port.channelNumber;
   }
 
   /// Gets the stereo side from a stereo port
   String? _getStereoSide(Port port) {
-    return port.metadata?['stereoSide'] as String?;
+    return port.stereoSide;
   }
 
   /// Updates the channel count and regenerates ports

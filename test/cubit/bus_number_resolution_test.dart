@@ -3,54 +3,48 @@ import 'package:nt_helper/core/routing/models/port.dart' as core_port;
 
 void main() {
   group('Bus Number Resolution Logic', () {
-    group('Port metadata validation', () {
-      test('should create port with busParam metadata', () {
+    group('Port properties validation', () {
+      test('should create port with busParam property', () {
         const port = core_port.Port(
           id: 'test_port',
           name: 'Test Port',
           type: core_port.PortType.audio,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'busParam': 'Audio input',
-          },
+          busParam: 'Audio input',
         );
 
-        expect(port.metadata?['busParam'], 'Audio input');
+        expect(port.busParam, 'Audio input');
         expect(port.id, 'test_port');
         expect(port.type, core_port.PortType.audio);
         expect(port.direction, core_port.PortDirection.input);
       });
 
-      test('should create port with polyphonic gate metadata', () {
+      test('should create port with polyphonic gate properties', () {
         const port = core_port.Port(
           id: 'gate_port',
           name: 'Gate Input',
           type: core_port.PortType.gate,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'isGateInput': true,
-            'gateBus': 9,
-          },
+          isPolyVoice: true,
+          busValue: 9,
         );
 
-        expect(port.metadata?['isGateInput'], true);
-        expect(port.metadata?['gateBus'], 9);
+        expect(port.isPolyVoice, true);
+        expect(port.busValue, 9);
       });
 
-      test('should create port with polyphonic CV metadata', () {
+      test('should create port with polyphonic CV properties', () {
         const port = core_port.Port(
           id: 'cv_port',
           name: 'CV Input',
           type: core_port.PortType.cv,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'isCvInput': true,
-            'suggestedBus': 4,
-          },
+          isVirtualCV: true,
+          busValue: 4,
         );
 
-        expect(port.metadata?['isCvInput'], true);
-        expect(port.metadata?['suggestedBus'], 4);
+        expect(port.isVirtualCV, true);
+        expect(port.busValue, 4);
       });
     });
 
@@ -80,10 +74,10 @@ void main() {
       });
     });
 
-    group('Metadata resolution strategy documentation', () {
+    group('Bus resolution strategy documentation', () {
       test('should document Strategy 1: busParam resolution', () {
-        // Strategy 1: Check port.metadata['busParam'] and lookup in slot parameters
-        // 1. Get busParam string from port metadata
+        // Strategy 1: Check port.busParam and lookup in slot parameters
+        // 1. Get busParam string from port property
         // 2. Find parameter with matching name in slot
         // 3. Get current value or default value
         // 4. Validate bus range (1-20) and reject 0 (None)
@@ -94,18 +88,16 @@ void main() {
           name: 'Example Port',
           type: core_port.PortType.audio,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'busParam': 'Audio input bus', // Step 1
-          },
+          busParam: 'Audio input bus', // Step 1
         );
 
-        expect(examplePort.metadata?['busParam'], 'Audio input bus');
+        expect(examplePort.busParam, 'Audio input bus');
       });
 
       test('should document Strategy 2: polyphonic fallback', () {
         // Strategy 2: Fall back to poly gate/CV logic
-        // For gate inputs: use gateBus metadata (buses 1-12)
-        // For CV inputs: use suggestedBus metadata (buses 1-12)
+        // For gate inputs: use busValue property (buses 1-12)
+        // For CV inputs: use busValue property (buses 1-12)
         // Validate range and reject invalid values
 
         const gatePort = core_port.Port(
@@ -113,10 +105,8 @@ void main() {
           name: 'Gate Example',
           type: core_port.PortType.gate,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'isGateInput': true,
-            'gateBus': 9, // Gate 1 on bus 9
-          },
+          isPolyVoice: true,
+          busValue: 9, // Gate 1 on bus 9
         );
 
         const cvPort = core_port.Port(
@@ -124,47 +114,45 @@ void main() {
           name: 'CV Example',
           type: core_port.PortType.cv,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'isCvInput': true,
-            'suggestedBus': 3, // CV on bus 3
-          },
+          isVirtualCV: true,
+          busValue: 3, // CV on bus 3
         );
 
-        expect(gatePort.metadata?['gateBus'], 9);
-        expect(cvPort.metadata?['suggestedBus'], 3);
+        expect(gatePort.busValue, 9);
+        expect(cvPort.busValue, 3);
       });
 
       test('should document Strategy 3: no assignment', () {
         // Strategy 3: Return null when no bus information is found
         // This happens when:
-        // - No busParam in metadata
-        // - No polyphonic metadata
+        // - No busParam property
+        // - No polyphonic properties set
         // - Parameter lookup fails
         // - Bus value is invalid
 
-        const noMetadataPort = core_port.Port(
-          id: 'no_metadata',
-          name: 'No Metadata Port',
+        const noPropertiesPort = core_port.Port(
+          id: 'no_properties',
+          name: 'No Properties Port',
           type: core_port.PortType.audio,
           direction: core_port.PortDirection.input,
-          // No metadata at all
+          // No bus-related properties set
         );
 
-        const irrelevantMetadataPort = core_port.Port(
-          id: 'irrelevant_metadata',
-          name: 'Irrelevant Metadata Port',
+        const irrelevantPropertiesPort = core_port.Port(
+          id: 'irrelevant_properties',
+          name: 'Irrelevant Properties Port',
           type: core_port.PortType.audio,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'someOtherField': 'value',
-            'notBusRelated': true,
-          },
+          description: 'Some description',
+          isActive: false,
         );
 
-        expect(noMetadataPort.metadata, isNull);
-        expect(irrelevantMetadataPort.metadata?.containsKey('busParam'), false);
-        expect(irrelevantMetadataPort.metadata?.containsKey('gateBus'), false);
-        expect(irrelevantMetadataPort.metadata?.containsKey('suggestedBus'), false);
+        expect(noPropertiesPort.busParam, isNull);
+        expect(noPropertiesPort.busValue, isNull);
+        expect(irrelevantPropertiesPort.busParam, isNull);
+        expect(irrelevantPropertiesPort.busValue, isNull);
+        expect(irrelevantPropertiesPort.isPolyVoice, false);
+        expect(irrelevantPropertiesPort.isVirtualCV, false);
       });
     });
 
@@ -184,12 +172,10 @@ void main() {
           name: 'Missing Param Port',
           type: core_port.PortType.audio,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'busParam': 'Nonexistent parameter',
-          },
+          busParam: 'Nonexistent parameter',
         );
 
-        expect(port.metadata?['busParam'], 'Nonexistent parameter');
+        expect(port.busParam, 'Nonexistent parameter');
       });
 
       test('should document invalid parameter number handling', () {
@@ -209,16 +195,14 @@ void main() {
           name: 'Precedence Port',
           type: core_port.PortType.gate,
           direction: core_port.PortDirection.input,
-          metadata: {
-            'busParam': 'Gate input', // Strategy 1 - should take precedence
-            'isGateInput': true,
-            'gateBus': 10, // Strategy 2 - should be ignored if Strategy 1 succeeds
-          },
+          busParam: 'Gate input', // Strategy 1 - should take precedence
+          isPolyVoice: true,
+          busValue: 10, // Strategy 2 - should be ignored if Strategy 1 succeeds
         );
 
-        expect(precedencePort.metadata?['busParam'], 'Gate input');
-        expect(precedencePort.metadata?['gateBus'], 10);
-        // Implementation should use 'Gate input' parameter value, not gateBus value
+        expect(precedencePort.busParam, 'Gate input');
+        expect(precedencePort.busValue, 10);
+        // Implementation should use 'Gate input' parameter value, not busValue directly
       });
     });
 

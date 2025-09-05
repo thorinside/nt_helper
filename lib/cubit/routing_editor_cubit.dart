@@ -155,8 +155,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   name: p.name,
                   type: _toUiPortType(p.type),
                   direction: PortDirection.input,
-                  busNumber: p.metadata?['busValue'] as int?,
-                  parameterName: p.metadata?['busParam'] as String?,
+                  busNumber: p.busValue,
+                  parameterName: p.busParam,
                 ),
               )
               .toList(),
@@ -167,8 +167,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   name: p.name,
                   type: _toUiPortType(p.type),
                   direction: PortDirection.output,
-                  busNumber: p.metadata?['busValue'] as int?,
-                  parameterName: p.metadata?['busParam'] as String?,
+                  busNumber: p.busValue,
+                  parameterName: p.busParam,
                 ),
               )
               .toList(),

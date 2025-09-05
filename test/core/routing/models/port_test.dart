@@ -40,13 +40,11 @@ void main() {
         description: 'A test CV output port',
         isActive: false,
         constraints: {'voltageRange': {'min': -5, 'max': 5}},
-        metadata: {'category': 'modulation'},
       );
 
       expect(port.description, equals('A test CV output port'));
       expect(port.isActive, isFalse);
       expect(port.constraints?['voltageRange'], isNotNull);
-      expect(port.metadata?['category'], equals('modulation'));
     });
 
     test('should create output port with outputMode', () {
@@ -387,6 +385,195 @@ void main() {
         expect(modifiedPort.type, equals(originalPort.type));
         expect(modifiedPort.direction, equals(originalPort.direction));
         expect(modifiedPort.isActive, isFalse);
+      });
+    });
+  });
+
+  group('Direct Properties Tests', () {
+    test('should create port with poly voice properties', () {
+      const port = Port(
+        id: 'poly_voice_port',
+        name: 'Poly Voice Port',
+        type: PortType.cv,
+        direction: PortDirection.input,
+        isPolyVoice: true,
+        voiceNumber: 3,
+      );
+
+      expect(port.isPolyVoice, isTrue);
+      expect(port.voiceNumber, equals(3));
+    });
+
+    test('should create port with multi-channel properties', () {
+      const port = Port(
+        id: 'multichannel_port',
+        name: 'Multi-Channel Port',
+        type: PortType.audio,
+        direction: PortDirection.output,
+        isMultiChannel: true,
+        channelNumber: 2,
+        isStereoChannel: true,
+        stereoSide: 'right',
+        isMasterMix: false,
+      );
+
+      expect(port.isMultiChannel, isTrue);
+      expect(port.channelNumber, equals(2));
+      expect(port.isStereoChannel, isTrue);
+      expect(port.stereoSide, equals('right'));
+      expect(port.isMasterMix, isFalse);
+    });
+
+    test('should create port with bus and parameter properties', () {
+      const port = Port(
+        id: 'bus_port',
+        name: 'Bus Port',
+        type: PortType.cv,
+        direction: PortDirection.input,
+        busValue: 5,
+        busParam: 'mix_level',
+        parameterNumber: 12,
+        isVirtualCV: true,
+      );
+
+      expect(port.busValue, equals(5));
+      expect(port.busParam, equals('mix_level'));
+      expect(port.parameterNumber, equals(12));
+      expect(port.isVirtualCV, isTrue);
+    });
+
+    test('should create port with default direct property values', () {
+      const port = Port(
+        id: 'default_port',
+        name: 'Default Port',
+        type: PortType.audio,
+        direction: PortDirection.input,
+      );
+
+      expect(port.isPolyVoice, isFalse);
+      expect(port.voiceNumber, isNull);
+      expect(port.isMultiChannel, isFalse);
+      expect(port.channelNumber, isNull);
+      expect(port.isStereoChannel, isFalse);
+      expect(port.stereoSide, isNull);
+      expect(port.isMasterMix, isFalse);
+      expect(port.busValue, isNull);
+      expect(port.busParam, isNull);
+      expect(port.parameterNumber, isNull);
+      expect(port.isVirtualCV, isFalse);
+    });
+
+    test('should serialize direct properties to and from JSON correctly', () {
+      const originalPort = Port(
+        id: 'direct_props_port',
+        name: 'Direct Props Port',
+        type: PortType.cv,
+        direction: PortDirection.output,
+        isPolyVoice: true,
+        voiceNumber: 2,
+        isMultiChannel: true,
+        channelNumber: 1,
+        isStereoChannel: true,
+        stereoSide: 'left',
+        isMasterMix: true,
+        busValue: 8,
+        busParam: 'frequency',
+        parameterNumber: 25,
+        isVirtualCV: true,
+      );
+
+      final json = originalPort.toJson();
+      final deserializedPort = Port.fromJson(json);
+
+      expect(deserializedPort, equals(originalPort));
+      expect(deserializedPort.isPolyVoice, equals(originalPort.isPolyVoice));
+      expect(deserializedPort.voiceNumber, equals(originalPort.voiceNumber));
+      expect(deserializedPort.isMultiChannel, equals(originalPort.isMultiChannel));
+      expect(deserializedPort.channelNumber, equals(originalPort.channelNumber));
+      expect(deserializedPort.isStereoChannel, equals(originalPort.isStereoChannel));
+      expect(deserializedPort.stereoSide, equals(originalPort.stereoSide));
+      expect(deserializedPort.isMasterMix, equals(originalPort.isMasterMix));
+      expect(deserializedPort.busValue, equals(originalPort.busValue));
+      expect(deserializedPort.busParam, equals(originalPort.busParam));
+      expect(deserializedPort.parameterNumber, equals(originalPort.parameterNumber));
+      expect(deserializedPort.isVirtualCV, equals(originalPort.isVirtualCV));
+    });
+
+    test('should handle copyWith with direct properties', () {
+      const originalPort = Port(
+        id: 'original',
+        name: 'Original',
+        type: PortType.audio,
+        direction: PortDirection.input,
+        isPolyVoice: false,
+        voiceNumber: 1,
+      );
+
+      final modifiedPort = originalPort.copyWith(
+        isPolyVoice: true,
+        voiceNumber: 4,
+        busValue: 10,
+      );
+
+      expect(modifiedPort.id, equals(originalPort.id));
+      expect(modifiedPort.name, equals(originalPort.name));
+      expect(modifiedPort.isPolyVoice, isTrue);
+      expect(modifiedPort.voiceNumber, equals(4));
+      expect(modifiedPort.busValue, equals(10));
+    });
+
+    group('Direct Properties Validation', () {
+      test('should handle null voice number with poly voice false', () {
+        const port = Port(
+          id: 'test',
+          name: 'Test',
+          type: PortType.cv,
+          direction: PortDirection.input,
+          isPolyVoice: false,
+          voiceNumber: null,
+        );
+
+        expect(port.isPolyVoice, isFalse);
+        expect(port.voiceNumber, isNull);
+      });
+
+      test('should handle null channel number with multi-channel false', () {
+        const port = Port(
+          id: 'test',
+          name: 'Test',
+          type: PortType.audio,
+          direction: PortDirection.output,
+          isMultiChannel: false,
+          channelNumber: null,
+        );
+
+        expect(port.isMultiChannel, isFalse);
+        expect(port.channelNumber, isNull);
+      });
+
+      test('should handle stereo properties independently', () {
+        const leftPort = Port(
+          id: 'left',
+          name: 'Left',
+          type: PortType.audio,
+          direction: PortDirection.output,
+          isStereoChannel: true,
+          stereoSide: 'left',
+        );
+
+        const rightPort = Port(
+          id: 'right',
+          name: 'Right',
+          type: PortType.audio,
+          direction: PortDirection.output,
+          isStereoChannel: true,
+          stereoSide: 'right',
+        );
+
+        expect(leftPort.isStereoChannel, isTrue);
+        expect(leftPort.stereoSide, equals('left'));
+        expect(rightPort.isStereoChannel, isTrue);
+        expect(rightPort.stereoSide, equals('right'));
       });
     });
   });

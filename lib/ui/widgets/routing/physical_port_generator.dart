@@ -27,12 +27,10 @@ class PhysicalPortGenerator {
         type: _getPortTypeForInput(portNumber),
         direction: PortDirection.output, // Physical inputs are sources
         description: 'Hardware input jack $portNumber',
-        metadata: {
-          'isPhysical': true,
-          'hardwareIndex': portNumber,
-          'jackType': 'input',
-          'nodeId': 'hw_inputs',
-        },
+        isPhysical: true,
+        hardwareIndex: portNumber,
+        jackType: 'input',
+        nodeId: 'hw_inputs',
       );
     });
   }
@@ -53,12 +51,10 @@ class PhysicalPortGenerator {
         type: _getPortTypeForOutput(portNumber),
         direction: PortDirection.input, // Physical outputs are targets
         description: 'Hardware output jack $portNumber',
-        metadata: {
-          'isPhysical': true,
-          'hardwareIndex': portNumber,
-          'jackType': 'output',
-          'nodeId': 'hw_outputs',
-        },
+        isPhysical: true,
+        hardwareIndex: portNumber,
+        jackType: 'output',
+        nodeId: 'hw_outputs',
       );
     });
   }
@@ -80,12 +76,10 @@ class PhysicalPortGenerator {
       type: _getPortTypeForInput(index),
       direction: PortDirection.output, // Physical inputs are sources
       description: 'Hardware input jack $index',
-      metadata: {
-        'isPhysical': true,
-        'hardwareIndex': index,
-        'jackType': 'input',
-        'nodeId': 'hw_inputs',
-      },
+      isPhysical: true,
+      hardwareIndex: index,
+      jackType: 'input',
+      nodeId: 'hw_inputs',
     );
   }
   
@@ -106,12 +100,10 @@ class PhysicalPortGenerator {
       type: _getPortTypeForOutput(index),
       direction: PortDirection.input, // Physical outputs are targets
       description: 'Hardware output jack $index',
-      metadata: {
-        'isPhysical': true,
-        'hardwareIndex': index,
-        'jackType': 'output',
-        'nodeId': 'hw_outputs',
-      },
+      isPhysical: true,
+      hardwareIndex: index,
+      jackType: 'output',
+      nodeId: 'hw_outputs',
     );
   }
   
@@ -151,21 +143,21 @@ class PhysicalPortGenerator {
   
   /// Validates that a port is a physical input port.
   static bool isPhysicalInputPort(Port port) {
-    return port.metadata?['isPhysical'] == true &&
-           port.metadata?['jackType'] == 'input' &&
+    return port.isPhysical &&
+           port.jackType == 'input' &&
            port.direction == PortDirection.output;
   }
   
   /// Validates that a port is a physical output port.
   static bool isPhysicalOutputPort(Port port) {
-    return port.metadata?['isPhysical'] == true &&
-           port.metadata?['jackType'] == 'output' &&
+    return port.isPhysical &&
+           port.jackType == 'output' &&
            port.direction == PortDirection.input;
   }
   
   /// Validates that a port is any physical port (input or output).
   static bool isPhysicalPort(Port port) {
-    return port.metadata?['isPhysical'] == true;
+    return port.isPhysical;
   }
   
   /// Gets the hardware index from a physical port.
@@ -173,7 +165,7 @@ class PhysicalPortGenerator {
   /// Returns null if the port is not a physical port or lacks the index.
   static int? getHardwareIndex(Port port) {
     if (!isPhysicalPort(port)) return null;
-    return port.metadata?['hardwareIndex'] as int?;
+    return port.hardwareIndex;
   }
   
   /// Gets a human-readable label for a physical port.

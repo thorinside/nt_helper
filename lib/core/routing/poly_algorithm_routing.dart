@@ -165,13 +165,10 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             type: PortType.gate,
             direction: PortDirection.input,
             description: 'Gate/trigger input for gate $gateNumber',
-            metadata: {
-              'gateNumber': gateNumber,
-              'isPolyVoice': true,
-              'isGateInput': true,
-              'gateBus': gateBus,
-              'busValue': gateBus,  // Store bus value for connection discovery
-            },
+            // Direct properties
+            isPolyVoice: true,
+            voiceNumber: gateNumber,
+            busValue: gateBus,
           ));
 
           // CV inputs for this connected gate, on consecutive busses after the gate bus
@@ -190,14 +187,10 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               type: PortType.cv,
               direction: PortDirection.input,
               description: 'CV input $cvNumber for gate $gateNumber',
-              metadata: {
-                'gateNumber': gateNumber,
-                'cvNumber': cvNumber,
-                'isPolyVoice': true,
-                'isGateDrivenCV': true,
-                'suggestedBus': cvBus,
-                'busValue': cvBus,  // Store actual bus value for connection discovery
-              },
+              // Direct properties
+              isPolyVoice: true,
+              voiceNumber: gateNumber,
+              busValue: cvBus,
             ));
           }
         }
@@ -219,12 +212,11 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             type: type,
             direction: PortDirection.input,
             description: item['description']?.toString(),
-            metadata: {
-              'isExtraInput': true,
-              if (item['busParam'] != null) 'busParam': item['busParam'],
-              if (item['busValue'] != null) 'busValue': item['busValue'],
-              if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
-            },
+            // Direct properties
+            busValue: item['busValue'] as int?,
+            busParam: item['busParam']?.toString(),
+            parameterNumber: item['parameterNumber'] as int?,
+            isVirtualCV: item['isVirtualCV'] == true,
           ));
         }
       }
@@ -265,14 +257,13 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             direction: PortDirection.output,
             description: item['description']?.toString(),
             outputMode: outputMode,
-            metadata: {
-              'isDeclaredOutput': true,
-              if (item['busParam'] != null) 'busParam': item['busParam'],
-              if (item['busValue'] != null) 'busValue': item['busValue'],
-              if (item['busValue'] != null) 'busNumber': item['busValue'],  // Also store as busNumber for easier lookup
-              if (item['parameterNumber'] != null) 'parameterNumber': item['parameterNumber'],
-              if (item['channel'] != null) 'channel': item['channel'],
-            },
+            // Direct properties
+            busValue: item['busValue'] as int?,
+            busParam: item['busParam']?.toString(),
+            parameterNumber: item['parameterNumber'] as int?,
+            channelNumber: item['channel'] as int?,
+            isStereoChannel: item['channel'] != null,
+            stereoSide: item['channel']?.toString(),
           ));
         }
       }
@@ -389,17 +380,17 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   
   /// Checks if a port belongs to a polyphonic voice
   bool _isPolyVoicePort(Port port) {
-    return port.metadata?['isPolyVoice'] == true;
+    return port.isPolyVoice;
   }
   
   /// Gets the voice number from a polyphonic voice port
   int? _getVoiceNumber(Port port) {
-    return port.metadata?['voiceNumber'] as int?;
+    return port.voiceNumber;
   }
   
   /// Checks if a port is a virtual CV port
   bool _isVirtualCvPort(Port port) {
-    return port.metadata?['isVirtualCV'] == true;
+    return port.isVirtualCV;
   }
   
   /// Updates the voice count and regenerates ports

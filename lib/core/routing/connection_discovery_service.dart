@@ -112,7 +112,7 @@ class ConnectionDiscoveryService {
     Map<int, List<_PortAssignment>> busRegistry,
   ) {
     for (final port in ports) {
-      final busValue = port.metadata?['busValue'] as int?;
+      final busValue = port.busValue;
       if (busValue != null && busValue > 0) {
         debugPrint('[ConnectionDiscovery]   ${isOutput ? 'Output' : 'Input'} port ${port.id}: bus=$busValue, outputMode=${port.outputMode}');
         busRegistry.putIfAbsent(busValue, () => []).add(
@@ -121,8 +121,8 @@ class ConnectionDiscoveryService {
             algorithmIndex: algorithmIndex,
             portId: port.id,
             portName: port.name,
-            parameterName: port.metadata?['busParam'] as String? ?? '',
-            parameterNumber: port.metadata?['parameterNumber'] as int? ?? 0,
+            parameterName: port.busParam ?? '',
+            parameterNumber: port.parameterNumber ?? 0,
             isOutput: isOutput,
             portType: port.type,
             busValue: busValue,

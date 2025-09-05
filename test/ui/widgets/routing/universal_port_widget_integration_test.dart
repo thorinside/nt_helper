@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/movable_physical_io_node.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
-import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
-import 'package:nt_helper/cubit/routing_editor_cubit.dart';
-import 'package:nt_helper/cubit/routing_editor_state.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
-import 'package:nt_helper/core/routing/models/connection.dart';
 
 /// Comprehensive integration tests for the universal port widget architecture.
 /// 
@@ -291,11 +285,7 @@ void main() {
 
     group('Interaction and Callback Handling', () {
       testWidgets('Port tap callbacks work across all node types', (tester) async {
-        final List<String> tappedPorts = [];
         
-        void onPortTapped(String portId) {
-          tappedPorts.add(portId);
-        }
 
         await tester.pumpWidget(
           MaterialApp(
@@ -331,7 +321,6 @@ void main() {
       });
 
       testWidgets('Port drag callbacks work across all node types', (tester) async {
-        final List<String> draggedPorts = [];
         
         await tester.pumpWidget(
           MaterialApp(
