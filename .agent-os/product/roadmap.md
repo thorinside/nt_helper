@@ -1,6 +1,6 @@
 # Product Roadmap
 
-> Last Updated: 2025-09-01
+> Last Updated: 2025-09-06
 > Version: 1.1.0
 > Status: Active Development
 
@@ -56,7 +56,7 @@
 - **Enhanced Routing Visualization**
   - Interactive connection editing
   - Real-time routing updates
-  - Connection validation and conflict detection
+  - [x] Connection validation and conflict detection
   - Export routing diagrams
 
 - **Advanced Routing Features**
