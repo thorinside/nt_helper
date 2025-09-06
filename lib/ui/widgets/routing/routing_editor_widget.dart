@@ -585,26 +585,28 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return const SizedBox.shrink();
     }
     
-    // Use the unified ConnectionPainter wrapped in GestureDetector and MouseRegion
-    return GestureDetector(
-      onTapDown: (details) => _handleConnectionCanvasTap(details, connectionDataList),
-      child: MouseRegion(
-        onHover: (event) => _handleMouseHover(event.localPosition, connectionDataList),
-        onExit: (_) => _handleConnectionHover('', false), // Clear hover when leaving canvas
-        child: CustomPaint(
-          painter: _ConnectionPainterWithBounds(
-            connections: connectionDataList,
-            theme: Theme.of(context),
-            showLabels: true,
-            enableAnimations: true,
-            hoveredConnectionId: _hoveredConnectionId,
-            onBoundsUpdated: (bounds) {
-              _connectionLabelBounds = bounds;
-            },
+    // Use the unified ConnectionPainter with conditional pointer events
+    return Stack(
+      children: [
+        // The connection painter itself (no pointer events)
+        IgnorePointer(
+          child: CustomPaint(
+            painter: _ConnectionPainterWithBounds(
+              connections: connectionDataList,
+              theme: Theme.of(context),
+              showLabels: true,
+              enableAnimations: true,
+              hoveredConnectionId: _hoveredConnectionId,
+              onBoundsUpdated: (bounds) {
+                _connectionLabelBounds = bounds;
+              },
+            ),
+            child: const SizedBox.expand(),
           ),
-          child: const SizedBox.expand(),
         ),
-      ),
+        // Invisible overlay for gesture detection only over connection labels
+        ..._buildConnectionLabelOverlays(),
+      ],
     );
   }
   
@@ -878,42 +880,42 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     });
   }
 
-  void _handleMouseHover(Offset position, List<painter.ConnectionData> connectionDataList) {
-    // Hit test against stored bounds
-    String? hitConnectionId;
+
+  /// Build invisible overlays positioned over connection labels for gesture detection
+  List<Widget> _buildConnectionLabelOverlays() {
+    final overlays = <Widget>[];
+    
     for (final entry in _connectionLabelBounds.entries) {
-      if (entry.value.contains(position)) {
-        hitConnectionId = entry.key;
-        break;
-      }
+      final connectionId = entry.key;
+      final bounds = entry.value;
+      
+      overlays.add(
+        Positioned(
+          left: bounds.left,
+          top: bounds.top,
+          width: bounds.width,
+          height: bounds.height,
+          child: GestureDetector(
+            onTap: () {
+              debugPrint('Connection label tapped: $connectionId');
+              _toggleConnectionOutputMode(connectionId);
+            },
+            child: MouseRegion(
+              onEnter: (_) => _handleConnectionHover(connectionId, true),
+              onExit: (_) => _handleConnectionHover(connectionId, false),
+              child: Container(
+                // Invisible container for hit testing
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+        ),
+      );
     }
     
-    if (hitConnectionId != _hoveredConnectionId) {
-      _handleConnectionHover(hitConnectionId ?? '', hitConnectionId != null);
-    }
+    return overlays;
   }
 
-  /// Handle tap events on the connection canvas to toggle output modes
-  void _handleConnectionCanvasTap(TapDownDetails details, List<painter.ConnectionData> connectionDataList) {
-    // Find connection by hit testing the tap position against label bounds
-    final tappedConnectionId = _findConnectionByTapPoint(details.localPosition, connectionDataList);
-    
-    if (tappedConnectionId != null) {
-      debugPrint('Connection label tapped: $tappedConnectionId');
-      _toggleConnectionOutputMode(tappedConnectionId);
-    }
-  }
-
-  /// Find connection ID by testing tap point against connection label bounds
-  String? _findConnectionByTapPoint(Offset tapPosition, List<painter.ConnectionData> connectionDataList) {
-    // Hit test against stored bounds
-    for (final entry in _connectionLabelBounds.entries) {
-      if (entry.value.contains(tapPosition)) {
-        return entry.key;
-      }
-    }
-    return null;
-  }
 
   /// Toggle output mode for a connection between add (0) and replace (1)
   void _toggleConnectionOutputMode(String connectionId) {
