@@ -19,6 +19,8 @@ class ConnectionData {
   final bool isPhysicalConnection; // True if this is a physical connection
   final bool? isInputConnection; // True if physical input connection, false if output, null if not physical
   final String? busLabel; // Bus label for partial connections
+  final Function(bool isHovering)? onLabelHover; // Callback for label hover events
+  final VoidCallback? onLabelTap; // Callback for label tap events
 
   const ConnectionData({
     required this.connection,
@@ -31,6 +33,8 @@ class ConnectionData {
     this.isPhysicalConnection = false,
     this.isInputConnection,
     this.busLabel,
+    this.onLabelHover,
+    this.onLabelTap,
   });
 
   /// Convenience getter for ghost connection status from the connection model
@@ -56,8 +60,12 @@ class ConnectionPainter extends CustomPainter {
   final bool showLabels;
   final bool enableAnimations;
   final double? animationProgress;
+  final String? hoveredConnectionId;
+  
+  /// Map storing label bounds for hit testing
+  final Map<String, Rect> _labelBounds = {};
 
-  const ConnectionPainter({
+  ConnectionPainter({
     required this.connections,
     required this.theme,
     this.connectionStateManager,
@@ -65,11 +73,15 @@ class ConnectionPainter extends CustomPainter {
     this.showLabels = true,
     this.enableAnimations = true,
     this.animationProgress,
+    this.hoveredConnectionId,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (connections.isEmpty) return;
+
+    // Clear previous label bounds
+    _labelBounds.clear();
 
     // Group connections by type for batch rendering
     final regularConnections = <ConnectionData>[];
@@ -472,15 +484,20 @@ class ConnectionPainter extends CustomPainter {
       height: textPainter.height + 8,
     );
 
+    // Store label bounds for hit testing
+    _labelBounds[conn.connection.id] = labelRect;
+
     // Draw label background with high contrast
     final backgroundPaint = Paint()
       ..style = PaintingStyle.fill
       ..color = Colors.white.withValues(alpha: 0.95); // High contrast white background
 
+    // Check hover state and apply styling
+    final isHovered = hoveredConnectionId == conn.connection.id;
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..color = Colors.black; // Bold black border
+      ..strokeWidth = isHovered ? 3.0 : 2.0
+      ..color = isHovered ? Colors.teal : Colors.black;
 
     // Save canvas state
     canvas.save();
@@ -638,6 +655,19 @@ class ConnectionPainter extends CustomPainter {
     return Colors.grey;
   }
 
+  /// Get current label bounds for testing purposes
+  Map<String, Rect> getLabelBounds() => Map.from(_labelBounds);
+
+  /// Hit test for connection labels
+  String? hitTestLabel(Offset point) {
+    for (final entry in _labelBounds.entries) {
+      if (entry.value.contains(point)) {
+        return entry.key;
+      }
+    }
+    return null;
+  }
+
   @override
   bool shouldRepaint(covariant ConnectionPainter oldDelegate) {
     return oldDelegate.connections != connections ||
@@ -646,6 +676,7 @@ class ConnectionPainter extends CustomPainter {
            oldDelegate.showLabels != showLabels ||
            oldDelegate.enableAnimations != enableAnimations ||
            oldDelegate.animationProgress != animationProgress ||
+           oldDelegate.hoveredConnectionId != hoveredConnectionId ||
            oldDelegate.theme != theme;
   }
 }
