@@ -119,6 +119,9 @@ sealed class Port with _$Port {
     /// The parameter number associated with this port
     int? parameterNumber,
     
+    /// The mode parameter number for this port's output mode (Add/Replace)
+    int? modeParameterNumber,
+    
     // Direct properties for physical ports
     /// Whether this port represents a physical hardware port
     @Default(false) bool isPhysical,

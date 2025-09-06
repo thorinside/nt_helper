@@ -51,7 +51,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   
   String? _connectionSourcePortId;
   Offset? _dragPosition;
-  bool _isDraggingConnection = false;
+  final bool _isDraggingConnection = false;
   String? _hoveredConnectionId;
   Timer? _connectionHighlightTimer;
   
@@ -1047,55 +1047,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
   }
 
-  void _handleConnectionHover(String connectionId, bool isHovering) {
-    setState(() {
-      _hoveredConnectionId = isHovering ? connectionId : null;
-    });
-  }
-
-  /// Handle port hover events for connection highlighting and deletion
-  void _handlePortHover(String portId, bool isHovering, List<Connection> connections) {
-    if (portId.startsWith('delete:')) {
-      // Handle connection deletion
-      final connectionId = portId.substring(7);
-      final cubit = context.read<RoutingEditorCubit>();
-      cubit.deleteConnectionWithSmartBusLogic(connectionId);
-      return;
-    }
-    
-    // Find connections that involve this port
-    final portConnections = connections.where((conn) => 
-      conn.sourcePortId == portId || conn.destinationPortId == portId
-    ).toList();
-    
-    if (portConnections.isNotEmpty) {
-      // Highlight the first connection (could be extended to highlight all)
-      final connectionId = isHovering ? portConnections.first.id : null;
-      setState(() {
-        _hoveredConnectionId = connectionId;
-      });
-      debugPrint('=== PORT HOVER: $portId, highlighting connection: $connectionId');
-    }
-  }
-
-  /// Build a map of port IDs to their connection IDs
-  Map<String, List<String>> _buildPortConnections(List<Connection> connections) {
-    final portConnections = <String, List<String>>{};
-    
-    for (final connection in connections) {
-      // Add to source port
-      final sourceConnections = portConnections[connection.sourcePortId] ?? <String>[];
-      sourceConnections.add(connection.id);
-      portConnections[connection.sourcePortId] = sourceConnections;
-      
-      // Add to destination port
-      final destConnections = portConnections[connection.destinationPortId] ?? <String>[];
-      destConnections.add(connection.id);
-      portConnections[connection.destinationPortId] = destConnections;
-    }
-    
-    return portConnections;
-  }
 
   /// Get a set of all connected port IDs
   Set<String> _getConnectedPortIds(List<Connection> connections) {
@@ -1171,23 +1122,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           width: bounds.width,
           height: bounds.height,
           child: GestureDetector(
-            behavior: HitTestBehavior.deferToChild, // Only respond when child is hit
+            behavior: HitTestBehavior.opaque, // Capture all taps in this area
             onTap: () {
               debugPrint('Connection label tapped: $connectionId');
               _toggleConnectionOutputMode(connectionId);
             },
-            child: MouseRegion(
-              onEnter: null, // Disabled - connection highlighting now controlled by port hover only
-              onExit: null, // Disabled - connection highlighting now controlled by port hover only
-              child: Center(
-                child: Container(
-                  // Small visible area that represents the actual text bounds
-                  width: bounds.width - 12, // Remove the padding added in ConnectionPainter
-                  height: bounds.height - 8, // Remove the padding added in ConnectionPainter
-                  color: Colors.transparent,
-                ),
-              ),
-            ),
+            child: const SizedBox.expand(), // Fill the entire positioned area
           ),
         ),
       );
@@ -1208,21 +1148,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       orElse: () => throw ArgumentError('Connection not found: $connectionId'),
     );
 
-    // Get current output mode for the source port
-    final currentMode = routingState.portOutputModes[connection.sourcePortId] ?? OutputMode.replace;
-    
-    // Toggle between the two modes
-    final newMode = currentMode == OutputMode.replace 
-        ? OutputMode.add 
-        : OutputMode.replace;
-
-    // Call the existing cubit method to update the port output mode
-    context.read<RoutingEditorCubit>().setPortOutputMode(
+    // Toggle the output mode for the source port
+    context.read<RoutingEditorCubit>().togglePortOutputMode(
       portId: connection.sourcePortId,
-      outputMode: newMode,
     );
     
-    debugPrint('Toggled output mode for ${connection.sourcePortId}: $currentMode -> $newMode');
+    debugPrint('Toggling output mode for ${connection.sourcePortId}');
   }
 
 }

@@ -157,6 +157,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   direction: PortDirection.input,
                   busValue: p.busValue,
                   busParam: p.busParam,
+                  parameterNumber: p.parameterNumber,
+                  isPolyVoice: p.isPolyVoice,
+                  voiceNumber: p.voiceNumber,
+                  isVirtualCV: p.isVirtualCV,
                 ),
               )
               .toList(),
@@ -169,6 +173,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   direction: PortDirection.output,
                   busValue: p.busValue,
                   busParam: p.busParam,
+                  parameterNumber: p.parameterNumber,
+                  modeParameterNumber: p.modeParameterNumber,
+                  outputMode: p.outputMode,
                 ),
               )
               .toList(),
@@ -629,6 +636,31 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
+  /// Helper method to find a port by ID and return both the port and its algorithm index
+  (Port?, int?) _findPortWithAlgorithmIndex(RoutingEditorStateLoaded state, String portId) {
+    // Check physical inputs (no algorithm index)
+    for (final port in state.physicalInputs) {
+      if (port.id == portId) return (port, null);
+    }
+
+    // Check physical outputs (no algorithm index)
+    for (final port in state.physicalOutputs) {
+      if (port.id == portId) return (port, null);
+    }
+
+    // Check algorithm ports
+    for (final algorithm in state.algorithms) {
+      for (final port in algorithm.inputPorts) {
+        if (port.id == portId) return (port, algorithm.index);
+      }
+      for (final port in algorithm.outputPorts) {
+        if (port.id == portId) return (port, algorithm.index);
+      }
+    }
+
+    return (null, null);
+  }
+
   /// Helper method to check if two ports can be connected
   bool _canConnect(Port sourcePort, Port targetPort) {
     // Output can connect to input
@@ -943,10 +975,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
-  /// Set output mode for a specific port
-  Future<void> setPortOutputMode({
+  /// Toggle output mode for a specific port
+  Future<void> togglePortOutputMode({
     required String portId,
-    required OutputMode outputMode,
   }) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) {
@@ -954,9 +985,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return;
     }
 
+    if (_distingCubit == null) {
+      debugPrint('Cannot set port output mode - DistingCubit not available');
+      return;
+    }
+
     try {
-      // Verify port exists
-      final port = _findPortById(currentState, portId);
+      // Find the port and its algorithm index
+      final (port, algorithmIndex) = _findPortWithAlgorithmIndex(currentState, portId);
       if (port == null) {
         debugPrint('Port not found: $portId');
         emit(RoutingEditorState.error('Port not found: $portId'));
@@ -974,29 +1010,50 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         return;
       }
 
-      // Update port output modes
-      final updatedPortOutputModes = Map<String, OutputMode>.from(
-        currentState.portOutputModes,
+      // Verify we have mode parameter information
+      if (port.modeParameterNumber == null || algorithmIndex == null) {
+        debugPrint('Mode parameter not available for port: $portId');
+        debugPrint('This algorithm may not support output mode switching');
+        // For algorithms without mode parameters, we silently ignore the request
+        // rather than showing an error to the user
+        return;
+      }
+
+      // Get current parameter value from the actual slot data
+      final distingState = _distingCubit.state;
+      if (distingState is! DistingStateSynchronized) {
+        debugPrint('Disting not synchronized, cannot get slot data');
+        return;
+      }
+      
+      if (algorithmIndex >= distingState.slots.length) {
+        debugPrint('Algorithm index $algorithmIndex out of range');
+        return;
+      }
+      
+      final currentSlot = distingState.slots[algorithmIndex];
+      
+      // Find the current value of the mode parameter
+      final currentParamValue = currentSlot.values.firstWhere(
+        (v) => v.parameterNumber == port.modeParameterNumber!,
+        orElse: () => throw StateError('Mode parameter ${port.modeParameterNumber} not found in slot'),
+      ).value;
+      
+      // Toggle the parameter value: 0=Add, 1=Replace
+      final newParamValue = currentParamValue == 0 ? 1 : 0;
+      final newMode = newParamValue == 1 ? OutputMode.replace : OutputMode.add;
+      
+      debugPrint('Toggling mode parameter for ${port.name}: current=$currentParamValue, new=$newParamValue ($newMode)');
+
+      // Update the hardware parameter via DistingCubit
+      await _distingCubit.updateParameterValue(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: port.modeParameterNumber!,
+        value: newParamValue,
+        userIsChangingTheValue: true,
       );
-      updatedPortOutputModes[portId] = outputMode;
 
-        // Update connections that use this port as source
-        final updatedConnections = currentState.connections.map((conn) {
-          if (conn.sourcePortId == portId) {
-            return conn.copyWith(outputMode: outputMode);
-          }
-          return conn;
-        }).toList();
-
-        emit(
-          currentState.copyWith(
-            portOutputModes: updatedPortOutputModes,
-            connections: updatedConnections,
-            lastError: null,
-          ),
-        );
-
-      debugPrint('Port output mode set: ${port.name} -> $outputMode');
+      debugPrint('Port output mode toggled via hardware parameter: ${port.name} -> $newMode');
     } catch (e) {
       debugPrint('Error setting port output mode: $e');
       emit(RoutingEditorState.error('Failed to set port output mode: $e'));
