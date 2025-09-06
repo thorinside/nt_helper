@@ -12,6 +12,7 @@ import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
+import 'package:nt_helper/ui/widgets/routing/interactive_connection_widget.dart';
 // Removed unused imports from previous canvas split
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.

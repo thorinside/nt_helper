@@ -129,8 +129,8 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
     final sourcePos = widget.connectionData!.sourcePosition;
     final destPos = widget.connectionData!.destinationPosition;
     
-    // Calculate point at 40% along the cubic bezier curve to avoid label areas
-    const t = 0.4; // Position along curve (0 = source, 1 = destination)
+    // Calculate point at 90% along the cubic bezier curve (near the destination)
+    const t = 0.9; // Position along curve (0 = source, 1 = destination)
     
     // Create control points for the cubic bezier (same as in ConnectionPainter)
     final controlPoint1 = Offset(
