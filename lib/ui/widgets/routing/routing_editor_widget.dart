@@ -11,6 +11,13 @@ import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
+import 'package:nt_helper/core/routing/services/connection_drag_handler.dart';
+import 'package:nt_helper/core/routing/services/connection_deletion_handler.dart';
+import 'package:nt_helper/core/routing/services/connection_bus_manager.dart';
+import 'package:nt_helper/core/routing/services/interactive_connection_validator.dart';
+import 'package:nt_helper/ui/routing/widgets/drag_preview_painter.dart';
+import 'package:nt_helper/ui/routing/widgets/connection_delete_dialog.dart';
+import 'package:nt_helper/ui/routing/widgets/port_mode_indicator.dart';
 // Removed unused imports from previous canvas split
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
@@ -44,9 +51,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   final Map<String, Offset> _portPositions = {};  // Store actual port positions
   final Set<String> _selectedNodes = {};
   
-  String? _connectionSourcePortId;
   Offset? _dragPosition;
-  final bool _isDraggingConnection = false;
+  bool _isDraggingConnection = false;
+  
+  // Drag-and-drop connection handler
+  late ConnectionDragHandler _dragHandler;
+  
+  // Connection deletion handler
+  late ConnectionDeletionHandler _deletionHandler;
+  
+  // Bus management and validation
+  final ConnectionBusManager _busManager = ConnectionBusManager();
   
   // ScrollControllers for manual pan control
   late ScrollController _horizontalScrollController;
@@ -71,6 +86,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     super.initState();
     _horizontalScrollController = ScrollController();
     _verticalScrollController = ScrollController();
+    
+    // Initialize drag handler with callbacks
+    _dragHandler = ConnectionDragHandler(
+      onDragStart: _onDragStart,
+      onDragUpdate: _onDragUpdate,
+      onDragEnd: _onDragEnd,
+      onDragCancel: _onDragCancel,
+    );
+    
+    // Initialize deletion handler with callbacks
+    _deletionHandler = ConnectionDeletionHandler(
+      onDeleteConnection: _onDeleteConnection,
+      onHoverChanged: _onConnectionHoverChanged,
+      onShowDeleteConfirmation: _onShowDeleteConfirmation,
+      onHideDeleteConfirmation: _onHideDeleteConfirmation,
+    );
     
     // Center the view on the canvas after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -125,6 +156,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   void dispose() {
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
+    _deletionHandler.dispose();
     super.dispose();
   }
 
@@ -174,7 +206,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       refreshing: () => _buildLoadingOverlay(context),
       persisting: () => _buildLoadingOverlay(context),
       syncing: () => _buildLoadingOverlay(context),
-      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) =>
+      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError, pendingOperations, baseConnections, hasOptimisticChanges, lastOptimisticChangeTime) =>
           _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections),
       error: (message) => _buildErrorState(context, message),
     );
@@ -595,38 +627,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
   
   Widget _buildTemporaryConnection() {
-    if (_connectionSourcePortId == null || _dragPosition == null) {
+    // Use the drag handler's preview data for enhanced visual feedback
+    final previewData = _dragHandler.previewData;
+    if (previewData == null) {
       return const SizedBox.shrink();
     }
-    final sourcePosition = _getPortPosition(_connectionSourcePortId!);
-    if (sourcePosition == null) return const SizedBox.shrink();
-    
-    // Create a temporary connection for preview
-    final tempConnection = Connection(
-      id: 'temp_connection',
-      sourcePortId: _connectionSourcePortId!,
-      destinationPortId: 'temp_target',
-      connectionType: ConnectionType.algorithmToAlgorithm,
-    );
-    
-    final connectionData = painter.ConnectionData(
-      connection: tempConnection,
-      sourcePosition: sourcePosition,
-      destinationPosition: _dragPosition!,
-      isHighlighted: true,
-    );
-    
-    // Use ConnectionPainter directly for the temporary connection
-    return CustomPaint(
-      painter: painter.ConnectionPainter(
-        connections: [connectionData],
-        theme: Theme.of(context),
-        enableAntiOverlap: false,
-        showLabels: false,
-        enableAnimations: true,
-        animationProgress: 1.0,
+
+    return IgnorePointer(
+      child: DragPreviewWidget(
+        previewData: previewData,
+        validColor: Colors.green.withValues(alpha: 0.8),
+        invalidColor: Colors.red.withValues(alpha: 0.8),
+        strokeWidth: 3.0,
       ),
-      child: const SizedBox.expand(),
     );
   }
 
@@ -669,13 +682,387 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   
-  // Original event handlers (removed unused canvas tap/drag stubs)
-  void _handlePortTap(core_port.Port port) { /* same logic */ }
-  void _handlePortDragStart(core_port.Port port) { /* same logic */ }
-  void _handlePortDragUpdate(core_port.Port port, Offset position) { /* same logic */ }
-  void _handlePortDragEnd(core_port.Port port, Offset position) { /* same logic */ }
-  void _handleNodeTap(String nodeId) { /* same logic */ }
-  // Haptic feedback suppressed to reduce complexity
+  // Original event handlers
+  void _handlePortTap(core_port.Port port) {
+    debugPrint('Port tapped: ${port.id} (${port.name})');
+    // Handle port mode toggle for Add/Replace mode
+    if (port.direction == core_port.PortDirection.output) {
+      _handlePortModeToggle(port);
+    }
+  }
+
+  void _handlePortDragStart(core_port.Port port) {
+    debugPrint('Port drag start: ${port.id} (${port.name})');
+    final portPosition = _getPortPosition(port.id);
+    if (portPosition != null) {
+      _dragHandler.startDrag(port, portPosition);
+    }
+  }
+
+  void _handlePortDragUpdate(core_port.Port port, Offset position) {
+    _dragHandler.updateDrag(position);
+  }
+
+  void _handlePortDragEnd(core_port.Port port, Offset position) {
+    // Find target port at drop position
+    final targetPort = _findPortAtPosition(position);
+    _dragHandler.endDrag(targetPort);
+  }
+
+  void _handleNodeTap(String nodeId) {
+    debugPrint('Node tapped: $nodeId');
+    // Handle node selection
+    setState(() {
+      if (_selectedNodes.contains(nodeId)) {
+        _selectedNodes.remove(nodeId);
+      } else {
+        _selectedNodes.add(nodeId);
+      }
+    });
+    widget.onNodeSelected?.call(nodeId);
+  }
+
+  // Drag handler callbacks
+  void _onDragStart(core_port.Port sourcePort, Offset startPosition) {
+    setState(() {
+      _isDraggingConnection = true;
+      _dragPosition = startPosition;
+    });
+    debugPrint('Drag started from port: ${sourcePort.name}');
+  }
+
+  void _onDragUpdate(Offset currentPosition, bool isValidDrop) {
+    setState(() {
+      _dragPosition = currentPosition;
+    });
+  }
+
+  void _onDragEnd(core_port.Port sourcePort, core_port.Port? targetPort) {
+    setState(() {
+      _isDraggingConnection = false;
+      _dragPosition = null;
+    });
+
+    if (targetPort != null) {
+      // Validate the connection using the validator
+      final routingState = context.read<RoutingEditorCubit>().state;
+      if (routingState is RoutingEditorStateLoaded) {
+        final validation = InteractiveConnectionValidator.validateConnectionCreation(
+          sourcePort: sourcePort,
+          targetPort: targetPort,
+          currentState: routingState,
+          isDragOperation: true,
+        );
+
+        if (validation.isValid) {
+          // Normalize connection (ensure output -> input direction)
+          final (source, target) = _dragHandler.normalizeConnection(sourcePort, targetPort);
+          _createOptimisticConnectionWithValidation(source, target);
+          debugPrint('Connection created: ${source.name} -> ${target.name}');
+          
+          // Show warning if present
+          if (validation.warningMessage != null) {
+            _showConnectionWarning(validation.warningMessage!);
+          }
+        } else {
+          // Show validation error
+          _showConnectionError(validation.errorMessage!, validation.suggestions);
+          debugPrint('Connection validation failed: ${validation.errorMessage}');
+        }
+      }
+    } else {
+      debugPrint('Invalid connection or no target port');
+    }
+  }
+
+  void _onDragCancel() {
+    setState(() {
+      _isDraggingConnection = false;
+      _dragPosition = null;
+    });
+    debugPrint('Drag cancelled');
+  }
+
+  // Port mode toggle for Add/Replace functionality
+  void _handlePortModeToggle(core_port.Port port) {
+    final cubit = context.read<RoutingEditorCubit>();
+    final currentMode = cubit.getPortOutputMode(port.id);
+    final newMode = currentMode == core_port.OutputMode.add 
+        ? core_port.OutputMode.replace 
+        : core_port.OutputMode.add;
+    
+    cubit.setPortOutputMode(portId: port.id, outputMode: newMode);
+    debugPrint('Port ${port.name} mode toggled to: $newMode');
+    
+    // Show visual feedback
+    PortModeSnackbar.show(
+      context,
+      portName: port.name,
+      newMode: newMode,
+    );
+  }
+
+  // Create optimistic connection through cubit (legacy method for backward compatibility)
+
+  // Create optimistic connection with validation and bus assignment
+  void _createOptimisticConnectionWithValidation(core_port.Port sourcePort, core_port.Port targetPort) {
+    // Create temporary connection for bus assignment
+    final tempConnection = Connection(
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      sourcePortId: sourcePort.id,
+      destinationPortId: targetPort.id,
+      connectionType: _determineConnectionTypeFromPorts(sourcePort, targetPort),
+    );
+
+    // Assign bus automatically
+    final assignedBus = _busManager.assignBus(tempConnection, sourcePort, targetPort);
+    
+    final cubit = context.read<RoutingEditorCubit>();
+    cubit.createConnectionOptimistic(
+      sourcePortId: sourcePort.id,
+      targetPortId: targetPort.id,
+      busId: assignedBus?.toString(),
+    );
+    
+    widget.onConnectionCreated?.call(sourcePort.id, targetPort.id);
+
+    // Show bus assignment feedback
+    if (assignedBus != null) {
+      _showBusAssignmentFeedback(sourcePort.name, targetPort.name, assignedBus);
+    }
+  }
+
+  // Determine connection type from ports
+  ConnectionType _determineConnectionTypeFromPorts(core_port.Port sourcePort, core_port.Port targetPort) {
+    final isSourceHardware = sourcePort.id.startsWith('hw_');
+    final isTargetHardware = targetPort.id.startsWith('hw_');
+    
+    if (isSourceHardware && !isTargetHardware) {
+      return ConnectionType.hardwareInput;
+    } else if (!isSourceHardware && isTargetHardware) {
+      return ConnectionType.hardwareOutput;
+    } else {
+      return ConnectionType.algorithmToAlgorithm;
+    }
+  }
+
+  // Show connection validation error
+  void _showConnectionError(String error, List<String> suggestions) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text(error, style: const TextStyle(fontWeight: FontWeight.w500))),
+              ],
+            ),
+            if (suggestions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...suggestions.map((suggestion) => Padding(
+                padding: const EdgeInsets.only(left: 28),
+                child: Text('• $suggestion', style: const TextStyle(fontSize: 12)),
+              )),
+            ],
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        ),
+      ),
+    );
+  }
+
+  // Show connection validation warning
+  void _showConnectionWarning(String warning) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.black87, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(warning, style: const TextStyle(color: Colors.black87))),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade300,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Show bus assignment feedback
+  void _showBusAssignmentFeedback(String sourceName, String targetName, int busNumber) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.cable, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Connection created: $sourceName → $targetName (Bus $busNumber)',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green.shade600,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // Find port at given position for drop detection
+  core_port.Port? _findPortAtPosition(Offset position) {
+    const double portRadius = 15.0; // Port hit detection radius
+    
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded) return null;
+
+    // Check all ports for proximity to the drop position
+    for (final algorithm in routingState.algorithms) {
+      for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+        final portPosition = _getPortPosition(port.id);
+        if (portPosition != null && (portPosition - position).distance <= portRadius) {
+          // Convert UI Port to core_port.Port
+          return core_port.Port(
+            id: port.id,
+            name: port.name,
+            type: _toCorePortType(port.type),
+            direction: port.direction == PortDirection.input 
+                ? core_port.PortDirection.input 
+                : core_port.PortDirection.output,
+            busValue: port.busNumber,
+            busParam: port.parameterName,
+          );
+        }
+      }
+    }
+
+    // Check physical ports
+    for (final port in [...routingState.physicalInputs, ...routingState.physicalOutputs]) {
+      final portPosition = _getPortPosition(port.id);
+      if (portPosition != null && (portPosition - position).distance <= portRadius) {
+        // Convert UI Port to core_port.Port
+        return core_port.Port(
+          id: port.id,
+          name: port.name,
+          type: _toCorePortType(port.type),
+          direction: port.direction == PortDirection.input 
+              ? core_port.PortDirection.input 
+              : core_port.PortDirection.output,
+          busValue: port.busNumber,
+          busParam: port.parameterName,
+        );
+      }
+    }
+
+    return null;
+  }
+
+  /// Convert UI PortType to core PortType
+  core_port.PortType _toCorePortType(PortType type) {
+    switch (type) {
+      case PortType.audio:
+        return core_port.PortType.audio;
+      case PortType.cv:
+        return core_port.PortType.cv;
+      case PortType.gate:
+        return core_port.PortType.gate;
+      case PortType.trigger:
+        return core_port.PortType.gate; // Map trigger to gate for compatibility
+    }
+  }
+
+  // Connection deletion callbacks
+  void _onDeleteConnection(String connectionId) {
+    final cubit = context.read<RoutingEditorCubit>();
+    cubit.deleteConnectionOptimistic(connectionId);
+    widget.onConnectionRemoved?.call(connectionId);
+    
+    // Show feedback
+    ConnectionDeleteSnackbar.show(
+      context,
+      message: 'Connection deleted',
+      // TODO: Implement undo functionality
+    );
+  }
+
+  void _onConnectionHoverChanged(String connectionId, bool isHovered, Offset position) {
+    // Trigger rebuild to show/hide delete icon
+    setState(() {
+      // State will be reflected in the deletion handler
+    });
+  }
+
+  void _onShowDeleteConfirmation(String connectionId) async {
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded) return;
+
+    // Find the connection
+    final connection = routingState.connections.firstWhere(
+      (conn) => conn.id == connectionId,
+      orElse: () => throw ArgumentError('Connection not found: $connectionId'),
+    );
+
+    // Get port names for better UX
+    final sourcePort = _findPortByIdInState(routingState, connection.sourcePortId);
+    final targetPort = _findPortByIdInState(routingState, connection.destinationPortId);
+
+    // Show confirmation dialog
+    final confirmed = await ConnectionDeleteDialog.show(
+      context,
+      connection: connection,
+      sourcePortName: sourcePort?.name,
+      targetPortName: targetPort?.name,
+    );
+
+    if (confirmed == true) {
+      _deletionHandler.confirmDeletion();
+    } else {
+      _deletionHandler.cancelDeletion();
+    }
+  }
+
+  void _onHideDeleteConfirmation() {
+    // Hide any active confirmation UI if needed
+    setState(() {
+      // Confirmation dialog is already dismissed
+    });
+  }
+
+  // Helper to find port by ID in current state
+  Port? _findPortByIdInState(RoutingEditorStateLoaded state, String portId) {
+    // Check physical inputs
+    for (final port in state.physicalInputs) {
+      if (port.id == portId) return port;
+    }
+
+    // Check physical outputs
+    for (final port in state.physicalOutputs) {
+      if (port.id == portId) return port;
+    }
+
+    // Check algorithm ports
+    for (final algorithm in state.algorithms) {
+      for (final port in algorithm.inputPorts) {
+        if (port.id == portId) return port;
+      }
+      for (final port in algorithm.outputPorts) {
+        if (port.id == portId) return port;
+      }
+    }
+
+    return null;
+  }
 
   bool _hasLoadedStateChanged(RoutingEditorStateLoaded previous, RoutingEditorStateLoaded current) { /* same as RoutingCanvas */
     if (previous.physicalInputs.length != current.physicalInputs.length ||

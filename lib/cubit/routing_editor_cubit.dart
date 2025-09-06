@@ -355,7 +355,279 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     ];
   }
 
-  /// Create a new connection between source and target ports
+  /// Create a connection optimistically with immediate UI feedback
+  Future<void> createConnectionOptimistic({
+    required String sourcePortId,
+    required String targetPortId,
+    String? busId,
+    core_port.OutputMode outputMode = core_port.OutputMode.replace,
+    double gain = 1.0,
+  }) async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) {
+      debugPrint('Cannot create connection - routing editor not loaded');
+      return;
+    }
+
+    try {
+      // Validate ports exist
+      final sourcePort = _findPortById(currentState, sourcePortId);
+      final targetPort = _findPortById(currentState, targetPortId);
+
+      if (sourcePort == null) {
+        debugPrint('Source port not found: $sourcePortId');
+        emit(RoutingEditorState.error('Source port not found: $sourcePortId'));
+        return;
+      }
+
+      if (targetPort == null) {
+        debugPrint('Target port not found: $targetPortId');
+        emit(RoutingEditorState.error('Target port not found: $targetPortId'));
+        return;
+      }
+
+      // Validate port compatibility
+      if (!_canConnect(sourcePort, targetPort)) {
+        debugPrint(
+          'Ports are not compatible for connection: $sourcePortId -> $targetPortId',
+        );
+        emit(
+          RoutingEditorState.error(
+            'Incompatible ports: ${sourcePort.name} -> ${targetPort.name}',
+          ),
+        );
+        return;
+      }
+
+      // Check for duplicate connections
+      final existingConnection = _findExistingConnection(
+        currentState,
+        sourcePortId,
+        targetPortId,
+      );
+      if (existingConnection != null) {
+        debugPrint('Connection already exists: $sourcePortId -> $targetPortId');
+        emit(RoutingEditorState.error('Connection already exists'));
+        return;
+      }
+
+      // Generate unique connection ID
+      final connectionId =
+          'conn_${sourcePortId}_${targetPortId}_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Determine connection type
+      final connectionType = _determineConnectionType(sourcePortId, targetPortId);
+
+      // Create new connection
+      final newConnection = Connection(
+        id: connectionId,
+        sourcePortId: sourcePortId,
+        destinationPortId: targetPortId,
+        connectionType: connectionType,
+        outputMode: outputMode,
+        gain: gain,
+        createdAt: DateTime.now(),
+      );
+
+      // Create optimistic operation record
+      final operation = OptimisticOperation(
+        id: 'op_${DateTime.now().millisecondsSinceEpoch}',
+        type: OptimisticOperationType.createConnection,
+        timestamp: DateTime.now(),
+        data: {
+          'connectionId': connectionId,
+          'sourcePortId': sourcePortId,
+          'targetPortId': targetPortId,
+          'outputMode': outputMode.name,
+          'gain': gain,
+        },
+      );
+
+      // Store base connections if this is the first optimistic change
+      final baseConnections = currentState.hasOptimisticChanges
+          ? currentState.baseConnections
+          : currentState.connections;
+
+      // Update state with new connection and pending operation
+      final updatedConnections = [...currentState.connections, newConnection];
+      final updatedOperations = [...currentState.pendingOperations, operation];
+
+      emit(
+        currentState.copyWith(
+          connections: updatedConnections,
+          pendingOperations: updatedOperations,
+          baseConnections: baseConnections,
+          hasOptimisticChanges: true,
+          lastOptimisticChangeTime: DateTime.now(),
+          isHardwareSynced: false,
+          lastError: null,
+        ),
+      );
+
+      debugPrint(
+        'Connection created optimistically: ${sourcePort.name} -> ${targetPort.name}',
+      );
+
+      // Trigger hardware sync with timeout
+      _syncOptimisticChangesToHardware();
+    } catch (e) {
+      debugPrint('Error creating optimistic connection: $e');
+      emit(RoutingEditorState.error('Failed to create connection: $e'));
+    }
+  }
+
+  /// Delete a connection optimistically with immediate UI feedback
+  Future<void> deleteConnectionOptimistic(String connectionId) async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) {
+      debugPrint('Cannot delete connection - routing editor not loaded');
+      return;
+    }
+
+    try {
+      // Find the connection to delete
+      final connectionToDelete = currentState.connections.firstWhere(
+        (connection) => connection.id == connectionId,
+        orElse: () => throw ArgumentError('Connection not found: $connectionId'),
+      );
+
+      // Create optimistic operation record
+      final operation = OptimisticOperation(
+        id: 'op_${DateTime.now().millisecondsSinceEpoch}',
+        type: OptimisticOperationType.deleteConnection,
+        timestamp: DateTime.now(),
+        data: {
+          'connectionId': connectionId,
+          'sourcePortId': connectionToDelete.sourcePortId,
+          'targetPortId': connectionToDelete.destinationPortId,
+        },
+      );
+
+      // Store base connections if this is the first optimistic change
+      final baseConnections = currentState.hasOptimisticChanges
+          ? currentState.baseConnections
+          : currentState.connections;
+
+      // Remove connection from state
+      final updatedConnections = currentState.connections
+          .where((connection) => connection.id != connectionId)
+          .toList();
+      
+      final updatedOperations = [...currentState.pendingOperations, operation];
+
+      emit(
+        currentState.copyWith(
+          connections: updatedConnections,
+          pendingOperations: updatedOperations,
+          baseConnections: baseConnections,
+          hasOptimisticChanges: true,
+          lastOptimisticChangeTime: DateTime.now(),
+          isHardwareSynced: false,
+          lastError: null,
+        ),
+      );
+
+      debugPrint('Connection deleted optimistically: $connectionId');
+
+      // Trigger hardware sync with timeout
+      _syncOptimisticChangesToHardware();
+    } catch (e) {
+      debugPrint('Error deleting optimistic connection: $e');
+      emit(RoutingEditorState.error('Failed to delete connection: $e'));
+    }
+  }
+
+  /// Revert all optimistic changes and restore base hardware state
+  Future<void> revertOptimisticChanges() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded || !currentState.hasOptimisticChanges) {
+      debugPrint('No optimistic changes to revert');
+      return;
+    }
+
+    try {
+      // Restore base connections and clear optimistic state
+      emit(
+        currentState.copyWith(
+          connections: currentState.baseConnections,
+          pendingOperations: [],
+          baseConnections: [],
+          hasOptimisticChanges: false,
+          lastOptimisticChangeTime: null,
+          lastError: null,
+        ),
+      );
+
+      debugPrint('Optimistic changes reverted');
+    } catch (e) {
+      debugPrint('Error reverting optimistic changes: $e');
+      emit(RoutingEditorState.error('Failed to revert changes: $e'));
+    }
+  }
+
+  /// Sync optimistic changes to hardware with timeout handling
+  Future<void> _syncOptimisticChangesToHardware() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded || !currentState.hasOptimisticChanges) {
+      return;
+    }
+
+    try {
+      // Start sync process
+      final syncingOperations = currentState.pendingOperations.map(
+        (op) => op.copyWith(isSyncing: true),
+      ).toList();
+
+      emit(
+        currentState.copyWith(
+          pendingOperations: syncingOperations,
+          lastError: null,
+        ),
+      );
+
+      // Simulate hardware sync with timeout
+      final syncCompleted = await _performHardwareSync().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => false,
+      );
+
+      if (syncCompleted) {
+        // Sync successful - commit optimistic changes
+        emit(
+          currentState.copyWith(
+            pendingOperations: [],
+            baseConnections: [],
+            hasOptimisticChanges: false,
+            isHardwareSynced: true,
+            lastSyncTime: DateTime.now(),
+            lastError: null,
+          ),
+        );
+        debugPrint('Optimistic changes synced to hardware successfully');
+      } else {
+        // Sync timeout - revert changes
+        debugPrint('Hardware sync timeout - reverting optimistic changes');
+        await revertOptimisticChanges();
+        emit(
+          RoutingEditorState.error('Hardware sync timeout - changes reverted'),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error syncing to hardware: $e');
+      await revertOptimisticChanges();
+      emit(RoutingEditorState.error('Sync failed - changes reverted: $e'));
+    }
+  }
+
+  /// Perform actual hardware synchronization
+  Future<bool> _performHardwareSync() async {
+    // TODO: Implement actual hardware communication
+    // For now, simulate sync operation
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true; // Simulate successful sync
+  }
+
+  /// Create a new connection between source and target ports (legacy method for backward compatibility)
   Future<void> createConnection({
     required String sourcePortId,
     required String targetPortId,

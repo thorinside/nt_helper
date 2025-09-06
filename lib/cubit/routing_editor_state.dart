@@ -30,6 +30,25 @@ enum BusStatus {
   error,
 }
 
+/// Represents types of pending optimistic operations
+enum OptimisticOperationType {
+  createConnection,
+  deleteConnection,
+  updateConnection,
+}
+
+/// Represents a pending optimistic operation
+@freezed
+sealed class OptimisticOperation with _$OptimisticOperation {
+  const factory OptimisticOperation({
+    required String id,
+    required OptimisticOperationType type,
+    required DateTime timestamp,
+    required Map<String, dynamic> data,
+    @Default(false) bool isSyncing,
+  }) = _OptimisticOperation;
+}
+
 /// Represents a port in the routing system
 @freezed
 sealed class Port with _$Port {
@@ -110,6 +129,11 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     DateTime? lastSyncTime, // Last hardware sync timestamp
     DateTime? lastPersistTime, // Last persistence save timestamp
     String? lastError, // Last error message
+    // Optimistic state management fields
+    @Default([]) List<OptimisticOperation> pendingOperations, // Pending optimistic operations
+    @Default([]) List<Connection> baseConnections, // Hardware state before optimistic changes
+    @Default(false) bool hasOptimisticChanges, // Whether there are unsynced optimistic changes
+    DateTime? lastOptimisticChangeTime, // Timestamp of last optimistic change
   }) = RoutingEditorStateLoaded;
 
   /// State when an error occurs

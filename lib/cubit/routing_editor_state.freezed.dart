@@ -12,6 +12,275 @@ part of 'routing_editor_state.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
+mixin _$OptimisticOperation {
+
+ String get id; OptimisticOperationType get type; DateTime get timestamp; Map<String, dynamic> get data; bool get isSyncing;
+/// Create a copy of OptimisticOperation
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OptimisticOperationCopyWith<OptimisticOperation> get copyWith => _$OptimisticOperationCopyWithImpl<OptimisticOperation>(this as OptimisticOperation, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OptimisticOperation&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&const DeepCollectionEquality().equals(other.data, data)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,type,timestamp,const DeepCollectionEquality().hash(data),isSyncing);
+
+@override
+String toString() {
+  return 'OptimisticOperation(id: $id, type: $type, timestamp: $timestamp, data: $data, isSyncing: $isSyncing)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $OptimisticOperationCopyWith<$Res>  {
+  factory $OptimisticOperationCopyWith(OptimisticOperation value, $Res Function(OptimisticOperation) _then) = _$OptimisticOperationCopyWithImpl;
+@useResult
+$Res call({
+ String id, OptimisticOperationType type, DateTime timestamp, Map<String, dynamic> data, bool isSyncing
+});
+
+
+
+
+}
+/// @nodoc
+class _$OptimisticOperationCopyWithImpl<$Res>
+    implements $OptimisticOperationCopyWith<$Res> {
+  _$OptimisticOperationCopyWithImpl(this._self, this._then);
+
+  final OptimisticOperation _self;
+  final $Res Function(OptimisticOperation) _then;
+
+/// Create a copy of OptimisticOperation
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? timestamp = null,Object? data = null,Object? isSyncing = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as OptimisticOperationType,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
+as DateTime,data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,isSyncing: null == isSyncing ? _self.isSyncing : isSyncing // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [OptimisticOperation].
+extension OptimisticOperationPatterns on OptimisticOperation {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OptimisticOperation value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _OptimisticOperation() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OptimisticOperation value)  $default,){
+final _that = this;
+switch (_that) {
+case _OptimisticOperation():
+return $default(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OptimisticOperation value)?  $default,){
+final _that = this;
+switch (_that) {
+case _OptimisticOperation() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  OptimisticOperationType type,  DateTime timestamp,  Map<String, dynamic> data,  bool isSyncing)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _OptimisticOperation() when $default != null:
+return $default(_that.id,_that.type,_that.timestamp,_that.data,_that.isSyncing);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  OptimisticOperationType type,  DateTime timestamp,  Map<String, dynamic> data,  bool isSyncing)  $default,) {final _that = this;
+switch (_that) {
+case _OptimisticOperation():
+return $default(_that.id,_that.type,_that.timestamp,_that.data,_that.isSyncing);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  OptimisticOperationType type,  DateTime timestamp,  Map<String, dynamic> data,  bool isSyncing)?  $default,) {final _that = this;
+switch (_that) {
+case _OptimisticOperation() when $default != null:
+return $default(_that.id,_that.type,_that.timestamp,_that.data,_that.isSyncing);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _OptimisticOperation implements OptimisticOperation {
+  const _OptimisticOperation({required this.id, required this.type, required this.timestamp, required final  Map<String, dynamic> data, this.isSyncing = false}): _data = data;
+  
+
+@override final  String id;
+@override final  OptimisticOperationType type;
+@override final  DateTime timestamp;
+ final  Map<String, dynamic> _data;
+@override Map<String, dynamic> get data {
+  if (_data is EqualUnmodifiableMapView) return _data;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_data);
+}
+
+@override@JsonKey() final  bool isSyncing;
+
+/// Create a copy of OptimisticOperation
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$OptimisticOperationCopyWith<_OptimisticOperation> get copyWith => __$OptimisticOperationCopyWithImpl<_OptimisticOperation>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OptimisticOperation&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&const DeepCollectionEquality().equals(other._data, _data)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,type,timestamp,const DeepCollectionEquality().hash(_data),isSyncing);
+
+@override
+String toString() {
+  return 'OptimisticOperation(id: $id, type: $type, timestamp: $timestamp, data: $data, isSyncing: $isSyncing)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$OptimisticOperationCopyWith<$Res> implements $OptimisticOperationCopyWith<$Res> {
+  factory _$OptimisticOperationCopyWith(_OptimisticOperation value, $Res Function(_OptimisticOperation) _then) = __$OptimisticOperationCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, OptimisticOperationType type, DateTime timestamp, Map<String, dynamic> data, bool isSyncing
+});
+
+
+
+
+}
+/// @nodoc
+class __$OptimisticOperationCopyWithImpl<$Res>
+    implements _$OptimisticOperationCopyWith<$Res> {
+  __$OptimisticOperationCopyWithImpl(this._self, this._then);
+
+  final _OptimisticOperation _self;
+  final $Res Function(_OptimisticOperation) _then;
+
+/// Create a copy of OptimisticOperation
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? timestamp = null,Object? data = null,Object? isSyncing = null,}) {
+  return _then(_OptimisticOperation(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as OptimisticOperationType,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
+as DateTime,data: null == data ? _self._data : data // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,isSyncing: null == isSyncing ? _self.isSyncing : isSyncing // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$Port {
 
  String get id;// Unique identifier
@@ -974,7 +1243,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  List<OptimisticOperation> pendingOperations,  List<Connection> baseConnections,  bool hasOptimisticChanges,  DateTime? lastOptimisticChangeTime)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -983,7 +1252,7 @@ return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
 return refreshing();case RoutingEditorStatePersisting() when persisting != null:
 return persisting();case RoutingEditorStateSyncing() when syncing != null:
 return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.pendingOperations,_that.baseConnections,_that.hasOptimisticChanges,_that.lastOptimisticChangeTime);case RoutingEditorStateError() when error != null:
 return error(_that.message);case _:
   return orElse();
 
@@ -1002,7 +1271,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  List<OptimisticOperation> pendingOperations,  List<Connection> baseConnections,  bool hasOptimisticChanges,  DateTime? lastOptimisticChangeTime)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial();case RoutingEditorStateDisconnected():
@@ -1011,7 +1280,7 @@ return connecting();case RoutingEditorStateRefreshing():
 return refreshing();case RoutingEditorStatePersisting():
 return persisting();case RoutingEditorStateSyncing():
 return syncing();case RoutingEditorStateLoaded():
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError():
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.pendingOperations,_that.baseConnections,_that.hasOptimisticChanges,_that.lastOptimisticChangeTime);case RoutingEditorStateError():
 return error(_that.message);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -1026,7 +1295,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  List<OptimisticOperation> pendingOperations,  List<Connection> baseConnections,  bool hasOptimisticChanges,  DateTime? lastOptimisticChangeTime)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -1035,7 +1304,7 @@ return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
 return refreshing();case RoutingEditorStatePersisting() when persisting != null:
 return persisting();case RoutingEditorStateSyncing() when syncing != null:
 return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.pendingOperations,_that.baseConnections,_that.hasOptimisticChanges,_that.lastOptimisticChangeTime);case RoutingEditorStateError() when error != null:
 return error(_that.message);case _:
   return null;
 
@@ -1240,7 +1509,7 @@ String toString() {
 
 
 class RoutingEditorStateLoaded implements RoutingEditorState {
-  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, core_port.OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
+  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, core_port.OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError, final  List<OptimisticOperation> pendingOperations = const [], final  List<Connection> baseConnections = const [], this.hasOptimisticChanges = false, this.lastOptimisticChangeTime}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes,_pendingOperations = pendingOperations,_baseConnections = baseConnections;
   
 
  final  List<Port> _physicalInputs;
@@ -1305,6 +1574,30 @@ class RoutingEditorStateLoaded implements RoutingEditorState {
  final  DateTime? lastPersistTime;
 // Last persistence save timestamp
  final  String? lastError;
+// Last error message
+// Optimistic state management fields
+ final  List<OptimisticOperation> _pendingOperations;
+// Last error message
+// Optimistic state management fields
+@JsonKey() List<OptimisticOperation> get pendingOperations {
+  if (_pendingOperations is EqualUnmodifiableListView) return _pendingOperations;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_pendingOperations);
+}
+
+// Pending optimistic operations
+ final  List<Connection> _baseConnections;
+// Pending optimistic operations
+@JsonKey() List<Connection> get baseConnections {
+  if (_baseConnections is EqualUnmodifiableListView) return _baseConnections;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_baseConnections);
+}
+
+// Hardware state before optimistic changes
+@JsonKey() final  bool hasOptimisticChanges;
+// Whether there are unsynced optimistic changes
+ final  DateTime? lastOptimisticChangeTime;
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
@@ -1316,16 +1609,16 @@ $RoutingEditorStateLoadedCopyWith<RoutingEditorStateLoaded> get copyWith => _$Ro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&const DeepCollectionEquality().equals(other._pendingOperations, _pendingOperations)&&const DeepCollectionEquality().equals(other._baseConnections, _baseConnections)&&(identical(other.hasOptimisticChanges, hasOptimisticChanges) || other.hasOptimisticChanges == hasOptimisticChanges)&&(identical(other.lastOptimisticChangeTime, lastOptimisticChangeTime) || other.lastOptimisticChangeTime == lastOptimisticChangeTime));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError,const DeepCollectionEquality().hash(_pendingOperations),const DeepCollectionEquality().hash(_baseConnections),hasOptimisticChanges,lastOptimisticChangeTime);
 
 @override
 String toString() {
-  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError)';
+  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError, pendingOperations: $pendingOperations, baseConnections: $baseConnections, hasOptimisticChanges: $hasOptimisticChanges, lastOptimisticChangeTime: $lastOptimisticChangeTime)';
 }
 
 
@@ -1336,7 +1629,7 @@ abstract mixin class $RoutingEditorStateLoadedCopyWith<$Res> implements $Routing
   factory $RoutingEditorStateLoadedCopyWith(RoutingEditorStateLoaded value, $Res Function(RoutingEditorStateLoaded) _then) = _$RoutingEditorStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, core_port.OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
+ List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, core_port.OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError, List<OptimisticOperation> pendingOperations, List<Connection> baseConnections, bool hasOptimisticChanges, DateTime? lastOptimisticChangeTime
 });
 
 
@@ -1353,7 +1646,7 @@ class _$RoutingEditorStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,Object? pendingOperations = null,Object? baseConnections = null,Object? hasOptimisticChanges = null,Object? lastOptimisticChangeTime = freezed,}) {
   return _then(RoutingEditorStateLoaded(
 physicalInputs: null == physicalInputs ? _self._physicalInputs : physicalInputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,physicalOutputs: null == physicalOutputs ? _self._physicalOutputs : physicalOutputs // ignore: cast_nullable_to_non_nullable
@@ -1366,7 +1659,11 @@ as bool,isPersistenceEnabled: null == isPersistenceEnabled ? _self.isPersistence
 as bool,lastSyncTime: freezed == lastSyncTime ? _self.lastSyncTime : lastSyncTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastPersistTime: freezed == lastPersistTime ? _self.lastPersistTime : lastPersistTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,pendingOperations: null == pendingOperations ? _self._pendingOperations : pendingOperations // ignore: cast_nullable_to_non_nullable
+as List<OptimisticOperation>,baseConnections: null == baseConnections ? _self._baseConnections : baseConnections // ignore: cast_nullable_to_non_nullable
+as List<Connection>,hasOptimisticChanges: null == hasOptimisticChanges ? _self.hasOptimisticChanges : hasOptimisticChanges // ignore: cast_nullable_to_non_nullable
+as bool,lastOptimisticChangeTime: freezed == lastOptimisticChangeTime ? _self.lastOptimisticChangeTime : lastOptimisticChangeTime // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
