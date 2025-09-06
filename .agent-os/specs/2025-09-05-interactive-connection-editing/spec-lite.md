@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Implement interactive connection editing in the routing editor with drag-and-drop connection creation, intuitive deletion gestures, and output mode toggling. Users can drag between any compatible ports in either direction, delete connections via hover+click or tap with confirmation, and toggle Add/Replace modes by tapping output labels. All operations use optimistic updates with automatic hardware synchronization and revert on failure.
