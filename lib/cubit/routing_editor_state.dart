@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/platform/connection_deletion_state.dart';
 
 part 'routing_editor_state.freezed.dart';
 
@@ -107,6 +108,7 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     @Default({}) Map<String, core_port.OutputMode> portOutputModes, // Output modes per port
     @Default(false) bool isHardwareSynced, // Hardware sync status
     @Default(false) bool isPersistenceEnabled, // State persistence status
+    @Default(ConnectionDeletionState.initial()) ConnectionDeletionState deletionState, // Connection deletion interaction state
     DateTime? lastSyncTime, // Last hardware sync timestamp
     DateTime? lastPersistTime, // Last persistence save timestamp
     String? lastError, // Last error message

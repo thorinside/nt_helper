@@ -974,7 +974,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  ConnectionDeletionState deletionState,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -983,7 +983,7 @@ return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
 return refreshing();case RoutingEditorStatePersisting() when persisting != null:
 return persisting();case RoutingEditorStateSyncing() when syncing != null:
 return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.deletionState,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
 return error(_that.message);case _:
   return orElse();
 
@@ -1002,7 +1002,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  ConnectionDeletionState deletionState,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial();case RoutingEditorStateDisconnected():
@@ -1011,7 +1011,7 @@ return connecting();case RoutingEditorStateRefreshing():
 return refreshing();case RoutingEditorStatePersisting():
 return persisting();case RoutingEditorStateSyncing():
 return syncing();case RoutingEditorStateLoaded():
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError():
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.deletionState,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError():
 return error(_that.message);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -1026,7 +1026,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  ConnectionDeletionState deletionState,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -1035,7 +1035,7 @@ return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
 return refreshing();case RoutingEditorStatePersisting() when persisting != null:
 return persisting();case RoutingEditorStateSyncing() when syncing != null:
 return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.deletionState,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
 return error(_that.message);case _:
   return null;
 
@@ -1240,7 +1240,7 @@ String toString() {
 
 
 class RoutingEditorStateLoaded implements RoutingEditorState {
-  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, core_port.OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
+  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, core_port.OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.deletionState = const ConnectionDeletionState.initial(), this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
   
 
  final  List<Port> _physicalInputs;
@@ -1300,6 +1300,8 @@ class RoutingEditorStateLoaded implements RoutingEditorState {
 // Hardware sync status
 @JsonKey() final  bool isPersistenceEnabled;
 // State persistence status
+@JsonKey() final  ConnectionDeletionState deletionState;
+// Connection deletion interaction state
  final  DateTime? lastSyncTime;
 // Last hardware sync timestamp
  final  DateTime? lastPersistTime;
@@ -1316,16 +1318,16 @@ $RoutingEditorStateLoadedCopyWith<RoutingEditorStateLoaded> get copyWith => _$Ro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.deletionState, deletionState) || other.deletionState == deletionState)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,deletionState,lastSyncTime,lastPersistTime,lastError);
 
 @override
 String toString() {
-  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError)';
+  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, deletionState: $deletionState, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError)';
 }
 
 
@@ -1336,11 +1338,11 @@ abstract mixin class $RoutingEditorStateLoadedCopyWith<$Res> implements $Routing
   factory $RoutingEditorStateLoadedCopyWith(RoutingEditorStateLoaded value, $Res Function(RoutingEditorStateLoaded) _then) = _$RoutingEditorStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, core_port.OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
+ List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, core_port.OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, ConnectionDeletionState deletionState, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
 });
 
 
-
+$ConnectionDeletionStateCopyWith<$Res> get deletionState;
 
 }
 /// @nodoc
@@ -1353,7 +1355,7 @@ class _$RoutingEditorStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? deletionState = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,}) {
   return _then(RoutingEditorStateLoaded(
 physicalInputs: null == physicalInputs ? _self._physicalInputs : physicalInputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,physicalOutputs: null == physicalOutputs ? _self._physicalOutputs : physicalOutputs // ignore: cast_nullable_to_non_nullable
@@ -1363,14 +1365,24 @@ as List<Connection>,buses: null == buses ? _self._buses : buses // ignore: cast_
 as List<RoutingBus>,portOutputModes: null == portOutputModes ? _self._portOutputModes : portOutputModes // ignore: cast_nullable_to_non_nullable
 as Map<String, core_port.OutputMode>,isHardwareSynced: null == isHardwareSynced ? _self.isHardwareSynced : isHardwareSynced // ignore: cast_nullable_to_non_nullable
 as bool,isPersistenceEnabled: null == isPersistenceEnabled ? _self.isPersistenceEnabled : isPersistenceEnabled // ignore: cast_nullable_to_non_nullable
-as bool,lastSyncTime: freezed == lastSyncTime ? _self.lastSyncTime : lastSyncTime // ignore: cast_nullable_to_non_nullable
+as bool,deletionState: null == deletionState ? _self.deletionState : deletionState // ignore: cast_nullable_to_non_nullable
+as ConnectionDeletionState,lastSyncTime: freezed == lastSyncTime ? _self.lastSyncTime : lastSyncTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastPersistTime: freezed == lastPersistTime ? _self.lastPersistTime : lastPersistTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
-
+/// Create a copy of RoutingEditorState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ConnectionDeletionStateCopyWith<$Res> get deletionState {
+  
+  return $ConnectionDeletionStateCopyWith<$Res>(_self.deletionState, (value) {
+    return _then(_self.copyWith(deletionState: value));
+  });
+}
 }
 
 /// @nodoc
