@@ -193,3 +193,4 @@ final paramNum = busPort.parameterNumber; // int?
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
 @./.taskmaster/CLAUDE.md
+- Connecting to the dart mcp: run `flutter run -d macos --print-dtd` remember the DTD url, then tell the user the URL after `The Flutter DevTools debugger and profiler on macOS is available at:` or launch it in a headless chrome, also in the background. The DTD Url can be used to connect using the mcp tool.

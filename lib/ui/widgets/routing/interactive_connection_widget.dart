@@ -158,33 +158,38 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
            t * t * t * p3;
   }
 
-  /// Create a path that represents the connection line for hit testing
-  Path _createConnectionPath() {
-    if (widget.connectionData == null) return Path();
+  /// Build a single narrow hover region along the connection line
+  Widget _buildConnectionHoverRegion() {
+    if (widget.connectionData == null) return const SizedBox.shrink();
     
     final sourcePos = widget.connectionData!.sourcePosition;
     final destPos = widget.connectionData!.destinationPosition;
     
-    final path = Path();
-    path.moveTo(sourcePos.dx, sourcePos.dy);
+    // Calculate bounds for the connection area
+    final left = (sourcePos.dx < destPos.dx ? sourcePos.dx : destPos.dx) - 10;
+    final right = (sourcePos.dx > destPos.dx ? sourcePos.dx : destPos.dx) + 10;
+    final top = (sourcePos.dy < destPos.dy ? sourcePos.dy : destPos.dy) - 10;
+    final bottom = (sourcePos.dy > destPos.dy ? sourcePos.dy : destPos.dy) + 10;
     
-    // Create a curved path similar to ConnectionPainter
-    final controlPoint1 = Offset(
-      sourcePos.dx + (destPos.dx - sourcePos.dx) * 0.5,
-      sourcePos.dy,
+    return Positioned(
+      left: left,
+      top: top,
+      child: IgnorePointer(
+        child: MouseRegion(
+          onEnter: _onHoverEnter,
+          onExit: _onHoverExit,
+          child: CustomPaint(
+            size: Size(right - left, bottom - top),
+            painter: _ConnectionHoverPainter(
+              connectionData: widget.connectionData!,
+              offsetX: -left,
+              offsetY: -top,
+              isHovering: _isHovering,
+            ),
+          ),
+        ),
+      ),
     );
-    final controlPoint2 = Offset(
-      destPos.dx - (destPos.dx - sourcePos.dx) * 0.5,
-      destPos.dy,
-    );
-    
-    path.cubicTo(
-      controlPoint1.dx, controlPoint1.dy,
-      controlPoint2.dx, controlPoint2.dy,
-      destPos.dx, destPos.dy,
-    );
-    
-    return path;
   }
 
   Future<void> _deleteConnection() async {
@@ -360,18 +365,8 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
             ),
           ),
           
-          // Invisible hit testing area for hover detection
-          MouseRegion(
-            onEnter: _onHoverEnter,
-            onExit: _onHoverExit,
-            child: CustomPaint(
-              size: widget.size ?? Size.zero,
-              painter: _HoverHitTestPainter(
-                connectionPath: _createConnectionPath(),
-                isHovering: _isHovering,
-              ),
-            ),
-          ),
+          // Single hover region along connection with very narrow hit area
+          _buildConnectionHoverRegion(),
           
           // Delete button overlay
           _buildDeleteButton(),
@@ -427,62 +422,82 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
   }
 }
 
-/// Custom painter that creates an invisible hit testing area along the connection path
-class _HoverHitTestPainter extends CustomPainter {
-  final Path connectionPath;
+/// Painter that provides precise hit testing only along the connection path
+class _ConnectionHoverPainter extends CustomPainter {
+  final painter.ConnectionData connectionData;
+  final double offsetX;
+  final double offsetY;
   final bool isHovering;
   
-  const _HoverHitTestPainter({
-    required this.connectionPath,
+  const _ConnectionHoverPainter({
+    required this.connectionData,
+    required this.offsetX,
+    required this.offsetY,
     required this.isHovering,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (isHovering) {
-      // Optionally paint a debug highlight when hovering
-      final paint = Paint()
-        ..color = Colors.red.withValues(alpha: 0.1)
+      // Optional debug visualization
+      final debugPaint = Paint()
+        ..color = Colors.green.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 10.0;
+        ..strokeWidth = 8.0;
       
-      canvas.drawPath(connectionPath, paint);
+      canvas.drawPath(_createConnectionPath(), debugPaint);
     }
   }
 
   @override
   bool hitTest(Offset position) {
-    // Create a wider path for easier hover detection
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 20.0; // Generous hit area
+    final path = _createConnectionPath();
+    return _isPointNearPath(path, position, hitRadius: 8.0);
+  }
+
+  Path _createConnectionPath() {
+    final sourcePos = Offset(
+      connectionData.sourcePosition.dx + offsetX,
+      connectionData.sourcePosition.dy + offsetY,
+    );
+    final destPos = Offset(
+      connectionData.destinationPosition.dx + offsetX,
+      connectionData.destinationPosition.dy + offsetY,
+    );
     
-    return connectionPath.contains(position) ||
-           strokePaint.contains(connectionPath, position);
+    final path = Path();
+    path.moveTo(sourcePos.dx, sourcePos.dy);
+    
+    // Create the same cubic bezier curve as ConnectionPainter
+    final controlPoint1 = Offset(
+      sourcePos.dx + (destPos.dx - sourcePos.dx) * 0.5,
+      sourcePos.dy,
+    );
+    final controlPoint2 = Offset(
+      destPos.dx - (destPos.dx - sourcePos.dx) * 0.5,
+      destPos.dy,
+    );
+    
+    path.cubicTo(
+      controlPoint1.dx, controlPoint1.dy,
+      controlPoint2.dx, controlPoint2.dy,
+      destPos.dx, destPos.dy,
+    );
+    
+    return path;
   }
 
-  @override
-  bool shouldRepaint(covariant _HoverHitTestPainter oldDelegate) {
-    return isHovering != oldDelegate.isHovering ||
-           connectionPath != oldDelegate.connectionPath;
-  }
-}
-
-/// Extension to help with path hit testing
-extension on Paint {
-  bool contains(Path path, Offset position) {
-    // Create a path with stroke width for hit testing
+  bool _isPointNearPath(Path path, Offset point, {required double hitRadius}) {
     final metrics = path.computeMetrics();
-    const hitRadius = 10.0;
     
     for (final metric in metrics) {
       final length = metric.length;
-      const step = 2.0; // Check every 2 pixels along the path
+      const step = 2.0;
       
       for (double distance = 0; distance <= length; distance += step) {
         final pos = metric.getTangentForOffset(distance)?.position;
         if (pos != null) {
-          final distanceToPoint = (position - pos).distance;
+          final distanceToPoint = (point - pos).distance;
           if (distanceToPoint <= hitRadius) {
             return true;
           }
@@ -491,5 +506,11 @@ extension on Paint {
     }
     
     return false;
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConnectionHoverPainter oldDelegate) {
+    return isHovering != oldDelegate.isHovering ||
+           connectionData != oldDelegate.connectionData;
   }
 }

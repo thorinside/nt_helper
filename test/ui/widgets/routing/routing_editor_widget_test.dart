@@ -9,7 +9,7 @@ import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart' as state;
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
-import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 
@@ -42,19 +42,19 @@ void main() {
       
       final loadedState = state.RoutingEditorStateLoaded(
         physicalInputs: [
-          state.Port(
+          Port(
             id: 'hw_in_1',
             name: 'Input 1',
-            type: state.PortType.cv,
-            direction: state.PortDirection.input,
+            type: PortType.cv,
+            direction: PortDirection.input,
           ),
         ],
         physicalOutputs: [
-          state.Port(
+          Port(
             id: 'hw_out_1', 
             name: 'Output 1',
-            type: state.PortType.cv,
-            direction: state.PortDirection.output,
+            type: PortType.cv,
+            direction: PortDirection.output,
           ),
         ],
         algorithms: [],
@@ -180,17 +180,17 @@ void main() {
         sourcePortId: 'algo_test_1_port_1',
         destinationPortId: 'hw_out_1',
         connectionType: ConnectionType.hardwareOutput,
-        outputMode: core_port.OutputMode.replace,
+        outputMode: OutputMode.replace,
       );
       
       final loadedState = state.RoutingEditorStateLoaded(
         physicalInputs: [],
         physicalOutputs: [
-          state.Port(
+          Port(
             id: 'hw_out_1', 
             name: 'Output 1',
-            type: state.PortType.audio,
-            direction: state.PortDirection.output,
+            type: PortType.audio,
+            direction: PortDirection.output,
           ),
         ],
         algorithms: [
@@ -200,18 +200,18 @@ void main() {
             algorithm: Algorithm(algorithmIndex: 0, guid: 'test-guid', name: 'Test Algorithm'),
             inputPorts: [],
             outputPorts: [
-              state.Port(
+              Port(
                 id: 'algo_test_1_port_1',
                 name: 'Test Output',
-                type: state.PortType.audio,
-                direction: state.PortDirection.output,
+                type: PortType.audio,
+                direction: PortDirection.output,
               ),
             ],
           ),
         ],
         connections: [testConnection],
         buses: [],
-        portOutputModes: {'algo_test_1_port_1': core_port.OutputMode.replace},
+        portOutputModes: {'algo_test_1_port_1': OutputMode.replace},
         isHardwareSynced: true,
         isPersistenceEnabled: false,
         lastSyncTime: null,
@@ -259,17 +259,17 @@ void main() {
         sourcePortId: 'algo_test_1_port_1',
         destinationPortId: 'hw_out_1',
         connectionType: ConnectionType.hardwareOutput,
-        outputMode: core_port.OutputMode.replace,
+        outputMode: OutputMode.replace,
       );
       
       final loadedState = state.RoutingEditorStateLoaded(
         physicalInputs: [],
         physicalOutputs: [
-          state.Port(
+          Port(
             id: 'hw_out_1', 
             name: 'Output 1',
-            type: state.PortType.audio,
-            direction: state.PortDirection.output,
+            type: PortType.audio,
+            direction: PortDirection.output,
           ),
         ],
         algorithms: [
@@ -279,18 +279,18 @@ void main() {
             algorithm: Algorithm(algorithmIndex: 0, guid: 'test-guid', name: 'Test Algorithm'),
             inputPorts: [],
             outputPorts: [
-              state.Port(
+              Port(
                 id: 'algo_test_1_port_1',
                 name: 'Test Output',
-                type: state.PortType.audio,
-                direction: state.PortDirection.output,
+                type: PortType.audio,
+                direction: PortDirection.output,
               ),
             ],
           ),
         ],
         connections: [testConnection],
         buses: [],
-        portOutputModes: {'algo_test_1_port_1': core_port.OutputMode.replace},
+        portOutputModes: {'algo_test_1_port_1': OutputMode.replace},
         isHardwareSynced: true,
         isPersistenceEnabled: false,
         lastSyncTime: null,
@@ -323,7 +323,7 @@ void main() {
       // with the toggled mode (from replace to add)
       when(mockRoutingCubit.setPortOutputMode(
         portId: 'algo_test_1_port_1',
-        outputMode: core_port.OutputMode.add,
+        outputMode: OutputMode.add,
       )).thenAnswer((_) async => {});
 
       // Find connection canvas and tap at a position where a label would be

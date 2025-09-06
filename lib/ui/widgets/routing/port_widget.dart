@@ -59,6 +59,21 @@ class PortWidget extends StatefulWidget {
   /// Callback for drag end events
   final void Function(Offset position)? onDragEnd;
   
+  /// Callback for mouse hover enter events  
+  final VoidCallback? onHoverEnter;
+  
+  /// Callback for mouse hover exit events
+  final VoidCallback? onHoverExit;
+  
+  /// Whether this port is currently connected to other ports
+  final bool isConnected;
+  
+  /// List of connection IDs that involve this port
+  final List<String> connectionIds;
+  
+  /// Direct callback to routing cubit for connection operations
+  final void Function(String portId, String action)? onRoutingAction;
+  
   const PortWidget({
     super.key,
     required this.label,
@@ -73,6 +88,11 @@ class PortWidget extends StatefulWidget {
     this.onDragStart,
     this.onDragUpdate,
     this.onDragEnd,
+    this.onHoverEnter,
+    this.onHoverExit,
+    this.isConnected = false,
+    this.connectionIds = const [],
+    this.onRoutingAction,
   });
   
   @override
@@ -115,8 +135,31 @@ class _PortWidgetState extends State<PortWidget> {
       );
     }
     
+    // Add hover detection when routing action callback is provided
+    if (widget.onRoutingAction != null) {
+      portWidget = MouseRegion(
+        onEnter: (_) {
+          widget.onHoverEnter?.call();
+          // Notify routing cubit about hover start - it will determine if port is connected
+          if (widget.portId != null) {
+            widget.onRoutingAction?.call(widget.portId!, 'hover_start');
+          }
+        },
+        onExit: (_) {
+          widget.onHoverExit?.call();
+          // Notify routing cubit about hover end
+          if (widget.portId != null) {
+            widget.onRoutingAction?.call(widget.portId!, 'hover_end');
+          }
+        },
+        child: portWidget,
+      );
+    }
+    
+    
     return portWidget;
   }
+  
   
   /// Builds the simple dot style port (for algorithm nodes)
   Widget _buildDotStyle(ThemeData theme) {

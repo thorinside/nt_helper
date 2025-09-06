@@ -41,6 +41,12 @@ class PhysicalInputNode extends StatelessWidget {
   
   /// Callback when node drag ends.
   final VoidCallback? onNodeDragEnd;
+
+  /// Callback for routing actions from ports
+  final void Function(String portId, String action)? onRoutingAction;
+
+  /// Set of connected port IDs
+  final Set<String>? connectedPorts;
   
   const PhysicalInputNode({
     super.key,
@@ -55,6 +61,8 @@ class PhysicalInputNode extends StatelessWidget {
     this.onPortPositionResolved,
     this.onNodeDragStart,
     this.onNodeDragEnd,
+    this.onRoutingAction,
+    this.connectedPorts,
   });
   
   @override
@@ -66,6 +74,7 @@ class PhysicalInputNode extends StatelessWidget {
       hint: 'Hardware input jacks. These act as outputs to algorithms.',
       child: MovablePhysicalIONode(
         ports: ports,
+        connectedPorts: connectedPorts,
         title: 'Physical Inputs',
         icon: Icons.input_rounded,
         position: position,
@@ -78,6 +87,7 @@ class PhysicalInputNode extends StatelessWidget {
         onPortPositionResolved: onPortPositionResolved,
         onNodeDragStart: onNodeDragStart,
         onNodeDragEnd: onNodeDragEnd,
+        onRoutingAction: onRoutingAction,
       ),
     );
   }

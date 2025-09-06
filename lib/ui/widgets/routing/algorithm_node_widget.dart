@@ -33,8 +33,16 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // Port IDs aligned with labels, used for accurate connection anchors
   final List<String>? inputPortIds;
   final List<String>? outputPortIds;
+  // Set of port IDs that are currently connected
+  final Set<String>? connectedPorts;
   // Callback to report per-port anchor global position
   final void Function(String portId, Offset globalCenter, bool isInput)? onPortPositionResolved;
+  
+  // Callback for routing actions from ports
+  final void Function(String portId, String action)? onRoutingAction;
+  
+  // Callback when a port is tapped (for connection deletion)
+  final void Function(String portId)? onPortTapped;
   
   const AlgorithmNodeWidget({
     super.key,
@@ -54,7 +62,10 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.outputLabels = const [],
     this.inputPortIds,
     this.outputPortIds,
+    this.connectedPorts,
     this.onPortPositionResolved,
+    this.onRoutingAction,
+    this.onPortTapped,
   });
   
   @override
@@ -244,13 +255,18 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
   
   Widget _buildPort(ThemeData theme, String label, bool isInput, {String? portId}) {
+    final isConnected = portId != null && (widget.connectedPorts?.contains(portId) ?? false);
+    
     return PortWidget(
       label: label,
       isInput: isInput,
       portId: portId,
       labelPosition: isInput ? PortLabelPosition.right : PortLabelPosition.left,
       theme: theme,
+      isConnected: isConnected, // Keep using the passed connection info for algorithm ports
       onPortPositionResolved: widget.onPortPositionResolved,
+      onRoutingAction: widget.onRoutingAction,
+      onTap: portId != null ? () => widget.onPortTapped?.call(portId) : null,
     );
   }
 
@@ -260,7 +276,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
   
   void _handleDragStart(DragStartDetails details) {
-    // Intentionally no haptic/audio/visual feedback on drag start
+    debugPrint('=== ALGORITHM NODE DRAG START: ${widget.algorithmName} at ${details.globalPosition}');
     
     setState(() {
       _isDragging = true;
@@ -354,6 +370,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       snappedPosition.dy.clamp(0.0, canvasSize - 100),
     );
     
+    debugPrint('=== ALGORITHM NODE DRAG UPDATE: ${widget.algorithmName} to $constrainedPosition');
     widget.onPositionChanged?.call(constrainedPosition);
   }
   

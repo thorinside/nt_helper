@@ -12,281 +12,9 @@ part of 'routing_editor_state.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$Port {
-
- String get id;// Unique identifier
- String get name;// Display name
- PortType get type; PortDirection get direction; int? get busNumber;// Bus number this port is connected to (1-28)
- String? get parameterName;
-/// Create a copy of Port
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$PortCopyWith<Port> get copyWith => _$PortCopyWithImpl<Port>(this as Port, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Port&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.busNumber, busNumber) || other.busNumber == busNumber)&&(identical(other.parameterName, parameterName) || other.parameterName == parameterName));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,id,name,type,direction,busNumber,parameterName);
-
-@override
-String toString() {
-  return 'Port(id: $id, name: $name, type: $type, direction: $direction, busNumber: $busNumber, parameterName: $parameterName)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $PortCopyWith<$Res>  {
-  factory $PortCopyWith(Port value, $Res Function(Port) _then) = _$PortCopyWithImpl;
-@useResult
-$Res call({
- String id, String name, PortType type, PortDirection direction, int? busNumber, String? parameterName
-});
-
-
-
-
-}
-/// @nodoc
-class _$PortCopyWithImpl<$Res>
-    implements $PortCopyWith<$Res> {
-  _$PortCopyWithImpl(this._self, this._then);
-
-  final Port _self;
-  final $Res Function(Port) _then;
-
-/// Create a copy of Port
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? direction = null,Object? busNumber = freezed,Object? parameterName = freezed,}) {
-  return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as PortType,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
-as PortDirection,busNumber: freezed == busNumber ? _self.busNumber : busNumber // ignore: cast_nullable_to_non_nullable
-as int?,parameterName: freezed == parameterName ? _self.parameterName : parameterName // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [Port].
-extension PortPatterns on Port {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Port value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _Port() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Port value)  $default,){
-final _that = this;
-switch (_that) {
-case _Port():
-return $default(_that);}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Port value)?  $default,){
-final _that = this;
-switch (_that) {
-case _Port() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  PortType type,  PortDirection direction,  int? busNumber,  String? parameterName)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _Port() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.direction,_that.busNumber,_that.parameterName);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  PortType type,  PortDirection direction,  int? busNumber,  String? parameterName)  $default,) {final _that = this;
-switch (_that) {
-case _Port():
-return $default(_that.id,_that.name,_that.type,_that.direction,_that.busNumber,_that.parameterName);}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  PortType type,  PortDirection direction,  int? busNumber,  String? parameterName)?  $default,) {final _that = this;
-switch (_that) {
-case _Port() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.direction,_that.busNumber,_that.parameterName);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-
-
-class _Port implements Port {
-  const _Port({required this.id, required this.name, required this.type, required this.direction, this.busNumber, this.parameterName});
-  
-
-@override final  String id;
-// Unique identifier
-@override final  String name;
-// Display name
-@override final  PortType type;
-@override final  PortDirection direction;
-@override final  int? busNumber;
-// Bus number this port is connected to (1-28)
-@override final  String? parameterName;
-
-/// Create a copy of Port
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$PortCopyWith<_Port> get copyWith => __$PortCopyWithImpl<_Port>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Port&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.busNumber, busNumber) || other.busNumber == busNumber)&&(identical(other.parameterName, parameterName) || other.parameterName == parameterName));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,id,name,type,direction,busNumber,parameterName);
-
-@override
-String toString() {
-  return 'Port(id: $id, name: $name, type: $type, direction: $direction, busNumber: $busNumber, parameterName: $parameterName)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$PortCopyWith<$Res> implements $PortCopyWith<$Res> {
-  factory _$PortCopyWith(_Port value, $Res Function(_Port) _then) = __$PortCopyWithImpl;
-@override @useResult
-$Res call({
- String id, String name, PortType type, PortDirection direction, int? busNumber, String? parameterName
-});
-
-
-
-
-}
-/// @nodoc
-class __$PortCopyWithImpl<$Res>
-    implements _$PortCopyWith<$Res> {
-  __$PortCopyWithImpl(this._self, this._then);
-
-  final _Port _self;
-  final $Res Function(_Port) _then;
-
-/// Create a copy of Port
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? direction = null,Object? busNumber = freezed,Object? parameterName = freezed,}) {
-  return _then(_Port(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as PortType,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
-as PortDirection,busNumber: freezed == busNumber ? _self.busNumber : busNumber // ignore: cast_nullable_to_non_nullable
-as int?,parameterName: freezed == parameterName ? _self.parameterName : parameterName // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-
-}
-
-/// @nodoc
 mixin _$RoutingBus {
 
- String get id; String get name; BusStatus get status; List<String> get connectionIds; core_port.OutputMode get defaultOutputMode; double get masterGain; DateTime? get createdAt; DateTime? get modifiedAt;
+ String get id; String get name; BusStatus get status; List<String> get connectionIds; OutputMode get defaultOutputMode; double get masterGain; DateTime? get createdAt; DateTime? get modifiedAt;
 /// Create a copy of RoutingBus
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -317,7 +45,7 @@ abstract mixin class $RoutingBusCopyWith<$Res>  {
   factory $RoutingBusCopyWith(RoutingBus value, $Res Function(RoutingBus) _then) = _$RoutingBusCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, BusStatus status, List<String> connectionIds, core_port.OutputMode defaultOutputMode, double masterGain, DateTime? createdAt, DateTime? modifiedAt
+ String id, String name, BusStatus status, List<String> connectionIds, OutputMode defaultOutputMode, double masterGain, DateTime? createdAt, DateTime? modifiedAt
 });
 
 
@@ -341,7 +69,7 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as BusStatus,connectionIds: null == connectionIds ? _self.connectionIds : connectionIds // ignore: cast_nullable_to_non_nullable
 as List<String>,defaultOutputMode: null == defaultOutputMode ? _self.defaultOutputMode : defaultOutputMode // ignore: cast_nullable_to_non_nullable
-as core_port.OutputMode,masterGain: null == masterGain ? _self.masterGain : masterGain // ignore: cast_nullable_to_non_nullable
+as OutputMode,masterGain: null == masterGain ? _self.masterGain : masterGain // ignore: cast_nullable_to_non_nullable
 as double,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,modifiedAt: freezed == modifiedAt ? _self.modifiedAt : modifiedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -426,7 +154,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  BusStatus status,  List<String> connectionIds,  core_port.OutputMode defaultOutputMode,  double masterGain,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  BusStatus status,  List<String> connectionIds,  OutputMode defaultOutputMode,  double masterGain,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RoutingBus() when $default != null:
 return $default(_that.id,_that.name,_that.status,_that.connectionIds,_that.defaultOutputMode,_that.masterGain,_that.createdAt,_that.modifiedAt);case _:
@@ -447,7 +175,7 @@ return $default(_that.id,_that.name,_that.status,_that.connectionIds,_that.defau
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  BusStatus status,  List<String> connectionIds,  core_port.OutputMode defaultOutputMode,  double masterGain,  DateTime? createdAt,  DateTime? modifiedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  BusStatus status,  List<String> connectionIds,  OutputMode defaultOutputMode,  double masterGain,  DateTime? createdAt,  DateTime? modifiedAt)  $default,) {final _that = this;
 switch (_that) {
 case _RoutingBus():
 return $default(_that.id,_that.name,_that.status,_that.connectionIds,_that.defaultOutputMode,_that.masterGain,_that.createdAt,_that.modifiedAt);}
@@ -464,7 +192,7 @@ return $default(_that.id,_that.name,_that.status,_that.connectionIds,_that.defau
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  BusStatus status,  List<String> connectionIds,  core_port.OutputMode defaultOutputMode,  double masterGain,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  BusStatus status,  List<String> connectionIds,  OutputMode defaultOutputMode,  double masterGain,  DateTime? createdAt,  DateTime? modifiedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _RoutingBus() when $default != null:
 return $default(_that.id,_that.name,_that.status,_that.connectionIds,_that.defaultOutputMode,_that.masterGain,_that.createdAt,_that.modifiedAt);case _:
@@ -479,7 +207,7 @@ return $default(_that.id,_that.name,_that.status,_that.connectionIds,_that.defau
 
 
 class _RoutingBus implements RoutingBus {
-  const _RoutingBus({required this.id, required this.name, required this.status, final  List<String> connectionIds = const [], this.defaultOutputMode = core_port.OutputMode.replace, this.masterGain = 1.0, this.createdAt, this.modifiedAt}): _connectionIds = connectionIds;
+  const _RoutingBus({required this.id, required this.name, required this.status, final  List<String> connectionIds = const [], this.defaultOutputMode = OutputMode.replace, this.masterGain = 1.0, this.createdAt, this.modifiedAt}): _connectionIds = connectionIds;
   
 
 @override final  String id;
@@ -492,7 +220,7 @@ class _RoutingBus implements RoutingBus {
   return EqualUnmodifiableListView(_connectionIds);
 }
 
-@override@JsonKey() final  core_port.OutputMode defaultOutputMode;
+@override@JsonKey() final  OutputMode defaultOutputMode;
 @override@JsonKey() final  double masterGain;
 @override final  DateTime? createdAt;
 @override final  DateTime? modifiedAt;
@@ -527,7 +255,7 @@ abstract mixin class _$RoutingBusCopyWith<$Res> implements $RoutingBusCopyWith<$
   factory _$RoutingBusCopyWith(_RoutingBus value, $Res Function(_RoutingBus) _then) = __$RoutingBusCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, BusStatus status, List<String> connectionIds, core_port.OutputMode defaultOutputMode, double masterGain, DateTime? createdAt, DateTime? modifiedAt
+ String id, String name, BusStatus status, List<String> connectionIds, OutputMode defaultOutputMode, double masterGain, DateTime? createdAt, DateTime? modifiedAt
 });
 
 
@@ -551,7 +279,7 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as BusStatus,connectionIds: null == connectionIds ? _self._connectionIds : connectionIds // ignore: cast_nullable_to_non_nullable
 as List<String>,defaultOutputMode: null == defaultOutputMode ? _self.defaultOutputMode : defaultOutputMode // ignore: cast_nullable_to_non_nullable
-as core_port.OutputMode,masterGain: null == masterGain ? _self.masterGain : masterGain // ignore: cast_nullable_to_non_nullable
+as OutputMode,masterGain: null == masterGain ? _self.masterGain : masterGain // ignore: cast_nullable_to_non_nullable
 as double,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,modifiedAt: freezed == modifiedAt ? _self.modifiedAt : modifiedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -974,7 +702,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -1002,7 +730,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial();case RoutingEditorStateDisconnected():
@@ -1026,7 +754,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, core_port.OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
@@ -1240,7 +968,7 @@ String toString() {
 
 
 class RoutingEditorStateLoaded implements RoutingEditorState {
-  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, core_port.OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
+  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
   
 
  final  List<Port> _physicalInputs;
@@ -1287,9 +1015,9 @@ class RoutingEditorStateLoaded implements RoutingEditorState {
 }
 
 // Available routing buses
- final  Map<String, core_port.OutputMode> _portOutputModes;
+ final  Map<String, OutputMode> _portOutputModes;
 // Available routing buses
-@JsonKey() Map<String, core_port.OutputMode> get portOutputModes {
+@JsonKey() Map<String, OutputMode> get portOutputModes {
   if (_portOutputModes is EqualUnmodifiableMapView) return _portOutputModes;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(_portOutputModes);
@@ -1336,7 +1064,7 @@ abstract mixin class $RoutingEditorStateLoadedCopyWith<$Res> implements $Routing
   factory $RoutingEditorStateLoadedCopyWith(RoutingEditorStateLoaded value, $Res Function(RoutingEditorStateLoaded) _then) = _$RoutingEditorStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, core_port.OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
+ List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
 });
 
 
@@ -1361,7 +1089,7 @@ as List<Port>,algorithms: null == algorithms ? _self._algorithms : algorithms //
 as List<RoutingAlgorithm>,connections: null == connections ? _self._connections : connections // ignore: cast_nullable_to_non_nullable
 as List<Connection>,buses: null == buses ? _self._buses : buses // ignore: cast_nullable_to_non_nullable
 as List<RoutingBus>,portOutputModes: null == portOutputModes ? _self._portOutputModes : portOutputModes // ignore: cast_nullable_to_non_nullable
-as Map<String, core_port.OutputMode>,isHardwareSynced: null == isHardwareSynced ? _self.isHardwareSynced : isHardwareSynced // ignore: cast_nullable_to_non_nullable
+as Map<String, OutputMode>,isHardwareSynced: null == isHardwareSynced ? _self.isHardwareSynced : isHardwareSynced // ignore: cast_nullable_to_non_nullable
 as bool,isPersistenceEnabled: null == isPersistenceEnabled ? _self.isPersistenceEnabled : isPersistenceEnabled // ignore: cast_nullable_to_non_nullable
 as bool,lastSyncTime: freezed == lastSyncTime ? _self.lastSyncTime : lastSyncTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastPersistTime: freezed == lastPersistTime ? _self.lastPersistTime : lastPersistTime // ignore: cast_nullable_to_non_nullable

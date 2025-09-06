@@ -144,6 +144,9 @@ sealed class Port with _$Port {
   /// Returns true if this is an output port  
   bool get isOutput => direction == PortDirection.output || direction == PortDirection.bidirectional;
   
+  /// Returns true if this port is connected (has a bus assignment)
+  bool get isConnected => busValue != null && busValue! > 0;
+  
   /// Returns true if this port can be connected to another port based on direction
   bool canConnectTo(Port other) {
     // Can only connect output to input or bidirectional ports
