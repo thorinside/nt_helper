@@ -47,6 +47,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   String? _connectionSourcePortId;
   Offset? _dragPosition;
   final bool _isDraggingConnection = false;
+  String? _hoveredConnectionId;
   
   // ScrollControllers for manual pan control
   late ScrollController _horizontalScrollController;
@@ -575,6 +576,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         isPhysicalConnection: isPhysicalConnection,
         isInputConnection: isInputConnection,
         busLabel: connection.busLabel, // Pass through bus label for partial connections
+        onLabelHover: (isHovering) => _handleConnectionHover(connection.id, isHovering),
+        onLabelTap: () {}, // TODO: Add tap handling if needed
       ));
     }
     
@@ -582,15 +585,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return const SizedBox.shrink();
     }
     
-    // Use the unified ConnectionPainter
-    return CustomPaint(
-      painter: painter.ConnectionPainter(
-        connections: connectionDataList,
-        theme: Theme.of(context),
-        showLabels: true,
-        enableAnimations: true,
+    // Use the unified ConnectionPainter wrapped in GestureDetector and MouseRegion
+    return GestureDetector(
+      onTapDown: (details) => _handleConnectionCanvasTap(details, connectionDataList),
+      child: MouseRegion(
+        onEnter: (_) {}, // Connection-level hover handled by individual labels
+        onExit: (_) => _handleConnectionHover('', false), // Clear hover when leaving canvas
+        child: CustomPaint(
+          painter: painter.ConnectionPainter(
+            connections: connectionDataList,
+            theme: Theme.of(context),
+            showLabels: true,
+            enableAnimations: true,
+            hoveredConnectionId: _hoveredConnectionId,
+          ),
+          child: const SizedBox.expand(),
+        ),
       ),
-      child: const SizedBox.expand(),
     );
   }
   
@@ -856,6 +867,65 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         setState(() {});
       }
     }
+  }
+
+  void _handleConnectionHover(String connectionId, bool isHovering) {
+    setState(() {
+      _hoveredConnectionId = isHovering ? connectionId : null;
+    });
+  }
+
+  /// Handle tap events on the connection canvas to toggle output modes
+  void _handleConnectionCanvasTap(TapDownDetails details, List<painter.ConnectionData> connectionDataList) {
+    // Find connection by hit testing the tap position against label bounds
+    final tappedConnectionId = _findConnectionByTapPoint(details.localPosition, connectionDataList);
+    
+    if (tappedConnectionId != null) {
+      debugPrint('Connection label tapped: $tappedConnectionId');
+      _toggleConnectionOutputMode(tappedConnectionId);
+    }
+  }
+
+  /// Find connection ID by testing tap point against connection label bounds
+  String? _findConnectionByTapPoint(Offset tapPosition, List<painter.ConnectionData> connectionDataList) {
+    // Create a temporary ConnectionPainter to access hit test functionality
+    final tempPainter = painter.ConnectionPainter(
+      connections: connectionDataList,
+      theme: Theme.of(context),
+      showLabels: true,
+      enableAnimations: false,
+    );
+    
+    // Use the existing hitTestLabel method to find the connection
+    return tempPainter.hitTestLabel(tapPosition);
+  }
+
+  /// Toggle output mode for a connection between add (0) and replace (1)
+  void _toggleConnectionOutputMode(String connectionId) {
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded) return;
+
+    // Find the connection to get its source port
+    final connection = routingState.connections.firstWhere(
+      (conn) => conn.id == connectionId,
+      orElse: () => throw ArgumentError('Connection not found: $connectionId'),
+    );
+
+    // Get current output mode for the source port
+    final currentMode = routingState.portOutputModes[connection.sourcePortId] ?? core_port.OutputMode.replace;
+    
+    // Toggle between the two modes
+    final newMode = currentMode == core_port.OutputMode.replace 
+        ? core_port.OutputMode.add 
+        : core_port.OutputMode.replace;
+
+    // Call the existing cubit method to update the port output mode
+    context.read<RoutingEditorCubit>().setPortOutputMode(
+      portId: connection.sourcePortId,
+      outputMode: newMode,
+    );
+    
+    debugPrint('Toggled output mode for ${connection.sourcePortId}: $currentMode -> $newMode');
   }
 
 }
