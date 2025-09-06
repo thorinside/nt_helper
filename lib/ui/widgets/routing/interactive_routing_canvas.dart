@@ -10,6 +10,7 @@ import 'package:nt_helper/ui/widgets/routing/connection_deletion_handler.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
+import 'package:nt_helper/ui/widgets/routing/error_notification.dart';
 
 /// Interactive routing canvas that integrates all connection editing features
 class InteractiveRoutingCanvas extends StatefulWidget {
@@ -47,6 +48,18 @@ class _InteractiveRoutingCanvasState extends State<InteractiveRoutingCanvas> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set up error callback for the routing editor cubit
+    final cubit = context.read<RoutingEditorCubit>();
+    cubit.setErrorCallback((message) {
+      if (mounted) {
+        context.showErrorNotification(message);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _transformationController.dispose();
     super.dispose();
@@ -60,24 +73,26 @@ class _InteractiveRoutingCanvasState extends State<InteractiveRoutingCanvas> {
           return _buildLoadingState();
         }
 
-        return Container(
-          width: widget.canvasSize.width,
-          height: widget.canvasSize.height,
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: InteractiveViewer(
-              transformationController: _transformationController,
-              constrained: false,
-              minScale: 0.5,
-              maxScale: 2.0,
-              child: ConnectionDragHandler(
-                connectionManager: _connectionManager,
-                child: _buildRoutingCanvas(state),
+        return ErrorNotificationManager(
+          child: Container(
+            width: widget.canvasSize.width,
+            height: widget.canvasSize.height,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: InteractiveViewer(
+                transformationController: _transformationController,
+                constrained: false,
+                minScale: 0.5,
+                maxScale: 2.0,
+                child: ConnectionDragHandler(
+                  connectionManager: _connectionManager,
+                  child: _buildRoutingCanvas(state),
+                ),
               ),
             ),
           ),

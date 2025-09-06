@@ -23,15 +23,34 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   final DistingCubit? _distingCubit;
   final Future<SharedPreferences> _prefs;
   StreamSubscription<DistingState>? _distingStateSubscription;
+  
+  /// Callback for showing error notifications instead of blocking error states
+  Function(String message)? _onError;
 
   RoutingEditorCubit(
     this._distingCubit, {
     AlgorithmConnectionService? algorithmConnectionService,
+    Function(String message)? onError,
   }) : _prefs = SharedPreferences.getInstance(),
+       _onError = onError,
        super(const RoutingEditorState.initial()) {
     if (_distingCubit != null) {
       _initializeStateWatcher();
       _loadPersistedState();
+    }
+  }
+
+  /// Set the error callback for showing non-blocking error notifications
+  void setErrorCallback(Function(String message)? callback) {
+    _onError = callback;
+  }
+
+  /// Helper method to show error as notification if callback is set, otherwise emit error state
+  void _handleError(String message) {
+    if (_onError != null) {
+      _onError!(message);
+    } else {
+      emit(RoutingEditorState.error(message));
     }
   }
 
@@ -386,13 +405,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (sourcePort == null) {
         debugPrint('Source port not found: $sourcePortId');
-        emit(RoutingEditorState.error('Source port not found: $sourcePortId'));
+        _handleError('Source port not found: $sourcePortId');
         return;
       }
 
       if (targetPort == null) {
         debugPrint('Target port not found: $targetPortId');
-        emit(RoutingEditorState.error('Target port not found: $targetPortId'));
+        _handleError('Target port not found: $targetPortId');
         return;
       }
 
@@ -417,7 +436,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
       if (existingConnection != null) {
         debugPrint('Connection already exists: $sourcePortId -> $targetPortId');
-        emit(RoutingEditorState.error('Connection already exists'));
+        _handleError('Connection already exists');
         return;
       }
 
@@ -691,13 +710,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (sourcePort == null) {
         debugPrint('Source port not found: $sourcePortId');
-        emit(RoutingEditorState.error('Source port not found: $sourcePortId'));
+        _handleError('Source port not found: $sourcePortId');
         return;
       }
 
       if (targetPort == null) {
         debugPrint('Target port not found: $targetPortId');
-        emit(RoutingEditorState.error('Target port not found: $targetPortId'));
+        _handleError('Target port not found: $targetPortId');
         return;
       }
 
@@ -722,7 +741,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
       if (existingConnection != null) {
         debugPrint('Connection already exists: $sourcePortId -> $targetPortId');
-        emit(RoutingEditorState.error('Connection already exists'));
+        _handleError('Connection already exists');
         return;
       }
 
@@ -1274,18 +1293,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final port = _findPortById(currentState, portId);
       if (port == null) {
         debugPrint('Port not found: $portId');
-        emit(RoutingEditorState.error('Port not found: $portId'));
+        _handleError('Port not found: $portId');
         return;
       }
 
       // Verify it's an output port
       if (port.direction != PortDirection.output) {
         debugPrint('Cannot set output mode for input port: $portId');
-        emit(
-          RoutingEditorState.error(
-            'Output mode can only be set for output ports',
-          ),
-        );
+        _handleError('Output mode can only be set for output ports');
         return;
       }
 
