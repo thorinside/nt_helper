@@ -6,6 +6,7 @@ import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/ui/widgets/routing/interactive_routing_canvas.dart';
 // Haptics can be reintroduced later if needed
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
@@ -27,6 +28,7 @@ class RoutingEditorWidget extends StatefulWidget {
   final Size canvasSize;
   final bool showPhysicalPorts;
   final bool showBusLabels;
+  final bool enableInteractiveEditing; // New: Enable interactive connection editing
   final Function(String nodeId)? onNodeSelected;
   final Function(String sourcePortId, String targetPortId)? onConnectionCreated;
   final Function(String connectionId)? onConnectionRemoved;
@@ -37,6 +39,7 @@ class RoutingEditorWidget extends StatefulWidget {
     this.canvasSize = const Size(1200, 800),
     this.showPhysicalPorts = true,
     bool? showBusLabels,
+    this.enableInteractiveEditing = false,
     this.onNodeSelected,
     this.onConnectionCreated,
     this.onConnectionRemoved,
@@ -285,6 +288,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
   ) {
+    // Use interactive canvas if enabled
+    if (widget.enableInteractiveEditing) {
+      return InteractiveRoutingCanvas(
+        canvasSize: widget.canvasSize,
+        showPhysicalPorts: widget.showPhysicalPorts,
+        showBusLabels: widget.showBusLabels,
+        onNodeSelected: widget.onNodeSelected,
+        onConnectionCreated: widget.onConnectionCreated,
+        onConnectionRemoved: widget.onConnectionRemoved,
+      );
+    }
+
+    // Use original canvas implementation
     return Semantics(
       label: 'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
       hint: 'Interactive routing canvas. Pan and zoom to navigate. Drag between ports to create connections.',

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
@@ -635,6 +635,39 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     // For now, simulate sync operation
     await Future.delayed(const Duration(milliseconds: 500));
     return true; // Simulate successful sync
+  }
+
+  // Interactive drag connection methods
+
+  /// Begin a connection drag operation from the specified source port
+  void beginConnectionDrag(Port sourcePort) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    // Add drag state to routing editor state if needed
+    // For now, this just validates the source port
+    debugPrint('Beginning connection drag from port: ${sourcePort.name}');
+  }
+
+  /// Update connection preview during drag operation
+  void updateConnectionPreview(Offset position) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    // Update drag preview state
+    debugPrint('Updating connection preview to position: $position');
+  }
+
+  /// Complete connection creation by connecting to target port
+  Future<void> completeConnection(Port targetPort) async {
+    // This method would be called by the drag handler when a valid drop occurs
+    // Implementation would extract source port from drag state and create connection
+    debugPrint('Completing connection to target port: ${targetPort.name}');
+  }
+
+  /// Cancel the current connection drag operation
+  void cancelConnectionDrag() {
+    debugPrint('Cancelling connection drag operation');
   }
 
   /// Create a new connection between source and target ports (legacy method for backward compatibility)
