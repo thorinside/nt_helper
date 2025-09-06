@@ -66,6 +66,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   
 
   bool _portsReady = false;
+  
+  // Store the current connection label bounds for hit testing
+  Map<String, Rect> _connectionLabelBounds = {};
 
   @override
   void initState() {
@@ -334,10 +337,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 // Draw all connections with unified canvas
                 if (connections.isNotEmpty) ...[
                   if (_portsReady)
-                    IgnorePointer(
-                      ignoring: true,
-                      child: _buildUnifiedConnectionCanvas(connections),
-                    )
+                    _buildUnifiedConnectionCanvas(connections)
                   else
                     IgnorePointer(
                       ignoring: true,
@@ -577,7 +577,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         isInputConnection: isInputConnection,
         busLabel: connection.busLabel, // Pass through bus label for partial connections
         onLabelHover: (isHovering) => _handleConnectionHover(connection.id, isHovering),
-        onLabelTap: () {}, // TODO: Add tap handling if needed
+        onLabelTap: () => _toggleConnectionOutputMode(connection.id),
       ));
     }
     
@@ -589,15 +589,18 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return GestureDetector(
       onTapDown: (details) => _handleConnectionCanvasTap(details, connectionDataList),
       child: MouseRegion(
-        onEnter: (_) {}, // Connection-level hover handled by individual labels
+        onHover: (event) => _handleMouseHover(event.localPosition, connectionDataList),
         onExit: (_) => _handleConnectionHover('', false), // Clear hover when leaving canvas
         child: CustomPaint(
-          painter: painter.ConnectionPainter(
+          painter: _ConnectionPainterWithBounds(
             connections: connectionDataList,
             theme: Theme.of(context),
             showLabels: true,
             enableAnimations: true,
             hoveredConnectionId: _hoveredConnectionId,
+            onBoundsUpdated: (bounds) {
+              _connectionLabelBounds = bounds;
+            },
           ),
           child: const SizedBox.expand(),
         ),
@@ -875,6 +878,21 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     });
   }
 
+  void _handleMouseHover(Offset position, List<painter.ConnectionData> connectionDataList) {
+    // Hit test against stored bounds
+    String? hitConnectionId;
+    for (final entry in _connectionLabelBounds.entries) {
+      if (entry.value.contains(position)) {
+        hitConnectionId = entry.key;
+        break;
+      }
+    }
+    
+    if (hitConnectionId != _hoveredConnectionId) {
+      _handleConnectionHover(hitConnectionId ?? '', hitConnectionId != null);
+    }
+  }
+
   /// Handle tap events on the connection canvas to toggle output modes
   void _handleConnectionCanvasTap(TapDownDetails details, List<painter.ConnectionData> connectionDataList) {
     // Find connection by hit testing the tap position against label bounds
@@ -888,16 +906,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Find connection ID by testing tap point against connection label bounds
   String? _findConnectionByTapPoint(Offset tapPosition, List<painter.ConnectionData> connectionDataList) {
-    // Create a temporary ConnectionPainter to access hit test functionality
-    final tempPainter = painter.ConnectionPainter(
-      connections: connectionDataList,
-      theme: Theme.of(context),
-      showLabels: true,
-      enableAnimations: false,
-    );
-    
-    // Use the existing hitTestLabel method to find the connection
-    return tempPainter.hitTestLabel(tapPosition);
+    // Hit test against stored bounds
+    for (final entry in _connectionLabelBounds.entries) {
+      if (entry.value.contains(tapPosition)) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   /// Toggle output mode for a connection between add (0) and replace (1)
@@ -951,4 +966,47 @@ class _CanvasGridPainter extends CustomPainter { /* same as canvas */
   }
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// ConnectionPainter wrapper that stores bounds in the widget state
+class _ConnectionPainterWithBounds extends CustomPainter {
+  final List<painter.ConnectionData> connections;
+  final ThemeData theme;
+  final bool showLabels;
+  final bool enableAnimations;
+  final String? hoveredConnectionId;
+  final Function(Map<String, Rect>) onBoundsUpdated;
+  
+  late final painter.ConnectionPainter _delegate;
+  
+  _ConnectionPainterWithBounds({
+    required this.connections,
+    required this.theme,
+    required this.showLabels,
+    required this.enableAnimations,
+    required this.hoveredConnectionId,
+    required this.onBoundsUpdated,
+  }) {
+    _delegate = painter.ConnectionPainter(
+      connections: connections,
+      theme: theme,
+      showLabels: showLabels,
+      enableAnimations: enableAnimations,
+      hoveredConnectionId: hoveredConnectionId,
+    );
+  }
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Delegate to the original painter
+    _delegate.paint(canvas, size);
+    
+    // Extract and store the bounds in the widget
+    onBoundsUpdated(_delegate.getLabelBounds());
+  }
+  
+  @override
+  bool shouldRepaint(covariant _ConnectionPainterWithBounds oldDelegate) {
+    return _delegate.shouldRepaint(oldDelegate._delegate);
+  }
 }
