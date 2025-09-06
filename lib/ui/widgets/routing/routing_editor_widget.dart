@@ -178,7 +178,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       refreshing: () => _buildLoadingOverlay(context),
       persisting: () => _buildLoadingOverlay(context),
       syncing: () => _buildLoadingOverlay(context),
-      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, deletionState, lastSyncTime, lastPersistTime, lastError) =>
+      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError) =>
           _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections),
       error: (message) => _buildErrorState(context, message),
     );

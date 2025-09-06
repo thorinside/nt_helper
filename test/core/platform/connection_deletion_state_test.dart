@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/core/platform/connection_deletion_state.dart';
 
+// Note: This state model is now used locally within UI widgets
+// rather than being managed at the cubit level.
+
 void main() {
   group('ConnectionDeletionState', () {
     group('constructor', () {

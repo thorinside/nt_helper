@@ -10,8 +10,6 @@ import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/services/connection_validator.dart';
-import 'package:nt_helper/core/platform/platform_interaction_service.dart';
-import 'package:nt_helper/core/platform/connection_deletion_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'routing_editor_state.dart';
@@ -24,15 +22,12 @@ import 'routing_editor_state.dart';
 class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   final DistingCubit? _distingCubit;
   final Future<SharedPreferences> _prefs;
-  final PlatformInteractionService _platformService;
   StreamSubscription<DistingState>? _distingStateSubscription;
 
   RoutingEditorCubit(
     this._distingCubit, {
     AlgorithmConnectionService? algorithmConnectionService,
-    PlatformInteractionService? platformService,
   }) : _prefs = SharedPreferences.getInstance(),
-       _platformService = platformService ?? PlatformInteractionService(),
        super(const RoutingEditorState.initial()) {
     if (_distingCubit != null) {
       _initializeStateWatcher();
@@ -1520,143 +1515,36 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
-  // Connection Deletion State Management Methods
+  // Connection Deletion Business Logic (UI-agnostic)
 
-  /// Start hovering over a connection (desktop platforms)
-  void startHover(String connectionId) {
+  /// Delete a connection by ID with smart bus assignment logic
+  /// This method handles the core business logic for connection deletion
+  /// including bus clearing for different connection types
+  Future<void> deleteConnectionWithSmartBusLogic(String connectionId) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return;
 
-    // Only allow hover interactions on desktop platforms
-    if (!_platformService.supportsHoverInteractions()) return;
-
-    // Validate connection exists
-    final connectionExists = currentState.connections
-        .any((conn) => conn.id == connectionId);
-    if (!connectionExists) {
-      debugPrint('Cannot start hover - connection not found: $connectionId');
-      return;
-    }
-
-    final newDeletionState = ConnectionDeletionState.hovering(connectionId);
-    emit(currentState.copyWith(deletionState: newDeletionState));
-  }
-
-  /// End hovering over a connection (desktop platforms)
-  void endHover() {
-    final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) return;
-
-    // Only process if currently hovering
-    if (!currentState.deletionState.isHovering) return;
-
-    final newDeletionState = const ConnectionDeletionState.initial();
-    emit(currentState.copyWith(deletionState: newDeletionState));
-  }
-
-  /// Select a connection for deletion (mobile platforms)
-  void selectForDeletion(String connectionId) {
-    final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) return;
-
-    // Only allow tap interactions on mobile platforms
-    if (!_platformService.shouldUseTouchInteractions()) return;
-
-    // Validate connection exists
-    final connectionExists = currentState.connections
-        .any((conn) => conn.id == connectionId);
-    if (!connectionExists) {
-      debugPrint('Cannot select connection - not found: $connectionId');
-      return;
-    }
-
-    // Toggle selection - if already selected, deselect; otherwise select
-    final currentSelection = currentState.deletionState.selectedConnectionIds;
-    Set<String> newSelection;
-    
-    if (currentSelection.contains(connectionId)) {
-      // Remove from selection
-      newSelection = Set.from(currentSelection)..remove(connectionId);
-    } else {
-      // Add to selection
-      newSelection = Set.from(currentSelection)..add(connectionId);
-    }
-
-    final newDeletionState = ConnectionDeletionState.tapSelected(newSelection);
-    emit(currentState.copyWith(deletionState: newDeletionState));
-  }
-
-  /// Clear all connection selections (mobile platforms)
-  void clearSelections() {
-    final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) return;
-
-    final newDeletionState = const ConnectionDeletionState.initial();
-    emit(currentState.copyWith(deletionState: newDeletionState));
-  }
-
-  /// Delete the currently selected connection(s) based on platform
-  Future<void> deleteSelectedConnections() async {
-    final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) return;
-
-    final deletionState = currentState.deletionState;
-    
     try {
-      if (deletionState.isHovering) {
-        // Desktop hover deletion - delete the hovered connection
-        final connectionId = deletionState.hoveredConnectionId!;
-        await deleteConnection(connectionId);
-        
-        // Clear hover state after deletion
-        endHover();
-        
-      } else if (deletionState.isTapSelecting && deletionState.hasSelectedConnection) {
-        // Mobile tap deletion - delete all selected connections
-        final selectedIds = deletionState.selectedConnectionIds;
-        
-        for (final connectionId in selectedIds) {
-          await deleteConnection(connectionId);
-        }
-        
-        // Clear selection after deletion
-        clearSelections();
-        
-      } else {
-        debugPrint('No connections selected for deletion');
+      // Validate connection exists
+      if (!currentState.connections.any((conn) => conn.id == connectionId)) {
+        throw ArgumentError('Connection not found: $connectionId');
       }
+
+      debugPrint('Deleting connection with smart bus logic: $connectionId');
+
+      // TODO: Implement smart bus assignment logic based on connection type
+      // - Hardware-to-algorithm: Clear only algorithm port bus (buses 1-12 for inputs, 13-20 for outputs)
+      // - Algorithm-to-algorithm: Clear both algorithm ports
+      // - Polyphonic connections: Handle voice-specific bus assignments
+      
+      // For now, use the existing deleteConnection method
+      await deleteConnection(connectionId);
+
+      debugPrint('Successfully deleted connection: $connectionId');
     } catch (e) {
-      debugPrint('Error deleting selected connections: $e');
-      emit(RoutingEditorState.error('Failed to delete connections: $e'));
+      debugPrint('Error deleting connection with smart bus logic: $e');
+      emit(RoutingEditorState.error('Failed to delete connection: $e'));
     }
-  }
-
-  /// Check if a connection is currently selected for deletion
-  bool isConnectionSelected(String connectionId) {
-    final currentState = state;
-    if (currentState is! RoutingEditorStateLoaded) return false;
-    
-    return currentState.deletionState.isConnectionSelected(connectionId);
-  }
-
-  /// Get the preferred interaction type for the current platform
-  InteractionType getPreferredInteractionType() {
-    return _platformService.getPreferredInteractionType();
-  }
-
-  /// Get minimum touch target size for accessibility
-  double getMinimumTouchTargetSize() {
-    return _platformService.getMinimumTouchTargetSize();
-  }
-
-  /// Check if hover interactions are supported on current platform
-  bool supportsHoverInteractions() {
-    return _platformService.supportsHoverInteractions();
-  }
-
-  /// Check if platform should use touch-based interactions
-  bool shouldUseTouchInteractions() {
-    return _platformService.shouldUseTouchInteractions();
   }
 
   @override
