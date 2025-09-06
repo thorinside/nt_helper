@@ -8,6 +8,7 @@ import 'package:nt_helper/core/routing/models/port.dart' as core_port;
 import 'package:nt_helper/core/routing/models/connection.dart';
 // Haptics can be reintroduced later if needed
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
+import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
@@ -23,6 +24,7 @@ class RoutingEditorWidget extends StatefulWidget {
   final Function(String nodeId)? onNodeSelected;
   final Function(String sourcePortId, String targetPortId)? onConnectionCreated;
   final Function(String connectionId)? onConnectionRemoved;
+  final PlatformInteractionService? platformService;
 
   RoutingEditorWidget({
     super.key,
@@ -33,6 +35,7 @@ class RoutingEditorWidget extends StatefulWidget {
     this.onNodeSelected,
     this.onConnectionCreated,
     this.onConnectionRemoved,
+    this.platformService,
   }) : showBusLabels = showBusLabels ?? (canvasSize.width >= 800);
 
   @override
@@ -48,6 +51,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Offset? _dragPosition;
   final bool _isDraggingConnection = false;
   String? _hoveredConnectionId;
+  
+  // Platform service for hover detection
+  late final PlatformInteractionService _platformService;
   
   // ScrollControllers for manual pan control
   late ScrollController _horizontalScrollController;
@@ -73,6 +79,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   @override
   void initState() {
     super.initState();
+    _platformService = widget.platformService ?? PlatformInteractionService();
     _horizontalScrollController = ScrollController();
     _verticalScrollController = ScrollController();
     
@@ -585,26 +592,78 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return const SizedBox.shrink();
     }
     
-    // Use the unified ConnectionPainter with conditional pointer events
+    // Choose rendering approach based on platform capabilities
+    if (_platformService.supportsHoverInteractions()) {
+      // Desktop: Use individual hoverable connections for delete functionality
+      return _buildHoverableConnections(connectionDataList);
+    } else {
+      // Mobile/other: Use unified painter with label overlays
+      return Stack(
+        children: [
+          // The connection painter itself (no pointer events)
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _ConnectionPainterWithBounds(
+                connections: connectionDataList,
+                theme: Theme.of(context),
+                showLabels: true,
+                enableAnimations: true,
+                hoveredConnectionId: _hoveredConnectionId,
+                onBoundsUpdated: (bounds) {
+                  _connectionLabelBounds = bounds;
+                },
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          // Invisible overlay for gesture detection only over connection labels
+          ..._buildConnectionLabelOverlays(),
+        ],
+      );
+    }
+  }
+
+  /// Build individual hoverable connections for desktop platforms
+  Widget _buildHoverableConnections(List<painter.ConnectionData> connectionDataList) {
+    // For desktop, we use a hybrid approach:
+    // 1. Render all connections with unified painter (efficient)
+    // 2. Overlay individual hover detection areas for delete functionality
+    
     return Stack(
       children: [
-        // The connection painter itself (no pointer events)
-        IgnorePointer(
-          child: CustomPaint(
-            painter: _ConnectionPainterWithBounds(
-              connections: connectionDataList,
-              theme: Theme.of(context),
-              showLabels: true,
-              enableAnimations: true,
-              hoveredConnectionId: _hoveredConnectionId,
-              onBoundsUpdated: (bounds) {
-                _connectionLabelBounds = bounds;
-              },
-            ),
-            child: const SizedBox.expand(),
+        // Base connection rendering (efficient batch painting)
+        CustomPaint(
+          painter: _ConnectionPainterWithBounds(
+            connections: connectionDataList,
+            theme: Theme.of(context),
+            showLabels: true,
+            enableAnimations: true,
+            hoveredConnectionId: _hoveredConnectionId,
+            onBoundsUpdated: (bounds) {
+              _connectionLabelBounds = bounds;
+            },
+          ),
+          child: const SizedBox.expand(),
+        ),
+        
+        // Individual hoverable areas for each connection
+        ...connectionDataList.map((connectionData) => 
+          InteractiveConnectionWidget(
+            key: ValueKey('hover_${connectionData.connection.id}'),
+            connection: connectionData.connection,
+            connectionData: connectionData,
+            routingEditorCubit: context.read<RoutingEditorCubit>(),
+            size: Size(_canvasWidth, _canvasHeight),
+            platformService: _platformService,
+            onHoverChange: (isHovering) {
+              setState(() {
+                _hoveredConnectionId = isHovering ? connectionData.connection.id : null;
+              });
+            },
           ),
         ),
-        // Invisible overlay for gesture detection only over connection labels
+        
+        // Keep existing label overlays for output mode toggling
         ..._buildConnectionLabelOverlays(),
       ],
     );
