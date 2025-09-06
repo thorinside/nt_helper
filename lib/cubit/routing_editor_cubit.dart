@@ -155,7 +155,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   name: p.name,
                   type: _toUiPortType(p.type),
                   direction: PortDirection.input,
-                  busNumber: p.busValue,
+                  busNumber: _safeBusValueToInt(p.busValue),
                   parameterName: p.busParam,
                 ),
               )
@@ -167,7 +167,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   name: p.name,
                   type: _toUiPortType(p.type),
                   direction: PortDirection.output,
-                  busNumber: p.busValue,
+                  busNumber: _safeBusValueToInt(p.busValue),
                   parameterName: p.busParam,
                 ),
               )
@@ -221,6 +221,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       case core_port.PortType.clock:
         return PortType.trigger; // closest match in UI enum
     }
+  }
+
+  /// Safely convert bus value to int, handling both int and String types
+  int? _safeBusValueToInt(dynamic busValue) {
+    if (busValue == null) return null;
+    if (busValue is int) return busValue;
+    if (busValue is String) {
+      return int.tryParse(busValue);
+    }
+    return null;
   }
 
   /// Create the 12 physical input ports of the Disting NT
