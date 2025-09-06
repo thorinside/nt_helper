@@ -596,7 +596,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         isPhysicalConnection: isPhysicalConnection,
         isInputConnection: isInputConnection,
         busLabel: connection.busLabel, // Pass through bus label for partial connections
-        onLabelHover: (isHovering) => _handleConnectionHover(connection.id, isHovering),
+        onLabelHover: null, // Disabled - connection highlighting now controlled by port hover only
         onLabelTap: () => _toggleConnectionOutputMode(connection.id),
       ));
     }
@@ -1177,8 +1177,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               _toggleConnectionOutputMode(connectionId);
             },
             child: MouseRegion(
-              onEnter: (_) => _handleConnectionHover(connectionId, true),
-              onExit: (_) => _handleConnectionHover(connectionId, false),
+              onEnter: null, // Disabled - connection highlighting now controlled by port hover only
+              onExit: null, // Disabled - connection highlighting now controlled by port hover only
               child: Center(
                 child: Container(
                   // Small visible area that represents the actual text bounds
