@@ -309,7 +309,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   return RoutingEditorWidget(
                     canvasSize: Size(constraints.maxWidth, constraints.maxHeight),
                     showPhysicalPorts: true,
-                    enableInteractiveEditing: true, // Enable interactive canvas with error notifications
+                    enableInteractiveEditing: true, // Keep interactive canvas enabled
                     onConnectionCreated: (source, target) {
                       context.read<RoutingEditorCubit>().createConnection(
                         sourcePortId: source,

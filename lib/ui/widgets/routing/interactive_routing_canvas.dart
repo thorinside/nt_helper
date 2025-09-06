@@ -140,21 +140,13 @@ class _InteractiveRoutingCanvasState extends State<InteractiveRoutingCanvas> {
           // Connections layer
           ...state.connections.map((connection) => _buildConnection(connection, state)),
           
-          // Physical input nodes
-          if (widget.showPhysicalPorts)
-            ...state.physicalInputs.asMap().entries.map((entry) {
-              final index = entry.key;
-              final port = entry.value;
-              return _buildPhysicalInputNode(port, index, state);
-            }),
+          // Physical input node (single node with all inputs)
+          if (widget.showPhysicalPorts && state.physicalInputs.isNotEmpty)
+            _buildPhysicalInputNode(state),
           
-          // Physical output nodes
-          if (widget.showPhysicalPorts)
-            ...state.physicalOutputs.asMap().entries.map((entry) {
-              final index = entry.key;
-              final port = entry.value;
-              return _buildPhysicalOutputNode(port, index, state);
-            }),
+          // Physical output node (single node with all outputs)  
+          if (widget.showPhysicalPorts && state.physicalOutputs.isNotEmpty)
+            _buildPhysicalOutputNode(state),
           
           // Algorithm nodes
           ...state.algorithms.asMap().entries.map((entry) {
@@ -189,12 +181,13 @@ class _InteractiveRoutingCanvasState extends State<InteractiveRoutingCanvas> {
     );
   }
 
-  Widget _buildPhysicalInputNode(Port port, int index, RoutingEditorStateLoaded state) {
-    final position = Offset(50, 100 + (index * 60));
-    _nodePositions[port.id] = position;
+  Widget _buildPhysicalInputNode(RoutingEditorStateLoaded state) {
+    final position = Offset(50, 100);
+    const nodeId = 'physical_inputs';
+    _nodePositions[nodeId] = position;
     
     final key = GlobalKey();
-    _nodeKeys[port.id] = key;
+    _nodeKeys[nodeId] = key;
     
     return Positioned(
       left: position.dx,
@@ -207,12 +200,13 @@ class _InteractiveRoutingCanvasState extends State<InteractiveRoutingCanvas> {
     );
   }
 
-  Widget _buildPhysicalOutputNode(Port port, int index, RoutingEditorStateLoaded state) {
-    final position = Offset(widget.canvasSize.width - 150, 100 + (index * 60));
-    _nodePositions[port.id] = position;
+  Widget _buildPhysicalOutputNode(RoutingEditorStateLoaded state) {
+    final position = Offset(widget.canvasSize.width - 150, 100);
+    const nodeId = 'physical_outputs';
+    _nodePositions[nodeId] = position;
     
     final key = GlobalKey();
-    _nodeKeys[port.id] = key;
+    _nodeKeys[nodeId] = key;
     
     return Positioned(
       left: position.dx,

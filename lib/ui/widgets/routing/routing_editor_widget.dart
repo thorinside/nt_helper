@@ -7,6 +7,7 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart' as core_port;
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/ui/widgets/routing/interactive_routing_canvas.dart';
+import 'package:nt_helper/ui/widgets/routing/error_notification.dart';
 // Haptics can be reintroduced later if needed
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
