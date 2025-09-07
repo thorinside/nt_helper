@@ -586,6 +586,10 @@ class ConnectionPainter extends CustomPainter {
       textPainter.height + 4,
     );
 
+    // Store bounds for partial connection bus labels to enable tap handling
+    // Use a special prefix to distinguish from regular connection labels
+    _labelBounds['partial_${conn.connection.id}'] = labelRect;
+
     // Draw label background with subtle styling
     final backgroundPaint = Paint()
       ..style = PaintingStyle.fill

@@ -1893,6 +1893,32 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final connectionId = entry.key;
       final bounds = entry.value;
 
+      // Check if this is a partial connection bus label
+      if (connectionId.startsWith('partial_')) {
+        // This is an unconnected bus label - add tap handler to clear the output
+        final actualConnectionId = connectionId.substring(8); // Remove 'partial_' prefix
+        
+        overlays.add(
+          Positioned(
+            left: bounds.left,
+            top: bounds.top,
+            width: bounds.width,
+            height: bounds.height,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _clearOutputBusForPartialConnection(actualConnectionId),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Container(
+                  color: Colors.transparent, // Invisible but tappable
+                ),
+              ),
+            ),
+          ),
+        );
+        continue;
+      }
+
       // Find the connection to check if it has a mode parameter
       final connection = routingState.connections.firstWhere(
         (conn) => conn.id == connectionId,
@@ -1969,6 +1995,53 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   /// Toggle output mode for a connection between add (0) and replace (1)
+  /// Clear the output bus assignment for a partial connection
+  void _clearOutputBusForPartialConnection(String connectionId) {
+    final routingCubit = context.read<RoutingEditorCubit>();
+    final routingState = routingCubit.state;
+    
+    if (routingState is! RoutingEditorStateLoaded) return;
+    
+    // Find the partial connection
+    final connection = routingState.connections.firstWhere(
+      (conn) => conn.id == connectionId && conn.isPartial,
+      orElse: () => Connection(
+        id: '',
+        sourcePortId: '',
+        destinationPortId: '',
+        connectionType: ConnectionType.algorithmToAlgorithm,
+      ),
+    );
+    
+    if (connection.id.isEmpty) {
+      debugPrint('Partial connection not found: $connectionId');
+      return;
+    }
+    
+    // For partial output-to-bus connections, the source is the output port
+    if (connection.connectionType == ConnectionType.partialOutputToBus) {
+      final sourcePortId = connection.sourcePortId;
+      
+      // Find the port and its algorithm
+      for (final algorithm in routingState.algorithms) {
+        for (final port in algorithm.outputPorts) {
+          if (port.id == sourcePortId && port.parameterNumber != null) {
+            debugPrint('Clearing output bus for port ${port.name} (algorithm ${algorithm.index})');
+            
+            // Clear the bus assignment by setting parameter to 0
+            context.read<DistingCubit>().updateParameterValue(
+              algorithmIndex: algorithm.index,
+              parameterNumber: port.parameterNumber!,
+              value: 0, // 0 means "None" for bus assignments
+              userIsChangingTheValue: true,
+            );
+            return;
+          }
+        }
+      }
+    }
+  }
+
   void _toggleConnectionOutputMode(String connectionId) {
     final routingState = context.read<RoutingEditorCubit>().state;
     if (routingState is! RoutingEditorStateLoaded) return;
