@@ -66,16 +66,20 @@ Reuse existing ConnectionPainter bezier calculations:
 - Apply semi-transparent overlay for preview
 - Use RepaintBoundary to isolate preview updates
 
-### 5. Drop Target Detection
+### 5. Drop Target Detection (All Ports Compatible)
+
+**No compatibility checking** - All signals in Eurorack are voltage, so any output can connect to any input.
 
 ```dart
-// Find port at global position
+// Find port at global position - NO TYPE CHECKING
 Port? _getPortAtPosition(Offset globalPosition) {
   // Convert global to local coordinates for each port
   // Check if position is within port bounds
-  // Return matching port or null
+  // Return matching port or null (no type validation needed)
 }
 ```
+
+**Visual Feedback**: Port highlighting should be subtle and delightful - consider gentle scale animation or soft glow effect rather than harsh color changes.
 
 ### 6. Existing Gesture Preservation
 
