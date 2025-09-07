@@ -48,9 +48,7 @@ void main() {
                 color: Colors.blue,
                 border: Border.all(color: Colors.black, width: 2),
               ),
-              child: const Center(
-                child: Text('Connection Line'),
-              ),
+              child: const Center(child: Text('Connection Line')),
             ),
           ),
         ),
@@ -68,7 +66,9 @@ void main() {
         expect(find.byIcon(Icons.close), findsNothing);
 
         // Simulate mouse enter by using the low-level mouse tracking
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
         await gesture.addPointer(location: tester.getCenter(mouseRegion));
         await gesture.moveTo(tester.getCenter(mouseRegion));
         await tester.pump();
@@ -82,7 +82,10 @@ void main() {
         final interactiveWidget = tester.widget<InteractiveConnectionWidget>(
           find.byType(InteractiveConnectionWidget),
         );
-        expect(interactiveWidget.connection.id, equals('hover-test-connection'));
+        expect(
+          interactiveWidget.connection.id,
+          equals('hover-test-connection'),
+        );
 
         await gesture.removePointer();
       });
@@ -91,10 +94,12 @@ void main() {
         await tester.pumpWidget(createDesktopConnectionWidget());
 
         final mouseRegion = find.byType(MouseRegion).last;
-        
+
         // Simulate entering and then exiting
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-        
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+
         // Enter
         await gesture.addPointer(location: tester.getCenter(mouseRegion));
         await gesture.moveTo(tester.getCenter(mouseRegion));
@@ -113,12 +118,16 @@ void main() {
         await gesture.removePointer();
       });
 
-      testWidgets('maintains hover state while cursor remains over widget', (tester) async {
+      testWidgets('maintains hover state while cursor remains over widget', (
+        tester,
+      ) async {
         await tester.pumpWidget(createDesktopConnectionWidget());
 
         final mouseRegion = find.byType(MouseRegion).last;
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-        
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+
         // Enter hover area
         await gesture.addPointer(location: tester.getCenter(mouseRegion));
         await gesture.moveTo(tester.getCenter(mouseRegion));
@@ -136,19 +145,26 @@ void main() {
         final interactiveWidget = tester.widget<InteractiveConnectionWidget>(
           find.byType(InteractiveConnectionWidget),
         );
-        expect(interactiveWidget.connection.id, equals('hover-test-connection'));
+        expect(
+          interactiveWidget.connection.id,
+          equals('hover-test-connection'),
+        );
 
         await gesture.removePointer();
       });
     });
 
     group('Hover State Persistence and Cleanup', () {
-      testWidgets('cleans up hover state when widget is disposed', (tester) async {
+      testWidgets('cleans up hover state when widget is disposed', (
+        tester,
+      ) async {
         // Build widget
         await tester.pumpWidget(createDesktopConnectionWidget());
 
         final mouseRegion = find.byType(MouseRegion).last;
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
 
         // Enter hover state
         await gesture.addPointer(location: tester.getCenter(mouseRegion));
@@ -156,9 +172,9 @@ void main() {
         await tester.pump();
 
         // Dispose widget by rebuilding without it
-        await tester.pumpWidget(const MaterialApp(
-          home: Scaffold(body: Text('Empty')),
-        ));
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: Text('Empty'))),
+        );
 
         // Verify no memory leaks or dangling state
         // The widget should be cleanly disposed
@@ -167,11 +183,15 @@ void main() {
         await gesture.removePointer();
       });
 
-      testWidgets('handles rapid hover enter/exit cycles gracefully', (tester) async {
+      testWidgets('handles rapid hover enter/exit cycles gracefully', (
+        tester,
+      ) async {
         await tester.pumpWidget(createDesktopConnectionWidget());
 
         final mouseRegion = find.byType(MouseRegion).last;
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
 
         final center = tester.getCenter(mouseRegion);
         const outsidePosition = Offset(1000, 1000);
@@ -196,13 +216,21 @@ void main() {
         await gesture.removePointer();
       });
 
-      testWidgets('preserves hover state during widget rebuilds', (tester) async {
+      testWidgets('preserves hover state during widget rebuilds', (
+        tester,
+      ) async {
         Widget buildWidget({String connectionId = 'hover-test-connection'}) {
           // Setup platform service for each rebuild
-          when(mockPlatformService.supportsHoverInteractions()).thenReturn(true);
-          when(mockPlatformService.shouldUseTouchInteractions()).thenReturn(false);
-          when(mockPlatformService.getMinimumTouchTargetSize()).thenReturn(24.0);
-          
+          when(
+            mockPlatformService.supportsHoverInteractions(),
+          ).thenReturn(true);
+          when(
+            mockPlatformService.shouldUseTouchInteractions(),
+          ).thenReturn(false);
+          when(
+            mockPlatformService.getMinimumTouchTargetSize(),
+          ).thenReturn(24.0);
+
           final connection = Connection(
             id: connectionId,
             sourcePortId: 'source-port-hover',
@@ -231,7 +259,9 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         final mouseRegion = find.byType(MouseRegion).last;
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
 
         // Enter hover state
         await gesture.addPointer(location: tester.getCenter(mouseRegion));
@@ -263,7 +293,9 @@ void main() {
         expect(widget.onExit, isNotNull);
       });
 
-      testWidgets('handles null mouse event callbacks gracefully', (tester) async {
+      testWidgets('handles null mouse event callbacks gracefully', (
+        tester,
+      ) async {
         // Test with a platform service that doesn't support hover
         when(mockPlatformService.supportsHoverInteractions()).thenReturn(false);
         when(mockPlatformService.shouldUseTouchInteractions()).thenReturn(true);
@@ -278,7 +310,9 @@ void main() {
         await tester.pumpWidget(createDesktopConnectionWidget());
 
         final mouseRegion = find.byType(MouseRegion).last;
-        final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        final TestGesture gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
 
         // Measure time for hover detection
         final stopwatch = Stopwatch()..start();
@@ -297,7 +331,9 @@ void main() {
     });
 
     group('Integration with Platform Detection', () {
-      testWidgets('only enables hover detection on desktop platforms', (tester) async {
+      testWidgets('only enables hover detection on desktop platforms', (
+        tester,
+      ) async {
         // Setup as mobile platform
         when(mockPlatformService.supportsHoverInteractions()).thenReturn(false);
         when(mockPlatformService.shouldUseTouchInteractions()).thenReturn(true);
@@ -312,17 +348,25 @@ void main() {
         expect(interactiveWidget, findsOneWidget);
       });
 
-      testWidgets('disables hover interactions when platform service indicates mobile', (tester) async {
-        when(mockPlatformService.supportsHoverInteractions()).thenReturn(false);
-        
-        await tester.pumpWidget(createDesktopConnectionWidget());
+      testWidgets(
+        'disables hover interactions when platform service indicates mobile',
+        (tester) async {
+          when(
+            mockPlatformService.supportsHoverInteractions(),
+          ).thenReturn(false);
 
-        // The widget should adapt to the platform service settings
-        final interactiveWidget = tester.widget<InteractiveConnectionWidget>(
-          find.byType(InteractiveConnectionWidget),
-        );
-        expect(interactiveWidget.platformService, equals(mockPlatformService));
-      });
+          await tester.pumpWidget(createDesktopConnectionWidget());
+
+          // The widget should adapt to the platform service settings
+          final interactiveWidget = tester.widget<InteractiveConnectionWidget>(
+            find.byType(InteractiveConnectionWidget),
+          );
+          expect(
+            interactiveWidget.platformService,
+            equals(mockPlatformService),
+          );
+        },
+      );
     });
   });
 }

@@ -19,13 +19,15 @@ import 'routing_editor_widget_test.mocks.dart';
 void main() {
   setUpAll(() {
     // Provide dummy value for RoutingEditorState
-    provideDummy<state.RoutingEditorState>(const state.RoutingEditorStateInitial());
+    provideDummy<state.RoutingEditorState>(
+      const state.RoutingEditorStateInitial(),
+    );
   });
 
   group('RoutingEditorWidget Hover State', () {
     late MockRoutingEditorCubit mockRoutingCubit;
     late MockDistingCubit mockDistingCubit;
-    
+
     setUp(() {
       mockRoutingCubit = MockRoutingEditorCubit();
       mockDistingCubit = MockDistingCubit();
@@ -39,7 +41,7 @@ void main() {
         destinationPortId: 'hw_out_1',
         connectionType: ConnectionType.hardwareInput,
       );
-      
+
       final loadedState = state.RoutingEditorStateLoaded(
         physicalInputs: [
           Port(
@@ -51,7 +53,7 @@ void main() {
         ],
         physicalOutputs: [
           Port(
-            id: 'hw_out_1', 
+            id: 'hw_out_1',
             name: 'Output 1',
             type: PortType.cv,
             direction: PortDirection.output,
@@ -69,7 +71,9 @@ void main() {
       );
 
       when(mockRoutingCubit.state).thenReturn(loadedState);
-      when(mockRoutingCubit.stream).thenAnswer((_) => Stream.value(loadedState));
+      when(
+        mockRoutingCubit.stream,
+      ).thenAnswer((_) => Stream.value(loadedState));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -79,9 +83,7 @@ void main() {
               BlocProvider<DistingCubit>.value(value: mockDistingCubit),
             ],
             child: Scaffold(
-              body: RoutingEditorWidget(
-                canvasSize: const Size(800, 600),
-              ),
+              body: RoutingEditorWidget(canvasSize: const Size(800, 600)),
             ),
           ),
         ),
@@ -91,23 +93,27 @@ void main() {
 
       // Find the MouseRegion wrapping connection canvas
       expect(find.byType(MouseRegion), findsWidgets);
-      
+
       // Test hover enter event
       await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
         'flutter/mousecursor',
-        const StandardMethodCodec().encodeMethodCall(const MethodCall('activateSystemCursor', <String, dynamic>{
-          'kind': 'basic',
-        })),
+        const StandardMethodCodec().encodeMethodCall(
+          const MethodCall('activateSystemCursor', <String, dynamic>{
+            'kind': 'basic',
+          }),
+        ),
         (data) {},
       );
 
       final mouseRegion = find.byType(MouseRegion).first;
-      
+
       // Simulate mouse enter event
-      final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      final TestGesture gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
       await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
-      
+
       // Move mouse over connection area
       await gesture.moveTo(tester.getCenter(mouseRegion));
       await tester.pump();
@@ -132,7 +138,9 @@ void main() {
       );
 
       when(mockRoutingCubit.state).thenReturn(loadedState);
-      when(mockRoutingCubit.stream).thenAnswer((_) => Stream.value(loadedState));
+      when(
+        mockRoutingCubit.stream,
+      ).thenAnswer((_) => Stream.value(loadedState));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -141,9 +149,7 @@ void main() {
               BlocProvider<RoutingEditorCubit>.value(value: mockRoutingCubit),
               BlocProvider<DistingCubit>.value(value: mockDistingCubit),
             ],
-            child: Scaffold(
-              body: RoutingEditorWidget(),
-            ),
+            child: Scaffold(body: RoutingEditorWidget()),
           ),
         ),
       );
@@ -151,10 +157,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Test stylus hover support - MouseRegion automatically handles stylus
-      final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.stylus);
+      final TestGesture gesture = await tester.createGesture(
+        kind: PointerDeviceKind.stylus,
+      );
       await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
-      
+
       // Move stylus over widget area
       await gesture.moveTo(const Offset(100, 100));
       await tester.pump();
@@ -167,13 +175,15 @@ void main() {
   group('RoutingEditorWidget Connection Label Tap', () {
     late MockRoutingEditorCubit mockRoutingCubit;
     late MockDistingCubit mockDistingCubit;
-    
+
     setUp(() {
       mockRoutingCubit = MockRoutingEditorCubit();
       mockDistingCubit = MockDistingCubit();
     });
 
-    testWidgets('handles connection label tap to toggle output mode', (tester) async {
+    testWidgets('handles connection label tap to toggle output mode', (
+      tester,
+    ) async {
       // Setup loaded state with test connection and replace mode
       final testConnection = Connection(
         id: 'test_connection_1',
@@ -182,12 +192,12 @@ void main() {
         connectionType: ConnectionType.hardwareOutput,
         outputMode: OutputMode.replace,
       );
-      
+
       final loadedState = state.RoutingEditorStateLoaded(
         physicalInputs: [],
         physicalOutputs: [
           Port(
-            id: 'hw_out_1', 
+            id: 'hw_out_1',
             name: 'Output 1',
             type: PortType.audio,
             direction: PortDirection.output,
@@ -197,7 +207,11 @@ void main() {
           state.RoutingAlgorithm(
             id: 'algo_test_1',
             index: 0,
-            algorithm: Algorithm(algorithmIndex: 0, guid: 'test-guid', name: 'Test Algorithm'),
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'test-guid',
+              name: 'Test Algorithm',
+            ),
             inputPorts: [],
             outputPorts: [
               Port(
@@ -220,7 +234,9 @@ void main() {
       );
 
       when(mockRoutingCubit.state).thenReturn(loadedState);
-      when(mockRoutingCubit.stream).thenAnswer((_) => Stream.value(loadedState));
+      when(
+        mockRoutingCubit.stream,
+      ).thenAnswer((_) => Stream.value(loadedState));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -230,9 +246,7 @@ void main() {
               BlocProvider<DistingCubit>.value(value: mockDistingCubit),
             ],
             child: Scaffold(
-              body: RoutingEditorWidget(
-                canvasSize: const Size(800, 600),
-              ),
+              body: RoutingEditorWidget(canvasSize: const Size(800, 600)),
             ),
           ),
         ),
@@ -252,7 +266,9 @@ void main() {
       expect(find.byType(RoutingEditorWidget), findsOneWidget);
     });
 
-    testWidgets('toggles output mode from replace to add on label tap', (tester) async {
+    testWidgets('toggles output mode from replace to add on label tap', (
+      tester,
+    ) async {
       // Setup connection with replace mode initially
       final testConnection = Connection(
         id: 'test_connection_1',
@@ -261,12 +277,12 @@ void main() {
         connectionType: ConnectionType.hardwareOutput,
         outputMode: OutputMode.replace,
       );
-      
+
       final loadedState = state.RoutingEditorStateLoaded(
         physicalInputs: [],
         physicalOutputs: [
           Port(
-            id: 'hw_out_1', 
+            id: 'hw_out_1',
             name: 'Output 1',
             type: PortType.audio,
             direction: PortDirection.output,
@@ -276,7 +292,11 @@ void main() {
           state.RoutingAlgorithm(
             id: 'algo_test_1',
             index: 0,
-            algorithm: Algorithm(algorithmIndex: 0, guid: 'test-guid', name: 'Test Algorithm'),
+            algorithm: Algorithm(
+              algorithmIndex: 0,
+              guid: 'test-guid',
+              name: 'Test Algorithm',
+            ),
             inputPorts: [],
             outputPorts: [
               Port(
@@ -299,7 +319,9 @@ void main() {
       );
 
       when(mockRoutingCubit.state).thenReturn(loadedState);
-      when(mockRoutingCubit.stream).thenAnswer((_) => Stream.value(loadedState));
+      when(
+        mockRoutingCubit.stream,
+      ).thenAnswer((_) => Stream.value(loadedState));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -309,9 +331,7 @@ void main() {
               BlocProvider<DistingCubit>.value(value: mockDistingCubit),
             ],
             child: Scaffold(
-              body: RoutingEditorWidget(
-                canvasSize: const Size(800, 600),
-              ),
+              body: RoutingEditorWidget(canvasSize: const Size(800, 600)),
             ),
           ),
         ),
@@ -321,16 +341,16 @@ void main() {
 
       // Prepare for tap simulation - when tap occurs, expect setPortOutputMode to be called
       // with the toggled mode (from replace to add)
-      when(mockRoutingCubit.togglePortOutputMode(
-        portId: 'algo_test_1_port_1',
-      )).thenAnswer((_) async => {});
+      when(
+        mockRoutingCubit.togglePortOutputMode(portId: 'algo_test_1_port_1'),
+      ).thenAnswer((_) async => {});
 
       // Find connection canvas and tap at a position where a label would be
       final customPaint = find.byType(CustomPaint).first;
       await tester.tap(customPaint, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      // Note: The actual verification of setPortOutputMode call will be done 
+      // Note: The actual verification of setPortOutputMode call will be done
       // after implementing the tap handling logic
       expect(find.byType(RoutingEditorWidget), findsOneWidget);
     });

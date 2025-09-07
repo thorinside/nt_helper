@@ -171,55 +171,61 @@ void main() {
         expect(hitConnection, isNull);
       });
 
-      test('should return first matching connection for overlapping labels', () {
-        // Create two connections with similar positions (overlapping labels)
-        final connection1 = Connection(
-          id: 'connection_1',
-          sourcePortId: 'source_1',
-          destinationPortId: 'dest_1',
-          connectionType: ConnectionType.algorithmToAlgorithm,
-        );
+      test(
+        'should return first matching connection for overlapping labels',
+        () {
+          // Create two connections with similar positions (overlapping labels)
+          final connection1 = Connection(
+            id: 'connection_1',
+            sourcePortId: 'source_1',
+            destinationPortId: 'dest_1',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+          );
 
-        final connection2 = Connection(
-          id: 'connection_2', 
-          sourcePortId: 'source_2',
-          destinationPortId: 'dest_2',
-          connectionType: ConnectionType.algorithmToAlgorithm,
-        );
+          final connection2 = Connection(
+            id: 'connection_2',
+            sourcePortId: 'source_2',
+            destinationPortId: 'dest_2',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+          );
 
-        final connectionData1 = ConnectionData(
-          connection: connection1,
-          sourcePosition: const Offset(50, 100),
-          destinationPosition: const Offset(150, 120),
-          busNumber: 1,
-        );
+          final connectionData1 = ConnectionData(
+            connection: connection1,
+            sourcePosition: const Offset(50, 100),
+            destinationPosition: const Offset(150, 120),
+            busNumber: 1,
+          );
 
-        final connectionData2 = ConnectionData(
-          connection: connection2,
-          sourcePosition: const Offset(55, 105),
-          destinationPosition: const Offset(155, 125),
-          busNumber: 2,
-        );
+          final connectionData2 = ConnectionData(
+            connection: connection2,
+            sourcePosition: const Offset(55, 105),
+            destinationPosition: const Offset(155, 125),
+            busNumber: 2,
+          );
 
-        final painter = ConnectionPainter(
-          connections: [connectionData1, connectionData2],
-          theme: mockTheme,
-          showLabels: true,
-        );
+          final painter = ConnectionPainter(
+            connections: [connectionData1, connectionData2],
+            theme: mockTheme,
+            showLabels: true,
+          );
 
-        // Paint to generate bounds
-        final recorder = PictureRecorder();
-        final canvas = Canvas(recorder);
-        const size = Size(400, 300);
-        painter.paint(canvas, size);
+          // Paint to generate bounds
+          final recorder = PictureRecorder();
+          final canvas = Canvas(recorder);
+          const size = Size(400, 300);
+          painter.paint(canvas, size);
 
-        // Hit test at a point that might overlap both labels
-        final testPoint = const Offset(100, 110);
-        final hitConnection = painter.hitTestLabel(testPoint);
-        
-        // Should return one of the connections (first match)
-        expect(hitConnection, anyOf(equals('connection_1'), equals('connection_2')));
-      });
+          // Hit test at a point that might overlap both labels
+          final testPoint = const Offset(100, 110);
+          final hitConnection = painter.hitTestLabel(testPoint);
+
+          // Should return one of the connections (first match)
+          expect(
+            hitConnection,
+            anyOf(equals('connection_1'), equals('connection_2')),
+          );
+        },
+      );
     });
 
     group('Hover Visual Feedback', () {
@@ -242,7 +248,7 @@ void main() {
         // Check that label bounds were stored (basic functionality still works)
         final labelBounds = painter.getLabelBounds();
         expect(labelBounds.containsKey(mockConnection.id), isTrue);
-        
+
         // Verify painter was created with hovered connection ID
         expect(painter.hoveredConnectionId, equals(mockConnection.id));
       });
@@ -266,34 +272,37 @@ void main() {
         // Check that label bounds were stored normally
         final labelBounds = painter.getLabelBounds();
         expect(labelBounds.containsKey(mockConnection.id), isTrue);
-        
+
         // Verify hovered connection ID is different
         expect(painter.hoveredConnectionId, equals('different_connection'));
       });
 
-      test('should not apply hover styling when hoveredConnectionId is null', () {
-        final painter = ConnectionPainter(
-          connections: [mockConnectionData],
-          theme: mockTheme,
-          showLabels: true,
-          hoveredConnectionId: null,
-        );
+      test(
+        'should not apply hover styling when hoveredConnectionId is null',
+        () {
+          final painter = ConnectionPainter(
+            connections: [mockConnectionData],
+            theme: mockTheme,
+            showLabels: true,
+            hoveredConnectionId: null,
+          );
 
-        // Create a test canvas
-        final recorder = PictureRecorder();
-        final canvas = Canvas(recorder);
-        const size = Size(400, 300);
+          // Create a test canvas
+          final recorder = PictureRecorder();
+          final canvas = Canvas(recorder);
+          const size = Size(400, 300);
 
-        // Paint the connections
-        painter.paint(canvas, size);
+          // Paint the connections
+          painter.paint(canvas, size);
 
-        // Check that label bounds were stored normally
-        final labelBounds = painter.getLabelBounds();
-        expect(labelBounds.containsKey(mockConnection.id), isTrue);
-        
-        // Verify no hover state
-        expect(painter.hoveredConnectionId, isNull);
-      });
+          // Check that label bounds were stored normally
+          final labelBounds = painter.getLabelBounds();
+          expect(labelBounds.containsKey(mockConnection.id), isTrue);
+
+          // Verify no hover state
+          expect(painter.hoveredConnectionId, isNull);
+        },
+      );
     });
   });
 }

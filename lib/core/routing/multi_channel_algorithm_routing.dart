@@ -112,7 +112,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// Cached output ports to avoid regeneration
   List<Port>? _cachedOutputPorts;
 
-
   /// Creates a new MultiChannelAlgorithmRouting instance.
   ///
   /// Parameters:
@@ -267,10 +266,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               outputMode = OutputMode.add;
             }
           }
-          
+
           // Get mode parameter number from the item metadata (already stored during createFromSlot)
           int? modeParameterNumber = item['modeParameterNumber'] as int?;
-          
+
           // Fallback to looking it up from base class if not in metadata
           if (modeParameterNumber == null) {
             final busParam = item['busParam']?.toString();
@@ -278,11 +277,13 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               modeParameterNumber = getModeParameterNumber(busParam);
             }
           }
-          
+
           if (modeParameterNumber != null) {
-            debugPrint('MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber');
+            debugPrint(
+              'MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber',
+            );
           }
-          
+
           ports.add(
             Port(
               id: id,
@@ -637,17 +638,19 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       'Voices',
       'voices',
     ];
-    
+
     for (final paramName in widthParameterNames) {
       if (AlgorithmRouting.hasParameter(slot, paramName)) {
         final value = AlgorithmRouting.getParameterValue(slot, paramName);
         if (value > 0) {
-          debugPrint('MultiChannelAlgorithmRouting: Found width parameter "$paramName" = $value');
+          debugPrint(
+            'MultiChannelAlgorithmRouting: Found width parameter "$paramName" = $value',
+          );
           return value;
         }
       }
     }
-    
+
     return 1; // Default to 1 if no width parameter found
   }
 
@@ -726,34 +729,69 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         } else if (lowerName.contains('mono')) {
           port['channel'] = 'mono';
         }
-        
+
+        // Determine possible mode names
+        final List<String> possibleModeNames = ['$paramName mode']; // Full name mode
+        final firstWord = paramName.split(' ').first;
+        if (firstWord.isNotEmpty && firstWord != paramName) {
+          possibleModeNames.add('$firstWord mode'); // First word mode
+        }
+        final uniquePossibleModeNames = possibleModeNames.toSet().toList();
+
         // Apply output mode if available
         if (modeParameters != null) {
-          // Look for corresponding mode parameter (e.g., "Output 1 mode" for "Output 1")
-          final modeName = '$paramName mode';
-          if (modeParameters.containsKey(modeName)) {
-            final modeValue = modeParameters[modeName];
-            // 0 = Add, 1 = Replace
-            if (modeValue == 1) {
-              port['outputMode'] = 'replace';
-            } else {
-              port['outputMode'] = 'add';
+          String? actualModeName;
+          int? modeValue;
+
+          for (final name in uniquePossibleModeNames) {
+            if (modeParameters.containsKey(name)) {
+              actualModeName = name;
+              modeValue = modeParameters[name];
+              break; // Found the mode parameter
             }
           }
-        }
-        
-        // Store mode parameter number if available
-        if (modeParametersWithNumbers != null) {
-          final modeName = '$paramName mode';
-          debugPrint('Looking for mode parameter: "$modeName" in ${modeParametersWithNumbers.keys}');
-          if (modeParametersWithNumbers.containsKey(modeName)) {
-            port['modeParameterNumber'] = modeParametersWithNumbers[modeName]!.parameterNumber;
-            debugPrint('Found mode parameter number ${port['modeParameterNumber']} for $paramName');
+
+          if (actualModeName != null && modeValue != null) {
+            port['outputMode'] = (modeValue == 1) ? 'replace' : 'add'; // 0 = Add, 1 = Replace
+            debugPrint('Found output mode "$actualModeName" for output "$paramName" with value $modeValue');
           } else {
-            debugPrint('Mode parameter "$modeName" not found');
+            // Optional: Log if no mode parameter was found for the value
+            // debugPrint('No output mode value parameter found for "$paramName" among candidates: $uniquePossibleModeNames. Available: ${modeParameters.keys}');
           }
         }
-        
+
+        // Store mode parameter number if available
+        if (modeParametersWithNumbers != null) {
+          String? actualModeNameForNumber;
+          ({int parameterNumber, int value})? modeInfo;
+
+          for (final name in uniquePossibleModeNames) {
+            if (modeParametersWithNumbers.containsKey(name)) {
+              actualModeNameForNumber = name;
+              modeInfo = modeParametersWithNumbers[name];
+              break; // Found the mode parameter for its number
+            }
+          }
+
+          // Debugging log to see what's being searched for and what's available
+          // Can be noisy, so enable when debugging mode parameter discovery
+          /*
+          debugPrint(
+            'Searching for mode param number for output "$paramName". Candidates: $uniquePossibleModeNames. Available mode params with numbers: ${modeParametersWithNumbers.keys.toList()}',
+          );
+          */
+
+          if (actualModeNameForNumber != null && modeInfo != null) {
+            port['modeParameterNumber'] = modeInfo.parameterNumber;
+            debugPrint(
+              'Found mode parameter number mapping for "$paramName" using key "$actualModeNameForNumber". Parameter number: ${modeInfo.parameterNumber}',
+            );
+          } else {
+            // Optional: Log if no mode parameter was found for the number
+            // debugPrint('Mode parameter number not found for "$paramName" among candidates: $uniquePossibleModeNames');
+          }
+        }
+
         outputPorts.add(port);
       } else {
         inputPorts.add(port);
@@ -769,15 +807,17 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       final audioInputIndex = inputPorts.indexWhere(
         (port) => port['name'] == 'Audio input',
       );
-      
+
       if (audioInputIndex >= 0) {
         final audioInputPort = inputPorts[audioInputIndex];
         final baseBusValue = audioInputPort['busValue'] as int? ?? 0;
-        
+
         // Only duplicate if the original Audio input has a valid bus assignment
         if (baseBusValue > 0) {
-          debugPrint('MultiChannelAlgorithmRouting: Duplicating Audio input for $channelCount channels');
-          
+          debugPrint(
+            'MultiChannelAlgorithmRouting: Duplicating Audio input for $channelCount channels',
+          );
+
           // Create virtual ports and insert them right after the original
           final virtualPorts = <Map<String, Object?>>[];
           for (int channel = 2; channel <= channelCount; channel++) {
@@ -793,9 +833,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               'basedOn': 'Audio input',
             };
             virtualPorts.add(virtualPort);
-            debugPrint('  Added virtual Audio input $channel on bus ${baseBusValue + (channel - 1)}');
+            debugPrint(
+              '  Added virtual Audio input $channel on bus ${baseBusValue + (channel - 1)}',
+            );
           }
-          
+
           // Insert all virtual ports right after the original Audio input
           inputPorts.insertAll(audioInputIndex + 1, virtualPorts);
         }

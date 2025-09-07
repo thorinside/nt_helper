@@ -48,11 +48,15 @@ void main() {
     group('Desktop platform behavior', () {
       setUp(() {
         when(mockPlatformService.supportsHoverInteractions()).thenReturn(true);
-        when(mockPlatformService.shouldUseTouchInteractions()).thenReturn(false);
+        when(
+          mockPlatformService.shouldUseTouchInteractions(),
+        ).thenReturn(false);
         when(mockPlatformService.getMinimumTouchTargetSize()).thenReturn(44.0);
       });
 
-      testWidgets('wraps child with GestureDetector for desktop interaction', (tester) async {
+      testWidgets('wraps child with GestureDetector for desktop interaction', (
+        tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Should have GestureDetector for tap detection
@@ -77,14 +81,20 @@ void main() {
 
         // Should show confirmation dialog
         expect(find.text('Delete Connection'), findsOneWidget);
-        expect(find.text('Are you sure you want to delete this connection?'), findsOneWidget);
+        expect(
+          find.text('Are you sure you want to delete this connection?'),
+          findsOneWidget,
+        );
         expect(find.text('Cancel'), findsOneWidget);
         expect(find.text('Delete'), findsOneWidget);
       });
 
-      testWidgets('deletes connection when confirmed in dialog', (tester) async {
-        when(mockCubit.deleteConnectionWithSmartBusLogic(any))
-            .thenAnswer((_) async {});
+      testWidgets('deletes connection when confirmed in dialog', (
+        tester,
+      ) async {
+        when(
+          mockCubit.deleteConnectionWithSmartBusLogic(any),
+        ).thenAnswer((_) async {});
 
         await tester.pumpWidget(createWidget());
 
@@ -96,7 +106,9 @@ void main() {
         await tester.tap(find.text('Delete'));
         await tester.pumpAndSettle();
 
-        verify(mockCubit.deleteConnectionWithSmartBusLogic('test-connection')).called(1);
+        verify(
+          mockCubit.deleteConnectionWithSmartBusLogic('test-connection'),
+        ).called(1);
       });
 
       testWidgets('does not delete when cancelled in dialog', (tester) async {
@@ -126,7 +138,9 @@ void main() {
     });
 
     group('Platform detection fallback', () {
-      testWidgets('uses real PlatformInteractionService when none provided', (tester) async {
+      testWidgets('uses real PlatformInteractionService when none provided', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(

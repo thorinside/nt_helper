@@ -17,7 +17,7 @@ mixin _$Connection {
 
 /// Unique identifier for this connection
  String get id;/// ID of the source port
- String get sourcePortId;/// ID of the destination port  
+ String get sourcePortId;/// ID of the destination port
  String get destinationPortId;/// Type of connection
  ConnectionType get connectionType;/// Current status of the connection
  ConnectionStatus get status;/// Whether this is a partial connection (one endpoint is a bus without match)
@@ -263,7 +263,7 @@ class _Connection extends Connection {
 @override final  String id;
 /// ID of the source port
 @override final  String sourcePortId;
-/// ID of the destination port  
+/// ID of the destination port
 @override final  String destinationPortId;
 /// Type of connection
 @override final  ConnectionType connectionType;

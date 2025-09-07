@@ -4,16 +4,18 @@ import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
+import 'package:nt_helper/ui/widgets/routing/physical_port_generator.dart';
 
 /// Integration validation test for Task 3 - Universal Port Widget System
-/// 
+///
 /// This test validates that the universal port widget architecture works
 /// correctly across all node types and provides the functionality required
 /// for the Physical I/O Node Redesign specification.
 void main() {
   group('Task 3 Integration Validation', () {
-    
-    testWidgets('Universal port widget works across all node types', (tester) async {
+    testWidgets('Universal port widget works across all node types', (
+      tester,
+    ) async {
       final Map<String, Offset> allPortPositions = {};
       bool algorithmPortCallbackFired = false;
       bool physicalPortCallbackFired = false;
@@ -53,6 +55,7 @@ void main() {
                   left: 300,
                   top: 150,
                   child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
                     position: const Offset(300, 150),
                     onPortPositionResolved: trackPhysicalPort,
                   ),
@@ -92,10 +95,16 @@ void main() {
       expect(allPortPositions.isNotEmpty, isTrue);
 
       // ✅ Validate different port styles
-      final portWidgets = tester.widgetList<PortWidget>(find.byType(PortWidget)).toList();
-      final dotPorts = portWidgets.where((w) => w.style == PortStyle.dot).length;
-      final jackPorts = portWidgets.where((w) => w.style == PortStyle.jack).length;
-      
+      final portWidgets = tester
+          .widgetList<PortWidget>(find.byType(PortWidget))
+          .toList();
+      final dotPorts = portWidgets
+          .where((w) => w.style == PortStyle.dot)
+          .length;
+      final jackPorts = portWidgets
+          .where((w) => w.style == PortStyle.jack)
+          .length;
+
       expect(dotPorts, equals(2)); // Algorithm ports use dots
       expect(jackPorts, equals(20)); // Physical ports use jacks
 
@@ -103,10 +112,12 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Physical I/O node movement with connection updates', (tester) async {
+    testWidgets('Physical I/O node movement with connection updates', (
+      tester,
+    ) async {
       final List<Offset> inputPortHistory = [];
       final List<Offset> outputPortHistory = [];
-      
+
       Offset inputNodePosition = const Offset(100, 100);
       Offset outputNodePosition = const Offset(400, 100);
 
@@ -119,6 +130,7 @@ void main() {
                   left: inputNodePosition.dx,
                   top: inputNodePosition.dy,
                   child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
                     position: inputNodePosition,
                     onPortPositionResolved: (port, pos) {
                       if (port.id == 'hw_in_1') {
@@ -182,7 +194,11 @@ void main() {
     testWidgets('Cross-node-type connections compatibility', (tester) async {
       final Set<String> allPortIds = {};
 
-      void collectAlgorithmPortId(String portId, Offset position, bool isInput) {
+      void collectAlgorithmPortId(
+        String portId,
+        Offset position,
+        bool isInput,
+      ) {
         allPortIds.add('algo_$portId');
       }
 
@@ -200,6 +216,7 @@ void main() {
                   left: 50,
                   top: 100,
                   child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
                     position: const Offset(50, 100),
                     onPortPositionResolved: collectPhysicalPortId,
                   ),
@@ -256,7 +273,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Performance validation under complex scenarios', (tester) async {
+    testWidgets('Performance validation under complex scenarios', (
+      tester,
+    ) async {
       final stopwatch = Stopwatch()..start();
 
       await tester.pumpWidget(
@@ -268,19 +287,25 @@ void main() {
                 Positioned(
                   left: 50,
                   top: 100,
-                  child: PhysicalInputNode(position: const Offset(50, 100)),
-                ),
-                ...List.generate(3, (index) => Positioned(
-                  left: 200.0 + index * 150,
-                  top: 80.0 + index * 40,
-                  child: AlgorithmNodeWidget(
-                    algorithmName: 'Algorithm ${index + 1}',
-                    slotNumber: index + 1,
-                    position: Offset(200.0 + index * 150, 80.0 + index * 40),
-                    inputLabels: ['In ${index + 1}'],
-                    outputLabels: ['Out ${index + 1}'],
+                  child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
+                    position: const Offset(50, 100)
                   ),
-                )),
+                ),
+                ...List.generate(
+                  3,
+                  (index) => Positioned(
+                    left: 200.0 + index * 150,
+                    top: 80.0 + index * 40,
+                    child: AlgorithmNodeWidget(
+                      algorithmName: 'Algorithm ${index + 1}',
+                      slotNumber: index + 1,
+                      position: Offset(200.0 + index * 150, 80.0 + index * 40),
+                      inputLabels: ['In ${index + 1}'],
+                      outputLabels: ['Out ${index + 1}'],
+                    ),
+                  ),
+                ),
                 Positioned(
                   left: 650,
                   top: 140,
@@ -296,8 +321,11 @@ void main() {
       stopwatch.stop();
 
       // ✅ Performance validation
-      expect(stopwatch.elapsedMilliseconds, lessThan(2000),
-          reason: 'Complex routing scene should render within 2 seconds');
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(2000),
+        reason: 'Complex routing scene should render within 2 seconds',
+      );
 
       // ✅ All components present
       expect(find.byType(PhysicalInputNode), findsOneWidget);
@@ -330,7 +358,8 @@ void main() {
                   left: 300,
                   top: 150,
                   child: PhysicalInputNode(
-                    position: const Offset(300, 150),
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
+                    position: const Offset(300, 150)
                   ),
                 ),
               ],

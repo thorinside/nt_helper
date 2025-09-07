@@ -20,12 +20,12 @@ void main() {
       // Check that the port and label are rendered
       expect(find.text('Test Port'), findsOneWidget);
       expect(find.byType(Container), findsOneWidget);
-      
+
       // Verify the port dot has correct decoration and size
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.shape, equals(BoxShape.circle));
-      
+
       // Check the actual rendered size
       final containerSize = tester.getSize(find.byType(Container));
       expect(containerSize.width, equals(12));
@@ -45,7 +45,7 @@ void main() {
           ),
         ),
       );
-      
+
       await tester.pumpAndSettle();
 
       final container = tester.widget<Container>(find.byType(Container));
@@ -66,7 +66,7 @@ void main() {
           ),
         ),
       );
-      
+
       await tester.pumpAndSettle();
 
       final container = tester.widget<Container>(find.byType(Container));
@@ -96,7 +96,7 @@ void main() {
       expect(rowWidget.children[0], isA<Text>());
       expect(rowWidget.children[1], isA<SizedBox>());
       expect(rowWidget.children[2], isA<Container>());
-      
+
       // Verify label text
       final textWidget = rowWidget.children[0] as Text;
       expect(textWidget.data, equals('Left Label'));
@@ -115,7 +115,7 @@ void main() {
         ),
       );
 
-      // Find the Row widget that contains the port elements  
+      // Find the Row widget that contains the port elements
       final rowWidget = tester.widget<Row>(find.byType(Row));
       expect(rowWidget.children.length, equals(3)); // dot + spacer + label
 
@@ -123,7 +123,7 @@ void main() {
       expect(rowWidget.children[0], isA<Container>());
       expect(rowWidget.children[1], isA<SizedBox>());
       expect(rowWidget.children[2], isA<Text>());
-      
+
       // Verify label text
       final textWidget = rowWidget.children[2] as Text;
       expect(textWidget.data, equals('Right Label'));
@@ -153,19 +153,21 @@ void main() {
           ),
         ),
       );
-      
+
       await tester.pumpAndSettle();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.color, equals(Colors.red));
-      
+
       final text = tester.widget<Text>(find.text('Custom Theme Port'));
       expect(text.style?.color, equals(Colors.purple));
       expect(text.style?.fontSize, equals(14));
     });
 
-    testWidgets('calls position resolved callback when portId is provided', (tester) async {
+    testWidgets('calls position resolved callback when portId is provided', (
+      tester,
+    ) async {
       String? resolvedPortId;
       Offset? resolvedPosition;
       bool? resolvedIsInput;
@@ -194,19 +196,21 @@ void main() {
       expect(resolvedPortId, equals('callback_port_1'));
       expect(resolvedPosition, isNotNull);
       expect(resolvedIsInput, equals(true));
-      
+
       // Verify the position is reasonable (should be center of 12x12 dot)
       final containerFinder = find.byType(Container);
       expect(containerFinder, findsOneWidget);
       final containerRect = tester.getRect(containerFinder);
       final expectedCenter = containerRect.center;
-      
+
       // Allow for some floating point tolerance
       expect((resolvedPosition!.dx - expectedCenter.dx).abs(), lessThan(1.0));
       expect((resolvedPosition!.dy - expectedCenter.dy).abs(), lessThan(1.0));
     });
 
-    testWidgets('does not call position callback when portId is null', (tester) async {
+    testWidgets('does not call position callback when portId is null', (
+      tester,
+    ) async {
       bool callbackCalled = false;
 
       await tester.pumpWidget(
@@ -230,7 +234,9 @@ void main() {
       expect(callbackCalled, equals(false));
     });
 
-    testWidgets('handles widget updates and recalls position callback', (tester) async {
+    testWidgets('handles widget updates and recalls position callback', (
+      tester,
+    ) async {
       int callbackCount = 0;
       String? lastPortId;
 
@@ -301,22 +307,25 @@ void main() {
 
       // Check that label and container are rendered
       expect(find.text('Jack Port'), findsOneWidget);
-      
+
       // Jack style should render a Container with specific dimensions
       final containers = find.byType(Container);
-      expect(containers, findsAtLeastNWidgets(1)); // At least outer container and port dot
-      
+      expect(
+        containers,
+        findsAtLeastNWidgets(1),
+      ); // At least outer container and port dot
+
       // Check if we can find a PortWidget with the expected size
       final portWidget = find.byType(PortWidget);
       expect(portWidget, findsOneWidget);
-      
+
       // Verify that we can find containers in the widget (there should be at least one)
       expect(containers.evaluate().length, greaterThanOrEqualTo(1));
     });
 
     testWidgets('handles tap callback correctly', (tester) async {
       bool tapped = false;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -347,7 +356,7 @@ void main() {
       bool dragEnded = false;
       Offset? dragUpdatePosition;
       Offset? dragEndPosition;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -375,10 +384,7 @@ void main() {
 
       // Simulate drag gesture
       final portWidget = find.byType(PortWidget);
-      await tester.dragFrom(
-        tester.getCenter(portWidget),
-        const Offset(50, 50),
-      );
+      await tester.dragFrom(tester.getCenter(portWidget), const Offset(50, 50));
       await tester.pumpAndSettle();
 
       expect(dragStarted, isTrue);
@@ -400,7 +406,7 @@ void main() {
                   portId: 'spacing_port_1',
                 ),
                 PortWidget(
-                  label: 'Port 2', 
+                  label: 'Port 2',
                   isInput: false,
                   portId: 'spacing_port_2',
                 ),
@@ -418,11 +424,14 @@ void main() {
       // Verify the ports have the expected vertical spacing by checking their sizes/positions
       final firstPortRect = tester.getRect(portWidgets.first);
       final secondPortRect = tester.getRect(portWidgets.last);
-      
+
       // Each port should have vertical padding, so height should be label height + 8 (4+4 padding)
       expect(firstPortRect.height, greaterThan(8)); // Should include padding
       expect(secondPortRect.height, greaterThan(8)); // Should include padding
-      expect(secondPortRect.top, greaterThanOrEqualTo(firstPortRect.bottom)); // Second port below first
+      expect(
+        secondPortRect.top,
+        greaterThanOrEqualTo(firstPortRect.bottom),
+      ); // Second port below first
     });
 
     testWidgets('properly handles theme changes', (tester) async {
@@ -445,7 +454,10 @@ void main() {
 
       final lightContainer = tester.widget<Container>(find.byType(Container));
       final lightDecoration = lightContainer.decoration as BoxDecoration;
-      expect(lightDecoration.color, equals(ThemeData.light().colorScheme.primary));
+      expect(
+        lightDecoration.color,
+        equals(ThemeData.light().colorScheme.primary),
+      );
 
       // Switch to dark theme
       await tester.pumpWidget(buildWithTheme(ThemeData.dark()));
@@ -453,7 +465,10 @@ void main() {
 
       final darkContainer = tester.widget<Container>(find.byType(Container));
       final darkDecoration = darkContainer.decoration as BoxDecoration;
-      expect(darkDecoration.color, equals(ThemeData.dark().colorScheme.primary));
+      expect(
+        darkDecoration.color,
+        equals(ThemeData.dark().colorScheme.primary),
+      );
     });
   });
 }

@@ -19,11 +19,11 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 - Update preview line position in real-time as cursor moves
 - Ensure preview line uses identical bezier curve math as permanent connections
 
-### Port Compatibility and Highlighting
-- Detect compatible input ports based on port type matching (audio/CV/gate)
-- Apply visual highlight to compatible ports when cursor is within proximity threshold
-- Disable highlighting for incompatible port types or already connected ports
-- Use existing port metadata from `AlgorithmRouting.fromSlot()` for compatibility checks
+### Port Highlighting (No Compatibility Checks)
+- Apply visual highlight to ANY input port when cursor is within proximity threshold
+- All ports are compatible - no type checking needed (all signals are voltage in Eurorack)
+- Highlight any input port during drag from output port
+- Visual feedback based solely on proximity, not port type
 
 ### Bus Number Assignment Logic
 - Follow the same pattern as connection deletion in `RoutingEditorCubit._deleteConnection()`
@@ -45,14 +45,15 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 
 ### Performance Optimization
 - Debounce drag move events to prevent excessive redraws
-- Cache compatible port calculations during drag operation
+- Cache port positions during drag operation (no compatibility to cache)
 - Use `RepaintBoundary` widgets to isolate preview rendering
 - Batch parameter updates when setting multiple bus values
 
 ### Error Handling
-- Validate port compatibility before creating connection
+- No port compatibility validation needed (all ports are compatible)
 - Check for bus number conflicts before assignment
-- Provide visual feedback for invalid drop targets
+- Display dismissable error messages in top-right corner to allow continuation
+- Use existing reduced intermediate states in cubit (no widget visibility changes)
 - Gracefully handle drag cancellation or escape key press
 
 ## Approach

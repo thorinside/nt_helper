@@ -33,7 +33,10 @@ void main() {
 
       expect(connectionData.connection, equals(mockConnection));
       expect(connectionData.sourcePosition, equals(const Offset(10, 20)));
-      expect(connectionData.destinationPosition, equals(const Offset(100, 200)));
+      expect(
+        connectionData.destinationPosition,
+        equals(const Offset(100, 200)),
+      );
       expect(connectionData.onLabelHover, isNotNull);
       expect(connectionData.onLabelTap, isNotNull);
 

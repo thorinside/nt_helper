@@ -108,22 +108,26 @@ class _RoutingPageState extends State<RoutingPage> {
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 16),
-                    ..._routingInformation.map((routing) => Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Slot ${routing.algorithmIndex}: ${routing.algorithmName}',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text('Routing Info: ${routing.routingInfo.join(", ")}'),
-                          ],
+                    ..._routingInformation.map(
+                      (routing) => Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Slot ${routing.algorithmIndex}: ${routing.algorithmName}',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Routing Info: ${routing.routingInfo.join(", ")}',
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               ),

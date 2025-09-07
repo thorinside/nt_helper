@@ -6,16 +6,16 @@ import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 class ConnectionVisualTheme {
   /// Theme for regular (direct) connections
   final ConnectionStyle directConnection;
-  
-  /// Theme for ghost connections  
+
+  /// Theme for ghost connections
   final ConnectionStyle ghostConnection;
-  
+
   /// Theme for selected connections
   final ConnectionStyle selectedConnection;
-  
+
   /// Theme for highlighted connections
   final ConnectionStyle highlightedConnection;
-  
+
   /// Theme for error/invalid connections
   final ConnectionStyle errorConnection;
 
@@ -30,7 +30,7 @@ class ConnectionVisualTheme {
   /// Create a default theme based on Material Design color scheme
   factory ConnectionVisualTheme.fromColorScheme(ColorScheme colorScheme) {
     final accessibleColors = AccessibilityColors.fromColorScheme(colorScheme);
-    
+
     return ConnectionVisualTheme(
       directConnection: ConnectionStyle(
         strokeWidth: 2.5, // Slightly thicker for better visibility
@@ -86,22 +86,22 @@ class ConnectionVisualTheme {
     if (hasError) {
       return errorConnection;
     }
-    
+
     // Selection state
     if (isSelected) {
       return selectedConnection;
     }
-    
+
     // Highlight state
     if (isHighlighted) {
       return highlightedConnection;
     }
-    
+
     // Connection type
     if (connection.isGhostConnection) {
       return ghostConnection;
     }
-    
+
     return directConnection;
   }
 }
@@ -110,19 +110,19 @@ class ConnectionVisualTheme {
 class ConnectionStyle {
   /// Stroke width for the connection line
   final double strokeWidth;
-  
+
   /// Primary color for the connection
   final Color color;
-  
+
   /// Dash pattern for dashed lines (null for solid)
   final List<double>? dashPattern;
-  
+
   /// Whether to show animated flow effects
   final bool animationEnabled;
-  
+
   /// Radius for connection endpoints
   final double endpointRadius;
-  
+
   /// Whether to show glow effect around connection
   final bool glowEffect;
 
@@ -162,40 +162,40 @@ class ConnectionStyle {
 class PortTypeColors {
   /// Audio signal color (blue family)
   static const Color audio = Color(0xFF2196F3);
-  
-  /// CV signal color (orange family) 
+
+  /// CV signal color (orange family)
   static const Color cv = Color(0xFFFF9800);
-  
+
   /// Gate signal color (red family)
   static const Color gate = Color(0xFFF44336);
-  
+
   /// Clock/Trigger signal color (purple family)
   static const Color clockTrigger = Color(0xFF9C27B0);
-  
+
   /// Default/unknown signal color (grey)
   static const Color unknown = Color(0xFF757575);
 
   /// Get color for a port type
   static Color getColorForPortType(String portType) {
     final type = portType.toLowerCase();
-    
+
     if (type.contains('audio')) return audio;
     if (type.contains('cv')) return cv;
     if (type.contains('gate')) return gate;
     if (type.contains('clock') || type.contains('trigger')) return clockTrigger;
-    
+
     return unknown;
   }
 
   /// Get color for a port ID (analyzing the ID string)
   static Color getColorForPortId(String portId) {
     final id = portId.toLowerCase();
-    
+
     if (id.contains('audio')) return audio;
     if (id.contains('cv')) return cv;
     if (id.contains('gate')) return gate;
     if (id.contains('clock') || id.contains('trigger')) return clockTrigger;
-    
+
     return unknown;
   }
 }
@@ -203,24 +203,24 @@ class PortTypeColors {
 /// Connection state management for visual consistency
 class ConnectionStateManager {
   final ConnectionVisualTheme theme;
-  
+
   /// Currently selected connections
   final Set<String> selectedConnectionIds;
-  
+
   /// Currently highlighted connections
   final Set<String> highlightedConnectionIds;
-  
+
   /// Connections with errors
   final Set<String> errorConnectionIds;
 
   ConnectionStateManager({
     required this.theme,
     Set<String>? selectedConnectionIds,
-    Set<String>? highlightedConnectionIds, 
+    Set<String>? highlightedConnectionIds,
     Set<String>? errorConnectionIds,
-  })  : selectedConnectionIds = selectedConnectionIds ?? {},
-        highlightedConnectionIds = highlightedConnectionIds ?? {},
-        errorConnectionIds = errorConnectionIds ?? {};
+  }) : selectedConnectionIds = selectedConnectionIds ?? {},
+       highlightedConnectionIds = highlightedConnectionIds ?? {},
+       errorConnectionIds = errorConnectionIds ?? {};
 
   /// Get the visual style for a specific connection
   ConnectionStyle getConnectionStyle(Connection connection) {
@@ -241,8 +241,10 @@ class ConnectionStateManager {
   }) {
     return ConnectionStateManager(
       theme: theme ?? this.theme,
-      selectedConnectionIds: selectedConnectionIds ?? this.selectedConnectionIds,
-      highlightedConnectionIds: highlightedConnectionIds ?? this.highlightedConnectionIds,
+      selectedConnectionIds:
+          selectedConnectionIds ?? this.selectedConnectionIds,
+      highlightedConnectionIds:
+          highlightedConnectionIds ?? this.highlightedConnectionIds,
       errorConnectionIds: errorConnectionIds ?? this.errorConnectionIds,
     );
   }
@@ -287,9 +289,7 @@ class ConnectionStateManager {
 
   /// Mark connection as having an error
   ConnectionStateManager markConnectionError(String connectionId) {
-    return copyWith(
-      errorConnectionIds: {...errorConnectionIds, connectionId},
-    );
+    return copyWith(errorConnectionIds: {...errorConnectionIds, connectionId});
   }
 
   /// Clear error state for connection

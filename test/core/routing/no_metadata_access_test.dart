@@ -26,7 +26,7 @@ void main() {
         // Verify that port doesn't have metadata field by checking the type
         // This is a compile-time check - if metadata field exists, this won't compile
         expect(port.toString(), isA<String>());
-        
+
         // Verify all direct properties are accessible
         expect(port.isPolyVoice, isTrue);
         expect(port.voiceNumber, equals(2));
@@ -64,7 +64,7 @@ void main() {
 
         // Verify metadata field is not in JSON
         expect(json.containsKey('metadata'), isFalse);
-        
+
         // Verify all direct properties are in JSON
         expect(json['isPolyVoice'], isTrue);
         expect(json['voiceNumber'], equals(3));
@@ -122,59 +122,62 @@ void main() {
     });
 
     group('Code Architecture Validation', () {
-      test('should demonstrate clean architecture without metadata coupling', () {
-        // Create a port with all direct properties
-        const inputPort = Port(
-          id: 'clean_input',
-          name: 'Clean Input Port',
-          type: PortType.cv,
-          direction: PortDirection.input,
-          isPolyVoice: true,
-          voiceNumber: 1,
-          busValue: 3,
-          busParam: 'input_level',
-          parameterNumber: 5,
-          isVirtualCV: false,
-        );
+      test(
+        'should demonstrate clean architecture without metadata coupling',
+        () {
+          // Create a port with all direct properties
+          const inputPort = Port(
+            id: 'clean_input',
+            name: 'Clean Input Port',
+            type: PortType.cv,
+            direction: PortDirection.input,
+            isPolyVoice: true,
+            voiceNumber: 1,
+            busValue: 3,
+            busParam: 'input_level',
+            parameterNumber: 5,
+            isVirtualCV: false,
+          );
 
-        const outputPort = Port(
-          id: 'clean_output',
-          name: 'Clean Output Port',
-          type: PortType.cv,
-          direction: PortDirection.output,
-          isMultiChannel: true,
-          channelNumber: 2,
-          isStereoChannel: true,
-          stereoSide: 'left',
-          isMasterMix: false,
-          busValue: 15,
-          busParam: 'output_level',
-          parameterNumber: 25,
-        );
+          const outputPort = Port(
+            id: 'clean_output',
+            name: 'Clean Output Port',
+            type: PortType.cv,
+            direction: PortDirection.output,
+            isMultiChannel: true,
+            channelNumber: 2,
+            isStereoChannel: true,
+            stereoSide: 'left',
+            isMasterMix: false,
+            busValue: 15,
+            busParam: 'output_level',
+            parameterNumber: 25,
+          );
 
-        // Test that all common port operations work with direct properties
-        expect(inputPort.canConnectTo(outputPort), isTrue);
-        expect(inputPort.isCompatibleWith(outputPort), isTrue);
-        
-        // Test that serialization round-trip works
-        final inputJson = inputPort.toJson();
-        final outputJson = outputPort.toJson();
-        
-        final deserializedInput = Port.fromJson(inputJson);
-        final deserializedOutput = Port.fromJson(outputJson);
-        
-        expect(deserializedInput, equals(inputPort));
-        expect(deserializedOutput, equals(outputPort));
-        
-        // Verify specific direct properties after deserialization
-        expect(deserializedInput.isPolyVoice, isTrue);
-        expect(deserializedInput.voiceNumber, equals(1));
-        expect(deserializedInput.busValue, equals(3));
-        
-        expect(deserializedOutput.isMultiChannel, isTrue);
-        expect(deserializedOutput.channelNumber, equals(2));
-        expect(deserializedOutput.stereoSide, equals('left'));
-      });
+          // Test that all common port operations work with direct properties
+          expect(inputPort.canConnectTo(outputPort), isTrue);
+          expect(inputPort.isCompatibleWith(outputPort), isTrue);
+
+          // Test that serialization round-trip works
+          final inputJson = inputPort.toJson();
+          final outputJson = outputPort.toJson();
+
+          final deserializedInput = Port.fromJson(inputJson);
+          final deserializedOutput = Port.fromJson(outputJson);
+
+          expect(deserializedInput, equals(inputPort));
+          expect(deserializedOutput, equals(outputPort));
+
+          // Verify specific direct properties after deserialization
+          expect(deserializedInput.isPolyVoice, isTrue);
+          expect(deserializedInput.voiceNumber, equals(1));
+          expect(deserializedInput.busValue, equals(3));
+
+          expect(deserializedOutput.isMultiChannel, isTrue);
+          expect(deserializedOutput.channelNumber, equals(2));
+          expect(deserializedOutput.stereoSide, equals('left'));
+        },
+      );
 
       test('should handle edge cases without metadata dependency', () {
         // Test with minimal properties
@@ -190,7 +193,7 @@ void main() {
         expect(minimalPort.isMultiChannel, isFalse);
         expect(minimalPort.channelNumber, isNull);
         expect(minimalPort.busValue, isNull);
-        
+
         // Test with all properties set
         const maximalPort = Port(
           id: 'maximal',

@@ -39,7 +39,9 @@ void main() {
         direction: PortDirection.output,
         description: 'A test CV output port',
         isActive: false,
-        constraints: {'voltageRange': {'min': -5, 'max': 5}},
+        constraints: {
+          'voltageRange': {'min': -5, 'max': 5},
+        },
       );
 
       expect(port.description, equals('A test CV output port'));
@@ -59,16 +61,19 @@ void main() {
       expect(port.outputMode, equals(OutputMode.replace));
     });
 
-    test('should create output port with default add mode when not specified', () {
-      const port = Port(
-        id: 'output_port',
-        name: 'Output Port',
-        type: PortType.audio,
-        direction: PortDirection.output,
-      );
+    test(
+      'should create output port with default add mode when not specified',
+      () {
+        const port = Port(
+          id: 'output_port',
+          name: 'Output Port',
+          type: PortType.audio,
+          direction: PortDirection.output,
+        );
 
-      expect(port.outputMode, isNull);
-    });
+        expect(port.outputMode, isNull);
+      },
+    );
 
     test('input port should not have outputMode', () {
       const port = Port(
@@ -76,7 +81,8 @@ void main() {
         name: 'Input Port',
         type: PortType.audio,
         direction: PortDirection.input,
-        outputMode: OutputMode.replace, // This should be ignored for input ports
+        outputMode:
+            OutputMode.replace, // This should be ignored for input ports
       );
 
       // The outputMode might be present but should not be used for input ports
@@ -107,22 +113,25 @@ void main() {
       expect(deserializedPort.constraints, equals(originalPort.constraints));
     });
 
-    test('should serialize port with outputMode to and from JSON correctly', () {
-      const originalPort = Port(
-        id: 'output_port',
-        name: 'Output Port',
-        type: PortType.audio,
-        direction: PortDirection.output,
-        outputMode: OutputMode.replace,
-      );
+    test(
+      'should serialize port with outputMode to and from JSON correctly',
+      () {
+        const originalPort = Port(
+          id: 'output_port',
+          name: 'Output Port',
+          type: PortType.audio,
+          direction: PortDirection.output,
+          outputMode: OutputMode.replace,
+        );
 
-      final json = originalPort.toJson();
-      expect(json['outputMode'], equals('replace'));
+        final json = originalPort.toJson();
+        expect(json['outputMode'], equals('replace'));
 
-      final deserializedPort = Port.fromJson(json);
-      expect(deserializedPort.outputMode, equals(OutputMode.replace));
-      expect(deserializedPort, equals(originalPort));
-    });
+        final deserializedPort = Port.fromJson(json);
+        expect(deserializedPort.outputMode, equals(OutputMode.replace));
+        expect(deserializedPort, equals(originalPort));
+      },
+    );
 
     group('Port Direction Tests', () {
       test('input port should be identified correctly', () {
@@ -488,14 +497,26 @@ void main() {
       expect(deserializedPort, equals(originalPort));
       expect(deserializedPort.isPolyVoice, equals(originalPort.isPolyVoice));
       expect(deserializedPort.voiceNumber, equals(originalPort.voiceNumber));
-      expect(deserializedPort.isMultiChannel, equals(originalPort.isMultiChannel));
-      expect(deserializedPort.channelNumber, equals(originalPort.channelNumber));
-      expect(deserializedPort.isStereoChannel, equals(originalPort.isStereoChannel));
+      expect(
+        deserializedPort.isMultiChannel,
+        equals(originalPort.isMultiChannel),
+      );
+      expect(
+        deserializedPort.channelNumber,
+        equals(originalPort.channelNumber),
+      );
+      expect(
+        deserializedPort.isStereoChannel,
+        equals(originalPort.isStereoChannel),
+      );
       expect(deserializedPort.stereoSide, equals(originalPort.stereoSide));
       expect(deserializedPort.isMasterMix, equals(originalPort.isMasterMix));
       expect(deserializedPort.busValue, equals(originalPort.busValue));
       expect(deserializedPort.busParam, equals(originalPort.busParam));
-      expect(deserializedPort.parameterNumber, equals(originalPort.parameterNumber));
+      expect(
+        deserializedPort.parameterNumber,
+        equals(originalPort.parameterNumber),
+      );
       expect(deserializedPort.isVirtualCV, equals(originalPort.isVirtualCV));
     });
 

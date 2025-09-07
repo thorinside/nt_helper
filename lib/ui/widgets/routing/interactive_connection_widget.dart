@@ -3,14 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
-import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
+import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
+    as painter;
 
 /// Widget that handles platform-specific interactions for connection deletion
-/// 
+///
 /// This widget provides two modes:
 /// - Desktop: Hover detection with delete button overlay at connection midpoint
 /// - Mobile: Tap-based selection with confirmation dialogs
-/// 
+///
 /// Can be used in two ways:
 /// 1. Wrap mode: Takes a child widget and overlays interaction on top
 /// 2. Connection mode: Takes connectionData and renders the connection with interaction
@@ -35,15 +36,17 @@ class InteractiveConnectionWidget extends StatefulWidget {
   final PlatformInteractionService? platformService;
 
   @override
-  State<InteractiveConnectionWidget> createState() => _InteractiveConnectionWidgetState();
+  State<InteractiveConnectionWidget> createState() =>
+      _InteractiveConnectionWidgetState();
 }
 
-class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidget>
+class _InteractiveConnectionWidgetState
+    extends State<InteractiveConnectionWidget>
     with SingleTickerProviderStateMixin {
   late final PlatformInteractionService _platformService;
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
-  
+
   bool _isHovering = false;
   bool _isSelected = false;
   Offset? _deleteButtonPosition;
@@ -56,13 +59,9 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -73,7 +72,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
 
   void _onHoverEnter([PointerEnterEvent? event]) {
     if (!_platformService.supportsHoverInteractions()) return;
-    
+
     setState(() {
       _isHovering = true;
       // For connection data mode, position delete button along the connection curve
@@ -87,7 +86,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
 
   void _onHoverExit([PointerExitEvent? event]) {
     if (!_platformService.supportsHoverInteractions()) return;
-    
+
     setState(() {
       _isHovering = false;
       _deleteButtonPosition = null;
@@ -107,7 +106,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
       setState(() {
         _isSelected = !_isSelected;
       });
-      
+
       if (_isSelected) {
         _showDeleteConfirmationDialog();
       }
@@ -116,7 +115,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
 
   void _onLongPress() {
     if (!_platformService.shouldUseTouchInteractions()) return;
-    
+
     // Mobile long press: Show delete confirmation
     _showDeleteConfirmationDialog();
   }
@@ -125,13 +124,13 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
   /// Places it at a point on the curve that's away from labels and easily clickable
   Offset _calculateConnectionDeletePosition() {
     if (widget.connectionData == null) return Offset.zero;
-    
+
     final sourcePos = widget.connectionData!.sourcePosition;
     final destPos = widget.connectionData!.destinationPosition;
-    
+
     // Calculate point at 90% along the cubic bezier curve (near the destination)
     const t = 0.9; // Position along curve (0 = source, 1 = destination)
-    
+
     // Create control points for the cubic bezier (same as in ConnectionPainter)
     final controlPoint1 = Offset(
       sourcePos.dx + (destPos.dx - sourcePos.dx) * 0.5,
@@ -141,36 +140,48 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
       destPos.dx - (destPos.dx - sourcePos.dx) * 0.5,
       destPos.dy,
     );
-    
+
     // Calculate point on cubic bezier curve using De Casteljau's algorithm
-    final x = _cubicBezier(sourcePos.dx, controlPoint1.dx, controlPoint2.dx, destPos.dx, t);
-    final y = _cubicBezier(sourcePos.dy, controlPoint1.dy, controlPoint2.dy, destPos.dy, t);
-    
+    final x = _cubicBezier(
+      sourcePos.dx,
+      controlPoint1.dx,
+      controlPoint2.dx,
+      destPos.dx,
+      t,
+    );
+    final y = _cubicBezier(
+      sourcePos.dy,
+      controlPoint1.dy,
+      controlPoint2.dy,
+      destPos.dy,
+      t,
+    );
+
     return Offset(x, y);
   }
-  
+
   /// Calculate point on cubic bezier curve at parameter t
   double _cubicBezier(double p0, double p1, double p2, double p3, double t) {
     final oneMinusT = 1 - t;
     return oneMinusT * oneMinusT * oneMinusT * p0 +
-           3 * oneMinusT * oneMinusT * t * p1 +
-           3 * oneMinusT * t * t * p2 +
-           t * t * t * p3;
+        3 * oneMinusT * oneMinusT * t * p1 +
+        3 * oneMinusT * t * t * p2 +
+        t * t * t * p3;
   }
 
   /// Build a single narrow hover region along the connection line
   Widget _buildConnectionHoverRegion() {
     if (widget.connectionData == null) return const SizedBox.shrink();
-    
+
     final sourcePos = widget.connectionData!.sourcePosition;
     final destPos = widget.connectionData!.destinationPosition;
-    
+
     // Calculate bounds for the connection area
     final left = (sourcePos.dx < destPos.dx ? sourcePos.dx : destPos.dx) - 10;
     final right = (sourcePos.dx > destPos.dx ? sourcePos.dx : destPos.dx) + 10;
     final top = (sourcePos.dy < destPos.dy ? sourcePos.dy : destPos.dy) - 10;
     final bottom = (sourcePos.dy > destPos.dy ? sourcePos.dy : destPos.dy) + 10;
-    
+
     return Positioned(
       left: left,
       top: top,
@@ -197,7 +208,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
       await widget.routingEditorCubit.deleteConnectionWithSmartBusLogic(
         widget.connection.id,
       );
-      
+
       // Reset interaction state after successful deletion
       if (mounted) {
         setState(() {
@@ -209,7 +220,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
       }
     } catch (e) {
       debugPrint('Error deleting connection: $e');
-      
+
       // Show error feedback to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -258,7 +269,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
     if (!_isHovering && !_isSelected) return const SizedBox.shrink();
 
     final minSize = _platformService.getMinimumTouchTargetSize();
-    
+
     // For connection data mode, position button at connection midpoint
     if (widget.connectionData != null && _deleteButtonPosition != null) {
       return Positioned(
@@ -275,7 +286,9 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
                   width: minSize,
                   height: minSize,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.9),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -297,22 +310,24 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
         ),
       );
     }
-    
+
     // For wrap mode, center the button
     return Positioned.fill(
       child: AnimatedBuilder(
         animation: _fadeAnimation,
         builder: (context, child) {
           return Opacity(
-            opacity: _platformService.supportsHoverInteractions() 
-                ? _fadeAnimation.value 
+            opacity: _platformService.supportsHoverInteractions()
+                ? _fadeAnimation.value
                 : (_isSelected ? 1.0 : 0.0),
             child: Center(
               child: Container(
                 width: minSize,
                 height: minSize,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.error.withValues(alpha: 0.9),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.error.withValues(alpha: 0.9),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -361,13 +376,15 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
               connections: [widget.connectionData!],
               theme: Theme.of(context),
               showLabels: true,
-              hoveredConnectionId: _isHovering ? widget.connectionData!.connection.id : null,
+              hoveredConnectionId: _isHovering
+                  ? widget.connectionData!.connection.id
+                  : null,
             ),
           ),
-          
+
           // Single hover region along connection with very narrow hit area
           _buildConnectionHoverRegion(),
-          
+
           // Delete button overlay
           _buildDeleteButton(),
         ],
@@ -413,12 +430,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
       );
     }
 
-    return Stack(
-      children: [
-        interactiveChild,
-        _buildDeleteButton(),
-      ],
-    );
+    return Stack(children: [interactiveChild, _buildDeleteButton()]);
   }
 }
 
@@ -428,7 +440,7 @@ class _ConnectionHoverPainter extends CustomPainter {
   final double offsetX;
   final double offsetY;
   final bool isHovering;
-  
+
   const _ConnectionHoverPainter({
     required this.connectionData,
     required this.offsetX,
@@ -444,7 +456,7 @@ class _ConnectionHoverPainter extends CustomPainter {
         ..color = Colors.green.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8.0;
-      
+
       canvas.drawPath(_createConnectionPath(), debugPaint);
     }
   }
@@ -464,10 +476,10 @@ class _ConnectionHoverPainter extends CustomPainter {
       connectionData.destinationPosition.dx + offsetX,
       connectionData.destinationPosition.dy + offsetY,
     );
-    
+
     final path = Path();
     path.moveTo(sourcePos.dx, sourcePos.dy);
-    
+
     // Create the same cubic bezier curve as ConnectionPainter
     final controlPoint1 = Offset(
       sourcePos.dx + (destPos.dx - sourcePos.dx) * 0.5,
@@ -477,23 +489,26 @@ class _ConnectionHoverPainter extends CustomPainter {
       destPos.dx - (destPos.dx - sourcePos.dx) * 0.5,
       destPos.dy,
     );
-    
+
     path.cubicTo(
-      controlPoint1.dx, controlPoint1.dy,
-      controlPoint2.dx, controlPoint2.dy,
-      destPos.dx, destPos.dy,
+      controlPoint1.dx,
+      controlPoint1.dy,
+      controlPoint2.dx,
+      controlPoint2.dy,
+      destPos.dx,
+      destPos.dy,
     );
-    
+
     return path;
   }
 
   bool _isPointNearPath(Path path, Offset point, {required double hitRadius}) {
     final metrics = path.computeMetrics();
-    
+
     for (final metric in metrics) {
       final length = metric.length;
       const step = 2.0;
-      
+
       for (double distance = 0; distance <= length; distance += step) {
         final pos = metric.getTangentForOffset(distance)?.position;
         if (pos != null) {
@@ -504,13 +519,13 @@ class _ConnectionHoverPainter extends CustomPainter {
         }
       }
     }
-    
+
     return false;
   }
 
   @override
   bool shouldRepaint(covariant _ConnectionHoverPainter oldDelegate) {
     return isHovering != oldDelegate.isHovering ||
-           connectionData != oldDelegate.connectionData;
+        connectionData != oldDelegate.connectionData;
   }
 }

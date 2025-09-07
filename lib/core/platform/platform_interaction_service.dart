@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 enum InteractionType {
   /// Touch-based interaction for mobile devices (tap, long press)
   tap,
+
   /// Pointer-based interaction for desktop devices (hover, click)
   hover,
 }
@@ -23,7 +24,7 @@ class PlatformInteractionService {
   }
 
   /// Determines the preferred interaction type based on the current platform
-  /// 
+  ///
   /// Returns:
   /// - [InteractionType.tap] for mobile platforms (iOS, Android)
   /// - [InteractionType.hover] for desktop platforms (macOS, Windows, Linux, Web)
@@ -42,7 +43,7 @@ class PlatformInteractionService {
   }
 
   /// Returns the minimum touch target size in logical pixels for accessibility
-  /// 
+  ///
   /// Following Material Design guidelines:
   /// - Mobile: 44px minimum touch target
   /// - Desktop: Can be smaller since pointer precision is higher

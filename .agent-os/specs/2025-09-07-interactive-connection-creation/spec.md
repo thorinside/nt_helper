@@ -25,7 +25,7 @@ When connecting two ports where one already has a bus assignment, the unassigned
 
 1. **Drag Gesture Handler** - Implement drag detection from output ports with visual feedback during drag operations
 2. **Connection Preview Rendering** - Display a preview line that follows the cursor using the same math as existing connection rendering
-3. **Port Compatibility Detection** - Identify valid target ports and provide visual highlighting during drag operations
+3. **Port Highlighting** - Provide subtle and delightful visual highlighting for any input port during drag (all ports are compatible)
 4. **Bus Number Synchronization** - Update source and target port bus parameters to create connections using optimistic updates
 5. **State Management Integration** - Leverage distingCubit's optimistic parameter updates without adding local connection state
 

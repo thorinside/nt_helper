@@ -426,7 +426,7 @@ class _AddAlgorithmScreenState extends State<AddAlgorithmScreen> {
             onPressed: () {
               // Call the refresh method from DistingCubit
               context.read<DistingCubit>().refreshAlgorithms();
-              
+
               // Show a brief feedback to user
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
