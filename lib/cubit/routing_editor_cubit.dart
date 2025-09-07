@@ -139,10 +139,19 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           slot,
           algorithmUuid: algorithmUuid,
         );
-        routings.add(routing);
 
         final inputPorts = routing.inputPorts;
         final outputPorts = routing.outputPorts;
+
+        // Skip algorithms with no inputs and no outputs (like Notes)
+        // These can't participate in routing and clutter the canvas
+        if (inputPorts.isEmpty && outputPorts.isEmpty) {
+          debugPrint('Skipping algorithm ${slot.algorithm} (slot $i) - no inputs or outputs');
+          continue;
+        }
+        
+        // Only add to routings list if the algorithm has I/O
+        routings.add(routing);
 
         final routingAlgorithm = RoutingAlgorithm(
           id: algorithmUuid,
