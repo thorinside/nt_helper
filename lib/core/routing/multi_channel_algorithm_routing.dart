@@ -268,12 +268,19 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             }
           }
           
-          // Get mode parameter number from base class
-          int? modeParameterNumber;
-          final busParam = item['busParam']?.toString();
-          if (busParam != null) {
-            modeParameterNumber = getModeParameterNumber(busParam);
-            debugPrint('MultiChannelRouting: Found mode parameter for $busParam: $modeParameterNumber');
+          // Get mode parameter number from the item metadata (already stored during createFromSlot)
+          int? modeParameterNumber = item['modeParameterNumber'] as int?;
+          
+          // Fallback to looking it up from base class if not in metadata
+          if (modeParameterNumber == null) {
+            final busParam = item['busParam']?.toString();
+            if (busParam != null) {
+              modeParameterNumber = getModeParameterNumber(busParam);
+            }
+          }
+          
+          if (modeParameterNumber != null) {
+            debugPrint('MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber');
           }
           
           ports.add(
@@ -738,8 +745,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         // Store mode parameter number if available
         if (modeParametersWithNumbers != null) {
           final modeName = '$paramName mode';
+          debugPrint('Looking for mode parameter: "$modeName" in ${modeParametersWithNumbers.keys}');
           if (modeParametersWithNumbers.containsKey(modeName)) {
             port['modeParameterNumber'] = modeParametersWithNumbers[modeName]!.parameterNumber;
+            debugPrint('Found mode parameter number ${port['modeParameterNumber']} for $paramName');
+          } else {
+            debugPrint('Mode parameter "$modeName" not found');
           }
         }
         

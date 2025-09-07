@@ -135,28 +135,6 @@ class _PortWidgetState extends State<PortWidget> {
       );
     }
     
-    // Add hover detection when routing action callback is provided
-    if (widget.onRoutingAction != null) {
-      portWidget = MouseRegion(
-        onEnter: (_) {
-          widget.onHoverEnter?.call();
-          // Notify routing cubit about hover start - it will determine if port is connected
-          if (widget.portId != null) {
-            widget.onRoutingAction?.call(widget.portId!, 'hover_start');
-          }
-        },
-        onExit: (_) {
-          widget.onHoverExit?.call();
-          // Notify routing cubit about hover end
-          if (widget.portId != null) {
-            widget.onRoutingAction?.call(widget.portId!, 'hover_end');
-          }
-        },
-        child: portWidget,
-      );
-    }
-    
-    
     return portWidget;
   }
   
@@ -177,6 +155,42 @@ class _PortWidgetState extends State<PortWidget> {
   Widget _buildJackStyle(ThemeData theme) {
     // For now, use a simpler jack representation
     // This could be enhanced to use the full JackConnectionWidget functionality
+    
+    Widget jackDot = Container(
+      key: _dotKey,
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: widget.isInput ? theme.colorScheme.primary : theme.colorScheme.secondary,
+        border: Border.all(
+          color: theme.colorScheme.outline,
+          width: 2,
+        ),
+      ),
+    );
+    
+    // Add hover detection only to the jack dot when routing action callback is provided
+    if (widget.onRoutingAction != null) {
+      jackDot = MouseRegion(
+        onEnter: (_) {
+          widget.onHoverEnter?.call();
+          // Notify routing cubit about hover start - it will determine if port is connected
+          if (widget.portId != null) {
+            widget.onRoutingAction?.call(widget.portId!, 'hover_start');
+          }
+        },
+        onExit: (_) {
+          widget.onHoverExit?.call();
+          // Notify routing cubit about hover end
+          if (widget.portId != null) {
+            widget.onRoutingAction?.call(widget.portId!, 'hover_end');
+          }
+        },
+        child: jackDot,
+      );
+    }
+    
     return Container(
       width: 120,
       height: 32,
@@ -196,19 +210,7 @@ class _PortWidgetState extends State<PortWidget> {
             ),
             const SizedBox(width: 8),
           ],
-          Container(
-            key: _dotKey,
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.isInput ? theme.colorScheme.primary : theme.colorScheme.secondary,
-              border: Border.all(
-                color: theme.colorScheme.outline,
-                width: 2,
-              ),
-            ),
-          ),
+          jackDot,
           if (widget.labelPosition == PortLabelPosition.right) ...[
             const SizedBox(width: 8),
             Expanded(
@@ -259,7 +261,7 @@ class _PortWidgetState extends State<PortWidget> {
   
   /// Builds the visual port dot/circle
   Widget _buildPortDot(ThemeData theme) {
-    return Container(
+    Widget dot = Container(
       key: _dotKey,
       width: 12,
       height: 12,
@@ -272,6 +274,29 @@ class _PortWidgetState extends State<PortWidget> {
         ),
       ),
     );
+    
+    // Add hover detection only to the dot when routing action callback is provided
+    if (widget.onRoutingAction != null) {
+      dot = MouseRegion(
+        onEnter: (_) {
+          widget.onHoverEnter?.call();
+          // Notify routing cubit about hover start - it will determine if port is connected
+          if (widget.portId != null) {
+            widget.onRoutingAction?.call(widget.portId!, 'hover_start');
+          }
+        },
+        onExit: (_) {
+          widget.onHoverExit?.call();
+          // Notify routing cubit about hover end
+          if (widget.portId != null) {
+            widget.onRoutingAction?.call(widget.portId!, 'hover_end');
+          }
+        },
+        child: dot,
+      );
+    }
+    
+    return dot;
   }
   
   /// Builds the port label text

@@ -52,7 +52,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   String? _connectionSourcePortId;
   Offset? _dragPosition;
   final bool _isDraggingConnection = false;
-  String? _hoveredConnectionId;
+  String? _hoveredConnectionId;  // For port hover (connection deletion)
+  String? _hoveredLabelConnectionId;  // For label hover (mode switching)
   Timer? _connectionHighlightTimer;
 
   // Platform service for hover detection
@@ -587,11 +588,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         busNumber: busNumber,
         outputMode: connection.outputMode,
         isSelected: false,
-        isHighlighted: _hoveredConnectionId == connection.id,
+        isHighlighted: _hoveredConnectionId == connection.id, // Highlight if this connection is hovered
         isPhysicalConnection: isPhysicalConnection,
         isInputConnection: isInputConnection,
         busLabel: connection.busLabel, // Pass through bus label for partial connections
-        onLabelHover: null, // Disabled - connection highlighting now controlled by port hover only
+        onLabelHover: null, // Label hover is handled by the overlay widgets, not here
         onLabelTap: () => _toggleConnectionOutputMode(connection.id),
       ));
     }
@@ -616,7 +617,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 theme: Theme.of(context),
                 showLabels: true,
                 enableAnimations: true,
-                hoveredConnectionId: _hoveredConnectionId,
+                hoveredConnectionId: _hoveredLabelConnectionId,  // Use label hover state for label highlighting
                 onBoundsUpdated: (bounds) {
                   _connectionLabelBounds = bounds;
                 },
@@ -647,7 +648,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               theme: Theme.of(context),
               showLabels: true,
               enableAnimations: true,
-              hoveredConnectionId: _hoveredConnectionId,
+              hoveredConnectionId: _hoveredLabelConnectionId,  // Use label hover state for label highlighting
               onBoundsUpdated: (bounds) {
                 _connectionLabelBounds = bounds;
               },
@@ -1105,10 +1106,73 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   /// Build invisible overlays positioned over connection labels for gesture detection
   List<Widget> _buildConnectionLabelOverlays() {
     final overlays = <Widget>[];
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded) return overlays;
 
     for (final entry in _connectionLabelBounds.entries) {
       final connectionId = entry.key;
       final bounds = entry.value;
+      
+      // Find the connection to check if it has a mode parameter
+      final connection = routingState.connections.firstWhere(
+        (conn) => conn.id == connectionId,
+        orElse: () => Connection(
+          id: connectionId,
+          sourcePortId: '',
+          destinationPortId: '',
+          connectionType: ConnectionType.algorithmToAlgorithm,
+        ),
+      );
+      
+      // Find the source port to check for mode parameter
+      // Collect all ports from algorithms
+      final allPorts = [
+        ...routingState.physicalInputs,
+        ...routingState.physicalOutputs,
+        for (final algo in routingState.algorithms) ...[
+          ...algo.inputPorts,
+          ...algo.outputPorts,
+        ],
+      ];
+      
+      final sourcePort = allPorts.firstWhere(
+        (port) => port.id == connection.sourcePortId,
+        orElse: () => Port(
+          id: '',
+          name: '',
+          type: PortType.cv,
+          direction: PortDirection.input,
+        ),
+      );
+      
+      // Only add hover effect if the port has a mode parameter
+      final hasModeParameter = sourcePort.modeParameterNumber != null;
+
+      Widget overlay = GestureDetector(
+        behavior: HitTestBehavior.opaque, // Capture all taps in this area
+        onTap: () {
+          debugPrint('Connection label tapped: $connectionId');
+          _toggleConnectionOutputMode(connectionId);
+        },
+        child: const SizedBox.expand(), // Fill the entire positioned area
+      );
+      
+      // Wrap in MouseRegion only if it has a mode parameter
+      if (hasModeParameter) {
+        overlay = MouseRegion(
+          onEnter: (_) {
+            setState(() {
+              _hoveredLabelConnectionId = connectionId;
+            });
+          },
+          onExit: (_) {
+            setState(() {
+              _hoveredLabelConnectionId = null;
+            });
+          },
+          child: overlay,
+        );
+      }
 
       overlays.add(
         Positioned(
@@ -1116,14 +1180,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           top: bounds.top,
           width: bounds.width,
           height: bounds.height,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque, // Capture all taps in this area
-            onTap: () {
-              debugPrint('Connection label tapped: $connectionId');
-              _toggleConnectionOutputMode(connectionId);
-            },
-            child: const SizedBox.expand(), // Fill the entire positioned area
-          ),
+          child: overlay,
         ),
       );
     }

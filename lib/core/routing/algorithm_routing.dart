@@ -421,7 +421,9 @@ abstract class AlgorithmRouting {
           enumValues.contains('Add') &&
           enumValues.contains('Replace');
 
-      debugPrint('AlgorithmRouting: Parameter ${param.name}: unit=${param.unit}, enums=$enumValues, isModeParam=$isModeParameter');
+      if (param.name.toLowerCase().contains('output')) {
+        debugPrint('AlgorithmRouting: Checking output parameter ${param.name}: unit=${param.unit}, enums=$enumValues, isModeParam=$isModeParameter');
+      }
 
       if (isModeParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
