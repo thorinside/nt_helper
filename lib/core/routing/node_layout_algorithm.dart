@@ -63,12 +63,12 @@ class LayoutResult {
 /// This algorithm optimizes node positioning to minimize connection overlap
 /// while maintaining logical slot ordering and proper physical node placement.
 class NodeLayoutAlgorithm {
-  static const double canvasWidth = 800.0;
-  static const double canvasHeight = 600.0;
+  static const double canvasWidth = 5000.0;
+  static const double canvasHeight = 5000.0;
   
-  static const double physicalInputX = 50.0;
-  static const double physicalOutputX = 750.0;
-  static const double algorithmCenterX = 400.0;
+  static const double physicalInputX = 1700.0;  // Left side, centered
+  static const double physicalOutputX = 3300.0;  // Right side, centered
+  static const double algorithmCenterX = 2500.0;  // Center of canvas
   
   static const double nodeSpacingY = 80.0;
   static const double minimumNodeSpacing = 60.0;
@@ -86,28 +86,21 @@ class NodeLayoutAlgorithm {
     debugPrint('  Algorithms: ${algorithms.length}');
     debugPrint('  Connections: ${connections.length}');
 
-    // Step 1: Position physical input ports on the left
-    final physicalInputPositions = _positionPhysicalInputs(physicalInputs);
-
-    // Step 2: Position physical output ports on the right
-    final physicalOutputPositions = _positionPhysicalOutputs(physicalOutputs);
-
-    // Step 3: Sort algorithms by slot index (lower indices appear higher)
+    // Step 1: Sort algorithms by slot index (lower indices appear higher)
     final sortedAlgorithms = List<RoutingAlgorithm>.from(algorithms);
     sortedAlgorithms.sort((a, b) => a.index.compareTo(b.index));
 
-    // Step 4: Initial algorithm positioning with slot ordering
-    final initialAlgorithmPositions = _positionAlgorithmsBySlotOrder(sortedAlgorithms);
+    // Step 2: Analyze connections to determine optimal column placement
+    final columnAssignments = _assignAlgorithmsToColumns(sortedAlgorithms, connections);
+    
+    // Step 3: Position algorithms based on column assignments and slot ordering
+    final initialAlgorithmPositions = _positionAlgorithmsByColumn(sortedAlgorithms, columnAssignments);
 
-    // Step 5: Optimize algorithm positions based on connections
+    // Step 4: Optimize algorithm positions based on connections
     final optimizedAlgorithmPositions = optimizeNodePositionsForConnections(
       sortedAlgorithms,
       connections,
-      {
-        ...physicalInputPositions,
-        ...physicalOutputPositions,
-        ...initialAlgorithmPositions,
-      },
+      initialAlgorithmPositions,
     );
 
     // Extract only algorithm positions from optimized result
@@ -117,6 +110,17 @@ class NodeLayoutAlgorithm {
         algorithmPositions[algorithm.id] = optimizedAlgorithmPositions[algorithm.id]!;
       }
     }
+
+    // Step 5: Position physical I/O nodes based on algorithm bounding box
+    final physicalInputPositions = _positionPhysicalInputsRelativeToAlgorithms(
+      physicalInputs, 
+      algorithmPositions,
+    );
+    
+    final physicalOutputPositions = _positionPhysicalOutputsRelativeToAlgorithms(
+      physicalOutputs,
+      algorithmPositions,
+    );
 
     // Step 6: Detect remaining overlaps after optimization
     final allPositions = {
@@ -140,59 +144,285 @@ class NodeLayoutAlgorithm {
     );
   }
 
-  /// Position physical input ports vertically on the left side
-  Map<String, NodePosition> _positionPhysicalInputs(List<Port> physicalInputs) {
+  /// Position physical input node relative to algorithm bounding box
+  Map<String, NodePosition> _positionPhysicalInputsRelativeToAlgorithms(
+    List<Port> physicalInputs,
+    Map<String, NodePosition> algorithmPositions,
+  ) {
     final positions = <String, NodePosition>{};
     
-    if (physicalInputs.isEmpty) return positions;
+    if (physicalInputs.isEmpty || algorithmPositions.isEmpty) return positions;
     
-    final totalHeight = (physicalInputs.length - 1) * nodeSpacingY;
-    final startY = (canvasHeight - totalHeight) / 2;
+    const double gridSize = 50.0;
+    const double nodeWidthInGrids = 7.0;  // Approximate node width
+    const double gapInGrids = 1.5;  // 1.5 grid squares gap (half of original 3)
     
-    for (int i = 0; i < physicalInputs.length; i++) {
-      positions[physicalInputs[i].id] = NodePosition(
-        x: physicalInputX,
-        y: startY + (i * nodeSpacingY),
-      );
+    // Calculate algorithm bounding box
+    double minX = double.infinity;
+    double maxX = double.negativeInfinity;
+    double minY = double.infinity;
+    double maxY = double.negativeInfinity;
+    
+    for (final pos in algorithmPositions.values) {
+      if (pos.x < minX) minX = pos.x;
+      if (pos.x > maxX) maxX = pos.x;
+      if (pos.y < minY) minY = pos.y;
+      if (pos.y > maxY) maxY = pos.y;
     }
+    
+    // Add approximate node width to maxX for right edge
+    maxX += nodeWidthInGrids * gridSize;
+    // Add approximate node height for bottom edge
+    maxY += 3.0 * gridSize;  // Approximate node height
+    
+    // Calculate height of physical inputs node based on number of ports
+    // Each port takes about 30px, plus header and padding
+    final physicalNodeHeight = (physicalInputs.length * 30.0 + 60.0); // Header + padding
+    
+    // Position physical inputs to the left with 3 grid squares gap
+    final x = ((minX - (nodeWidthInGrids + gapInGrids) * gridSize) / gridSize).round() * gridSize;
+    
+    // Center vertically relative to algorithm bounding box
+    // Account for the physical node's own height
+    final algorithmCenterY = (minY + maxY) / 2;
+    final y = ((algorithmCenterY - physicalNodeHeight / 2) / gridSize).round() * gridSize;
+    
+    positions['physical_inputs'] = NodePosition(x: x, y: y);
+    
+    debugPrint('[NodeLayout] Physical inputs positioned at x=$x, y=$y (left of algorithms with 1.5 grid gap)');
+    debugPrint('[NodeLayout] Physical inputs height: $physicalNodeHeight px');
     
     return positions;
   }
 
-  /// Position physical output ports vertically on the right side
-  Map<String, NodePosition> _positionPhysicalOutputs(List<Port> physicalOutputs) {
+  /// Position physical output node relative to algorithm bounding box
+  Map<String, NodePosition> _positionPhysicalOutputsRelativeToAlgorithms(
+    List<Port> physicalOutputs,
+    Map<String, NodePosition> algorithmPositions,
+  ) {
     final positions = <String, NodePosition>{};
     
-    if (physicalOutputs.isEmpty) return positions;
+    if (physicalOutputs.isEmpty || algorithmPositions.isEmpty) return positions;
     
-    final totalHeight = (physicalOutputs.length - 1) * nodeSpacingY;
-    final startY = (canvasHeight - totalHeight) / 2;
+    const double gridSize = 50.0;
+    const double nodeWidthInGrids = 7.0;  // Approximate node width
+    const double gapInGrids = 1.5;  // 1.5 grid squares gap (half of original 3)
     
-    for (int i = 0; i < physicalOutputs.length; i++) {
-      positions[physicalOutputs[i].id] = NodePosition(
-        x: physicalOutputX,
-        y: startY + (i * nodeSpacingY),
-      );
+    // Calculate algorithm bounding box
+    double minX = double.infinity;
+    double maxX = double.negativeInfinity;
+    double minY = double.infinity;
+    double maxY = double.negativeInfinity;
+    
+    for (final pos in algorithmPositions.values) {
+      if (pos.x < minX) minX = pos.x;
+      if (pos.x > maxX) maxX = pos.x;
+      if (pos.y < minY) minY = pos.y;
+      if (pos.y > maxY) maxY = pos.y;
     }
+    
+    // Add approximate node width to maxX for right edge
+    maxX += nodeWidthInGrids * gridSize;
+    // Add approximate node height for bottom edge
+    maxY += 3.0 * gridSize;  // Approximate node height
+    
+    // Calculate height of physical outputs node based on number of ports
+    // Each port takes about 30px, plus header and padding
+    final physicalNodeHeight = (physicalOutputs.length * 30.0 + 60.0); // Header + padding
+    
+    // Position physical outputs to the right with 3 grid squares gap
+    final x = ((maxX + gapInGrids * gridSize) / gridSize).round() * gridSize;
+    
+    // Center vertically relative to algorithm bounding box
+    // Account for the physical node's own height
+    final algorithmCenterY = (minY + maxY) / 2;
+    final y = ((algorithmCenterY - physicalNodeHeight / 2) / gridSize).round() * gridSize;
+    
+    positions['physical_outputs'] = NodePosition(x: x, y: y);
+    
+    debugPrint('[NodeLayout] Physical outputs positioned at x=$x, y=$y (right of algorithms with 1.5 grid gap)');
+    debugPrint('[NodeLayout] Physical outputs height: $physicalNodeHeight px');
     
     return positions;
   }
 
-  /// Position algorithms in the center based on slot ordering
-  /// Lower slot indices (index 0, 1, 2...) appear higher (smaller Y values)
-  Map<String, NodePosition> _positionAlgorithmsBySlotOrder(List<RoutingAlgorithm> sortedAlgorithms) {
+  /// Analyze connections to determine which column each algorithm should be in
+  /// Returns a map of algorithm ID to column index (0 = left, 1 = right)
+  Map<String, int> _assignAlgorithmsToColumns(
+    List<RoutingAlgorithm> algorithms,
+    List<Connection> connections,
+  ) {
+    final assignments = <String, int>{};
+    
+    // Build a dependency graph to understand data flow
+    final Map<String, Set<String>> dependencies = {}; // algorithm -> algorithms it depends on
+    final Map<String, Set<String>> dependents = {}; // algorithm -> algorithms that depend on it
+    
+    for (final algorithm in algorithms) {
+      dependencies[algorithm.id] = {};
+      dependents[algorithm.id] = {};
+    }
+    
+    // Analyze algorithm-to-algorithm connections
+    for (final connection in connections) {
+      // Skip hardware connections
+      if (connection.sourcePortId.contains('hw_') || 
+          connection.destinationPortId.contains('hw_')) {
+        continue;
+      }
+      
+      String? sourceAlgorithmId;
+      String? destAlgorithmId;
+      
+      // Find source algorithm
+      for (final algorithm in algorithms) {
+        for (final port in algorithm.outputPorts) {
+          if (connection.sourcePortId == port.id) {
+            sourceAlgorithmId = algorithm.id;
+            break;
+          }
+        }
+        if (sourceAlgorithmId != null) break;
+      }
+      
+      // Find destination algorithm
+      for (final algorithm in algorithms) {
+        for (final port in algorithm.inputPorts) {
+          if (connection.destinationPortId == port.id) {
+            destAlgorithmId = algorithm.id;
+            break;
+          }
+        }
+        if (destAlgorithmId != null) break;
+      }
+      
+      // Record dependency if both are algorithms
+      if (sourceAlgorithmId != null && destAlgorithmId != null && sourceAlgorithmId != destAlgorithmId) {
+        dependencies[destAlgorithmId]!.add(sourceAlgorithmId);
+        dependents[sourceAlgorithmId]!.add(destAlgorithmId);
+        debugPrint('[NodeLayout] Found dependency: $destAlgorithmId depends on $sourceAlgorithmId');
+      }
+    }
+    
+    // Calculate dependency depth for each algorithm
+    final Map<String, int> depthMap = {};
+    for (final algorithm in algorithms) {
+      depthMap[algorithm.id] = _calculateMaxDependencyDepth(
+        algorithm.id, 
+        dependencies, 
+        <String, int>{},
+      );
+    }
+    
+    // Find the maximum depth to determine number of columns needed
+    int maxDepth = 0;
+    for (final depth in depthMap.values) {
+      if (depth > maxDepth) maxDepth = depth;
+    }
+    
+    // Assign columns based on dependency depth
+    for (final algorithm in algorithms) {
+      final depth = depthMap[algorithm.id]!;
+      final hasDependencies = dependencies[algorithm.id]!.isNotEmpty;
+      final hasDependents = dependents[algorithm.id]!.isNotEmpty;
+      
+      // Use depth as column index
+      assignments[algorithm.id] = depth;
+      
+      debugPrint('[NodeLayout] Algorithm ${algorithm.index} (${algorithm.id}): '
+          'dependencies=${dependencies[algorithm.id]!.length}, '
+          'dependents=${dependents[algorithm.id]!.length}, '
+          'depth=$depth, column=${assignments[algorithm.id]}');
+    }
+    
+    return assignments;
+  }
+  
+  /// Calculate the maximum dependency depth for an algorithm (memoized)
+  int _calculateMaxDependencyDepth(
+    String algorithmId,
+    Map<String, Set<String>> dependencies,
+    Map<String, int> memo,
+  ) {
+    // Return memoized result if available
+    if (memo.containsKey(algorithmId)) {
+      return memo[algorithmId]!;
+    }
+    
+    final deps = dependencies[algorithmId] ?? {};
+    if (deps.isEmpty) {
+      // No dependencies means depth 0 (leftmost column)
+      memo[algorithmId] = 0;
+      return 0;
+    }
+    
+    // Find the maximum depth among all dependencies
+    int maxDepth = 0;
+    for (final depId in deps) {
+      final depDepth = _calculateMaxDependencyDepth(depId, dependencies, memo);
+      if (depDepth >= maxDepth) {
+        maxDepth = depDepth + 1; // This node is one level deeper than its deepest dependency
+      }
+    }
+    
+    memo[algorithmId] = maxDepth;
+    return maxDepth;
+  }
+  
+  /// Position algorithms based on column assignments and slot ordering
+  Map<String, NodePosition> _positionAlgorithmsByColumn(
+    List<RoutingAlgorithm> sortedAlgorithms,
+    Map<String, int> columnAssignments,
+  ) {
     final positions = <String, NodePosition>{};
     
     if (sortedAlgorithms.isEmpty) return positions;
     
-    final totalHeight = (sortedAlgorithms.length - 1) * nodeSpacingY;
-    final startY = (canvasHeight - totalHeight) / 2;
+    // Grid-based spacing
+    const double gridSize = 50.0;
+    const double nodeWidthInGrids = 7.0;  // Approximate node width in grid squares
+    const double nodeHeightInGrids = 3.0;  // Approximate node height in grid squares
+    const double gapInGrids = 1.0;  // 1 grid square gap between nodes
     
-    for (int i = 0; i < sortedAlgorithms.length; i++) {
-      positions[sortedAlgorithms[i].id] = NodePosition(
-        x: algorithmCenterX,
-        y: startY + (i * nodeSpacingY),
-      );
+    // Calculate spacing based on grid (node size + gap)
+    const double algorithmSpacingY = (nodeHeightInGrids + gapInGrids) * gridSize;  // 200px (4 grid squares total)
+    const double algorithmSpacingX = (nodeWidthInGrids + gapInGrids) * gridSize;   // 400px (8 grid squares total)
+    
+    // Find the maximum column index to support more than 2 columns if needed
+    int maxColumn = 0;
+    for (final column in columnAssignments.values) {
+      if (column > maxColumn) maxColumn = column;
+    }
+    
+    // Group algorithms by column
+    final Map<int, List<RoutingAlgorithm>> columnGroups = {};
+    for (int col = 0; col <= maxColumn; col++) {
+      columnGroups[col] = [];
+    }
+    
+    for (final algorithm in sortedAlgorithms) {
+      final column = columnAssignments[algorithm.id] ?? 0;
+      columnGroups[column]!.add(algorithm);
+    }
+    
+    // Position each column
+    final int numColumns = maxColumn + 1;
+    final double totalWidth = (numColumns - 1) * algorithmSpacingX;
+    final double startX = algorithmCenterX - (totalWidth / 2);
+    
+    for (int col = 0; col <= maxColumn; col++) {
+      final algorithms = columnGroups[col]!;
+      if (algorithms.isEmpty) continue;
+      
+      final columnX = startX + (col * algorithmSpacingX);
+      final startY = (canvasHeight - ((algorithms.length - 1) * algorithmSpacingY)) / 2;
+      
+      for (int i = 0; i < algorithms.length; i++) {
+        final x = (columnX / gridSize).round() * gridSize;
+        final y = ((startY + (i * algorithmSpacingY)) / gridSize).round() * gridSize;
+        
+        positions[algorithms[i].id] = NodePosition(x: x, y: y);
+      }
     }
     
     return positions;
@@ -327,48 +557,8 @@ class NodeLayoutAlgorithm {
       return optimizedPositions;
     }
     
-    // Multiple optimization passes to reduce overlaps
-    const maxIterations = 5;
-    double previousOverlapCount = double.infinity;
-    
-    for (int iteration = 0; iteration < maxIterations; iteration++) {
-      bool positionsChanged = false;
-      
-      // Try to optimize each algorithm's position
-      for (final algorithm in algorithms) {
-        final currentPos = optimizedPositions[algorithm.id];
-        if (currentPos == null) continue;
-        
-        final bestPosition = _findOptimalPositionForAlgorithm(
-          algorithm,
-          connections,
-          optimizedPositions,
-        );
-        
-        // Only update if position significantly changes
-        final distance = math.sqrt(
-          math.pow(bestPosition.x - currentPos.x, 2) + 
-          math.pow(bestPosition.y - currentPos.y, 2),
-        );
-        
-        if (distance > 10.0) { // Minimum distance threshold for changes
-          optimizedPositions[algorithm.id] = bestPosition;
-          positionsChanged = true;
-        }
-      }
-      
-      // Check for convergence
-      final currentOverlaps = detectConnectionOverlaps(connections, optimizedPositions);
-      final currentOverlapCount = currentOverlaps.length.toDouble();
-      
-      if (!positionsChanged || currentOverlapCount >= previousOverlapCount) {
-        debugPrint('[NodeLayoutAlgorithm] Optimization converged at iteration $iteration');
-        break;
-      }
-      
-      previousOverlapCount = currentOverlapCount;
-    }
-    
+    // Skip optimization for now since we're focusing on column-based layout
+    // This can be enhanced later if needed
     return optimizedPositions;
   }
 

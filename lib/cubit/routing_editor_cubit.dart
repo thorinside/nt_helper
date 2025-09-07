@@ -223,6 +223,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Initialize default buses after loading (fire and forget)
       initializeDefaultBuses();
+      
+      // Load saved node positions for this preset
+      loadNodePositions();
     } catch (e) {
       debugPrint('Error processing synchronized state: $e');
     }
@@ -2009,6 +2012,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('[RoutingEditorCubit] Layout algorithm applied successfully');
       debugPrint('  Updated positions: ${updatedNodePositions.length}');
       debugPrint('  Overlap reduction: ${layoutResult.totalOverlapReduction.toStringAsFixed(2)}');
+      
+      // Save the new positions to preferences
+      await saveNodePositions();
 
     } catch (e, stackTrace) {
       debugPrint('[RoutingEditorCubit] Error applying layout algorithm: $e');
@@ -2021,6 +2027,104 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         ),
       );
     }
+  }
+
+  /// Save node positions to SharedPreferences for the current preset
+  Future<void> saveNodePositions() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+    
+    final distingState = _distingCubit?.state;
+    if (distingState == null) return;
+    
+    // Get preset name from DistingState
+    String? presetName;
+    distingState.whenOrNull(
+      synchronized: (_, __, ___, name, ____, _____, ______, _______, ________,
+          _________, __________, ___________, ____________, _____________) {
+        presetName = name;
+      },
+    );
+    
+    if (presetName == null || presetName!.isEmpty) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'routing_positions_$presetName';
+      
+      // Convert NodePosition map to JSON-serializable format
+      final positionsMap = <String, Map<String, double>>{};
+      for (final entry in currentState.nodePositions.entries) {
+        positionsMap[entry.key] = {
+          'x': entry.value.x,
+          'y': entry.value.y,
+        };
+      }
+      
+      final json = jsonEncode(positionsMap);
+      await prefs.setString(key, json);
+      debugPrint('[RoutingEditorCubit] Saved node positions for preset: $presetName');
+    } catch (e) {
+      debugPrint('[RoutingEditorCubit] Error saving node positions: $e');
+    }
+  }
+  
+  /// Load node positions from SharedPreferences for the current preset
+  Future<void> loadNodePositions() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+    
+    final distingState = _distingCubit?.state;
+    if (distingState == null) return;
+    
+    // Get preset name from DistingState
+    String? presetName;
+    distingState.whenOrNull(
+      synchronized: (_, __, ___, name, ____, _____, ______, _______, ________,
+          _________, __________, ___________, ____________, _____________) {
+        presetName = name;
+      },
+    );
+    
+    if (presetName == null || presetName!.isEmpty) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'routing_positions_$presetName';
+      final json = prefs.getString(key);
+      
+      if (json != null) {
+        final positionsMap = jsonDecode(json) as Map<String, dynamic>;
+        final nodePositions = <String, NodePosition>{};
+        
+        for (final entry in positionsMap.entries) {
+          final pos = entry.value as Map<String, dynamic>;
+          nodePositions[entry.key] = NodePosition(
+            x: (pos['x'] as num).toDouble(),
+            y: (pos['y'] as num).toDouble(),
+          );
+        }
+        
+        emit(currentState.copyWith(nodePositions: nodePositions));
+        debugPrint('[RoutingEditorCubit] Loaded node positions for preset: $presetName');
+      }
+    } catch (e) {
+      debugPrint('[RoutingEditorCubit] Error loading node positions: $e');
+    }
+  }
+  
+  /// Update a single node position and save to preferences
+  Future<void> updateNodePosition(String nodeId, double x, double y) async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+    
+    final updatedPositions = Map<String, NodePosition>.from(currentState.nodePositions);
+    updatedPositions[nodeId] = NodePosition(x: x, y: y);
+    
+    emit(currentState.copyWith(nodePositions: updatedPositions));
+    
+    // Save positions after update
+    await saveNodePositions();
   }
 
   @override
