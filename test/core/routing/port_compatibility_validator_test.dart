@@ -16,49 +16,49 @@ void main() {
 
     setUp(() {
       validator = PortCompatibilityValidator();
-      
+
       audioInputPort = const Port(
         id: 'audio_in',
         name: 'Audio Input',
         type: PortType.audio,
         direction: PortDirection.input,
       );
-      
+
       audioOutputPort = const Port(
         id: 'audio_out',
         name: 'Audio Output',
         type: PortType.audio,
         direction: PortDirection.output,
       );
-      
+
       cvInputPort = const Port(
         id: 'cv_in',
         name: 'CV Input',
         type: PortType.cv,
         direction: PortDirection.input,
       );
-      
+
       cvOutputPort = const Port(
         id: 'cv_out',
         name: 'CV Output',
         type: PortType.cv,
         direction: PortDirection.output,
       );
-      
+
       midiInputPort = const Port(
         id: 'midi_in',
         name: 'MIDI Input',
         type: PortType.gate,
         direction: PortDirection.input,
       );
-      
+
       // midiOutputPort = const Port(
       //   id: 'midi_out',
       //   name: 'MIDI Output',
       //   type: ,
       //   direction: PortDirection.output,
       // );
-      
+
       inactivePort = const Port(
         id: 'inactive',
         name: 'Inactive Port',
@@ -79,17 +79,20 @@ void main() {
         expect(result.errors, isEmpty);
       });
 
-      test('should validate cross-compatible audio to CV connection with warning', () {
-        final result = validator.validateConnection(
-          audioOutputPort,
-          cvInputPort,
-        );
+      test(
+        'should validate cross-compatible audio to CV connection with warning',
+        () {
+          final result = validator.validateConnection(
+            audioOutputPort,
+            cvInputPort,
+          );
 
-        expect(result.isValid, isTrue);
-        expect(result.errors, isEmpty);
-        expect(result.warnings.length, equals(1));
-        expect(result.warnings[0].message, contains('Cross-type connection'));
-      });
+          expect(result.isValid, isTrue);
+          expect(result.errors, isEmpty);
+          expect(result.warnings.length, equals(1));
+          expect(result.warnings[0].message, contains('Cross-type connection'));
+        },
+      );
 
       test('should reject incompatible audio to MIDI connection', () {
         final result = validator.validateConnection(
@@ -99,7 +102,10 @@ void main() {
 
         expect(result.isValid, isFalse);
         expect(result.errors.length, equals(1));
-        expect(result.errors[0].type, equals(ValidationErrorType.incompatibleType));
+        expect(
+          result.errors[0].type,
+          equals(ValidationErrorType.incompatibleType),
+        );
         expect(result.errors[0].message, contains('not compatible'));
       });
 
@@ -111,8 +117,14 @@ void main() {
 
         expect(result.isValid, isFalse);
         expect(result.errors.length, equals(1));
-        expect(result.errors[0].type, equals(ValidationErrorType.incompatibleDirection));
-        expect(result.errors[0].message, contains('Cannot connect input port to input port'));
+        expect(
+          result.errors[0].type,
+          equals(ValidationErrorType.incompatibleDirection),
+        );
+        expect(
+          result.errors[0].message,
+          contains('Cannot connect input port to input port'),
+        );
       });
 
       test('should reject connection from output to output', () {
@@ -123,8 +135,14 @@ void main() {
 
         expect(result.isValid, isFalse);
         expect(result.errors.length, equals(1));
-        expect(result.errors[0].type, equals(ValidationErrorType.incompatibleDirection));
-        expect(result.errors[0].message, contains('Cannot connect output port to output port'));
+        expect(
+          result.errors[0].type,
+          equals(ValidationErrorType.incompatibleDirection),
+        );
+        expect(
+          result.errors[0].message,
+          contains('Cannot connect output port to output port'),
+        );
       });
     });
 
@@ -136,9 +154,12 @@ void main() {
         );
 
         expect(result.isValid, isFalse);
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.inactiveSourcePort,
-        ), isTrue);
+        expect(
+          result.errors.any(
+            (error) => error.type == ValidationErrorType.inactiveSourcePort,
+          ),
+          isTrue,
+        );
       });
 
       test('should reject connection with inactive destination port', () {
@@ -148,9 +169,13 @@ void main() {
         );
 
         expect(result.isValid, isFalse);
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.inactiveDestinationPort,
-        ), isTrue);
+        expect(
+          result.errors.any(
+            (error) =>
+                error.type == ValidationErrorType.inactiveDestinationPort,
+          ),
+          isTrue,
+        );
       });
 
       test('should reject connection with both ports inactive', () {
@@ -169,12 +194,19 @@ void main() {
 
         expect(result.isValid, isFalse);
         expect(result.errors.length, equals(2));
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.inactiveSourcePort,
-        ), isTrue);
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.inactiveDestinationPort,
-        ), isTrue);
+        expect(
+          result.errors.any(
+            (error) => error.type == ValidationErrorType.inactiveSourcePort,
+          ),
+          isTrue,
+        );
+        expect(
+          result.errors.any(
+            (error) =>
+                error.type == ValidationErrorType.inactiveDestinationPort,
+          ),
+          isTrue,
+        );
       });
     });
 
@@ -186,7 +218,7 @@ void main() {
           type: PortType.cv,
           direction: PortDirection.output,
           constraints: {
-            'voltageRange': {'min': -5, 'max': 5}
+            'voltageRange': {'min': -5, 'max': 5},
           },
         );
 
@@ -196,11 +228,14 @@ void main() {
           type: PortType.cv,
           direction: PortDirection.input,
           constraints: {
-            'voltageRange': {'min': -10, 'max': 10}
+            'voltageRange': {'min': -10, 'max': 10},
           },
         );
 
-        final result = validator.validateConnection(sourceWithRange, destWithRange);
+        final result = validator.validateConnection(
+          sourceWithRange,
+          destWithRange,
+        );
 
         expect(result.isValid, isTrue);
         expect(result.errors, isEmpty);
@@ -213,7 +248,7 @@ void main() {
           type: PortType.cv,
           direction: PortDirection.output,
           constraints: {
-            'voltageRange': {'min': 5, 'max': 10}
+            'voltageRange': {'min': 5, 'max': 10},
           },
         );
 
@@ -223,16 +258,22 @@ void main() {
           type: PortType.cv,
           direction: PortDirection.input,
           constraints: {
-            'voltageRange': {'min': -5, 'max': 3}
+            'voltageRange': {'min': -5, 'max': 3},
           },
         );
 
-        final result = validator.validateConnection(sourceWithRange, destWithRange);
+        final result = validator.validateConnection(
+          sourceWithRange,
+          destWithRange,
+        );
 
         expect(result.isValid, isFalse);
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.constraintViolation,
-        ), isTrue);
+        expect(
+          result.errors.any(
+            (error) => error.type == ValidationErrorType.constraintViolation,
+          ),
+          isTrue,
+        );
       });
     });
 
@@ -261,12 +302,21 @@ void main() {
 
         expect(result.isValid, isTrue);
         expect(result.warnings.length, equals(2));
-        expect(result.warnings.any(
-          (warning) => warning.message.contains('Source port audio_out already has'),
-        ), isTrue);
-        expect(result.warnings.any(
-          (warning) => warning.message.contains('Destination port audio_in already has'),
-        ), isTrue);
+        expect(
+          result.warnings.any(
+            (warning) =>
+                warning.message.contains('Source port audio_out already has'),
+          ),
+          isTrue,
+        );
+        expect(
+          result.warnings.any(
+            (warning) => warning.message.contains(
+              'Destination port audio_in already has',
+            ),
+          ),
+          isTrue,
+        );
       });
     });
 
@@ -274,7 +324,8 @@ void main() {
       test('should apply custom validation rules', () {
         // Add a custom rule that rejects connections between specific port types
         validator.addCustomRule((source, destination) {
-          if (source.type == PortType.audio && destination.type == PortType.cv) {
+          if (source.type == PortType.audio &&
+              destination.type == PortType.cv) {
             return const ValidationResult.failure([
               ValidationError(
                 type: ValidationErrorType.customRuleFailed,
@@ -291,12 +342,16 @@ void main() {
         );
 
         expect(result.isValid, isFalse);
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.customRuleFailed,
-        ), isTrue);
-        expect(result.errors.any(
-          (error) => error.message.contains('Custom rule'),
-        ), isTrue);
+        expect(
+          result.errors.any(
+            (error) => error.type == ValidationErrorType.customRuleFailed,
+          ),
+          isTrue,
+        );
+        expect(
+          result.errors.any((error) => error.message.contains('Custom rule')),
+          isTrue,
+        );
       });
 
       test('should handle custom rule exceptions gracefully', () {
@@ -311,12 +366,18 @@ void main() {
         );
 
         expect(result.isValid, isFalse);
-        expect(result.errors.any(
-          (error) => error.type == ValidationErrorType.customRuleFailed,
-        ), isTrue);
-        expect(result.errors.any(
-          (error) => error.message.contains('Custom validation rule failed'),
-        ), isTrue);
+        expect(
+          result.errors.any(
+            (error) => error.type == ValidationErrorType.customRuleFailed,
+          ),
+          isTrue,
+        );
+        expect(
+          result.errors.any(
+            (error) => error.message.contains('Custom validation rule failed'),
+          ),
+          isTrue,
+        );
       });
 
       test('should clear custom rules', () {
@@ -331,7 +392,10 @@ void main() {
         });
 
         // Verify rule is applied
-        var result = validator.validateConnection(audioOutputPort, audioInputPort);
+        var result = validator.validateConnection(
+          audioOutputPort,
+          audioInputPort,
+        );
         expect(result.isValid, isFalse);
 
         // Clear rules and verify they're no longer applied
@@ -343,9 +407,7 @@ void main() {
 
     group('ValidationResult Tests', () {
       test('should create successful validation result', () {
-        const warnings = [
-          ValidationWarning(message: 'Test warning'),
-        ];
+        const warnings = [ValidationWarning(message: 'Test warning')];
         const result = ValidationResult.success(warnings: warnings);
 
         expect(result.isValid, isTrue);

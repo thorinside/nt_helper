@@ -72,13 +72,28 @@ void main() {
 
       expect(deserializedConnection, equals(originalConnection));
       expect(deserializedConnection.id, equals(originalConnection.id));
-      expect(deserializedConnection.sourcePortId, equals(originalConnection.sourcePortId));
-      expect(deserializedConnection.destinationPortId, equals(originalConnection.destinationPortId));
+      expect(
+        deserializedConnection.sourcePortId,
+        equals(originalConnection.sourcePortId),
+      );
+      expect(
+        deserializedConnection.destinationPortId,
+        equals(originalConnection.destinationPortId),
+      );
       expect(deserializedConnection.status, equals(originalConnection.status));
       expect(deserializedConnection.gain, equals(originalConnection.gain));
-      expect(deserializedConnection.isMuted, equals(originalConnection.isMuted));
-      expect(deserializedConnection.isInverted, equals(originalConnection.isInverted));
-      expect(deserializedConnection.delayMs, equals(originalConnection.delayMs));
+      expect(
+        deserializedConnection.isMuted,
+        equals(originalConnection.isMuted),
+      );
+      expect(
+        deserializedConnection.isInverted,
+        equals(originalConnection.isInverted),
+      );
+      expect(
+        deserializedConnection.delayMs,
+        equals(originalConnection.delayMs),
+      );
     });
 
     group('Connection Status Tests', () {
@@ -212,16 +227,30 @@ void main() {
           modifiedAt: DateTime(2023, 1, 1),
         );
 
-        final updatedConnection = originalConnection.withStatus(ConnectionStatus.error);
+        final updatedConnection = originalConnection.withStatus(
+          ConnectionStatus.error,
+        );
 
         expect(updatedConnection.status, equals(ConnectionStatus.error));
-        expect(updatedConnection.modifiedAt, isNot(equals(originalConnection.modifiedAt)));
-        expect(updatedConnection.modifiedAt!.isAfter(originalConnection.modifiedAt!), isTrue);
-        
+        expect(
+          updatedConnection.modifiedAt,
+          isNot(equals(originalConnection.modifiedAt)),
+        );
+        expect(
+          updatedConnection.modifiedAt!.isAfter(originalConnection.modifiedAt!),
+          isTrue,
+        );
+
         // Other fields should remain the same
         expect(updatedConnection.id, equals(originalConnection.id));
-        expect(updatedConnection.sourcePortId, equals(originalConnection.sourcePortId));
-        expect(updatedConnection.destinationPortId, equals(originalConnection.destinationPortId));
+        expect(
+          updatedConnection.sourcePortId,
+          equals(originalConnection.sourcePortId),
+        );
+        expect(
+          updatedConnection.destinationPortId,
+          equals(originalConnection.destinationPortId),
+        );
       });
 
       // withProperties method was removed in the Connection refactor
@@ -239,8 +268,14 @@ void main() {
         final updatedConnection = originalConnection.withGain(0.5);
 
         expect(updatedConnection.gain, equals(0.5));
-        expect(updatedConnection.modifiedAt, isNot(equals(originalConnection.modifiedAt)));
-        expect(updatedConnection.modifiedAt!.isAfter(originalConnection.modifiedAt!), isTrue);
+        expect(
+          updatedConnection.modifiedAt,
+          isNot(equals(originalConnection.modifiedAt)),
+        );
+        expect(
+          updatedConnection.modifiedAt!.isAfter(originalConnection.modifiedAt!),
+          isTrue,
+        );
       });
     });
 
@@ -304,8 +339,14 @@ void main() {
         );
 
         expect(modifiedConnection.id, equals(originalConnection.id));
-        expect(modifiedConnection.sourcePortId, equals(originalConnection.sourcePortId));
-        expect(modifiedConnection.destinationPortId, equals(originalConnection.destinationPortId));
+        expect(
+          modifiedConnection.sourcePortId,
+          equals(originalConnection.sourcePortId),
+        );
+        expect(
+          modifiedConnection.destinationPortId,
+          equals(originalConnection.destinationPortId),
+        );
         expect(modifiedConnection.status, equals(ConnectionStatus.disabled));
         expect(modifiedConnection.gain, equals(0.5));
         expect(modifiedConnection.isMuted, isTrue);
@@ -399,9 +440,7 @@ void main() {
           busNumber: 4,
         );
 
-        final modifiedConnection = originalConnection.copyWith(
-          gain: 0.8,
-        );
+        final modifiedConnection = originalConnection.copyWith(gain: 0.8);
 
         expect(modifiedConnection.isPartial, isTrue);
         expect(modifiedConnection.busNumber, equals(4));
@@ -423,26 +462,29 @@ void main() {
         expect(connection.hasUnconnectedBus, isTrue);
       });
 
-      test('should differentiate between partial and full connections in equality', () {
-        const partialConnection = Connection(
-          id: 'test',
-          sourcePortId: 'src',
-          destinationPortId: '',
-          connectionType: ConnectionType.partialOutputToBus,
-          isPartial: true,
-          busNumber: 5,
-        );
+      test(
+        'should differentiate between partial and full connections in equality',
+        () {
+          const partialConnection = Connection(
+            id: 'test',
+            sourcePortId: 'src',
+            destinationPortId: '',
+            connectionType: ConnectionType.partialOutputToBus,
+            isPartial: true,
+            busNumber: 5,
+          );
 
-        const fullConnection = Connection(
-          id: 'test',
-          sourcePortId: 'src',
-          destinationPortId: 'dest',
-          connectionType: ConnectionType.algorithmToAlgorithm,
-          isPartial: false,
-        );
+          const fullConnection = Connection(
+            id: 'test',
+            sourcePortId: 'src',
+            destinationPortId: 'dest',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+            isPartial: false,
+          );
 
-        expect(partialConnection, isNot(equals(fullConnection)));
-      });
+          expect(partialConnection, isNot(equals(fullConnection)));
+        },
+      );
     });
   });
 }

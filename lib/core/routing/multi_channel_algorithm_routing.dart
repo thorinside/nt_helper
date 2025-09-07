@@ -112,7 +112,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// Cached output ports to avoid regeneration
   List<Port>? _cachedOutputPorts;
 
-
   /// Creates a new MultiChannelAlgorithmRouting instance.
   ///
   /// Parameters:
@@ -267,10 +266,10 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               outputMode = OutputMode.add;
             }
           }
-          
+
           // Get mode parameter number from the item metadata (already stored during createFromSlot)
           int? modeParameterNumber = item['modeParameterNumber'] as int?;
-          
+
           // Fallback to looking it up from base class if not in metadata
           if (modeParameterNumber == null) {
             final busParam = item['busParam']?.toString();
@@ -278,11 +277,13 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               modeParameterNumber = getModeParameterNumber(busParam);
             }
           }
-          
+
           if (modeParameterNumber != null) {
-            debugPrint('MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber');
+            debugPrint(
+              'MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber',
+            );
           }
-          
+
           ports.add(
             Port(
               id: id,
@@ -637,17 +638,19 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       'Voices',
       'voices',
     ];
-    
+
     for (final paramName in widthParameterNames) {
       if (AlgorithmRouting.hasParameter(slot, paramName)) {
         final value = AlgorithmRouting.getParameterValue(slot, paramName);
         if (value > 0) {
-          debugPrint('MultiChannelAlgorithmRouting: Found width parameter "$paramName" = $value');
+          debugPrint(
+            'MultiChannelAlgorithmRouting: Found width parameter "$paramName" = $value',
+          );
           return value;
         }
       }
     }
-    
+
     return 1; // Default to 1 if no width parameter found
   }
 
@@ -726,7 +729,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         } else if (lowerName.contains('mono')) {
           port['channel'] = 'mono';
         }
-        
+
         // Apply output mode if available
         if (modeParameters != null) {
           // Look for corresponding mode parameter (e.g., "Output 1 mode" for "Output 1")
@@ -741,19 +744,24 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             }
           }
         }
-        
+
         // Store mode parameter number if available
         if (modeParametersWithNumbers != null) {
           final modeName = '$paramName mode';
-          debugPrint('Looking for mode parameter: "$modeName" in ${modeParametersWithNumbers.keys}');
+          debugPrint(
+            'Looking for mode parameter: "$modeName" in ${modeParametersWithNumbers.keys}',
+          );
           if (modeParametersWithNumbers.containsKey(modeName)) {
-            port['modeParameterNumber'] = modeParametersWithNumbers[modeName]!.parameterNumber;
-            debugPrint('Found mode parameter number ${port['modeParameterNumber']} for $paramName');
+            port['modeParameterNumber'] =
+                modeParametersWithNumbers[modeName]!.parameterNumber;
+            debugPrint(
+              'Found mode parameter number ${port['modeParameterNumber']} for $paramName',
+            );
           } else {
             debugPrint('Mode parameter "$modeName" not found');
           }
         }
-        
+
         outputPorts.add(port);
       } else {
         inputPorts.add(port);
@@ -769,15 +777,17 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       final audioInputIndex = inputPorts.indexWhere(
         (port) => port['name'] == 'Audio input',
       );
-      
+
       if (audioInputIndex >= 0) {
         final audioInputPort = inputPorts[audioInputIndex];
         final baseBusValue = audioInputPort['busValue'] as int? ?? 0;
-        
+
         // Only duplicate if the original Audio input has a valid bus assignment
         if (baseBusValue > 0) {
-          debugPrint('MultiChannelAlgorithmRouting: Duplicating Audio input for $channelCount channels');
-          
+          debugPrint(
+            'MultiChannelAlgorithmRouting: Duplicating Audio input for $channelCount channels',
+          );
+
           // Create virtual ports and insert them right after the original
           final virtualPorts = <Map<String, Object?>>[];
           for (int channel = 2; channel <= channelCount; channel++) {
@@ -793,9 +803,11 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               'basedOn': 'Audio input',
             };
             virtualPorts.add(virtualPort);
-            debugPrint('  Added virtual Audio input $channel on bus ${baseBusValue + (channel - 1)}');
+            debugPrint(
+              '  Added virtual Audio input $channel on bus ${baseBusValue + (channel - 1)}',
+            );
           }
-          
+
           // Insert all virtual ports right after the original Audio input
           inputPorts.insertAll(audioInputIndex + 1, virtualPorts);
         }

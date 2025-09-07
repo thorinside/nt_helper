@@ -5,27 +5,19 @@ import 'package:nt_helper/core/routing/models/port.dart';
 
 part 'routing_editor_state.freezed.dart';
 
-
-
 /// Represents status of a routing bus
 enum BusStatus {
   /// Bus is available for assignment
   available,
+
   /// Bus is assigned and active
   assigned,
+
   /// Bus has an error
   error,
 }
 
-enum SubState {
-  refreshing,
-  persisting,
-  syncing,
-  error,
-  idle,
-}
-
-
+enum SubState { refreshing, persisting, syncing, error, idle }
 
 /// Represents a routing bus for signal distribution
 @freezed
@@ -48,12 +40,16 @@ sealed class RoutingAlgorithm with _$RoutingAlgorithm {
   const factory RoutingAlgorithm({
     /// Stable unique identifier for this algorithm instance
     required String id,
+
     /// Current slot index (0-7), can change when algorithms are reordered
     required int index,
+
     /// The algorithm definition
     required Algorithm algorithm,
+
     /// Input ports for this algorithm
     required List<Port> inputPorts,
+
     /// Output ports for this algorithm
     required List<Port> outputPorts,
   }) = _RoutingAlgorithm;
@@ -66,7 +62,8 @@ sealed class RoutingEditorState with _$RoutingEditorState {
   const factory RoutingEditorState.initial() = RoutingEditorStateInitial;
 
   /// State when hardware is disconnected
-  const factory RoutingEditorState.disconnected() = RoutingEditorStateDisconnected;
+  const factory RoutingEditorState.disconnected() =
+      RoutingEditorStateDisconnected;
 
   /// State when routing data is loaded and ready for visualization
   const factory RoutingEditorState.loaded({
@@ -75,14 +72,13 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     required List<RoutingAlgorithm> algorithms, // Algorithms with their ports
     required List<Connection> connections, // All routing connections
     @Default([]) List<RoutingBus> buses, // Available routing buses
-    @Default({}) Map<String, OutputMode> portOutputModes, // Output modes per port
+    @Default({})
+    Map<String, OutputMode> portOutputModes, // Output modes per port
     @Default(false) bool isHardwareSynced, // Hardware sync status
     @Default(false) bool isPersistenceEnabled, // State persistence status
     DateTime? lastSyncTime, // Last hardware sync timestamp
     DateTime? lastPersistTime, // Last persistence save timestamp
     String? lastError, // Last error message
-    @Default(SubState.idle)SubState subState, // Current sub-state
-
-
+    @Default(SubState.idle) SubState subState, // Current sub-state
   }) = RoutingEditorStateLoaded;
 }

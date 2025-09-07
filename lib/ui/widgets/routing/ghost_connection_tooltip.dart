@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 
 /// A specialized tooltip widget for explaining ghost connections
-/// 
+///
 /// Ghost connections represent indirect routing paths, typically from algorithm
 /// outputs to physical hardware inputs. This tooltip provides clear explanations
 /// to help users understand the difference between ghost and direct connections.
 class GhostConnectionTooltip extends StatefulWidget {
   /// The connection to show tooltip information for
   final Connection connection;
-  
+
   /// The child widget that triggers the tooltip on hover
   final Widget child;
-  
+
   /// Custom tooltip message (optional - defaults to standard ghost connection explanation)
   final String? customMessage;
-  
+
   /// Whether the tooltip should be shown
   final bool show;
-  
+
   /// Delay before showing the tooltip
   final Duration delay;
 
@@ -40,34 +40,26 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   bool _isHovering = false;
   bool _isShowingTooltip = false;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutBack,
-    ));
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
   }
 
   @override
@@ -79,18 +71,18 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
   /// Show the tooltip with animation
   void _showTooltip() {
     if (!widget.show || _isShowingTooltip) return;
-    
+
     setState(() {
       _isShowingTooltip = true;
     });
-    
+
     _animationController.forward();
   }
 
   /// Hide the tooltip with animation
   void _hideTooltip() {
     if (!_isShowingTooltip) return;
-    
+
     _animationController.reverse().then((_) {
       if (mounted) {
         setState(() {
@@ -105,7 +97,7 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
     setState(() {
       _isHovering = true;
     });
-    
+
     // Show tooltip after delay
     Future.delayed(widget.delay, () {
       if (_isHovering && mounted) {
@@ -119,7 +111,7 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
     setState(() {
       _isHovering = false;
     });
-    
+
     _hideTooltip();
   }
 
@@ -128,26 +120,26 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
     if (widget.customMessage != null) {
       return widget.customMessage!;
     }
-    
+
     if (widget.connection.isGhostConnection) {
       return 'Ghost Connection\n'
-             'Algorithm output → Physical input\n'
-             'Indirect signal routing path\n\n'
-             'This connection represents signal flow from an '
-             'algorithm processing module to the physical hardware inputs, '
-             'creating an indirect routing path.';
+          'Algorithm output → Physical input\n'
+          'Indirect signal routing path\n\n'
+          'This connection represents signal flow from an '
+          'algorithm processing module to the physical hardware inputs, '
+          'creating an indirect routing path.';
     } else {
       return 'Direct Connection\n'
-             'Direct signal routing path\n\n'
-             'This connection represents a direct signal path between '
-             'compatible ports without intermediate processing.';
+          'Direct signal routing path\n\n'
+          'This connection represents a direct signal path between '
+          'compatible ports without intermediate processing.';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return MouseRegion(
       onEnter: (_) => _onHoverEnter(),
       onExit: (_) => _onHoverExit(),
@@ -189,7 +181,7 @@ class _GhostConnectionTooltipState extends State<GhostConnectionTooltip>
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: widget.connection.isGhostConnection 
+                color: widget.connection.isGhostConnection
                     ? theme.colorScheme.primary.withValues(alpha: 0.3)
                     : theme.colorScheme.outline.withValues(alpha: 0.3),
                 width: 1,

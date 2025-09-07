@@ -12,11 +12,7 @@ class RoutingFactoryException implements Exception {
   final AlgorithmRoutingMetadata metadata;
   final Object? cause;
 
-  const RoutingFactoryException(
-    this.message,
-    this.metadata,
-    this.cause,
-  );
+  const RoutingFactoryException(this.message, this.metadata, this.cause);
 
   @override
   String toString() {
@@ -29,7 +25,7 @@ class RoutingFactoryException implements Exception {
 ///
 /// This class implements the Factory Method pattern and provides a clean separation
 /// between algorithm metadata and routing implementation details. It analyzes the
-/// metadata to determine whether to create PolyAlgorithmRouting or 
+/// metadata to determine whether to create PolyAlgorithmRouting or
 /// MultiChannelAlgorithmRouting instances.
 ///
 /// The factory is designed to be easily extensible for future routing types by:
@@ -40,14 +36,14 @@ class RoutingFactoryException implements Exception {
 /// Example usage:
 /// ```dart
 /// final factory = RoutingFactory();
-/// 
+///
 /// // Create routing for a polyphonic algorithm
 /// final polyMetadata = AlgorithmRoutingMetadataFactory.polyphonic(
 ///   algorithmGuid: 'synth-v1',
 ///   voiceCount: 8,
 /// );
 /// final polyRouting = factory.createRouting(polyMetadata);
-/// 
+///
 /// // Create routing for a width-based algorithm
 /// final widthMetadata = AlgorithmRoutingMetadataFactory.widthBased(
 ///   algorithmGuid: 'stereo-delay-v1',
@@ -66,9 +62,8 @@ class RoutingFactory {
   /// - [validator]: Optional port compatibility validator to use for all created
   ///   routing instances. If not provided, each routing instance will use its
   ///   default validator.
-  const RoutingFactory({
-    PortCompatibilityValidator? validator,
-  }) : _validator = validator;
+  const RoutingFactory({PortCompatibilityValidator? validator})
+    : _validator = validator;
 
   /// Creates an appropriate AlgorithmRouting instance based on the provided metadata.
   ///
@@ -94,7 +89,7 @@ class RoutingFactory {
     try {
       debugPrint(
         'RoutingFactory: Creating routing for algorithm ${metadata.algorithmGuid} '
-        'with type ${metadata.routingType}'
+        'with type ${metadata.routingType}',
       );
 
       // Use provided validator, factory default, or null (routing will create its own)
@@ -119,10 +114,10 @@ class RoutingFactory {
       }
     } catch (e, stackTrace) {
       debugPrint(
-        'RoutingFactory: Error creating routing for ${metadata.algorithmGuid}: $e'
+        'RoutingFactory: Error creating routing for ${metadata.algorithmGuid}: $e',
       );
       debugPrint('Stack trace: $stackTrace');
-      
+
       throw RoutingFactoryException(
         'Failed to create routing instance',
         metadata,
@@ -140,7 +135,7 @@ class RoutingFactory {
     PortCompatibilityValidator? validator,
   ) {
     debugPrint(
-      'RoutingFactory: Creating polyphonic routing with ${metadata.voiceCount} voices'
+      'RoutingFactory: Creating polyphonic routing with ${metadata.voiceCount} voices',
     );
 
     final config = PolyAlgorithmConfig(
@@ -152,14 +147,12 @@ class RoutingFactory {
       algorithmProperties: {
         ...metadata.customProperties,
         'algorithmGuid': metadata.algorithmGuid,
-        if (metadata.algorithmName != null) 'algorithmName': metadata.algorithmName!,
+        if (metadata.algorithmName != null)
+          'algorithmName': metadata.algorithmName!,
       },
     );
 
-    return PolyAlgorithmRouting(
-      config: config,
-      validator: validator,
-    );
+    return PolyAlgorithmRouting(config: config, validator: validator);
   }
 
   /// Creates a MultiChannelAlgorithmRouting instance for multi-channel algorithms.
@@ -171,7 +164,7 @@ class RoutingFactory {
     PortCompatibilityValidator? validator,
   ) {
     debugPrint(
-      'RoutingFactory: Creating multi-channel routing with ${metadata.channelCount} channels'
+      'RoutingFactory: Creating multi-channel routing with ${metadata.channelCount} channels',
     );
 
     // Convert string port types to PortType enum
@@ -187,14 +180,12 @@ class RoutingFactory {
       algorithmProperties: {
         ...metadata.customProperties,
         'algorithmGuid': metadata.algorithmGuid,
-        if (metadata.algorithmName != null) 'algorithmName': metadata.algorithmName!,
+        if (metadata.algorithmName != null)
+          'algorithmName': metadata.algorithmName!,
       },
     );
 
-    return MultiChannelAlgorithmRouting(
-      config: config,
-      validator: validator,
-    );
+    return MultiChannelAlgorithmRouting(config: config, validator: validator);
   }
 
   /// Converts string port type names to PortType enums.
@@ -209,20 +200,18 @@ class RoutingFactory {
     }
 
     final supportedTypes = <PortType>[];
-    
+
     for (final typeName in portTypeNames) {
       final portType = _parsePortType(typeName);
       if (portType != null) {
         supportedTypes.add(portType);
       } else {
-        debugPrint(
-          'RoutingFactory: Unknown port type "$typeName", skipping'
-        );
+        debugPrint('RoutingFactory: Unknown port type "$typeName", skipping');
       }
     }
 
-    return supportedTypes.isNotEmpty 
-        ? supportedTypes 
+    return supportedTypes.isNotEmpty
+        ? supportedTypes
         : [PortType.audio, PortType.cv]; // fallback
   }
 
@@ -275,7 +264,7 @@ class RoutingFactory {
   bool _validatePolyphonicMetadata(AlgorithmRoutingMetadata metadata) {
     if (metadata.voiceCount <= 0) {
       debugPrint(
-        'RoutingFactory: Voice count must be positive, got ${metadata.voiceCount}'
+        'RoutingFactory: Voice count must be positive, got ${metadata.voiceCount}',
       );
       return false;
     }
@@ -283,7 +272,7 @@ class RoutingFactory {
     if (metadata.virtualCvPortsPerVoice < 0) {
       debugPrint(
         'RoutingFactory: Virtual CV ports per voice cannot be negative, '
-        'got ${metadata.virtualCvPortsPerVoice}'
+        'got ${metadata.virtualCvPortsPerVoice}',
       );
       return false;
     }
@@ -295,7 +284,7 @@ class RoutingFactory {
   bool _validateMultiChannelMetadata(AlgorithmRoutingMetadata metadata) {
     if (metadata.channelCount <= 0) {
       debugPrint(
-        'RoutingFactory: Channel count must be positive, got ${metadata.channelCount}'
+        'RoutingFactory: Channel count must be positive, got ${metadata.channelCount}',
       );
       return false;
     }
@@ -332,31 +321,29 @@ class RoutingFactory {
     // Check for potentially excessive voice/channel counts
     if (metadata.isPolyphonic && metadata.voiceCount > 16) {
       suggestions.add(
-        'High voice count (${metadata.voiceCount}) may impact performance'
+        'High voice count (${metadata.voiceCount}) may impact performance',
       );
     }
 
     if (metadata.isMultiChannel && metadata.channelCount > 32) {
       suggestions.add(
-        'High channel count (${metadata.channelCount}) may impact performance'
+        'High channel count (${metadata.channelCount}) may impact performance',
       );
     }
 
     // Check for unused features
-    if (metadata.isPolyphonic && 
-        metadata.usesVirtualCvPorts && 
+    if (metadata.isPolyphonic &&
+        metadata.usesVirtualCvPorts &&
         metadata.virtualCvPortsPerVoice == 0) {
-      suggestions.add(
-        'Virtual CV ports are enabled but count per voice is 0'
-      );
+      suggestions.add('Virtual CV ports are enabled but count per voice is 0');
     }
 
     // Check for potential stereo configuration issues
-    if (metadata.isMultiChannel && 
-        metadata.supportsStereo && 
+    if (metadata.isMultiChannel &&
+        metadata.supportsStereo &&
         metadata.channelCount % 2 != 0) {
       suggestions.add(
-        'Stereo support is enabled but channel count (${metadata.channelCount}) is odd'
+        'Stereo support is enabled but channel count (${metadata.channelCount}) is odd',
       );
     }
 

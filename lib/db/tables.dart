@@ -162,9 +162,7 @@ class PackedMappingDataConverter
   @override
   PackedMappingData fromSql(Uint8List fromDb) {
     if (fromDb.isEmpty) {
-      debugPrint(
-        "PackedMappingDataConverter.fromSql: Empty returning filler",
-      );
+      debugPrint("PackedMappingDataConverter.fromSql: Empty returning filler");
       return PackedMappingData.filler();
     }
 

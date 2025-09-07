@@ -9,11 +9,11 @@ import 'poly_algorithm_routing.dart';
 import 'multi_channel_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
-/// 
+///
 /// This class defines the core interface that all routing algorithms must implement.
 /// It provides a standardized way to generate ports, validate connections, and manage
 /// routing state while allowing concrete implementations to define their own logic.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// class MyRoutingAlgorithm extends AlgorithmRouting {
@@ -21,12 +21,12 @@ import 'multi_channel_algorithm_routing.dart';
 ///   List<Port> generateInputPorts() {
 ///     return [Port(id: 'input1', name: 'Audio In', type: PortType.audio)];
 ///   }
-///   
+///
 ///   @override
 ///   List<Port> generateOutputPorts() {
 ///     return [Port(id: 'output1', name: 'Audio Out', type: PortType.audio)];
 ///   }
-///   
+///
 ///   @override
 ///   bool validateConnection(Port source, Port destination) {
 ///     return source.type == destination.type;
@@ -36,36 +36,38 @@ import 'multi_channel_algorithm_routing.dart';
 abstract class AlgorithmRouting {
   /// The port compatibility validator for this algorithm
   late final PortCompatibilityValidator _validator;
-  
+
   /// Mode parameters with their numbers for output mode switching
   Map<String, ({int parameterNumber, int value})>? _modeParametersWithNumbers;
-  
+
   /// Creates a new AlgorithmRouting instance
   AlgorithmRouting({PortCompatibilityValidator? validator}) {
     _validator = validator ?? PortCompatibilityValidator();
   }
-  
+
   /// The current routing state
   RoutingState get state;
-  
+
   /// List of input ports available for this routing algorithm
   List<Port> get inputPorts;
-  
-  /// List of output ports available for this routing algorithm  
+
+  /// List of output ports available for this routing algorithm
   List<Port> get outputPorts;
-  
+
   /// List of active connections between ports
   List<Connection> get connections;
-  
+
   /// The port compatibility validator
   PortCompatibilityValidator get validator => _validator;
-  
+
   /// Sets the mode parameters for this routing algorithm
   @protected
-  void setModeParameters(Map<String, ({int parameterNumber, int value})> modeParameters) {
+  void setModeParameters(
+    Map<String, ({int parameterNumber, int value})> modeParameters,
+  ) {
     _modeParametersWithNumbers = modeParameters;
   }
-  
+
   /// Gets the mode parameter number for the given output parameter name
   /// If the output parameter is named "Blah", looks for "Blah mode"
   @protected
@@ -73,38 +75,38 @@ abstract class AlgorithmRouting {
     final modeParameterName = '$outputParameterName mode';
     return _modeParametersWithNumbers?[modeParameterName]?.parameterNumber;
   }
-  
+
   /// Generates the list of input ports for this algorithm.
-  /// 
+  ///
   /// This method should be implemented by concrete classes to define
   /// what input ports are available for the routing algorithm.
-  /// 
+  ///
   /// Returns a list of [Port] objects representing input ports.
   @protected
   List<Port> generateInputPorts();
-  
+
   /// Generates the list of output ports for this algorithm.
-  /// 
+  ///
   /// This method should be implemented by concrete classes to define
   /// what output ports are available for the routing algorithm.
-  /// 
+  ///
   /// Returns a list of [Port] objects representing output ports.
   @protected
   List<Port> generateOutputPorts();
-  
+
   /// Validates whether a connection between two ports is valid.
-  /// 
+  ///
   /// This method checks if a connection can be made between the [source]
   /// port and the [destination] port based on their types, directions,
   /// and any other algorithm-specific constraints.
-  /// 
+  ///
   /// The default implementation uses the port compatibility validator,
   /// but concrete classes can override this for custom validation logic.
-  /// 
+  ///
   /// Parameters:
   /// - [source]: The port where the connection originates
   /// - [destination]: The port where the connection terminates
-  /// 
+  ///
   /// Returns `true` if the connection is valid, `false` otherwise.
   bool validateConnection(Port source, Port destination) {
     final result = _validator.validateConnection(
@@ -114,16 +116,16 @@ abstract class AlgorithmRouting {
     );
     return result.isValid;
   }
-  
+
   /// Validates a connection with detailed results.
-  /// 
+  ///
   /// This method provides detailed validation results including errors
   /// and warnings, which can be useful for providing user feedback.
-  /// 
+  ///
   /// Parameters:
   /// - [source]: The port where the connection originates
   /// - [destination]: The port where the connection terminates
-  /// 
+  ///
   /// Returns a [ValidationResult] with detailed validation information.
   ValidationResult validateConnectionDetailed(Port source, Port destination) {
     return _validator.validateConnection(
@@ -132,55 +134,53 @@ abstract class AlgorithmRouting {
       existingConnections: connections,
     );
   }
-  
+
   /// Updates the routing state with a new state.
-  /// 
+  ///
   /// This method allows updating the internal routing state and should
   /// trigger any necessary state change notifications.
-  /// 
+  ///
   /// Parameters:
   /// - [newState]: The new routing state to apply
   void updateState(RoutingState newState);
-  
+
   /// Adds a connection between two ports if the connection is valid.
-  /// 
+  ///
   /// This method validates the connection using [validateConnection] and
   /// adds it to the list of active connections if valid.
-  /// 
+  ///
   /// Parameters:
   /// - [source]: The source port for the connection
   /// - [destination]: The destination port for the connection
-  /// 
+  ///
   /// Returns the created [Connection] if successful, null if invalid.
   Connection? addConnection(Port source, Port destination) {
     if (!validateConnection(source, destination)) {
       debugPrint(
-        'AlgorithmRouting: Invalid connection attempt from ${source.id} to ${destination.id}'
+        'AlgorithmRouting: Invalid connection attempt from ${source.id} to ${destination.id}',
       );
       return null;
     }
-    
+
     final connection = Connection(
       id: '${source.id}_${destination.id}',
       sourcePortId: source.id,
       destinationPortId: destination.id,
       connectionType: ConnectionType.algorithmToAlgorithm,
     );
-    
-    debugPrint(
-      'AlgorithmRouting: Created connection ${connection.id}'
-    );
-    
+
+    debugPrint('AlgorithmRouting: Created connection ${connection.id}');
+
     return connection;
   }
-  
+
   /// Removes a connection by its ID.
-  /// 
+  ///
   /// This method removes an active connection from the routing system.
-  /// 
+  ///
   /// Parameters:
   /// - [connectionId]: The ID of the connection to remove
-  /// 
+  ///
   /// Returns `true` if the connection was found and removed, `false` otherwise.
   bool removeConnection(String connectionId) {
     final removed = connections.any((conn) => conn.id == connectionId);
@@ -191,15 +191,15 @@ abstract class AlgorithmRouting {
     }
     return removed;
   }
-  
+
   /// Finds a port by its ID in both input and output ports.
-  /// 
+  ///
   /// This utility method searches through all available ports to find
   /// one with the specified ID.
-  /// 
+  ///
   /// Parameters:
   /// - [portId]: The ID of the port to find
-  /// 
+  ///
   /// Returns the [Port] if found, null otherwise.
   Port? findPortById(String portId) {
     // Search in input ports
@@ -208,76 +208,76 @@ abstract class AlgorithmRouting {
         return port;
       }
     }
-    
+
     // Search in output ports
     for (final port in outputPorts) {
       if (port.id == portId) {
         return port;
       }
     }
-    
+
     return null;
   }
-  
+
   /// Validates the entire routing configuration.
-  /// 
+  ///
   /// This method performs a comprehensive validation of the current
   /// routing state, checking all connections for validity and consistency.
-  /// 
+  ///
   /// Returns `true` if the routing configuration is valid, `false` otherwise.
   bool validateRouting() {
     for (final connection in connections) {
       final source = findPortById(connection.sourcePortId);
       final destination = findPortById(connection.destinationPortId);
-      
+
       if (source == null || destination == null) {
         debugPrint(
-          'AlgorithmRouting: Invalid connection ${connection.id} - missing ports'
+          'AlgorithmRouting: Invalid connection ${connection.id} - missing ports',
         );
         return false;
       }
-      
+
       if (!validateConnection(source, destination)) {
         debugPrint(
-          'AlgorithmRouting: Invalid connection ${connection.id} - validation failed'
+          'AlgorithmRouting: Invalid connection ${connection.id} - validation failed',
         );
         return false;
       }
     }
-    
+
     return true;
   }
-  
+
   /// Disposes of any resources used by the routing algorithm.
-  /// 
+  ///
   /// Concrete implementations should override this method to clean up
   /// any resources, listeners, or subscriptions they may have created.
   @mustCallSuper
   void dispose() {
     debugPrint('AlgorithmRouting: Disposing routing algorithm');
   }
-  
+
   /// Factory method to create the appropriate AlgorithmRouting from a Slot.
-  /// 
+  ///
   /// This method asks each concrete implementation if it can handle the slot,
   /// then delegates creation to the appropriate subclass.
-  /// 
+  ///
   /// Parameters:
   /// - [slot]: The slot containing algorithm and parameter information
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
-  /// 
+  ///
   /// Returns an appropriate AlgorithmRouting implementation
   static AlgorithmRouting fromSlot(Slot slot, {String? algorithmUuid}) {
     // Extract both routing and mode parameters once for all implementations
     final ioParameters = extractIOParameters(slot);
     final modeParameters = extractModeParameters(slot);
     final modeParametersWithNumbers = extractModeParametersWithNumbers(slot);
-    
+
     // Ask each implementation if it can handle this slot
     AlgorithmRouting instance;
     if (PolyAlgorithmRouting.canHandle(slot)) {
       instance = PolyAlgorithmRouting.createFromSlot(
-        slot, 
+        slot,
         ioParameters: ioParameters,
         modeParameters: modeParameters,
         modeParametersWithNumbers: modeParametersWithNumbers,
@@ -293,46 +293,49 @@ abstract class AlgorithmRouting {
         algorithmUuid: algorithmUuid,
       );
     }
-    
+
     // Set the mode parameters in the base class
     instance.setModeParameters(modeParametersWithNumbers);
-    
+
     return instance;
   }
-  
+
   /// Helper method to extract routing-related parameters from a slot.
-  /// 
+  ///
   /// Identifies parameters that represent bus assignments for routing.
   /// These are parameters with:
   /// - unit == 1 (enum type)
   /// - min is 0 or 1
   /// - max is 27 or 28
-  /// 
+  ///
   /// Parameters:
   /// - [slot]: The slot to analyze
-  /// 
+  ///
   /// Returns a map of parameter names to their bus values
   static Map<String, int> extractIOParameters(Slot slot) {
     // Special case: Notes algorithm (guid: 'note') has no I/O capabilities
     // Even if it has parameters that look like bus parameters,
     // they're not for routing audio/CV signals
     if (slot.algorithm.guid == 'note') {
-      debugPrint('Notes algorithm detected (guid: note) - returning empty I/O parameters (no routing capability)');
+      debugPrint(
+        'Notes algorithm detected (guid: note) - returning empty I/O parameters (no routing capability)',
+      );
       return {};
     }
-    
+
     final ioParameters = <String, int>{};
-    
+
     final valueByParam = <int, int>{
       for (final v in slot.values) v.parameterNumber: v.value,
     };
-    
+
     for (final param in slot.parameters) {
       // Bus parameters are identified by:
       // - unit == 1 (enum type)
       // - min is 0 or 1
       // - max is 27 or 28
-      final isBusParameter = param.unit == 1 && 
+      final isBusParameter =
+          param.unit == 1 &&
           (param.min == 0 || param.min == 1) &&
           (param.max == 27 || param.max == 28);
 
@@ -343,44 +346,45 @@ abstract class AlgorithmRouting {
         ioParameters[param.name] = value;
       }
     }
-    
+
     return ioParameters;
   }
-  
+
   /// Helper method to extract mode-related parameters from a slot.
-  /// 
+  ///
   /// Identifies parameters that control output modes (Add/Replace).
   /// Mode parameters are identified by:
   /// - Parameter name ending with 'mode' (case-insensitive)
   /// - unit == 1 (enum type)
   /// - enumValues containing 'Add' and 'Replace'
-  /// 
+  ///
   /// This method follows the same pattern as extractIOParameters but
   /// specifically targets mode control parameters for output ports.
-  /// 
+  ///
   /// Parameters:
   /// - [slot]: The slot to analyze
-  /// 
+  ///
   /// Returns a map of parameter names to their mode values (0=Add, 1=Replace)
   static Map<String, int> extractModeParameters(Slot slot) {
     final modeParameters = <String, int>{};
-    
+
     final valueByParam = <int, int>{
       for (final v in slot.values) v.parameterNumber: v.value,
     };
-    
+
     // Build enum lookup map
     final enumsByParam = <int, List<String>>{
       for (final e in slot.enums) e.parameterNumber: e.values,
     };
-    
+
     for (final param in slot.parameters) {
       // Mode parameters are identified by:
       // - name ending with 'mode' (case-insensitive)
       // - unit == 1 (enum type)
       // - enum values containing 'Add' and 'Replace'
       final enumValues = enumsByParam[param.parameterNumber];
-      final isModeParameter = param.name.toLowerCase().endsWith('mode') &&
+      final isModeParameter =
+          param.name.toLowerCase().endsWith('mode') &&
           param.unit == 1 &&
           enumValues != null &&
           enumValues.length >= 2 &&
@@ -392,37 +396,41 @@ abstract class AlgorithmRouting {
         modeParameters[param.name] = value;
       }
     }
-    
+
     return modeParameters;
   }
-  
+
   /// Extract mode parameters with both their values and parameter numbers.
-  /// 
+  ///
   /// Parameters:
   /// - [slot]: The slot to analyze
-  /// 
+  ///
   /// Returns a map of parameter names to (parameterNumber, value) records
-  static Map<String, ({int parameterNumber, int value})> extractModeParametersWithNumbers(Slot slot) {
+  static Map<String, ({int parameterNumber, int value})>
+  extractModeParametersWithNumbers(Slot slot) {
     final modeParameters = <String, ({int parameterNumber, int value})>{};
-    
+
     final valueByParam = <int, int>{
       for (final v in slot.values) v.parameterNumber: v.value,
     };
-    
+
     // Build enum lookup map
     final enumsByParam = <int, List<String>>{
       for (final e in slot.enums) e.parameterNumber: e.values,
     };
-    
-    debugPrint('AlgorithmRouting: Scanning ${slot.parameters.length} parameters for mode parameters');
-    
+
+    debugPrint(
+      'AlgorithmRouting: Scanning ${slot.parameters.length} parameters for mode parameters',
+    );
+
     for (final param in slot.parameters) {
       // Mode parameters are identified by:
       // - name ending with 'mode' (case-insensitive)
       // - unit == 1 (enum type)
       // - enum values containing 'Add' and 'Replace'
       final enumValues = enumsByParam[param.parameterNumber];
-      final isModeParameter = param.name.toLowerCase().endsWith('mode') &&
+      final isModeParameter =
+          param.name.toLowerCase().endsWith('mode') &&
           param.unit == 1 &&
           enumValues != null &&
           enumValues.length >= 2 &&
@@ -430,26 +438,35 @@ abstract class AlgorithmRouting {
           enumValues.contains('Replace');
 
       if (param.name.toLowerCase().contains('output')) {
-        debugPrint('AlgorithmRouting: Checking output parameter ${param.name}: unit=${param.unit}, enums=$enumValues, isModeParam=$isModeParameter');
+        debugPrint(
+          'AlgorithmRouting: Checking output parameter ${param.name}: unit=${param.unit}, enums=$enumValues, isModeParam=$isModeParameter',
+        );
       }
 
       if (isModeParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
-        modeParameters[param.name] = (parameterNumber: param.parameterNumber, value: value);
-        debugPrint('AlgorithmRouting: Found mode parameter: ${param.name} -> paramNum=${param.parameterNumber}, value=$value');
+        modeParameters[param.name] = (
+          parameterNumber: param.parameterNumber,
+          value: value,
+        );
+        debugPrint(
+          'AlgorithmRouting: Found mode parameter: ${param.name} -> paramNum=${param.parameterNumber}, value=$value',
+        );
       }
     }
-    
-    debugPrint('AlgorithmRouting: Found ${modeParameters.length} mode parameters: ${modeParameters.keys}');
+
+    debugPrint(
+      'AlgorithmRouting: Found ${modeParameters.length} mode parameters: ${modeParameters.keys}',
+    );
     return modeParameters;
   }
-  
+
   /// Helper method to get parameter value from a slot.
-  /// 
+  ///
   /// Parameters:
   /// - [slot]: The slot to extract value from
   /// - [parameterName]: Name of the parameter to find
-  /// 
+  ///
   /// Returns the parameter value or default value if not set
   @protected
   static int getParameterValue(Slot slot, String parameterName) {
@@ -457,22 +474,22 @@ abstract class AlgorithmRouting {
       (p) => p.name == parameterName,
       orElse: () => ParameterInfo.filler(),
     );
-    
+
     if (param.parameterNumber < 0) return 0;
-    
+
     final valueByParam = <int, int>{
       for (final v in slot.values) v.parameterNumber: v.value,
     };
-    
+
     return valueByParam[param.parameterNumber] ?? param.defaultValue;
   }
-  
+
   /// Helper method to check if a parameter exists in a slot.
-  /// 
+  ///
   /// Parameters:
   /// - [slot]: The slot to check
   /// - [parameterName]: Name of the parameter to find
-  /// 
+  ///
   /// Returns true if the parameter exists
   @protected
   static bool hasParameter(Slot slot, String parameterName) {

@@ -7,7 +7,7 @@ import 'package:nt_helper/core/routing/models/algorithm_routing_metadata.dart';
 import 'package:nt_helper/services/haptic_feedback_service.dart';
 
 /// Service locator configuration for routing-related dependencies.
-/// 
+///
 /// This class provides a centralized way to register and configure routing
 /// dependencies with the get_it service locator. It follows best practices
 /// for dependency injection and provides a clean API for setting up routing
@@ -17,20 +17,20 @@ import 'package:nt_helper/services/haptic_feedback_service.dart';
 /// ```dart
 /// // Setup during app initialization
 /// await RoutingServiceLocator.setup();
-/// 
+///
 /// // Use in your code
 /// final factory = RoutingServiceLocator.routingFactory;
 /// final routing = factory.createRouting(metadata);
-/// 
+///
 /// // Or get a routing instance directly
 /// final routing = RoutingServiceLocator.getRouting(metadata);
-/// 
+///
 /// // Clean up when shutting down
 /// await RoutingServiceLocator.reset();
 /// ```
 class RoutingServiceLocator {
   static final GetIt _getIt = GetIt.instance;
-  
+
   /// Whether the service locator has been set up
   static bool get isSetup => _getIt.isRegistered<RoutingFactory>();
 
@@ -38,25 +38,27 @@ class RoutingServiceLocator {
   static RoutingFactory get routingFactory => _getIt<RoutingFactory>();
 
   /// Gets the PortCompatibilityValidator instance from the service locator
-  static PortCompatibilityValidator get portValidator => _getIt<PortCompatibilityValidator>();
+  static PortCompatibilityValidator get portValidator =>
+      _getIt<PortCompatibilityValidator>();
 
   /// Gets the HapticFeedbackService instance from the service locator
-  static IHapticFeedbackService get hapticFeedbackService => _getIt<IHapticFeedbackService>();
+  static IHapticFeedbackService get hapticFeedbackService =>
+      _getIt<IHapticFeedbackService>();
 
   /// Sets up all routing-related dependencies in the service locator.
-  /// 
+  ///
   /// This method should be called during app initialization, before any
   /// routing functionality is used. It registers:
   /// - PortCompatibilityValidator as a singleton
   /// - RoutingFactory as a singleton (using the validator)
   /// - HapticFeedbackService as a singleton
-  /// 
+  ///
   /// Parameters:
   /// - [customValidator]: Optional custom port compatibility validator.
   ///   If not provided, a default validator will be used.
   /// - [customFactory]: Optional custom routing factory. If not provided,
   ///   a default factory will be created using the validator.
-  /// 
+  ///
   /// Throws: [StateError] if setup is called when already initialized
   static Future<void> setup({
     PortCompatibilityValidator? customValidator,
@@ -64,7 +66,7 @@ class RoutingServiceLocator {
   }) async {
     if (isSetup) {
       throw StateError(
-        'RoutingServiceLocator is already set up. Call reset() first if you need to reconfigure.'
+        'RoutingServiceLocator is already set up. Call reset() first if you need to reconfigure.',
       );
     }
 
@@ -89,17 +91,17 @@ class RoutingServiceLocator {
   }
 
   /// Convenience method to get a routing instance directly.
-  /// 
+  ///
   /// This method combines getting the factory and creating a routing instance
   /// in one call, providing a simpler API for consumers who just need a
   /// routing instance.
-  /// 
+  ///
   /// Parameters:
   /// - [metadata]: The algorithm routing metadata
   /// - [validator]: Optional validator to override the factory's default
-  /// 
+  ///
   /// Returns: An [AlgorithmRouting] instance configured according to the metadata
-  /// 
+  ///
   /// Throws: [StateError] if the service locator hasn't been set up
   static AlgorithmRouting getRouting(
     AlgorithmRoutingMetadata metadata, {
@@ -110,17 +112,17 @@ class RoutingServiceLocator {
   }
 
   /// Convenience method to get a validated routing instance directly.
-  /// 
+  ///
   /// This method performs metadata validation before creating the routing
   /// instance, providing additional safety.
-  /// 
+  ///
   /// Parameters:
   /// - [metadata]: The algorithm routing metadata
   /// - [validator]: Optional validator to override the factory's default
-  /// 
+  ///
   /// Returns: An [AlgorithmRouting] instance configured according to the metadata
-  /// 
-  /// Throws: 
+  ///
+  /// Throws:
   /// - [StateError] if the service locator hasn't been set up
   /// - [RoutingFactoryException] if the metadata is invalid
   static AlgorithmRouting getValidatedRouting(
@@ -128,19 +130,22 @@ class RoutingServiceLocator {
     PortCompatibilityValidator? validator,
   }) {
     _ensureSetup();
-    return routingFactory.createValidatedRouting(metadata, validator: validator);
+    return routingFactory.createValidatedRouting(
+      metadata,
+      validator: validator,
+    );
   }
 
   /// Analyzes metadata using the registered factory.
-  /// 
+  ///
   /// This provides access to the factory's metadata analysis capabilities
   /// through the service locator.
-  /// 
+  ///
   /// Parameters:
   /// - [metadata]: The algorithm routing metadata to analyze
-  /// 
+  ///
   /// Returns: A list of suggestions and potential issues
-  /// 
+  ///
   /// Throws: [StateError] if the service locator hasn't been set up
   static List<String> analyzeMetadata(AlgorithmRoutingMetadata metadata) {
     _ensureSetup();
@@ -148,12 +153,12 @@ class RoutingServiceLocator {
   }
 
   /// Validates metadata using the registered factory.
-  /// 
+  ///
   /// Parameters:
   /// - [metadata]: The algorithm routing metadata to validate
-  /// 
+  ///
   /// Returns: true if the metadata is valid, false otherwise
-  /// 
+  ///
   /// Throws: [StateError] if the service locator hasn't been set up
   static bool validateMetadata(AlgorithmRoutingMetadata metadata) {
     _ensureSetup();
@@ -161,11 +166,11 @@ class RoutingServiceLocator {
   }
 
   /// Resets the service locator, removing all routing-related registrations.
-  /// 
+  ///
   /// This method should be called during app shutdown or when you need to
   /// reconfigure the routing dependencies. After calling this method,
   /// [setup] must be called again before using any routing functionality.
-  /// 
+  ///
   /// This method is safe to call even if the service locator hasn't been
   /// set up or has already been reset.
   static Future<void> reset() async {
@@ -184,7 +189,9 @@ class RoutingServiceLocator {
 
     if (_getIt.isRegistered<PortCompatibilityValidator>()) {
       await _getIt.unregister<PortCompatibilityValidator>();
-      debugPrint('RoutingServiceLocator: Unregistered PortCompatibilityValidator');
+      debugPrint(
+        'RoutingServiceLocator: Unregistered PortCompatibilityValidator',
+      );
     }
 
     debugPrint('RoutingServiceLocator: Reset complete');
@@ -194,22 +201,22 @@ class RoutingServiceLocator {
   static void _ensureSetup() {
     if (!isSetup) {
       throw StateError(
-        'RoutingServiceLocator has not been set up. Call RoutingServiceLocator.setup() first.'
+        'RoutingServiceLocator has not been set up. Call RoutingServiceLocator.setup() first.',
       );
     }
   }
 
   /// Advanced registration method for custom scenarios.
-  /// 
+  ///
   /// This method provides more control over the registration process and
   /// allows for custom registration patterns. Use this if you need to
   /// register dependencies with custom lifecycle management or if you
   /// need to integrate with existing DI setup.
-  /// 
+  ///
   /// Parameters:
   /// - [registerValidator]: Function to register the validator
   /// - [registerFactory]: Function to register the factory
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// await RoutingServiceLocator.setupAdvanced(
@@ -233,14 +240,18 @@ class RoutingServiceLocator {
   }) async {
     if (isSetup) {
       throw StateError(
-        'RoutingServiceLocator is already set up. Call reset() first if you need to reconfigure.'
+        'RoutingServiceLocator is already set up. Call reset() first if you need to reconfigure.',
       );
     }
 
-    debugPrint('RoutingServiceLocator: Setting up routing dependencies (advanced)');
+    debugPrint(
+      'RoutingServiceLocator: Setting up routing dependencies (advanced)',
+    );
 
     registerValidator(_getIt);
-    debugPrint('RoutingServiceLocator: Custom PortCompatibilityValidator registered');
+    debugPrint(
+      'RoutingServiceLocator: Custom PortCompatibilityValidator registered',
+    );
 
     registerFactory(_getIt);
     debugPrint('RoutingServiceLocator: Custom RoutingFactory registered');
@@ -249,17 +260,18 @@ class RoutingServiceLocator {
   }
 
   /// Gets diagnostic information about the current registration state.
-  /// 
+  ///
   /// This method is useful for debugging and monitoring the service locator
   /// state during development.
-  /// 
+  ///
   /// Returns: A map containing registration status and dependency information
   static Map<String, dynamic> getDiagnostics() {
     return {
       'isSetup': isSetup,
       'validatorRegistered': _getIt.isRegistered<PortCompatibilityValidator>(),
       'factoryRegistered': _getIt.isRegistered<RoutingFactory>(),
-      'totalRegistrations': 'N/A', // GetIt doesn't provide a direct count method
+      'totalRegistrations':
+          'N/A', // GetIt doesn't provide a direct count method
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
@@ -268,16 +280,16 @@ class RoutingServiceLocator {
 /// Extension methods for easier integration with existing get_it setups
 extension GetItRoutingExtensions on GetIt {
   /// Registers routing dependencies using the standard pattern.
-  /// 
+  ///
   /// This extension method allows you to register routing dependencies
   /// directly on your existing GetIt instance if you prefer not to use
   /// the RoutingServiceLocator wrapper.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// final getIt = GetIt.instance;
   /// getIt.registerRoutingDependencies();
-  /// 
+  ///
   /// // Later, use the dependencies
   /// final factory = getIt<RoutingFactory>();
   /// final routing = factory.createRouting(metadata);
@@ -296,14 +308,14 @@ extension GetItRoutingExtensions on GetIt {
   }
 
   /// Unregisters routing dependencies.
-  /// 
+  ///
   /// This extension method provides a convenient way to clean up routing
   /// dependencies from your GetIt instance.
   Future<void> unregisterRoutingDependencies() async {
     if (isRegistered<RoutingFactory>()) {
       await unregister<RoutingFactory>();
     }
-    
+
     if (isRegistered<PortCompatibilityValidator>()) {
       await unregister<PortCompatibilityValidator>();
     }

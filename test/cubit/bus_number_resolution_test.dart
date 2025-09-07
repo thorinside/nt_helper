@@ -68,8 +68,11 @@ void main() {
       test('should identify invalid bus numbers', () {
         const invalidBuses = [-1, 0, 21, 22, 25, 28, 50];
         for (final bus in invalidBuses) {
-          expect(bus < 1 || bus > 20, true, 
-              reason: 'Bus $bus should be invalid (outside 1-20 range)');
+          expect(
+            bus < 1 || bus > 20,
+            true,
+            reason: 'Bus $bus should be invalid (outside 1-20 range)',
+          );
         }
       });
     });
@@ -166,7 +169,7 @@ void main() {
       test('should document missing parameter handling', () {
         // When busParam points to a parameter that doesn't exist in the slot
         // Should return null and fall back to Strategy 2 if applicable
-        
+
         const port = core_port.Port(
           id: 'missing_param',
           name: 'Missing Param Port',
@@ -216,7 +219,7 @@ void main() {
 
         // We can't directly test private methods, but we can validate
         // the expected inputs and outputs through documentation
-        
+
         expect(1, isA<int?>()); // Valid bus number type
         expect(null, isA<int?>()); // Null return for no assignment
         expect('busParam', isA<String>()); // Metadata key type

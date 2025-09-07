@@ -724,7 +724,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Remove algorithm from slot. WARNING: Subsequent algorithms shift down.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-          'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -741,19 +744,22 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Set parameter value. Use parameter_number from get_current_preset OR parameter_name.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'parameter_number': {
-          'type': 'integer',
-          'description': 'From get_current_preset',
-        },
-        'parameter_name': {
-          'type': 'string',
-          'description': 'Parameter name (must be unique)',
-        },
-        'value': {
-          'type': 'number',
-          'description': 'Value within parameter min/max',
-        },
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'parameter_number': {
+            'type': 'integer',
+            'description': 'From get_current_preset',
+          },
+          'parameter_name': {
+            'type': 'string',
+            'description': 'Parameter name (must be unique)',
+          },
+          'value': {
+            'type': 'number',
+            'description': 'Value within parameter min/max',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -770,11 +776,14 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Get parameter value. Use parameter_number from get_current_preset.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'parameter_number': {
-          'type': 'integer',
-          'description': 'From get_current_preset',
-        },
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'parameter_number': {
+            'type': 'integer',
+            'description': 'From get_current_preset',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -790,15 +799,18 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'Get available enum values for an enum parameter',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'parameter_number': {
-          'type': 'integer',
-          'description': 'Parameter number (0-based)',
-        },
-        'parameter_name': {
-          'type': 'string',
-          'description': 'Parameter name (alternative to number)',
-        },
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'parameter_number': {
+            'type': 'integer',
+            'description': 'Parameter number (0-based)',
+          },
+          'parameter_name': {
+            'type': 'string',
+            'description': 'Parameter name (alternative to number)',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -822,7 +834,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'Set preset name. Use save_preset to persist.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'name': {'type': 'string', 'description': 'Preset name'},
+          'name': {'type': 'string', 'description': 'Preset name'},
         },
       ),
       callback: ({args, extra}) async {
@@ -838,8 +850,11 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'Set custom slot name. Use save_preset to persist.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'name': {'type': 'string', 'description': 'Custom slot name'},
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'name': {'type': 'string', 'description': 'Custom slot name'},
         },
       ),
       callback: ({args, extra}) async {
@@ -892,7 +907,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
       description: 'Get custom slot name for specified slot.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-          'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -911,7 +929,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Move algorithm up one slot. Algorithms evaluate top to bottom.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-          'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -928,7 +949,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Move algorithm down one slot. Algorithms evaluate top to bottom.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-          'slot_index': {'type': 'integer', 'description': '0-based slot index'},
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -945,16 +969,19 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Move algorithm in specified direction with optional step count. More flexible than individual up/down tools.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'direction': {
-          'type': 'string',
-          'description': 'Direction to move: "up" or "down"',
-        },
-        'steps': {
-          'type': 'integer',
-          'description': 'Number of steps to move (default: 1)',
-          'default': 1,
-        },
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'direction': {
+            'type': 'string',
+            'description': 'Direction to move: "up" or "down"',
+          },
+          'steps': {
+            'type': 'integer',
+            'description': 'Number of steps to move (default: 1)',
+            'default': 1,
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -973,25 +1000,28 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Set multiple parameters in one operation. More efficient than individual calls.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'parameters': {
-          'type': 'array',
-          'description': 'Array of parameter objects',
-          'items': {
-            'type': 'object',
-            'properties': {
-              'parameter_number': {
-                'type': 'integer',
-                'description': 'Parameter number (0-based)',
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'parameters': {
+            'type': 'array',
+            'description': 'Array of parameter objects',
+            'items': {
+              'type': 'object',
+              'properties': {
+                'parameter_number': {
+                  'type': 'integer',
+                  'description': 'Parameter number (0-based)',
+                },
+                'parameter_name': {
+                  'type': 'string',
+                  'description': 'Parameter name (alternative to number)',
+                },
+                'value': {'type': 'number', 'description': 'Parameter value'},
               },
-              'parameter_name': {
-                'type': 'string',
-                'description': 'Parameter name (alternative to number)',
-              },
-              'value': {'type': 'number', 'description': 'Parameter value'},
             },
           },
-        },
         },
       ),
       callback: ({args, extra}) async {
@@ -1008,12 +1038,15 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Get multiple parameter values in one operation. More efficient than individual calls.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'slot_index': {'type': 'integer', 'description': '0-based slot index'},
-        'parameter_numbers': {
-          'type': 'array',
-          'description': 'Array of parameter numbers to retrieve',
-          'items': {'type': 'integer'},
-        },
+          'slot_index': {
+            'type': 'integer',
+            'description': '0-based slot index',
+          },
+          'parameter_numbers': {
+            'type': 'array',
+            'description': 'Array of parameter numbers to retrieve',
+            'items': {'type': 'integer'},
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -1030,20 +1063,20 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Build complete preset from JSON data. Supports algorithms and parameters.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'preset_data': {
-          'type': 'object',
-          'description': 'JSON object with preset_name and slots array',
-          'properties': {
-            'preset_name': {'type': 'string'},
-            'slots': {'type': 'array'},
+          'preset_data': {
+            'type': 'object',
+            'description': 'JSON object with preset_name and slots array',
+            'properties': {
+              'preset_name': {'type': 'string'},
+              'slots': {'type': 'array'},
+            },
+            'required': ['preset_name', 'slots'],
           },
-          'required': ['preset_name', 'slots'],
-        },
-        'clear_existing': {
-          'type': 'boolean',
-          'description': 'Clear existing preset first (default: true)',
-          'default': true,
-        },
+          'clear_existing': {
+            'type': 'boolean',
+            'description': 'Clear existing preset first (default: true)',
+            'default': true,
+          },
         },
       ),
       callback: ({args, extra}) async {
@@ -1106,10 +1139,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Add/update Notes algorithm at slot 0. Max 7 lines of 31 chars each.',
       toolInputSchema: const ToolInputSchema(
         properties: {
-        'text': {
-          'type': 'string',
-          'description': 'Note text (auto-wrapped at 31 chars)',
-        },
+          'text': {
+            'type': 'string',
+            'description': 'Note text (auto-wrapped at 31 chars)',
+          },
         },
       ),
       callback: ({args, extra}) async {

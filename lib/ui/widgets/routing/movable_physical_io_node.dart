@@ -3,57 +3,60 @@ import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 
 /// A movable widget for displaying physical I/O nodes with draggable functionality.
-/// 
+///
 /// This widget provides a movable version of physical I/O nodes using the shared
 /// PortWidget for consistent visualization across the routing system.
 class MovablePhysicalIONode extends StatefulWidget {
   /// The list of ports to display in this node.
   final List<Port> ports;
-  
+
   /// The title to display in the header.
   final String title;
-  
+
   /// The icon to display in the header.
   final IconData icon;
-  
+
   /// The initial position of this node in the canvas.
   final Offset position;
-  
+
   /// Whether this is a physical input node (affects label positioning).
   /// Physical inputs act as outputs to algorithms (left labels).
   /// Physical outputs act as inputs from algorithms (right labels).
   final bool isInput;
-  
+
   /// Callback when the node position changes.
   final Function(Offset)? onPositionChanged;
-  
+
   /// Callback when a port is tapped.
   final Function(Port)? onPortTapped;
-  
+
   /// Callback when drag starts from a port.
   final Function(Port)? onPortDragStart;
-  
+
   /// Callback when drag updates with new position.
   final Function(Port, Offset)? onPortDragUpdate;
-  
+
   /// Callback when drag ends at a position.
   final Function(Port, Offset)? onPortDragEnd;
-  
+
   /// Callback to report each port's global center for connection anchoring.
   final void Function(Port port, Offset globalCenter)? onPortPositionResolved;
-  
+
   /// Callback when node drag starts.
   final VoidCallback? onNodeDragStart;
-  
+
   /// Callback when node drag ends.
   final VoidCallback? onNodeDragEnd;
 
   /// Set of connected port IDs
   final Set<String>? connectedPorts;
-  
+
   /// Callback for routing actions from ports
   final void Function(String portId, String action)? onRoutingAction;
-  
+
+  /// ID of the port that should be highlighted (during drag operations)
+  final String? highlightedPortId;
+
   const MovablePhysicalIONode({
     super.key,
     required this.ports,
@@ -71,8 +74,9 @@ class MovablePhysicalIONode extends StatefulWidget {
     this.onNodeDragEnd,
     this.connectedPorts,
     this.onRoutingAction,
+    this.highlightedPortId,
   });
-  
+
   @override
   State<MovablePhysicalIONode> createState() => _MovablePhysicalIONodeState();
 }
@@ -81,18 +85,20 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   bool _isDragging = false;
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return GestureDetector(
       onPanStart: _handleDragStart,
       onPanUpdate: _handleDragUpdate,
       onPanEnd: _handleDragEnd,
       child: AnimatedContainer(
-        duration: _isDragging ? Duration.zero : const Duration(milliseconds: 150),
+        duration: _isDragging
+            ? Duration.zero
+            : const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainer.withValues(alpha: 0.95),
           border: Border.all(
@@ -125,7 +131,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       ),
     );
   }
-  
+
   /// Builds the header section with title and icon.
   Widget _buildHeader(ColorScheme colorScheme, ThemeData theme) {
     return Container(
@@ -139,11 +145,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       ),
       child: Row(
         children: [
-          Icon(
-            widget.icon,
-            size: 16.0,
-            color: colorScheme.primary,
-          ),
+          Icon(widget.icon, size: 16.0, color: colorScheme.primary),
           const SizedBox(width: 8.0),
           Expanded(
             child: Text(
@@ -159,7 +161,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       ),
     );
   }
-  
+
   /// Builds the list of port widgets using the shared PortWidget.
   Widget _buildPortList() {
     return Padding(
@@ -171,7 +173,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       ),
     );
   }
-  
+
   /// Builds a single port row using PortWidget.
   Widget _buildPortRow(Port port) {
     return Padding(
@@ -181,9 +183,15 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
         isInput: widget.isInput,
         portId: port.id,
         port: port,
-        labelPosition: widget.isInput ? PortLabelPosition.left : PortLabelPosition.right,
+        labelPosition: widget.isInput
+            ? PortLabelPosition.left
+            : PortLabelPosition.right,
         style: PortStyle.jack,
-        isConnected: port.isConnected || (widget.connectedPorts?.contains(port.id) ?? false), // Check both port's connection status and connectedPorts
+        isConnected:
+            port.isConnected ||
+            (widget.connectedPorts?.contains(port.id) ??
+                false), // Check both port's connection status and connectedPorts
+        isHighlighted: port.id == widget.highlightedPortId,
         onPortPositionResolved: widget.onPortPositionResolved != null
             ? (portId, globalCenter, isInput) {
                 widget.onPortPositionResolved!(port, globalCenter);
@@ -192,50 +200,51 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
         onTap: () => widget.onPortTapped?.call(port),
         onRoutingAction: widget.onRoutingAction,
         onDragStart: () => widget.onPortDragStart?.call(port),
-        onDragUpdate: (position) => widget.onPortDragUpdate?.call(port, position),
+        onDragUpdate: (position) =>
+            widget.onPortDragUpdate?.call(port, position),
         onDragEnd: (position) => widget.onPortDragEnd?.call(port, position),
       ),
     );
   }
-  
+
   void _handleDragStart(DragStartDetails details) {
     setState(() {
       _isDragging = true;
       _dragStartGlobal = details.globalPosition;
       _initialPosition = widget.position;
     });
-    
+
     widget.onNodeDragStart?.call();
   }
-  
+
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
-    
+
     final dragDelta = details.globalPosition - _dragStartGlobal;
     final newPosition = _initialPosition + dragDelta;
-    
+
     // Snap to grid
     const double gridSize = 25.0;
     final snappedPosition = Offset(
       (newPosition.dx / gridSize).round() * gridSize,
       (newPosition.dy / gridSize).round() * gridSize,
     );
-    
+
     // Constrain to canvas bounds
     const double canvasSize = 5000.0;
     final constrainedPosition = Offset(
       snappedPosition.dx.clamp(0.0, canvasSize - 200),
       snappedPosition.dy.clamp(0.0, canvasSize - 300),
     );
-    
+
     widget.onPositionChanged?.call(constrainedPosition);
   }
-  
+
   void _handleDragEnd(DragEndDetails details) {
     setState(() {
       _isDragging = false;
     });
-    
+
     widget.onNodeDragEnd?.call();
   }
 }

@@ -122,7 +122,7 @@ void main() {
     group('Status Check Methods Tests', () {
       test('should correctly identify ready state', () {
         const state = RoutingState(status: RoutingSystemStatus.ready);
-        
+
         expect(state.isReady, isTrue);
         expect(state.isUpdating, isFalse);
         expect(state.hasError, isFalse);
@@ -131,7 +131,7 @@ void main() {
 
       test('should correctly identify updating state', () {
         const state = RoutingState(status: RoutingSystemStatus.updating);
-        
+
         expect(state.isReady, isFalse);
         expect(state.isUpdating, isTrue);
         expect(state.hasError, isFalse);
@@ -140,7 +140,7 @@ void main() {
 
       test('should correctly identify error state', () {
         const state = RoutingState(status: RoutingSystemStatus.error);
-        
+
         expect(state.isReady, isFalse);
         expect(state.isUpdating, isFalse);
         expect(state.hasError, isTrue);
@@ -149,7 +149,7 @@ void main() {
 
       test('should correctly identify initializing state', () {
         const state = RoutingState(status: RoutingSystemStatus.initializing);
-        
+
         expect(state.isReady, isFalse);
         expect(state.isUpdating, isFalse);
         expect(state.hasError, isFalse);
@@ -170,7 +170,7 @@ void main() {
 
       test('should return all ports combined', () {
         final allPorts = state.allPorts;
-        
+
         expect(allPorts.length, equals(4));
         expect(allPorts.contains(testInputPorts[0]), isTrue);
         expect(allPorts.contains(testInputPorts[1]), isTrue);
@@ -248,35 +248,47 @@ void main() {
 
         expect(updatedState.status, equals(RoutingSystemStatus.ready));
         expect(updatedState.errorMessage, equals('Test error'));
-        expect(updatedState.lastUpdated, isNot(equals(originalState.lastUpdated)));
-        expect(updatedState.lastUpdated!.isAfter(originalState.lastUpdated!), isTrue);
-      });
-
-      test('withAddedConnection should add connection and update lastUpdated', () {
-        const originalState = RoutingState();
-        const newConnection = Connection(
-          id: 'new_conn',
-          sourcePortId: 'src',
-          destinationPortId: 'dest',
-          connectionType: ConnectionType.algorithmToAlgorithm,
+        expect(
+          updatedState.lastUpdated,
+          isNot(equals(originalState.lastUpdated)),
         );
-
-        final updatedState = originalState.withAddedConnection(newConnection);
-
-        expect(updatedState.connections.length, equals(1));
-        expect(updatedState.connections[0], equals(newConnection));
-        expect(updatedState.lastUpdated, isNotNull);
+        expect(
+          updatedState.lastUpdated!.isAfter(originalState.lastUpdated!),
+          isTrue,
+        );
       });
 
-      test('withRemovedConnection should remove connection and update lastUpdated', () {
-        final originalState = RoutingState(connections: testConnections);
+      test(
+        'withAddedConnection should add connection and update lastUpdated',
+        () {
+          const originalState = RoutingState();
+          const newConnection = Connection(
+            id: 'new_conn',
+            sourcePortId: 'src',
+            destinationPortId: 'dest',
+            connectionType: ConnectionType.algorithmToAlgorithm,
+          );
 
-        final updatedState = originalState.withRemovedConnection('conn1');
+          final updatedState = originalState.withAddedConnection(newConnection);
 
-        expect(updatedState.connections.length, equals(1));
-        expect(updatedState.connections[0].id, equals('conn2'));
-        expect(updatedState.lastUpdated, isNotNull);
-      });
+          expect(updatedState.connections.length, equals(1));
+          expect(updatedState.connections[0], equals(newConnection));
+          expect(updatedState.lastUpdated, isNotNull);
+        },
+      );
+
+      test(
+        'withRemovedConnection should remove connection and update lastUpdated',
+        () {
+          final originalState = RoutingState(connections: testConnections);
+
+          final updatedState = originalState.withRemovedConnection('conn1');
+
+          expect(updatedState.connections.length, equals(1));
+          expect(updatedState.connections[0].id, equals('conn2'));
+          expect(updatedState.lastUpdated, isNotNull);
+        },
+      );
 
       test('withUpdatedConnection should update existing connection', () {
         final originalState = RoutingState(connections: testConnections);
@@ -284,7 +296,9 @@ void main() {
           status: ConnectionStatus.disabled,
         );
 
-        final updatedState = originalState.withUpdatedConnection(updatedConnection);
+        final updatedState = originalState.withUpdatedConnection(
+          updatedConnection,
+        );
 
         expect(updatedState.connections.length, equals(2));
         final foundConnection = updatedState.findConnectionById('conn1');

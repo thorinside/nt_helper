@@ -128,11 +128,31 @@ class MockDistingMidiManager implements IDistingMidiManager {
       ),
     ];
     final List<ParameterValue> clockDividerValues = <ParameterValue>[
-      ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 4), // 4 channels
-      ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 1), // Clock input from Input 1
-      ParameterValue(algorithmIndex: 0, parameterNumber: 2, value: 0), // No reset input
-      ParameterValue(algorithmIndex: 0, parameterNumber: 3, value: 13), // Clock 1 to Output 1
-      ParameterValue(algorithmIndex: 0, parameterNumber: 4, value: 14), // Clock 2 to Output 2
+      ParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 0,
+        value: 4,
+      ), // 4 channels
+      ParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 1,
+        value: 1,
+      ), // Clock input from Input 1
+      ParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 2,
+        value: 0,
+      ), // No reset input
+      ParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 3,
+        value: 13,
+      ), // Clock 1 to Output 1
+      ParameterValue(
+        algorithmIndex: 0,
+        parameterNumber: 4,
+        value: 14,
+      ), // Clock 2 to Output 2
     ];
     // Clock Divider enums are now generated inline in the Slot creation
     final List<Mapping> clockDividerMappings = List<Mapping>.generate(
@@ -147,21 +167,44 @@ class MockDistingMidiManager implements IDistingMidiManager {
     final ParameterPages clockDividerPages = ParameterPages(
       algorithmIndex: 0,
       pages: [
-        ParameterPage(name: "Setup", parameters: [0, 1]), // Channels, Clock input
+        ParameterPage(
+          name: "Setup",
+          parameters: [0, 1],
+        ), // Channels, Clock input
         ParameterPage(name: "Common", parameters: [2]), // Reset input
         ParameterPage(name: "Outputs", parameters: [3, 4]), // Clock outputs
       ],
     );
     final List<ParameterEnumStrings> clockDividerEnums = [
       ParameterEnumStrings.filler(), // Channels (not enum)
-      ParameterEnumStrings(algorithmIndex: 0, parameterNumber: 1, values: _ioEnumValues), // Clock input
-      ParameterEnumStrings(algorithmIndex: 0, parameterNumber: 2, values: ["None", ..._ioEnumValues]), // Reset input (can be None)
-      ParameterEnumStrings(algorithmIndex: 0, parameterNumber: 3, values: _ioEnumValues), // Clock 1 output
-      ParameterEnumStrings(algorithmIndex: 0, parameterNumber: 4, values: _ioEnumValues), // Clock 2 output
+      ParameterEnumStrings(
+        algorithmIndex: 0,
+        parameterNumber: 1,
+        values: _ioEnumValues,
+      ), // Clock input
+      ParameterEnumStrings(
+        algorithmIndex: 0,
+        parameterNumber: 2,
+        values: ["None", ..._ioEnumValues],
+      ), // Reset input (can be None)
+      ParameterEnumStrings(
+        algorithmIndex: 0,
+        parameterNumber: 3,
+        values: _ioEnumValues,
+      ), // Clock 1 output
+      ParameterEnumStrings(
+        algorithmIndex: 0,
+        parameterNumber: 4,
+        values: _ioEnumValues,
+      ), // Clock 2 output
     ];
 
     final Slot clockSlot = Slot(
-      algorithm: Algorithm(algorithmIndex: 0, guid: "clkd", name: "Clock divider"),
+      algorithm: Algorithm(
+        algorithmIndex: 0,
+        guid: "clkd",
+        name: "Clock divider",
+      ),
       routing: RoutingInfo.filler(),
       pages: clockDividerPages,
       parameters: clockDividerParams,
@@ -245,28 +288,78 @@ class MockDistingMidiManager implements IDistingMidiManager {
       ), // Gate to Envelope
     ];
     final List<ParameterValue> seqValues = <ParameterValue>[
-      ParameterValue(algorithmIndex: 1, parameterNumber: 0, value: 1), // Sequence 1
-      ParameterValue(algorithmIndex: 1, parameterNumber: 1, value: 1), // Start at step 1
-      ParameterValue(algorithmIndex: 1, parameterNumber: 2, value: 8), // End at step 8
-      ParameterValue(algorithmIndex: 1, parameterNumber: 3, value: 13), // Clock from Output 1 (Clock Divider)
-      ParameterValue(algorithmIndex: 1, parameterNumber: 4, value: 0), // No reset
-      ParameterValue(algorithmIndex: 1, parameterNumber: 5, value: 15), // CV to Output 3 (VCO)
-      ParameterValue(algorithmIndex: 1, parameterNumber: 6, value: 16), // Gate to Output 4 (Env)
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 0,
+        value: 1,
+      ), // Sequence 1
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 1,
+        value: 1,
+      ), // Start at step 1
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 2,
+        value: 8,
+      ), // End at step 8
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 3,
+        value: 13,
+      ), // Clock from Output 1 (Clock Divider)
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 4,
+        value: 0,
+      ), // No reset
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 5,
+        value: 15,
+      ), // CV to Output 3 (VCO)
+      ParameterValue(
+        algorithmIndex: 1,
+        parameterNumber: 6,
+        value: 16,
+      ), // Gate to Output 4 (Env)
     ];
     final List<ParameterEnumStrings> seqEnums = <ParameterEnumStrings>[
       ParameterEnumStrings.filler(), // Sequence (not enum)
       ParameterEnumStrings.filler(), // Start (not enum)
       ParameterEnumStrings.filler(), // End (not enum)
-      ParameterEnumStrings(algorithmIndex: 1, parameterNumber: 3, values: _ioEnumValues), // Clock input
-      ParameterEnumStrings(algorithmIndex: 1, parameterNumber: 4, values: ["None", ..._ioEnumValues]), // Reset input (can be None)
-      ParameterEnumStrings(algorithmIndex: 1, parameterNumber: 5, values: _ioEnumValues), // CV output
-      ParameterEnumStrings(algorithmIndex: 1, parameterNumber: 6, values: _ioEnumValues), // Gate output
+      ParameterEnumStrings(
+        algorithmIndex: 1,
+        parameterNumber: 3,
+        values: _ioEnumValues,
+      ), // Clock input
+      ParameterEnumStrings(
+        algorithmIndex: 1,
+        parameterNumber: 4,
+        values: ["None", ..._ioEnumValues],
+      ), // Reset input (can be None)
+      ParameterEnumStrings(
+        algorithmIndex: 1,
+        parameterNumber: 5,
+        values: _ioEnumValues,
+      ), // CV output
+      ParameterEnumStrings(
+        algorithmIndex: 1,
+        parameterNumber: 6,
+        values: _ioEnumValues,
+      ), // Gate output
     ];
     final ParameterPages seqPages = ParameterPages(
       algorithmIndex: 1,
       pages: [
-        ParameterPage(name: "Sequence", parameters: [0, 1, 2]), // Sequence, Start, End
-        ParameterPage(name: "Routing", parameters: [3, 4, 5, 6]), // Clock input, Reset input, CV output, Gate output
+        ParameterPage(
+          name: "Sequence",
+          parameters: [0, 1, 2],
+        ), // Sequence, Start, End
+        ParameterPage(
+          name: "Routing",
+          parameters: [3, 4, 5, 6],
+        ), // Clock input, Reset input, CV output, Gate output
       ],
     );
     final List<Mapping> seqMappings = List<Mapping>.generate(
@@ -347,26 +440,60 @@ class MockDistingMidiManager implements IDistingMidiManager {
       ), // To Envelope
     ];
     final List<ParameterValue> vcoValues = <ParameterValue>[
-      ParameterValue(algorithmIndex: 2, parameterNumber: 0, value: 15), // Wavetable 15 (analog-style)
-      ParameterValue(algorithmIndex: 2, parameterNumber: 1, value: 60), // C4 root note
-      ParameterValue(algorithmIndex: 2, parameterNumber: 2, value: 0), // No fine tune
-      ParameterValue(algorithmIndex: 2, parameterNumber: 3, value: 15), // CV from Sequencer (Output 3)
-      ParameterValue(algorithmIndex: 2, parameterNumber: 4, value: 17), // Audio to Output 5 (Envelope)
+      ParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 0,
+        value: 15,
+      ), // Wavetable 15 (analog-style)
+      ParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 1,
+        value: 60,
+      ), // C4 root note
+      ParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 2,
+        value: 0,
+      ), // No fine tune
+      ParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 3,
+        value: 15,
+      ), // CV from Sequencer (Output 3)
+      ParameterValue(
+        algorithmIndex: 2,
+        parameterNumber: 4,
+        value: 17,
+      ), // Audio to Output 5 (Envelope)
     ];
     // VCO enums, mappings and value strings are now generated in the Slot creation above
     final ParameterPages vcoPages = ParameterPages(
       algorithmIndex: 2,
       pages: [
-        ParameterPage(name: "Wavetable", parameters: [0, 1, 2]), // Wavetable, Root note, Fine tune
-        ParameterPage(name: "Routing", parameters: [3, 4]), // CV input, Audio output
+        ParameterPage(
+          name: "Wavetable",
+          parameters: [0, 1, 2],
+        ), // Wavetable, Root note, Fine tune
+        ParameterPage(
+          name: "Routing",
+          parameters: [3, 4],
+        ), // CV input, Audio output
       ],
     );
     final List<ParameterEnumStrings> vcoEnums = [
       ParameterEnumStrings.filler(), // Wavetable (not enum - numeric selection)
       ParameterEnumStrings.filler(), // Root note (not enum - MIDI note number)
       ParameterEnumStrings.filler(), // Fine tune (not enum - cents)
-      ParameterEnumStrings(algorithmIndex: 2, parameterNumber: 3, values: _ioEnumValues), // CV input
-      ParameterEnumStrings(algorithmIndex: 2, parameterNumber: 4, values: _ioEnumValues), // Audio output
+      ParameterEnumStrings(
+        algorithmIndex: 2,
+        parameterNumber: 3,
+        values: _ioEnumValues,
+      ), // CV input
+      ParameterEnumStrings(
+        algorithmIndex: 2,
+        parameterNumber: 4,
+        values: _ioEnumValues,
+      ), // Audio output
     ];
 
     final Slot vcoSlot = Slot(
@@ -380,8 +507,14 @@ class MockDistingMidiManager implements IDistingMidiManager {
       parameters: vcoParams,
       values: vcoValues,
       enums: vcoEnums,
-      mappings: List<Mapping>.generate(vcoParams.length, (_) => Mapping.filler()),
-      valueStrings: List<ParameterValueString>.generate(vcoParams.length, (_) => ParameterValueString.filler()),
+      mappings: List<Mapping>.generate(
+        vcoParams.length,
+        (_) => Mapping.filler(),
+      ),
+      valueStrings: List<ParameterValueString>.generate(
+        vcoParams.length,
+        (_) => ParameterValueString.filler(),
+      ),
     );
 
     // Add Envelope and Delay slots (simplified for demo)
@@ -429,38 +562,75 @@ class MockDistingMidiManager implements IDistingMidiManager {
     ];
 
     final List<ParameterValue> envValues = <ParameterValue>[
-      ParameterValue(algorithmIndex: 3, parameterNumber: 0, value: 10), // Fast attack
-      ParameterValue(algorithmIndex: 3, parameterNumber: 1, value: 200), // Medium release
-      ParameterValue(algorithmIndex: 3, parameterNumber: 2, value: 16), // Gate from Sequencer
-      ParameterValue(algorithmIndex: 3, parameterNumber: 3, value: 18), // CV to modulation
+      ParameterValue(
+        algorithmIndex: 3,
+        parameterNumber: 0,
+        value: 10,
+      ), // Fast attack
+      ParameterValue(
+        algorithmIndex: 3,
+        parameterNumber: 1,
+        value: 200,
+      ), // Medium release
+      ParameterValue(
+        algorithmIndex: 3,
+        parameterNumber: 2,
+        value: 16,
+      ), // Gate from Sequencer
+      ParameterValue(
+        algorithmIndex: 3,
+        parameterNumber: 3,
+        value: 18,
+      ), // CV to modulation
     ];
 
     final ParameterPages envPages = ParameterPages(
       algorithmIndex: 3,
       pages: [
         ParameterPage(name: "Envelope", parameters: [0, 1]), // Attack, Release
-        ParameterPage(name: "Routing", parameters: [2, 3]), // Trigger input, CV output
+        ParameterPage(
+          name: "Routing",
+          parameters: [2, 3],
+        ), // Trigger input, CV output
       ],
     );
 
     final List<ParameterEnumStrings> envEnums = [
       ParameterEnumStrings.filler(), // Attack time (not enum - milliseconds)
       ParameterEnumStrings.filler(), // Release time (not enum - milliseconds)
-      ParameterEnumStrings(algorithmIndex: 3, parameterNumber: 2, values: _ioEnumValues), // Trigger input
-      ParameterEnumStrings(algorithmIndex: 3, parameterNumber: 3, values: _ioEnumValues), // CV output
+      ParameterEnumStrings(
+        algorithmIndex: 3,
+        parameterNumber: 2,
+        values: _ioEnumValues,
+      ), // Trigger input
+      ParameterEnumStrings(
+        algorithmIndex: 3,
+        parameterNumber: 3,
+        values: _ioEnumValues,
+      ), // CV output
     ];
 
     final Slot envelopeSlot = Slot(
-      algorithm: Algorithm(algorithmIndex: 3, guid: "env2", name: "Envelope (AR/AD)"),
+      algorithm: Algorithm(
+        algorithmIndex: 3,
+        guid: "env2",
+        name: "Envelope (AR/AD)",
+      ),
       routing: RoutingInfo.filler(),
       pages: envPages,
       parameters: envParams,
       values: envValues,
       enums: envEnums,
-      mappings: List<Mapping>.generate(envParams.length, (_) => Mapping.filler()),
-      valueStrings: List<ParameterValueString>.generate(envParams.length, (_) => ParameterValueString.filler()),
+      mappings: List<Mapping>.generate(
+        envParams.length,
+        (_) => Mapping.filler(),
+      ),
+      valueStrings: List<ParameterValueString>.generate(
+        envParams.length,
+        (_) => ParameterValueString.filler(),
+      ),
     );
-    
+
     final List<ParameterInfo> delayParams = <ParameterInfo>[
       ParameterInfo(
         algorithmIndex: 4,
@@ -525,19 +695,49 @@ class MockDistingMidiManager implements IDistingMidiManager {
     ];
 
     final List<ParameterValue> delayValues = <ParameterValue>[
-      ParameterValue(algorithmIndex: 4, parameterNumber: 0, value: 250), // 1/4 note at 120 BPM
-      ParameterValue(algorithmIndex: 4, parameterNumber: 1, value: 35), // Medium feedback
-      ParameterValue(algorithmIndex: 4, parameterNumber: 2, value: 25), // Subtle mix
-      ParameterValue(algorithmIndex: 4, parameterNumber: 3, value: 17), // From VCO
-      ParameterValue(algorithmIndex: 4, parameterNumber: 4, value: 19), // Left out
-      ParameterValue(algorithmIndex: 4, parameterNumber: 5, value: 20), // Right out
+      ParameterValue(
+        algorithmIndex: 4,
+        parameterNumber: 0,
+        value: 250,
+      ), // 1/4 note at 120 BPM
+      ParameterValue(
+        algorithmIndex: 4,
+        parameterNumber: 1,
+        value: 35,
+      ), // Medium feedback
+      ParameterValue(
+        algorithmIndex: 4,
+        parameterNumber: 2,
+        value: 25,
+      ), // Subtle mix
+      ParameterValue(
+        algorithmIndex: 4,
+        parameterNumber: 3,
+        value: 17,
+      ), // From VCO
+      ParameterValue(
+        algorithmIndex: 4,
+        parameterNumber: 4,
+        value: 19,
+      ), // Left out
+      ParameterValue(
+        algorithmIndex: 4,
+        parameterNumber: 5,
+        value: 20,
+      ), // Right out
     ];
 
     final ParameterPages delayPages = ParameterPages(
       algorithmIndex: 4,
       pages: [
-        ParameterPage(name: "Delay", parameters: [0, 1, 2]), // Time, Feedback, Mix
-        ParameterPage(name: "Routing", parameters: [3, 4, 5]), // Left input, Left output, Right output
+        ParameterPage(
+          name: "Delay",
+          parameters: [0, 1, 2],
+        ), // Time, Feedback, Mix
+        ParameterPage(
+          name: "Routing",
+          parameters: [3, 4, 5],
+        ), // Left input, Left output, Right output
       ],
     );
 
@@ -545,25 +745,53 @@ class MockDistingMidiManager implements IDistingMidiManager {
       ParameterEnumStrings.filler(), // Time (not enum - milliseconds)
       ParameterEnumStrings.filler(), // Feedback (not enum - percentage)
       ParameterEnumStrings.filler(), // Mix (not enum - percentage)
-      ParameterEnumStrings(algorithmIndex: 4, parameterNumber: 3, values: _ioEnumValues), // Left input
-      ParameterEnumStrings(algorithmIndex: 4, parameterNumber: 4, values: _ioEnumValues), // Left output
-      ParameterEnumStrings(algorithmIndex: 4, parameterNumber: 5, values: _ioEnumValues), // Right output
+      ParameterEnumStrings(
+        algorithmIndex: 4,
+        parameterNumber: 3,
+        values: _ioEnumValues,
+      ), // Left input
+      ParameterEnumStrings(
+        algorithmIndex: 4,
+        parameterNumber: 4,
+        values: _ioEnumValues,
+      ), // Left output
+      ParameterEnumStrings(
+        algorithmIndex: 4,
+        parameterNumber: 5,
+        values: _ioEnumValues,
+      ), // Right output
     ];
 
     final Slot delaySlot = Slot(
-      algorithm: Algorithm(algorithmIndex: 4, guid: "dels", name: "Delay (Stereo)"),
+      algorithm: Algorithm(
+        algorithmIndex: 4,
+        guid: "dels",
+        name: "Delay (Stereo)",
+      ),
       routing: RoutingInfo.filler(),
       pages: delayPages,
       parameters: delayParams,
       values: delayValues,
       enums: delayEnums,
-      mappings: List<Mapping>.generate(delayParams.length, (_) => Mapping.filler()),
-      valueStrings: List<ParameterValueString>.generate(delayParams.length, (_) => ParameterValueString.filler()),
+      mappings: List<Mapping>.generate(
+        delayParams.length,
+        (_) => Mapping.filler(),
+      ),
+      valueStrings: List<ParameterValueString>.generate(
+        delayParams.length,
+        (_) => ParameterValueString.filler(),
+      ),
     );
 
     // --- Assign to State Object ---
     _state.availableAlgorithms = availableAlgorithms;
-    _state.presetSlots = [clockSlot, sequencerSlot, vcoSlot, envelopeSlot, delaySlot];
+    _state.presetSlots = [
+      clockSlot,
+      sequencerSlot,
+      vcoSlot,
+      envelopeSlot,
+      delaySlot,
+    ];
     _state.unitStrings = ["", "%", "Hz", "dB", "°", "V/Oct"]; // Example units
     _state.presetName = "Berlin School Pluck";
     _state.versionString = "Demo v1.0";

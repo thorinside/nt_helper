@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
@@ -9,7 +10,8 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 // Haptics can be reintroduced later if needed
-import 'package:nt_helper/ui/widgets/routing/connection_painter.dart' as painter;
+import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
+    as painter;
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
@@ -46,16 +48,24 @@ class RoutingEditorWidget extends StatefulWidget {
 
 class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   final Map<String, Offset> _nodePositions = {};
-  final Map<String, Offset> _portPositions = {};  // Store actual port positions
+  final Map<String, Offset> _portPositions = {}; // Store actual port positions
   final Set<String> _selectedNodes = {};
 
-  String? _connectionSourcePortId;
-  Offset? _dragPosition;
-  final bool _isDraggingConnection = false;
-  String? _hoveredConnectionId;  // For port hover (connection deletion)
-  String? _hoveredLabelConnectionId;  // For label hover (mode switching)
+  // Drag state management for connection creation
+  bool _isDraggingConnection = false;
+  Port? _dragSourcePort;
+  Offset? _dragCurrentPosition;
+  String? _hoveredConnectionId; // For port hover (connection deletion)
+  String? _hoveredLabelConnectionId; // For label hover (mode switching)
+  String? _highlightedPortId; // For port highlighting during drag operations
   Timer? _connectionHighlightTimer;
-  Set<String> _selectedPortConnectionIds = {}; // For mobile port tap confirmation
+  Set<String> _selectedPortConnectionIds =
+      {}; // For mobile port tap confirmation
+
+  // Error handling state
+  String? _errorMessage;
+  Timer? _errorDismissTimer;
+  Timer? _dragUpdateDebounceTimer;
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
@@ -74,7 +84,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   bool _isPanning = false;
   Offset _lastPanPosition = Offset.zero;
   bool _isDraggingNode = false;
-
 
   bool _portsReady = false;
 
@@ -100,10 +109,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   void _centerCanvas() {
     // Center the scroll view on the canvas
     if (_horizontalScrollController.hasClients) {
-      _horizontalScrollController.jumpTo((_canvasWidth - widget.canvasSize.width) / 2);
+      _horizontalScrollController.jumpTo(
+        (_canvasWidth - widget.canvasSize.width) / 2,
+      );
     }
     if (_verticalScrollController.hasClients) {
-      _verticalScrollController.jumpTo((_canvasHeight - widget.canvasSize.height) / 2);
+      _verticalScrollController.jumpTo(
+        (_canvasHeight - widget.canvasSize.height) / 2,
+      );
     }
   }
 
@@ -113,10 +126,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     const double centerY = _canvasHeight / 2;
 
     // Physical inputs on the left side (matching _buildPhysicalInputNodes)
-    _nodePositions['physical_inputs'] = const Offset(centerX - 800, centerY - 300);
+    _nodePositions['physical_inputs'] = const Offset(
+      centerX - 800,
+      centerY - 300,
+    );
 
     // Physical outputs on the right side (matching _buildPhysicalOutputNodes)
-    _nodePositions['physical_outputs'] = const Offset(centerX + 600, centerY - 300);
+    _nodePositions['physical_outputs'] = const Offset(
+      centerX + 600,
+      centerY - 300,
+    );
 
     // Algorithm nodes in the center area
     // We'll initialize them when we have the actual algorithm IDs
@@ -140,6 +159,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   @override
   void dispose() {
     _connectionHighlightTimer?.cancel();
+    _errorDismissTimer?.cancel();
+    _dragUpdateDebounceTimer?.cancel();
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     super.dispose();
@@ -149,7 +170,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Widget build(BuildContext context) {
     return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
       buildWhen: (previous, current) {
-        final shouldRebuild = previous.runtimeType != current.runtimeType ||
+        final shouldRebuild =
+            previous.runtimeType != current.runtimeType ||
             (previous is RoutingEditorStateLoaded &&
                 current is RoutingEditorStateLoaded &&
                 _hasLoadedStateChanged(previous, current));
@@ -163,36 +185,232 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return shouldRebuild;
       },
       builder: (context, state) {
-        return Container(
-          width: widget.canvasSize.width,
-          height: widget.canvasSize.height,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border.all(
-              color: Theme.of(context).dividerColor,
-              width: 1,
+        return Stack(
+          children: [
+            Container(
+              width: widget.canvasSize.width,
+              height: widget.canvasSize.height,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border.all(color: Theme.of(context).dividerColor, width: 1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: _platformService.isDesktopPlatform()
+                    ? Focus(
+                        onKeyEvent: (node, event) => _handleKeyEvent(event),
+                        child: _buildCanvasContent(context, state),
+                      )
+                    : _buildCanvasContent(context, state),
+              ),
             ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: _buildCanvasContent(context, state),
-          ),
+            // Error display widget in top-right corner
+            if (_errorMessage != null) _buildErrorDisplay(),
+          ],
         );
       },
     );
   }
 
-  Widget _buildCanvasContent(BuildContext context, RoutingEditorState state) {
-    return state.when(
-      initial: () => _buildEmptyState(context, 'Initializing routing editor...'),
-      disconnected: () => _buildEmptyState(context, 'Hardware disconnected'),
-      loaded: (physicalInputs, physicalOutputs, algorithms, connections, buses, portOutputModes, isHardwareSynced, isPersistenceEnabled, lastSyncTime, lastPersistTime, lastError, subState) =>
-          _buildLoadedCanvas(context, physicalInputs, physicalOutputs, algorithms, connections),
+  /// Build dismissable error display widget
+  Widget _buildErrorDisplay() {
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.2),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 16,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                _errorMessage!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _dismissError,
+              child: Icon(
+                Icons.close,
+                size: 16,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, String message) { /* identical to RoutingCanvas */
+  /// Handle keyboard events for desktop platforms
+  KeyEventResult _handleKeyEvent(KeyEvent event) {
+    if (_platformService.isDesktopPlatform() && 
+        event is KeyDownEvent && 
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      
+      // Cancel drag operation if in progress
+      if (_isDraggingConnection) {
+        _cancelDragOperation();
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// Cancel current drag operation
+  void _cancelDragOperation() {
+    debugPrint('=== DRAG CANCELLED: ESC key pressed');
+    setState(() {
+      _isDraggingConnection = false;
+      _dragSourcePort = null;
+      _dragCurrentPosition = null;
+      _highlightedPortId = null;
+    });
+  }
+
+  /// Display an error message with auto-dismiss after 5 seconds
+  void _showError(String message) {
+    debugPrint('=== ROUTING ERROR: $message');
+    setState(() {
+      _errorMessage = message;
+    });
+
+    // Cancel previous timer if exists
+    _errorDismissTimer?.cancel();
+    
+    // Auto-dismiss after 5 seconds
+    _errorDismissTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _errorMessage == message) {
+        _dismissError();
+      }
+    });
+  }
+
+  /// Dismiss current error message
+  void _dismissError() {
+    _errorDismissTimer?.cancel();
+    setState(() {
+      _errorMessage = null;
+    });
+  }
+
+  /// Create connection with comprehensive error handling
+  Future<void> _createConnectionWithErrorHandling(
+    RoutingEditorCubit cubit,
+    String sourcePortId,
+    String targetPortId,
+  ) async {
+    try {
+      // Check current state
+      final currentState = cubit.state;
+      if (currentState is! RoutingEditorStateLoaded) {
+        _showError('Routing editor not ready');
+        return;
+      }
+
+      // Check if bus ranges are exhausted
+      final availableAuxBuses = await _checkAvailableBuses(currentState);
+      if (!availableAuxBuses) {
+        _showError('No available buses for connection');
+        return;
+      }
+
+      // Attempt to create the connection
+      await cubit.createConnection(
+        sourcePortId: sourcePortId,
+        targetPortId: targetPortId,
+      );
+      
+      debugPrint('Connection created successfully');
+    } on ArgumentError catch (e) {
+      _showError('Invalid connection: ${e.message}');
+    } on StateError catch (e) {
+      _showError('State error: ${e.message}');
+    } catch (e) {
+      _showError('Connection failed: ${e.toString()}');
+      debugPrint('Connection creation error: $e');
+    }
+  }
+
+  /// Check if there are available buses for new connections
+  Future<bool> _checkAvailableBuses(RoutingEditorStateLoaded state) async {
+    // Get all currently used bus numbers from existing connections
+    final usedBuses = <int>{};
+    
+    // Check all algorithm ports for their current bus assignments
+    for (final algorithm in state.algorithms) {
+      for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+        if (port.busValue != null && port.busValue! > 0) {
+          usedBuses.add(port.busValue!);
+        }
+      }
+    }
+    
+    // Check if aux buses (21-28) are available
+    for (int busNumber = 21; busNumber <= 28; busNumber++) {
+      if (!usedBuses.contains(busNumber)) {
+        return true; // Found at least one available bus
+      }
+    }
+    
+    return false; // All aux buses are in use
+  }
+
+  Widget _buildCanvasContent(BuildContext context, RoutingEditorState state) {
+    return state.when(
+      initial: () =>
+          _buildEmptyState(context, 'Initializing routing editor...'),
+      disconnected: () => _buildEmptyState(context, 'Hardware disconnected'),
+      loaded:
+          (
+            physicalInputs,
+            physicalOutputs,
+            algorithms,
+            connections,
+            buses,
+            portOutputModes,
+            isHardwareSynced,
+            isPersistenceEnabled,
+            lastSyncTime,
+            lastPersistTime,
+            lastError,
+            subState,
+          ) => _buildLoadedCanvas(
+            context,
+            physicalInputs,
+            physicalOutputs,
+            algorithms,
+            connections,
+          ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, String message) {
+    /* identical to RoutingCanvas */
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -200,20 +418,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           Icon(
             Icons.device_hub,
             size: 64,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             message,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
         ],
       ),
     );
   }
-
 
   Widget _buildLoadedCanvas(
     BuildContext context,
@@ -223,24 +444,30 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<Connection> connections,
   ) {
     return Semantics(
-      label: 'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
-      hint: 'Interactive routing canvas. Pan and zoom to navigate. Drag between ports to create connections.',
+      label:
+          'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
+      hint:
+          'Interactive routing canvas. Pan and zoom to navigate. Drag between ports to create connections.',
       container: true,
       child: SingleChildScrollView(
         controller: _horizontalScrollController,
         scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(), // Disable scroll gestures
+        physics:
+            const NeverScrollableScrollPhysics(), // Disable scroll gestures
         child: SingleChildScrollView(
           controller: _verticalScrollController,
           scrollDirection: Axis.vertical,
-          physics: const NeverScrollableScrollPhysics(), // Disable scroll gestures
+          physics:
+              const NeverScrollableScrollPhysics(), // Disable scroll gestures
           child: Listener(
             // Handle mouse wheel and trackpad scrolling
             onPointerSignal: (pointerSignal) {
               if (pointerSignal is PointerScrollEvent) {
                 // Handle horizontal scrolling (trackpad side-scroll or shift+wheel)
                 if (_horizontalScrollController.hasClients) {
-                  final newHorizontal = _horizontalScrollController.offset + pointerSignal.scrollDelta.dx;
+                  final newHorizontal =
+                      _horizontalScrollController.offset +
+                      pointerSignal.scrollDelta.dx;
                   _horizontalScrollController.jumpTo(
                     newHorizontal.clamp(
                       _horizontalScrollController.position.minScrollExtent,
@@ -251,7 +478,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
                 // Handle vertical scrolling (mouse wheel or trackpad)
                 if (_verticalScrollController.hasClients) {
-                  final newVertical = _verticalScrollController.offset + pointerSignal.scrollDelta.dy;
+                  final newVertical =
+                      _verticalScrollController.offset +
+                      pointerSignal.scrollDelta.dy;
                   _verticalScrollController.jumpTo(
                     newVertical.clamp(
                       _verticalScrollController.position.minScrollExtent,
@@ -268,54 +497,66 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
               ),
-            child: Stack(
+              child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                // Grid background with gesture detector for empty space (bottom layer)
-                SizedBox(
-                  width: _canvasWidth,
-                  height: _canvasHeight,
-                  child: GestureDetector(
-                    // Handle taps and panning on empty space
-                    onTapDown: (details) {
-                      debugPrint('=== GRID TAP DOWN: ${details.localPosition}');
-                      _handleCanvasTap(details.localPosition, connections);
-                    },
-                    onPanStart: _handleCanvasPanStart,
-                    onPanUpdate: _handleCanvasPanUpdate,
-                    onPanEnd: _handleCanvasPanEnd,
-                    behavior: HitTestBehavior.translucent, // Allow events to pass through to child widgets
-                    child: CustomPaint(
-                      painter: _CanvasGridPainter(
-                        minorGridColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-                        majorGridColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                        gridSize: 50.0,
-                        majorEvery: 5,
+                  // Grid background with gesture detector for empty space (bottom layer)
+                  SizedBox(
+                    width: _canvasWidth,
+                    height: _canvasHeight,
+                    child: GestureDetector(
+                      // Handle taps and panning on empty space
+                      onTapDown: (details) {
+                        debugPrint(
+                          '=== GRID TAP DOWN: ${details.localPosition}',
+                        );
+                        _handleCanvasTap(details.localPosition, connections);
+                      },
+                      onPanStart: _handleCanvasPanStart,
+                      onPanUpdate: _handleCanvasPanUpdate,
+                      onPanEnd: _handleCanvasPanEnd,
+                      behavior: HitTestBehavior
+                          .translucent, // Allow events to pass through to child widgets
+                      child: CustomPaint(
+                        painter: _CanvasGridPainter(
+                          minorGridColor: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.1),
+                          majorGridColor: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.2),
+                          gridSize: 50.0,
+                          majorEvery: 5,
+                        ),
+                        size: Size(_canvasWidth, _canvasHeight),
                       ),
-                      size: Size(_canvasWidth, _canvasHeight),
                     ),
                   ),
-                ),
-                // Nodes on middle layer (connections will draw above to overlay ports)
-                if (widget.showPhysicalPorts) ..._buildPhysicalInputNodes(physicalInputs, connections),
-                if (widget.showPhysicalPorts) ..._buildPhysicalOutputNodes(physicalOutputs, connections),
-                ..._buildAlgorithmNodes(algorithms, connections),
-                // Draw all connections with unified canvas
-                if (connections.isNotEmpty) ...[
-                  if (_portsReady)
-                    _buildUnifiedConnectionCanvas(connections)
-                  else
-                    IgnorePointer(
-                      ignoring: true,
-                      child: Center(
-                        child: Text('Waiting for ports... (${connections.length} connections ready)'),
+                  // Nodes on middle layer (connections will draw above to overlay ports)
+                  if (widget.showPhysicalPorts)
+                    ..._buildPhysicalInputNodes(physicalInputs, connections),
+                  if (widget.showPhysicalPorts)
+                    ..._buildPhysicalOutputNodes(physicalOutputs, connections),
+                  ..._buildAlgorithmNodes(algorithms, connections),
+                  // Draw all connections with unified canvas
+                  if (connections.isNotEmpty) ...[
+                    if (_portsReady)
+                      _buildUnifiedConnectionCanvas(connections)
+                    else
+                      IgnorePointer(
+                        ignoring: true,
+                        child: Center(
+                          child: Text(
+                            'Waiting for ports... (${connections.length} connections ready)',
+                          ),
+                        ),
                       ),
-                    ),
+                  ],
+                  if (_isDraggingConnection && _dragCurrentPosition != null)
+                    _buildTemporaryConnection(),
                 ],
-                if (_isDraggingConnection && _dragPosition != null) _buildTemporaryConnection(),
-              ],
+              ),
             ),
-          ),
           ),
         ),
       ),
@@ -323,12 +564,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   // Below methods are copied from RoutingCanvas (handlers, builders, validators)
-  List<Widget> _buildPhysicalInputNodes(List<Port> physicalInputs, List<Connection> connections) {
+  List<Widget> _buildPhysicalInputNodes(
+    List<Port> physicalInputs,
+    List<Connection> connections,
+  ) {
     if (physicalInputs.isEmpty) return [];
     // Position in the center area of the canvas, to the left of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    final nodePosition = _nodePositions['physical_inputs'] ?? const Offset(centerX - 800, centerY - 300);
+    final nodePosition =
+        _nodePositions['physical_inputs'] ??
+        const Offset(centerX - 800, centerY - 300);
 
     return [
       Positioned(
@@ -346,12 +592,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
           onDragStart: (port) => _handlePortDragStart(port),
-          onDragUpdate: (port, position) => _handlePortDragUpdate(port, position),
+          onDragUpdate: (port, position) =>
+              _handlePortDragUpdate(port, position),
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
           onPortPositionResolved: (port, globalCenter) {
             _updatePortAnchor(port.id, globalCenter);
           },
-          onRoutingAction: (portId, action) => _handlePortRoutingAction(portId, action, connections),
+          onRoutingAction: (portId, action) =>
+              _handlePortRoutingAction(portId, action, connections),
+          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
           onNodeDragStart: () {
             // Node drag start handler (could be used for visual feedback)
           },
@@ -363,12 +612,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     ];
   }
 
-  List<Widget> _buildPhysicalOutputNodes(List<Port> physicalOutputs, List<Connection> connections) {
+  List<Widget> _buildPhysicalOutputNodes(
+    List<Port> physicalOutputs,
+    List<Connection> connections,
+  ) {
     if (physicalOutputs.isEmpty) return [];
     // Position in the center area of the canvas, to the right of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    final nodePosition = _nodePositions['physical_outputs'] ?? const Offset(centerX + 600, centerY - 300);
+    final nodePosition =
+        _nodePositions['physical_outputs'] ??
+        const Offset(centerX + 600, centerY - 300);
 
     return [
       Positioned(
@@ -386,12 +640,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
           onDragStart: (port) => _handlePortDragStart(port),
-          onDragUpdate: (port, position) => _handlePortDragUpdate(port, position),
+          onDragUpdate: (port, position) =>
+              _handlePortDragUpdate(port, position),
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
           onPortPositionResolved: (port, globalCenter) {
             _updatePortAnchor(port.id, globalCenter);
           },
-          onRoutingAction: (portId, action) => _handlePortRoutingAction(portId, action, connections),
+          onRoutingAction: (portId, action) =>
+              _handlePortRoutingAction(portId, action, connections),
+          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
           onNodeDragStart: () {
             // Node drag start handler (could be used for visual feedback)
           },
@@ -403,7 +660,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     ];
   }
 
-  List<Widget> _buildAlgorithmNodes(List<RoutingAlgorithm> algorithms, List<Connection> connections) {
+  List<Widget> _buildAlgorithmNodes(
+    List<RoutingAlgorithm> algorithms,
+    List<Connection> connections,
+  ) {
     return algorithms.map((algorithm) {
       // Use stable algorithm ID instead of index for consistent positioning
       final nodeId = algorithm.id;
@@ -445,7 +705,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             }
           },
           onPositionChanged: (newPosition) {
-            debugPrint('=== ROUTING EDITOR: Node $nodeId position changed to $newPosition');
+            debugPrint(
+              '=== ROUTING EDITOR: Node $nodeId position changed to $newPosition',
+            );
             // When a node is being dragged, flag it so canvas doesn't pan
             if (!_isDraggingNode) {
               setState(() {
@@ -464,11 +726,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               });
             }
           },
-          onMoveUp: algorithm.index > 0 ? () => _handleAlgorithmMoveUp(algorithm.index) : null,
-          onMoveDown: algorithm.index < algorithms.length - 1 ? () => _handleAlgorithmMoveDown(algorithm.index) : null,
+          onMoveUp: algorithm.index > 0
+              ? () => _handleAlgorithmMoveUp(algorithm.index)
+              : null,
+          onMoveDown: algorithm.index < algorithms.length - 1
+              ? () => _handleAlgorithmMoveDown(algorithm.index)
+              : null,
           onDelete: () => _handleAlgorithmDelete(algorithm.index),
-          onRoutingAction: (portId, action) => _handlePortRoutingAction(portId, action, connections),
+          onRoutingAction: (portId, action) =>
+              _handlePortRoutingAction(portId, action, connections),
           onPortTapped: (portId) => _handlePortTapById(portId),
+          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
           // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
         ),
       );
@@ -516,9 +784,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Extract connection metadata to determine connection type
       final connectionType = connection.connectionType;
 
-      final isPhysicalConnection = connectionType == ConnectionType.hardwareInput ||
+      final isPhysicalConnection =
+          connectionType == ConnectionType.hardwareInput ||
           connectionType == ConnectionType.hardwareOutput;
-      final isInputConnection = connectionType == ConnectionType.hardwareInput ||
+      final isInputConnection =
+          connectionType == ConnectionType.hardwareInput ||
           connectionType == ConnectionType.partialBusToInput;
 
       // Get bus number directly from the connection
@@ -529,31 +799,42 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final busIdMatch = RegExp(r'bus_(\d+)').firstMatch(connection.busId!);
         if (busIdMatch != null) {
           busNumber = int.tryParse(busIdMatch.group(1)!);
-          debugPrint('RoutingEditorWidget: Got bus number from busId: $busNumber');
+          debugPrint(
+            'RoutingEditorWidget: Got bus number from busId: $busNumber',
+          );
         }
       }
 
       if (busNumber == null) {
-        debugPrint('RoutingEditorWidget: No bus number found for connection ${connection.id}');
+        debugPrint(
+          'RoutingEditorWidget: No bus number found for connection ${connection.id}',
+        );
         debugPrint('  - busNumber: ${connection.busNumber}');
         debugPrint('  - busId: ${connection.busId}');
       }
 
-      connectionDataList.add(painter.ConnectionData(
-        connection: connection,
-        sourcePosition: sourcePosition,
-        destinationPosition: targetPosition,
-        busNumber: busNumber,
-        outputMode: connection.outputMode,
-        isSelected: false,
-        isHighlighted: _hoveredConnectionId == connection.id || 
-                      _selectedPortConnectionIds.contains(connection.id), // Highlight if hovered or selected for deletion
-        isPhysicalConnection: isPhysicalConnection,
-        isInputConnection: isInputConnection,
-        busLabel: connection.busLabel, // Pass through bus label for partial connections
-        onLabelHover: null, // Label hover is handled by the overlay widgets, not here
-        onLabelTap: () => _toggleConnectionOutputMode(connection.id),
-      ));
+      connectionDataList.add(
+        painter.ConnectionData(
+          connection: connection,
+          sourcePosition: sourcePosition,
+          destinationPosition: targetPosition,
+          busNumber: busNumber,
+          outputMode: connection.outputMode,
+          isSelected: false,
+          isHighlighted:
+              _hoveredConnectionId == connection.id ||
+              _selectedPortConnectionIds.contains(
+                connection.id,
+              ), // Highlight if hovered or selected for deletion
+          isPhysicalConnection: isPhysicalConnection,
+          isInputConnection: isInputConnection,
+          busLabel: connection
+              .busLabel, // Pass through bus label for partial connections
+          onLabelHover:
+              null, // Label hover is handled by the overlay widgets, not here
+          onLabelTap: () => _toggleConnectionOutputMode(connection.id),
+        ),
+      );
     }
 
     if (connectionDataList.isEmpty) {
@@ -576,7 +857,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 theme: Theme.of(context),
                 showLabels: true,
                 enableAnimations: true,
-                hoveredConnectionId: _hoveredLabelConnectionId,  // Use label hover state for label highlighting
+                hoveredConnectionId:
+                    _hoveredLabelConnectionId, // Use label hover state for label highlighting
                 onBoundsUpdated: (bounds) {
                   _connectionLabelBounds = bounds;
                 },
@@ -592,7 +874,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   /// Build individual hoverable connections for desktop platforms
-  Widget _buildHoverableConnections(List<painter.ConnectionData> connectionDataList) {
+  Widget _buildHoverableConnections(
+    List<painter.ConnectionData> connectionDataList,
+  ) {
     // For desktop, we use a hybrid approach:
     // 1. Render all connections with unified painter (efficient)
     // 2. Overlay individual hover detection areas for delete functionality
@@ -607,7 +891,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               theme: Theme.of(context),
               showLabels: true,
               enableAnimations: true,
-              hoveredConnectionId: _hoveredLabelConnectionId,  // Use label hover state for label highlighting
+              hoveredConnectionId:
+                  _hoveredLabelConnectionId, // Use label hover state for label highlighting
               onBoundsUpdated: (bounds) {
                 _connectionLabelBounds = bounds;
               },
@@ -616,7 +901,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           ),
         ),
 
-
         // Keep existing label overlays for output mode toggling
         ..._buildConnectionLabelOverlays(),
       ],
@@ -624,38 +908,26 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   Widget _buildTemporaryConnection() {
-    if (_connectionSourcePortId == null || _dragPosition == null) {
+    if (!_isDraggingConnection ||
+        _dragSourcePort == null ||
+        _dragCurrentPosition == null) {
       return const SizedBox.shrink();
     }
-    final sourcePosition = _getPortPosition(_connectionSourcePortId!);
+
+    final sourcePosition = _getPortPosition(_dragSourcePort!.id);
     if (sourcePosition == null) return const SizedBox.shrink();
 
-    // Create a temporary connection for preview
-    final tempConnection = Connection(
-      id: 'temp_connection',
-      sourcePortId: _connectionSourcePortId!,
-      destinationPortId: 'temp_target',
-      connectionType: ConnectionType.algorithmToAlgorithm,
-    );
-
-    final connectionData = painter.ConnectionData(
-      connection: tempConnection,
-      sourcePosition: sourcePosition,
-      destinationPosition: _dragPosition!,
-      isHighlighted: true,
-    );
-
-    // Use ConnectionPainter directly for the temporary connection
-    return CustomPaint(
-      painter: painter.ConnectionPainter(
-        connections: [connectionData],
-        theme: Theme.of(context),
-        enableAntiOverlap: false,
-        showLabels: false,
-        enableAnimations: true,
-        animationProgress: 1.0,
+    // Use RepaintBoundary for performance during drag operations
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: _TemporaryConnectionPainter(
+          sourcePosition: sourcePosition,
+          targetPosition: _dragCurrentPosition!,
+          sourcePortId: _dragSourcePort!.id,
+          theme: Theme.of(context),
+        ),
+        child: const SizedBox.expand(),
       ),
-      child: const SizedBox.expand(),
     );
   }
 
@@ -674,7 +946,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         ),
       );
 
-      if (highlightedConnection.id.isNotEmpty && _isPointNearConnection(tapPosition, highlightedConnection)) {
+      if (highlightedConnection.id.isNotEmpty &&
+          _isPointNearConnection(tapPosition, highlightedConnection)) {
         // Tap hit the highlighted connection - delete it
         debugPrint('Deleting connection: $_hoveredConnectionId');
         _deleteConnection(_hoveredConnectionId!, connections);
@@ -699,7 +972,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return distance <= hitRadius;
   }
 
-  double _distanceFromPointToLine(Offset point, Offset lineStart, Offset lineEnd) {
+  double _distanceFromPointToLine(
+    Offset point,
+    Offset lineStart,
+    Offset lineEnd,
+  ) {
     // Calculate distance from point to line segment
     final A = point.dx - lineStart.dx;
     final B = point.dy - lineStart.dy;
@@ -766,14 +1043,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (_horizontalScrollController.hasClients) {
         final newHorizontal = _horizontalScrollController.offset - delta.dx;
         _horizontalScrollController.jumpTo(
-          newHorizontal.clamp(0.0, _horizontalScrollController.position.maxScrollExtent),
+          newHorizontal.clamp(
+            0.0,
+            _horizontalScrollController.position.maxScrollExtent,
+          ),
         );
       }
 
       if (_verticalScrollController.hasClients) {
         final newVertical = _verticalScrollController.offset - delta.dy;
         _verticalScrollController.jumpTo(
-          newVertical.clamp(0.0, _verticalScrollController.position.maxScrollExtent),
+          newVertical.clamp(
+            0.0,
+            _verticalScrollController.position.maxScrollExtent,
+          ),
         );
       }
     }
@@ -785,7 +1068,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       _isDraggingNode = false;
     });
   }
-
 
   // Port and node interaction handlers
   void _handlePortTap(Port port) {
@@ -816,39 +1098,152 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   void _handlePortDragStart(Port port) {
     debugPrint('=== PORT DRAG START: ${port.id} (${port.name})');
-    // Port dragging not implemented yet
+
+    // Only start drag from output ports
+    if (port.isInput) {
+      debugPrint('Cannot start drag from input port: ${port.id}');
+      return;
+    }
+
+    // Get the current port position
+    final portPosition = _getPortPosition(port.id);
+    if (portPosition == null) {
+      debugPrint('Cannot find position for port: ${port.id}');
+      return;
+    }
+
+    setState(() {
+      _isDraggingConnection = true;
+      _dragSourcePort = port;
+      _dragCurrentPosition = portPosition;
+    });
+
+    debugPrint('Started connection drag from output port: ${port.name}');
   }
 
   void _handlePortDragUpdate(Port port, Offset position) {
-    debugPrint('=== PORT DRAG UPDATE: ${port.id} at $position');
-    // Port dragging not implemented yet
+    // Only update if we're dragging a connection and this is the source port
+    if (!_isDraggingConnection || _dragSourcePort?.id != port.id) {
+      return;
+    }
+
+    // Cancel previous debounce timer
+    _dragUpdateDebounceTimer?.cancel();
+
+    // Debounce drag updates to prevent excessive setState calls
+    _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 50), () {
+      if (!mounted || !_isDraggingConnection || _dragSourcePort?.id != port.id) {
+        return;
+      }
+
+      debugPrint('=== PORT DRAG UPDATE: ${port.id} at $position');
+
+      // Find port at current drag position for highlighting
+      final targetPort = _findPortAtPosition(position);
+      String? newHighlightedPortId;
+      
+      // Only highlight input ports (since drag starts from output)
+      if (targetPort != null && targetPort.isInput) {
+        newHighlightedPortId = targetPort.id;
+      }
+
+      // Update highlighted port only if it changed (performance optimization)
+      if (newHighlightedPortId != _highlightedPortId) {
+        setState(() {
+          _highlightedPortId = newHighlightedPortId;
+          _dragCurrentPosition = position;
+        });
+      } else {
+        setState(() {
+          _dragCurrentPosition = position;
+        });
+      }
+    });
   }
 
   void _handlePortDragEnd(Port port, Offset position) {
     debugPrint('=== PORT DRAG END: ${port.id} at $position');
-    // Port dragging not implemented yet
+
+    // Only handle if we're dragging a connection and this is the source port
+    if (!_isDraggingConnection || _dragSourcePort?.id != port.id) {
+      return;
+    }
+
+    // Cancel any pending drag update
+    _dragUpdateDebounceTimer?.cancel();
+
+    try {
+      // Find port at drop position
+      final targetPort = _findPortAtPosition(position);
+
+      if (targetPort != null && targetPort.isInput) {
+        debugPrint('Valid drop target found: ${targetPort.name}');
+        
+        // Check for duplicate connection before attempting to create
+        final currentState = context.read<RoutingEditorCubit>().state;
+        if (currentState is RoutingEditorStateLoaded) {
+          final existingConnection = currentState.connections.any(
+            (conn) => conn.sourcePortId == _dragSourcePort!.id && 
+                     conn.destinationPortId == targetPort.id,
+          );
+          
+          if (existingConnection) {
+            _showError('Connection already exists between these ports');
+            return;
+          }
+        }
+        
+        // Create the connection using the cubit
+        final cubit = context.read<RoutingEditorCubit>();
+        _createConnectionWithErrorHandling(cubit, _dragSourcePort!.id, targetPort.id);
+        
+        debugPrint(
+          'Connection creation requested: ${_dragSourcePort!.name} -> ${targetPort.name}',
+        );
+      } else {
+        // Invalid drop - silently clear drag state (no error message)
+        debugPrint('No valid input port found at drop position - silent failure');
+      }
+    } catch (e) {
+      _showError('Failed to create connection: ${e.toString()}');
+      debugPrint('Error in drag end: $e');
+    } finally {
+      // Always clear drag state
+      setState(() {
+        _isDraggingConnection = false;
+        _dragSourcePort = null;
+        _dragCurrentPosition = null;
+        _highlightedPortId = null; // Clear highlighting when drag ends
+      });
+    }
   }
 
-  Future<void> _showPortConnectionsDeleteConfirmation(String portId, String? portName) async {
+  Future<void> _showPortConnectionsDeleteConfirmation(
+    String portId,
+    String? portName,
+  ) async {
     // Get the current state to find connections
     final routingState = context.read<RoutingEditorCubit>().state;
     if (routingState is! RoutingEditorStateLoaded) return;
-    
+
     // Find all connections for this port
-    final portConnections = routingState.connections.where((conn) =>
-      conn.sourcePortId == portId || conn.destinationPortId == portId
-    ).toList();
-    
+    final portConnections = routingState.connections
+        .where(
+          (conn) =>
+              conn.sourcePortId == portId || conn.destinationPortId == portId,
+        )
+        .toList();
+
     if (portConnections.isEmpty) {
       debugPrint('No connections found for port: $portId');
       return;
     }
-    
+
     // Highlight the connections that will be deleted
     setState(() {
       _selectedPortConnectionIds = portConnections.map((c) => c.id).toSet();
     });
-    
+
     // Build connection descriptions for the dialog
     final connectionDescriptions = <String>[];
     for (final connection in portConnections) {
@@ -861,44 +1256,55 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           ...algo.outputPorts,
         ],
       ];
-      
+
       final sourcePort = allPorts.firstWhere(
         (p) => p.id == connection.sourcePortId,
-        orElse: () => Port(id: '', name: connection.sourcePortId, type: PortType.cv, direction: PortDirection.input),
+        orElse: () => Port(
+          id: '',
+          name: connection.sourcePortId,
+          type: PortType.cv,
+          direction: PortDirection.input,
+        ),
       );
       final destPort = allPorts.firstWhere(
         (p) => p.id == connection.destinationPortId,
-        orElse: () => Port(id: '', name: connection.destinationPortId, type: PortType.cv, direction: PortDirection.input),
+        orElse: () => Port(
+          id: '',
+          name: connection.destinationPortId,
+          type: PortType.cv,
+          direction: PortDirection.input,
+        ),
       );
-      
+
       connectionDescriptions.add('${sourcePort.name} → ${destPort.name}');
     }
-    
+
     // Show confirmation dialog
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          portConnections.length == 1 
-            ? 'Delete Connection?' 
-            : 'Delete ${portConnections.length} Connections?'
+          portConnections.length == 1
+              ? 'Delete Connection?'
+              : 'Delete ${portConnections.length} Connections?',
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (portName != null)
-              Text('From port: $portName\n'),
+            if (portName != null) Text('From port: $portName\n'),
             Text(
               portConnections.length == 1
-                ? 'This will delete the connection:'
-                : 'This will delete the following connections:',
+                  ? 'This will delete the connection:'
+                  : 'This will delete the following connections:',
             ),
             const SizedBox(height: 8),
-            ...connectionDescriptions.map((desc) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text('• $desc', style: const TextStyle(fontSize: 14)),
-            )),
+            ...connectionDescriptions.map(
+              (desc) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text('• $desc', style: const TextStyle(fontSize: 14)),
+              ),
+            ),
           ],
         ),
         actions: [
@@ -916,25 +1322,29 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         ],
       ),
     );
-    
+
     // Clear highlighting
     setState(() {
       _selectedPortConnectionIds.clear();
     });
-    
+
     // Delete connections if confirmed
     if (shouldDelete == true && mounted) {
       final cubit = context.read<RoutingEditorCubit>();
       for (final connection in portConnections) {
         await cubit.deleteConnectionWithSmartBusLogic(connection.id);
       }
-      debugPrint('Deleted ${portConnections.length} connections for port $portId');
+      debugPrint(
+        'Deleted ${portConnections.length} connections for port $portId',
+      );
     }
   }
 
-
-
-  bool _hasLoadedStateChanged(RoutingEditorStateLoaded previous, RoutingEditorStateLoaded current) { /* same as RoutingCanvas */
+  bool _hasLoadedStateChanged(
+    RoutingEditorStateLoaded previous,
+    RoutingEditorStateLoaded current,
+  ) {
+    /* same as RoutingCanvas */
     if (previous.physicalInputs.length != current.physicalInputs.length ||
         previous.physicalOutputs.length != current.physicalOutputs.length ||
         previous.algorithms.length != current.algorithms.length ||
@@ -945,14 +1355,18 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (i >= previous.algorithms.length) return true;
       final prevAlg = previous.algorithms[i];
       final currAlg = current.algorithms[i];
-      if (prevAlg.index != currAlg.index || prevAlg.algorithm.name != currAlg.algorithm.name) {
+      if (prevAlg.index != currAlg.index ||
+          prevAlg.algorithm.name != currAlg.algorithm.name) {
         return true;
       }
       if (prevAlg.inputPorts.length != currAlg.inputPorts.length) return true;
       for (int p = 0; p < currAlg.inputPorts.length; p++) {
         final a = prevAlg.inputPorts[p];
         final b = currAlg.inputPorts[p];
-        if (a.id != b.id || a.name != b.name || a.type != b.type || a.direction != b.direction) {
+        if (a.id != b.id ||
+            a.name != b.name ||
+            a.type != b.type ||
+            a.direction != b.direction) {
           return true;
         }
       }
@@ -960,7 +1374,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (int p = 0; p < currAlg.outputPorts.length; p++) {
         final a = prevAlg.outputPorts[p];
         final b = currAlg.outputPorts[p];
-        if (a.id != b.id || a.name != b.name || a.type != b.type || a.direction != b.direction) {
+        if (a.id != b.id ||
+            a.name != b.name ||
+            a.type != b.type ||
+            a.direction != b.direction) {
           return true;
         }
       }
@@ -1021,9 +1438,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         // Physical inputs are on the left side
         const double centerX = _canvasWidth / 2;
         const double centerY = _canvasHeight / 2;
-        final nodePos = _nodePositions['physical_inputs'] ?? const Offset(centerX - 800, centerY - 300);
+        final nodePos =
+            _nodePositions['physical_inputs'] ??
+            const Offset(centerX - 800, centerY - 300);
         // Physical input node width is ~150px, ports are on the right edge
-        final portOffset = Offset(150, 50 + (inputNum - 1) * 30); // Stack vertically
+        final portOffset = Offset(
+          150,
+          50 + (inputNum - 1) * 30,
+        ); // Stack vertically
         return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
       }
     }
@@ -1035,9 +1457,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         // Physical outputs are on the right side
         const double centerX = _canvasWidth / 2;
         const double centerY = _canvasHeight / 2;
-        final nodePos = _nodePositions['physical_outputs'] ?? const Offset(centerX + 600, centerY - 300);
+        final nodePos =
+            _nodePositions['physical_outputs'] ??
+            const Offset(centerX + 600, centerY - 300);
         // Physical output node ports are on the left edge
-        final portOffset = Offset(0, 50 + (outputNum - 1) * 30); // Stack vertically
+        final portOffset = Offset(
+          0,
+          50 + (outputNum - 1) * 30,
+        ); // Stack vertically
         return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
       }
     }
@@ -1080,7 +1507,51 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return null;
   }
 
+  /// Find a port at the given position within a reasonable hit radius
+  Port? _findPortAtPosition(Offset position) {
+    const double hitRadius = 20.0; // Pixels
 
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded) return null;
+
+    // Check all ports and find the closest one within hit radius
+    Port? closestPort;
+    double closestDistance = double.infinity;
+
+    // Helper function to check a port's position
+    void checkPort(Port port) {
+      final portPosition = _getPortPosition(port.id);
+      if (portPosition != null) {
+        final distance = (position - portPosition).distance;
+        if (distance <= hitRadius && distance < closestDistance) {
+          closestDistance = distance;
+          closestPort = port;
+        }
+      }
+    }
+
+    // Check physical inputs
+    for (final port in routingState.physicalInputs) {
+      checkPort(port);
+    }
+
+    // Check physical outputs
+    for (final port in routingState.physicalOutputs) {
+      checkPort(port);
+    }
+
+    // Check algorithm ports
+    for (final algorithm in routingState.algorithms) {
+      for (final port in algorithm.inputPorts) {
+        checkPort(port);
+      }
+      for (final port in algorithm.outputPorts) {
+        checkPort(port);
+      }
+    }
+
+    return closestPort;
+  }
 
   /// Create a theme for a specific algorithm connection type
 
@@ -1092,7 +1563,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final local = box.globalToLocal(globalCenter);
     // Check if position has changed significantly
     final existingPosition = _portPositions[portId];
-    final needsUpdate = existingPosition == null || (existingPosition - local).distance > 1.0;
+    final needsUpdate =
+        existingPosition == null || (existingPosition - local).distance > 1.0;
 
     if (needsUpdate) {
       // Store port position
@@ -1115,7 +1587,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
   }
 
-
   /// Get a set of all connected port IDs
   Set<String> _getConnectedPortIds(List<Connection> connections) {
     final connectedPorts = <String>{};
@@ -1127,15 +1598,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   /// Handle routing actions from PortWidget
-  void _handlePortRoutingAction(String portId, String action, List<Connection> connections) {
+  void _handlePortRoutingAction(
+    String portId,
+    String action,
+    List<Connection> connections,
+  ) {
     debugPrint('=== PORT ROUTING ACTION: $portId -> $action');
 
     switch (action) {
       case 'hover_start':
         // Find connections involving this port and highlight the first one
-        final portConnections = connections.where((conn) =>
-          conn.sourcePortId == portId || conn.destinationPortId == portId
-        ).toList();
+        final portConnections = connections
+            .where(
+              (conn) =>
+                  conn.sourcePortId == portId ||
+                  conn.destinationPortId == portId,
+            )
+            .toList();
 
         if (portConnections.isNotEmpty) {
           _connectionHighlightTimer?.cancel();
@@ -1161,11 +1640,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
       case 'delete_connections':
         // Find and delete all connections for this port
-        final portConnections = connections.where((conn) =>
-          conn.sourcePortId == portId || conn.destinationPortId == portId
-        ).toList();
+        final portConnections = connections
+            .where(
+              (conn) =>
+                  conn.sourcePortId == portId ||
+                  conn.destinationPortId == portId,
+            )
+            .toList();
 
-        debugPrint('Deleting ${portConnections.length} connections for port $portId');
+        debugPrint(
+          'Deleting ${portConnections.length} connections for port $portId',
+        );
         final cubit = context.read<RoutingEditorCubit>();
         for (final connection in portConnections) {
           cubit.deleteConnectionWithSmartBusLogic(connection.id);
@@ -1173,7 +1658,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         break;
     }
   }
-
 
   /// Build invisible overlays positioned over connection labels for gesture detection
   List<Widget> _buildConnectionLabelOverlays() {
@@ -1184,7 +1668,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     for (final entry in _connectionLabelBounds.entries) {
       final connectionId = entry.key;
       final bounds = entry.value;
-      
+
       // Find the connection to check if it has a mode parameter
       final connection = routingState.connections.firstWhere(
         (conn) => conn.id == connectionId,
@@ -1195,7 +1679,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           connectionType: ConnectionType.algorithmToAlgorithm,
         ),
       );
-      
+
       // Find the source port to check for mode parameter
       // Collect all ports from algorithms
       final allPorts = [
@@ -1206,7 +1690,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           ...algo.outputPorts,
         ],
       ];
-      
+
       final sourcePort = allPorts.firstWhere(
         (port) => port.id == connection.sourcePortId,
         orElse: () => Port(
@@ -1216,7 +1700,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           direction: PortDirection.input,
         ),
       );
-      
+
       // Only add hover effect if the port has a mode parameter
       final hasModeParameter = sourcePort.modeParameterNumber != null;
 
@@ -1228,7 +1712,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         },
         child: const SizedBox.expand(), // Fill the entire positioned area
       );
-      
+
       // Wrap in MouseRegion only if it has a mode parameter
       if (hasModeParameter) {
         overlay = MouseRegion(
@@ -1260,7 +1744,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return overlays;
   }
 
-
   /// Toggle output mode for a connection between add (0) and replace (1)
   void _toggleConnectionOutputMode(String connectionId) {
     final routingState = context.read<RoutingEditorCubit>().state;
@@ -1279,28 +1762,46 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     debugPrint('Toggling output mode for ${connection.sourcePortId}');
   }
-
 }
 
-class _CanvasGridPainter extends CustomPainter { /* same as canvas */
+class _CanvasGridPainter extends CustomPainter {
+  /* same as canvas */
   final Color minorGridColor;
   final Color majorGridColor;
   final double gridSize;
   final int majorEvery;
-  const _CanvasGridPainter({required this.minorGridColor, required this.majorGridColor, this.gridSize = 50.0, this.majorEvery = 5});
+  const _CanvasGridPainter({
+    required this.minorGridColor,
+    required this.majorGridColor,
+    this.gridSize = 50.0,
+    this.majorEvery = 5,
+  });
   @override
   void paint(Canvas canvas, Size size) {
-    final minorPaint = Paint()..color = minorGridColor..strokeWidth = 1;
-    final majorPaint = Paint()..color = majorGridColor..strokeWidth = 1.5;
+    final minorPaint = Paint()
+      ..color = minorGridColor
+      ..strokeWidth = 1;
+    final majorPaint = Paint()
+      ..color = majorGridColor
+      ..strokeWidth = 1.5;
     for (double x = 0; x <= size.width; x += gridSize) {
       final isMajor = (x / gridSize) % majorEvery == 0;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), isMajor ? majorPaint : minorPaint);
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        isMajor ? majorPaint : minorPaint,
+      );
     }
     for (double y = 0; y <= size.height; y += gridSize) {
       final isMajor = (y / gridSize) % majorEvery == 0;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), isMajor ? majorPaint : minorPaint);
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        isMajor ? majorPaint : minorPaint,
+      );
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -1345,5 +1846,72 @@ class _ConnectionPainterWithBounds extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ConnectionPainterWithBounds oldDelegate) {
     return _delegate.shouldRepaint(oldDelegate._delegate);
+  }
+}
+
+/// Custom painter for temporary connection preview during drag operations
+class _TemporaryConnectionPainter extends CustomPainter {
+  final Offset sourcePosition;
+  final Offset targetPosition;
+  final String sourcePortId;
+  final ThemeData theme;
+
+  const _TemporaryConnectionPainter({
+    required this.sourcePosition,
+    required this.targetPosition,
+    required this.sourcePortId,
+    required this.theme,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Create the bezier path using the same calculation as ConnectionPainter
+    final path = painter.ConnectionPainter.createBezierPath(
+      sourcePosition,
+      targetPosition,
+    );
+
+    // Get color for the source port type (similar to ConnectionPainter._getPortColor)
+    Color connectionColor = _getPortColor(sourcePortId);
+
+    // Apply semi-transparent styling for preview
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = connectionColor.withValues(alpha: 0.5); // Semi-transparent
+
+    // Draw the connection path
+    canvas.drawPath(path, paint);
+
+    // Draw endpoints with semi-transparent styling
+    final endpointPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = connectionColor.withValues(alpha: 0.7);
+
+    const radius = 4.0;
+    canvas.drawCircle(sourcePosition, radius, endpointPaint);
+    canvas.drawCircle(targetPosition, radius, endpointPaint);
+  }
+
+  /// Get color for a port based on its type (simplified version from ConnectionPainter)
+  Color _getPortColor(String portId) {
+    // Parse port type from ID (simplified - should use actual port data)
+    if (portId.contains('audio')) return theme.colorScheme.primary;
+    if (portId.contains('cv')) return Colors.orange;
+    if (portId.contains('gate')) return Colors.red;
+    if (portId.contains('clock') || portId.contains('trigger')) {
+      return Colors.purple;
+    }
+    return theme.colorScheme.onSurface;
+  }
+
+  @override
+  bool shouldRepaint(covariant _TemporaryConnectionPainter oldDelegate) {
+    return oldDelegate.sourcePosition != sourcePosition ||
+        oldDelegate.targetPosition != targetPosition ||
+        oldDelegate.sourcePortId != sourcePortId ||
+        oldDelegate.theme != theme;
   }
 }

@@ -146,10 +146,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         // Skip algorithms with no inputs and no outputs (like Notes)
         // These can't participate in routing and clutter the canvas
         if (inputPorts.isEmpty && outputPorts.isEmpty) {
-          debugPrint('Skipping algorithm ${slot.algorithm} (slot $i) - no inputs or outputs');
+          debugPrint(
+            'Skipping algorithm ${slot.algorithm} (slot $i) - no inputs or outputs',
+          );
           continue;
         }
-        
+
         // Only add to routings list if the algorithm has I/O
         routings.add(routing);
 
@@ -370,7 +372,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     ];
   }
 
-  /// Create a new connection between source and target ports
+  /// Create a new connection between source and target ports with automatic bus assignment
   Future<void> createConnection({
     required String sourcePortId,
     required String targetPortId,
@@ -384,6 +386,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return;
     }
 
+    if (_distingCubit == null) {
+      debugPrint('Cannot create connection - DistingCubit not available');
+      return;
+    }
+
     try {
       // Validate ports exist
       final sourcePort = _findPortById(currentState, sourcePortId);
@@ -391,12 +398,18 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (sourcePort == null) {
         debugPrint('Source port not found: $sourcePortId');
-        return;
+        throw ArgumentError('Source port not found: $sourcePortId');
       }
 
       if (targetPort == null) {
         debugPrint('Target port not found: $targetPortId');
-        return;
+        throw ArgumentError('Target port not found: $targetPortId');
+      }
+
+      // Validate connection is valid (output -> input)
+      if (sourcePort.direction != PortDirection.output || targetPort.direction != PortDirection.input) {
+        debugPrint('Invalid connection direction: source must be output, target must be input');
+        throw ArgumentError('Invalid connection: source must be output, target must be input');
       }
 
       // Check for duplicate connections
@@ -407,46 +420,236 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
       if (existingConnection != null) {
         debugPrint('Connection already exists: $sourcePortId -> $targetPortId');
-        return;
+        throw StateError('Connection already exists between these ports');
       }
 
-      // Generate unique connection ID
-      final connectionId =
-          'conn_${sourcePortId}_${targetPortId}_${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('Creating connection: ${sourcePort.name} -> ${targetPort.name}');
 
-      // Determine connection type
-      final connectionType = _determineConnectionType(
-        sourcePortId,
-        targetPortId,
-      );
+      // Determine connection type and assign bus number
+      final connectionType = _determineConnectionType(sourcePortId, targetPortId);
+      int? busNumber;
 
-      // Create new connection
-      final newConnection = Connection(
-        id: connectionId,
-        sourcePortId: sourcePortId,
-        destinationPortId: targetPortId,
-        connectionType: connectionType,
-        outputMode: outputMode,
-        gain: gain,
-        createdAt: DateTime.now(),
-      );
+      // Assign bus numbers based on connection type
+      switch (connectionType) {
+        case ConnectionType.hardwareInput:
+          // Hardware input to algorithm: use buses 1-12
+          busNumber = await _assignBusForHardwareInput(sourcePortId, targetPort, currentState);
+          break;
+        case ConnectionType.hardwareOutput:
+          // Algorithm to hardware output: use buses 13-20
+          busNumber = await _assignBusForHardwareOutput(sourcePort, targetPortId, currentState);
+          break;
+        case ConnectionType.algorithmToAlgorithm:
+          // Algorithm to algorithm: use aux buses 21-28
+          busNumber = await _assignBusForAlgorithmConnection(sourcePort, targetPort, currentState);
+          break;
+        default:
+          debugPrint('Unsupported connection type: $connectionType');
+          return;
+      }
 
-      // Update state with new connection
-      final updatedConnections = [...currentState.connections, newConnection];
+      if (busNumber == null) {
+        debugPrint('Failed to assign bus number for connection');
+        throw StateError('Failed to assign bus - all buses may be in use');
+      }
 
-      emit(
-        currentState.copyWith(connections: updatedConnections, lastError: null),
-      );
+      debugPrint('Assigned bus $busNumber for connection: ${sourcePort.name} -> ${targetPort.name}');
 
-      debugPrint(
-        'Connection created: ${sourcePort.name} -> ${targetPort.name}',
-      );
+      // The connection will appear automatically via ConnectionDiscoveryService
+      // when the bus parameters are updated
+      debugPrint('Connection creation initiated - will appear via automatic discovery');
 
-      // Mark hardware as out of sync after local changes
+      // Mark hardware as out of sync after parameter changes
       await _autoSyncToHardware();
     } catch (e) {
       debugPrint('Error creating connection: $e');
     }
+  }
+
+  /// Assign bus for hardware input connection (hardware input -> algorithm input)
+  Future<int?> _assignBusForHardwareInput(
+    String hardwareInputPortId,
+    Port algorithmInputPort,
+    RoutingEditorStateLoaded state,
+  ) async {
+    // Hardware inputs use buses 1-12
+    final hardwareInputNumber = int.tryParse(hardwareInputPortId.replaceAll('hw_in_', ''));
+    if (hardwareInputNumber == null || hardwareInputNumber < 1 || hardwareInputNumber > 12) {
+      debugPrint('Invalid hardware input port: $hardwareInputPortId');
+      return null;
+    }
+
+    final busNumber = hardwareInputNumber; // Bus 1 for hw_in_1, etc.
+
+    // Find the algorithm that owns this input port and update its parameter
+    if (algorithmInputPort.parameterNumber != null) {
+      final algorithmIndex = _findAlgorithmIndexForPort(state, algorithmInputPort.id);
+      if (algorithmIndex != null) {
+        debugPrint('Setting input bus for algorithm $algorithmIndex, parameter ${algorithmInputPort.parameterNumber} to bus $busNumber');
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: algorithmInputPort.parameterNumber!,
+          value: busNumber,
+          userIsChangingTheValue: false,
+        );
+        return busNumber;
+      }
+    }
+
+    debugPrint('Could not find algorithm for input port: ${algorithmInputPort.id}');
+    return null;
+  }
+
+  /// Assign bus for hardware output connection (algorithm output -> hardware output)
+  Future<int?> _assignBusForHardwareOutput(
+    Port algorithmOutputPort,
+    String hardwareOutputPortId,
+    RoutingEditorStateLoaded state,
+  ) async {
+    // Hardware outputs use buses 13-20
+    final hardwareOutputNumber = int.tryParse(hardwareOutputPortId.replaceAll('hw_out_', ''));
+    if (hardwareOutputNumber == null || hardwareOutputNumber < 1 || hardwareOutputNumber > 8) {
+      debugPrint('Invalid hardware output port: $hardwareOutputPortId');
+      return null;
+    }
+
+    final busNumber = 12 + hardwareOutputNumber; // Bus 13 for hw_out_1, etc.
+
+    // Find the algorithm that owns this output port and update its parameter
+    if (algorithmOutputPort.parameterNumber != null) {
+      final algorithmIndex = _findAlgorithmIndexForPort(state, algorithmOutputPort.id);
+      if (algorithmIndex != null) {
+        debugPrint('Setting output bus for algorithm $algorithmIndex, parameter ${algorithmOutputPort.parameterNumber} to bus $busNumber');
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: algorithmIndex,
+          parameterNumber: algorithmOutputPort.parameterNumber!,
+          value: busNumber,
+          userIsChangingTheValue: false,
+        );
+        return busNumber;
+      }
+    }
+
+    debugPrint('Could not find algorithm for output port: ${algorithmOutputPort.id}');
+    return null;
+  }
+
+  /// Assign bus for algorithm-to-algorithm connection using aux buses
+  Future<int?> _assignBusForAlgorithmConnection(
+    Port sourceOutputPort,
+    Port targetInputPort,
+    RoutingEditorStateLoaded state,
+  ) async {
+    // Check if either port already has a bus assignment - use that if available
+    int? existingBus;
+    if (sourceOutputPort.busValue != null && sourceOutputPort.busValue! > 0) {
+      existingBus = sourceOutputPort.busValue;
+    } else if (targetInputPort.busValue != null && targetInputPort.busValue! > 0) {
+      existingBus = targetInputPort.busValue;
+    }
+
+    int busToUse;
+    if (existingBus != null) {
+      busToUse = existingBus;
+      debugPrint('Using existing bus $busToUse for algorithm connection');
+    } else {
+      // Find the first available aux bus (21-28)
+      final availableBus = await _findFirstAvailableAuxBus(state);
+      if (availableBus == null) {
+        debugPrint('No available aux buses for algorithm connection');
+        throw StateError('No available aux buses for algorithm connections (limit: 8 buses)');
+      }
+      busToUse = availableBus;
+      debugPrint('Using new aux bus $busToUse for algorithm connection');
+    }
+
+    // Update both source output and target input bus parameters
+    bool sourceUpdated = false;
+    bool targetUpdated = false;
+
+    // Update source output port (if it doesn't already have this bus)
+    if (sourceOutputPort.parameterNumber != null && sourceOutputPort.busValue != busToUse) {
+      final sourceAlgorithmIndex = _findAlgorithmIndexForPort(state, sourceOutputPort.id);
+      if (sourceAlgorithmIndex != null) {
+        debugPrint('Setting source output bus for algorithm $sourceAlgorithmIndex, parameter ${sourceOutputPort.parameterNumber} to bus $busToUse');
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: sourceAlgorithmIndex,
+          parameterNumber: sourceOutputPort.parameterNumber!,
+          value: busToUse,
+          userIsChangingTheValue: false,
+        );
+        sourceUpdated = true;
+      }
+    } else if (sourceOutputPort.busValue == busToUse) {
+      sourceUpdated = true; // Already has the correct bus
+    }
+
+    // Update target input port (if it doesn't already have this bus)
+    if (targetInputPort.parameterNumber != null && targetInputPort.busValue != busToUse) {
+      final targetAlgorithmIndex = _findAlgorithmIndexForPort(state, targetInputPort.id);
+      if (targetAlgorithmIndex != null) {
+        debugPrint('Setting target input bus for algorithm $targetAlgorithmIndex, parameter ${targetInputPort.parameterNumber} to bus $busToUse');
+        await _distingCubit!.updateParameterValue(
+          algorithmIndex: targetAlgorithmIndex,
+          parameterNumber: targetInputPort.parameterNumber!,
+          value: busToUse,
+          userIsChangingTheValue: false,
+        );
+        targetUpdated = true;
+      }
+    } else if (targetInputPort.busValue == busToUse) {
+      targetUpdated = true; // Already has the correct bus
+    }
+
+    if (sourceUpdated && targetUpdated) {
+      return busToUse;
+    } else {
+      debugPrint('Failed to update bus parameters for algorithm connection');
+      throw StateError('Failed to update bus parameters - algorithms may not be found');
+    }
+  }
+
+  /// Find the algorithm index for a given port ID
+  int? _findAlgorithmIndexForPort(RoutingEditorStateLoaded state, String portId) {
+    for (final algorithm in state.algorithms) {
+      // Check input ports
+      for (final port in algorithm.inputPorts) {
+        if (port.id == portId) {
+          return algorithm.index;
+        }
+      }
+      // Check output ports
+      for (final port in algorithm.outputPorts) {
+        if (port.id == portId) {
+          return algorithm.index;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Find the first available aux bus (21-28) that's not currently in use
+  Future<int?> _findFirstAvailableAuxBus(RoutingEditorStateLoaded state) async {
+    // Get all currently used bus numbers from existing connections
+    final usedBuses = <int>{};
+    
+    // Check all algorithm ports for their current bus assignments
+    for (final algorithm in state.algorithms) {
+      for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+        if (port.busValue != null && port.busValue! > 0) {
+          usedBuses.add(port.busValue!);
+        }
+      }
+    }
+    
+    // Find first available aux bus (21-28)
+    for (int busNumber = 21; busNumber <= 28; busNumber++) {
+      if (!usedBuses.contains(busNumber)) {
+        return busNumber;
+      }
+    }
+    
+    return null; // No available aux buses
   }
 
   /// Delete an existing connection by ID
@@ -656,7 +859,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   }
 
   /// Helper method to check if two ports can be connected
-
 
   /// Helper method to determine if a connection is a ghost connection
   /// Ghost connections occur when an algorithm output connects to a physical input
@@ -1181,7 +1383,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Hardware sync completed at $syncTime');
     } catch (e) {
       debugPrint('Error syncing to hardware: $e');
-      emit(currentState.copyWith(subState: SubState.error, lastError: e.toString()));
+      emit(
+        currentState.copyWith(
+          subState: SubState.error,
+          lastError: e.toString(),
+        ),
+      );
     }
   }
 
@@ -1268,7 +1475,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Refresh routing data from hardware
   Future<void> refreshRouting() async {
     if (state is RoutingEditorStateLoaded) {
-      emit((state as RoutingEditorStateLoaded).copyWith(subState: SubState.refreshing));
+      emit(
+        (state as RoutingEditorStateLoaded).copyWith(
+          subState: SubState.refreshing,
+        ),
+      );
     }
 
     try {
@@ -1512,7 +1723,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Enhanced error recovery method
   Future<void> recoverFromError() async {
     final currentState = state;
-    if (currentState is RoutingEditorStateLoaded && currentState.lastError != null) {
+    if (currentState is RoutingEditorStateLoaded &&
+        currentState.lastError != null) {
       debugPrint('Attempting recovery from error: ${currentState.lastError}');
 
       try {
@@ -1572,11 +1784,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     try {
       debugPrint('Clearing bus assignments for connection: ${connection.id}');
-      
+
       // Find the source and destination ports
       final sourcePort = _findPortById(state, connection.sourcePortId);
       final targetPort = _findPortById(state, connection.destinationPortId);
-      
+
       if (sourcePort == null || targetPort == null) {
         debugPrint('Could not find ports for connection: ${connection.id}');
         return;
@@ -1584,9 +1796,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // For algorithm-to-algorithm connections, we need to clear both ends
       // by setting their respective bus parameters to 0
-      
+
       // Clear source port (output) bus assignment
-      if (sourcePort.parameterNumber != null && !connection.sourcePortId.startsWith('hw_')) {
+      if (sourcePort.parameterNumber != null &&
+          !connection.sourcePortId.startsWith('hw_')) {
         // Find which algorithm this port belongs to
         for (final algorithm in state.algorithms) {
           for (final port in algorithm.outputPorts) {
@@ -1608,7 +1821,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Clear target port (input) bus assignment
-      if (targetPort.parameterNumber != null && !connection.destinationPortId.startsWith('hw_')) {
+      if (targetPort.parameterNumber != null &&
+          !connection.destinationPortId.startsWith('hw_')) {
         // Find which algorithm this port belongs to
         for (final algorithm in state.algorithms) {
           for (final port in algorithm.inputPorts) {

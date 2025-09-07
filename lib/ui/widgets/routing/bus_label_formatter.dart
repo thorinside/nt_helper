@@ -4,16 +4,16 @@ import '../../../core/routing/models/port.dart';
 enum BusType {
   /// Physical input buses (1-12)
   input,
-  
+
   /// Physical output buses (13-20)
   output,
-  
+
   /// Auxiliary buses (21-28)
   auxiliary,
 }
 
 /// Utility class for formatting bus numbers into readable labels
-/// 
+///
 /// Converts bus numbers to their corresponding display format:
 /// - Buses 1-12: "I1" through "I12" (physical inputs)
 /// - Buses 13-20: "O1" through "O8" (physical outputs)
@@ -24,24 +24,24 @@ class BusLabelFormatter {
 
   /// Minimum valid bus number
   static const int minBusNumber = 1;
-  
+
   /// Maximum valid bus number
   static const int maxBusNumber = 28;
-  
+
   /// Input bus range
   static const int minInputBus = 1;
   static const int maxInputBus = 12;
-  
+
   /// Output bus range
   static const int minOutputBus = 13;
   static const int maxOutputBus = 20;
-  
+
   /// Auxiliary bus range
   static const int minAuxBus = 21;
   static const int maxAuxBus = 28;
 
   /// Formats a bus number into its display label
-  /// 
+  ///
   /// Returns:
   /// - "I1" through "I12" for buses 1-12
   /// - "O1" through "O8" for buses 13-20
@@ -69,17 +69,20 @@ class BusLabelFormatter {
   }
 
   /// Formats a bus number into its display label with optional output mode suffix
-  /// 
+  ///
   /// For output buses (13-20), adds " R" suffix when outputMode is replace.
   /// Input and auxiliary buses ignore the output mode parameter.
-  /// 
+  ///
   /// Returns:
   /// - "I1" through "I12" for input buses (mode ignored)
   /// - "O1" through "O8" for output buses in add mode or null mode
   /// - "O1 R" through "O8 R" for output buses in replace mode
   /// - "A1" through "A8" for auxiliary buses (mode ignored)
   /// - null for invalid bus numbers
-  static String? formatBusLabelWithMode(int? busNumber, OutputMode? outputMode) {
+  static String? formatBusLabelWithMode(
+    int? busNumber,
+    OutputMode? outputMode,
+  ) {
     if (busNumber == null || !isValidBusNumber(busNumber)) {
       return null;
     }
@@ -102,11 +105,11 @@ class BusLabelFormatter {
   }
 
   /// Determines the type of bus from its number
-  /// 
+  ///
   /// Returns the [BusType] for valid bus numbers, null otherwise
   static BusType? getBusType(int? busNumber) {
     if (busNumber == null) return null;
-    
+
     if (busNumber >= minInputBus && busNumber <= maxInputBus) {
       return BusType.input;
     } else if (busNumber >= minOutputBus && busNumber <= maxOutputBus) {
@@ -114,12 +117,12 @@ class BusLabelFormatter {
     } else if (busNumber >= minAuxBus && busNumber <= maxAuxBus) {
       return BusType.auxiliary;
     }
-    
+
     return null;
   }
 
   /// Checks if a bus number is valid
-  /// 
+  ///
   /// Valid bus numbers are 1-28 inclusive
   static bool isValidBusNumber(int? busNumber) {
     if (busNumber == null) return false;
@@ -127,7 +130,7 @@ class BusLabelFormatter {
   }
 
   /// Gets the range of bus numbers for a specific bus type
-  /// 
+  ///
   /// Returns a list with [min, max] bus numbers for the type
   static List<int> getBusRange(BusType busType) {
     switch (busType) {
@@ -141,7 +144,7 @@ class BusLabelFormatter {
   }
 
   /// Converts a global bus number to its local number within its type
-  /// 
+  ///
   /// For example:
   /// - Bus 1-12 returns 1-12 (unchanged for inputs)
   /// - Bus 13-20 returns 1-8 (outputs start at 1)

@@ -6,7 +6,7 @@ import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 // No direct dependency on RoutingEditorWidget static members
 
 /// A draggable widget representing an algorithm node in the routing editor.
-/// 
+///
 /// Features:
 /// - Draggable with precise coordinate transforms
 /// - Title bar showing algorithm name and slot number
@@ -36,14 +36,18 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // Set of port IDs that are currently connected
   final Set<String>? connectedPorts;
   // Callback to report per-port anchor global position
-  final void Function(String portId, Offset globalCenter, bool isInput)? onPortPositionResolved;
-  
+  final void Function(String portId, Offset globalCenter, bool isInput)?
+  onPortPositionResolved;
+
   // Callback for routing actions from ports
   final void Function(String portId, String action)? onRoutingAction;
-  
+
   // Callback when a port is tapped (for connection deletion)
   final void Function(String portId)? onPortTapped;
-  
+
+  // ID of the port that should be highlighted (during drag operations)
+  final String? highlightedPortId;
+
   const AlgorithmNodeWidget({
     super.key,
     required this.algorithmName,
@@ -66,8 +70,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onPortPositionResolved,
     this.onRoutingAction,
     this.onPortTapped,
+    this.highlightedPortId,
   });
-  
+
   @override
   State<AlgorithmNodeWidget> createState() => _AlgorithmNodeWidgetState();
 }
@@ -77,65 +82,69 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   // Track drag start and initial position for stable deltas
   Offset _dragStartGlobal = Offset.zero;
   Offset _initialPosition = Offset.zero;
-  
+
   @override
   void initState() {
     super.initState();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return GestureDetector(
-        onTap: () {
-          widget.onTap?.call();
-        },
-        onPanStart: _handleDragStart,
-        onPanUpdate: _handleDragUpdate,
-        onPanEnd: _handleDragEnd,
-        child: AnimatedContainer(
-          duration: _isDragging ? Duration.zero : const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.isSelected 
+      onTap: () {
+        widget.onTap?.call();
+      },
+      onPanStart: _handleDragStart,
+      onPanUpdate: _handleDragUpdate,
+      onPanEnd: _handleDragEnd,
+      child: AnimatedContainer(
+        duration: _isDragging
+            ? Duration.zero
+            : const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: widget.isSelected
                 ? AccessibilityColors.ensureContrast(
                     theme.colorScheme.primary,
                     theme.colorScheme.surface,
                     minRatio: AccessibilityColors.wcagAANormal,
                   )
-                : theme.colorScheme.outline.withValues(alpha: 0.7), // Higher alpha for better visibility
-              width: widget.isSelected ? 3 : 1, // Thicker border when selected
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
-                blurRadius: _isDragging ? 8 : 4,
-                offset: Offset(0, _isDragging ? 4 : 2),
-              ),
-            ],
+                : theme.colorScheme.outline.withValues(
+                    alpha: 0.7,
+                  ), // Higher alpha for better visibility
+            width: widget.isSelected ? 3 : 1, // Thicker border when selected
           ),
-          child: IntrinsicWidth(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildTitleBar(theme),
-                _buildPorts(theme),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
+              blurRadius: _isDragging ? 8 : 4,
+              offset: Offset(0, _isDragging ? 4 : 2),
             ),
+          ],
+        ),
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [_buildTitleBar(theme), _buildPorts(theme)],
           ),
         ),
-      );
+      ),
+    );
   }
-  
+
   Widget _buildTitleBar(ThemeData theme) {
     // Use app bar theming for better readability and consistency
-    final backgroundColor = theme.appBarTheme.backgroundColor ?? theme.colorScheme.surfaceContainerHigh;
-    final foregroundColor = theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface;
-    
+    final backgroundColor =
+        theme.appBarTheme.backgroundColor ??
+        theme.colorScheme.surfaceContainerHigh;
+    final foregroundColor =
+        theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
@@ -189,9 +198,16 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                 enabled: widget.onDelete != null,
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 18, color: theme.colorScheme.error),
+                    Icon(
+                      Icons.delete,
+                      size: 18,
+                      color: theme.colorScheme.error,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                    Text(
+                      'Delete',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
                   ],
                 ),
               ),
@@ -206,9 +222,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       ),
     );
   }
-  
+
   // Removed old overflow-only toolbar; actions are now visible icon buttons with delete in overflow
-  
+
   Widget _buildPorts(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
@@ -220,12 +236,15 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(widget.inputLabels.length, (index) =>
-              _buildPort(
+            children: List.generate(
+              widget.inputLabels.length,
+              (index) => _buildPort(
                 theme,
                 widget.inputLabels[index],
                 true,
-                portId: (widget.inputPortIds != null && index < widget.inputPortIds!.length)
+                portId:
+                    (widget.inputPortIds != null &&
+                        index < widget.inputPortIds!.length)
                     ? widget.inputPortIds![index]
                     : null,
               ),
@@ -238,12 +257,15 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(widget.outputLabels.length, (index) =>
-              _buildPort(
+            children: List.generate(
+              widget.outputLabels.length,
+              (index) => _buildPort(
                 theme,
                 widget.outputLabels[index],
                 false,
-                portId: (widget.outputPortIds != null && index < widget.outputPortIds!.length)
+                portId:
+                    (widget.outputPortIds != null &&
+                        index < widget.outputPortIds!.length)
                     ? widget.outputPortIds![index]
                     : null,
               ),
@@ -253,17 +275,25 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       ),
     );
   }
-  
-  Widget _buildPort(ThemeData theme, String label, bool isInput, {String? portId}) {
-    final isConnected = portId != null && (widget.connectedPorts?.contains(portId) ?? false);
-    
+
+  Widget _buildPort(
+    ThemeData theme,
+    String label,
+    bool isInput, {
+    String? portId,
+  }) {
+    final isConnected =
+        portId != null && (widget.connectedPorts?.contains(portId) ?? false);
+
     return PortWidget(
       label: label,
       isInput: isInput,
       portId: portId,
       labelPosition: isInput ? PortLabelPosition.right : PortLabelPosition.left,
       theme: theme,
-      isConnected: isConnected, // Keep using the passed connection info for algorithm ports
+      isConnected:
+          isConnected, // Keep using the passed connection info for algorithm ports
+      isHighlighted: portId != null && portId == widget.highlightedPortId,
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
       onTap: portId != null ? () => widget.onPortTapped?.call(portId) : null,
@@ -274,10 +304,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     if (text.length <= maxChars) return text;
     return '${text.substring(0, maxChars)}…';
   }
-  
+
   void _handleDragStart(DragStartDetails details) {
-    debugPrint('=== ALGORITHM NODE DRAG START: ${widget.algorithmName} at ${details.globalPosition}');
-    
+    debugPrint(
+      '=== ALGORITHM NODE DRAG START: ${widget.algorithmName} at ${details.globalPosition}',
+    );
+
     setState(() {
       _isDragging = true;
       _dragStartGlobal = details.globalPosition;
@@ -287,18 +319,20 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     // Notify parent that a drag has begun
     widget.onDragStart?.call();
   }
-  
+
   // Toolbar action handlers removed; actions call callbacks directly
-  
+
   void _handleDelete() async {
     debugPrint('AlgorithmNodeWidget: Deleting algorithm #${widget.slotNumber}');
-    
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Algorithm'),
-        content: Text('Are you sure you want to delete "${widget.algorithmName}" from slot #${widget.slotNumber}?'),
+        content: Text(
+          'Are you sure you want to delete "${widget.algorithmName}" from slot #${widget.slotNumber}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -314,18 +348,18 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         ],
       ),
     );
-    
+
     if (confirmed != true) {
       debugPrint('AlgorithmNodeWidget: Delete cancelled by user');
       return;
     }
-    
+
     if (!mounted) return;
     final cubit = context.read<DistingCubit>();
     try {
       // Slot numbers are 1-indexed, but the cubit uses 0-indexed
       final algorithmIndex = widget.slotNumber - 1;
-      
+
       await cubit.onRemoveAlgorithm(algorithmIndex);
       widget.onDelete?.call();
       _showFeedback('Algorithm deleted');
@@ -335,45 +369,47 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       _showFeedback('Failed to delete algorithm: $e', isError: true);
     }
   }
-  
+
   void _showFeedback(String message, {bool isError = false}) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError 
+        backgroundColor: isError
             ? Theme.of(context).colorScheme.error
             : Theme.of(context).colorScheme.primary,
         duration: const Duration(seconds: 2),
       ),
     );
   }
-  
+
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
     // Compute new position from drag delta relative to drag start
     final dragDelta = details.globalPosition - _dragStartGlobal;
     final newPosition = _initialPosition + dragDelta;
-    
+
     // Snap to grid
     const double gridSize = 50.0;
     final snappedPosition = Offset(
       (newPosition.dx / gridSize).round() * gridSize,
       (newPosition.dy / gridSize).round() * gridSize,
     );
-    
+
     // Constrain to canvas bounds
     const double canvasSize = 5000.0;
     final constrainedPosition = Offset(
       snappedPosition.dx.clamp(0.0, canvasSize - 200),
       snappedPosition.dy.clamp(0.0, canvasSize - 100),
     );
-    
-    debugPrint('=== ALGORITHM NODE DRAG UPDATE: ${widget.algorithmName} to $constrainedPosition');
+
+    debugPrint(
+      '=== ALGORITHM NODE DRAG UPDATE: ${widget.algorithmName} to $constrainedPosition',
+    );
     widget.onPositionChanged?.call(constrainedPosition);
   }
-  
+
   void _handleDragEnd(DragEndDetails details) {
     setState(() {
       _isDragging = false;

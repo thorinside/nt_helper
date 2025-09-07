@@ -23,7 +23,7 @@ void main() async {
   await SettingsService().init();
   await NodePositionsPersistenceService().init();
   await AlgorithmMetadataService().initialize(database);
-  
+
   // Initialize routing dependencies
   await RoutingServiceLocator.setup();
 
@@ -68,7 +68,7 @@ void main() async {
         // Optionally, decide if this error should affect prefsSavedSuccessfully
         // For now, we let it proceed and return based on prefs saving.
       }
-      
+
       try {
         debugPrint("Resetting routing service locator...");
         await RoutingServiceLocator.reset();

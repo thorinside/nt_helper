@@ -6,8 +6,10 @@ part 'connection_deletion_state.freezed.dart';
 enum DeletionMode {
   /// No deletion interaction active
   idle,
+
   /// Desktop hover mode - connection is being hovered
   hovering,
+
   /// Mobile tap mode - connection(s) are selected for deletion
   tapSelected,
 }
@@ -19,13 +21,13 @@ class ConnectionDeletionState with _$ConnectionDeletionState {
   const factory ConnectionDeletionState.initial() = _Initial;
 
   /// Creates a hovering state for desktop platforms
-  /// 
+  ///
   /// [connectionId] must not be empty
-  const factory ConnectionDeletionState.hovering(String connectionId) = _Hovering;
-
+  const factory ConnectionDeletionState.hovering(String connectionId) =
+      _Hovering;
 
   /// Creates a tap-selected state for mobile platforms
-  /// 
+  ///
   /// [selectedConnectionIds] can be empty to represent no selection
   const factory ConnectionDeletionState.tapSelected(
     Set<String> selectedConnectionIds,
@@ -44,16 +46,12 @@ class ConnectionDeletionState with _$ConnectionDeletionState {
 
   /// Returns the hovered connection ID if in hovering mode, null otherwise
   String? get hoveredConnectionId {
-    return mapOrNull(
-      hovering: (state) => state.connectionId,
-    );
+    return mapOrNull(hovering: (state) => state.connectionId);
   }
 
   /// Returns the set of selected connection IDs if in tap-selected mode, empty set otherwise
   Set<String> get selectedConnectionIds {
-    return mapOrNull(
-      tapSelected: (state) => state.selectedConnectionIds,
-    ) ?? {};
+    return mapOrNull(tapSelected: (state) => state.selectedConnectionIds) ?? {};
   }
 
   /// Returns true if currently in hovering mode
@@ -79,7 +77,8 @@ class ConnectionDeletionState with _$ConnectionDeletionState {
     return map(
       initial: (_) => false,
       hovering: (state) => state.connectionId == connectionId,
-      tapSelected: (state) => state.selectedConnectionIds.contains(connectionId),
+      tapSelected: (state) =>
+          state.selectedConnectionIds.contains(connectionId),
     );
   }
 }

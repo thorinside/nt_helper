@@ -8,18 +8,18 @@ part 'algorithm_routing_metadata.g.dart';
 enum RoutingType {
   /// Polyphonic routing for algorithms with multiple independent voices
   polyphonic,
-  
-  /// Multi-channel routing for width-based or single-channel algorithms  
-  multiChannel;
+
+  /// Multi-channel routing for width-based or single-channel algorithms
+  multiChannel,
 }
 
 /// Metadata that defines the routing requirements for an algorithm.
-/// 
+///
 /// This model is decoupled from specific routing implementations and provides
 /// the information needed by the RoutingFactory to determine which routing
 /// type to instantiate. It focuses purely on algorithm characteristics that
 /// affect routing behavior.
-/// 
+///
 /// Example usage:
 /// ```dart
 /// // For a polyphonic algorithm
@@ -29,7 +29,7 @@ enum RoutingType {
 ///   voiceCount: 8,
 ///   requiresGateInputs: true,
 /// );
-/// 
+///
 /// // For a width-based algorithm
 /// final multiMetadata = AlgorithmRoutingMetadata(
 ///   algorithmGuid: 'stereo-delay-v1',
@@ -43,63 +43,63 @@ sealed class AlgorithmRoutingMetadata with _$AlgorithmRoutingMetadata {
   const factory AlgorithmRoutingMetadata({
     /// Unique identifier for the algorithm
     required String algorithmGuid,
-    
+
     /// The type of routing this algorithm requires
     required RoutingType routingType,
-    
+
     /// Human-readable name for debugging/logging
     String? algorithmName,
-    
+
     // === Polyphonic Algorithm Properties ===
-    
+
     /// Number of polyphonic voices (relevant for polyphonic routing)
     /// Default: 1 (monophonic)
     @Default(1) int voiceCount,
-    
+
     /// Whether the algorithm requires gate/trigger inputs for each voice
     @Default(false) bool requiresGateInputs,
-    
+
     /// Whether the algorithm uses virtual CV ports for modulation
     @Default(false) bool usesVirtualCvPorts,
-    
+
     /// Number of virtual CV ports per voice (when usesVirtualCvPorts is true)
     @Default(2) int virtualCvPortsPerVoice,
-    
+
     // === Multi-Channel Algorithm Properties ===
-    
+
     /// Number of channels (relevant for multi-channel routing)
     /// For normal algorithms: 1, for width-based algorithms: N
     @Default(1) int channelCount,
-    
+
     /// Whether the algorithm supports stereo channel pairing
     @Default(false) bool supportsStereo,
-    
+
     /// Whether channels can be independently routed
     @Default(true) bool allowsIndependentChannels,
-    
+
     /// Whether to create master mix outputs for multi-channel algorithms
     @Default(true) bool createMasterMix,
-    
+
     // === Common Properties ===
-    
+
     /// Port types that this algorithm supports
     @Default([]) List<String> supportedPortTypes,
-    
+
     /// Base name prefix for generated ports
     String? portNamePrefix,
-    
+
     /// Additional algorithm-specific properties for extensibility
-    /// 
+    ///
     /// This map allows for future routing requirements without breaking
     /// the existing interface. New routing implementations can check for
     /// specific keys in this map to enable additional behavior.
     @Default({}) Map<String, dynamic> customProperties,
-    
+
     /// Routing constraints or special requirements
-    /// 
+    ///
     /// Examples:
     /// - 'maxConnections': 8
-    /// - 'requiresClockInput': true  
+    /// - 'requiresClockInput': true
     /// - 'bypassable': true
     @Default({}) Map<String, dynamic> routingConstraints,
   }) = _AlgorithmRoutingMetadata;
@@ -112,20 +112,18 @@ sealed class AlgorithmRoutingMetadata with _$AlgorithmRoutingMetadata {
 extension AlgorithmRoutingMetadataX on AlgorithmRoutingMetadata {
   /// Whether this algorithm is polyphonic
   bool get isPolyphonic => routingType == RoutingType.polyphonic;
-  
+
   /// Whether this algorithm is multi-channel
   bool get isMultiChannel => routingType == RoutingType.multiChannel;
-  
+
   /// Whether this algorithm has multiple channels or voices
-  bool get hasMultipleChannelsOrVoices => 
-      (isPolyphonic && voiceCount > 1) || 
-      (isMultiChannel && channelCount > 1);
-  
+  bool get hasMultipleChannelsOrVoices =>
+      (isPolyphonic && voiceCount > 1) || (isMultiChannel && channelCount > 1);
+
   /// Get the effective port name prefix, falling back to defaults
-  String get effectivePortNamePrefix => 
-      portNamePrefix ?? 
-      (isPolyphonic ? 'Voice' : 'Ch');
-  
+  String get effectivePortNamePrefix =>
+      portNamePrefix ?? (isPolyphonic ? 'Voice' : 'Ch');
+
   /// Get a constraint value with optional type casting
   T? getConstraint<T>(String key) {
     final value = routingConstraints[key];
@@ -134,7 +132,7 @@ extension AlgorithmRoutingMetadataX on AlgorithmRoutingMetadata {
     }
     return null;
   }
-  
+
   /// Get a custom property value with optional type casting
   T? getCustomProperty<T>(String key) {
     final value = customProperties[key];
@@ -143,18 +141,17 @@ extension AlgorithmRoutingMetadataX on AlgorithmRoutingMetadata {
     }
     return null;
   }
-  
+
   /// Whether this algorithm requires special gate handling
-  bool get needsGateSupport => 
-      requiresGateInputs || 
+  bool get needsGateSupport =>
+      requiresGateInputs ||
       supportedPortTypes.contains('gate') ||
       getConstraint<bool>('requiresClockInput') == true;
-  
+
   /// Whether this algorithm uses CV modulation
-  bool get usesCvModulation => 
-      usesVirtualCvPorts || 
-      supportedPortTypes.contains('cv');
-  
+  bool get usesCvModulation =>
+      usesVirtualCvPorts || supportedPortTypes.contains('cv');
+
   /// Get the total number of channels or voices for port generation
   int get totalPortUnits => isPolyphonic ? voiceCount : channelCount;
 }

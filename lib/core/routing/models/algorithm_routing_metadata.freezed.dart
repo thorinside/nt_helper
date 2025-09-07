@@ -34,15 +34,15 @@ mixin _$AlgorithmRoutingMetadata {
 /// Port types that this algorithm supports
  List<String> get supportedPortTypes;/// Base name prefix for generated ports
  String? get portNamePrefix;/// Additional algorithm-specific properties for extensibility
-/// 
+///
 /// This map allows for future routing requirements without breaking
 /// the existing interface. New routing implementations can check for
 /// specific keys in this map to enable additional behavior.
  Map<String, dynamic> get customProperties;/// Routing constraints or special requirements
-/// 
+///
 /// Examples:
 /// - 'maxConnections': 8
-/// - 'requiresClockInput': true  
+/// - 'requiresClockInput': true
 /// - 'bypassable': true
  Map<String, dynamic> get routingConstraints;
 /// Create a copy of AlgorithmRoutingMetadata
@@ -289,13 +289,13 @@ class _AlgorithmRoutingMetadata implements AlgorithmRoutingMetadata {
 /// Base name prefix for generated ports
 @override final  String? portNamePrefix;
 /// Additional algorithm-specific properties for extensibility
-/// 
+///
 /// This map allows for future routing requirements without breaking
 /// the existing interface. New routing implementations can check for
 /// specific keys in this map to enable additional behavior.
  final  Map<String, dynamic> _customProperties;
 /// Additional algorithm-specific properties for extensibility
-/// 
+///
 /// This map allows for future routing requirements without breaking
 /// the existing interface. New routing implementations can check for
 /// specific keys in this map to enable additional behavior.
@@ -306,17 +306,17 @@ class _AlgorithmRoutingMetadata implements AlgorithmRoutingMetadata {
 }
 
 /// Routing constraints or special requirements
-/// 
+///
 /// Examples:
 /// - 'maxConnections': 8
-/// - 'requiresClockInput': true  
+/// - 'requiresClockInput': true
 /// - 'bypassable': true
  final  Map<String, dynamic> _routingConstraints;
 /// Routing constraints or special requirements
-/// 
+///
 /// Examples:
 /// - 'maxConnections': 8
-/// - 'requiresClockInput': true  
+/// - 'requiresClockInput': true
 /// - 'bypassable': true
 @override@JsonKey() Map<String, dynamic> get routingConstraints {
   if (_routingConstraints is EqualUnmodifiableMapView) return _routingConstraints;
