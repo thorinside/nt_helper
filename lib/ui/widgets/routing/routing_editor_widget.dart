@@ -1145,6 +1145,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return;
     }
 
+    // Convert global position to local canvas coordinates
+    final ctx = _canvasKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return;
+    final localPosition = box.globalToLocal(position);
+
     // Cancel previous debounce timer
     _dragUpdateDebounceTimer?.cancel();
 
@@ -1154,10 +1161,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
 
-      debugPrint('=== PORT DRAG UPDATE: ${port.id} at $position');
+      debugPrint('=== PORT DRAG UPDATE: ${port.id} at $localPosition');
 
       // Find port at current drag position for highlighting
-      final targetPort = _findPortAtPosition(position);
+      final targetPort = _findPortAtPosition(localPosition);
       String? newHighlightedPortId;
       
       // Only highlight input ports (since drag starts from output)
@@ -1169,11 +1176,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       if (newHighlightedPortId != _highlightedPortId) {
         setState(() {
           _highlightedPortId = newHighlightedPortId;
-          _dragCurrentPosition = position;
+          _dragCurrentPosition = localPosition;
         });
       } else {
         setState(() {
-          _dragCurrentPosition = position;
+          _dragCurrentPosition = localPosition;
         });
       }
     });
@@ -1232,6 +1239,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return;
     }
     
+    // Convert global position to local canvas coordinates
+    final ctx = _canvasKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return;
+    final localPosition = box.globalToLocal(position);
+    
     // Cancel previous debounce timer
     _dragUpdateDebounceTimer?.cancel();
     
@@ -1242,10 +1256,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
       
       setState(() {
-        _dragCurrentPosition = position;
+        _dragCurrentPosition = localPosition;
         
         // Find port at position for highlighting
-        final targetPort = _findPortAtPosition(position);
+        final targetPort = _findPortAtPosition(localPosition);
         if (targetPort != null && targetPort.isInput) {
           _highlightedPortId = targetPort.id;
         } else {
@@ -1256,7 +1270,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
   
   Future<void> _handleAlgorithmPortDragEnd(String portId, Offset position) async {
-    debugPrint('=== ALGORITHM PORT DRAG END: $portId at $position');
+    // Convert global position to local canvas coordinates
+    final ctx = _canvasKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return;
+    final localPosition = box.globalToLocal(position);
+    
+    debugPrint('=== ALGORITHM PORT DRAG END: $portId at $localPosition');
     
     // Only handle if we're dragging a connection and this is the source port
     if (!_isDraggingConnection || _dragSourcePort?.id != portId) {
@@ -1268,7 +1289,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     
     try {
       // Find port at drop position
-      final targetPort = _findPortAtPosition(position);
+      final targetPort = _findPortAtPosition(localPosition);
       
       if (targetPort != null && targetPort.isInput) {
         debugPrint('Valid drop target found: ${targetPort.name}');
@@ -1318,7 +1339,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   }
 
   void _handlePortDragEnd(Port port, Offset position) {
-    debugPrint('=== PORT DRAG END: ${port.id} at $position');
+    // Convert global position to local canvas coordinates
+    final ctx = _canvasKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return;
+    final localPosition = box.globalToLocal(position);
+    
+    debugPrint('=== PORT DRAG END: ${port.id} at $localPosition');
 
     // Only handle if we're dragging a connection and this is the source port
     if (!_isDraggingConnection || _dragSourcePort?.id != port.id) {
@@ -1330,7 +1358,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     try {
       // Find port at drop position
-      final targetPort = _findPortAtPosition(position);
+      final targetPort = _findPortAtPosition(localPosition);
 
       if (targetPort != null && targetPort.isInput) {
         debugPrint('Valid drop target found: ${targetPort.name}');
