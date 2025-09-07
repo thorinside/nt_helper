@@ -465,6 +465,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
             throw ArgumentError('Connection not found: $connectionId'),
       );
 
+      // Clear the bus assignments in hardware before removing from UI
+      await _clearBusAssignmentsForConnection(connectionToDelete, currentState);
+
       // Remove connection from state
       final updatedConnections = currentState.connections
           .where((connection) => connection.id != connectionId)
@@ -539,7 +542,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         return;
       }
 
-      // Delete each connection
+      // Delete each connection (which will also clear bus assignments)
       for (final connection in connectionsToDelete) {
         await deleteConnection(connection.id);
       }
@@ -1551,12 +1554,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         'Connection details: source=${connectionToDelete.sourcePortId}, dest=${connectionToDelete.destinationPortId}, bus=${connectionToDelete.busNumber}',
       );
 
-      // Clear bus assignments by setting parameter values to 0
-      if (_distingCubit != null && connectionToDelete.busNumber != null) {
-        await _clearBusAssignments(connectionToDelete);
-      }
-
-      // Remove connection from UI state
+      // This just calls deleteConnection which already handles clearing bus assignments
       await deleteConnection(connectionId);
 
       debugPrint('Successfully deleted connection: $connectionId');
@@ -1565,40 +1563,76 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     }
   }
 
-  /// Clear bus assignments by setting parameter values to 0
-  Future<void> _clearBusAssignments(Connection connection) async {
+  /// Clear bus assignments for a connection by setting parameter values to 0
+  Future<void> _clearBusAssignmentsForConnection(
+    Connection connection,
+    RoutingEditorStateLoaded state,
+  ) async {
     if (_distingCubit == null) return;
 
     try {
       debugPrint('Clearing bus assignments for connection: ${connection.id}');
-
-      // For algorithm ports, we need to set the parameter value to 0
-      // Bus number indicates which parameter controls the bus assignment
-      if (connection.algorithmIndex != null &&
-          connection.parameterNumber != null) {
-        final algorithmIndex = connection.algorithmIndex!;
-        final parameterNumber = connection.parameterNumber!;
-
-        debugPrint(
-          'Setting algorithm $algorithmIndex parameter $parameterNumber to 0',
-        );
-
-        // For now, just log the action since we don't have direct access to parameter setting
-        // In a complete implementation, we would call the MIDI manager to set parameter value to 0
-        debugPrint(
-          'Would set algorithm $algorithmIndex parameter $parameterNumber to 0 (bus cleared)',
-        );
-
-        debugPrint(
-          'Successfully cleared parameter value for algorithm $algorithmIndex param $parameterNumber',
-        );
+      
+      // Find the source and destination ports
+      final sourcePort = _findPortById(state, connection.sourcePortId);
+      final targetPort = _findPortById(state, connection.destinationPortId);
+      
+      if (sourcePort == null || targetPort == null) {
+        debugPrint('Could not find ports for connection: ${connection.id}');
+        return;
       }
 
-      // For connections involving multiple ports (algorithm-to-algorithm),
-      // we might need to clear both ends, but for now focus on the algorithm side
+      // For algorithm-to-algorithm connections, we need to clear both ends
+      // by setting their respective bus parameters to 0
+      
+      // Clear source port (output) bus assignment
+      if (sourcePort.parameterNumber != null && !connection.sourcePortId.startsWith('hw_')) {
+        // Find which algorithm this port belongs to
+        for (final algorithm in state.algorithms) {
+          for (final port in algorithm.outputPorts) {
+            if (port.id == sourcePort.id && port.parameterNumber != null) {
+              debugPrint(
+                'Clearing output bus for algorithm ${algorithm.index}, '
+                'parameter ${port.parameterNumber} (was bus ${port.busValue})',
+              );
+              await _distingCubit.updateParameterValue(
+                algorithmIndex: algorithm.index,
+                parameterNumber: port.parameterNumber!,
+                value: 0, // 0 means "None" for bus assignments
+                userIsChangingTheValue: false,
+              );
+              break;
+            }
+          }
+        }
+      }
+
+      // Clear target port (input) bus assignment
+      if (targetPort.parameterNumber != null && !connection.destinationPortId.startsWith('hw_')) {
+        // Find which algorithm this port belongs to
+        for (final algorithm in state.algorithms) {
+          for (final port in algorithm.inputPorts) {
+            if (port.id == targetPort.id && port.parameterNumber != null) {
+              debugPrint(
+                'Clearing input bus for algorithm ${algorithm.index}, '
+                'parameter ${port.parameterNumber} (was bus ${port.busValue})',
+              );
+              await _distingCubit.updateParameterValue(
+                algorithmIndex: algorithm.index,
+                parameterNumber: port.parameterNumber!,
+                value: 0, // 0 means "None" for bus assignments
+                userIsChangingTheValue: false,
+              );
+              break;
+            }
+          }
+        }
+      }
+
+      debugPrint('Successfully cleared bus assignments for connection');
     } catch (e) {
       debugPrint('Error clearing bus assignments: $e');
-      rethrow;
+      // Don't rethrow - we still want to delete the connection from UI
     }
   }
 
