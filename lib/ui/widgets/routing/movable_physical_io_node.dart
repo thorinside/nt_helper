@@ -180,7 +180,9 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: PortWidget(
         label: port.name,
-        isInput: widget.isInput,
+        // Physical inputs act as outputs to algorithms (they send signals TO algorithms)
+        // Physical outputs act as inputs from algorithms (they receive signals FROM algorithms)
+        isInput: !widget.isInput,
         portId: port.id,
         port: port,
         labelPosition: widget.isInput

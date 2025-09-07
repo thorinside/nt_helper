@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -736,6 +737,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onRoutingAction: (portId, action) =>
               _handlePortRoutingAction(portId, action, connections),
           onPortTapped: (portId) => _handlePortTapById(portId),
+          onPortDragStart: _handleAlgorithmPortDragStart,
+          onPortDragUpdate: _handleAlgorithmPortDragUpdate,
+          onPortDragEnd: _handleAlgorithmPortDragEnd,
           highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
           // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
         ),
@@ -1105,6 +1109,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       return;
     }
 
+    // Check if port is connected - don't allow dragging from connected ports
+    final state = context.read<RoutingEditorCubit>().state;
+    if (state is RoutingEditorStateLoaded) {
+      final hasConnections = state.connections.any((conn) => 
+        conn.sourcePortId == port.id
+      );
+      
+      if (hasConnections) {
+        debugPrint('Port is connected, cannot start drag: ${port.id}');
+        // Could trigger delete gesture here instead
+        return;
+      }
+    }
+
     // Get the current port position
     final portPosition = _getPortPosition(port.id);
     if (portPosition == null) {
@@ -1159,6 +1177,144 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         });
       }
     });
+  }
+
+  // Handler methods for algorithm port drags (using port ID instead of Port object)
+  void _handleAlgorithmPortDragStart(String portId) {
+    debugPrint('=== ALGORITHM PORT DRAG START: $portId');
+    
+    // Find the port in the current state
+    final state = context.read<RoutingEditorCubit>().state;
+    if (state is! RoutingEditorStateLoaded) return;
+    
+    // Find port in algorithms
+    Port? port;
+    for (final algorithm in state.algorithms) {
+      port = algorithm.outputPorts.firstWhereOrNull((p) => p.id == portId);
+      if (port != null) break;
+    }
+    
+    if (port == null) {
+      debugPrint('Port not found: $portId');
+      return;
+    }
+    
+    // Check if port is connected
+    final hasConnections = state.connections.any((conn) => 
+      conn.sourcePortId == portId
+    );
+    
+    if (hasConnections) {
+      debugPrint('Port is connected, cannot start drag: $portId');
+      // Could trigger delete gesture here instead
+      return;
+    }
+    
+    // Get the current port position
+    final portPosition = _getPortPosition(portId);
+    if (portPosition == null) {
+      debugPrint('Cannot find position for port: $portId');
+      return;
+    }
+    
+    setState(() {
+      _isDraggingConnection = true;
+      _dragSourcePort = port;
+      _dragCurrentPosition = portPosition;
+    });
+    
+    debugPrint('Started connection drag from algorithm output port: ${port.name}');
+  }
+  
+  void _handleAlgorithmPortDragUpdate(String portId, Offset position) {
+    // Only update if we're dragging a connection and this is the source port
+    if (!_isDraggingConnection || _dragSourcePort?.id != portId) {
+      return;
+    }
+    
+    // Cancel previous debounce timer
+    _dragUpdateDebounceTimer?.cancel();
+    
+    // Debounce drag updates to prevent excessive setState calls
+    _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 50), () {
+      if (!mounted || !_isDraggingConnection || _dragSourcePort?.id != portId) {
+        return;
+      }
+      
+      setState(() {
+        _dragCurrentPosition = position;
+        
+        // Find port at position for highlighting
+        final targetPort = _findPortAtPosition(position);
+        if (targetPort != null && targetPort.isInput) {
+          _highlightedPortId = targetPort.id;
+        } else {
+          _highlightedPortId = null;
+        }
+      });
+    });
+  }
+  
+  Future<void> _handleAlgorithmPortDragEnd(String portId, Offset position) async {
+    debugPrint('=== ALGORITHM PORT DRAG END: $portId at $position');
+    
+    // Only handle if we're dragging a connection and this is the source port
+    if (!_isDraggingConnection || _dragSourcePort?.id != portId) {
+      return;
+    }
+    
+    // Cancel any pending drag update
+    _dragUpdateDebounceTimer?.cancel();
+    
+    try {
+      // Find port at drop position
+      final targetPort = _findPortAtPosition(position);
+      
+      if (targetPort != null && targetPort.isInput) {
+        debugPrint('Valid drop target found: ${targetPort.name}');
+        
+        // Check for duplicate connection before attempting to create
+        final cubit = context.read<RoutingEditorCubit>();
+        final currentState = cubit.state;
+        if (currentState is RoutingEditorStateLoaded) {
+          final exists = currentState.connections.any((conn) =>
+            conn.sourcePortId == _dragSourcePort!.id &&
+            conn.destinationPortId == targetPort.id
+          );
+          
+          if (exists) {
+            _showError('Connection already exists between these ports');
+            return;
+          }
+          
+          // Check available aux buses for algorithm connections
+          if (!(await _checkAvailableBuses(currentState))) {
+            return;
+          }
+        }
+        
+        // Create the connection
+        try {
+          cubit.createConnection(
+            sourcePortId: _dragSourcePort!.id,
+            targetPortId: targetPort.id,
+          );
+          debugPrint('Connection created successfully');
+        } catch (e) {
+          _showError('Failed to create connection: ${e.toString()}');
+        }
+      } else {
+        debugPrint('Invalid drop target or dropped on non-port area');
+      }
+    } finally {
+      // Always clear drag state
+      setState(() {
+        _isDraggingConnection = false;
+        _dragSourcePort = null;
+        _dragCurrentPosition = null;
+        _highlightedPortId = null;
+      });
+    }
   }
 
   void _handlePortDragEnd(Port port, Offset position) {

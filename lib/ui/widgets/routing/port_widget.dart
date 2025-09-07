@@ -145,7 +145,7 @@ class _PortWidgetState extends State<PortWidget> {
             ? (details) => widget.onDragUpdate!(details.globalPosition)
             : null,
         onPanEnd: widget.onDragEnd != null
-            ? (details) => widget.onDragEnd!(details.velocity.pixelsPerSecond)
+            ? (details) => widget.onDragEnd!(details.globalPosition)
             : null,
         child: portWidget,
       );

@@ -45,6 +45,11 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // Callback when a port is tapped (for connection deletion)
   final void Function(String portId)? onPortTapped;
 
+  // Port drag callbacks for connection creation
+  final void Function(String portId)? onPortDragStart;
+  final void Function(String portId, Offset position)? onPortDragUpdate;
+  final void Function(String portId, Offset position)? onPortDragEnd;
+
   // ID of the port that should be highlighted (during drag operations)
   final String? highlightedPortId;
 
@@ -70,6 +75,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onPortPositionResolved,
     this.onRoutingAction,
     this.onPortTapped,
+    this.onPortDragStart,
+    this.onPortDragUpdate,
+    this.onPortDragEnd,
     this.highlightedPortId,
   });
 
@@ -297,6 +305,15 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
       onTap: portId != null ? () => widget.onPortTapped?.call(portId) : null,
+      onDragStart: portId != null && !isInput && widget.onPortDragStart != null
+          ? () => widget.onPortDragStart!(portId)
+          : null,
+      onDragUpdate: portId != null && !isInput && widget.onPortDragUpdate != null
+          ? (position) => widget.onPortDragUpdate!(portId, position)
+          : null,
+      onDragEnd: portId != null && !isInput && widget.onPortDragEnd != null
+          ? (position) => widget.onPortDragEnd!(portId, position)
+          : null,
     );
   }
 
