@@ -1152,35 +1152,27 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     if (box == null || !box.attached) return;
     final localPosition = box.globalToLocal(position);
 
+    // Immediate position update for fluid preview
+    setState(() {
+      _dragCurrentPosition = localPosition;
+    });
+
     // Cancel previous debounce timer
     _dragUpdateDebounceTimer?.cancel();
 
-    // Debounce drag updates to prevent excessive setState calls
-    _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 50), () {
+    // Debounced port detection (16ms for 60fps)
+    _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 16), () {
       if (!mounted || !_isDraggingConnection || _dragSourcePort?.id != port.id) {
         return;
       }
 
-      debugPrint('=== PORT DRAG UPDATE: ${port.id} at $localPosition');
-
-      // Find port at current drag position for highlighting
       final targetPort = _findPortAtPosition(localPosition);
-      String? newHighlightedPortId;
+      final newHighlight = targetPort?.isInput == true ? targetPort?.id : null;
       
-      // Only highlight input ports (since drag starts from output)
-      if (targetPort != null && targetPort.isInput) {
-        newHighlightedPortId = targetPort.id;
-      }
-
-      // Update highlighted port only if it changed (performance optimization)
-      if (newHighlightedPortId != _highlightedPortId) {
+      // Only setState if highlight actually changed
+      if (newHighlight != _highlightedPortId) {
         setState(() {
-          _highlightedPortId = newHighlightedPortId;
-          _dragCurrentPosition = localPosition;
-        });
-      } else {
-        setState(() {
-          _dragCurrentPosition = localPosition;
+          _highlightedPortId = newHighlight;
         });
       }
     });
@@ -1246,26 +1238,29 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     if (box == null || !box.attached) return;
     final localPosition = box.globalToLocal(position);
     
+    // Immediate position update for fluid preview
+    setState(() {
+      _dragCurrentPosition = localPosition;
+    });
+    
     // Cancel previous debounce timer
     _dragUpdateDebounceTimer?.cancel();
     
-    // Debounce drag updates to prevent excessive setState calls
-    _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 50), () {
+    // Debounced port detection (16ms for 60fps)
+    _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 16), () {
       if (!mounted || !_isDraggingConnection || _dragSourcePort?.id != portId) {
         return;
       }
       
-      setState(() {
-        _dragCurrentPosition = localPosition;
-        
-        // Find port at position for highlighting
-        final targetPort = _findPortAtPosition(localPosition);
-        if (targetPort != null && targetPort.isInput) {
-          _highlightedPortId = targetPort.id;
-        } else {
-          _highlightedPortId = null;
-        }
-      });
+      final targetPort = _findPortAtPosition(localPosition);
+      final newHighlight = targetPort?.isInput == true ? targetPort?.id : null;
+      
+      // Only setState if highlight actually changed
+      if (newHighlight != _highlightedPortId) {
+        setState(() {
+          _highlightedPortId = newHighlight;
+        });
+      }
     });
   }
   
