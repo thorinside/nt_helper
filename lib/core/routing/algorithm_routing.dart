@@ -313,11 +313,11 @@ abstract class AlgorithmRouting {
   /// 
   /// Returns a map of parameter names to their bus values
   static Map<String, int> extractIOParameters(Slot slot) {
-    // Special case: Notes algorithm has no I/O capabilities
+    // Special case: Notes algorithm (guid: 'note') has no I/O capabilities
     // Even if it has parameters that look like bus parameters,
     // they're not for routing audio/CV signals
-    if (slot.algorithm == 'Notes') {
-      debugPrint('Notes algorithm detected - returning empty I/O parameters (no routing capability)');
+    if (slot.algorithm.guid == 'note') {
+      debugPrint('Notes algorithm detected (guid: note) - returning empty I/O parameters (no routing capability)');
       return {};
     }
     
