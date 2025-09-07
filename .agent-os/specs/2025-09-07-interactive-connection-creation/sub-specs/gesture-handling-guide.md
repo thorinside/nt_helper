@@ -131,10 +131,16 @@ Port? _getPortAtPosition(Offset globalPosition) {
 
 ## Error Handling
 
-1. **Invalid Drop Target**: Visual feedback + no connection
+1. **Invalid Drop Target**: No connection created (silent failure is OK)
 2. **Drag Cancelled**: Clear preview + restore state
 3. **Rapid Drags**: Debounce to prevent conflicts
-4. **Port Already Connected**: Show incompatibility indicator
+4. **Bus Conflicts**: Display dismissable error in top-right corner
+5. **General Errors**: Show dismissable notifications that allow user to continue
+
+**Error Display Pattern**:
+- Use dismissable error messages in top-right corner
+- Allow user to continue working while error is displayed
+- Leverage reduced intermediate states in cubit (no widget visibility changes needed)
 
 ## Code Reuse
 

@@ -52,7 +52,8 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 ### Error Handling
 - No port compatibility validation needed (all ports are compatible)
 - Check for bus number conflicts before assignment
-- Provide visual feedback for invalid drop targets
+- Display dismissable error messages in top-right corner to allow continuation
+- Use existing reduced intermediate states in cubit (no widget visibility changes)
 - Gracefully handle drag cancellation or escape key press
 
 ## Approach
