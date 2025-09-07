@@ -653,35 +653,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   }
 
   /// Helper method to check if two ports can be connected
-  bool _canConnect(Port sourcePort, Port targetPort) {
-    // Output can connect to input
-    if (sourcePort.direction == PortDirection.output &&
-        targetPort.direction == PortDirection.input) {
-      return _arePortTypesCompatible(sourcePort.type, targetPort.type);
-    }
 
-    return false;
-  }
-
-  /// Helper method to check port type compatibility
-  bool _arePortTypesCompatible(PortType sourceType, PortType targetType) {
-    // Same types are always compatible
-    if (sourceType == targetType) return true;
-
-    // Audio and CV are often interchangeable
-    if ((sourceType == PortType.audio && targetType == PortType.cv) ||
-        (sourceType == PortType.cv && targetType == PortType.audio)) {
-      return true;
-    }
-
-    // Gate and trigger can be compatible
-    if ((sourceType == PortType.gate && targetType == PortType.gate) ||
-        (sourceType == PortType.gate && targetType == PortType.gate)) {
-      return true;
-    }
-
-    return false;
-  }
 
   /// Helper method to determine if a connection is a ghost connection
   /// Ghost connections occur when an algorithm output connects to a physical input
