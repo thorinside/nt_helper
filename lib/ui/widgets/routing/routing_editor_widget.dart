@@ -404,6 +404,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             connections,
             buses,
             portOutputModes,
+            nodePositions,
             isHardwareSynced,
             isPersistenceEnabled,
             lastSyncTime,
