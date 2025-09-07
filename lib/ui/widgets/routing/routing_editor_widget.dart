@@ -55,6 +55,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   String? _hoveredConnectionId;  // For port hover (connection deletion)
   String? _hoveredLabelConnectionId;  // For label hover (mode switching)
   Timer? _connectionHighlightTimer;
+  Set<String> _selectedPortConnectionIds = {}; // For mobile port tap confirmation
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
@@ -545,7 +546,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         busNumber: busNumber,
         outputMode: connection.outputMode,
         isSelected: false,
-        isHighlighted: _hoveredConnectionId == connection.id, // Highlight if this connection is hovered
+        isHighlighted: _hoveredConnectionId == connection.id || 
+                      _selectedPortConnectionIds.contains(connection.id), // Highlight if hovered or selected for deletion
         isPhysicalConnection: isPhysicalConnection,
         isInputConnection: isInputConnection,
         busLabel: connection.busLabel, // Pass through bus label for partial connections
@@ -789,17 +791,27 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   void _handlePortTap(Port port) {
     debugPrint('=== PORT TAP: ${port.id} (${port.name})');
 
-    // For now, just handle deletion of connections for connected ports
-    final cubit = context.read<RoutingEditorCubit>();
-    cubit.deleteConnectionsForPort(port.id);
+    if (_platformService.isMobilePlatform()) {
+      // Mobile: Show confirmation dialog
+      _showPortConnectionsDeleteConfirmation(port.id, port.name);
+    } else {
+      // Desktop: Keep immediate deletion
+      final cubit = context.read<RoutingEditorCubit>();
+      cubit.deleteConnectionsForPort(port.id);
+    }
   }
 
   void _handlePortTapById(String portId) {
     debugPrint('=== PORT TAP: $portId');
 
-    // For now, just handle deletion of connections for connected ports
-    final cubit = context.read<RoutingEditorCubit>();
-    cubit.deleteConnectionsForPort(portId);
+    if (_platformService.isMobilePlatform()) {
+      // Mobile: Show confirmation dialog
+      _showPortConnectionsDeleteConfirmation(portId, null);
+    } else {
+      // Desktop: Keep immediate deletion
+      final cubit = context.read<RoutingEditorCubit>();
+      cubit.deleteConnectionsForPort(portId);
+    }
   }
 
   void _handlePortDragStart(Port port) {
@@ -815,6 +827,109 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   void _handlePortDragEnd(Port port, Offset position) {
     debugPrint('=== PORT DRAG END: ${port.id} at $position');
     // Port dragging not implemented yet
+  }
+
+  Future<void> _showPortConnectionsDeleteConfirmation(String portId, String? portName) async {
+    // Get the current state to find connections
+    final routingState = context.read<RoutingEditorCubit>().state;
+    if (routingState is! RoutingEditorStateLoaded) return;
+    
+    // Find all connections for this port
+    final portConnections = routingState.connections.where((conn) =>
+      conn.sourcePortId == portId || conn.destinationPortId == portId
+    ).toList();
+    
+    if (portConnections.isEmpty) {
+      debugPrint('No connections found for port: $portId');
+      return;
+    }
+    
+    // Highlight the connections that will be deleted
+    setState(() {
+      _selectedPortConnectionIds = portConnections.map((c) => c.id).toSet();
+    });
+    
+    // Build connection descriptions for the dialog
+    final connectionDescriptions = <String>[];
+    for (final connection in portConnections) {
+      // Try to find actual port names
+      final allPorts = [
+        ...routingState.physicalInputs,
+        ...routingState.physicalOutputs,
+        for (final algo in routingState.algorithms) ...[
+          ...algo.inputPorts,
+          ...algo.outputPorts,
+        ],
+      ];
+      
+      final sourcePort = allPorts.firstWhere(
+        (p) => p.id == connection.sourcePortId,
+        orElse: () => Port(id: '', name: connection.sourcePortId, type: PortType.cv, direction: PortDirection.input),
+      );
+      final destPort = allPorts.firstWhere(
+        (p) => p.id == connection.destinationPortId,
+        orElse: () => Port(id: '', name: connection.destinationPortId, type: PortType.cv, direction: PortDirection.input),
+      );
+      
+      connectionDescriptions.add('${sourcePort.name} → ${destPort.name}');
+    }
+    
+    // Show confirmation dialog
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          portConnections.length == 1 
+            ? 'Delete Connection?' 
+            : 'Delete ${portConnections.length} Connections?'
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (portName != null)
+              Text('From port: $portName\n'),
+            Text(
+              portConnections.length == 1
+                ? 'This will delete the connection:'
+                : 'This will delete the following connections:',
+            ),
+            const SizedBox(height: 8),
+            ...connectionDescriptions.map((desc) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text('• $desc', style: const TextStyle(fontSize: 14)),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    
+    // Clear highlighting
+    setState(() {
+      _selectedPortConnectionIds.clear();
+    });
+    
+    // Delete connections if confirmed
+    if (shouldDelete == true && mounted) {
+      final cubit = context.read<RoutingEditorCubit>();
+      for (final connection in portConnections) {
+        await cubit.deleteConnectionWithSmartBusLogic(connection.id);
+      }
+      debugPrint('Deleted ${portConnections.length} connections for port $portId');
+    }
   }
 
 
