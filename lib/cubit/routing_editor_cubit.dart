@@ -5,7 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
-import 'package:nt_helper/core/routing/models/port.dart' as core_port;
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
@@ -13,7 +13,6 @@ import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'routing_editor_state.dart';
-
 
 /// Cubit that manages the state of the routing editor.
 ///
@@ -87,7 +86,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       selectDevice: (inputDevices, outputDevices, canWorkOffline) =>
           emit(const RoutingEditorState.disconnected()),
       connected: (disting, inputDevice, outputDevice, offline, loading) =>
-          emit(const RoutingEditorState.connecting()),
+          emit(const RoutingEditorState.disconnected()),
       synchronized:
           (
             disting,
@@ -116,7 +115,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// DistingCubit's synchronized state changes, ensuring physical connection discovery
   /// only runs when algorithm parameters or slots change, not on every UI rebuild.
   void _processSynchronizedState(List<Slot> slots) {
-    debugPrint('[RoutingEditor] Processing synchronized state with ${slots.length} slots');
+    debugPrint(
+      '[RoutingEditor] Processing synchronized state with ${slots.length} slots',
+    );
     try {
       // Create physical hardware ports
       final physicalInputs = _createPhysicalInputPorts();
@@ -138,10 +139,19 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           slot,
           algorithmUuid: algorithmUuid,
         );
-        routings.add(routing);
 
         final inputPorts = routing.inputPorts;
         final outputPorts = routing.outputPorts;
+
+        // Skip algorithms with no inputs and no outputs (like Notes)
+        // These can't participate in routing and clutter the canvas
+        if (inputPorts.isEmpty && outputPorts.isEmpty) {
+          debugPrint('Skipping algorithm ${slot.algorithm} (slot $i) - no inputs or outputs');
+          continue;
+        }
+        
+        // Only add to routings list if the algorithm has I/O
+        routings.add(routing);
 
         final routingAlgorithm = RoutingAlgorithm(
           id: algorithmUuid,
@@ -155,8 +165,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   name: p.name,
                   type: _toUiPortType(p.type),
                   direction: PortDirection.input,
-                  busNumber: p.busValue,
-                  parameterName: p.busParam,
+                  busValue: p.busValue,
+                  busParam: p.busParam,
+                  parameterNumber: p.parameterNumber,
+                  isPolyVoice: p.isPolyVoice,
+                  voiceNumber: p.voiceNumber,
+                  isVirtualCV: p.isVirtualCV,
                 ),
               )
               .toList(),
@@ -167,8 +181,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
                   name: p.name,
                   type: _toUiPortType(p.type),
                   direction: PortDirection.output,
-                  busNumber: p.busValue,
-                  parameterName: p.busParam,
+                  busValue: p.busValue,
+                  busParam: p.busParam,
+                  parameterNumber: p.parameterNumber,
+                  modeParameterNumber: p.modeParameterNumber,
+                  outputMode: p.outputMode,
                 ),
               )
               .toList(),
@@ -177,9 +194,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Use the ConnectionDiscoveryService to discover connections from AlgorithmRouting instances
-      final discoveredConnections = ConnectionDiscoveryService.discoverConnections(
-        routings,
-      );
+      final discoveredConnections =
+          ConnectionDiscoveryService.discoverConnections(routings);
 
       // Validate connections for slot ordering violations
       final connections = ConnectionValidator.validateConnections(
@@ -205,21 +221,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       initializeDefaultBuses();
     } catch (e) {
       debugPrint('Error processing synchronized state: $e');
-      emit(RoutingEditorState.error('Failed to process routing data: $e'));
     }
   }
 
   /// Convert core port type (routing) to UI port type
-  PortType _toUiPortType(core_port.PortType type) {
+  PortType _toUiPortType(PortType type) {
     switch (type) {
-      case core_port.PortType.audio:
+      case PortType.audio:
         return PortType.audio;
-      case core_port.PortType.cv:
+      case PortType.cv:
         return PortType.cv;
-      case core_port.PortType.gate:
+      case PortType.gate:
         return PortType.gate;
-      case core_port.PortType.clock:
-        return PortType.trigger; // closest match in UI enum
+      case PortType.clock:
+        return PortType.gate; // closest match in UI enum
     }
   }
 
@@ -360,7 +375,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     required String sourcePortId,
     required String targetPortId,
     String? busId,
-    core_port.OutputMode outputMode = core_port.OutputMode.replace,
+    OutputMode outputMode = OutputMode.add,
     double gain = 1.0,
   }) async {
     final currentState = state;
@@ -376,26 +391,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (sourcePort == null) {
         debugPrint('Source port not found: $sourcePortId');
-        emit(RoutingEditorState.error('Source port not found: $sourcePortId'));
         return;
       }
 
       if (targetPort == null) {
         debugPrint('Target port not found: $targetPortId');
-        emit(RoutingEditorState.error('Target port not found: $targetPortId'));
-        return;
-      }
-
-      // Validate port compatibility
-      if (!_canConnect(sourcePort, targetPort)) {
-        debugPrint(
-          'Ports are not compatible for connection: $sourcePortId -> $targetPortId',
-        );
-        emit(
-          RoutingEditorState.error(
-            'Incompatible ports: ${sourcePort.name} -> ${targetPort.name}',
-          ),
-        );
         return;
       }
 
@@ -407,7 +407,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
       if (existingConnection != null) {
         debugPrint('Connection already exists: $sourcePortId -> $targetPortId');
-        emit(RoutingEditorState.error('Connection already exists'));
         return;
       }
 
@@ -416,7 +415,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           'conn_${sourcePortId}_${targetPortId}_${DateTime.now().millisecondsSinceEpoch}';
 
       // Determine connection type
-      final connectionType = _determineConnectionType(sourcePortId, targetPortId);
+      final connectionType = _determineConnectionType(
+        sourcePortId,
+        targetPortId,
+      );
 
       // Create new connection
       final newConnection = Connection(
@@ -444,7 +446,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       await _autoSyncToHardware();
     } catch (e) {
       debugPrint('Error creating connection: $e');
-      emit(RoutingEditorState.error('Failed to create connection: $e'));
     }
   }
 
@@ -463,6 +464,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         orElse: () =>
             throw ArgumentError('Connection not found: $connectionId'),
       );
+
+      // Clear the bus assignments in hardware before removing from UI
+      await _clearBusAssignmentsForConnection(connectionToDelete, currentState);
 
       // Remove connection from state
       final updatedConnections = currentState.connections
@@ -513,7 +517,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       await _autoSyncToHardware();
     } catch (e) {
       debugPrint('Error deleting connection: $e');
-      emit(RoutingEditorState.error('Failed to delete connection: $e'));
     }
   }
 
@@ -539,7 +542,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         return;
       }
 
-      // Delete each connection
+      // Delete each connection (which will also clear bus assignments)
       for (final connection in connectionsToDelete) {
         await deleteConnection(connection.id);
       }
@@ -549,9 +552,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     } catch (e) {
       debugPrint('Error deleting connections for port: $e');
-      emit(
-        RoutingEditorState.error('Failed to delete connections for port: $e'),
-      );
     }
   }
 
@@ -559,7 +559,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   Future<void> updateConnection({
     required String connectionId,
     String? busId,
-    core_port.OutputMode? outputMode,
+    OutputMode? outputMode,
     double? gain,
     bool? isMuted,
   }) async {
@@ -576,7 +576,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (connectionIndex == -1) {
         debugPrint('Connection not found for update: $connectionId');
-        emit(RoutingEditorState.error('Connection not found: $connectionId'));
+
         return;
       }
 
@@ -599,10 +599,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Connection updated: $connectionId');
     } catch (e) {
       debugPrint('Error updating connection: $e');
-      emit(RoutingEditorState.error('Failed to update connection: $e'));
     }
   }
-
 
   /// Helper method to find a port by ID across all port lists
   Port? _findPortById(RoutingEditorStateLoaded state, String portId) {
@@ -629,45 +627,48 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
+  /// Helper method to find a port by ID and return both the port and its algorithm index
+  (Port?, int?) _findPortWithAlgorithmIndex(
+    RoutingEditorStateLoaded state,
+    String portId,
+  ) {
+    // Check physical inputs (no algorithm index)
+    for (final port in state.physicalInputs) {
+      if (port.id == portId) return (port, null);
+    }
+
+    // Check physical outputs (no algorithm index)
+    for (final port in state.physicalOutputs) {
+      if (port.id == portId) return (port, null);
+    }
+
+    // Check algorithm ports
+    for (final algorithm in state.algorithms) {
+      for (final port in algorithm.inputPorts) {
+        if (port.id == portId) return (port, algorithm.index);
+      }
+      for (final port in algorithm.outputPorts) {
+        if (port.id == portId) return (port, algorithm.index);
+      }
+    }
+
+    return (null, null);
+  }
+
   /// Helper method to check if two ports can be connected
-  bool _canConnect(Port sourcePort, Port targetPort) {
-    // Output can connect to input
-    if (sourcePort.direction == PortDirection.output &&
-        targetPort.direction == PortDirection.input) {
-      return _arePortTypesCompatible(sourcePort.type, targetPort.type);
-    }
 
-    return false;
-  }
-
-  /// Helper method to check port type compatibility
-  bool _arePortTypesCompatible(PortType sourceType, PortType targetType) {
-    // Same types are always compatible
-    if (sourceType == targetType) return true;
-
-    // Audio and CV are often interchangeable
-    if ((sourceType == PortType.audio && targetType == PortType.cv) ||
-        (sourceType == PortType.cv && targetType == PortType.audio)) {
-      return true;
-    }
-
-    // Gate and trigger can be compatible
-    if ((sourceType == PortType.gate && targetType == PortType.trigger) ||
-        (sourceType == PortType.trigger && targetType == PortType.gate)) {
-      return true;
-    }
-
-    return false;
-  }
 
   /// Helper method to determine if a connection is a ghost connection
   /// Ghost connections occur when an algorithm output connects to a physical input
-  
+
   /// Helper method to determine the type of connection based on port IDs
-  ConnectionType _determineConnectionType(String sourcePortId, String targetPortId) {
+  ConnectionType _determineConnectionType(
+    String sourcePortId,
+    String targetPortId,
+  ) {
     final isSourceHardware = sourcePortId.startsWith('hw_in_');
     final isTargetHardware = targetPortId.startsWith('hw_out_');
-    
+
     if (isSourceHardware) {
       return ConnectionType.hardwareInput;
     } else if (isTargetHardware) {
@@ -697,7 +698,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Create a new routing bus
   Future<void> createBus({
     required String name,
-    core_port.OutputMode defaultOutputMode = core_port.OutputMode.replace,
+    OutputMode defaultOutputMode = OutputMode.add,
     double masterGain = 1.0,
   }) async {
     final currentState = state;
@@ -731,7 +732,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       await _autoSyncToHardware();
     } catch (e) {
       debugPrint('Error creating bus: $e');
-      emit(RoutingEditorState.error('Failed to create bus: $e'));
     }
   }
 
@@ -776,7 +776,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     } catch (e) {
       debugPrint('Error deleting bus: $e');
-      emit(RoutingEditorState.error('Failed to delete bus: $e'));
     }
   }
 
@@ -784,7 +783,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   Future<void> assignConnectionToBus({
     required String connectionId,
     required String busId,
-    core_port.OutputMode? outputMode,
+    OutputMode? outputMode,
   }) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) {
@@ -800,7 +799,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (connectionIndex == -1) {
         debugPrint('Connection not found: $connectionId');
-        emit(RoutingEditorState.error('Connection not found: $connectionId'));
+
         return;
       }
 
@@ -809,7 +808,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (busIndex == -1) {
         debugPrint('Bus not found: $busId');
-        emit(RoutingEditorState.error('Bus not found: $busId'));
+
         return;
       }
 
@@ -867,7 +866,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     } catch (e) {
       debugPrint('Error assigning connection to bus: $e');
-      emit(RoutingEditorState.error('Failed to assign connection to bus: $e'));
     }
   }
 
@@ -889,7 +887,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (connectionIndex == -1) {
         debugPrint('Connection not found: $connectionId');
-        emit(RoutingEditorState.error('Connection not found: $connectionId'));
+
         return;
       }
 
@@ -937,86 +935,110 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Connection unassigned from bus: $connectionId');
     } catch (e) {
       debugPrint('Error unassigning connection from bus: $e');
-      emit(
-        RoutingEditorState.error('Failed to unassign connection from bus: $e'),
-      );
     }
   }
 
-  /// Set output mode for a specific port
-  Future<void> setPortOutputMode({
-    required String portId,
-    required core_port.OutputMode outputMode,
-  }) async {
+  /// Toggle output mode for a specific port
+  Future<void> togglePortOutputMode({required String portId}) async {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) {
       debugPrint('Cannot set port output mode - routing editor not loaded');
       return;
     }
 
+    if (_distingCubit == null) {
+      debugPrint('Cannot set port output mode - DistingCubit not available');
+      return;
+    }
+
     try {
-      // Verify port exists
-      final port = _findPortById(currentState, portId);
+      // Find the port and its algorithm index
+      final (port, algorithmIndex) = _findPortWithAlgorithmIndex(
+        currentState,
+        portId,
+      );
       if (port == null) {
         debugPrint('Port not found: $portId');
-        emit(RoutingEditorState.error('Port not found: $portId'));
         return;
       }
 
       // Verify it's an output port
       if (port.direction != PortDirection.output) {
         debugPrint('Cannot set output mode for input port: $portId');
-        emit(
-          RoutingEditorState.error(
-            'Output mode can only be set for output ports',
-          ),
-        );
         return;
       }
 
-      // Update port output modes
-      final updatedPortOutputModes = Map<String, core_port.OutputMode>.from(
-        currentState.portOutputModes,
+      // Verify we have mode parameter information
+      if (port.modeParameterNumber == null || algorithmIndex == null) {
+        debugPrint('Mode parameter not available for port: $portId');
+        debugPrint('This algorithm may not support output mode switching');
+        // For algorithms without mode parameters, we silently ignore the request
+        // rather than showing an error to the user
+        return;
+      }
+
+      // Get current parameter value from the actual slot data
+      final distingState = _distingCubit.state;
+      if (distingState is! DistingStateSynchronized) {
+        debugPrint('Disting not synchronized, cannot get slot data');
+        return;
+      }
+
+      if (algorithmIndex >= distingState.slots.length) {
+        debugPrint('Algorithm index $algorithmIndex out of range');
+        return;
+      }
+
+      final currentSlot = distingState.slots[algorithmIndex];
+
+      // Find the current value of the mode parameter
+      final currentParamValue = currentSlot.values
+          .firstWhere(
+            (v) => v.parameterNumber == port.modeParameterNumber!,
+            orElse: () => throw StateError(
+              'Mode parameter ${port.modeParameterNumber} not found in slot',
+            ),
+          )
+          .value;
+
+      // Toggle the parameter value: 0=Add, 1=Replace
+      final newParamValue = currentParamValue == 0 ? 1 : 0;
+      final newMode = newParamValue == 1 ? OutputMode.replace : OutputMode.add;
+
+      debugPrint(
+        'Toggling mode parameter for ${port.name}: current=$currentParamValue, new=$newParamValue ($newMode)',
       );
-      updatedPortOutputModes[portId] = outputMode;
 
-        // Update connections that use this port as source
-        final updatedConnections = currentState.connections.map((conn) {
-          if (conn.sourcePortId == portId) {
-            return conn.copyWith(outputMode: outputMode);
-          }
-          return conn;
-        }).toList();
+      // Update the hardware parameter via DistingCubit
+      await _distingCubit.updateParameterValue(
+        algorithmIndex: algorithmIndex,
+        parameterNumber: port.modeParameterNumber!,
+        value: newParamValue,
+        userIsChangingTheValue: true,
+      );
 
-        emit(
-          currentState.copyWith(
-            portOutputModes: updatedPortOutputModes,
-            connections: updatedConnections,
-            lastError: null,
-          ),
-        );
-
-      debugPrint('Port output mode set: ${port.name} -> $outputMode');
+      debugPrint(
+        'Port output mode toggled via hardware parameter: ${port.name} -> $newMode',
+      );
     } catch (e) {
       debugPrint('Error setting port output mode: $e');
-      emit(RoutingEditorState.error('Failed to set port output mode: $e'));
     }
   }
 
   /// Get output mode for a specific port
-  core_port.OutputMode getPortOutputMode(String portId) {
+  OutputMode getPortOutputMode(String portId) {
     final currentState = state;
     if (currentState is RoutingEditorStateLoaded) {
-      return currentState.portOutputModes[portId] ?? core_port.OutputMode.replace;
+      return currentState.portOutputModes[portId] ?? OutputMode.replace;
     }
-    return core_port.OutputMode.replace;
+    return OutputMode.replace;
   }
 
   /// Update bus properties
   Future<void> updateBus({
     required String busId,
     String? name,
-    core_port.OutputMode? defaultOutputMode,
+    OutputMode? defaultOutputMode,
     double? masterGain,
   }) async {
     final currentState = state;
@@ -1030,7 +1052,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       if (busIndex == -1) {
         debugPrint('Bus not found for update: $busId');
-        emit(RoutingEditorState.error('Bus not found: $busId'));
         return;
       }
 
@@ -1050,7 +1071,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Bus updated: ${updatedBus.name}');
     } catch (e) {
       debugPrint('Error updating bus: $e');
-      emit(RoutingEditorState.error('Failed to update bus: $e'));
     }
   }
 
@@ -1092,7 +1112,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           id: 'bus_audio_main',
           name: 'Audio Main',
           status: BusStatus.available,
-          defaultOutputMode: core_port.OutputMode.add,
+          defaultOutputMode: OutputMode.add,
           masterGain: 1.0,
           createdAt: DateTime.now(),
         ),
@@ -1100,7 +1120,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           id: 'bus_cv_main',
           name: 'CV Main',
           status: BusStatus.available,
-          defaultOutputMode: core_port.OutputMode.replace,
+          defaultOutputMode: OutputMode.replace,
           masterGain: 1.0,
           createdAt: DateTime.now(),
         ),
@@ -1108,7 +1128,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           id: 'bus_gate_main',
           name: 'Gate/Trigger Main',
           status: BusStatus.available,
-          defaultOutputMode: core_port.OutputMode.replace,
+          defaultOutputMode: OutputMode.replace,
           masterGain: 1.0,
           createdAt: DateTime.now(),
         ),
@@ -1129,7 +1149,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     } catch (e) {
       debugPrint('Error initializing default buses: $e');
-      emit(RoutingEditorState.error('Failed to initialize default buses: $e'));
     }
   }
 
@@ -1141,7 +1160,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return;
     }
 
-    emit(const RoutingEditorState.syncing());
+    emit(currentState.copyWith(subState: SubState.syncing));
 
     try {
       debugPrint(
@@ -1162,7 +1181,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Hardware sync completed at $syncTime');
     } catch (e) {
       debugPrint('Error syncing to hardware: $e');
-      emit(RoutingEditorState.error('Failed to sync to hardware: $e'));
+      emit(currentState.copyWith(subState: SubState.error, lastError: e.toString()));
     }
   }
 
@@ -1174,7 +1193,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return;
     }
 
-    emit(const RoutingEditorState.syncing());
+    emit(currentState.copyWith(subState: SubState.syncing));
 
     try {
       debugPrint('Starting hardware sync from device');
@@ -1188,7 +1207,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Hardware sync from device initiated');
     } catch (e) {
       debugPrint('Error syncing from hardware: $e');
-      emit(RoutingEditorState.error('Failed to sync from hardware: $e'));
     }
   }
 
@@ -1250,7 +1268,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Refresh routing data from hardware
   Future<void> refreshRouting() async {
     if (state is RoutingEditorStateLoaded) {
-      emit(const RoutingEditorState.refreshing());
+      emit((state as RoutingEditorStateLoaded).copyWith(subState: SubState.refreshing));
     }
 
     try {
@@ -1258,7 +1276,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // State will be updated through the stream subscription
     } catch (e) {
       debugPrint('Error refreshing routing: $e');
-      emit(RoutingEditorState.error('Failed to refresh routing: $e'));
     }
   }
 
@@ -1275,7 +1292,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       return;
     }
 
-    emit(const RoutingEditorState.persisting());
+    emit(currentState.copyWith(subState: SubState.persisting));
 
     try {
       final prefs = await _prefs;
@@ -1335,7 +1352,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Routing editor state saved at $persistTime');
     } catch (e) {
       debugPrint('Error saving routing editor state: $e');
-      emit(RoutingEditorState.error('Failed to save state: $e'));
     }
   }
 
@@ -1367,9 +1383,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               (type) => type.name == connectionMap['connectionType'],
               orElse: () => ConnectionType.algorithmToAlgorithm,
             ),
-            outputMode: core_port.OutputMode.values.firstWhere(
+            outputMode: OutputMode.values.firstWhere(
               (mode) => mode.name == connectionMap['outputMode'],
-              orElse: () => core_port.OutputMode.replace,
+              orElse: () => OutputMode.replace,
             ),
             gain: (connectionMap['gain'] as num?)?.toDouble() ?? 1.0,
             isMuted: connectionMap['isMuted'] as bool? ?? false,
@@ -1396,9 +1412,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
               orElse: () => BusStatus.available,
             ),
             connectionIds: (busMap['connectionIds'] as List).cast<String>(),
-            defaultOutputMode: core_port.OutputMode.values.firstWhere(
+            defaultOutputMode: OutputMode.values.firstWhere(
               (mode) => mode.name == busMap['defaultOutputMode'],
-              orElse: () => core_port.OutputMode.replace,
+              orElse: () => OutputMode.replace,
             ),
             masterGain: (busMap['masterGain'] as num?)?.toDouble() ?? 1.0,
             createdAt: busMap['createdAt'] != null
@@ -1412,14 +1428,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Parse port output modes
-      final portOutputModes = <String, core_port.OutputMode>{};
+      final portOutputModes = <String, OutputMode>{};
       final portModeData =
           stateData['portOutputModes'] as Map<String, dynamic>?;
       if (portModeData != null) {
         for (final entry in portModeData.entries) {
-          portOutputModes[entry.key] = core_port.OutputMode.values.firstWhere(
+          portOutputModes[entry.key] = OutputMode.values.firstWhere(
             (mode) => mode.name == entry.value,
-            orElse: () => core_port.OutputMode.replace,
+            orElse: () => OutputMode.replace,
           );
         }
       }
@@ -1461,7 +1477,6 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Persisted routing editor state cleared');
     } catch (e) {
       debugPrint('Error clearing persisted state: $e');
-      emit(RoutingEditorState.error('Failed to clear persisted state: $e'));
     }
   }
 
@@ -1497,8 +1512,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Enhanced error recovery method
   Future<void> recoverFromError() async {
     final currentState = state;
-    if (currentState is RoutingEditorStateError) {
-      debugPrint('Attempting recovery from error: ${currentState.message}');
+    if (currentState is RoutingEditorStateLoaded && currentState.lastError != null) {
+      debugPrint('Attempting recovery from error: ${currentState.lastError}');
 
       try {
         // Try to reload the last known good state
@@ -1510,8 +1525,114 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         debugPrint('Recovery attempt completed');
       } catch (e) {
         debugPrint('Recovery failed: $e');
-        emit(RoutingEditorState.error('Recovery failed: $e'));
       }
+    }
+  }
+
+  // Connection Deletion Business Logic (UI-agnostic)
+
+  /// Delete a connection by ID with smart bus assignment logic
+  /// This method handles the core business logic for connection deletion
+  /// including bus clearing for different connection types
+  Future<void> deleteConnectionWithSmartBusLogic(String connectionId) async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    try {
+      // Validate connection exists
+      if (!currentState.connections.any((conn) => conn.id == connectionId)) {
+        throw ArgumentError('Connection not found: $connectionId');
+      }
+
+      debugPrint('Deleting connection with smart bus logic: $connectionId');
+
+      // Get connection details before deletion
+      final connectionToDelete = currentState.connections.firstWhere(
+        (conn) => conn.id == connectionId,
+      );
+      debugPrint(
+        'Connection details: source=${connectionToDelete.sourcePortId}, dest=${connectionToDelete.destinationPortId}, bus=${connectionToDelete.busNumber}',
+      );
+
+      // This just calls deleteConnection which already handles clearing bus assignments
+      await deleteConnection(connectionId);
+
+      debugPrint('Successfully deleted connection: $connectionId');
+    } catch (e) {
+      debugPrint('Error deleting connection with smart bus logic: $e');
+    }
+  }
+
+  /// Clear bus assignments for a connection by setting parameter values to 0
+  Future<void> _clearBusAssignmentsForConnection(
+    Connection connection,
+    RoutingEditorStateLoaded state,
+  ) async {
+    if (_distingCubit == null) return;
+
+    try {
+      debugPrint('Clearing bus assignments for connection: ${connection.id}');
+      
+      // Find the source and destination ports
+      final sourcePort = _findPortById(state, connection.sourcePortId);
+      final targetPort = _findPortById(state, connection.destinationPortId);
+      
+      if (sourcePort == null || targetPort == null) {
+        debugPrint('Could not find ports for connection: ${connection.id}');
+        return;
+      }
+
+      // For algorithm-to-algorithm connections, we need to clear both ends
+      // by setting their respective bus parameters to 0
+      
+      // Clear source port (output) bus assignment
+      if (sourcePort.parameterNumber != null && !connection.sourcePortId.startsWith('hw_')) {
+        // Find which algorithm this port belongs to
+        for (final algorithm in state.algorithms) {
+          for (final port in algorithm.outputPorts) {
+            if (port.id == sourcePort.id && port.parameterNumber != null) {
+              debugPrint(
+                'Clearing output bus for algorithm ${algorithm.index}, '
+                'parameter ${port.parameterNumber} (was bus ${port.busValue})',
+              );
+              await _distingCubit.updateParameterValue(
+                algorithmIndex: algorithm.index,
+                parameterNumber: port.parameterNumber!,
+                value: 0, // 0 means "None" for bus assignments
+                userIsChangingTheValue: false,
+              );
+              break;
+            }
+          }
+        }
+      }
+
+      // Clear target port (input) bus assignment
+      if (targetPort.parameterNumber != null && !connection.destinationPortId.startsWith('hw_')) {
+        // Find which algorithm this port belongs to
+        for (final algorithm in state.algorithms) {
+          for (final port in algorithm.inputPorts) {
+            if (port.id == targetPort.id && port.parameterNumber != null) {
+              debugPrint(
+                'Clearing input bus for algorithm ${algorithm.index}, '
+                'parameter ${port.parameterNumber} (was bus ${port.busValue})',
+              );
+              await _distingCubit.updateParameterValue(
+                algorithmIndex: algorithm.index,
+                parameterNumber: port.parameterNumber!,
+                value: 0, // 0 means "None" for bus assignments
+                userIsChangingTheValue: false,
+              );
+              break;
+            }
+          }
+        }
+      }
+
+      debugPrint('Successfully cleared bus assignments for connection');
+    } catch (e) {
+      debugPrint('Error clearing bus assignments: $e');
+      // Don't rethrow - we still want to delete the connection from UI
     }
   }
 

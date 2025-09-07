@@ -436,11 +436,13 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
   /// - [slot]: The slot containing algorithm and parameter information
   /// - [ioParameters]: Pre-extracted routing parameters (bus assignments)
   /// - [modeParameters]: Pre-extracted mode parameters (Add/Replace modes)
+  /// - [modeParametersWithNumbers]: Mode parameters with their parameter numbers
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
   static PolyAlgorithmRouting createFromSlot(
     Slot slot, {
     required Map<String, int> ioParameters,
     Map<String, int>? modeParameters,
+    Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
     // Ensure we have a valid algorithm UUID
@@ -537,6 +539,14 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
             } else {
               port['outputMode'] = 'add';
             }
+          }
+        }
+        
+        // Store mode parameter number if available
+        if (modeParametersWithNumbers != null) {
+          final modeName = '$paramName mode';
+          if (modeParametersWithNumbers.containsKey(modeName)) {
+            port['modeParameterNumber'] = modeParametersWithNumbers[modeName]!.parameterNumber;
           }
         }
         

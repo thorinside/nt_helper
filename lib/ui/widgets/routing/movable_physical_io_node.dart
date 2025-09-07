@@ -47,6 +47,12 @@ class MovablePhysicalIONode extends StatefulWidget {
   
   /// Callback when node drag ends.
   final VoidCallback? onNodeDragEnd;
+
+  /// Set of connected port IDs
+  final Set<String>? connectedPorts;
+  
+  /// Callback for routing actions from ports
+  final void Function(String portId, String action)? onRoutingAction;
   
   const MovablePhysicalIONode({
     super.key,
@@ -63,6 +69,8 @@ class MovablePhysicalIONode extends StatefulWidget {
     this.onPortPositionResolved,
     this.onNodeDragStart,
     this.onNodeDragEnd,
+    this.connectedPorts,
+    this.onRoutingAction,
   });
   
   @override
@@ -175,12 +183,14 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
         port: port,
         labelPosition: widget.isInput ? PortLabelPosition.left : PortLabelPosition.right,
         style: PortStyle.jack,
+        isConnected: port.isConnected || (widget.connectedPorts?.contains(port.id) ?? false), // Check both port's connection status and connectedPorts
         onPortPositionResolved: widget.onPortPositionResolved != null
             ? (portId, globalCenter, isInput) {
                 widget.onPortPositionResolved!(port, globalCenter);
               }
             : null,
         onTap: () => widget.onPortTapped?.call(port),
+        onRoutingAction: widget.onRoutingAction,
         onDragStart: () => widget.onPortDragStart?.call(port),
         onDragUpdate: (position) => widget.onPortDragUpdate?.call(port, position),
         onDragEnd: (position) => widget.onPortDragEnd?.call(port, position),

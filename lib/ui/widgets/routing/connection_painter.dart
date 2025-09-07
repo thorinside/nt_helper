@@ -326,7 +326,14 @@ class ConnectionPainter extends CustomPainter {
 
     // Use port type color as base, modified by connection style
     Color baseColor = PortTypeColors.getColorForPortId(conn.connection.sourcePortId);
-    Color finalColor = Color.lerp(baseColor, style.color, 0.7) ?? style.color;
+    Color finalColor;
+    
+    // For highlighted connections, use pure red for maximum visibility
+    if (conn.isHighlighted) {
+      finalColor = Colors.red;
+    } else {
+      finalColor = Color.lerp(baseColor, style.color, 0.7) ?? style.color;
+    }
 
     // Apply replace mode styling
     if (conn.outputMode == OutputMode.replace) {

@@ -243,7 +243,6 @@ class MockRoutingEditorCubit extends RoutingEditorCubit {
 
   Function(String portId, core_port.OutputMode outputMode)? onSetPortOutputMode;
 
-  @override
   Future<void> setPortOutputMode({
     required String portId,
     required core_port.OutputMode outputMode,

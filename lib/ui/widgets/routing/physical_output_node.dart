@@ -41,9 +41,16 @@ class PhysicalOutputNode extends StatelessWidget {
   
   /// Callback when node drag ends.
   final VoidCallback? onNodeDragEnd;
+
+  /// Callback for routing actions from ports
+  final void Function(String portId, String action)? onRoutingAction;
+
+  /// Set of connected port IDs
+  final Set<String>? connectedPorts;
   
   const PhysicalOutputNode({
     super.key,
+    this.connectedPorts,
     this.onPortTapped,
     this.onDragStart,
     this.onDragUpdate,
@@ -55,17 +62,20 @@ class PhysicalOutputNode extends StatelessWidget {
     this.onPortPositionResolved,
     this.onNodeDragStart,
     this.onNodeDragEnd,
+    this.onRoutingAction,
   });
   
   @override
   Widget build(BuildContext context) {
-    final ports = PhysicalPortGenerator.generatePhysicalOutputPorts();
+    // Generate physical output ports for display
+    final effectivePorts = PhysicalPortGenerator.generatePhysicalOutputPorts();
     
     return Semantics(
       label: 'Physical Outputs',
       hint: 'Hardware output jacks. These act as inputs from algorithms.',
       child: MovablePhysicalIONode(
-        ports: ports,
+        ports: effectivePorts,
+        connectedPorts: connectedPorts,
         title: 'Physical Outputs',
         icon: Icons.output_rounded,
         position: position,
@@ -78,6 +88,7 @@ class PhysicalOutputNode extends StatelessWidget {
         onPortPositionResolved: onPortPositionResolved,
         onNodeDragStart: onNodeDragStart,
         onNodeDragEnd: onNodeDragEnd,
+        onRoutingAction: onRoutingAction,
       ),
     );
   }

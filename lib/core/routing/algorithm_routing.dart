@@ -37,6 +37,9 @@ abstract class AlgorithmRouting {
   /// The port compatibility validator for this algorithm
   late final PortCompatibilityValidator _validator;
   
+  /// Mode parameters with their numbers for output mode switching
+  Map<String, ({int parameterNumber, int value})>? _modeParametersWithNumbers;
+  
   /// Creates a new AlgorithmRouting instance
   AlgorithmRouting({PortCompatibilityValidator? validator}) {
     _validator = validator ?? PortCompatibilityValidator();
@@ -56,6 +59,20 @@ abstract class AlgorithmRouting {
   
   /// The port compatibility validator
   PortCompatibilityValidator get validator => _validator;
+  
+  /// Sets the mode parameters for this routing algorithm
+  @protected
+  void setModeParameters(Map<String, ({int parameterNumber, int value})> modeParameters) {
+    _modeParametersWithNumbers = modeParameters;
+  }
+  
+  /// Gets the mode parameter number for the given output parameter name
+  /// If the output parameter is named "Blah", looks for "Blah mode"
+  @protected
+  int? getModeParameterNumber(String outputParameterName) {
+    final modeParameterName = '$outputParameterName mode';
+    return _modeParametersWithNumbers?[modeParameterName]?.parameterNumber;
+  }
   
   /// Generates the list of input ports for this algorithm.
   /// 
@@ -254,24 +271,33 @@ abstract class AlgorithmRouting {
     // Extract both routing and mode parameters once for all implementations
     final ioParameters = extractIOParameters(slot);
     final modeParameters = extractModeParameters(slot);
+    final modeParametersWithNumbers = extractModeParametersWithNumbers(slot);
     
     // Ask each implementation if it can handle this slot
+    AlgorithmRouting instance;
     if (PolyAlgorithmRouting.canHandle(slot)) {
-      return PolyAlgorithmRouting.createFromSlot(
+      instance = PolyAlgorithmRouting.createFromSlot(
         slot, 
         ioParameters: ioParameters,
         modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+      );
+    } else {
+      // MultiChannelAlgorithmRouting is the fallback for everything else
+      instance = MultiChannelAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
         algorithmUuid: algorithmUuid,
       );
     }
     
-    // MultiChannelAlgorithmRouting is the fallback for everything else
-    return MultiChannelAlgorithmRouting.createFromSlot(
-      slot,
-      ioParameters: ioParameters,
-      modeParameters: modeParameters,
-      algorithmUuid: algorithmUuid,
-    );
+    // Set the mode parameters in the base class
+    instance.setModeParameters(modeParametersWithNumbers);
+    
+    return instance;
   }
   
   /// Helper method to extract routing-related parameters from a slot.
@@ -287,6 +313,14 @@ abstract class AlgorithmRouting {
   /// 
   /// Returns a map of parameter names to their bus values
   static Map<String, int> extractIOParameters(Slot slot) {
+    // Special case: Notes algorithm (guid: 'note') has no I/O capabilities
+    // Even if it has parameters that look like bus parameters,
+    // they're not for routing audio/CV signals
+    if (slot.algorithm.guid == 'note') {
+      debugPrint('Notes algorithm detected (guid: note) - returning empty I/O parameters (no routing capability)');
+      return {};
+    }
+    
     final ioParameters = <String, int>{};
     
     final valueByParam = <int, int>{
@@ -359,6 +393,54 @@ abstract class AlgorithmRouting {
       }
     }
     
+    return modeParameters;
+  }
+  
+  /// Extract mode parameters with both their values and parameter numbers.
+  /// 
+  /// Parameters:
+  /// - [slot]: The slot to analyze
+  /// 
+  /// Returns a map of parameter names to (parameterNumber, value) records
+  static Map<String, ({int parameterNumber, int value})> extractModeParametersWithNumbers(Slot slot) {
+    final modeParameters = <String, ({int parameterNumber, int value})>{};
+    
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+    
+    // Build enum lookup map
+    final enumsByParam = <int, List<String>>{
+      for (final e in slot.enums) e.parameterNumber: e.values,
+    };
+    
+    debugPrint('AlgorithmRouting: Scanning ${slot.parameters.length} parameters for mode parameters');
+    
+    for (final param in slot.parameters) {
+      // Mode parameters are identified by:
+      // - name ending with 'mode' (case-insensitive)
+      // - unit == 1 (enum type)
+      // - enum values containing 'Add' and 'Replace'
+      final enumValues = enumsByParam[param.parameterNumber];
+      final isModeParameter = param.name.toLowerCase().endsWith('mode') &&
+          param.unit == 1 &&
+          enumValues != null &&
+          enumValues.length >= 2 &&
+          enumValues.contains('Add') &&
+          enumValues.contains('Replace');
+
+      if (param.name.toLowerCase().contains('output')) {
+        debugPrint('AlgorithmRouting: Checking output parameter ${param.name}: unit=${param.unit}, enums=$enumValues, isModeParam=$isModeParameter');
+      }
+
+      if (isModeParameter) {
+        final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
+        modeParameters[param.name] = (parameterNumber: param.parameterNumber, value: value);
+        debugPrint('AlgorithmRouting: Found mode parameter: ${param.name} -> paramNum=${param.parameterNumber}, value=$value');
+      }
+    }
+    
+    debugPrint('AlgorithmRouting: Found ${modeParameters.length} mode parameters: ${modeParameters.keys}');
     return modeParameters;
   }
   

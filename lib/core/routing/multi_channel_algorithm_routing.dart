@@ -112,6 +112,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// Cached output ports to avoid regeneration
   List<Port>? _cachedOutputPorts;
 
+
   /// Creates a new MultiChannelAlgorithmRouting instance.
   ///
   /// Parameters:
@@ -267,6 +268,21 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             }
           }
           
+          // Get mode parameter number from the item metadata (already stored during createFromSlot)
+          int? modeParameterNumber = item['modeParameterNumber'] as int?;
+          
+          // Fallback to looking it up from base class if not in metadata
+          if (modeParameterNumber == null) {
+            final busParam = item['busParam']?.toString();
+            if (busParam != null) {
+              modeParameterNumber = getModeParameterNumber(busParam);
+            }
+          }
+          
+          if (modeParameterNumber != null) {
+            debugPrint('MultiChannelRouting: Found mode parameter for ${item['name']}: $modeParameterNumber');
+          }
+          
           ports.add(
             Port(
               id: id,
@@ -279,6 +295,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               busValue: item['busValue'] as int?,
               busParam: item['busParam']?.toString(),
               parameterNumber: item['parameterNumber'] as int?,
+              modeParameterNumber: modeParameterNumber,
               channelNumber: item['channel'] as int?,
               isStereoChannel: item['channel'] != null,
               stereoSide: item['channel']?.toString(),
@@ -643,11 +660,13 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   /// - [slot]: The slot containing algorithm and parameter information
   /// - [ioParameters]: Pre-extracted routing parameters (bus assignments)
   /// - [modeParameters]: Pre-extracted mode parameters (Add/Replace modes)
+  /// - [modeParametersWithNumbers]: Mode parameters with their parameter numbers
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
   static MultiChannelAlgorithmRouting createFromSlot(
     Slot slot, {
     required Map<String, int> ioParameters,
     Map<String, int>? modeParameters,
+    Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
     // Process routing parameters as regular ports
@@ -720,6 +739,18 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
             } else {
               port['outputMode'] = 'add';
             }
+          }
+        }
+        
+        // Store mode parameter number if available
+        if (modeParametersWithNumbers != null) {
+          final modeName = '$paramName mode';
+          debugPrint('Looking for mode parameter: "$modeName" in ${modeParametersWithNumbers.keys}');
+          if (modeParametersWithNumbers.containsKey(modeName)) {
+            port['modeParameterNumber'] = modeParametersWithNumbers[modeName]!.parameterNumber;
+            debugPrint('Found mode parameter number ${port['modeParameterNumber']} for $paramName');
+          } else {
+            debugPrint('Mode parameter "$modeName" not found');
           }
         }
         
