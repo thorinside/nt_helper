@@ -435,9 +435,6 @@ class ConnectionPainter extends CustomPainter {
   /// Draw connection label with bus number and output mode
   void _drawConnectionLabel(Canvas canvas, ConnectionData conn) {
     if (conn.busNumber == null) {
-      debugPrint(
-        'ConnectionPainter: No bus number for connection ${conn.connection.id}',
-      );
       return;
     }
 
@@ -486,13 +483,8 @@ class ConnectionPainter extends CustomPainter {
     }
 
     // Use BusLabelFormatter to get the label with mode-aware formatting
-    debugPrint(
-      'ConnectionPainter: Formatting label for bus ${conn.busNumber} with outputMode ${conn.outputMode}',
-    );
     final label = formatBusLabelWithMode(conn.busNumber, conn.outputMode);
-    debugPrint('ConnectionPainter: Generated label: "$label"');
     if (label.isEmpty) {
-      debugPrint('ConnectionPainter: Empty label for bus ${conn.busNumber}');
       return;
     }
 

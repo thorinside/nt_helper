@@ -730,35 +730,65 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           port['channel'] = 'mono';
         }
 
+        // Determine possible mode names
+        final List<String> possibleModeNames = ['$paramName mode']; // Full name mode
+        final firstWord = paramName.split(' ').first;
+        if (firstWord.isNotEmpty && firstWord != paramName) {
+          possibleModeNames.add('$firstWord mode'); // First word mode
+        }
+        final uniquePossibleModeNames = possibleModeNames.toSet().toList();
+
         // Apply output mode if available
         if (modeParameters != null) {
-          // Look for corresponding mode parameter (e.g., "Output 1 mode" for "Output 1")
-          final modeName = '$paramName mode';
-          if (modeParameters.containsKey(modeName)) {
-            final modeValue = modeParameters[modeName];
-            // 0 = Add, 1 = Replace
-            if (modeValue == 1) {
-              port['outputMode'] = 'replace';
-            } else {
-              port['outputMode'] = 'add';
+          String? actualModeName;
+          int? modeValue;
+
+          for (final name in uniquePossibleModeNames) {
+            if (modeParameters.containsKey(name)) {
+              actualModeName = name;
+              modeValue = modeParameters[name];
+              break; // Found the mode parameter
             }
+          }
+
+          if (actualModeName != null && modeValue != null) {
+            port['outputMode'] = (modeValue == 1) ? 'replace' : 'add'; // 0 = Add, 1 = Replace
+            debugPrint('Found output mode "$actualModeName" for output "$paramName" with value $modeValue');
+          } else {
+            // Optional: Log if no mode parameter was found for the value
+            // debugPrint('No output mode value parameter found for "$paramName" among candidates: $uniquePossibleModeNames. Available: ${modeParameters.keys}');
           }
         }
 
         // Store mode parameter number if available
         if (modeParametersWithNumbers != null) {
-          final modeName = '$paramName mode';
+          String? actualModeNameForNumber;
+          ({int parameterNumber, int value})? modeInfo;
+
+          for (final name in uniquePossibleModeNames) {
+            if (modeParametersWithNumbers.containsKey(name)) {
+              actualModeNameForNumber = name;
+              modeInfo = modeParametersWithNumbers[name];
+              break; // Found the mode parameter for its number
+            }
+          }
+
+          // Debugging log to see what's being searched for and what's available
+          // Can be noisy, so enable when debugging mode parameter discovery
+          /*
           debugPrint(
-            'Looking for mode parameter: "$modeName" in ${modeParametersWithNumbers.keys}',
+            'Searching for mode param number for output "$paramName". Candidates: $uniquePossibleModeNames. Available mode params with numbers: ${modeParametersWithNumbers.keys.toList()}',
           );
-          if (modeParametersWithNumbers.containsKey(modeName)) {
-            port['modeParameterNumber'] =
-                modeParametersWithNumbers[modeName]!.parameterNumber;
+          */
+
+          if (actualModeNameForNumber != null && modeInfo != null) {
+            port['modeParameterNumber'] = modeInfo.parameterNumber;
             debugPrint(
-              'Found mode parameter number ${port['modeParameterNumber']} for $paramName',
+              'Found mode parameter number mapping for "$paramName" using key "$actualModeNameForNumber". Parameter number: ${modeInfo.parameterNumber}',
             );
           } else {
-            debugPrint('Mode parameter "$modeName" not found');
+            // Optional: Log if no mode parameter was found for the number
+            // debugPrint('Mode parameter number not found for "$paramName" among candidates: $uniquePossibleModeNames');
           }
         }
 

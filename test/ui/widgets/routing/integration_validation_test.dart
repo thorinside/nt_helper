@@ -4,6 +4,7 @@ import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
+import 'package:nt_helper/ui/widgets/routing/physical_port_generator.dart';
 
 /// Integration validation test for Task 3 - Universal Port Widget System
 ///
@@ -54,6 +55,7 @@ void main() {
                   left: 300,
                   top: 150,
                   child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
                     position: const Offset(300, 150),
                     onPortPositionResolved: trackPhysicalPort,
                   ),
@@ -128,6 +130,7 @@ void main() {
                   left: inputNodePosition.dx,
                   top: inputNodePosition.dy,
                   child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
                     position: inputNodePosition,
                     onPortPositionResolved: (port, pos) {
                       if (port.id == 'hw_in_1') {
@@ -213,6 +216,7 @@ void main() {
                   left: 50,
                   top: 100,
                   child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
                     position: const Offset(50, 100),
                     onPortPositionResolved: collectPhysicalPortId,
                   ),
@@ -283,7 +287,10 @@ void main() {
                 Positioned(
                   left: 50,
                   top: 100,
-                  child: PhysicalInputNode(position: const Offset(50, 100)),
+                  child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
+                    position: const Offset(50, 100)
+                  ),
                 ),
                 ...List.generate(
                   3,
@@ -350,7 +357,10 @@ void main() {
                 Positioned(
                   left: 300,
                   top: 150,
-                  child: PhysicalInputNode(position: const Offset(300, 150)),
+                  child: PhysicalInputNode(
+                    ports: PhysicalPortGenerator.generatePhysicalInputPorts(),
+                    position: const Offset(300, 150)
+                  ),
                 ),
               ],
             ),

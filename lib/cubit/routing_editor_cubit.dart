@@ -247,73 +247,73 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         id: 'hw_in_1',
         name: 'I1',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_2',
         name: 'I2',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_3',
         name: 'I3',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_4',
         name: 'I4',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_5',
         name: 'I5',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_6',
         name: 'I6',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_7',
         name: 'I7',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_8',
         name: 'I8',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_9',
         name: 'I9',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_10',
         name: 'I10',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_11',
         name: 'I11',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
       const Port(
         id: 'hw_in_12',
         name: 'I12',
         type: PortType.cv,
-        direction: PortDirection.input,
+        direction: PortDirection.output,
       ),
     ];
   }
@@ -325,49 +325,49 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         id: 'hw_out_1',
         name: 'Audio Out 1',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_2',
         name: 'Audio Out 2',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_3',
         name: 'Audio Out 3',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_4',
         name: 'Audio Out 4',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_5',
         name: 'Audio Out 5',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_6',
         name: 'Audio Out 6',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_7',
         name: 'Audio Out 7',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_8',
         name: 'Audio Out 8',
         type: PortType.audio,
-        direction: PortDirection.output,
+        direction: PortDirection.input,
       ),
     ];
   }
@@ -407,8 +407,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       // Validate connection is valid (output -> input)
+      debugPrint('Source port direction: ${sourcePort.direction}, Target port direction: ${targetPort.direction}');
+      debugPrint('Source port isInput: ${sourcePort.isInput}, isOutput: ${sourcePort.isOutput}');
+      debugPrint('Target port isInput: ${targetPort.isInput}, isOutput: ${targetPort.isOutput}');
+      
       if (sourcePort.direction != PortDirection.output || targetPort.direction != PortDirection.input) {
         debugPrint('Invalid connection direction: source must be output, target must be input');
+        debugPrint('Source: ${sourcePort.id} (${sourcePort.name}) direction=${sourcePort.direction}');
+        debugPrint('Target: ${targetPort.id} (${targetPort.name}) direction=${targetPort.direction}');
         throw ArgumentError('Invalid connection: source must be output, target must be input');
       }
 
@@ -423,10 +429,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         throw StateError('Connection already exists between these ports');
       }
 
-      debugPrint('Creating connection: ${sourcePort.name} -> ${targetPort.name}');
+      debugPrint('=== Creating connection: ${sourcePort.name} (${sourcePort.id}) -> ${targetPort.name} (${targetPort.id}) ===');
+      debugPrint('Source port bus value: ${sourcePort.busValue}, param: ${sourcePort.parameterNumber}');
+      debugPrint('Target port bus value: ${targetPort.busValue}, param: ${targetPort.parameterNumber}');
 
       // Determine connection type and assign bus number
       final connectionType = _determineConnectionType(sourcePortId, targetPortId);
+      debugPrint('Connection type determined: $connectionType');
       int? busNumber;
 
       // Assign bus numbers based on connection type
@@ -449,11 +458,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
 
       if (busNumber == null) {
-        debugPrint('Failed to assign bus number for connection');
+        debugPrint('=== ERROR: Bus assignment failed for ${sourcePort.name} -> ${targetPort.name} ===');
         throw StateError('Failed to assign bus - all buses may be in use');
       }
 
-      debugPrint('Assigned bus $busNumber for connection: ${sourcePort.name} -> ${targetPort.name}');
+      debugPrint('=== Bus assignment successful: bus $busNumber for ${sourcePort.name} -> ${targetPort.name} ===');
 
       // The connection will appear automatically via ConnectionDiscoveryService
       // when the bus parameters are updated
@@ -461,8 +470,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Mark hardware as out of sync after parameter changes
       await _autoSyncToHardware();
-    } catch (e) {
-      debugPrint('Error creating connection: $e');
+    } catch (e, stackTrace) {
+      debugPrint('=== ERROR in createConnection: $e ===');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -586,19 +596,40 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Update target input port (if it doesn't already have this bus)
     if (targetInputPort.parameterNumber != null && targetInputPort.busValue != busToUse) {
+      debugPrint('=== Updating target input port ===');
+      debugPrint('Target port: ${targetInputPort.name} (${targetInputPort.id})');
+      debugPrint('Current bus value: ${targetInputPort.busValue}, desired bus: $busToUse');
+      debugPrint('Parameter number: ${targetInputPort.parameterNumber}');
+      
       final targetAlgorithmIndex = _findAlgorithmIndexForPort(state, targetInputPort.id);
+      debugPrint('Target algorithm index found: $targetAlgorithmIndex');
+      
       if (targetAlgorithmIndex != null) {
-        debugPrint('Setting target input bus for algorithm $targetAlgorithmIndex, parameter ${targetInputPort.parameterNumber} to bus $busToUse');
-        await _distingCubit!.updateParameterValue(
-          algorithmIndex: targetAlgorithmIndex,
-          parameterNumber: targetInputPort.parameterNumber!,
-          value: busToUse,
-          userIsChangingTheValue: false,
-        );
-        targetUpdated = true;
+        debugPrint('=== Calling updateParameterValue for TARGET ===');
+        debugPrint('Algorithm index: $targetAlgorithmIndex');
+        debugPrint('Parameter number: ${targetInputPort.parameterNumber}');
+        debugPrint('Value (bus): $busToUse');
+        
+        try {
+          await _distingCubit!.updateParameterValue(
+            algorithmIndex: targetAlgorithmIndex,
+            parameterNumber: targetInputPort.parameterNumber!,
+            value: busToUse,
+            userIsChangingTheValue: false,
+          );
+          debugPrint('=== Target parameter update SUCCESS ===');
+          targetUpdated = true;
+        } catch (e) {
+          debugPrint('=== Target parameter update FAILED: $e ===');
+        }
+      } else {
+        debugPrint('=== ERROR: Target algorithm index is NULL ===');
       }
     } else if (targetInputPort.busValue == busToUse) {
+      debugPrint('Target input port already has correct bus value: $busToUse');
       targetUpdated = true; // Already has the correct bus
+    } else {
+      debugPrint('Target input port has no parameter number: ${targetInputPort.parameterNumber}');
     }
 
     if (sourceUpdated && targetUpdated) {
@@ -611,20 +642,33 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Find the algorithm index for a given port ID
   int? _findAlgorithmIndexForPort(RoutingEditorStateLoaded state, String portId) {
-    for (final algorithm in state.algorithms) {
+    debugPrint('=== Searching for algorithm index for port: $portId ===');
+    debugPrint('Total algorithms to search: ${state.algorithms.length}');
+    
+    for (int i = 0; i < state.algorithms.length; i++) {
+      final algorithm = state.algorithms[i];
+      debugPrint('Checking algorithm $i (index ${algorithm.index}): ${algorithm.algorithm}');
+      
       // Check input ports
+      debugPrint('  Input ports: ${algorithm.inputPorts.length}');
       for (final port in algorithm.inputPorts) {
         if (port.id == portId) {
+          debugPrint('=== FOUND port $portId in algorithm ${algorithm.index} (input ports) ===');
           return algorithm.index;
         }
       }
+      
       // Check output ports
+      debugPrint('  Output ports: ${algorithm.outputPorts.length}');
       for (final port in algorithm.outputPorts) {
         if (port.id == portId) {
+          debugPrint('=== FOUND port $portId in algorithm ${algorithm.index} (output ports) ===');
           return algorithm.index;
         }
       }
     }
+    
+    debugPrint('=== PORT NOT FOUND: $portId not found in any algorithm ===');
     return null;
   }
 
@@ -1794,50 +1838,53 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         return;
       }
 
-      // For algorithm-to-algorithm connections, we need to clear both ends
-      // by setting their respective bus parameters to 0
+      // Use the input-only deletion pattern:
+      // 1. If target is a physical output: Clear the SOURCE output bus (physical outputs don't have parameters)
+      // 2. Otherwise: Clear only the TARGET input bus (preserves multi-connections from outputs)
 
-      // Clear source port (output) bus assignment
-      if (sourcePort.parameterNumber != null &&
-          !connection.sourcePortId.startsWith('hw_')) {
-        // Find which algorithm this port belongs to
-        for (final algorithm in state.algorithms) {
-          for (final port in algorithm.outputPorts) {
-            if (port.id == sourcePort.id && port.parameterNumber != null) {
-              debugPrint(
-                'Clearing output bus for algorithm ${algorithm.index}, '
-                'parameter ${port.parameterNumber} (was bus ${port.busValue})',
-              );
-              await _distingCubit.updateParameterValue(
-                algorithmIndex: algorithm.index,
-                parameterNumber: port.parameterNumber!,
-                value: 0, // 0 means "None" for bus assignments
-                userIsChangingTheValue: false,
-              );
-              break;
+      if (connection.destinationPortId.startsWith('hw_out_')) {
+        // Target is physical output - clear the SOURCE output bus
+        if (sourcePort.parameterNumber != null &&
+            !connection.sourcePortId.startsWith('hw_')) {
+          // Find which algorithm this port belongs to
+          for (final algorithm in state.algorithms) {
+            for (final port in algorithm.outputPorts) {
+              if (port.id == sourcePort.id && port.parameterNumber != null) {
+                debugPrint(
+                  'Clearing source output bus for algorithm ${algorithm.index}, '
+                  'parameter ${port.parameterNumber} (was bus ${port.busValue}) - target is physical output',
+                );
+                await _distingCubit.updateParameterValue(
+                  algorithmIndex: algorithm.index,
+                  parameterNumber: port.parameterNumber!,
+                  value: 0, // 0 means "None" for bus assignments
+                  userIsChangingTheValue: false,
+                );
+                break;
+              }
             }
           }
         }
-      }
-
-      // Clear target port (input) bus assignment
-      if (targetPort.parameterNumber != null &&
-          !connection.destinationPortId.startsWith('hw_')) {
-        // Find which algorithm this port belongs to
-        for (final algorithm in state.algorithms) {
-          for (final port in algorithm.inputPorts) {
-            if (port.id == targetPort.id && port.parameterNumber != null) {
-              debugPrint(
-                'Clearing input bus for algorithm ${algorithm.index}, '
-                'parameter ${port.parameterNumber} (was bus ${port.busValue})',
-              );
-              await _distingCubit.updateParameterValue(
-                algorithmIndex: algorithm.index,
-                parameterNumber: port.parameterNumber!,
-                value: 0, // 0 means "None" for bus assignments
-                userIsChangingTheValue: false,
-              );
-              break;
+      } else {
+        // Target is algorithm input - clear only the TARGET input bus
+        if (targetPort.parameterNumber != null &&
+            !connection.destinationPortId.startsWith('hw_')) {
+          // Find which algorithm this port belongs to
+          for (final algorithm in state.algorithms) {
+            for (final port in algorithm.inputPorts) {
+              if (port.id == targetPort.id && port.parameterNumber != null) {
+                debugPrint(
+                  'Clearing target input bus for algorithm ${algorithm.index}, '
+                  'parameter ${port.parameterNumber} (was bus ${port.busValue}) - preserving source for multi-connections',
+                );
+                await _distingCubit.updateParameterValue(
+                  algorithmIndex: algorithm.index,
+                  parameterNumber: port.parameterNumber!,
+                  value: 0, // 0 means "None" for bus assignments
+                  userIsChangingTheValue: false,
+                );
+                break;
+              }
             }
           }
         }

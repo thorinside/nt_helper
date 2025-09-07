@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/ui/widgets/routing/movable_physical_io_node.dart';
-import 'package:nt_helper/ui/widgets/routing/physical_port_generator.dart';
 
 /// Widget representing the physical input node with 12 hardware input jacks.
 ///
@@ -9,6 +8,8 @@ import 'package:nt_helper/ui/widgets/routing/physical_port_generator.dart';
 /// From the algorithm perspective, these physical inputs act as outputs
 /// (they output signals to algorithms), so they use left label positioning.
 class PhysicalInputNode extends StatelessWidget {
+  /// The list of ports from the routing state to display in this node.
+  final List<Port> ports;
   /// Callback when a port is tapped.
   final Function(Port)? onPortTapped;
 
@@ -53,6 +54,7 @@ class PhysicalInputNode extends StatelessWidget {
 
   const PhysicalInputNode({
     super.key,
+    required this.ports,
     this.onPortTapped,
     this.onDragStart,
     this.onDragUpdate,
@@ -71,8 +73,6 @@ class PhysicalInputNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ports = PhysicalPortGenerator.generatePhysicalInputPorts();
-
     return Semantics(
       label: 'Physical Inputs',
       hint: 'Hardware input jacks. These act as outputs to algorithms.',

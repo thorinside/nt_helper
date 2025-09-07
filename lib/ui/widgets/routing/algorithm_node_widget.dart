@@ -304,7 +304,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       isHighlighted: portId != null && portId == widget.highlightedPortId,
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
-      onTap: portId != null ? () => widget.onPortTapped?.call(portId) : null,
+      onTap: portId != null && isInput ? () => widget.onPortTapped?.call(portId) : null,
       onDragStart: portId != null && !isInput && widget.onPortDragStart != null
           ? () => widget.onPortDragStart!(portId)
           : null,
