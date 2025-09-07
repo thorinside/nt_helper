@@ -87,6 +87,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   bool _isDraggingNode = false;
 
   bool _portsReady = false;
+  bool _connectionsVisible = false; // Track connection visibility separately
 
   // Store the current connection label bounds for hit testing
   Map<String, Rect> _connectionLabelBounds = {};
@@ -177,10 +178,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 current is RoutingEditorStateLoaded &&
                 _hasLoadedStateChanged(previous, current));
 
-        // Clear port positions when state changes significantly
+        // Only clear port positions when the routing structure actually changes
+        // This prevents flicker when state updates don't affect the visual layout
         if (shouldRebuild && current is RoutingEditorStateLoaded) {
-          _portPositions.clear();
-          _portsReady = false;
+          if (previous is! RoutingEditorStateLoaded ||
+              _hasRoutingStructureChanged(previous, current)) {
+            _portPositions.clear();
+            _portsReady = false;
+            _connectionsVisible = false;
+          }
         }
 
         return shouldRebuild;
@@ -544,19 +550,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     ..._buildPhysicalOutputNodes(physicalOutputs, connections),
                   ..._buildAlgorithmNodes(algorithms, connections),
                   // Draw all connections with unified canvas
-                  if (connections.isNotEmpty) ...[
-                    if (_portsReady)
-                      _buildUnifiedConnectionCanvas(connections)
-                    else
-                      IgnorePointer(
-                        ignoring: true,
-                        child: Center(
-                          child: Text(
-                            'Waiting for ports... (${connections.length} connections ready)',
-                          ),
-                        ),
-                      ),
-                  ],
+                  // Use RepaintBoundary to isolate canvas repaints
+                  // Keep connections visible if they were already visible and ports haven't been cleared
+                  if (_connectionsVisible || _portsReady)
+                    RepaintBoundary(
+                      child: _buildUnifiedConnectionCanvas(connections),
+                    )
+                  else
+                    const SizedBox.shrink(),
                   if (_isDraggingConnection && _dragCurrentPosition != null)
                     _buildTemporaryConnection(),
                 ],
@@ -1627,6 +1628,56 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return false;
   }
 
+  /// Check if the routing structure (ports and algorithms) has actually changed
+  /// This is more restrictive than _hasLoadedStateChanged and only returns true
+  /// when the visual layout needs to be recreated
+  bool _hasRoutingStructureChanged(
+    RoutingEditorStateLoaded previous,
+    RoutingEditorStateLoaded current,
+  ) {
+    // Check if algorithms changed structurally
+    if (previous.algorithms.length != current.algorithms.length) {
+      return true;
+    }
+    
+    for (int i = 0; i < current.algorithms.length; i++) {
+      final prevAlg = previous.algorithms[i];
+      final currAlg = current.algorithms[i];
+      
+      // Algorithm changed (different type or position)
+      if (prevAlg.algorithm.guid != currAlg.algorithm.guid ||
+          prevAlg.index != currAlg.index) {
+        return true;
+      }
+      
+      // Port structure changed
+      if (prevAlg.inputPorts.length != currAlg.inputPorts.length ||
+          prevAlg.outputPorts.length != currAlg.outputPorts.length) {
+        return true;
+      }
+      
+      // Port IDs changed (indicates different routing)
+      for (int p = 0; p < currAlg.inputPorts.length; p++) {
+        if (prevAlg.inputPorts[p].id != currAlg.inputPorts[p].id) {
+          return true;
+        }
+      }
+      for (int p = 0; p < currAlg.outputPorts.length; p++) {
+        if (prevAlg.outputPorts[p].id != currAlg.outputPorts[p].id) {
+          return true;
+        }
+      }
+    }
+    
+    // Physical ports structure changed
+    if (previous.physicalInputs.length != current.physicalInputs.length ||
+        previous.physicalOutputs.length != current.physicalOutputs.length) {
+      return true;
+    }
+    
+    return false;
+  }
+
   // Algorithm operation handlers
   void _handleAlgorithmMoveUp(int algorithmIndex) {
     final cubit = context.read<DistingCubit>();
@@ -1801,12 +1852,18 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           if (mounted && !_portsReady) {
             setState(() {
               _portsReady = true;
+              _connectionsVisible = true;
             });
           }
         });
       } else if (_portsReady) {
-        // After initial setup, update immediately
-        setState(() {});
+        // After initial setup, update immediately but don't change connection visibility
+        // if it's already true (prevents flicker)
+        setState(() {
+          if (!_connectionsVisible) {
+            _connectionsVisible = true;
+          }
+        });
       }
     }
   }
