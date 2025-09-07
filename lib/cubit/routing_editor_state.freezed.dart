@@ -620,18 +620,13 @@ extension RoutingEditorStatePatterns on RoutingEditorState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( RoutingEditorStateInitial value)?  initial,TResult Function( RoutingEditorStateDisconnected value)?  disconnected,TResult Function( RoutingEditorStateConnecting value)?  connecting,TResult Function( RoutingEditorStateRefreshing value)?  refreshing,TResult Function( RoutingEditorStatePersisting value)?  persisting,TResult Function( RoutingEditorStateSyncing value)?  syncing,TResult Function( RoutingEditorStateLoaded value)?  loaded,TResult Function( RoutingEditorStateError value)?  error,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( RoutingEditorStateInitial value)?  initial,TResult Function( RoutingEditorStateDisconnected value)?  disconnected,TResult Function( RoutingEditorStateLoaded value)?  loaded,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial(_that);case RoutingEditorStateDisconnected() when disconnected != null:
-return disconnected(_that);case RoutingEditorStateConnecting() when connecting != null:
-return connecting(_that);case RoutingEditorStateRefreshing() when refreshing != null:
-return refreshing(_that);case RoutingEditorStatePersisting() when persisting != null:
-return persisting(_that);case RoutingEditorStateSyncing() when syncing != null:
-return syncing(_that);case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that);case RoutingEditorStateError() when error != null:
-return error(_that);case _:
+return disconnected(_that);case RoutingEditorStateLoaded() when loaded != null:
+return loaded(_that);case _:
   return orElse();
 
 }
@@ -649,18 +644,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( RoutingEditorStateInitial value)  initial,required TResult Function( RoutingEditorStateDisconnected value)  disconnected,required TResult Function( RoutingEditorStateConnecting value)  connecting,required TResult Function( RoutingEditorStateRefreshing value)  refreshing,required TResult Function( RoutingEditorStatePersisting value)  persisting,required TResult Function( RoutingEditorStateSyncing value)  syncing,required TResult Function( RoutingEditorStateLoaded value)  loaded,required TResult Function( RoutingEditorStateError value)  error,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( RoutingEditorStateInitial value)  initial,required TResult Function( RoutingEditorStateDisconnected value)  disconnected,required TResult Function( RoutingEditorStateLoaded value)  loaded,}){
 final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial(_that);case RoutingEditorStateDisconnected():
-return disconnected(_that);case RoutingEditorStateConnecting():
-return connecting(_that);case RoutingEditorStateRefreshing():
-return refreshing(_that);case RoutingEditorStatePersisting():
-return persisting(_that);case RoutingEditorStateSyncing():
-return syncing(_that);case RoutingEditorStateLoaded():
-return loaded(_that);case RoutingEditorStateError():
-return error(_that);}
+return disconnected(_that);case RoutingEditorStateLoaded():
+return loaded(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -674,18 +664,13 @@ return error(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( RoutingEditorStateInitial value)?  initial,TResult? Function( RoutingEditorStateDisconnected value)?  disconnected,TResult? Function( RoutingEditorStateConnecting value)?  connecting,TResult? Function( RoutingEditorStateRefreshing value)?  refreshing,TResult? Function( RoutingEditorStatePersisting value)?  persisting,TResult? Function( RoutingEditorStateSyncing value)?  syncing,TResult? Function( RoutingEditorStateLoaded value)?  loaded,TResult? Function( RoutingEditorStateError value)?  error,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( RoutingEditorStateInitial value)?  initial,TResult? Function( RoutingEditorStateDisconnected value)?  disconnected,TResult? Function( RoutingEditorStateLoaded value)?  loaded,}){
 final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial(_that);case RoutingEditorStateDisconnected() when disconnected != null:
-return disconnected(_that);case RoutingEditorStateConnecting() when connecting != null:
-return connecting(_that);case RoutingEditorStateRefreshing() when refreshing != null:
-return refreshing(_that);case RoutingEditorStatePersisting() when persisting != null:
-return persisting(_that);case RoutingEditorStateSyncing() when syncing != null:
-return syncing(_that);case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that);case RoutingEditorStateError() when error != null:
-return error(_that);case _:
+return disconnected(_that);case RoutingEditorStateLoaded() when loaded != null:
+return loaded(_that);case _:
   return null;
 
 }
@@ -702,17 +687,12 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function()?  connecting,TResult Function()?  refreshing,TResult Function()?  persisting,TResult Function()?  syncing,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)?  loaded,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
-return disconnected();case RoutingEditorStateConnecting() when connecting != null:
-return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
-return refreshing();case RoutingEditorStatePersisting() when persisting != null:
-return persisting();case RoutingEditorStateSyncing() when syncing != null:
-return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
-return error(_that.message);case _:
+return disconnected();case RoutingEditorStateLoaded() when loaded != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);case _:
   return orElse();
 
 }
@@ -730,17 +710,12 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function()  connecting,required TResult Function()  refreshing,required TResult Function()  persisting,required TResult Function()  syncing,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)  loaded,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial();case RoutingEditorStateDisconnected():
-return disconnected();case RoutingEditorStateConnecting():
-return connecting();case RoutingEditorStateRefreshing():
-return refreshing();case RoutingEditorStatePersisting():
-return persisting();case RoutingEditorStateSyncing():
-return syncing();case RoutingEditorStateLoaded():
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError():
-return error(_that.message);}
+return disconnected();case RoutingEditorStateLoaded():
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -754,17 +729,12 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function()?  connecting,TResult? Function()?  refreshing,TResult? Function()?  persisting,TResult? Function()?  syncing,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)?  loaded,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
-return disconnected();case RoutingEditorStateConnecting() when connecting != null:
-return connecting();case RoutingEditorStateRefreshing() when refreshing != null:
-return refreshing();case RoutingEditorStatePersisting() when persisting != null:
-return persisting();case RoutingEditorStateSyncing() when syncing != null:
-return syncing();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError);case RoutingEditorStateError() when error != null:
-return error(_that.message);case _:
+return disconnected();case RoutingEditorStateLoaded() when loaded != null:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);case _:
   return null;
 
 }
@@ -839,136 +809,8 @@ String toString() {
 /// @nodoc
 
 
-class RoutingEditorStateConnecting implements RoutingEditorState {
-  const RoutingEditorStateConnecting();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateConnecting);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'RoutingEditorState.connecting()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
-class RoutingEditorStateRefreshing implements RoutingEditorState {
-  const RoutingEditorStateRefreshing();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateRefreshing);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'RoutingEditorState.refreshing()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
-class RoutingEditorStatePersisting implements RoutingEditorState {
-  const RoutingEditorStatePersisting();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStatePersisting);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'RoutingEditorState.persisting()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
-class RoutingEditorStateSyncing implements RoutingEditorState {
-  const RoutingEditorStateSyncing();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateSyncing);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'RoutingEditorState.syncing()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
 class RoutingEditorStateLoaded implements RoutingEditorState {
-  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
+  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError, this.subState = SubState.idle}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes;
   
 
  final  List<Port> _physicalInputs;
@@ -1033,6 +875,8 @@ class RoutingEditorStateLoaded implements RoutingEditorState {
  final  DateTime? lastPersistTime;
 // Last persistence save timestamp
  final  String? lastError;
+// Last error message
+@JsonKey() final  SubState subState;
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
@@ -1044,16 +888,16 @@ $RoutingEditorStateLoadedCopyWith<RoutingEditorStateLoaded> get copyWith => _$Ro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.subState, subState) || other.subState == subState));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError,subState);
 
 @override
 String toString() {
-  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError)';
+  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError, subState: $subState)';
 }
 
 
@@ -1064,7 +908,7 @@ abstract mixin class $RoutingEditorStateLoadedCopyWith<$Res> implements $Routing
   factory $RoutingEditorStateLoadedCopyWith(RoutingEditorStateLoaded value, $Res Function(RoutingEditorStateLoaded) _then) = _$RoutingEditorStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError
+ List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError, SubState subState
 });
 
 
@@ -1081,7 +925,7 @@ class _$RoutingEditorStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,Object? subState = null,}) {
   return _then(RoutingEditorStateLoaded(
 physicalInputs: null == physicalInputs ? _self._physicalInputs : physicalInputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,physicalOutputs: null == physicalOutputs ? _self._physicalOutputs : physicalOutputs // ignore: cast_nullable_to_non_nullable
@@ -1094,73 +938,8 @@ as bool,isPersistenceEnabled: null == isPersistenceEnabled ? _self.isPersistence
 as bool,lastSyncTime: freezed == lastSyncTime ? _self.lastSyncTime : lastSyncTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastPersistTime: freezed == lastPersistTime ? _self.lastPersistTime : lastPersistTime // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-
-}
-
-/// @nodoc
-
-
-class RoutingEditorStateError implements RoutingEditorState {
-  const RoutingEditorStateError(this.message);
-  
-
- final  String message;
-
-/// Create a copy of RoutingEditorState
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$RoutingEditorStateErrorCopyWith<RoutingEditorStateError> get copyWith => _$RoutingEditorStateErrorCopyWithImpl<RoutingEditorStateError>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateError&&(identical(other.message, message) || other.message == message));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,message);
-
-@override
-String toString() {
-  return 'RoutingEditorState.error(message: $message)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $RoutingEditorStateErrorCopyWith<$Res> implements $RoutingEditorStateCopyWith<$Res> {
-  factory $RoutingEditorStateErrorCopyWith(RoutingEditorStateError value, $Res Function(RoutingEditorStateError) _then) = _$RoutingEditorStateErrorCopyWithImpl;
-@useResult
-$Res call({
- String message
-});
-
-
-
-
-}
-/// @nodoc
-class _$RoutingEditorStateErrorCopyWithImpl<$Res>
-    implements $RoutingEditorStateErrorCopyWith<$Res> {
-  _$RoutingEditorStateErrorCopyWithImpl(this._self, this._then);
-
-  final RoutingEditorStateError _self;
-  final $Res Function(RoutingEditorStateError) _then;
-
-/// Create a copy of RoutingEditorState
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
-  return _then(RoutingEditorStateError(
-null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+as String?,subState: null == subState ? _self.subState : subState // ignore: cast_nullable_to_non_nullable
+as SubState,
   ));
 }
 

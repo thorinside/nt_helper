@@ -17,6 +17,14 @@ enum BusStatus {
   error,
 }
 
+enum SubState {
+  refreshing,
+  persisting,
+  syncing,
+  error,
+  idle,
+}
+
 
 
 /// Represents a routing bus for signal distribution
@@ -60,18 +68,6 @@ sealed class RoutingEditorState with _$RoutingEditorState {
   /// State when hardware is disconnected
   const factory RoutingEditorState.disconnected() = RoutingEditorStateDisconnected;
 
-  /// State when connecting to hardware
-  const factory RoutingEditorState.connecting() = RoutingEditorStateConnecting;
-
-  /// State when routing data is being refreshed
-  const factory RoutingEditorState.refreshing() = RoutingEditorStateRefreshing;
-
-  /// State when saving or loading persistent state
-  const factory RoutingEditorState.persisting() = RoutingEditorStatePersisting;
-
-  /// State when syncing with hardware
-  const factory RoutingEditorState.syncing() = RoutingEditorStateSyncing;
-
   /// State when routing data is loaded and ready for visualization
   const factory RoutingEditorState.loaded({
     required List<Port> physicalInputs, // 12 physical input ports
@@ -85,9 +81,8 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     DateTime? lastSyncTime, // Last hardware sync timestamp
     DateTime? lastPersistTime, // Last persistence save timestamp
     String? lastError, // Last error message
+    @Default(SubState.idle)SubState subState, // Current sub-state
+
+
   }) = RoutingEditorStateLoaded;
-
-  /// State when an error occurs
-  const factory RoutingEditorState.error(String message) = RoutingEditorStateError;
-
 }

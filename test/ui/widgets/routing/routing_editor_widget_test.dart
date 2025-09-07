@@ -321,9 +321,8 @@ void main() {
 
       // Prepare for tap simulation - when tap occurs, expect setPortOutputMode to be called
       // with the toggled mode (from replace to add)
-      when(mockRoutingCubit.setPortOutputMode(
+      when(mockRoutingCubit.togglePortOutputMode(
         portId: 'algo_test_1_port_1',
-        outputMode: OutputMode.add,
       )).thenAnswer((_) async => {});
 
       // Find connection canvas and tap at a position where a label would be
