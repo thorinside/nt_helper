@@ -154,8 +154,8 @@ class NodeLayoutAlgorithm {
     if (physicalInputs.isEmpty || algorithmPositions.isEmpty) return positions;
     
     const double gridSize = 50.0;
-    const double nodeWidthInGrids = 7.0;  // Approximate node width
-    const double gapInGrids = 1.5;  // 1.5 grid squares gap (half of original 3)
+    const double nodeWidthInGrids = 6.0;  // Slightly smaller node width estimate
+    const double gapInGrids = 2.4;        // 2.4 * 50 = 120px gap to algorithms (3x ~40px)
     
     // Calculate algorithm bounding box
     double minX = double.infinity;
@@ -205,8 +205,8 @@ class NodeLayoutAlgorithm {
     if (physicalOutputs.isEmpty || algorithmPositions.isEmpty) return positions;
     
     const double gridSize = 50.0;
-    const double nodeWidthInGrids = 7.0;  // Approximate node width
-    const double gapInGrids = 1.5;  // 1.5 grid squares gap (half of original 3)
+    const double nodeWidthInGrids = 6.0;  // Slightly smaller node width estimate
+    const double gapInGrids = 2.4;        // 120px gap to algorithms
     
     // Calculate algorithm bounding box
     double minX = double.infinity;
@@ -246,95 +246,105 @@ class NodeLayoutAlgorithm {
     return positions;
   }
 
-  /// Analyze connections to determine which column each algorithm should be in
-  /// Returns a map of algorithm ID to column index (0 = left, 1 = right)
+  /// Analyze connections to determine which column each algorithm should be in,
+  /// minimizing right-to-left (backtracking) edges. Vertical slot order is
+  /// enforced elsewhere and not changed here.
+  /// Returns a map of algorithm ID to column index (0 = leftmost)
   Map<String, int> _assignAlgorithmsToColumns(
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
   ) {
     final assignments = <String, int>{};
-    
-    // Build a dependency graph to understand data flow
-    final Map<String, Set<String>> dependencies = {}; // algorithm -> algorithms it depends on
-    final Map<String, Set<String>> dependents = {}; // algorithm -> algorithms that depend on it
-    
-    for (final algorithm in algorithms) {
-      dependencies[algorithm.id] = {};
-      dependents[algorithm.id] = {};
+
+    if (algorithms.isEmpty) return assignments;
+
+    // Build helpers
+    final idByPort = <String, String>{}; // portId -> algorithmId
+    final indexById = <String, int>{};
+    for (final a in algorithms) {
+      indexById[a.id] = a.index;
+      for (final p in a.inputPorts) idByPort[p.id] = a.id;
+      for (final p in a.outputPorts) idByPort[p.id] = a.id;
     }
-    
-    // Analyze algorithm-to-algorithm connections
-    for (final connection in connections) {
-      // Skip hardware connections
-      if (connection.sourcePortId.contains('hw_') || 
-          connection.destinationPortId.contains('hw_')) {
-        continue;
+
+    // Separate forward edges (slot increases) and feedback edges (slot decreases)
+    final forward = <String, Set<String>>{}; // u -> {v}
+    final feedback = <String, Set<String>>{}; // u -> {v}
+    for (final a in algorithms) {
+      forward[a.id] = {};
+      feedback[a.id] = {};
+    }
+    for (final c in connections) {
+      if (c.sourcePortId.contains('hw_') || c.destinationPortId.contains('hw_')) continue;
+      final u = idByPort[c.sourcePortId];
+      final v = idByPort[c.destinationPortId];
+      if (u == null || v == null || u == v) continue;
+      final ui = indexById[u] ?? 0;
+      final vi = indexById[v] ?? 0;
+      if (ui <= vi) forward[u]!.add(v); else feedback[u]!.add(v);
+    }
+
+    // Initial columns: longest path depth using only forward edges
+    final memo = <String, int>{};
+    int depthOf(String id) {
+      if (memo.containsKey(id)) return memo[id]!;
+      int best = 0;
+      for (final v in forward[id]!) {
+        best = math.max(best, depthOf(v) + 1);
       }
-      
-      String? sourceAlgorithmId;
-      String? destAlgorithmId;
-      
-      // Find source algorithm
-      for (final algorithm in algorithms) {
-        for (final port in algorithm.outputPorts) {
-          if (connection.sourcePortId == port.id) {
-            sourceAlgorithmId = algorithm.id;
-            break;
+      memo[id] = best;
+      return best;
+    }
+    for (final a in algorithms) {
+      assignments[a.id] = depthOf(a.id);
+    }
+
+    // Iteratively reduce backtracking by pulling sources left, while
+    // re-enforcing forward constraints (v >= u + 1 for forward edges)
+    bool changed = true;
+    int iterations = 0;
+    while (changed && iterations < 10) {
+      changed = false;
+      iterations++;
+
+      // Pull sources of feedback edges leftwards up to their dest column
+      for (final u in feedback.keys) {
+        final uCol = assignments[u] ?? 0;
+        for (final v in feedback[u]!) {
+          final vCol = assignments[v] ?? 0;
+          if (uCol > vCol) {
+            assignments[u] = vCol;
+            changed = true;
           }
         }
-        if (sourceAlgorithmId != null) break;
       }
-      
-      // Find destination algorithm
-      for (final algorithm in algorithms) {
-        for (final port in algorithm.inputPorts) {
-          if (connection.destinationPortId == port.id) {
-            destAlgorithmId = algorithm.id;
-            break;
+
+      // Re-enforce forward constraints
+      for (final u in forward.keys) {
+        final uCol = assignments[u] ?? 0;
+        for (final v in forward[u]!) {
+          final desired = uCol + 1;
+          if ((assignments[v] ?? 0) < desired) {
+            assignments[v] = desired;
+            changed = true;
           }
         }
-        if (destAlgorithmId != null) break;
-      }
-      
-      // Record dependency if both are algorithms
-      if (sourceAlgorithmId != null && destAlgorithmId != null && sourceAlgorithmId != destAlgorithmId) {
-        dependencies[destAlgorithmId]!.add(sourceAlgorithmId);
-        dependents[sourceAlgorithmId]!.add(destAlgorithmId);
-        debugPrint('[NodeLayout] Found dependency: $destAlgorithmId depends on $sourceAlgorithmId');
       }
     }
-    
-    // Calculate dependency depth for each algorithm
-    final Map<String, int> depthMap = {};
-    for (final algorithm in algorithms) {
-      depthMap[algorithm.id] = _calculateMaxDependencyDepth(
-        algorithm.id, 
-        dependencies, 
-        <String, int>{},
-      );
+
+    // Normalize columns to 0..N-1 (dense)
+    final unique = assignments.values.toSet().toList()..sort();
+    final remap = <int, int>{};
+    for (var i = 0; i < unique.length; i++) remap[unique[i]] = i;
+    for (final id in assignments.keys) {
+      assignments[id] = remap[assignments[id]!]!;
     }
-    
-    // Find the maximum depth to determine number of columns needed
-    int maxDepth = 0;
-    for (final depth in depthMap.values) {
-      if (depth > maxDepth) maxDepth = depth;
+
+    // Debug
+    for (final a in algorithms) {
+      debugPrint('[NodeLayout] Column assigned: algo ${a.index} (${a.id}) -> col ${assignments[a.id]}');
     }
-    
-    // Assign columns based on dependency depth
-    for (final algorithm in algorithms) {
-      final depth = depthMap[algorithm.id]!;
-      final hasDependencies = dependencies[algorithm.id]!.isNotEmpty;
-      final hasDependents = dependents[algorithm.id]!.isNotEmpty;
-      
-      // Use depth as column index
-      assignments[algorithm.id] = depth;
-      
-      debugPrint('[NodeLayout] Algorithm ${algorithm.index} (${algorithm.id}): '
-          'dependencies=${dependencies[algorithm.id]!.length}, '
-          'dependents=${dependents[algorithm.id]!.length}, '
-          'depth=$depth, column=${assignments[algorithm.id]}');
-    }
-    
+
     return assignments;
   }
   
@@ -378,53 +388,67 @@ class NodeLayoutAlgorithm {
     
     if (sortedAlgorithms.isEmpty) return positions;
     
-    // Grid-based spacing
+    // Grid-based spacing (compact + non-overlapping using estimated sizes)
     const double gridSize = 50.0;
-    const double nodeWidthInGrids = 7.0;  // Approximate node width in grid squares
-    const double nodeHeightInGrids = 3.0;  // Approximate node height in grid squares
-    const double gapInGrids = 1.0;  // 1 grid square gap between nodes
-    
-    // Calculate spacing based on grid (node size + gap)
-    const double algorithmSpacingY = (nodeHeightInGrids + gapInGrids) * gridSize;  // 200px (4 grid squares total)
-    const double algorithmSpacingX = (nodeWidthInGrids + gapInGrids) * gridSize;   // 400px (8 grid squares total)
-    
-    // Find the maximum column index to support more than 2 columns if needed
+    const double colGapPx = 40.0; // min horizontal gap between columns
+    const double rowGapPx = 40.0; // min vertical gap between algorithms
+
+    // Estimate node sizes from port counts
+    double estimateWidth(RoutingAlgorithm a) => 340.0;
+    double estimateHeight(RoutingAlgorithm a) {
+      const header = 52.0;
+      const padding = 16.0;
+      const row = 28.0;
+      final rows = math.max(a.inputPorts.length, a.outputPorts.length);
+      return header + padding + rows * row;
+    }
+
+    // Determine number of columns
     int maxColumn = 0;
-    for (final column in columnAssignments.values) {
-      if (column > maxColumn) maxColumn = column;
+    for (final col in columnAssignments.values) { if (col > maxColumn) maxColumn = col; }
+
+    // Column widths based on widest node in each column
+    final columnMaxWidth = List<double>.filled(maxColumn + 1, 0.0);
+    for (final a in sortedAlgorithms) {
+      final c = columnAssignments[a.id] ?? 0;
+      columnMaxWidth[c] = math.max(columnMaxWidth[c], estimateWidth(a));
     }
-    
-    // Group algorithms by column
-    final Map<int, List<RoutingAlgorithm>> columnGroups = {};
-    for (int col = 0; col <= maxColumn; col++) {
-      columnGroups[col] = [];
+
+    // Column positions centered horizontally
+    double totalColumnsWidth = 0.0;
+    for (var c = 0; c <= maxColumn; c++) {
+      totalColumnsWidth += columnMaxWidth[c];
+      if (c < maxColumn) totalColumnsWidth += colGapPx;
     }
-    
-    for (final algorithm in sortedAlgorithms) {
-      final column = columnAssignments[algorithm.id] ?? 0;
-      columnGroups[column]!.add(algorithm);
+    final startX = (canvasWidth / 2) - (totalColumnsWidth / 2);
+    final columnLeftX = List<double>.filled(maxColumn + 1, 0.0);
+    double runX = startX;
+    for (var c = 0; c <= maxColumn; c++) {
+      columnLeftX[c] = runX;
+      runX += columnMaxWidth[c] + (c < maxColumn ? colGapPx : 0.0);
     }
-    
-    // Position each column
-    final int numColumns = maxColumn + 1;
-    final double totalWidth = (numColumns - 1) * algorithmSpacingX;
-    final double startX = algorithmCenterX - (totalWidth / 2);
-    
-    for (int col = 0; col <= maxColumn; col++) {
-      final algorithms = columnGroups[col]!;
-      if (algorithms.isEmpty) continue;
-      
-      final columnX = startX + (col * algorithmSpacingX);
-      final startY = (canvasHeight - ((algorithms.length - 1) * algorithmSpacingY)) / 2;
-      
-      for (int i = 0; i < algorithms.length; i++) {
-        final x = (columnX / gridSize).round() * gridSize;
-        final y = ((startY + (i * algorithmSpacingY)) / gridSize).round() * gridSize;
-        
-        positions[algorithms[i].id] = NodePosition(x: x, y: y);
-      }
+
+    // Total stacked height for vertical centering (strict slot order)
+    double totalHeight = 0.0;
+    for (var i = 0; i < sortedAlgorithms.length; i++) {
+      totalHeight += estimateHeight(sortedAlgorithms[i]);
+      if (i < sortedAlgorithms.length - 1) totalHeight += rowGapPx;
     }
-    
+    final baseY = (canvasHeight / 2) - (totalHeight / 2);
+
+    // Place algorithms in slot order, centered within their columns, no overlaps
+    double yCursor = baseY;
+    for (final a in sortedAlgorithms) {
+      final c = columnAssignments[a.id] ?? 0;
+      final w = estimateWidth(a);
+      final h = estimateHeight(a);
+      final left = columnLeftX[c] + (columnMaxWidth[c] - w) / 2;
+      final xSnap = (left / gridSize).round() * gridSize;
+      final ySnap = (yCursor / gridSize).round() * gridSize;
+      positions[a.id] = NodePosition(x: xSnap, y: ySnap);
+      yCursor += h + rowGapPx;
+    }
+
     return positions;
   }
 
