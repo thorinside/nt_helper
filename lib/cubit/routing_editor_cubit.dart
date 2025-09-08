@@ -21,16 +21,16 @@ import 'routing_editor_state.dart';
 /// information into a visual representation for the routing canvas.
 class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   final DistingCubit? _distingCubit;
-  final Future<SharedPreferences> _prefs;
+  Future<SharedPreferences>? _prefs;
   StreamSubscription<DistingState>? _distingStateSubscription;
   NodeLayoutAlgorithm? _layoutAlgorithm;
 
   RoutingEditorCubit(
     this._distingCubit, {
     AlgorithmConnectionService? algorithmConnectionService,
-  }) : _prefs = SharedPreferences.getInstance(),
-       super(const RoutingEditorState.initial()) {
+  }) : super(const RoutingEditorState.initial()) {
     if (_distingCubit != null) {
+      _prefs = SharedPreferences.getInstance();
       _initializeStateWatcher();
       _loadPersistedState();
     }
@@ -141,22 +141,20 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
           slot,
           algorithmUuid: algorithmUuid,
         );
-
+        
         final inputPorts = routing.inputPorts;
         final outputPorts = routing.outputPorts;
-
-        // Skip algorithms with no inputs and no outputs (like Notes)
-        // These can't participate in routing and clutter the canvas
+        
+        // Filter out algorithms with no ports (e.g., the 'note' algorithm)
         if (inputPorts.isEmpty && outputPorts.isEmpty) {
-          debugPrint(
-            'Skipping algorithm ${slot.algorithm} (slot $i) - no inputs or outputs',
-          );
+          debugPrint('[RoutingEditor] Skipping algorithm ${slot.algorithm.name} (no ports)');
           continue;
         }
-
-        // Only add to routings list if the algorithm has I/O
+        
+        // Add routing to list for connection discovery
         routings.add(routing);
 
+        // Create visual representation
         final routingAlgorithm = RoutingAlgorithm(
           id: algorithmUuid,
           index: i,
@@ -1603,7 +1601,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     emit(currentState.copyWith(subState: SubState.persisting));
 
     try {
-      final prefs = await _prefs;
+      if (_prefs == null) {
+        debugPrint('SharedPreferences not initialized - skipping persistence');
+        return;
+      }
+      final prefs = await _prefs!;
 
       // Prepare state data for serialization
       final stateData = {
@@ -1666,7 +1668,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Load routing editor state from persistent storage
   Future<void> _loadPersistedState() async {
     try {
-      final prefs = await _prefs;
+      if (_prefs == null) {
+        debugPrint('SharedPreferences not initialized - skipping load');
+        return;
+      }
+      final prefs = await _prefs!;
       final jsonString = prefs.getString('routing_editor_state');
 
       if (jsonString == null) {
@@ -1768,7 +1774,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Clear all persisted state data
   Future<void> clearPersistedState() async {
     try {
-      final prefs = await _prefs;
+      if (_prefs == null) {
+        debugPrint('SharedPreferences not initialized - skipping clear');
+        return;
+      }
+      final prefs = await _prefs!;
       await prefs.remove('routing_editor_state');
 
       final currentState = state;

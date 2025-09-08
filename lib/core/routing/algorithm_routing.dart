@@ -7,6 +7,7 @@ import 'models/connection.dart';
 import 'port_compatibility_validator.dart';
 import 'poly_algorithm_routing.dart';
 import 'multi_channel_algorithm_routing.dart';
+import 'usb_from_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 ///
@@ -268,10 +269,25 @@ abstract class AlgorithmRouting {
   ///
   /// Returns an appropriate AlgorithmRouting implementation
   static AlgorithmRouting fromSlot(Slot slot, {String? algorithmUuid}) {
-    // Extract both routing and mode parameters once for all implementations
-    final ioParameters = extractIOParameters(slot);
-    final modeParameters = extractModeParameters(slot);
+    // Extract mode parameters once (used by all implementations)
     final modeParametersWithNumbers = extractModeParametersWithNumbers(slot);
+
+    // Check for USB Audio (From Host) algorithm first and use its own IO extractor
+    if (UsbFromAlgorithmRouting.canHandle(slot)) {
+      final usbIoParameters = UsbFromAlgorithmRouting.extractIOParameters(slot);
+      return UsbFromAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: usbIoParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+      );
+    }
+
+    // For non-USB algorithms use the generic IO extractor
+    final ioParameters = extractIOParameters(slot);
+
+    // For other algorithms, we may need the older modeParameters map
+    final modeParameters = extractModeParameters(slot);
 
     // Ask each implementation if it can handle this slot
     AlgorithmRouting instance;
@@ -337,7 +353,7 @@ abstract class AlgorithmRouting {
       final isBusParameter =
           param.unit == 1 &&
           (param.min == 0 || param.min == 1) &&
-          (param.max == 27 || param.max == 28);
+          (param.max == 27 || param.max == 28 || param.max == 30);
 
       if (isBusParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;

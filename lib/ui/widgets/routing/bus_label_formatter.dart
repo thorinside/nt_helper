@@ -10,6 +10,9 @@ enum BusType {
 
   /// Auxiliary buses (21-28)
   auxiliary,
+  
+  /// ES-5 output buses (29-30)
+  es5,
 }
 
 /// Utility class for formatting bus numbers into readable labels
@@ -24,10 +27,9 @@ class BusLabelFormatter {
 
   /// Minimum valid bus number
   static const int minBusNumber = 1;
-
-  /// Maximum valid bus number
-  static const int maxBusNumber = 28;
-
+  
+  /// Maximum valid bus number (includes ES-5)
+  static const int maxBusNumber = 30;
   /// Input bus range
   static const int minInputBus = 1;
   static const int maxInputBus = 12;
@@ -39,13 +41,26 @@ class BusLabelFormatter {
   /// Auxiliary bus range
   static const int minAuxBus = 21;
   static const int maxAuxBus = 28;
+  
+  /// ES-5 bus range
+  static const int minES5Bus = 29;
+  static const int maxES5Bus = 30;
 
+  /// Formats a bus value (alias for formatBusNumber)
+  /// 
+  /// This is provided for convenience and compatibility.
+  static String formatBusValue(int busValue) {
+    return formatBusNumber(busValue) ?? 'Bus$busValue';
+  }
+  
   /// Formats a bus number into its display label
   ///
   /// Returns:
   /// - "I1" through "I12" for buses 1-12
   /// - "O1" through "O8" for buses 13-20
   /// - "A1" through "A8" for buses 21-28
+  /// - "ES-5 L" for bus 29
+  /// - "ES-5 R" for bus 30
   /// - null for invalid bus numbers
   static String? formatBusNumber(int? busNumber) {
     if (busNumber == null || !isValidBusNumber(busNumber)) {
@@ -63,6 +78,8 @@ class BusLabelFormatter {
         return 'O$localNumber';
       case BusType.auxiliary:
         return 'A$localNumber';
+      case BusType.es5:
+        return busNumber == 29 ? 'ES-5 L' : 'ES-5 R';
       case null:
         return null;
     }
@@ -78,8 +95,8 @@ class BusLabelFormatter {
   /// - "I1" through "I12" for input buses (mode ignored)
   /// - "O1" through "O8" for output buses in add mode or null mode
   /// - "O1 R" through "O8 R" for output buses in replace mode
-  /// - "A1" through "A8" for aux buses in add mode or null mode
-  /// - "A1 R" through "A8 R" for aux buses in replace mode
+  /// - "A1" through "A8" for auxiliary buses (mode ignored)
+  /// - "ES-5 L" or "ES-5 R" for ES-5 buses (mode ignored)
   /// - null for invalid bus numbers
   static String? formatBusLabelWithMode(
     int? busNumber,
@@ -101,8 +118,9 @@ class BusLabelFormatter {
         final baseLabel = 'O$localNumber';
         return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case BusType.auxiliary:
-        final baseLabel = 'A$localNumber';
-        return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
+        return 'A$localNumber';
+      case BusType.es5:
+        return busNumber == 29 ? 'ES-5 L' : 'ES-5 R';
       case null:
         return null;
     }
@@ -120,14 +138,16 @@ class BusLabelFormatter {
       return BusType.output;
     } else if (busNumber >= minAuxBus && busNumber <= maxAuxBus) {
       return BusType.auxiliary;
+    } else if (busNumber >= minES5Bus && busNumber <= maxES5Bus) {
+      return BusType.es5;
     }
 
     return null;
   }
 
   /// Checks if a bus number is valid
-  ///
-  /// Valid bus numbers are 1-28 inclusive
+  /// 
+  /// Valid bus numbers are 1-30 inclusive (includes ES-5)
   static bool isValidBusNumber(int? busNumber) {
     if (busNumber == null) return false;
     return busNumber >= minBusNumber && busNumber <= maxBusNumber;
@@ -144,6 +164,8 @@ class BusLabelFormatter {
         return [minOutputBus, maxOutputBus];
       case BusType.auxiliary:
         return [minAuxBus, maxAuxBus];
+      case BusType.es5:
+        return [minES5Bus, maxES5Bus];
     }
   }
 
@@ -153,6 +175,7 @@ class BusLabelFormatter {
   /// - Bus 1-12 returns 1-12 (unchanged for inputs)
   /// - Bus 13-20 returns 1-8 (outputs start at 1)
   /// - Bus 21-28 returns 1-8 (aux buses start at 1)
+  /// - Bus 29-30 returns 1-2 (ES-5 L/R)
   static int? getLocalBusNumber(int? busNumber) {
     if (busNumber == null || !isValidBusNumber(busNumber)) {
       return null;
@@ -166,6 +189,8 @@ class BusLabelFormatter {
         return busNumber - (minOutputBus - 1); // Convert 13-20 to 1-8
       case BusType.auxiliary:
         return busNumber - (minAuxBus - 1); // Convert 21-28 to 1-8
+      case BusType.es5:
+        return busNumber - (minES5Bus - 1); // Convert 29-30 to 1-2
       case null:
         return null;
     }
