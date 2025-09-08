@@ -7,6 +7,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
+import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 
 class MockDistingCubit extends Mock implements DistingCubit {
@@ -14,8 +15,14 @@ class MockDistingCubit extends Mock implements DistingCubit {
   Stream<DistingState> get stream => const Stream.empty();
 }
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+class MockMidiListenerCubit extends Mock implements MidiListenerCubit {}
 
 void main() {
+  setUpAll(() {
+    // Register fallback value for PackedMappingData used with any() matcher
+    registerFallbackValue(PackedMappingData.filler());
+  });
+
   group('AlgorithmNodeWidget Mapping Tests', () {
     late MockDistingCubit mockCubit;
     late MockDistingMidiManager mockManager;
@@ -336,6 +343,102 @@ void main() {
 
       // Verify delete item is still present at the bottom
       expect(find.text('Delete'), findsOneWidget);
+    });
+
+    testWidgets('should not show mapping icon when no parameters are mapped', (tester) async {
+      // Create a slot with no mapped parameters
+      final unmappedSlot = Slot(
+        algorithm: Algorithm(
+          algorithmIndex: 0,
+          guid: 'test',
+          name: 'Test Algorithm',
+        ),
+        routing: RoutingInfo(
+          algorithmIndex: 0,
+          routingInfo: const [],
+        ),
+        pages: ParameterPages(
+          algorithmIndex: 0,
+          pages: const [],
+        ),
+        parameters: [
+          ParameterInfo(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            min: 0,
+            max: 100,
+            defaultValue: 50,
+            unit: 0,
+            name: 'Test Param',
+            powerOfTen: 0,
+          ),
+        ],
+        values: [
+          ParameterValue(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: 50,
+          ),
+        ],
+        enums: [
+          ParameterEnumStrings(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            values: const [],
+          ),
+        ],
+        mappings: [
+          Mapping(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            packedMappingData: PackedMappingData.filler(), // Filler = not mapped
+          ),
+        ],
+        valueStrings: [
+          ParameterValueString(
+            algorithmIndex: 0,
+            parameterNumber: 0,
+            value: '50',
+          ),
+        ],
+      );
+
+      final state = DistingStateSynchronized(
+        disting: mockManager,
+        distingVersion: 'v1.0',
+        firmwareVersion: FirmwareVersion('1.0.0'),
+        presetName: 'Test Preset',
+        algorithms: [],
+        slots: [unmappedSlot],
+        unitStrings: const [],
+      );
+
+      when(() => mockCubit.state).thenReturn(state);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: BlocProvider<DistingCubit>.value(
+              value: mockCubit,
+              child: AlgorithmNodeWidget(
+                algorithmName: 'Test Algorithm',
+                slotNumber: 1,
+                position: const Offset(100, 100),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the mapping icon in the title bar
+      final mappingIcon = find.descendant(
+        of: find.byType(AlgorithmNodeWidget),
+        matching: find.byIcon(Icons.map_sharp),
+      );
+
+      expect(mappingIcon, findsNothing); // Should not find mapping icon
     });
   });
 }
