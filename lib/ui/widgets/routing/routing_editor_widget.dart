@@ -17,6 +17,7 @@ import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
+import 'package:nt_helper/ui/widgets/routing/mini_map_widget.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 // Removed unused imports from previous canvas split
 
@@ -213,7 +214,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     : _buildCanvasContent(context, state),
               ),
             ),
-            // Error display widget in top-right corner
+            // MiniMapWidget positioned in bottom-right corner with 16px margin
+            if (state is RoutingEditorStateLoaded)
+              Positioned(
+                bottom: 16.0,
+                right: 16.0,
+                child: MiniMapWidget(
+                  horizontalScrollController: _horizontalScrollController,
+                  verticalScrollController: _verticalScrollController,
+                  canvasWidth: _canvasWidth,
+                  canvasHeight: _canvasHeight,
+                  nodePositions: _nodePositions,
+                  connections: state.connections,
+                  portPositions: _portPositions,
+                ),
+              ),
+            // Error display widget in top-right corner (above mini-map in z-order)
             if (_errorMessage != null) _buildErrorDisplay(),
           ],
         );

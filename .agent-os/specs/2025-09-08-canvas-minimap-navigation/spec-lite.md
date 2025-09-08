@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Implement a mini-map overview widget in the bottom-right corner of the routing canvas for bird's-eye navigation and viewport visualization. The mini-map displays a scaled representation of the entire 5000x5000px canvas with nodes and connections, features a highlighted rectangle showing the current viewport position, and enables tap-to-navigate and drag-to-pan interactions for efficient canvas navigation without excessive scrolling.
