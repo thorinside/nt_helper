@@ -19,11 +19,11 @@ import 'models/connection.dart';
 /// - Supports extended bus values 0-30 (including ES-5 L/R at 29-30)
 /// - Extracts mode information for each channel
 class UsbFromAlgorithmRouting extends AlgorithmRouting {
-  /// The slot data containing algorithm and parameter information
-  final Slot slot;
-
   /// The unique identifier for this algorithm instance
   final String algorithmUuid;
+
+  /// Algorithm-specific properties, including pre-parsed ports
+  final Map<String, dynamic> properties;
 
   /// Current routing state
   RoutingState _state;
@@ -37,19 +37,18 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
   /// Creates a new UsbFromAlgorithmRouting instance.
   ///
   /// Parameters:
-  /// - [slot]: The slot containing algorithm and parameter information
+  /// - [properties]: Pre-parsed algorithm properties, including output ports
   /// - [algorithmUuid]: Unique identifier for this algorithm instance
   /// - [validator]: Optional port compatibility validator
   /// - [initialState]: Optional initial routing state
   UsbFromAlgorithmRouting({
-    required this.slot,
+    required this.properties,
     required this.algorithmUuid,
     super.validator,
     RoutingState? initialState,
   }) : _state = initialState ?? const RoutingState() {
     debugPrint(
-      'UsbFromAlgorithmRouting: Initialized for ${slot.algorithm.name} '
-      'with UUID $algorithmUuid',
+      'UsbFromAlgorithmRouting: Initialized with UUID $algorithmUuid',
     );
   }
 
@@ -75,77 +74,47 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
   @override
   List<Port> generateOutputPorts() {
     final ports = <Port>[];
+    final declaredOutputs = properties['outputs'];
 
-    // Extract 8 output ports from Ch1-Ch8 'to' parameters
-    for (int channel = 1; channel <= 8; channel++) {
-      final toParamName = 'Ch$channel to';
-      final modeParamName = 'Ch$channel mode';
+    if (declaredOutputs is List) {
+      for (final item in declaredOutputs) {
+        if (item is Map) {
+          final id = item['id']?.toString() ?? 'out_${ports.length + 1}';
+          final name = item['name']?.toString() ?? 'Output';
+          final type = PortType.audio; // Always audio for USB
 
-      // Find the 'to' parameter
-      final toParam = slot.parameters.firstWhere(
-        (p) => p.name == toParamName,
-        orElse: () => ParameterInfo.filler(),
-      );
+          OutputMode? outputMode;
+          if (item['outputMode'] != null) {
+            final modeStr = item['outputMode'].toString().toLowerCase();
+            if (modeStr == 'replace') {
+              outputMode = OutputMode.replace;
+            } else if (modeStr == 'add') {
+              outputMode = OutputMode.add;
+            }
+          }
 
-      // Find the 'mode' parameter
-      final modeParam = slot.parameters.firstWhere(
-        (p) => p.name == modeParamName,
-        orElse: () => ParameterInfo.filler(),
-      );
-
-      // Get the bus value for this channel
-      int busValue = 0;
-      if (toParam.parameterNumber >= 0) {
-        final value = slot.values.firstWhere(
-          (v) => v.parameterNumber == toParam.parameterNumber,
-          orElse: () => ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: toParam.parameterNumber,
-            value: toParam.defaultValue,
-          ),
-        );
-        busValue = value.value;
+          ports.add(
+            Port(
+              id: id,
+              name: name,
+              type: type,
+              direction: PortDirection.output,
+              description:
+                  item['description']?.toString() ?? 'USB audio channel from host',
+              outputMode: outputMode,
+              busValue: item['busValue'] as int?,
+              busParam: item['busParam']?.toString(),
+              parameterNumber: item['parameterNumber'] as int?,
+              modeParameterNumber: item['modeParameterNumber'] as int?,
+              channelNumber: item['channelNumber'] as int?,
+            ),
+          );
+        }
       }
-
-      // Get the mode value for this channel (0=Add, 1=Replace)
-      OutputMode outputMode = OutputMode.add;
-      if (modeParam.parameterNumber >= 0) {
-        final value = slot.values.firstWhere(
-          (v) => v.parameterNumber == modeParam.parameterNumber,
-          orElse: () => ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: modeParam.parameterNumber,
-            value: modeParam.defaultValue,
-          ),
-        );
-        outputMode = value.value == 1 ? OutputMode.replace : OutputMode.add;
-      }
-
-      // Create the output port
-      final port = Port(
-        id: '${algorithmUuid}_usb_ch$channel',
-        name: 'USB Channel $channel',
-        type: PortType.audio,
-        direction: PortDirection.output,
-        description: 'USB audio channel $channel from host',
-        outputMode: outputMode,
-        // Direct properties
-        busValue: busValue,
-        busParam: toParamName,
-        parameterNumber: toParam.parameterNumber >= 0 ? toParam.parameterNumber : null,
-        // Mark as USB channel
-        channelNumber: channel,
-      );
-
-      ports.add(port);
-
-      debugPrint(
-        'UsbFromAlgorithmRouting: Ch$channel -> bus $busValue '
-        '(${outputMode == OutputMode.replace ? "Replace" : "Add"})',
-      );
     }
 
-    debugPrint('UsbFromAlgorithmRouting: Generated ${ports.length} output ports');
+    debugPrint(
+        'UsbFromAlgorithmRouting: Generated ${ports.length} output ports from properties');
     return ports;
   }
 
@@ -177,23 +146,204 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     return slot.algorithm.guid == 'usbf';
   }
 
+  /// USB-specific extraction of IO parameters.
+  ///
+  /// Finds the 8 USB channel "to" parameters using robust heuristics and returns a
+  /// map of parameter name -> current value. Includes 0 values (None).
+  ///
+  /// Heuristics and ordering:
+  /// - Prefer enum-style bus params whose name contains 'to' and whose range
+  ///   matches bus-like values (min 0/1, max 27/28/30/31).
+  /// - If fewer than 8 by name, fall back to any bus-like enum params.
+  /// - Sort by parameterNumber and keep the first 8 to define channels 1..8.
+  static Map<String, int> extractIOParameters(Slot slot) {
+    final result = <String, int>{};
+
+    // Build helpers
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+
+    // Collect candidate 'to' params: enum-style bus params with names hinting at routing
+    List<ParameterInfo> toParams = [
+      for (final p in slot.parameters)
+        if (p.unit == 1 && (p.min == 0 || p.min == 1) &&
+            (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31) &&
+            p.name.toLowerCase().contains('to'))
+          p,
+    ];
+
+    // Fallback: take any bus-like enum params if we didn't find 8
+    if (toParams.length != 8) {
+      toParams = [
+        for (final p in slot.parameters)
+          if (p.unit == 1 && (p.min == 0 || p.min == 1) &&
+              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31)) p,
+      ];
+    }
+
+    // Sort stably by parameter number and keep the first 8
+    toParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+    if (toParams.length > 8) toParams = toParams.sublist(0, 8);
+
+    // Build output map using actual parameter names
+    for (final p in toParams) {
+      final value = valueByParam[p.parameterNumber] ?? p.defaultValue;
+      result[p.name] = value;
+    }
+
+    return result;
+  }
+
   /// Creates a UsbFromAlgorithmRouting instance from a slot.
   ///
   /// This factory method is called by AlgorithmRouting.fromSlot() when
-  /// the algorithm GUID is 'usbf'.
+  /// the algorithm GUID is 'usbf'. It parses the 8 channel parameters
+  /// and their corresponding modes.
+  ///
+  /// Channel enumeration and mode alignment:
+  /// - Output ports are enumerated by ascending parameterNumber of the eight
+  ///   USB channel 'to' parameters, producing 'USB Channel 1..8'. This holds even
+  ///   if names are generic (e.g., all 'to'/'mode').
+  /// - OutputMode for each channel is aligned by index with the sorted mode
+  ///   parameters: 0 = Add, 1 = Replace. Missing mode defaults to Add.
+  /// - busValue drives connection discovery (e.g., 13–20 => hardware outs O1–O8,
+  ///   29–30 => ES-5 L/R). A value of 0 means 'None'.
   ///
   /// Parameters:
   /// - [slot]: The slot containing algorithm and parameter information
+  /// - [ioParameters]: Pre-extracted routing parameters (bus assignments)
+  /// - [modeParametersWithNumbers]: Mode parameters with their parameter numbers
   /// - [algorithmUuid]: Optional UUID for the algorithm instance
   static UsbFromAlgorithmRouting createFromSlot(
     Slot slot, {
+    required Map<String, int> ioParameters,
+    Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
     debugPrint('UsbFromAlgorithmRouting.createFromSlot: Algorithm ${slot.algorithm.name}');
+    final algUuid =
+        algorithmUuid ?? 'algo_usbf_${DateTime.now().millisecondsSinceEpoch}';
+
+    final outputPorts = <Map<String, Object?>>[];
+
+    // Build parameter lookup for getting parameter numbers
+    final paramsByName = <String, ParameterInfo>{
+      for (final p in slot.parameters) p.name: p,
+    };
+
+    // Pre-build a value lookup for direct fallback access
+    final valueByParam = <int, int>{
+      for (final v in slot.values) v.parameterNumber: v.value,
+    };
+
+    // Collect candidate 'to' and 'mode' parameters robustly
+    List<ParameterInfo> toParams = [];
+    List<ParameterInfo> modeParams = [];
+
+    for (final p in slot.parameters) {
+      // Identify USB routing 'to' parameters:
+      final isBusParam = p.unit == 1 && (p.min == 0 || p.min == 1) &&
+          (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31);
+      final nameLower = p.name.toLowerCase();
+      final looksLikeTo = nameLower.contains('to');
+
+      if (isBusParam && looksLikeTo) {
+        toParams.add(p);
+        continue;
+      }
+
+      // Identify per-channel mode parameters (Add/Replace)
+      if (p.unit == 1 && nameLower.contains('mode')) {
+        modeParams.add(p);
+        continue;
+      }
+    }
+
+    // Fallback: some firmwares name all channels as just 'to' or 'mode'.
+    // If we didn't find exactly 8 'to' params by name, widen to any bus params.
+    if (toParams.length != 8) {
+      toParams = [
+        for (final p in slot.parameters)
+          if (p.unit == 1 && (p.min == 0 || p.min == 1) &&
+              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31)) p
+      ];
+    }
+
+    // Sort by parameter number to keep channel order stable
+    toParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+    modeParams.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+
+    // Keep only first 8 of each list (USB has 8 channels)
+    if (toParams.length > 8) toParams = toParams.sublist(0, 8);
+    if (modeParams.length > 8) modeParams = modeParams.sublist(0, 8);
+
+    // If we still have fewer than 8 'to' params, try name-based lookup as a last resort
+    if (toParams.length < 8) {
+      String? findParamName(int channel, String suffix) {
+        final candidates = <String>[
+          'Ch$channel $suffix',
+          'Ch $channel $suffix',
+          'Channel $channel $suffix',
+          if (suffix == 'to' || suffix == 'mode') 'Ch$channel $suffix',
+        ];
+        for (final name in candidates) {
+          final info = paramsByName[name];
+          if (info != null) return name;
+        }
+        return null;
+      }
+      final recovered = <ParameterInfo>[];
+      for (int i = 1; i <= 8; i++) {
+        final name = findParamName(i, 'to');
+        if (name != null) {
+          final info = paramsByName[name];
+          if (info != null) recovered.add(info);
+        }
+      }
+      if (recovered.isNotEmpty) {
+        recovered.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+        toParams = recovered;
+      }
+    }
+
+    // Build ports based on discovered params
+    for (int i = 0; i < toParams.length && i < 8; i++) {
+      final channel = i + 1;
+      final toParam = toParams[i];
+      final busValue = valueByParam[toParam.parameterNumber] ?? toParam.defaultValue;
+
+      // Mode per index if available
+      ({int parameterNumber, int value})? modeInfo;
+      if (i < modeParams.length) {
+        final modeParam = modeParams[i];
+        final value = valueByParam[modeParam.parameterNumber] ?? modeParam.defaultValue;
+        modeInfo = (parameterNumber: modeParam.parameterNumber, value: value);
+      }
+
+      outputPorts.add({
+        'id': '${algUuid}_usb_ch$channel',
+        'name': 'USB Channel $channel',
+        'type': 'audio',
+        'busParam': toParam.name,
+        'busValue': busValue,
+        'parameterNumber': toParam.parameterNumber,
+        'channelNumber': channel,
+        'outputMode': (modeInfo?.value == 1) ? 'replace' : 'add',
+        'modeParameterNumber': modeInfo?.parameterNumber,
+      });
+    }
+
+    final properties = {
+      'algorithmGuid': slot.algorithm.guid,
+      'algorithmName': slot.algorithm.name,
+      'algorithmUuid': algUuid,
+      'outputs': outputPorts,
+    };
 
     return UsbFromAlgorithmRouting(
-      slot: slot,
-      algorithmUuid: algorithmUuid ?? 'algo_usbf_${DateTime.now().millisecondsSinceEpoch}',
+      properties: properties,
+      algorithmUuid: algUuid,
     );
   }
 }
