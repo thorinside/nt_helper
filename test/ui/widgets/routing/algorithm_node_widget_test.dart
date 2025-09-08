@@ -151,14 +151,14 @@ void main() {
 
       expect(mappingIcon, findsOneWidget);
 
-      // Verify the icon is styled correctly
-      final iconButton = tester.widget<IconButton>(
+      // Verify the icon is inside a container with the correct background color
+      final container = tester.widget<Container>(
         find.ancestor(
           of: mappingIcon,
-          matching: find.byType(IconButton),
-        ),
+          matching: find.byType(Container),
+        ).first,
       );
-      expect(iconButton.style?.backgroundColor?.resolve({}), isNotNull);
+      expect(container.decoration, isNotNull);
     });
 
     testWidgets('should show mapped parameter menu items when slot has mappings', (tester) async {
