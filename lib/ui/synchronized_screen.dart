@@ -34,6 +34,7 @@ import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
+import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
@@ -268,7 +269,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
 
   Widget _buildRoutingCanvas() {
     return BlocProvider(
-      create: (context) => RoutingEditorCubit(context.read<DistingCubit>()),
+      create: (context) {
+        final cubit = RoutingEditorCubit(context.read<DistingCubit>());
+        cubit.injectLayoutAlgorithm(NodeLayoutAlgorithm());
+        return cubit;
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -296,6 +301,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                   connections,
                                   buses,
                                   portOutputModes,
+                                  nodePositions,
                                   isHardwareSynced,
                                   isPersistenceEnabled,
                                   lastSyncTime,
@@ -310,6 +316,47 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                             orElse: () => null,
                           ),
                           tooltip: 'Refresh Routing',
+                        ),
+                        // Layout Algorithm Button
+                        state.maybeWhen(
+                          loaded: (
+                            physicalInputs,
+                            physicalOutputs,
+                            algorithms,
+                            connections,
+                            buses,
+                            portOutputModes,
+                            nodePositions,
+                            isHardwareSynced,
+                            isPersistenceEnabled,
+                            lastSyncTime,
+                            lastPersistTime,
+                            lastError,
+                            subState,
+                          ) {
+                            // Show loading during layout calculation
+                            if (subState == SubState.syncing) {
+                              return IconButton(
+                                icon: const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                onPressed: null,
+                                tooltip: 'Calculating Layout...',
+                              );
+                            }
+
+                            // Show normal layout button
+                            return IconButton(
+                              icon: const Icon(Icons.auto_fix_high),
+                              onPressed: () {
+                                context.read<RoutingEditorCubit>().applyLayoutAlgorithm();
+                              },
+                              tooltip: 'Apply Layout Algorithm',
+                            );
+                          },
+                          orElse: () => const SizedBox.shrink(),
                         ),
                       ],
                     );

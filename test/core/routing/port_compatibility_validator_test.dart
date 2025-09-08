@@ -26,7 +26,7 @@ void main() {
 
       audioOutputPort = const Port(
         id: 'audio_out',
-        name: 'Audio Output',
+        name: 'Output',
         type: PortType.audio,
         direction: PortDirection.output,
       );

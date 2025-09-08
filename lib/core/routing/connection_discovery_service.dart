@@ -357,7 +357,15 @@ class ConnectionDiscoveryService {
 
       // Create partial connections for each unmatched port
       for (final port in unmatchedPorts) {
-        final busLabel = _generateBusLabel(busNumber);
+        // For unmatched OUTPUT ports, include output mode in the label
+        // so replace mode shows as "O# R" or "A# R". Inputs ignore mode.
+        final String busLabel = port.isOutput
+            ? (BusLabelFormatter.formatBusLabelWithMode(
+                    busNumber, port.outputMode) ??
+                'Bus$busNumber')
+            : (BusLabelFormatter.formatBusNumber(busNumber) ??
+                'Bus$busNumber');
+
         final partialConnection = _createPartialConnection(
           port,
           busNumber,
@@ -418,10 +426,8 @@ class ConnectionDiscoveryService {
     );
   }
 
-  /// Generates a human-readable bus label for the given bus number
+  /// Generates a human-readable bus label for the given bus number (legacy helper)
   static String _generateBusLabel(int busNumber) {
-    // Use the centralized BusLabelFormatter for consistent labeling across the app
-    // This ensures all bus labels follow the same format: I1-I12, O1-O8, A1-A8
     return BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber';
   }
 }

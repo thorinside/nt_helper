@@ -226,34 +226,26 @@ class _PortWidgetState extends State<PortWidget> {
       );
     }
 
-    return Container(
-      width: 120,
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+    return SizedBox(
+      height: 28,
       child: Row(
-        mainAxisAlignment: widget.labelPosition == PortLabelPosition.left
-            ? MainAxisAlignment.start
-            : MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (widget.labelPosition == PortLabelPosition.left) ...[
-            Expanded(
-              child: Text(
-                widget.label,
-                style: theme.textTheme.labelSmall,
-                overflow: TextOverflow.ellipsis,
-              ),
+            Text(
+              widget.label,
+              style: theme.textTheme.labelSmall,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
           jackDot,
           if (widget.labelPosition == PortLabelPosition.right) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                widget.label,
-                style: theme.textTheme.labelSmall,
-                overflow: TextOverflow.ellipsis,
-              ),
+            const SizedBox(width: 6),
+            Text(
+              widget.label,
+              style: theme.textTheme.labelSmall,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],

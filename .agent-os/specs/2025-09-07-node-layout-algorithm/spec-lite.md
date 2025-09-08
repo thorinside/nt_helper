@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Implement an intelligent node layout algorithm for the routing editor that automatically optimizes node positioning to minimize connection overlap while maintaining logical slot ordering. The feature will include a layout algorithm button positioned beside the refresh routing button, with smart positioning logic that places physical inputs on the left, outputs on the right, and algorithm nodes optimally positioned in between to reduce visual clutter and improve routing diagram readability.

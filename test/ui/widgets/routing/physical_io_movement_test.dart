@@ -4,6 +4,36 @@ import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 
+/// Helper function to create test physical input ports
+List<Port> _createTestInputPorts() {
+  return List.generate(12, (index) {
+    final portNum = index + 1;
+    return Port(
+      id: 'hw_in_$portNum',
+      name: 'Input $portNum',
+      type: PortType.audio,
+      direction: PortDirection.output, // Physical inputs act as outputs to algorithms
+      isPhysical: true,
+      busValue: portNum,
+    );
+  });
+}
+
+/// Helper function to create test physical output ports
+List<Port> _createTestOutputPorts() {
+  return List.generate(8, (index) {
+    final portNum = index + 1;
+    return Port(
+      id: 'hw_out_$portNum',
+      name: 'Output $portNum',
+      type: PortType.audio,
+      direction: PortDirection.input, // Physical outputs act as inputs from algorithms
+      isPhysical: true,
+      busValue: portNum + 12,
+    );
+  });
+}
+
 /// Tests for physical I/O node movement functionality and connection updates.
 ///
 /// Validates that physical I/O nodes can be moved correctly, port positions
@@ -18,6 +48,7 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: PhysicalOutputNode(
+                ports: _createTestOutputPorts(),
                 position: const Offset(100, 100),
                 onPositionChanged: (newPosition) =>
                     positionHistory.add(newPosition),
@@ -76,6 +107,7 @@ void main() {
                     left: 50,
                     top: 50,
                     child: PhysicalInputNode(
+                      ports: _createTestInputPorts(),
                       position: const Offset(50, 50),
                       onPortPositionResolved: trackPortUpdate,
                     ),
@@ -84,6 +116,7 @@ void main() {
                     left: 300,
                     top: 50,
                     child: PhysicalOutputNode(
+                      ports: _createTestOutputPorts(),
                       position: const Offset(300, 50),
                       onPortPositionResolved: trackPortUpdate,
                     ),
@@ -115,7 +148,10 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: PhysicalInputNode(position: const Offset(100, 100)),
+              body: PhysicalInputNode(
+                ports: _createTestInputPorts(),
+                position: const Offset(100, 100),
+              ),
             ),
           ),
         );
@@ -151,6 +187,7 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: PhysicalInputNode(
+                ports: _createTestInputPorts(),
                 position: const Offset(100, 100),
                 // onPositionChanged is null
               ),

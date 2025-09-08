@@ -17,6 +17,7 @@ import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
+import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 // Removed unused imports from previous canvas split
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
@@ -404,6 +405,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             connections,
             buses,
             portOutputModes,
+            nodePositions,
             isHardwareSynced,
             isPersistenceEnabled,
             lastSyncTime,
@@ -416,6 +418,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             physicalOutputs,
             algorithms,
             connections,
+            nodePositions,
           ),
     );
   }
@@ -453,6 +456,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<Port> physicalOutputs,
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
+    Map<String, NodePosition> stateNodePositions,
   ) {
     return Semantics(
       label:
@@ -545,10 +549,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                   ),
                   // Nodes on middle layer (connections will draw above to overlay ports)
                   if (widget.showPhysicalPorts)
-                    ..._buildPhysicalInputNodes(physicalInputs, connections),
+                    ..._buildPhysicalInputNodes(physicalInputs, connections, stateNodePositions),
                   if (widget.showPhysicalPorts)
-                    ..._buildPhysicalOutputNodes(physicalOutputs, connections),
-                  ..._buildAlgorithmNodes(algorithms, connections),
+                    ..._buildPhysicalOutputNodes(physicalOutputs, connections, stateNodePositions),
+                  ..._buildAlgorithmNodes(algorithms, connections, stateNodePositions),
                   // Draw all connections with unified canvas
                   // Use RepaintBoundary to isolate canvas repaints
                   // Keep connections visible if they were already visible and ports haven't been cleared
@@ -573,14 +577,24 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   List<Widget> _buildPhysicalInputNodes(
     List<Port> physicalInputs,
     List<Connection> connections,
+    Map<String, NodePosition> stateNodePositions,
   ) {
     if (physicalInputs.isEmpty) return [];
     // Position in the center area of the canvas, to the left of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    final nodePosition =
-        _nodePositions['physical_inputs'] ??
-        const Offset(centerX - 800, centerY - 300);
+    
+    // Check for position from state first
+    final statePosition = stateNodePositions['physical_inputs'];
+    final Offset nodePosition;
+    
+    if (statePosition != null) {
+      nodePosition = Offset(statePosition.x, statePosition.y);
+      _nodePositions['physical_inputs'] = nodePosition;
+    } else {
+      nodePosition = _nodePositions['physical_inputs'] ??
+          const Offset(centerX - 800, centerY - 300);
+    }
 
     return [
       Positioned(
@@ -595,6 +609,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             setState(() {
               _nodePositions['physical_inputs'] = newPosition;
             });
+            // Save position to preferences
+            context.read<RoutingEditorCubit>().updateNodePosition(
+              'physical_inputs',
+              newPosition.dx,
+              newPosition.dy,
+            );
           },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
@@ -622,14 +642,24 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   List<Widget> _buildPhysicalOutputNodes(
     List<Port> physicalOutputs,
     List<Connection> connections,
+    Map<String, NodePosition> stateNodePositions,
   ) {
     if (physicalOutputs.isEmpty) return [];
     // Position in the center area of the canvas, to the right of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    final nodePosition =
-        _nodePositions['physical_outputs'] ??
-        const Offset(centerX + 600, centerY - 300);
+    
+    // Check for position from state first
+    final statePosition = stateNodePositions['physical_outputs'];
+    final Offset nodePosition;
+    
+    if (statePosition != null) {
+      nodePosition = Offset(statePosition.x, statePosition.y);
+      _nodePositions['physical_outputs'] = nodePosition;
+    } else {
+      nodePosition = _nodePositions['physical_outputs'] ??
+          const Offset(centerX + 600, centerY - 300);
+    }
 
     return [
       Positioned(
@@ -637,12 +667,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         left: nodePosition.dx,
         top: nodePosition.dy,
         child: PhysicalOutputNode(
+          ports: physicalOutputs,
           connectedPorts: _getConnectedPortIds(connections).toSet(),
           position: nodePosition,
           onPositionChanged: (newPosition) {
             setState(() {
               _nodePositions['physical_outputs'] = newPosition;
             });
+            // Save position to preferences
+            context.read<RoutingEditorCubit>().updateNodePosition(
+              'physical_outputs',
+              newPosition.dx,
+              newPosition.dy,
+            );
           },
           showLabels: widget.canvasSize.width >= 800,
           onPortTapped: (port) => _handlePortTap(port),
@@ -670,19 +707,32 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   List<Widget> _buildAlgorithmNodes(
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
+    Map<String, NodePosition> stateNodePositions,
   ) {
     return algorithms.map((algorithm) {
       // Use stable algorithm ID instead of index for consistent positioning
       final nodeId = algorithm.id;
-      // Use a default position in the center area if not yet positioned
-      final defaultPosition = Offset(
-        _canvasWidth / 2 - 250 + ((algorithm.index % 2) * 300),
-        _canvasHeight / 2 - 300 + ((algorithm.index ~/ 2) * 200),
-      );
-      final position = _nodePositions[nodeId] ?? defaultPosition;
-      // Store the default position if not already in the map
-      if (!_nodePositions.containsKey(nodeId)) {
-        _nodePositions[nodeId] = defaultPosition;
+      
+      // First check if there's a position from the layout algorithm in state
+      final statePosition = stateNodePositions[nodeId];
+      final Offset position;
+      
+      if (statePosition != null) {
+        // Use position from state (layout algorithm result)
+        position = Offset(statePosition.x, statePosition.y);
+        // Update local cache with state position
+        _nodePositions[nodeId] = position;
+      } else {
+        // Fall back to local position or default
+        final defaultPosition = Offset(
+          _canvasWidth / 2 - 250 + ((algorithm.index % 2) * 300),
+          _canvasHeight / 2 - 300 + ((algorithm.index ~/ 2) * 200),
+        );
+        position = _nodePositions[nodeId] ?? defaultPosition;
+        // Store the default position if not already in the map
+        if (!_nodePositions.containsKey(nodeId)) {
+          _nodePositions[nodeId] = defaultPosition;
+        }
       }
       final isSelected = _selectedNodes.contains(nodeId);
 
@@ -725,6 +775,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             setState(() {
               _nodePositions[nodeId] = newPosition;
             });
+            // Save position to preferences
+            context.read<RoutingEditorCubit>().updateNodePosition(
+              nodeId,
+              newPosition.dx,
+              newPosition.dy,
+            );
           },
           onDragEnd: () {
             if (_isDraggingNode) {
@@ -1573,8 +1629,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     if (previous.physicalInputs.length != current.physicalInputs.length ||
         previous.physicalOutputs.length != current.physicalOutputs.length ||
         previous.algorithms.length != current.algorithms.length ||
-        previous.connections.length != current.connections.length) {
+        previous.connections.length != current.connections.length ||
+        previous.nodePositions.length != current.nodePositions.length) {
       return true;
+    }
+    
+    // Check if node positions have changed
+    for (final entry in current.nodePositions.entries) {
+      final prevPosition = previous.nodePositions[entry.key];
+      if (prevPosition == null || 
+          prevPosition.x != entry.value.x || 
+          prevPosition.y != entry.value.y) {
+        return true;
+      }
     }
     for (int i = 0; i < current.algorithms.length; i++) {
       if (i >= previous.algorithms.length) return true;

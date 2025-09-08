@@ -10,6 +10,7 @@ import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/services/algorithm_connection_service.dart';
 import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/services/connection_validator.dart';
+import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'routing_editor_state.dart';
@@ -22,6 +23,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   final DistingCubit? _distingCubit;
   final Future<SharedPreferences> _prefs;
   StreamSubscription<DistingState>? _distingStateSubscription;
+  NodeLayoutAlgorithm? _layoutAlgorithm;
 
   RoutingEditorCubit(
     this._distingCubit, {
@@ -221,6 +223,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Initialize default buses after loading (fire and forget)
       initializeDefaultBuses();
+      
+      // Load saved node positions for this preset
+      loadNodePositions();
     } catch (e) {
       debugPrint('Error processing synchronized state: $e');
     }
@@ -323,49 +328,49 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return [
       const Port(
         id: 'hw_out_1',
-        name: 'Audio Out 1',
+        name: 'O1',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_2',
-        name: 'Audio Out 2',
+        name: 'O2',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_3',
-        name: 'Audio Out 3',
+        name: 'O3',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_4',
-        name: 'Audio Out 4',
+        name: 'O4',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_5',
-        name: 'Audio Out 5',
+        name: 'O5',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_6',
-        name: 'Audio Out 6',
+        name: 'O6',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_7',
-        name: 'Audio Out 7',
+        name: 'O7',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
       const Port(
         id: 'hw_out_8',
-        name: 'Audio Out 8',
+        name: 'O8',
         type: PortType.audio,
         direction: PortDirection.input,
       ),
@@ -1943,6 +1948,183 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       debugPrint('Error clearing bus assignments: $e');
       // Don't rethrow - we still want to delete the connection from UI
     }
+  }
+
+  /// Inject the layout algorithm service
+  void injectLayoutAlgorithm(NodeLayoutAlgorithm layoutAlgorithm) {
+    if (_layoutAlgorithm != null) {
+      throw StateError('Layout algorithm service already injected');
+    }
+    _layoutAlgorithm = layoutAlgorithm;
+    debugPrint('[RoutingEditorCubit] Layout algorithm service injected');
+  }
+
+  /// Apply the layout algorithm to optimize node positions
+  Future<void> applyLayoutAlgorithm() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) {
+      debugPrint('Cannot apply layout algorithm - routing editor not loaded');
+      return;
+    }
+
+    if (_layoutAlgorithm == null) {
+      debugPrint('Cannot apply layout algorithm - service not injected');
+      // Create a default instance if none is provided
+      _layoutAlgorithm = NodeLayoutAlgorithm();
+    }
+
+    try {
+      debugPrint('[RoutingEditorCubit] Applying layout algorithm');
+      
+      // Show loading state
+      emit(currentState.copyWith(subState: SubState.syncing));
+
+      // Calculate optimal layout using the algorithm
+      final layoutResult = _layoutAlgorithm!.calculateLayout(
+        physicalInputs: currentState.physicalInputs,
+        physicalOutputs: currentState.physicalOutputs,
+        algorithms: currentState.algorithms,
+        connections: currentState.connections,
+      );
+
+      // Merge existing node positions with new calculated positions
+      // This preserves any custom-positioned nodes not managed by the layout algorithm
+      final updatedNodePositions = Map<String, NodePosition>.from(currentState.nodePositions);
+      
+      // Update physical input positions
+      updatedNodePositions.addAll(layoutResult.physicalInputPositions);
+      
+      // Update physical output positions  
+      updatedNodePositions.addAll(layoutResult.physicalOutputPositions);
+      
+      // Update algorithm positions
+      updatedNodePositions.addAll(layoutResult.algorithmPositions);
+
+      // Emit updated state with new positions
+      emit(
+        currentState.copyWith(
+          nodePositions: updatedNodePositions,
+          subState: SubState.idle,
+          lastError: null,
+        ),
+      );
+
+      debugPrint('[RoutingEditorCubit] Layout algorithm applied successfully');
+      debugPrint('  Updated positions: ${updatedNodePositions.length}');
+      debugPrint('  Overlap reduction: ${layoutResult.totalOverlapReduction.toStringAsFixed(2)}');
+      
+      // Save the new positions to preferences
+      await saveNodePositions();
+
+    } catch (e, stackTrace) {
+      debugPrint('[RoutingEditorCubit] Error applying layout algorithm: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      emit(
+        currentState.copyWith(
+          subState: SubState.error,
+          lastError: 'Layout calculation failed: $e',
+        ),
+      );
+    }
+  }
+
+  /// Save node positions to SharedPreferences for the current preset
+  Future<void> saveNodePositions() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+    
+    final distingState = _distingCubit?.state;
+    if (distingState == null) return;
+    
+    // Get preset name from DistingState
+    String? presetName;
+    distingState.whenOrNull(
+      synchronized: (_, __, ___, name, ____, _____, ______, _______, ________,
+          _________, __________, ___________, ____________, _____________) {
+        presetName = name;
+      },
+    );
+    
+    if (presetName == null || presetName!.isEmpty) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'routing_positions_$presetName';
+      
+      // Convert NodePosition map to JSON-serializable format
+      final positionsMap = <String, Map<String, double>>{};
+      for (final entry in currentState.nodePositions.entries) {
+        positionsMap[entry.key] = {
+          'x': entry.value.x,
+          'y': entry.value.y,
+        };
+      }
+      
+      final json = jsonEncode(positionsMap);
+      await prefs.setString(key, json);
+      debugPrint('[RoutingEditorCubit] Saved node positions for preset: $presetName');
+    } catch (e) {
+      debugPrint('[RoutingEditorCubit] Error saving node positions: $e');
+    }
+  }
+  
+  /// Load node positions from SharedPreferences for the current preset
+  Future<void> loadNodePositions() async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+    
+    final distingState = _distingCubit?.state;
+    if (distingState == null) return;
+    
+    // Get preset name from DistingState
+    String? presetName;
+    distingState.whenOrNull(
+      synchronized: (_, __, ___, name, ____, _____, ______, _______, ________,
+          _________, __________, ___________, ____________, _____________) {
+        presetName = name;
+      },
+    );
+    
+    if (presetName == null || presetName!.isEmpty) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'routing_positions_$presetName';
+      final json = prefs.getString(key);
+      
+      if (json != null) {
+        final positionsMap = jsonDecode(json) as Map<String, dynamic>;
+        final nodePositions = <String, NodePosition>{};
+        
+        for (final entry in positionsMap.entries) {
+          final pos = entry.value as Map<String, dynamic>;
+          nodePositions[entry.key] = NodePosition(
+            x: (pos['x'] as num).toDouble(),
+            y: (pos['y'] as num).toDouble(),
+          );
+        }
+        
+        emit(currentState.copyWith(nodePositions: nodePositions));
+        debugPrint('[RoutingEditorCubit] Loaded node positions for preset: $presetName');
+      }
+    } catch (e) {
+      debugPrint('[RoutingEditorCubit] Error loading node positions: $e');
+    }
+  }
+  
+  /// Update a single node position and save to preferences
+  Future<void> updateNodePosition(String nodeId, double x, double y) async {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+    
+    final updatedPositions = Map<String, NodePosition>.from(currentState.nodePositions);
+    updatedPositions[nodeId] = NodePosition(x: x, y: y);
+    
+    emit(currentState.copyWith(nodePositions: updatedPositions));
+    
+    // Save positions after update
+    await saveNodePositions();
   }
 
   @override
