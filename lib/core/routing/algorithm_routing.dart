@@ -7,6 +7,7 @@ import 'models/connection.dart';
 import 'port_compatibility_validator.dart';
 import 'poly_algorithm_routing.dart';
 import 'multi_channel_algorithm_routing.dart';
+import 'usb_from_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 ///
@@ -268,6 +269,14 @@ abstract class AlgorithmRouting {
   ///
   /// Returns an appropriate AlgorithmRouting implementation
   static AlgorithmRouting fromSlot(Slot slot, {String? algorithmUuid}) {
+    // Check for USB Audio (From Host) algorithm first
+    if (UsbFromAlgorithmRouting.canHandle(slot)) {
+      return UsbFromAlgorithmRouting.createFromSlot(
+        slot,
+        algorithmUuid: algorithmUuid,
+      );
+    }
+    
     // Extract both routing and mode parameters once for all implementations
     final ioParameters = extractIOParameters(slot);
     final modeParameters = extractModeParameters(slot);

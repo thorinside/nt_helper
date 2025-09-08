@@ -145,9 +145,18 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
   List<Port> generateInputPorts() {
     final ports = <Port>[];
 
-    // If explicit inputs are defined in algorithm properties, use them first.
+    // If explicit inputs are defined in algorithm properties, use them.
     final declaredInputs = config.algorithmProperties['inputs'];
-    if (declaredInputs is List && declaredInputs.isNotEmpty) {
+    if (declaredInputs is List) {
+      // If the list is explicitly empty, return empty ports (no fallback)
+      if (declaredInputs.isEmpty) {
+        debugPrint(
+          'MultiChannelAlgorithmRouting: No input ports declared - returning empty',
+        );
+        return ports;
+      }
+      
+      // Process declared inputs
       for (final item in declaredInputs) {
         if (item is Map) {
           final id = item['id']?.toString() ?? 'in_${ports.length + 1}';
@@ -249,7 +258,16 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
 
     // If outputs are explicitly defined in algorithm properties, use them.
     final declared = config.algorithmProperties['outputs'];
-    if (declared is List && declared.isNotEmpty) {
+    if (declared is List) {
+      // If the list is explicitly empty, return empty ports (no fallback)
+      if (declared.isEmpty) {
+        debugPrint(
+          'MultiChannelAlgorithmRouting: No output ports declared - returning empty',
+        );
+        return ports;
+      }
+      
+      // Process declared outputs
       for (final item in declared) {
         if (item is Map) {
           final id = item['id']?.toString() ?? 'out_${ports.length + 1}';

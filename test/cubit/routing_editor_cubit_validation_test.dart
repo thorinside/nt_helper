@@ -110,7 +110,7 @@ void main() {
               ParameterValue(
                 algorithmIndex: 0,
                 parameterNumber: 0,
-                value: 15,
+                value: 22, // Input from bus 22 (not a hardware bus)
               ),
             ],
             algorithmIndex: 0,
@@ -137,7 +137,7 @@ void main() {
               ParameterValue(
                 algorithmIndex: 1,
                 parameterNumber: 0,
-                value: 15, // Creates backward connection to slot 0
+                value: 22, // Creates backward connection to slot 0
               ),
             ],
             algorithmIndex: 1,
@@ -145,17 +145,18 @@ void main() {
         ];
 
         // Emit a new state with test slots
-        when(() => mockDistingCubit.state).thenReturn(
-          DistingState.synchronized(
-            disting: mockDistingMidiManager,
-            distingVersion: '1.0.0',
-            firmwareVersion: FirmwareVersion('1.0.0'),
-            presetName: 'Test Preset',
-            algorithms: [],
-            slots: testSlots,
-            unitStrings: [],
-          ),
+        final testState = DistingState.synchronized(
+          disting: mockDistingMidiManager,
+          distingVersion: '1.0.0',
+          firmwareVersion: FirmwareVersion('1.0.0'),
+          presetName: 'Test Preset',
+          algorithms: [],
+          slots: testSlots,
+          unitStrings: [],
         );
+        
+        when(() => mockDistingCubit.state).thenReturn(testState);
+        when(() => mockDistingCubit.stream).thenAnswer((_) => Stream.value(testState));
 
         // Create a new cubit that will process this state
         final testCubit = RoutingEditorCubit(mockDistingCubit);
@@ -164,25 +165,25 @@ void main() {
         await Future.delayed(Duration(milliseconds: 50));
 
         // The cubit should have processed the slots and created routing data
-        expect(testCubit.state, isA<RoutingEditorState>());
+        expect(testCubit.state, isA<RoutingEditorStateLoaded>());
         
-        // If it became loaded, it should have connections
-        if (testCubit.state is RoutingEditorStateLoaded) {
-          final loadedState = testCubit.state as RoutingEditorStateLoaded;
-          
-          // Should have some connections discovered from the shared bus
-          final algorithmConnections = loadedState.connections
-              .where((conn) => conn.connectionType == ConnectionType.algorithmToAlgorithm)
-              .toList();
-          
-          // With our setup (slot 1 outputs to bus 15, slot 0 inputs from bus 15)
-          // this creates a backward edge connection
-          final backwardConnections = algorithmConnections
-              .where((conn) => conn.isBackwardEdge)
-              .toList();
-              
-          expect(backwardConnections.isNotEmpty, isTrue);
-        }
+        final loadedState = testCubit.state as RoutingEditorStateLoaded;
+        
+        // Should have some connections discovered from the shared bus
+        final algorithmConnections = loadedState.connections
+            .where((conn) => conn.connectionType == ConnectionType.algorithmToAlgorithm)
+            .toList();
+        
+        // We should have at least one algorithm-to-algorithm connection
+        expect(algorithmConnections.isNotEmpty, isTrue);
+        
+        // With our setup (slot 1 outputs to bus 15, slot 0 inputs from bus 15)
+        // this creates a backward edge connection
+        final backwardConnections = algorithmConnections
+            .where((conn) => conn.isBackwardEdge == true)
+            .toList();
+            
+        expect(backwardConnections.isNotEmpty, isTrue);
 
         testCubit.close();
       });
@@ -247,7 +248,7 @@ void main() {
               ParameterValue(
                 algorithmIndex: 0,
                 parameterNumber: 0,
-                value: 20, // Input from bus 20
+                value: 25, // Input from bus 25 (not a hardware bus)
               ),
             ],
             algorithmIndex: 0,
@@ -274,7 +275,7 @@ void main() {
               ParameterValue(
                 algorithmIndex: 1,
                 parameterNumber: 1,
-                value: 20, // Output to bus 20 (consumed by slot 0 - backward edge!)
+                value: 25, // Output to bus 25 (consumed by slot 0 - backward edge!)
               ),
             ],
             algorithmIndex: 1,
@@ -282,17 +283,18 @@ void main() {
         ];
 
         // Mock the state with backward edge scenario
-        when(() => mockDistingCubit.state).thenReturn(
-          DistingState.synchronized(
-            disting: mockDistingMidiManager,
-            distingVersion: '1.0.0',
-            firmwareVersion: FirmwareVersion('1.0.0'),
-            presetName: 'Backward Edge Test',
-            algorithms: [],
-            slots: testSlots,
-            unitStrings: [],
-          ),
+        final testState = DistingState.synchronized(
+          disting: mockDistingMidiManager,
+          distingVersion: '1.0.0',
+          firmwareVersion: FirmwareVersion('1.0.0'),
+          presetName: 'Backward Edge Test',
+          algorithms: [],
+          slots: testSlots,
+          unitStrings: [],
         );
+        
+        when(() => mockDistingCubit.state).thenReturn(testState);
+        when(() => mockDistingCubit.stream).thenAnswer((_) => Stream.value(testState));
 
         // Create cubit
         final testCubit = RoutingEditorCubit(mockDistingCubit);
@@ -312,8 +314,9 @@ void main() {
           expect(backwardConnections.isNotEmpty, isTrue);
           
           // The backward connection should involve slot 1 -> slot 0
+          // Source is from guid-2 (slot 1), destination is to guid-1 (slot 0)
           final slot1ToSlot0 = backwardConnections.any(
-            (conn) => conn.sourcePortId.contains('_1_') && conn.destinationPortId.contains('_0_'),
+            (conn) => conn.sourcePortId.contains('guid-2') && conn.destinationPortId.contains('guid-1'),
           );
           
           expect(slot1ToSlot0, isTrue);
