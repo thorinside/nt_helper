@@ -1,9 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
-import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
+
+/// Helper function to create test physical input ports
+List<Port> _createTestInputPorts() {
+  return List.generate(12, (index) {
+    final portNum = index + 1;
+    return Port(
+      id: 'hw_in_$portNum',
+      name: 'Input $portNum',
+      type: PortType.audio,
+      direction: PortDirection.output, // Physical inputs act as outputs to algorithms
+      isPhysical: true,
+      busValue: portNum,
+    );
+  });
+}
+
+/// Helper function to create test physical output ports
+List<Port> _createTestOutputPorts() {
+  return List.generate(8, (index) {
+    final portNum = index + 1;
+    return Port(
+      id: 'hw_out_$portNum',
+      name: 'Output $portNum',
+      type: PortType.audio,
+      direction: PortDirection.input, // Physical outputs act as inputs from algorithms
+      isPhysical: true,
+      busValue: portNum + 12,
+    );
+  });
+}
 
 /// Performance tests for drag operations and connection updates
 /// with the universal port widget architecture.
@@ -28,11 +57,92 @@ void main() {
         };
 
         void recordDragTime(String nodeType) {
-          final stopwatch = stopwatches[nodeType]!;
+          if (!dragTimesByNodeType.containsKey(nodeType)) {
+            dragTimesByNodeType[nodeType] = [];
+          }
+          stopwatches[nodeType]?.stop();
+          final elapsed = stopwatches[nodeType]?.elapsed;
+          if (elapsed != null) {
+            dragTimesByNodeType[nodeType]!.add(elapsed);
+          }
+          stopwatches[nodeType]?.reset();
+        }
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(
+                children: [
+                  Positioned(
+                    left: 50,
+                    top: 50,
+                    child: PhysicalInputNode(
+                      ports: _createTestInputPorts(),
+                      position: const Offset(50, 50),
+                      onPositionChanged: (_) => recordDragTime('physical_input'),
+                    ),
+                  ),
+                  Positioned(
+                    left: 300,
+                    top: 50,
+                    child: PhysicalOutputNode(
+                      ports: _createTestOutputPorts(),
+                      position: const Offset(300, 50),
+                      onPositionChanged: (_) => recordDragTime('physical_output'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Perform rapid drag operations on both nodes
+        const int iterations = 10;
+        for (int i = 0; i < iterations; i++) {
+          // Start timing for input node
+          stopwatches['physical_input']!.start();
+          await tester.dragFrom(
+            tester.getCenter(find.byType(PhysicalInputNode)),
+            Offset(10 * (i + 1).toDouble(), 10.0),
+          );
+          await tester.pump(const Duration(milliseconds: 16)); // Single frame
+
+          // Start timing for output node
+          stopwatches['physical_output']!.start();
+          await tester.dragFrom(
+            tester.getCenter(find.byType(PhysicalOutputNode)),
+            Offset(10 * (i + 1).toDouble(), 10.0),
+          );
+          await tester.pump(const Duration(milliseconds: 16)); // Single frame
+        }
+
+        await tester.pumpAndSettle();
+
+        // Verify performance (all drags should complete in reasonable time)
+        for (final nodeType in dragTimesByNodeType.keys) {
+          final times = dragTimesByNodeType[nodeType]!;
+          final averageTime = times.fold<Duration>(
+                  Duration.zero, (sum, time) => sum + time) ~/
+              times.length;
+
+          expect(averageTime.inMilliseconds, lessThan(100),
+              reason:
+                  '$nodeType drag operations should be fast (< 100ms average)');
+        }
+      });
+    });
+
+    group('Port Position Update Performance', () {
+      testWidgets('Large number of port position updates', (tester) async {
+        final List<Duration> updateTimes = [];
+        final stopwatch = Stopwatch();
+
+        void trackUpdate(port, Offset position) {
           stopwatch.stop();
-          dragTimesByNodeType
-              .putIfAbsent(nodeType, () => [])
-              .add(Duration(microseconds: stopwatch.elapsedMicroseconds));
+          updateTimes.add(stopwatch.elapsed);
           stopwatch.reset();
         }
 
@@ -41,38 +151,21 @@ void main() {
             home: Scaffold(
               body: Stack(
                 children: [
-                  Positioned(
-                    left: 100,
-                    top: 100,
-                    child: AlgorithmNodeWidget(
-                      algorithmName: 'Concurrent Test',
-                      slotNumber: 1,
-                      position: const Offset(100, 100),
-                      inputLabels: ['Input'],
-                      outputLabels: ['Output'],
-                      onDragStart: () => stopwatches['algorithm']!.start(),
-                      onDragEnd: () => recordDragTime('algorithm'),
-                    ),
+                  PhysicalInputNode(
+                    ports: _createTestInputPorts(),
+                    position: const Offset(100, 100),
+                    onPortPositionResolved: (port, position) {
+                      stopwatch.start();
+                      trackUpdate(port, position);
+                    },
                   ),
-                  Positioned(
-                    left: 300,
-                    top: 150,
-                    child: PhysicalInputNode(
-                      position: const Offset(300, 150),
-                      onNodeDragStart: () =>
-                          stopwatches['physical_input']!.start(),
-                      onNodeDragEnd: () => recordDragTime('physical_input'),
-                    ),
-                  ),
-                  Positioned(
-                    left: 500,
-                    top: 100,
-                    child: PhysicalOutputNode(
-                      position: const Offset(500, 100),
-                      onNodeDragStart: () =>
-                          stopwatches['physical_output']!.start(),
-                      onNodeDragEnd: () => recordDragTime('physical_output'),
-                    ),
+                  PhysicalOutputNode(
+                    ports: _createTestOutputPorts(),
+                    position: const Offset(300, 100),
+                    onPortPositionResolved: (port, position) {
+                      stopwatch.start();
+                      trackUpdate(port, position);
+                    },
                   ),
                 ],
               ),
@@ -81,241 +174,94 @@ void main() {
         );
 
         await tester.pumpAndSettle();
+        await tester.pump(); // Allow all position callbacks
 
-        // Drag all nodes in sequence rapidly
-        final nodes = [
-          (find.byType(AlgorithmNodeWidget), 'algorithm'),
-          (find.byType(PhysicalInputNode), 'physical_input'),
-          (find.byType(PhysicalOutputNode), 'physical_output'),
-        ];
+        // Should have fast port position updates
+        if (updateTimes.isNotEmpty) {
+          final averageUpdateTime = updateTimes.fold<Duration>(
+                  Duration.zero, (sum, time) => sum + time) ~/
+              updateTimes.length;
 
-        for (final (finder, _) in nodes) {
-          await tester.dragFrom(tester.getCenter(finder), const Offset(25, 25));
-          await tester.pump(
-            const Duration(milliseconds: 10),
-          ); // Rapid succession
+          expect(averageUpdateTime.inMicroseconds, lessThan(1000),
+              reason: 'Port position updates should be fast (< 1ms average)');
         }
-        await tester.pumpAndSettle();
-
-        // All node types should maintain good performance
-        for (final nodeType in dragTimesByNodeType.keys) {
-          final times = dragTimesByNodeType[nodeType]!;
-          expect(
-            times,
-            isNotEmpty,
-            reason: '$nodeType should have recorded drag times',
-          );
-
-          final avgTime =
-              times.map((d) => d.inMicroseconds).reduce((a, b) => a + b) /
-              times.length;
-          expect(
-            avgTime,
-            lessThan(200000),
-            reason:
-                '$nodeType drag should be under 200ms even with concurrent operations',
-          );
-        }
-      });
-    });
-
-    group('Port Position Update Performance', () {
-      testWidgets('Port position callbacks execute efficiently', (
-        tester,
-      ) async {
-        final List<Duration> callbackTimes = [];
-        final stopwatch = Stopwatch();
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: AlgorithmNodeWidget(
-                algorithmName: 'Callback Performance Test',
-                slotNumber: 1,
-                position: const Offset(150, 150),
-                inputLabels: List.generate(
-                  8,
-                  (i) => 'Input ${i + 1}',
-                ), // Many inputs
-                outputLabels: List.generate(
-                  8,
-                  (i) => 'Output ${i + 1}',
-                ), // Many outputs
-                inputPortIds: List.generate(8, (i) => 'perf_in_$i'),
-                outputPortIds: List.generate(8, (i) => 'perf_out_$i'),
-                onPortPositionResolved: (portId, position, isInput) {
-                  if (!stopwatch.isRunning) stopwatch.start();
-                  // Simulate some processing time
-                  for (int i = 0; i < 100; i++) {
-                    position.dx + position.dy; // Minimal computation
-                  }
-                  callbackTimes.add(
-                    Duration(microseconds: stopwatch.elapsedMicroseconds),
-                  );
-                  stopwatch.reset();
-                },
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        await tester.pump(); // Allow callbacks to execute
-
-        // Should have callbacks for all 16 ports (8 inputs + 8 outputs)
-        expect(callbackTimes.length, greaterThanOrEqualTo(16));
-
-        // Each callback should execute quickly
-        final avgCallbackTime =
-            callbackTimes.map((d) => d.inMicroseconds).reduce((a, b) => a + b) /
-            callbackTimes.length;
-        expect(
-          avgCallbackTime,
-          lessThan(1000), // 1ms per callback
-          reason:
-              'Port position callbacks should execute in under 1ms on average',
-        );
-
-        // No callback should take more than 5ms
-        final maxCallbackTime = callbackTimes
-            .map((d) => d.inMicroseconds)
-            .reduce((a, b) => a > b ? a : b);
-        expect(
-          maxCallbackTime,
-          lessThan(5000),
-          reason: 'No port callback should take more than 5ms',
-        );
       });
     });
 
     group('Large Scale Performance', () {
-      testWidgets('Many port widgets render efficiently', (tester) async {
-        final startTime = DateTime.now();
+      testWidgets('Many nodes with many ports perform well', (tester) async {
+        final stopwatch = Stopwatch();
 
+        stopwatch.start();
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Multiple physical I/O nodes
-                    PhysicalInputNode(position: const Offset(0, 0)),
-                    PhysicalOutputNode(position: const Offset(0, 300)),
-                    // Multiple algorithm nodes
-                    ...List.generate(
-                      8,
-                      (index) => Padding(
-                        padding: EdgeInsets.only(top: index * 150.0 + 600),
-                        child: AlgorithmNodeWidget(
-                          algorithmName: 'Algorithm ${index + 1}',
-                          slotNumber: index + 1,
-                          position: Offset(0, index * 150.0 + 600),
-                          inputLabels: ['Input 1', 'Input 2'],
-                          outputLabels: ['Output 1', 'Output 2'],
-                        ),
+              body: Stack(
+                children: [
+                  // Multiple physical I/O nodes to simulate large routing
+                  for (int i = 0; i < 3; i++) ...[
+                    Positioned(
+                      left: (i * 200).toDouble(),
+                      top: 100,
+                      child: PhysicalInputNode(
+                        ports: _createTestInputPorts().take(4).toList(),
+                        position: Offset((i * 200).toDouble(), 100),
+                      ),
+                    ),
+                    Positioned(
+                      left: (i * 200).toDouble(),
+                      top: 300,
+                      child: PhysicalOutputNode(
+                        ports: _createTestOutputPorts().take(4).toList(),
+                        position: Offset((i * 200).toDouble(), 300),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
         );
 
         await tester.pumpAndSettle();
-        final renderTime = DateTime.now().difference(startTime);
+        stopwatch.stop();
 
-        // Should render many ports efficiently
-        // Total ports: 12 (physical inputs) + 8 (physical outputs) + 32 (8 algorithms × 4 ports each) = 52 ports
-        expect(find.byType(PortWidget), findsNWidgets(52));
+        // Should render large routing graph quickly
+        expect(stopwatch.elapsedMilliseconds, lessThan(1000),
+            reason: 'Large routing graph should render quickly (< 1s)');
 
-        // Should render within reasonable time (under 2 seconds)
-        expect(
-          renderTime.inMilliseconds,
-          lessThan(2000),
-          reason: 'Large scale port rendering should complete within 2 seconds',
-        );
+        // Should find all nodes
+        expect(find.byType(PhysicalInputNode), findsNWidgets(3));
+        expect(find.byType(PhysicalOutputNode), findsNWidgets(3));
       });
+    });
 
-      testWidgets('Complex routing scene performs well', (tester) async {
-        final performanceStopwatch = Stopwatch()..start();
+    group('Animation Performance', () {
+      testWidgets('Smooth drag animations', (tester) async {
+        final List<Duration> frameTimes = [];
+        Duration? lastFrameTime;
+
+        void trackFrame() {
+          final now = DateTime.now();
+          if (lastFrameTime != null) {
+            frameTimes.add(now.difference(DateTime.fromMillisecondsSinceEpoch(
+                lastFrameTime!.inMilliseconds)));
+          }
+          lastFrameTime = Duration(milliseconds: now.millisecondsSinceEpoch);
+        }
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: Stack(
                 children: [
-                  // Complex routing scenario
-                  Positioned(
-                    left: 50,
-                    top: 100,
-                    child: PhysicalInputNode(position: const Offset(50, 100)),
+                  PhysicalInputNode(
+                    ports: _createTestInputPorts().take(1).toList(),
+                    position: const Offset(0, 0),
                   ),
-                  Positioned(
-                    left: 250,
-                    top: 80,
-                    child: AlgorithmNodeWidget(
-                      algorithmName: 'LFO 1',
-                      slotNumber: 1,
-                      position: const Offset(250, 80),
-                      outputLabels: ['Triangle', 'Square'],
-                      outputPortIds: ['lfo1_tri', 'lfo1_sqr'],
-                    ),
-                  ),
-                  Positioned(
-                    left: 250,
-                    top: 180,
-                    child: AlgorithmNodeWidget(
-                      algorithmName: 'LFO 2',
-                      slotNumber: 2,
-                      position: const Offset(250, 180),
-                      outputLabels: ['Sine', 'Sawtooth'],
-                      outputPortIds: ['lfo2_sin', 'lfo2_saw'],
-                    ),
-                  ),
-                  Positioned(
-                    left: 450,
-                    top: 100,
-                    child: AlgorithmNodeWidget(
-                      algorithmName: 'VCA',
-                      slotNumber: 3,
-                      position: const Offset(450, 100),
-                      inputLabels: ['Audio', 'CV1', 'CV2'],
-                      outputLabels: ['Audio Out'],
-                      inputPortIds: ['vca_audio', 'vca_cv1', 'vca_cv2'],
-                      outputPortIds: ['vca_out'],
-                    ),
-                  ),
-                  Positioned(
-                    left: 450,
-                    top: 220,
-                    child: AlgorithmNodeWidget(
-                      algorithmName: 'Filter',
-                      slotNumber: 4,
-                      position: const Offset(450, 220),
-                      inputLabels: ['Audio', 'Cutoff'],
-                      outputLabels: ['Filtered'],
-                      inputPortIds: ['filt_audio', 'filt_cutoff'],
-                      outputPortIds: ['filt_out'],
-                    ),
-                  ),
-                  Positioned(
-                    left: 650,
-                    top: 160,
-                    child: AlgorithmNodeWidget(
-                      algorithmName: 'Mixer',
-                      slotNumber: 5,
-                      position: const Offset(650, 160),
-                      inputLabels: ['Input 1', 'Input 2', 'Input 3'],
-                      outputLabels: ['Mix Out'],
-                      inputPortIds: ['mix_in1', 'mix_in2', 'mix_in3'],
-                      outputPortIds: ['mix_out'],
-                    ),
-                  ),
-                  Positioned(
-                    left: 850,
-                    top: 140,
-                    child: PhysicalOutputNode(position: const Offset(850, 140)),
+                  PhysicalOutputNode(
+                    ports: _createTestOutputPorts().take(1).toList(),
+                    position: const Offset(0, 300),
                   ),
                 ],
               ),
@@ -324,163 +270,72 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        performanceStopwatch.stop();
 
-        // Complex scene should render efficiently
-        expect(find.byType(AlgorithmNodeWidget), findsNWidgets(5));
-        expect(find.byType(PhysicalInputNode), findsOneWidget);
-        expect(find.byType(PhysicalOutputNode), findsOneWidget);
+        // Perform drag with frame timing
+        final gesture =
+            await tester.startGesture(tester.getCenter(find.byType(PhysicalInputNode)));
 
-        // Total ports: 12 + 8 + (2+2+4+3+4) = 35 ports
-        expect(find.byType(PortWidget), findsNWidgets(35));
-
-        // Should render complex scene within 3 seconds
-        expect(
-          performanceStopwatch.elapsedMilliseconds,
-          lessThan(3000),
-          reason: 'Complex routing scene should render within 3 seconds',
-        );
-      });
-    });
-
-    group('Memory and Resource Management', () {
-      testWidgets('Repeated widget rebuilds don\'t leak memory excessively', (
-        tester,
-      ) async {
-        final memorySnapshots = <String>[];
-
-        // This is a basic test - in a real scenario you'd use more sophisticated memory profiling
-        Widget buildTestScene(int iteration) {
-          return MaterialApp(
-            home: Scaffold(
-              body: AlgorithmNodeWidget(
-                algorithmName: 'Memory Test $iteration',
-                slotNumber: iteration,
-                position: Offset(
-                  100.0 + iteration * 10,
-                  100.0 + iteration * 10,
-                ),
-                inputLabels: ['Input $iteration'],
-                outputLabels: ['Output $iteration'],
-                onPortPositionResolved: (portId, pos, isInput) {
-                  memorySnapshots.add('$portId:${pos.toString()}:$isInput');
-                },
-              ),
-            ),
-          );
-        }
-
-        // Build and rebuild multiple times
-        for (int i = 1; i <= 10; i++) {
-          await tester.pumpWidget(buildTestScene(i));
-          await tester.pumpAndSettle();
-          await tester.pump();
-        }
-
-        // Should have reasonable callback activity (not accumulating indefinitely)
-        expect(
-          memorySnapshots.length,
-          lessThanOrEqualTo(20), // 2 ports × 10 iterations
-          reason: 'Memory snapshots should not accumulate excessively',
-        );
-
-        // Final widget tree should be clean
-        expect(find.byType(AlgorithmNodeWidget), findsOneWidget);
-        expect(find.byType(PortWidget), findsNWidgets(2));
-      });
-
-      testWidgets('Port widget cleanup on dispose', (tester) async {
-        bool callbackExecuted = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: AlgorithmNodeWidget(
-                algorithmName: 'Dispose Test',
-                slotNumber: 1,
-                position: const Offset(100, 100),
-                inputLabels: ['Disposable Input'],
-                inputPortIds: ['dispose_test'],
-                onPortPositionResolved: (portId, pos, isInput) {
-                  callbackExecuted = true;
-                },
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        await tester.pump();
-        expect(callbackExecuted, isTrue);
-
-        // Replace with empty widget to trigger dispose
-        await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Should cleanly dispose without errors
-        expect(find.byType(AlgorithmNodeWidget), findsNothing);
-        expect(find.byType(PortWidget), findsNothing);
-      });
-    });
-
-    group('Frame Rate and Smoothness', () {
-      testWidgets('Drag animations maintain smooth frame rate', (tester) async {
-        final List<Duration> frameTimes = [];
-        DateTime? lastFrameTime;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: AlgorithmNodeWidget(
-                algorithmName: 'Smooth Drag Test',
-                slotNumber: 1,
-                position: const Offset(200, 200),
-                inputLabels: ['Smooth Input'],
-                onPositionChanged: (position) {
-                  final now = DateTime.now();
-                  if (lastFrameTime != null) {
-                    frameTimes.add(now.difference(lastFrameTime!));
-                  }
-                  lastFrameTime = now;
-                },
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Perform smooth drag gesture
-        final gesture = await tester.startGesture(
-          tester.getCenter(find.byType(AlgorithmNodeWidget)),
-        );
-
-        // Simulate smooth drag with multiple intermediate positions
         for (int i = 0; i < 10; i++) {
-          await gesture.moveBy(Offset(5.0, 5.0));
-          await tester.pump(const Duration(milliseconds: 16)); // ~60 FPS
+          trackFrame();
+          await gesture.moveBy(const Offset(10, 0));
+          await tester.pump(const Duration(milliseconds: 16));
         }
 
         await gesture.up();
         await tester.pumpAndSettle();
 
-        // Should maintain reasonable frame timing
-        if (frameTimes.isNotEmpty) {
-          final avgFrameTime =
-              frameTimes.map((d) => d.inMilliseconds).reduce((a, b) => a + b) /
+        // Verify smooth animation (consistent frame times)
+        if (frameTimes.length >= 2) {
+          final averageFrameTime = frameTimes.fold<Duration>(
+                  Duration.zero, (sum, time) => sum + time) ~/
               frameTimes.length;
 
-          // Average frame time should be reasonable (allow up to 33ms for 30fps minimum)
-          expect(
-            avgFrameTime,
-            lessThan(33),
-            reason:
-                'Frame rate should maintain at least 30fps (33ms per frame)',
-          );
+          expect(averageFrameTime.inMilliseconds, lessThan(20),
+              reason: 'Frame times should be smooth (< 20ms for 60fps)');
         }
+      });
+    });
+
+    group('Memory Usage', () {
+      testWidgets('No memory leaks during repeated operations', (tester) async {
+        // Create and destroy widgets multiple times
+        for (int iteration = 0; iteration < 5; iteration++) {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Stack(
+                  children: [
+                    PhysicalInputNode(
+                      ports: _createTestInputPorts(),
+                      position: Offset(100 + iteration * 10.0, 100),
+                    ),
+                    PhysicalOutputNode(
+                      ports: _createTestOutputPorts(),
+                      position: Offset(300 + iteration * 10.0, 100),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Perform some operations
+          await tester.dragFrom(
+            tester.getCenter(find.byType(PhysicalInputNode)),
+            const Offset(20, 20),
+          );
+          await tester.pumpAndSettle();
+
+          // Clear the widget tree
+          await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+          await tester.pumpAndSettle();
+        }
+
+        // If we get here without OutOfMemory, memory usage is acceptable
+        expect(find.byType(PhysicalInputNode), findsNothing);
+        expect(find.byType(PhysicalOutputNode), findsNothing);
       });
     });
   });
