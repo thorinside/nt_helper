@@ -114,11 +114,11 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
             ),
           ],
         ),
-        child: IntrinsicHeight(
-          child: SizedBox(
-            width: 180.0,
+        child: IntrinsicWidth(
+          child: IntrinsicHeight(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHeader(colorScheme, theme),
                 const SizedBox(height: 8.0),
@@ -144,18 +144,17 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
         ),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(widget.icon, size: 16.0, color: colorScheme.primary),
           const SizedBox(width: 8.0),
-          Expanded(
-            child: Text(
-              widget.title,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
+          Text(
+            widget.title,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -168,7 +167,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: widget.ports.map((port) => _buildPortRow(port)).toList(),
       ),
     );
@@ -178,38 +177,45 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   Widget _buildPortRow(Port port) {
     final portIsInput = port.direction == PortDirection.input;
     
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: PortWidget(
-        label: port.name,
+    Widget inner = PortWidget(
+      label: port.name,
         // Use the port's actual direction instead of inverting widget.isInput
         // Physical inputs have PortDirection.output (they send signals TO algorithms)
         // Physical outputs have PortDirection.input (they receive signals FROM algorithms)
-        isInput: portIsInput,
-        portId: port.id,
-        port: port,
-        labelPosition: widget.isInput
-            ? PortLabelPosition.left
-            : PortLabelPosition.right,
-        style: PortStyle.jack,
-        isConnected:
-            port.isConnected ||
-            (widget.connectedPorts?.contains(port.id) ??
-                false), // Check both port's connection status and connectedPorts
-        isHighlighted: port.id == widget.highlightedPortId,
-        onPortPositionResolved: widget.onPortPositionResolved != null
-            ? (portId, globalCenter, isInput) {
-                widget.onPortPositionResolved!(port, globalCenter);
-              }
-            : null,
-        // Only allow tap/deletion for inputs (physical outputs act as inputs)
-        onTap: !widget.isInput ? () => widget.onPortTapped?.call(port) : null,
-        onRoutingAction: widget.onRoutingAction,
-        onDragStart: () => widget.onPortDragStart?.call(port),
-        onDragUpdate: (position) =>
-            widget.onPortDragUpdate?.call(port, position),
-        onDragEnd: (position) => widget.onPortDragEnd?.call(port, position),
-      ),
+      isInput: portIsInput,
+      portId: port.id,
+      port: port,
+      labelPosition: widget.isInput
+          ? PortLabelPosition.left
+          : PortLabelPosition.right,
+      style: PortStyle.jack,
+      isConnected:
+          port.isConnected ||
+          (widget.connectedPorts?.contains(port.id) ??
+              false), // Check both port's connection status and connectedPorts
+      isHighlighted: port.id == widget.highlightedPortId,
+      onPortPositionResolved: widget.onPortPositionResolved != null
+          ? (portId, globalCenter, isInput) {
+              widget.onPortPositionResolved!(port, globalCenter);
+            }
+          : null,
+      // Only allow tap/deletion for inputs (physical outputs act as inputs)
+      onTap: !widget.isInput ? () => widget.onPortTapped?.call(port) : null,
+      onRoutingAction: widget.onRoutingAction,
+      onDragStart: () => widget.onPortDragStart?.call(port),
+      onDragUpdate: (position) =>
+          widget.onPortDragUpdate?.call(port, position),
+      onDragEnd: (position) => widget.onPortDragEnd?.call(port, position),
+    );
+
+    // Ensure input side rows are right-justified inside the node
+    if (widget.isInput) {
+      inner = Align(alignment: Alignment.centerRight, child: inner);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: inner,
     );
   }
 

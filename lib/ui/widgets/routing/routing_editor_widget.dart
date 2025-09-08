@@ -667,6 +667,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         left: nodePosition.dx,
         top: nodePosition.dy,
         child: PhysicalOutputNode(
+          ports: physicalOutputs,
           connectedPorts: _getConnectedPortIds(connections).toSet(),
           position: nodePosition,
           onPositionChanged: (newPosition) {

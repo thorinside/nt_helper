@@ -74,12 +74,12 @@ class PhysicalInputNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Physical Inputs',
+      label: 'Inputs',
       hint: 'Hardware input jacks. These act as outputs to algorithms.',
       child: MovablePhysicalIONode(
         ports: ports,
         connectedPorts: connectedPorts,
-        title: 'Physical Inputs',
+        title: 'Inputs',
         icon: Icons.input_rounded,
         position: position,
         isInput: true,

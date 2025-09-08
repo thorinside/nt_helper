@@ -65,13 +65,13 @@ void main() {
         final physicalOutputs = [
           const Port(
             id: 'hw_out_1',
-            name: 'Audio Out 1',
+            name: 'O1',
             type: PortType.audio,
             direction: PortDirection.input,
           ),
           const Port(
             id: 'hw_out_2',
-            name: 'Audio Out 2',
+            name: 'O2',
             type: PortType.audio,
             direction: PortDirection.input,
           ),
@@ -175,7 +175,7 @@ void main() {
         final physicalOutputs = [
           const Port(
             id: 'hw_out_1',
-            name: 'Audio Out 1',
+            name: 'O1',
             type: PortType.audio,
             direction: PortDirection.input,
           ),
@@ -250,7 +250,7 @@ void main() {
 
         final physicalOutputs = List.generate(2, (i) => Port(
           id: 'hw_out_${i + 1}',
-          name: 'Audio Out ${i + 1}',
+          name: 'O${i + 1}',
           type: PortType.audio,
           direction: PortDirection.input,
         ));

@@ -47,7 +47,7 @@ class PhysicalPortGenerator {
       final portNumber = index + 1;
       return Port(
         id: 'hw_out_$portNumber',
-        name: 'Output $portNumber',
+        name: 'O$portNumber',
         type: _getPortTypeForOutput(portNumber),
         direction: PortDirection.input, // Physical outputs are targets
         description: 'Hardware output jack $portNumber',
@@ -96,7 +96,7 @@ class PhysicalPortGenerator {
 
     return Port(
       id: 'hw_out_$index',
-      name: 'Output $index',
+      name: 'O$index',
       type: _getPortTypeForOutput(index),
       direction: PortDirection.input, // Physical outputs are targets
       description: 'Hardware output jack $index',
@@ -174,9 +174,9 @@ class PhysicalPortGenerator {
     if (index == null) return port.name;
 
     if (isPhysicalInputPort(port)) {
-      return 'In $index';
+      return 'I$index';
     } else if (isPhysicalOutputPort(port)) {
-      return 'Out $index';
+      return 'O$index';
     }
 
     return port.name;

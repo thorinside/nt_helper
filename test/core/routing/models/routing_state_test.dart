@@ -28,7 +28,7 @@ void main() {
       testOutputPorts = [
         const Port(
           id: 'output1',
-          name: 'Audio Output 1',
+          name: 'O1',
           type: PortType.audio,
           direction: PortDirection.output,
         ),

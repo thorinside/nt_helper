@@ -74,7 +74,7 @@ void main() {
         final physicalOutputs = [
           const Port(
             id: 'hw_out_1',
-            name: 'Audio Out 1',
+            name: 'O1',
             type: PortType.audio,
             direction: PortDirection.input,
           ),
