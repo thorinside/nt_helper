@@ -60,8 +60,8 @@ class ConnectionDiscoveryService {
 
       // Determine if this is a hardware bus
       final isHardwareInput = busNumber >= 1 && busNumber <= 12;
-      final isHardwareOutput = busNumber >= 13 && busNumber <= 20;
-
+      final isHardwareOutput = (busNumber >= 13 && busNumber <= 20) || 
+                               (busNumber >= 29 && busNumber <= 30); // ES-5 L/R
       // Create hardware input connections (buses 1-12)
       if (isHardwareInput && inputs.isNotEmpty) {
         connections.addAll(_createHardwareInputConnections(busNumber, inputs));
