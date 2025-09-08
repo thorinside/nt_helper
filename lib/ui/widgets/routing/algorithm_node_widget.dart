@@ -177,7 +177,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             const SizedBox(width: 8),
           ],
           // Show mapping icon if any parameters are mapped
-          if (_hasAnyMappings(theme)) ...[
+          if (_hasAnyMappings()) ...[
             Transform.scale(
               scale: 0.6,
               child: IconButton.filledTonal(
@@ -546,7 +546,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }
 
   /// Check if the slot has any mapped parameters
-  bool _hasAnyMappings(ThemeData theme) {
+  bool _hasAnyMappings() {
     // Get slot data from cubit to check for mappings
     final cubit = context.read<DistingCubit>();
     final state = cubit.state;
