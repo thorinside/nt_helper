@@ -21,16 +21,16 @@ import 'routing_editor_state.dart';
 /// information into a visual representation for the routing canvas.
 class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   final DistingCubit? _distingCubit;
-  final Future<SharedPreferences> _prefs;
+  Future<SharedPreferences>? _prefs;
   StreamSubscription<DistingState>? _distingStateSubscription;
   NodeLayoutAlgorithm? _layoutAlgorithm;
 
   RoutingEditorCubit(
     this._distingCubit, {
     AlgorithmConnectionService? algorithmConnectionService,
-  }) : _prefs = SharedPreferences.getInstance(),
-       super(const RoutingEditorState.initial()) {
+  }) : super(const RoutingEditorState.initial()) {
     if (_distingCubit != null) {
+      _prefs = SharedPreferences.getInstance();
       _initializeStateWatcher();
       _loadPersistedState();
     }
@@ -1603,7 +1603,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     emit(currentState.copyWith(subState: SubState.persisting));
 
     try {
-      final prefs = await _prefs;
+      if (_prefs == null) {
+        debugPrint('SharedPreferences not initialized - skipping persistence');
+        return;
+      }
+      final prefs = await _prefs!;
 
       // Prepare state data for serialization
       final stateData = {
@@ -1666,7 +1670,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Load routing editor state from persistent storage
   Future<void> _loadPersistedState() async {
     try {
-      final prefs = await _prefs;
+      if (_prefs == null) {
+        debugPrint('SharedPreferences not initialized - skipping load');
+        return;
+      }
+      final prefs = await _prefs!;
       final jsonString = prefs.getString('routing_editor_state');
 
       if (jsonString == null) {
@@ -1768,7 +1776,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   /// Clear all persisted state data
   Future<void> clearPersistedState() async {
     try {
-      final prefs = await _prefs;
+      if (_prefs == null) {
+        debugPrint('SharedPreferences not initialized - skipping clear');
+        return;
+      }
+      final prefs = await _prefs!;
       await prefs.remove('routing_editor_state');
 
       final currentState = state;
