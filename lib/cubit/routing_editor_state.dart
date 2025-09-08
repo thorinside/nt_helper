@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 
 part 'routing_editor_state.freezed.dart';
 
@@ -74,6 +75,8 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     @Default([]) List<RoutingBus> buses, // Available routing buses
     @Default({})
     Map<String, OutputMode> portOutputModes, // Output modes per port
+    @Default({})
+    Map<String, NodePosition> nodePositions, // Node positions for layout
     @Default(false) bool isHardwareSynced, // Hardware sync status
     @Default(false) bool isPersistenceEnabled, // State persistence status
     DateTime? lastSyncTime, // Last hardware sync timestamp

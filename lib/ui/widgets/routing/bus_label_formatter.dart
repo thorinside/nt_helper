@@ -70,14 +70,16 @@ class BusLabelFormatter {
 
   /// Formats a bus number into its display label with optional output mode suffix
   ///
-  /// For output buses (13-20), adds " R" suffix when outputMode is replace.
-  /// Input and auxiliary buses ignore the output mode parameter.
+  /// Adds " R" suffix when [outputMode] is [OutputMode.replace] for
+  /// both hardware output buses (13-20, "O#") and auxiliary buses
+  /// (21-28, "A#"). Input buses (1-12, "I#") ignore the mode.
   ///
   /// Returns:
   /// - "I1" through "I12" for input buses (mode ignored)
   /// - "O1" through "O8" for output buses in add mode or null mode
   /// - "O1 R" through "O8 R" for output buses in replace mode
-  /// - "A1" through "A8" for auxiliary buses (mode ignored)
+  /// - "A1" through "A8" for aux buses in add mode or null mode
+  /// - "A1 R" through "A8 R" for aux buses in replace mode
   /// - null for invalid bus numbers
   static String? formatBusLabelWithMode(
     int? busNumber,
@@ -93,12 +95,14 @@ class BusLabelFormatter {
     final busType = getBusType(busNumber);
     switch (busType) {
       case BusType.input:
-        return 'I$localNumber';
+        final baseLabel = 'I$localNumber';
+        return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case BusType.output:
         final baseLabel = 'O$localNumber';
         return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case BusType.auxiliary:
-        return 'A$localNumber';
+        final baseLabel = 'A$localNumber';
+        return outputMode == OutputMode.replace ? '$baseLabel R' : baseLabel;
       case null:
         return null;
     }

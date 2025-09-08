@@ -100,6 +100,7 @@ dev_dependencies:
   build_runner: ^2.7.0
   json_serializable: ^6.10.0
   mockito: ^5.5.0
+  mocktail: ^1.0.4
   freezed: ^3.2.0
   test: ^1.26.2
   bloc_test: ^10.0.0
