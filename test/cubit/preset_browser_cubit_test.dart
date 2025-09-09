@@ -251,6 +251,118 @@ void main() {
       );
     });
 
+    group('getSelectedPath', () {
+      test('returns full path when file is selected in right panel', () {
+        cubit.emit(PresetBrowserState.loaded(
+          currentPath: '/presets',
+          leftPanelItems: [],
+          centerPanelItems: [],
+          rightPanelItems: [],
+          selectedLeftItem: DirectoryEntry(
+            name: 'Factory/',
+            attributes: 0x10,
+            date: 0,
+            time: 0,
+            size: 0,
+          ),
+          selectedCenterItem: DirectoryEntry(
+            name: 'Synths/',
+            attributes: 0x10,
+            date: 0,
+            time: 0,
+            size: 0,
+          ),
+          selectedRightItem: DirectoryEntry(
+            name: 'lead.json',
+            attributes: 0,
+            date: 0,
+            time: 0,
+            size: 1024,
+          ),
+          navigationHistory: [],
+          sortByDate: false,
+        ));
+
+        final path = cubit.getSelectedPath();
+        expect(path, '/presets/Factory/Synths/lead.json');
+      });
+
+      test('returns full path when file is selected in center panel', () {
+        cubit.emit(PresetBrowserState.loaded(
+          currentPath: '/presets',
+          leftPanelItems: [],
+          centerPanelItems: [],
+          rightPanelItems: [],
+          selectedLeftItem: DirectoryEntry(
+            name: 'User/',
+            attributes: 0x10,
+            date: 0,
+            time: 0,
+            size: 0,
+          ),
+          selectedCenterItem: DirectoryEntry(
+            name: 'preset.json',
+            attributes: 0,
+            date: 0,
+            time: 0,
+            size: 2048,
+          ),
+          selectedRightItem: null,
+          navigationHistory: [],
+          sortByDate: false,
+        ));
+
+        final path = cubit.getSelectedPath();
+        expect(path, '/presets/User/preset.json');
+      });
+
+      test('returns full path when file is selected in left panel', () {
+        cubit.emit(PresetBrowserState.loaded(
+          currentPath: '/presets',
+          leftPanelItems: [],
+          centerPanelItems: [],
+          rightPanelItems: [],
+          selectedLeftItem: DirectoryEntry(
+            name: 'default.json',
+            attributes: 0,
+            date: 0,
+            time: 0,
+            size: 512,
+          ),
+          selectedCenterItem: null,
+          selectedRightItem: null,
+          navigationHistory: [],
+          sortByDate: false,
+        ));
+
+        final path = cubit.getSelectedPath();
+        expect(path, '/presets/default.json');
+      });
+
+      test('returns empty string when no JSON file is selected', () {
+        cubit.emit(PresetBrowserState.loaded(
+          currentPath: '/presets',
+          leftPanelItems: [],
+          centerPanelItems: [],
+          rightPanelItems: [],
+          selectedLeftItem: DirectoryEntry(
+            name: 'Factory/',
+            attributes: 0x10,
+            date: 0,
+            time: 0,
+            size: 0,
+          ),
+          selectedCenterItem: null,
+          selectedRightItem: null,
+          navigationHistory: [],
+          sortByDate: false,
+        ));
+
+        final path = cubit.getSelectedPath();
+        expect(path, '');
+      });
+    });
+
     group('preset history', () {
       test('loadRecentPresets loads from SharedPreferences', () async {
         when(() => mockPrefs.getStringList('presetHistory'))

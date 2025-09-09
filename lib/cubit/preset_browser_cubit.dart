@@ -340,21 +340,44 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   String getSelectedPath() {
     return state.maybeMap(
       loaded: (currentState) {
-        // Build path from selections - only return if it's a .json file
-        if (currentState.selectedRightItem != null && 
-            !currentState.selectedRightItem!.isDirectory &&
-            currentState.selectedRightItem!.name.toLowerCase().endsWith('.json')) {
-          return _buildPath(currentState.currentPath, currentState.selectedRightItem!.name, PanelPosition.right);
+        // Build the complete path from the base path and selected items
+        String fullPath = currentState.currentPath;
+        
+        // If we have a selected directory in the left panel, add it to the path
+        if (currentState.selectedLeftItem != null && currentState.selectedLeftItem!.isDirectory) {
+          final cleanName = currentState.selectedLeftItem!.name.endsWith('/')
+              ? currentState.selectedLeftItem!.name.substring(0, currentState.selectedLeftItem!.name.length - 1)
+              : currentState.selectedLeftItem!.name;
+          fullPath = fullPath.endsWith('/') ? '$fullPath$cleanName' : '$fullPath/$cleanName';
+          
+          // If we have a selected directory in the center panel, add it too
+          if (currentState.selectedCenterItem != null && currentState.selectedCenterItem!.isDirectory) {
+            final cleanCenterName = currentState.selectedCenterItem!.name.endsWith('/')
+                ? currentState.selectedCenterItem!.name.substring(0, currentState.selectedCenterItem!.name.length - 1)
+                : currentState.selectedCenterItem!.name;
+            fullPath = '$fullPath/$cleanCenterName';
+            
+            // Check if we have a JSON file selected in the right panel
+            if (currentState.selectedRightItem != null && 
+                !currentState.selectedRightItem!.isDirectory &&
+                currentState.selectedRightItem!.name.toLowerCase().endsWith('.json')) {
+              return '$fullPath/${currentState.selectedRightItem!.name}';
+            }
+          }
+          // Check if we have a JSON file selected in the center panel (no directory selected)
+          else if (currentState.selectedCenterItem != null && 
+              !currentState.selectedCenterItem!.isDirectory &&
+              currentState.selectedCenterItem!.name.toLowerCase().endsWith('.json')) {
+            return '$fullPath/${currentState.selectedCenterItem!.name}';
+          }
         }
-        if (currentState.selectedCenterItem != null && 
-            !currentState.selectedCenterItem!.isDirectory &&
-            currentState.selectedCenterItem!.name.toLowerCase().endsWith('.json')) {
-          return _buildPath(currentState.currentPath, currentState.selectedCenterItem!.name, PanelPosition.center);
-        }
-        if (currentState.selectedLeftItem != null && 
+        // Check if we have a JSON file selected in the left panel (no directory selected)
+        else if (currentState.selectedLeftItem != null && 
             !currentState.selectedLeftItem!.isDirectory &&
             currentState.selectedLeftItem!.name.toLowerCase().endsWith('.json')) {
-          return _buildPath(currentState.currentPath, currentState.selectedLeftItem!.name, PanelPosition.left);
+          return fullPath.endsWith('/') 
+              ? '$fullPath${currentState.selectedLeftItem!.name}'
+              : '$fullPath/${currentState.selectedLeftItem!.name}';
         }
         
         return '';
