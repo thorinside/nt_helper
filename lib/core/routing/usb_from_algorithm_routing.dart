@@ -19,9 +19,6 @@ import 'models/connection.dart';
 /// - Supports extended bus values 0-30 (including ES-5 L/R at 29-30)
 /// - Extracts mode information for each channel
 class UsbFromAlgorithmRouting extends AlgorithmRouting {
-  /// The unique identifier for this algorithm instance
-  final String algorithmUuid;
-
   /// Algorithm-specific properties, including pre-parsed ports
   final Map<String, dynamic> properties;
 
@@ -43,10 +40,11 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
   /// - [initialState]: Optional initial routing state
   UsbFromAlgorithmRouting({
     required this.properties,
-    required this.algorithmUuid,
+    required String algorithmUuid,
     super.validator,
     RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState() {
+  }) : _state = initialState ?? const RoutingState(),
+        super(algorithmUuid: algorithmUuid) {
     debugPrint(
       'UsbFromAlgorithmRouting: Initialized with UUID $algorithmUuid',
     );

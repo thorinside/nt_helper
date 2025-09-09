@@ -41,8 +41,11 @@ abstract class AlgorithmRouting {
   /// Mode parameters with their numbers for output mode switching
   Map<String, ({int parameterNumber, int value})>? _modeParametersWithNumbers;
 
+  /// Stable UUID for this algorithm instance
+  String? algorithmUuid;
+
   /// Creates a new AlgorithmRouting instance
-  AlgorithmRouting({PortCompatibilityValidator? validator}) {
+  AlgorithmRouting({PortCompatibilityValidator? validator, this.algorithmUuid}) {
     _validator = validator ?? PortCompatibilityValidator();
   }
 

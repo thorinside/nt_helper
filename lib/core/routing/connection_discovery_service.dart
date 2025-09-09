@@ -257,7 +257,12 @@ class ConnectionDiscoveryService {
 
   /// Extracts algorithm ID from routing instance
   static String _extractAlgorithmId(AlgorithmRouting routing) {
-    // Try to get algorithm UUID from properties if available
+    // Use the stable algorithmUuid from the routing instance
+    if (routing.algorithmUuid != null) {
+      return routing.algorithmUuid!;
+    }
+    
+    // Fallback: Try to extract from port IDs (for backward compatibility)
     if (routing.inputPorts.isNotEmpty) {
       final firstPort = routing.inputPorts.first;
       if (firstPort.id.contains('_param_')) {
@@ -271,7 +276,7 @@ class ConnectionDiscoveryService {
       }
     }
 
-    // Fallback
+    // Last resort fallback (should rarely be used now)
     return 'algo_${routing.hashCode}';
   }
 
