@@ -67,8 +67,10 @@ void main() {
           ],
         );
 
+        final ioParameters = UsbFromAlgorithmRouting.extractIOParameters(usbSlot);
         final usbRouting = UsbFromAlgorithmRouting.createFromSlot(
           usbSlot,
+          ioParameters: ioParameters,
           algorithmUuid: 'usb_1',
         );
 
@@ -120,8 +122,10 @@ void main() {
           ],
         );
 
+        final ioParameters = UsbFromAlgorithmRouting.extractIOParameters(usbSlot);
         final usbRouting = UsbFromAlgorithmRouting.createFromSlot(
           usbSlot,
+          ioParameters: ioParameters,
           algorithmUuid: 'usb_2',
         );
 

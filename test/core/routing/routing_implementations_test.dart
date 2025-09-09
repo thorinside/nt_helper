@@ -432,7 +432,7 @@ class _MockRouting extends AlgorithmRouting {
   final List<Port> _ports;
   RoutingState _state = const RoutingState();
 
-  _MockRouting(this._ports);
+  _MockRouting(this._ports) : super();
 
   @override
   RoutingState get state => _state;
