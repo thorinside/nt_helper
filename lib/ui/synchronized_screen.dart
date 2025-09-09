@@ -23,6 +23,8 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart'
 import 'package:nt_helper/ui/widgets/floating_video_overlay.dart';
 import 'package:nt_helper/cubit/video_frame_cubit.dart';
 import 'package:nt_helper/ui/widgets/load_preset_dialog.dart';
+import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
+import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
@@ -50,6 +52,7 @@ import 'package:nt_helper/ui/reset_outputs_dialog.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/models/firmware_version.dart';
 
 enum EditMode { parameters, routing }
@@ -714,6 +717,55 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
         };
         return [
           PopupMenuItem(
+            value: "browse",
+            enabled: !widget.loading && !isOffline,
+            onTap: widget.loading || isOffline
+                ? null
+                : () async {
+                    final currentState = cubit.state;
+                    if (currentState is DistingStateSynchronized &&
+                        context.mounted) {
+                      final midiManager = cubit.disting();
+                      if (midiManager != null) {
+                        final prefs = await SharedPreferences.getInstance();
+                        var presetInfo = await showDialog(
+                          context: popupCtx,
+                          builder: (context) => BlocProvider(
+                            create: (context) => PresetBrowserCubit(
+                              midiManager: midiManager,
+                              prefs: prefs,
+                            ),
+                            child: const PresetBrowserDialog(),
+                          ),
+                        );
+                        if (presetInfo != null && presetInfo is Map) {
+                          final sdCardPath = presetInfo['sdCardPath'];
+                          final action = presetInfo['action'] as PresetAction?;
+                          if (sdCardPath != null &&
+                              sdCardPath.isNotEmpty &&
+                              action != null) {
+                            switch (action) {
+                              case PresetAction.load:
+                                cubit.loadPreset(sdCardPath, false);
+                                break;
+                              case PresetAction.append:
+                                // Append is not directly supported, could be handled differently
+                                break;
+                              case PresetAction.export:
+                                // Export is not applicable for browse
+                                break;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Browse Presets'), Icon(Icons.folder_open)],
+            ),
+          ),
+          PopupMenuItem(
             value: "load",
             enabled: !widget.loading && !isOffline,
             onTap: widget.loading || isOffline
@@ -757,7 +809,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   },
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('Load Preset'), Icon(Icons.file_upload_rounded)],
+              children: [Text('Load Preset (Search)'), Icon(Icons.search)],
             ),
           ),
           PopupMenuItem(
