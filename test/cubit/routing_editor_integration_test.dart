@@ -3,6 +3,7 @@ import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 void main() {

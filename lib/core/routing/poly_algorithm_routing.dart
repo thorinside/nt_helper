@@ -99,7 +99,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     required this.config,
     super.validator,
     RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState() {
+  }) : _state = initialState ?? const RoutingState(),
+        super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?) {
     debugPrint(
       'PolyAlgorithmRouting: Initialized with ${config.voiceCount} voices, '
       'gates: ${config.requiresGateInputs}, CV: ${config.usesVirtualCvPorts}',

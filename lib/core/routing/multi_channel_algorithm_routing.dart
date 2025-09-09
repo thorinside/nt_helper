@@ -122,7 +122,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     required this.config,
     super.validator,
     RoutingState? initialState,
-  }) : _state = initialState ?? const RoutingState() {
+  }) : _state = initialState ?? const RoutingState(),
+        super(algorithmUuid: config.algorithmProperties?['algorithmUuid'] as String?) {
     debugPrint(
       'MultiChannelAlgorithmRouting: Initialized with ${config.channelCount} channels, '
       'stereo: ${config.supportsStereoChannels}, mix: ${config.createMasterMix}',
