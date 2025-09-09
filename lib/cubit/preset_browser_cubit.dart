@@ -106,14 +106,17 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       loaded: (currentState) async {
         if (entry.isDirectory) return;
 
+        // Update the state to mark the file as selected
+        final newState = _updateFileSelection(currentState, panel, entry);
+        emit(newState);
+        
         // Build full path for the selected file
         final path = _buildPath(currentState.currentPath, entry.name, panel);
         
-        // Add to history
-        await addToHistory(path);
-        
-        // Return the selected preset path to the dialog
-        // This will be handled by the dialog widget
+        // Add to history only if it's a JSON preset file
+        if (entry.name.toLowerCase().endsWith('.json')) {
+          await addToHistory(path);
+        }
       },
       orElse: () async {},
     );
@@ -308,17 +311,49 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
     }
   }
 
+  PresetBrowserState _updateFileSelection(
+    dynamic currentState, // Will be _Loaded but can't reference it directly
+    PanelPosition panel,
+    DirectoryEntry selectedFile,
+  ) {
+    switch (panel) {
+      case PanelPosition.left:
+        return currentState.copyWith(
+          selectedLeftItem: selectedFile,
+          selectedCenterItem: null,
+          selectedRightItem: null,
+        );
+        
+      case PanelPosition.center:
+        return currentState.copyWith(
+          selectedCenterItem: selectedFile,
+          selectedRightItem: null,
+        );
+        
+      case PanelPosition.right:
+        return currentState.copyWith(
+          selectedRightItem: selectedFile,
+        );
+    }
+  }
+
   String getSelectedPath() {
     return state.maybeMap(
       loaded: (currentState) {
-        // Build path from selections
-        if (currentState.selectedRightItem != null && !currentState.selectedRightItem!.isDirectory) {
+        // Build path from selections - only return if it's a .json file
+        if (currentState.selectedRightItem != null && 
+            !currentState.selectedRightItem!.isDirectory &&
+            currentState.selectedRightItem!.name.toLowerCase().endsWith('.json')) {
           return _buildPath(currentState.currentPath, currentState.selectedRightItem!.name, PanelPosition.right);
         }
-        if (currentState.selectedCenterItem != null && !currentState.selectedCenterItem!.isDirectory) {
+        if (currentState.selectedCenterItem != null && 
+            !currentState.selectedCenterItem!.isDirectory &&
+            currentState.selectedCenterItem!.name.toLowerCase().endsWith('.json')) {
           return _buildPath(currentState.currentPath, currentState.selectedCenterItem!.name, PanelPosition.center);
         }
-        if (currentState.selectedLeftItem != null && !currentState.selectedLeftItem!.isDirectory) {
+        if (currentState.selectedLeftItem != null && 
+            !currentState.selectedLeftItem!.isDirectory &&
+            currentState.selectedLeftItem!.name.toLowerCase().endsWith('.json')) {
           return _buildPath(currentState.currentPath, currentState.selectedLeftItem!.name, PanelPosition.left);
         }
         

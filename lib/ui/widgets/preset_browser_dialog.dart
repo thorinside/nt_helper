@@ -284,12 +284,20 @@ class DirectoryPanel extends StatelessWidget {
             displayName = displayName.substring(0, displayName.length - 1);
           }
           
+          final isJsonPreset = !item.isDirectory && item.name.toLowerCase().endsWith('.json');
+          
           return ListTile(
             leading: Icon(
-              item.isDirectory ? Icons.folder : Icons.insert_drive_file,
+              item.isDirectory 
+                  ? Icons.folder 
+                  : isJsonPreset 
+                      ? Icons.music_note 
+                      : Icons.insert_drive_file,
               color: item.isDirectory
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.secondary,
+                  : isJsonPreset
+                      ? Theme.of(context).colorScheme.tertiary
+                      : Theme.of(context).colorScheme.secondary,
             ),
             title: Text(
               displayName,

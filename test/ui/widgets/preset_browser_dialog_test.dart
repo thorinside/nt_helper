@@ -271,19 +271,27 @@ void main() {
     });
 
     testWidgets('displays file icons for files', (tester) async {
-      final testFile = DirectoryEntry(
-        name: 'file.json',
+      final testJsonFile = DirectoryEntry(
+        name: 'preset.json',
         attributes: 0,
         date: 0,
         time: 0,
         size: 1024,
+      );
+      
+      final testOtherFile = DirectoryEntry(
+        name: 'readme.txt',
+        attributes: 0,
+        date: 0,
+        time: 0,
+        size: 512,
       );
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: DirectoryPanel(
-              items: [testFile],
+              items: [testJsonFile, testOtherFile],
               selectedItem: null,
               onItemTap: (_) {},
               position: PanelPosition.left,
@@ -292,6 +300,9 @@ void main() {
         ),
       );
 
+      // JSON files should show music note icon
+      expect(find.byIcon(Icons.music_note), findsOneWidget);
+      // Other files should show generic file icon
       expect(find.byIcon(Icons.insert_drive_file), findsOneWidget);
     });
 
