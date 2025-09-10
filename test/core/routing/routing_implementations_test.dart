@@ -105,6 +105,94 @@ void main() {
         expect(audioPort.isVirtualCV, isFalse);
       });
 
+      test('should create output ports for output-only poly algorithms', () {
+        final config = PolyAlgorithmConfig(
+          voiceCount: 2,
+          requiresGateInputs: false, // No gate inputs required
+          algorithmProperties: {
+            'algorithmGuid': 'pycv',
+            'algorithmName': 'Poly CV',
+            'algorithmUuid': 'test_pycv_123',
+            'extraInputs': [], // No extra inputs
+            'outputs': [
+              // Gate outputs
+              {
+                'id': 'test_pycv_123_gate_out_0',
+                'name': 'Gate Out 0',
+                'type': 'gate',
+                'busValue': 15,
+                'busParam': 'Gate output 0',
+                'parameterNumber': 0,
+                'voiceNumber': 0,
+              },
+              {
+                'id': 'test_pycv_123_gate_out_1',
+                'name': 'Gate Out 1', 
+                'type': 'gate',
+                'busValue': 18,
+                'busParam': 'Gate output 1',
+                'parameterNumber': 0,
+                'voiceNumber': 1,
+              },
+              // Pitch outputs
+              {
+                'id': 'test_pycv_123_pitch_out_0',
+                'name': 'Pitch Out 0',
+                'type': 'cv',
+                'busValue': 16,
+                'busParam': 'Pitch output 0',
+                'parameterNumber': 0,
+                'voiceNumber': 0,
+              },
+              {
+                'id': 'test_pycv_123_pitch_out_1',
+                'name': 'Pitch Out 1',
+                'type': 'cv',
+                'busValue': 19,
+                'busParam': 'Pitch output 1',
+                'parameterNumber': 0,
+                'voiceNumber': 1,
+              },
+            ],
+          },
+        );
+
+        final routing = PolyAlgorithmRouting(config: config);
+        final inputPorts = routing.generateInputPorts();
+        final outputPorts = routing.generateOutputPorts();
+
+        // Should have no input ports (output-only algorithm)
+        expect(inputPorts, isEmpty);
+
+        // Should have output ports based on the algorithm properties
+        expect(outputPorts, hasLength(4)); // 2 gate + 2 pitch outputs
+
+        // Verify gate outputs
+        final gateOutputs = outputPorts
+            .where((p) => p.type == PortType.gate)
+            .toList();
+        expect(gateOutputs, hasLength(2));
+
+        final gate0 = gateOutputs.firstWhere((p) => p.name == 'Gate Out 0');
+        expect(gate0.busValue, equals(15));
+        expect(gate0.direction, equals(PortDirection.output));
+
+        final gate1 = gateOutputs.firstWhere((p) => p.name == 'Gate Out 1');
+        expect(gate1.busValue, equals(18));
+
+        // Verify pitch outputs  
+        final pitchOutputs = outputPorts
+            .where((p) => p.type == PortType.cv)
+            .toList();
+        expect(pitchOutputs, hasLength(2));
+
+        final pitch0 = pitchOutputs.firstWhere((p) => p.name == 'Pitch Out 0');
+        expect(pitch0.busValue, equals(16));
+
+        final pitch1 = pitchOutputs.firstWhere((p) => p.name == 'Pitch Out 1');
+        expect(pitch1.busValue, equals(19));
+      });
+
       test('should use direct properties in helper methods', () {
         final config = PolyAlgorithmConfig(voiceCount: 2);
         final routing = PolyAlgorithmRouting(config: config);
