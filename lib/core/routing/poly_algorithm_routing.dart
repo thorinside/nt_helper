@@ -186,6 +186,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           final cvCount = gateIndex < gateCvCounts.length
               ? gateCvCounts[gateIndex]
               : 0;
+          debugPrint('[PolyRouting] Gate $gateNumber: Creating $cvCount CV inputs');
           for (int cv = 0; cv < cvCount; cv++) {
             final cvNumber = cv + 1;
             final algUuid =
@@ -230,9 +231,9 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               direction: PortDirection.input,
               description: item['description']?.toString(),
               // Direct properties
-              busValue: item['busValue'] as int?,
+              busValue: item['busValue'] is int ? item['busValue'] as int? : int.tryParse(item['busValue']?.toString() ?? ''),
               busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] as int?,
+              parameterNumber: item['parameterNumber'] is int ? item['parameterNumber'] as int? : int.tryParse(item['parameterNumber']?.toString() ?? ''),
               isVirtualCV: item['isVirtualCV'] == true,
             ),
           );
@@ -277,10 +278,10 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
               description: item['description']?.toString(),
               outputMode: outputMode,
               // Direct properties
-              busValue: item['busValue'] as int?,
+              busValue: item['busValue'] is int ? item['busValue'] as int? : int.tryParse(item['busValue']?.toString() ?? ''),
               busParam: item['busParam']?.toString(),
-              parameterNumber: item['parameterNumber'] as int?,
-              channelNumber: item['channel'] as int?,
+              parameterNumber: item['parameterNumber'] is int ? item['parameterNumber'] as int? : int.tryParse(item['parameterNumber']?.toString() ?? ''),
+              channelNumber: item['channel'] is int ? item['channel'] as int? : (item['channel'] is String ? null : int.tryParse(item['channel']?.toString() ?? '')),
               isStereoChannel: item['channel'] != null,
               stereoSide: item['channel']?.toString(),
             ),
@@ -488,6 +489,9 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       // CV count for this gate (only relevant if gate is connected)
       final cvCount = ioParameters['Gate $i CV count'] ?? 0;
       gateCvCounts.add(cvCount);
+      if (gateBus > 0 || cvCount > 0) {
+        debugPrint('[PolyRouting] Gate $i: bus=$gateBus, cvCount=$cvCount');
+      }
     }
 
     // Trim trailing unconnected gates
@@ -510,8 +514,14 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       final busValue = entry.value;
 
       // Skip gate-specific parameters (handled above)
+      // Also skip Poly CV configuration parameters that aren't actual ports
       if (paramName.startsWith('Gate input ') ||
-          (paramName.startsWith('Gate ') && paramName.contains(' CV count'))) {
+          (paramName.startsWith('Gate ') && paramName.contains(' CV count')) ||
+          paramName == 'First output' ||
+          paramName == 'Voices' ||
+          paramName == 'Gate outputs' ||
+          paramName == 'Pitch outputs' ||
+          paramName == 'Velocity outputs') {
         continue;
       }
 
@@ -547,8 +557,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
         'name': paramName,
         'type': portType,
         'busParam': paramName,
-        'busValue': busValue,
-        'parameterNumber': paramNumber,
+        'busValue': int.tryParse(busValue.toString()),
+        'parameterNumber': int.tryParse(paramNumber.toString()),
       };
 
       if (isOutput) {
@@ -604,55 +614,94 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     // Determine if this algorithm actually has gate inputs
     final hasGateInputs = gateInputs.any((bus) => bus > 0);
     
-    // For algorithms without gate inputs (like pycv), we should still create
-    // output ports based on the voice configuration
-    if (!hasGateInputs && outputPorts.isEmpty) {
-      // Check if this is an output-only poly algorithm like pycv
-      final firstOutput = AlgorithmRouting.getParameterValue(slot, 'First output');
-      if (firstOutput > 0) {
-        // Generate output ports based on voice count and first output bus
-        final gateOutputs = AlgorithmRouting.getParameterValue(slot, 'Gate outputs');
-        final pitchOutputs = AlgorithmRouting.getParameterValue(slot, 'Pitch outputs');
-        final velocityOutputs = AlgorithmRouting.getParameterValue(slot, 'Velocity outputs');
+    // Check if this algorithm uses the Poly CV output pattern
+    // (has "First output", "Gate outputs", "Pitch outputs", "Velocity outputs" parameters)
+    final firstOutput = AlgorithmRouting.getParameterValue(slot, 'First output');
+    final gateOutputsParam = slot.parameters.firstWhere(
+      (p) => p.name == 'Gate outputs',
+      orElse: () => ParameterInfo.filler(),
+    );
+    final hasPolyCvOutputPattern = firstOutput > 0 && gateOutputsParam.parameterNumber >= 0;
+    
+    if (hasPolyCvOutputPattern) {
+      // Handle Poly CV output pattern
+      // Get boolean parameters (these are checkboxes, so 1 = enabled, 0 = disabled)
+      final gateOutputs = AlgorithmRouting.getParameterValue(slot, 'Gate outputs');
+      final pitchOutputs = AlgorithmRouting.getParameterValue(slot, 'Pitch outputs');
+      final velocityOutputs = AlgorithmRouting.getParameterValue(slot, 'Velocity outputs');
+      
+      // Count how many output types are enabled
+      int outputsPerVoice = 0;
+      if (gateOutputs > 0) outputsPerVoice++;
+      if (pitchOutputs > 0) outputsPerVoice++;
+      if (velocityOutputs > 0) outputsPerVoice++;
+      
+      // Generate output ports for each voice
+      for (int voice = 0; voice < voiceCount; voice++) {
+        int currentBus = firstOutput + (voice * outputsPerVoice);
+        int busOffset = 0;
         
-        for (int voice = 0; voice < voiceCount; voice++) {
-          int currentBus = firstOutput + (voice * 3); // Gate, Pitch, Velocity per voice
-          
-          if (gateOutputs > 0) {
-            outputPorts.add({
-              'id': '${algId}_gate_out_$voice',
-              'name': 'Gate Out $voice',
-              'type': 'gate',
-              'busValue': currentBus,
-              'busParam': 'Gate output $voice',
-              'parameterNumber': 0, // No specific parameter for this
-              'voiceNumber': voice,
-            });
+        // Voice numbering is 1-based for display
+        final voiceNum = voice + 1;
+        
+        if (gateOutputs > 0) {
+          // Get Gate mode if available
+          String? gateMode;
+          if (modeParameters != null && modeParameters.containsKey('Gate mode')) {
+            gateMode = modeParameters['Gate mode'] == 1 ? 'replace' : 'add';
           }
           
-          if (pitchOutputs > 0) {
-            outputPorts.add({
-              'id': '${algId}_pitch_out_$voice',
-              'name': 'Pitch Out $voice',
-              'type': 'cv',
-              'busValue': currentBus + 1,
-              'busParam': 'Pitch output $voice',
-              'parameterNumber': 0,
-              'voiceNumber': voice,
-            });
+          outputPorts.add({
+            'id': '${algId}_gate_output_${voiceNum}',
+            'name': 'Gate output $voiceNum',
+            'type': 'gate',
+            'busValue': currentBus + busOffset,
+            'busParam': 'Gate output',
+            'parameterNumber': 0,
+            'voiceNumber': voiceNum,
+            'outputMode': gateMode,
+          });
+          busOffset++;
+        }
+        
+        if (pitchOutputs > 0) {
+          // Get Pitch mode if available
+          String? pitchMode;
+          if (modeParameters != null && modeParameters.containsKey('Pitch mode')) {
+            pitchMode = modeParameters['Pitch mode'] == 1 ? 'replace' : 'add';
           }
           
-          if (velocityOutputs > 0) {
-            outputPorts.add({
-              'id': '${algId}_velocity_out_$voice',
-              'name': 'Velocity Out $voice',
-              'type': 'cv',
-              'busValue': currentBus + 2,
-              'busParam': 'Velocity output $voice',
-              'parameterNumber': 0,
-              'voiceNumber': voice,
-            });
+          outputPorts.add({
+            'id': '${algId}_pitch_output_${voiceNum}',
+            'name': 'Pitch output $voiceNum',
+            'type': 'cv',
+            'busValue': currentBus + busOffset,
+            'busParam': 'Pitch output',
+            'parameterNumber': 0,
+            'voiceNumber': voiceNum,
+            'outputMode': pitchMode,
+          });
+          busOffset++;
+        }
+        
+        if (velocityOutputs > 0) {
+          // Get Velocity mode if available
+          String? velocityMode;
+          if (modeParameters != null && modeParameters.containsKey('Velocity mode')) {
+            velocityMode = modeParameters['Velocity mode'] == 1 ? 'replace' : 'add';
           }
+          
+          outputPorts.add({
+            'id': '${algId}_velocity_output_${voiceNum}',
+            'name': 'Velocity output $voiceNum',
+            'type': 'cv',
+            'busValue': currentBus + busOffset,
+            'busParam': 'Velocity output',
+            'parameterNumber': 0,
+            'voiceNumber': voiceNum,
+            'outputMode': velocityMode,
+          });
+          busOffset++;
         }
       }
     }
@@ -662,8 +711,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       voiceCount: voiceCount,
       requiresGateInputs: hasGateInputs,
       usesVirtualCvPorts: false, // Real CV ports based on gate configuration
-      gateInputs: hasGateInputs ? gateInputs : null,
-      gateCvCounts: hasGateInputs ? gateCvCounts : null,
+      gateInputs: gateInputs.isNotEmpty ? gateInputs : null,
+      gateCvCounts: gateCvCounts.isNotEmpty ? gateCvCounts : null,
       algorithmProperties: {
         'algorithmGuid': slot.algorithm.guid,
         'algorithmName': slot.algorithm.name,

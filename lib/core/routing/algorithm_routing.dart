@@ -358,9 +358,29 @@ abstract class AlgorithmRouting {
           (param.min == 0 || param.min == 1) &&
           (param.max == 27 || param.max == 28 || param.max == 30);
 
-      if (isBusParameter) {
+      // CV count parameters are identified by:
+      // - name contains "CV count"
+      // - unit == 0 (numeric type)
+      final isCvCountParameter = 
+          param.name.contains('CV count') && param.unit == 0;
+
+      // Boolean parameters for Poly CV outputs:
+      // - unit == 2 (boolean type)
+      // - name contains "outputs" (e.g., "Gate outputs", "Pitch outputs")
+      final isBooleanOutputParameter = 
+          param.unit == 2 && param.name.contains('outputs');
+
+      // Include numeric parameters like "Voices" or "First output"
+      // - unit == 0 (numeric type)
+      // - name is exactly "Voices" or "First output"
+      final isPolyCvNumericParameter = 
+          param.unit == 0 && 
+          (param.name == 'Voices' || param.name == 'First output');
+
+      if (isBusParameter || isCvCountParameter || 
+          isBooleanOutputParameter || isPolyCvNumericParameter) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
-        // Include all bus parameters, even if not connected (value 0)
+        // Include all relevant parameters
         // The subclass will decide how to handle them
         ioParameters[param.name] = value;
       }
