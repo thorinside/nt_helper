@@ -148,7 +148,8 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
     final effectiveGateInputs = config.gateInputs ?? gateInputsFromProps;
     final effectiveGateCvCounts = config.gateCvCounts ?? gateCvCountsFromProps;
     final hasGateDrivenSpec =
-        (effectiveGateInputs != null && effectiveGateInputs.isNotEmpty);
+        (effectiveGateInputs != null && effectiveGateInputs.isNotEmpty) &&
+        config.requiresGateInputs;
     if (hasGateDrivenSpec) {
       final gateInputs =
           effectiveGateInputs; // Non-null due to hasGateDrivenSpec
@@ -600,13 +601,69 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
       if (voices > 0) voiceCount = voices;
     }
 
+    // Determine if this algorithm actually has gate inputs
+    final hasGateInputs = gateInputs.any((bus) => bus > 0);
+    
+    // For algorithms without gate inputs (like pycv), we should still create
+    // output ports based on the voice configuration
+    if (!hasGateInputs && outputPorts.isEmpty) {
+      // Check if this is an output-only poly algorithm like pycv
+      final firstOutput = AlgorithmRouting.getParameterValue(slot, 'First output');
+      if (firstOutput > 0) {
+        // Generate output ports based on voice count and first output bus
+        final gateOutputs = AlgorithmRouting.getParameterValue(slot, 'Gate outputs');
+        final pitchOutputs = AlgorithmRouting.getParameterValue(slot, 'Pitch outputs');
+        final velocityOutputs = AlgorithmRouting.getParameterValue(slot, 'Velocity outputs');
+        
+        for (int voice = 0; voice < voiceCount; voice++) {
+          int currentBus = firstOutput + (voice * 3); // Gate, Pitch, Velocity per voice
+          
+          if (gateOutputs > 0) {
+            outputPorts.add({
+              'id': '${algId}_gate_out_$voice',
+              'name': 'Gate Out $voice',
+              'type': 'gate',
+              'busValue': currentBus,
+              'busParam': 'Gate output $voice',
+              'parameterNumber': 0, // No specific parameter for this
+              'voiceNumber': voice,
+            });
+          }
+          
+          if (pitchOutputs > 0) {
+            outputPorts.add({
+              'id': '${algId}_pitch_out_$voice',
+              'name': 'Pitch Out $voice',
+              'type': 'cv',
+              'busValue': currentBus + 1,
+              'busParam': 'Pitch output $voice',
+              'parameterNumber': 0,
+              'voiceNumber': voice,
+            });
+          }
+          
+          if (velocityOutputs > 0) {
+            outputPorts.add({
+              'id': '${algId}_velocity_out_$voice',
+              'name': 'Velocity Out $voice',
+              'type': 'cv',
+              'busValue': currentBus + 2,
+              'busParam': 'Velocity output $voice',
+              'parameterNumber': 0,
+              'voiceNumber': voice,
+            });
+          }
+        }
+      }
+    }
+
     // Create configuration for poly routing
     final config = PolyAlgorithmConfig(
       voiceCount: voiceCount,
-      requiresGateInputs: true,
+      requiresGateInputs: hasGateInputs,
       usesVirtualCvPorts: false, // Real CV ports based on gate configuration
-      gateInputs: gateInputs,
-      gateCvCounts: gateCvCounts,
+      gateInputs: hasGateInputs ? gateInputs : null,
+      gateCvCounts: hasGateInputs ? gateCvCounts : null,
       algorithmProperties: {
         'algorithmGuid': slot.algorithm.guid,
         'algorithmName': slot.algorithm.name,
