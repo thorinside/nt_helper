@@ -63,11 +63,17 @@ void main() {
               ),
           ],
           values: [
-            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 29), // Ch1 to ES-5 L
+            ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              value: 29,
+            ), // Ch1 to ES-5 L
           ],
         );
 
-        final ioParameters = UsbFromAlgorithmRouting.extractIOParameters(usbSlot);
+        final ioParameters = UsbFromAlgorithmRouting.extractIOParameters(
+          usbSlot,
+        );
         final usbRouting = UsbFromAlgorithmRouting.createFromSlot(
           usbSlot,
           ioParameters: ioParameters,
@@ -75,13 +81,18 @@ void main() {
         );
 
         // Discover connections
-        final connections = ConnectionDiscoveryService.discoverConnections([usbRouting]);
+        final connections = ConnectionDiscoveryService.discoverConnections([
+          usbRouting,
+        ]);
 
         // Should create a hardware output connection for ES-5 L
         expect(connections, isNotEmpty);
-        
+
         final es5Connection = connections.first;
-        expect(es5Connection.connectionType, equals(ConnectionType.hardwareOutput));
+        expect(
+          es5Connection.connectionType,
+          equals(ConnectionType.hardwareOutput),
+        );
         expect(es5Connection.busNumber, equals(29));
       });
 
@@ -118,11 +129,17 @@ void main() {
               ),
           ],
           values: [
-            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 30), // Ch2 to ES-5 R
+            ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              value: 30,
+            ), // Ch2 to ES-5 R
           ],
         );
 
-        final ioParameters = UsbFromAlgorithmRouting.extractIOParameters(usbSlot);
+        final ioParameters = UsbFromAlgorithmRouting.extractIOParameters(
+          usbSlot,
+        );
         final usbRouting = UsbFromAlgorithmRouting.createFromSlot(
           usbSlot,
           ioParameters: ioParameters,
@@ -130,13 +147,18 @@ void main() {
         );
 
         // Discover connections
-        final connections = ConnectionDiscoveryService.discoverConnections([usbRouting]);
+        final connections = ConnectionDiscoveryService.discoverConnections([
+          usbRouting,
+        ]);
 
         // Should create a hardware output connection for ES-5 R
         expect(connections, isNotEmpty);
-        
+
         final es5Connection = connections.first;
-        expect(es5Connection.connectionType, equals(ConnectionType.hardwareOutput));
+        expect(
+          es5Connection.connectionType,
+          equals(ConnectionType.hardwareOutput),
+        );
         expect(es5Connection.busNumber, equals(30));
       });
 
@@ -161,7 +183,11 @@ void main() {
             ),
           ],
           values: [
-            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 29), // ES-5 L
+            ParameterValue(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              value: 29,
+            ), // ES-5 L
           ],
         );
 
@@ -185,7 +211,11 @@ void main() {
             ),
           ],
           values: [
-            ParameterValue(algorithmIndex: 1, parameterNumber: 0, value: 29), // ES-5 L
+            ParameterValue(
+              algorithmIndex: 1,
+              parameterNumber: 0,
+              value: 29,
+            ), // ES-5 L
           ],
         );
 
@@ -208,10 +238,12 @@ void main() {
         ]);
 
         // Should create algorithm-to-algorithm connection via ES-5 L bus
-        final algoConnections = connections.where(
-          (c) => c.connectionType == ConnectionType.algorithmToAlgorithm,
-        ).toList();
-        
+        final algoConnections = connections
+            .where(
+              (c) => c.connectionType == ConnectionType.algorithmToAlgorithm,
+            )
+            .toList();
+
         expect(algoConnections, isNotEmpty);
       });
     });

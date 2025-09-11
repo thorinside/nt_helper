@@ -176,12 +176,12 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
   /// Builds a single port row using PortWidget.
   Widget _buildPortRow(Port port) {
     final portIsInput = port.direction == PortDirection.input;
-    
+
     Widget inner = PortWidget(
       label: port.name,
-        // Use the port's actual direction instead of inverting widget.isInput
-        // Physical inputs have PortDirection.output (they send signals TO algorithms)
-        // Physical outputs have PortDirection.input (they receive signals FROM algorithms)
+      // Use the port's actual direction instead of inverting widget.isInput
+      // Physical inputs have PortDirection.output (they send signals TO algorithms)
+      // Physical outputs have PortDirection.input (they receive signals FROM algorithms)
       isInput: portIsInput,
       portId: port.id,
       port: port,
@@ -203,8 +203,7 @@ class _MovablePhysicalIONodeState extends State<MovablePhysicalIONode> {
       onTap: !widget.isInput ? () => widget.onPortTapped?.call(port) : null,
       onRoutingAction: widget.onRoutingAction,
       onDragStart: () => widget.onPortDragStart?.call(port),
-      onDragUpdate: (position) =>
-          widget.onPortDragUpdate?.call(port, position),
+      onDragUpdate: (position) => widget.onPortDragUpdate?.call(port, position),
       onDragEnd: (position) => widget.onPortDragEnd?.call(port, position),
     );
 

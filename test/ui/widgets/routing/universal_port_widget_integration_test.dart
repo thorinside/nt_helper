@@ -14,7 +14,9 @@ List<core_port.Port> _createTestInputPorts() {
       id: 'hw_in_$portNum',
       name: 'Input $portNum',
       type: core_port.PortType.audio,
-      direction: core_port.PortDirection.output, // Physical inputs act as outputs to algorithms
+      direction: core_port
+          .PortDirection
+          .output, // Physical inputs act as outputs to algorithms
       isPhysical: true,
       busValue: portNum,
     );
@@ -29,7 +31,9 @@ List<core_port.Port> _createTestOutputPorts() {
       id: 'hw_out_$portNum',
       name: 'Output $portNum',
       type: core_port.PortType.audio,
-      direction: core_port.PortDirection.input, // Physical outputs act as inputs from algorithms
+      direction: core_port
+          .PortDirection
+          .input, // Physical outputs act as inputs from algorithms
       isPhysical: true,
       busValue: portNum + 12,
     );
@@ -74,8 +78,11 @@ void main() {
           matching: find.byType(PortWidget),
         );
 
-        expect(portWidgets, findsWidgets,
-            reason: 'AlgorithmNodeWidget should use PortWidget internally');
+        expect(
+          portWidgets,
+          findsWidgets,
+          reason: 'AlgorithmNodeWidget should use PortWidget internally',
+        );
       });
 
       testWidgets('PortWidget works consistently in physical I/O nodes', (
@@ -100,8 +107,11 @@ void main() {
           matching: find.byType(PortWidget),
         );
 
-        expect(portWidgets, findsWidgets,
-            reason: 'PhysicalInputNode should use PortWidget internally');
+        expect(
+          portWidgets,
+          findsWidgets,
+          reason: 'PhysicalInputNode should use PortWidget internally',
+        );
       });
 
       testWidgets('Physical output nodes use consistent port widgets', (
@@ -126,8 +136,11 @@ void main() {
           matching: find.byType(PortWidget),
         );
 
-        expect(portWidgets, findsWidgets,
-            reason: 'PhysicalOutputNode should use PortWidget internally');
+        expect(
+          portWidgets,
+          findsWidgets,
+          reason: 'PhysicalOutputNode should use PortWidget internally',
+        );
       });
     });
 
@@ -210,7 +223,7 @@ void main() {
         tester,
       ) async {
         final Map<String, Offset> portPositions = {};
-        
+
         void trackPortPosition(core_port.Port port, Offset position) {
           portPositions[port.id] = position;
         }
@@ -241,11 +254,17 @@ void main() {
         await tester.pump(); // Allow position callbacks
 
         // Should have updated port positions
-        expect(portPositions.length, equals(initialPositionCount),
-            reason: 'Should maintain same number of tracked ports');
+        expect(
+          portPositions.length,
+          equals(initialPositionCount),
+          reason: 'Should maintain same number of tracked ports',
+        );
 
-        expect(portPositions, isNotEmpty,
-            reason: 'Should have tracked port positions');
+        expect(
+          portPositions,
+          isNotEmpty,
+          reason: 'Should have tracked port positions',
+        );
       });
 
       testWidgets('Port interaction states work across all node types', (
@@ -275,8 +294,7 @@ void main() {
 
         // Find port widgets
         final portWidgets = find.byType(PortWidget);
-        expect(portWidgets, findsWidgets,
-            reason: 'Should find port widgets');
+        expect(portWidgets, findsWidgets, reason: 'Should find port widgets');
 
         // Test interaction (tap)
         await tester.tap(portWidgets.first);
@@ -342,8 +360,11 @@ void main() {
         stopwatch.stop();
 
         // Should render efficiently
-        expect(stopwatch.elapsedMilliseconds, lessThan(1000),
-            reason: 'Large routing graph should render within 1 second');
+        expect(
+          stopwatch.elapsedMilliseconds,
+          lessThan(1000),
+          reason: 'Large routing graph should render within 1 second',
+        );
 
         // All nodes should be present
         expect(find.byType(AlgorithmNodeWidget), findsNWidgets(3));
@@ -352,8 +373,11 @@ void main() {
 
         // All should use PortWidget
         final allPorts = find.byType(PortWidget);
-        expect(allPorts, findsWidgets,
-            reason: 'All nodes should use PortWidget');
+        expect(
+          allPorts,
+          findsWidgets,
+          reason: 'All nodes should use PortWidget',
+        );
       });
 
       testWidgets('Memory management during rapid node operations', (
@@ -403,7 +427,7 @@ void main() {
     group('Widget Lifecycle and State Persistence', () {
       testWidgets('Widget state persists through rebuilds', (tester) async {
         bool nodePositionCallbackFired = false;
-        
+
         void positionCallback(Offset position) {
           nodePositionCallbackFired = true;
         }
@@ -445,8 +469,11 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(nodePositionCallbackFired, isTrue,
-            reason: 'Position callback should have been fired');
+        expect(
+          nodePositionCallbackFired,
+          isTrue,
+          reason: 'Position callback should have been fired',
+        );
 
         // Widget should still be functional after rebuild
         expect(find.byType(PhysicalInputNode), findsOneWidget);

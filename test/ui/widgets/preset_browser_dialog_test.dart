@@ -59,14 +59,12 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PresetBrowserDialog(),
-        ),
+        createTestWidget(child: const PresetBrowserDialog()),
       );
 
       // Should find three panel containers
       expect(find.byType(DirectoryPanel), findsNWidgets(3));
-      
+
       // Should be in a Row
       expect(
         find.descendant(
@@ -78,15 +76,13 @@ void main() {
     });
 
     testWidgets('displays loading indicator when loading', (tester) async {
-      when(() => mockCubit.state).thenReturn(
-        const PresetBrowserState.loading(),
-      );
+      when(
+        () => mockCubit.state,
+      ).thenReturn(const PresetBrowserState.loading());
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PresetBrowserDialog(),
-        ),
+        createTestWidget(child: const PresetBrowserDialog()),
       );
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -94,16 +90,12 @@ void main() {
 
     testWidgets('displays error message when error state', (tester) async {
       when(() => mockCubit.state).thenReturn(
-        const PresetBrowserState.error(
-          message: 'Test error message',
-        ),
+        const PresetBrowserState.error(message: 'Test error message'),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PresetBrowserDialog(),
-        ),
+        createTestWidget(child: const PresetBrowserDialog()),
       );
 
       expect(find.text('Test error message'), findsOneWidget);
@@ -126,18 +118,16 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PresetBrowserDialog(),
-        ),
+        createTestWidget(child: const PresetBrowserDialog()),
       );
 
       // Mock the navigateBack and toggleSortMode methods
       when(() => mockCubit.navigateBack()).thenAnswer((_) async {});
       when(() => mockCubit.toggleSortMode()).thenReturn(null);
-      
+
       // Back button should be visible when history exists
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-      
+
       // Sort toggle should be visible
       expect(find.byIcon(Icons.sort_by_alpha), findsOneWidget);
     });
@@ -165,7 +155,9 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.selectDirectory(any(), any())).thenAnswer((_) async {});
+      when(
+        () => mockCubit.selectDirectory(any(), any()),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         createTestWidget(
@@ -189,7 +181,9 @@ void main() {
       await tester.tap(find.text('TestFolder'));
       await tester.pumpAndSettle();
 
-      verify(() => mockCubit.selectDirectory(testEntry, PanelPosition.left)).called(1);
+      verify(
+        () => mockCubit.selectDirectory(testEntry, PanelPosition.left),
+      ).called(1);
     });
 
     testWidgets('calls selectFile when file tapped', (tester) async {
@@ -215,7 +209,9 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.getSelectedPath()).thenReturn('/presets/preset.json');
+      when(
+        () => mockCubit.getSelectedPath(),
+      ).thenReturn('/presets/preset.json');
       when(() => mockCubit.selectFile(any(), any())).thenAnswer((_) async {});
 
       await tester.pumpWidget(
@@ -240,7 +236,9 @@ void main() {
       await tester.tap(find.text('preset.json'));
       await tester.pumpAndSettle();
 
-      verify(() => mockCubit.selectFile(testFile, PanelPosition.left)).called(1);
+      verify(
+        () => mockCubit.selectFile(testFile, PanelPosition.left),
+      ).called(1);
     });
   });
 
@@ -278,7 +276,7 @@ void main() {
         time: 0,
         size: 1024,
       );
-      
+
       final testOtherFile = DirectoryEntry(
         name: 'readme.txt',
         attributes: 0,

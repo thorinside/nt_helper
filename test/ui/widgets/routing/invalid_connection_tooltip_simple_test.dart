@@ -5,7 +5,9 @@ import 'package:nt_helper/ui/widgets/routing/invalid_connection_tooltip.dart';
 
 void main() {
   group('InvalidConnectionTooltip Widget Tests', () {
-    testWidgets('should create widget with invalid connection', (WidgetTester tester) async {
+    testWidgets('should create widget with invalid connection', (
+      WidgetTester tester,
+    ) async {
       final invalidConnection = Connection(
         id: 'test_invalid',
         sourcePortId: 'alg_2_output_1',
@@ -38,7 +40,9 @@ void main() {
       expect(find.byType(MouseRegion), findsWidgets);
     });
 
-    testWidgets('should create widget with valid connection', (WidgetTester tester) async {
+    testWidgets('should create widget with valid connection', (
+      WidgetTester tester,
+    ) async {
       final validConnection = Connection(
         id: 'test_valid',
         sourcePortId: 'alg_1_output_1',
@@ -102,7 +106,9 @@ void main() {
       expect(find.text('Test Connection'), findsOneWidget);
     });
 
-    testWidgets('should handle connection with properties', (WidgetTester tester) async {
+    testWidgets('should handle connection with properties', (
+      WidgetTester tester,
+    ) async {
       final connectionWithProperties = Connection(
         id: 'test_connection',
         sourcePortId: 'alg_2_output_1',
@@ -134,7 +140,9 @@ void main() {
       expect(find.text('Test Connection'), findsOneWidget);
     });
 
-    testWidgets('should be disabled when show is false', (WidgetTester tester) async {
+    testWidgets('should be disabled when show is false', (
+      WidgetTester tester,
+    ) async {
       final connection = Connection(
         id: 'test_connection',
         sourcePortId: 'test_port',
@@ -225,7 +233,9 @@ void main() {
   });
 
   group('InvalidConnectionTooltip Animation Setup', () {
-    testWidgets('should have animation controller setup', (WidgetTester tester) async {
+    testWidgets('should have animation controller setup', (
+      WidgetTester tester,
+    ) async {
       final connection = Connection(
         id: 'test_connection',
         sourcePortId: 'test_port',
@@ -253,13 +263,13 @@ void main() {
       // Check that the widget has animation components
       expect(find.byType(InvalidConnectionTooltip), findsOneWidget);
       expect(find.byType(MouseRegion), findsWidgets);
-      
+
       // The AnimatedBuilder should exist even if not currently animating
       // This verifies the animation setup is correct
       final tooltipWidget = tester.widget<InvalidConnectionTooltip>(
         find.byType(InvalidConnectionTooltip),
       );
-      
+
       expect(tooltipWidget.delay, isA<Duration>());
       expect(tooltipWidget.show, isA<bool>());
     });

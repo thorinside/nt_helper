@@ -306,75 +306,81 @@ void main() {
     });
 
     group('Invalid Connection Rendering', () {
-      test('should render invalid connections with dashed lines and error color', () {
-        final theme = ThemeData.light();
-        final invalidConnection = ConnectionData(
-          connection: Connection(
-            id: 'invalid_test',
-            sourcePortId: 'alg_2_out_1',
-            destinationPortId: 'alg_1_in_1',
-            connectionType: ConnectionType.algorithmToAlgorithm,
-            isBackwardEdge: true, // Mark as invalid
-          ),
-          sourcePosition: const Offset(10, 10),
-          destinationPosition: const Offset(100, 50),
-        );
+      test(
+        'should render invalid connections with dashed lines and error color',
+        () {
+          final theme = ThemeData.light();
+          final invalidConnection = ConnectionData(
+            connection: Connection(
+              id: 'invalid_test',
+              sourcePortId: 'alg_2_out_1',
+              destinationPortId: 'alg_1_in_1',
+              connectionType: ConnectionType.algorithmToAlgorithm,
+              isBackwardEdge: true, // Mark as invalid
+            ),
+            sourcePosition: const Offset(10, 10),
+            destinationPosition: const Offset(100, 50),
+          );
 
-        final painter = ConnectionPainter(
-          connections: [invalidConnection],
-          theme: theme,
-        );
+          final painter = ConnectionPainter(
+            connections: [invalidConnection],
+            theme: theme,
+          );
 
-        // Test that invalid connection is identified
-        expect(invalidConnection.isInvalidOrder, isTrue);
-        
-        // Verify painter handles the invalid connection
-        expect(painter.connections.length, equals(1));
-        expect(painter.connections.first.isInvalidOrder, isTrue);
-      });
+          // Test that invalid connection is identified
+          expect(invalidConnection.isInvalidOrder, isTrue);
 
-      test('should group invalid connections separately for batch rendering', () {
-        final theme = ThemeData.light();
-        final validConnection = ConnectionData(
-          connection: Connection(
-            id: 'valid_test',
-            sourcePortId: 'alg_1_out_1',
-            destinationPortId: 'alg_2_in_1',
-            connectionType: ConnectionType.algorithmToAlgorithm,
-            isBackwardEdge: false,
-          ),
-          sourcePosition: const Offset(10, 10),
-          destinationPosition: const Offset(100, 50),
-        );
+          // Verify painter handles the invalid connection
+          expect(painter.connections.length, equals(1));
+          expect(painter.connections.first.isInvalidOrder, isTrue);
+        },
+      );
 
-        final invalidConnection = ConnectionData(
-          connection: Connection(
-            id: 'invalid_test',
-            sourcePortId: 'alg_2_out_1',
-            destinationPortId: 'alg_1_in_1',
-            connectionType: ConnectionType.algorithmToAlgorithm,
-            isBackwardEdge: true,
-          ),
-          sourcePosition: const Offset(10, 100),
-          destinationPosition: const Offset(100, 150),
-        );
+      test(
+        'should group invalid connections separately for batch rendering',
+        () {
+          final theme = ThemeData.light();
+          final validConnection = ConnectionData(
+            connection: Connection(
+              id: 'valid_test',
+              sourcePortId: 'alg_1_out_1',
+              destinationPortId: 'alg_2_in_1',
+              connectionType: ConnectionType.algorithmToAlgorithm,
+              isBackwardEdge: false,
+            ),
+            sourcePosition: const Offset(10, 10),
+            destinationPosition: const Offset(100, 50),
+          );
 
-        final painter = ConnectionPainter(
-          connections: [validConnection, invalidConnection],
-          theme: theme,
-        );
+          final invalidConnection = ConnectionData(
+            connection: Connection(
+              id: 'invalid_test',
+              sourcePortId: 'alg_2_out_1',
+              destinationPortId: 'alg_1_in_1',
+              connectionType: ConnectionType.algorithmToAlgorithm,
+              isBackwardEdge: true,
+            ),
+            sourcePosition: const Offset(10, 100),
+            destinationPosition: const Offset(100, 150),
+          );
 
-        // Verify that connections are properly categorized
-        expect(painter.connections.length, equals(2));
-        expect(
-          painter.connections.where((c) => c.isInvalidOrder).length,
-          equals(1),
-        );
-        expect(
-          painter.connections.where((c) => !c.isInvalidOrder).length,
-          equals(1),
-        );
-      });
+          final painter = ConnectionPainter(
+            connections: [validConnection, invalidConnection],
+            theme: theme,
+          );
+
+          // Verify that connections are properly categorized
+          expect(painter.connections.length, equals(2));
+          expect(
+            painter.connections.where((c) => c.isInvalidOrder).length,
+            equals(1),
+          );
+          expect(
+            painter.connections.where((c) => !c.isInvalidOrder).length,
+            equals(1),
+          );
+        },
+      );
 
       test('should handle mixed connection types with proper grouping', () {
         final theme = ThemeData.light();
@@ -447,10 +453,16 @@ void main() {
         );
 
         expect(painter.connections.length, equals(5));
-        
+
         // Verify grouping logic works correctly
         final regularConnections = painter.connections
-            .where((c) => !c.isSelected && !c.isPartial && !c.isInvalidOrder && !c.isGhostConnection)
+            .where(
+              (c) =>
+                  !c.isSelected &&
+                  !c.isPartial &&
+                  !c.isInvalidOrder &&
+                  !c.isGhostConnection,
+            )
             .toList();
         final invalidConnections = painter.connections
             .where((c) => c.isInvalidOrder)
@@ -528,68 +540,74 @@ void main() {
     group('Dash Pattern Support', () {
       test('should create painter with dash pattern support enabled', () {
         final theme = ThemeData.light();
-        final painter = ConnectionPainter(
-          connections: [],
-          theme: theme,
-        );
+        final painter = ConnectionPainter(connections: [], theme: theme);
 
         // Verify painter can be instantiated (dash pattern support is internal)
         expect(painter.connections, isEmpty);
         expect(painter.theme, equals(theme));
       });
 
-      test('should handle anti-overlap and animations settings for invalid connections', () {
-        final theme = ThemeData.light();
-        final invalidConnection = ConnectionData(
-          connection: Connection(
-            id: 'invalid_test',
-            sourcePortId: 'alg_2_out_1',
-            destinationPortId: 'alg_1_in_1',
-            connectionType: ConnectionType.algorithmToAlgorithm,
-            isBackwardEdge: true,
-          ),
-          sourcePosition: const Offset(10, 10),
-          destinationPosition: const Offset(100, 50),
-        );
+      test(
+        'should handle anti-overlap and animations settings for invalid connections',
+        () {
+          final theme = ThemeData.light();
+          final invalidConnection = ConnectionData(
+            connection: Connection(
+              id: 'invalid_test',
+              sourcePortId: 'alg_2_out_1',
+              destinationPortId: 'alg_1_in_1',
+              connectionType: ConnectionType.algorithmToAlgorithm,
+              isBackwardEdge: true,
+            ),
+            sourcePosition: const Offset(10, 10),
+            destinationPosition: const Offset(100, 50),
+          );
 
-        final painter = ConnectionPainter(
-          connections: [invalidConnection],
-          theme: theme,
-          enableAntiOverlap: true,
-          enableAnimations: false, // Invalid connections shouldn't animate
-          showLabels: true,
-        );
+          final painter = ConnectionPainter(
+            connections: [invalidConnection],
+            theme: theme,
+            enableAntiOverlap: true,
+            enableAnimations: false, // Invalid connections shouldn't animate
+            showLabels: true,
+          );
 
-        expect(painter.enableAntiOverlap, isTrue);
-        expect(painter.enableAnimations, isFalse);
-        expect(painter.showLabels, isTrue);
-      });
+          expect(painter.enableAntiOverlap, isTrue);
+          expect(painter.enableAnimations, isFalse);
+          expect(painter.showLabels, isTrue);
+        },
+      );
     });
 
     group('Theme Integration', () {
-      test('should use error color from light theme for invalid connections', () {
-        final lightTheme = ThemeData.light();
-        final painter = ConnectionPainter(
-          connections: [],
-          theme: lightTheme,
-        );
+      test(
+        'should use error color from light theme for invalid connections',
+        () {
+          final lightTheme = ThemeData.light();
+          final painter = ConnectionPainter(connections: [], theme: lightTheme);
 
-        expect(painter.theme.colorScheme.error, isNotNull);
-        // In light theme, error color should typically be red-ish
-        expect(painter.theme.colorScheme.error.value, isNot(equals(Colors.transparent.value)));
-      });
+          expect(painter.theme.colorScheme.error, isNotNull);
+          // In light theme, error color should typically be red-ish
+          expect(
+            painter.theme.colorScheme.error.value,
+            isNot(equals(Colors.transparent.value)),
+          );
+        },
+      );
 
-      test('should use error color from dark theme for invalid connections', () {
-        final darkTheme = ThemeData.dark();
-        final painter = ConnectionPainter(
-          connections: [],
-          theme: darkTheme,
-        );
+      test(
+        'should use error color from dark theme for invalid connections',
+        () {
+          final darkTheme = ThemeData.dark();
+          final painter = ConnectionPainter(connections: [], theme: darkTheme);
 
-        expect(painter.theme.colorScheme.error, isNotNull);
-        // In dark theme, error color should also be available
-        expect(painter.theme.colorScheme.error.value, isNot(equals(Colors.transparent.value)));
-      });
+          expect(painter.theme.colorScheme.error, isNotNull);
+          // In dark theme, error color should also be available
+          expect(
+            painter.theme.colorScheme.error.value,
+            isNot(equals(Colors.transparent.value)),
+          );
+        },
+      );
 
       test('should ensure error color contrast in both themes', () {
         final lightTheme = ThemeData.light();
@@ -608,35 +626,39 @@ void main() {
     });
 
     group('Performance', () {
-      test('should handle large numbers of invalid connections efficiently', () {
-        final theme = ThemeData.light();
-        final invalidConnections = List.generate(100, (index) => 
-          ConnectionData(
-            connection: Connection(
-              id: 'invalid_$index',
-              sourcePortId: 'alg_${index % 5}_out_1',
-              destinationPortId: 'alg_${(index % 5) - 1}_in_1',
-              connectionType: ConnectionType.algorithmToAlgorithm,
-              isBackwardEdge: true,
+      test(
+        'should handle large numbers of invalid connections efficiently',
+        () {
+          final theme = ThemeData.light();
+          final invalidConnections = List.generate(
+            100,
+            (index) => ConnectionData(
+              connection: Connection(
+                id: 'invalid_$index',
+                sourcePortId: 'alg_${index % 5}_out_1',
+                destinationPortId: 'alg_${(index % 5) - 1}_in_1',
+                connectionType: ConnectionType.algorithmToAlgorithm,
+                isBackwardEdge: true,
+              ),
+              sourcePosition: Offset(10.0, index * 10.0),
+              destinationPosition: Offset(100.0, index * 10.0 + 50),
             ),
-            sourcePosition: Offset(10.0, index * 10.0),
-            destinationPosition: Offset(100.0, index * 10.0 + 50),
-          ),
-        );
+          );
 
-        final painter = ConnectionPainter(
-          connections: invalidConnections,
-          theme: theme,
-        );
+          final painter = ConnectionPainter(
+            connections: invalidConnections,
+            theme: theme,
+          );
 
-        expect(painter.connections.length, equals(100));
-        expect(painter.connections.every((c) => c.isInvalidOrder), isTrue);
-      });
+          expect(painter.connections.length, equals(100));
+          expect(painter.connections.every((c) => c.isInvalidOrder), isTrue);
+        },
+      );
 
       test('should maintain performance with mixed connection types', () {
         final theme = ThemeData.light();
         final mixedConnections = <ConnectionData>[];
-        
+
         // Add various connection types
         for (int i = 0; i < 50; i++) {
           mixedConnections.addAll([
@@ -687,7 +709,7 @@ void main() {
       test('should maintain proper z-order for different connection types', () {
         // The rendering order should be: regular -> ghost -> invalid -> partial -> selected
         // This ensures invalid connections are visible but not on top of selected ones
-        
+
         final theme = ThemeData.light();
         final connections = [
           // Selected connection (should render last/on top)
@@ -734,7 +756,7 @@ void main() {
 
         // Verify all connections are present
         expect(painter.connections.length, equals(3));
-        
+
         // The painter should handle the rendering order internally
         // We can verify the connections are properly categorized
         final regularConnections = painter.connections

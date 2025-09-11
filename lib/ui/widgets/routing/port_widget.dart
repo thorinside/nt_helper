@@ -184,19 +184,20 @@ class _PortWidgetState extends State<PortWidget> {
         border: Border.all(
           color: widget.isHighlighted
               ? (widget.isInput
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.secondary)
-                  .withValues(alpha: 0.8)
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.secondary)
+                    .withValues(alpha: 0.8)
               : theme.colorScheme.outline,
           width: widget.isHighlighted ? 3 : 2,
         ),
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color: (widget.isInput
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.secondary)
-                      .withValues(alpha: 0.3),
+                  color:
+                      (widget.isInput
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.secondary)
+                          .withValues(alpha: 0.3),
                   blurRadius: 6,
                   spreadRadius: 1,
                 ),
@@ -285,7 +286,7 @@ class _PortWidgetState extends State<PortWidget> {
       key: _dotKey,
       width: 12,
       height: 12,
-      transform: widget.isHighlighted 
+      transform: widget.isHighlighted
           ? (Matrix4.identity()..scaleByVector3(math.Vector3(1.1, 1.1, 1.0)))
           : Matrix4.identity(),
       decoration: BoxDecoration(
@@ -297,10 +298,11 @@ class _PortWidgetState extends State<PortWidget> {
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color: (widget.isInput
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.secondary)
-                      .withValues(alpha: 0.4),
+                  color:
+                      (widget.isInput
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.secondary)
+                          .withValues(alpha: 0.4),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),

@@ -8,7 +8,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  
+
   group('RoutingEditorCubit Integration Tests', () {
     late RoutingEditorCubit routingEditorCubit;
 
@@ -26,11 +26,14 @@ void main() {
         expect(routingEditorCubit.state, isA<RoutingEditorStateInitial>());
       });
 
-      test('should maintain initial state when no disting cubit provided', () async {
-        // Wait a bit to ensure no state changes occur
-        await Future.delayed(Duration.zero);
-        expect(routingEditorCubit.state, isA<RoutingEditorStateInitial>());
-      });
+      test(
+        'should maintain initial state when no disting cubit provided',
+        () async {
+          // Wait a bit to ensure no state changes occur
+          await Future.delayed(Duration.zero);
+          expect(routingEditorCubit.state, isA<RoutingEditorStateInitial>());
+        },
+      );
     });
 
     group('ConnectionValidator Integration Tests', () {
@@ -116,10 +119,12 @@ void main() {
         expect(validatedConnections.length, equals(2));
 
         // Find the connections
-        final validConnection = validatedConnections
-            .firstWhere((c) => c.id == 'valid_connection');
-        final invalidConnection = validatedConnections
-            .firstWhere((c) => c.id == 'invalid_connection');
+        final validConnection = validatedConnections.firstWhere(
+          (c) => c.id == 'valid_connection',
+        );
+        final invalidConnection = validatedConnections.firstWhere(
+          (c) => c.id == 'invalid_connection',
+        );
 
         // Verify validation results
         expect(validConnection.isBackwardEdge, isFalse);
@@ -197,14 +202,14 @@ void main() {
         );
 
         expect(portId, equals('${algorithmId}_port_$parameterNumber'));
-        
+
         // Should be consistent on repeated calls
         final portId2 = routingEditorCubit.generatePortId(
           algorithmId: algorithmId,
           parameterNumber: parameterNumber,
           portType: portType,
         );
-        
+
         expect(portId, equals(portId2));
       });
     });
@@ -327,17 +332,15 @@ void main() {
         );
 
         // Before reordering: alg_2 (index 1) -> alg_1 (index 0) = INVALID
-        final beforeReorderValidated = ConnectionValidator.validateConnections(
-          [connection],
-          algorithmsBeforeReorder,
-        );
+        final beforeReorderValidated = ConnectionValidator.validateConnections([
+          connection,
+        ], algorithmsBeforeReorder);
         expect(beforeReorderValidated.first.isBackwardEdge, isTrue);
 
         // After reordering: alg_2 (index 0) -> alg_1 (index 1) = VALID
-        final afterReorderValidated = ConnectionValidator.validateConnections(
-          [connection],
-          algorithmsAfterReorder,
-        );
+        final afterReorderValidated = ConnectionValidator.validateConnections([
+          connection,
+        ], algorithmsAfterReorder);
         expect(afterReorderValidated.first.isBackwardEdge, isFalse);
       });
     });

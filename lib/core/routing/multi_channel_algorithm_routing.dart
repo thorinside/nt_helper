@@ -123,7 +123,9 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     super.validator,
     RoutingState? initialState,
   }) : _state = initialState ?? const RoutingState(),
-        super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?) {
+       super(
+         algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?,
+       ) {
     debugPrint(
       'MultiChannelAlgorithmRouting: Initialized with ${config.channelCount} channels, '
       'stereo: ${config.supportsStereoChannels}, mix: ${config.createMasterMix}',
@@ -156,7 +158,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         );
         return ports;
       }
-      
+
       // Process declared inputs
       for (final item in declaredInputs) {
         if (item is Map) {
@@ -175,7 +177,9 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               busValue: item['busValue'] as int?,
               busParam: item['busParam']?.toString(),
               parameterNumber: item['parameterNumber'] as int?,
-              channelNumber: item['channelNumber'] is int ? item['channelNumber'] as int : null,
+              channelNumber: item['channelNumber'] is int
+                  ? item['channelNumber'] as int
+                  : null,
               isMultiChannel: item['channelNumber'] != null,
             ),
           );
@@ -267,7 +271,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         );
         return ports;
       }
-      
+
       // Process declared outputs
       for (final item in declared) {
         if (item is Map) {
@@ -316,7 +320,9 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               busParam: item['busParam']?.toString(),
               parameterNumber: item['parameterNumber'] as int?,
               modeParameterNumber: modeParameterNumber,
-              channelNumber: item['channel'] is int ? item['channel'] as int : null,
+              channelNumber: item['channel'] is int
+                  ? item['channel'] as int
+                  : null,
               isStereoChannel: item['channel'] != null,
               stereoSide: item['channel']?.toString(),
             ),
@@ -750,7 +756,9 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         }
 
         // Determine possible mode names
-        final List<String> possibleModeNames = ['$paramName mode']; // Full name mode
+        final List<String> possibleModeNames = [
+          '$paramName mode',
+        ]; // Full name mode
         final firstWord = paramName.split(' ').first;
         if (firstWord.isNotEmpty && firstWord != paramName) {
           possibleModeNames.add('$firstWord mode'); // First word mode
@@ -771,8 +779,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           }
 
           if (actualModeName != null && modeValue != null) {
-            port['outputMode'] = (modeValue == 1) ? 'replace' : 'add'; // 0 = Add, 1 = Replace
-            debugPrint('Found output mode "$actualModeName" for output "$paramName" with value $modeValue');
+            port['outputMode'] = (modeValue == 1)
+                ? 'replace'
+                : 'add'; // 0 = Add, 1 = Replace
+            debugPrint(
+              'Found output mode "$actualModeName" for output "$paramName" with value $modeValue',
+            );
           } else {
             // Optional: Log if no mode parameter was found for the value
             // debugPrint('No output mode value parameter found for "$paramName" among candidates: $uniquePossibleModeNames. Available: ${modeParameters.keys}');

@@ -44,10 +44,8 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     super.validator,
     RoutingState? initialState,
   }) : _state = initialState ?? const RoutingState(),
-        super(algorithmUuid: algorithmUuid) {
-    debugPrint(
-      'UsbFromAlgorithmRouting: Initialized with UUID $algorithmUuid',
-    );
+       super(algorithmUuid: algorithmUuid) {
+    debugPrint('UsbFromAlgorithmRouting: Initialized with UUID $algorithmUuid');
   }
 
   @override
@@ -98,7 +96,8 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
               type: type,
               direction: PortDirection.output,
               description:
-                  item['description']?.toString() ?? 'USB audio channel from host',
+                  item['description']?.toString() ??
+                  'USB audio channel from host',
               outputMode: outputMode,
               busValue: item['busValue'] as int?,
               busParam: item['busParam']?.toString(),
@@ -112,7 +111,8 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     }
 
     debugPrint(
-        'UsbFromAlgorithmRouting: Generated ${ports.length} output ports from properties');
+      'UsbFromAlgorithmRouting: Generated ${ports.length} output ports from properties',
+    );
     return ports;
   }
 
@@ -165,7 +165,8 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     // Collect candidate 'to' params: enum-style bus params with names hinting at routing
     List<ParameterInfo> toParams = [
       for (final p in slot.parameters)
-        if (p.unit == 1 && (p.min == 0 || p.min == 1) &&
+        if (p.unit == 1 &&
+            (p.min == 0 || p.min == 1) &&
             (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31) &&
             p.name.toLowerCase().contains('to'))
           p,
@@ -175,8 +176,10 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     if (toParams.length != 8) {
       toParams = [
         for (final p in slot.parameters)
-          if (p.unit == 1 && (p.min == 0 || p.min == 1) &&
-              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31)) p,
+          if (p.unit == 1 &&
+              (p.min == 0 || p.min == 1) &&
+              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31))
+            p,
       ];
     }
 
@@ -219,7 +222,9 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     Map<String, ({int parameterNumber, int value})>? modeParametersWithNumbers,
     String? algorithmUuid,
   }) {
-    debugPrint('UsbFromAlgorithmRouting.createFromSlot: Algorithm ${slot.algorithm.name}');
+    debugPrint(
+      'UsbFromAlgorithmRouting.createFromSlot: Algorithm ${slot.algorithm.name}',
+    );
     final algUuid =
         algorithmUuid ?? 'algo_usbf_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -241,7 +246,9 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
 
     for (final p in slot.parameters) {
       // Identify USB routing 'to' parameters:
-      final isBusParam = p.unit == 1 && (p.min == 0 || p.min == 1) &&
+      final isBusParam =
+          p.unit == 1 &&
+          (p.min == 0 || p.min == 1) &&
           (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31);
       final nameLower = p.name.toLowerCase();
       final looksLikeTo = nameLower.contains('to');
@@ -263,8 +270,10 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     if (toParams.length != 8) {
       toParams = [
         for (final p in slot.parameters)
-          if (p.unit == 1 && (p.min == 0 || p.min == 1) &&
-              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31)) p
+          if (p.unit == 1 &&
+              (p.min == 0 || p.min == 1) &&
+              (p.max == 27 || p.max == 28 || p.max == 30 || p.max == 31))
+            p,
       ];
     }
 
@@ -291,6 +300,7 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
         }
         return null;
       }
+
       final recovered = <ParameterInfo>[];
       for (int i = 1; i <= 8; i++) {
         final name = findParamName(i, 'to');
@@ -300,7 +310,9 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
         }
       }
       if (recovered.isNotEmpty) {
-        recovered.sort((a, b) => a.parameterNumber.compareTo(b.parameterNumber));
+        recovered.sort(
+          (a, b) => a.parameterNumber.compareTo(b.parameterNumber),
+        );
         toParams = recovered;
       }
     }
@@ -309,13 +321,15 @@ class UsbFromAlgorithmRouting extends AlgorithmRouting {
     for (int i = 0; i < toParams.length && i < 8; i++) {
       final channel = i + 1;
       final toParam = toParams[i];
-      final busValue = valueByParam[toParam.parameterNumber] ?? toParam.defaultValue;
+      final busValue =
+          valueByParam[toParam.parameterNumber] ?? toParam.defaultValue;
 
       // Mode per index if available
       ({int parameterNumber, int value})? modeInfo;
       if (i < modeParams.length) {
         final modeParam = modeParams[i];
-        final value = valueByParam[modeParam.parameterNumber] ?? modeParam.defaultValue;
+        final value =
+            valueByParam[modeParam.parameterNumber] ?? modeParam.defaultValue;
         modeInfo = (parameterNumber: modeParam.parameterNumber, value: value);
       }
 

@@ -5,7 +5,9 @@ import 'package:nt_helper/ui/widgets/routing/invalid_connection_tooltip.dart';
 
 void main() {
   group('InvalidConnectionTooltip Widget Tests', () {
-    testWidgets('should create tooltip widget with correct structure', (WidgetTester tester) async {
+    testWidgets('should create tooltip widget with correct structure', (
+      WidgetTester tester,
+    ) async {
       final invalidConnection = Connection(
         id: 'test_invalid',
         sourcePortId: 'alg_2_output_1',
@@ -40,7 +42,9 @@ void main() {
       expect(find.text('Test Connection'), findsOneWidget);
     });
 
-    testWidgets('should handle valid connections correctly', (WidgetTester tester) async {
+    testWidgets('should handle valid connections correctly', (
+      WidgetTester tester,
+    ) async {
       final validConnection = Connection(
         id: 'test_valid',
         sourcePortId: 'alg_1_output_1',
@@ -110,7 +114,9 @@ void main() {
       expect(tooltipWidget.connection, equals(connection));
     });
 
-    testWidgets('should handle connection properties', (WidgetTester tester) async {
+    testWidgets('should handle connection properties', (
+      WidgetTester tester,
+    ) async {
       final connectionWithProperties = Connection(
         id: 'test_connection',
         sourcePortId: 'alg_2_output_1',
@@ -217,7 +223,9 @@ void main() {
       expect(tooltipWidget.destinationSlot, equals(0));
     });
 
-    testWidgets('should handle missing slot numbers', (WidgetTester tester) async {
+    testWidgets('should handle missing slot numbers', (
+      WidgetTester tester,
+    ) async {
       final invalidConnection = Connection(
         id: 'test_invalid',
         sourcePortId: 'unknown_output',
@@ -252,7 +260,9 @@ void main() {
       expect(tooltipWidget.destinationSlot, isNull);
     });
 
-    testWidgets('should handle different connection types', (WidgetTester tester) async {
+    testWidgets('should handle different connection types', (
+      WidgetTester tester,
+    ) async {
       final hardwareConnection = Connection(
         id: 'hardware_connection',
         sourcePortId: 'hardware_input_1',
@@ -282,13 +292,18 @@ void main() {
       final tooltipWidget = tester.widget<InvalidConnectionTooltip>(
         find.byType(InvalidConnectionTooltip),
       );
-      expect(tooltipWidget.connection.connectionType, equals(ConnectionType.hardwareInput));
+      expect(
+        tooltipWidget.connection.connectionType,
+        equals(ConnectionType.hardwareInput),
+      );
       expect(tooltipWidget.connection.isBackwardEdge, equals(false));
     });
   });
 
   group('InvalidConnectionTooltip Animation Tests', () {
-    testWidgets('should create widget with animation controller structure', (WidgetTester tester) async {
+    testWidgets('should create widget with animation controller structure', (
+      WidgetTester tester,
+    ) async {
       final connection = Connection(
         id: 'test_connection',
         sourcePortId: 'test_port',
@@ -320,7 +335,9 @@ void main() {
       expect(find.byType(Stack), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('should handle different delay durations', (WidgetTester tester) async {
+    testWidgets('should handle different delay durations', (
+      WidgetTester tester,
+    ) async {
       final connection = Connection(
         id: 'test_connection',
         sourcePortId: 'test_port',

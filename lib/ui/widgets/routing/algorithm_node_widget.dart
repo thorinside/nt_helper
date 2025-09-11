@@ -195,7 +195,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           // Title with slot number pre-pended
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(right: 12.0), // Add space after title per Material 3 specs
+              padding: const EdgeInsets.only(
+                right: 12.0,
+              ), // Add space after title per Material 3 specs
               child: Text(
                 '#${widget.slotNumber} ${_truncateWithEllipsis(widget.algorithmName, 25)}',
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -228,7 +230,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
             icon: Icon(Icons.more_vert, size: 18, color: foregroundColor),
             itemBuilder: (context) {
               List<PopupMenuEntry<String>> items = [];
-              
+
               // Add mapped parameter items first
               final cubit = context.read<DistingCubit>();
               final state = cubit.state;
@@ -236,56 +238,71 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                 final slotIndex = widget.slotNumber - 1;
                 if (slotIndex >= 0 && slotIndex < state.slots.length) {
                   final slot = state.slots[slotIndex];
-                  
+
                   // Find mapped parameters by checking both parameters list and mappings
-                  final mappedParams = <({ParameterInfo param, Mapping mapping})>[];
+                  final mappedParams =
+                      <({ParameterInfo param, Mapping mapping})>[];
                   for (int i = 0; i < slot.mappings.length; i++) {
                     final mapping = slot.mappings.elementAtOrNull(i);
-                    if (mapping != null && 
-                        mapping.packedMappingData != PackedMappingData.filler() && 
+                    if (mapping != null &&
+                        mapping.packedMappingData !=
+                            PackedMappingData.filler() &&
                         mapping.packedMappingData.isMapped()) {
                       // Find corresponding parameter info
                       final param = slot.parameters
-                          .where((p) => p.parameterNumber == mapping.parameterNumber)
+                          .where(
+                            (p) => p.parameterNumber == mapping.parameterNumber,
+                          )
                           .firstOrNull;
                       if (param != null) {
                         mappedParams.add((param: param, mapping: mapping));
                       }
                     }
                   }
-                  
+
                   for (final mappedParam in mappedParams) {
-                    items.add(PopupMenuItem(
-                      value: 'mapping_${mappedParam.param.parameterNumber}',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.map_sharp, size: 18),
-                          const SizedBox(width: 8),
-                          Text(mappedParam.param.name),
-                        ],
+                    items.add(
+                      PopupMenuItem(
+                        value: 'mapping_${mappedParam.param.parameterNumber}',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.map_sharp, size: 18),
+                            const SizedBox(width: 8),
+                            Text(mappedParam.param.name),
+                          ],
+                        ),
                       ),
-                    ));
+                    );
                   }
-                  
+
                   if (mappedParams.isNotEmpty) {
                     items.add(const PopupMenuDivider());
                   }
                 }
               }
-              
+
               // Add existing delete item
-              items.add(PopupMenuItem(
-                value: 'delete',
-                enabled: widget.onDelete != null,
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, size: 18, color: theme.colorScheme.error),
-                    const SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
-                  ],
+              items.add(
+                PopupMenuItem(
+                  value: 'delete',
+                  enabled: widget.onDelete != null,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete,
+                        size: 18,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Delete',
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
+                  ),
                 ),
-              ));
-              
+              );
+
               return items;
             },
             onSelected: (value) {
@@ -375,11 +392,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       isHighlighted: portId != null && portId == widget.highlightedPortId,
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
-      onTap: portId != null && isInput ? () => widget.onPortTapped?.call(portId) : null,
+      onTap: portId != null && isInput
+          ? () => widget.onPortTapped?.call(portId)
+          : null,
       onDragStart: portId != null && !isInput && widget.onPortDragStart != null
           ? () => widget.onPortDragStart!(portId)
           : null,
-      onDragUpdate: portId != null && !isInput && widget.onPortDragUpdate != null
+      onDragUpdate:
+          portId != null && !isInput && widget.onPortDragUpdate != null
           ? (position) => widget.onPortDragUpdate!(portId, position)
           : null,
       onDragEnd: portId != null && !isInput && widget.onPortDragEnd != null
@@ -461,22 +481,22 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   Future<void> _handleMappingEdit(int parameterNumber) async {
     final cubit = context.read<DistingCubit>();
     final state = cubit.state;
-    
+
     if (state is! DistingStateSynchronized) return;
-    
+
     final slotIndex = widget.slotNumber - 1;
     if (slotIndex < 0 || slotIndex >= state.slots.length) return;
-    
+
     final slot = state.slots[slotIndex];
     final mapping = slot.mappings
         .where((m) => m.parameterNumber == parameterNumber)
         .firstOrNull;
-    
+
     if (mapping == null) return;
-    
+
     final data = mapping.packedMappingData;
     final myMidiCubit = context.read<MidiListenerCubit>();
-    
+
     final updatedData = await showModalBottomSheet<PackedMappingData>(
       context: context,
       isScrollControlled: true,
@@ -486,13 +506,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         slots: state.slots,
       ),
     );
-    
+
     if (updatedData != null) {
-      cubit.saveMapping(
-        slotIndex,
-        parameterNumber,
-        updatedData,
-      );
+      cubit.saveMapping(slotIndex, parameterNumber, updatedData);
     }
   }
 
@@ -562,12 +578,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     }
 
     final slot = state.slots[slotIndex];
-    
+
     // Check if any parameter has a mapping that's not empty/filler
     for (int i = 0; i < slot.mappings.length; i++) {
       final mapping = slot.mappings.elementAtOrNull(i);
-      if (mapping != null && 
-          mapping.packedMappingData != PackedMappingData.filler() && 
+      if (mapping != null &&
+          mapping.packedMappingData != PackedMappingData.filler() &&
           mapping.packedMappingData.isMapped()) {
         return true;
       }

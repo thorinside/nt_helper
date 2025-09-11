@@ -48,12 +48,16 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                   state.maybeMap(
                     loaded: (loaded) => IconButton(
                       icon: Icon(
-                        loaded.sortByDate ? Icons.date_range : Icons.sort_by_alpha,
+                        loaded.sortByDate
+                            ? Icons.date_range
+                            : Icons.sort_by_alpha,
                       ),
                       onPressed: () {
                         context.read<PresetBrowserCubit>().toggleSortMode();
                       },
-                      tooltip: loaded.sortByDate ? 'Sort by date' : 'Sort alphabetically',
+                      tooltip: loaded.sortByDate
+                          ? 'Sort by date'
+                          : 'Sort alphabetically',
                     ),
                     orElse: () => const SizedBox.shrink(),
                   ),
@@ -73,12 +77,10 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
               child: BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
                 builder: (context, state) {
                   return state.map(
-                    initial: (_) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    loading: (_) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    initial: (_) =>
+                        const Center(child: CircularProgressIndicator()),
+                    loading: (_) =>
+                        const Center(child: CircularProgressIndicator()),
                     loaded: (loaded) => ThreePanelNavigator(
                       leftPanelItems: loaded.leftPanelItems,
                       centerPanelItems: loaded.centerPanelItems,
@@ -98,14 +100,13 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                             size: 48,
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            error.message,
-                            textAlign: TextAlign.center,
-                          ),
+                          Text(error.message, textAlign: TextAlign.center),
                           const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: () {
-                              context.read<PresetBrowserCubit>().loadRootDirectory();
+                              context
+                                  .read<PresetBrowserCubit>()
+                                  .loadRootDirectory();
                             },
                             child: const Text('Retry'),
                           ),
@@ -140,7 +141,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ),
         BlocBuilder<PresetBrowserCubit, PresetBrowserState>(
           builder: (context, state) {
-            final selectedPath = context.read<PresetBrowserCubit>().getSelectedPath();
+            final selectedPath = context
+                .read<PresetBrowserCubit>()
+                .getSelectedPath();
             return ElevatedButton(
               onPressed: selectedPath.isNotEmpty
                   ? () {
@@ -161,7 +164,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
   void _handleItemSelected(DirectoryEntry item, PanelPosition position) {
     final cubit = context.read<PresetBrowserCubit>();
-    
+
     if (item.isDirectory) {
       cubit.selectDirectory(item, position);
     } else {
@@ -247,18 +250,12 @@ class DirectoryPanel extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          border: Border.all(
-            color: Theme.of(context).dividerColor,
-            width: 0.5,
-          ),
+          border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
         ),
         child: const Center(
           child: Text(
             'Empty',
-            style: TextStyle(
-              color: Colors.grey,
-              fontStyle: FontStyle.italic,
-            ),
+            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
           ),
         ),
       );
@@ -267,37 +264,35 @@ class DirectoryPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-          width: 0.5,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor, width: 0.5),
       ),
       child: ListView.builder(
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
           final isSelected = item == selectedItem;
-          
+
           // Clean up the display name
           String displayName = item.name;
           if (displayName.endsWith('/')) {
             displayName = displayName.substring(0, displayName.length - 1);
           }
-          
-          final isJsonPreset = !item.isDirectory && item.name.toLowerCase().endsWith('.json');
-          
+
+          final isJsonPreset =
+              !item.isDirectory && item.name.toLowerCase().endsWith('.json');
+
           return ListTile(
             leading: Icon(
-              item.isDirectory 
-                  ? Icons.folder 
-                  : isJsonPreset 
-                      ? Icons.music_note 
-                      : Icons.insert_drive_file,
+              item.isDirectory
+                  ? Icons.folder
+                  : isJsonPreset
+                  ? Icons.music_note
+                  : Icons.insert_drive_file,
               color: item.isDirectory
                   ? Theme.of(context).colorScheme.primary
                   : isJsonPreset
-                      ? Theme.of(context).colorScheme.tertiary
-                      : Theme.of(context).colorScheme.secondary,
+                  ? Theme.of(context).colorScheme.tertiary
+                  : Theme.of(context).colorScheme.secondary,
             ),
             title: Text(
               displayName,

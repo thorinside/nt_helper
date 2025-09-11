@@ -12,7 +12,8 @@ List<Port> _createTestInputPorts() {
       id: 'hw_in_$portNum',
       name: 'Input $portNum',
       type: PortType.audio,
-      direction: PortDirection.output, // Physical inputs act as outputs to algorithms
+      direction:
+          PortDirection.output, // Physical inputs act as outputs to algorithms
       isPhysical: true,
       busValue: portNum,
     );
@@ -27,7 +28,8 @@ List<Port> _createTestOutputPorts() {
       id: 'hw_out_$portNum',
       name: 'Output $portNum',
       type: PortType.audio,
-      direction: PortDirection.input, // Physical outputs act as inputs from algorithms
+      direction:
+          PortDirection.input, // Physical outputs act as inputs from algorithms
       isPhysical: true,
       busValue: portNum + 12,
     );

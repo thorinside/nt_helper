@@ -17,9 +17,9 @@ class _TestRouting extends AlgorithmRouting {
     required List<Port> inputPorts,
     required List<Port> outputPorts,
     String? algorithmUuid,
-  })  : _inputPorts = inputPorts,
-        _outputPorts = outputPorts,
-        super(algorithmUuid: algorithmUuid);
+  }) : _inputPorts = inputPorts,
+       _outputPorts = outputPorts,
+       super(algorithmUuid: algorithmUuid);
 
   @override
   RoutingState get state => _state;
@@ -89,8 +89,16 @@ void main() {
         pages: ParameterPages(algorithmIndex: 100, pages: []),
         parameters: parameters,
         values: [
-          ParameterValue(algorithmIndex: 100, parameterNumber: 1, value: 3), // Bus 3
-          ParameterValue(algorithmIndex: 100, parameterNumber: 2, value: 15), // Bus 15
+          ParameterValue(
+            algorithmIndex: 100,
+            parameterNumber: 1,
+            value: 3,
+          ), // Bus 3
+          ParameterValue(
+            algorithmIndex: 100,
+            parameterNumber: 2,
+            value: 15,
+          ), // Bus 15
         ],
         enums: [],
         mappings: [],
@@ -103,8 +111,16 @@ void main() {
         pages: ParameterPages(algorithmIndex: 100, pages: []),
         parameters: parameters,
         values: [
-          ParameterValue(algorithmIndex: 100, parameterNumber: 1, value: 4), // Bus 4
-          ParameterValue(algorithmIndex: 100, parameterNumber: 2, value: 16), // Bus 16
+          ParameterValue(
+            algorithmIndex: 100,
+            parameterNumber: 1,
+            value: 4,
+          ), // Bus 4
+          ParameterValue(
+            algorithmIndex: 100,
+            parameterNumber: 2,
+            value: 16,
+          ), // Bus 16
         ],
         enums: [],
         mappings: [],
@@ -124,7 +140,7 @@ void main() {
       // This test should FAIL initially because ConnectionDiscoveryService
       // uses hashCode fallback instead of stable algorithmUuid
       // After the fix, it should PASS
-      
+
       // Attempt to discover connections
       final connections = ConnectionDiscoveryService.discoverConnections([
         routing1,
@@ -134,12 +150,12 @@ void main() {
       // Verify that the service doesn't get stuck in an infinite loop
       // (The bug causes hashCode to be unstable, leading to mismatched port IDs)
       expect(connections, isNotNull);
-      
+
       // Verify that both algorithms are properly identified
       // This will fail with the current implementation because hashCode changes
       final routing1Ports = routing1.inputPorts + routing1.outputPorts;
       final routing2Ports = routing2.inputPorts + routing2.outputPorts;
-      
+
       // Check that port IDs use stable algorithm UUIDs
       for (final port in routing1Ports) {
         expect(
@@ -148,7 +164,7 @@ void main() {
           reason: 'Port ID should contain stable algorithm UUID for slot 0',
         );
       }
-      
+
       for (final port in routing2Ports) {
         expect(
           port.id,
@@ -196,8 +212,16 @@ void main() {
         pages: ParameterPages(algorithmIndex: 101, pages: []),
         parameters: parameters,
         values: [
-          ParameterValue(algorithmIndex: 101, parameterNumber: 1, value: 1), // Hardware input
-          ParameterValue(algorithmIndex: 101, parameterNumber: 2, value: 20), // Internal bus
+          ParameterValue(
+            algorithmIndex: 101,
+            parameterNumber: 1,
+            value: 1,
+          ), // Hardware input
+          ParameterValue(
+            algorithmIndex: 101,
+            parameterNumber: 2,
+            value: 20,
+          ), // Internal bus
         ],
         enums: [],
         mappings: [],
@@ -210,8 +234,16 @@ void main() {
         pages: ParameterPages(algorithmIndex: 101, pages: []),
         parameters: parameters,
         values: [
-          ParameterValue(algorithmIndex: 101, parameterNumber: 1, value: 20), // From slot1
-          ParameterValue(algorithmIndex: 101, parameterNumber: 2, value: 13), // Hardware output
+          ParameterValue(
+            algorithmIndex: 101,
+            parameterNumber: 1,
+            value: 20,
+          ), // From slot1
+          ParameterValue(
+            algorithmIndex: 101,
+            parameterNumber: 2,
+            value: 13,
+          ), // Hardware output
         ],
         enums: [],
         mappings: [],
@@ -234,9 +266,9 @@ void main() {
 
       // Should find the connection between the two instances via bus 20
       // Look for algorithm-to-algorithm connections
-      final algorithmConnections = connections.where((c) =>
-        c.connectionType == ConnectionType.algorithmToAlgorithm
-      ).toList();
+      final algorithmConnections = connections
+          .where((c) => c.connectionType == ConnectionType.algorithmToAlgorithm)
+          .toList();
 
       expect(
         algorithmConnections,
@@ -301,8 +333,16 @@ void main() {
           pages: ParameterPages(algorithmIndex: 102, pages: []),
           parameters: parameters,
           values: [
-            ParameterValue(algorithmIndex: 102, parameterNumber: 1, value: i + 1),
-            ParameterValue(algorithmIndex: 102, parameterNumber: 2, value: i + 13),
+            ParameterValue(
+              algorithmIndex: 102,
+              parameterNumber: 1,
+              value: i + 1,
+            ),
+            ParameterValue(
+              algorithmIndex: 102,
+              parameterNumber: 2,
+              value: i + 13,
+            ),
           ],
           enums: [],
           mappings: [],
@@ -310,15 +350,14 @@ void main() {
         );
 
         routings.add(
-          AlgorithmRouting.fromSlot(
-            slot,
-            algorithmUuid: 'instance_$i',
-          ),
+          AlgorithmRouting.fromSlot(slot, algorithmUuid: 'instance_$i'),
         );
       }
 
       final stopwatch = Stopwatch()..start();
-      final connections = ConnectionDiscoveryService.discoverConnections(routings);
+      final connections = ConnectionDiscoveryService.discoverConnections(
+        routings,
+      );
       stopwatch.stop();
 
       expect(connections, isNotNull);

@@ -201,7 +201,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               height: widget.canvasSize.height,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                border: Border.all(color: Theme.of(context).dividerColor, width: 1),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: ClipRRect(
@@ -292,10 +295,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Handle keyboard events for desktop platforms
   KeyEventResult _handleKeyEvent(KeyEvent event) {
-    if (_platformService.isDesktopPlatform() && 
-        event is KeyDownEvent && 
+    if (_platformService.isDesktopPlatform() &&
+        event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      
       // Cancel drag operation if in progress
       if (_isDraggingConnection) {
         _cancelDragOperation();
@@ -325,7 +327,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Cancel previous timer if exists
     _errorDismissTimer?.cancel();
-    
+
     // Auto-dismiss after 5 seconds
     _errorDismissTimer = Timer(const Duration(seconds: 5), () {
       if (mounted && _errorMessage == message) {
@@ -358,7 +360,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
       // Only check aux buses for algorithm-to-algorithm connections
       // Hardware input/output connections (buses 1-20) are always available
-      final isHardwareConnection = sourcePortId.startsWith('hw_') || targetPortId.startsWith('hw_');
+      final isHardwareConnection =
+          sourcePortId.startsWith('hw_') || targetPortId.startsWith('hw_');
       if (!isHardwareConnection) {
         final availableAuxBuses = await _checkAvailableAuxBuses(currentState);
         if (!availableAuxBuses) {
@@ -372,7 +375,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         sourcePortId: sourcePortId,
         targetPortId: targetPortId,
       );
-      
+
       debugPrint('Connection created successfully');
     } on ArgumentError catch (e) {
       _showError('Invalid connection: ${e.message}');
@@ -388,7 +391,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Future<bool> _checkAvailableAuxBuses(RoutingEditorStateLoaded state) async {
     // Get all currently used bus numbers from existing connections
     final usedBuses = <int>{};
-    
+
     // Check all algorithm ports for their current bus assignments
     for (final algorithm in state.algorithms) {
       for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
@@ -397,14 +400,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
       }
     }
-    
+
     // Check if aux buses (21-28) are available
     for (int busNumber = 21; busNumber <= 28; busNumber++) {
       if (!usedBuses.contains(busNumber)) {
         return true; // Found at least one available bus
       }
     }
-    
+
     return false; // All aux buses are in use
   }
 
@@ -565,10 +568,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                   ),
                   // Nodes on middle layer (connections will draw above to overlay ports)
                   if (widget.showPhysicalPorts)
-                    ..._buildPhysicalInputNodes(physicalInputs, connections, stateNodePositions),
+                    ..._buildPhysicalInputNodes(
+                      physicalInputs,
+                      connections,
+                      stateNodePositions,
+                    ),
                   if (widget.showPhysicalPorts)
-                    ..._buildPhysicalOutputNodes(physicalOutputs, connections, stateNodePositions),
-                  ..._buildAlgorithmNodes(algorithms, connections, stateNodePositions),
+                    ..._buildPhysicalOutputNodes(
+                      physicalOutputs,
+                      connections,
+                      stateNodePositions,
+                    ),
+                  ..._buildAlgorithmNodes(
+                    algorithms,
+                    connections,
+                    stateNodePositions,
+                  ),
                   // Draw all connections with unified canvas
                   // Use RepaintBoundary to isolate canvas repaints
                   // Keep connections visible if they were already visible and ports haven't been cleared
@@ -599,16 +614,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Position in the center area of the canvas, to the left of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    
+
     // Check for position from state first
     final statePosition = stateNodePositions['physical_inputs'];
     final Offset nodePosition;
-    
+
     if (statePosition != null) {
       nodePosition = Offset(statePosition.x, statePosition.y);
       _nodePositions['physical_inputs'] = nodePosition;
     } else {
-      nodePosition = _nodePositions['physical_inputs'] ??
+      nodePosition =
+          _nodePositions['physical_inputs'] ??
           const Offset(centerX - 800, centerY - 300);
     }
 
@@ -664,16 +680,17 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Position in the center area of the canvas, to the right of algorithms
     const double centerX = _canvasWidth / 2;
     const double centerY = _canvasHeight / 2;
-    
+
     // Check for position from state first
     final statePosition = stateNodePositions['physical_outputs'];
     final Offset nodePosition;
-    
+
     if (statePosition != null) {
       nodePosition = Offset(statePosition.x, statePosition.y);
       _nodePositions['physical_outputs'] = nodePosition;
     } else {
-      nodePosition = _nodePositions['physical_outputs'] ??
+      nodePosition =
+          _nodePositions['physical_outputs'] ??
           const Offset(centerX + 600, centerY - 300);
     }
 
@@ -728,11 +745,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return algorithms.map((algorithm) {
       // Use stable algorithm ID instead of index for consistent positioning
       final nodeId = algorithm.id;
-      
+
       // First check if there's a position from the layout algorithm in state
       final statePosition = stateNodePositions[nodeId];
       final Offset position;
-      
+
       if (statePosition != null) {
         // Use position from state (layout algorithm result)
         position = Offset(statePosition.x, statePosition.y);
@@ -1157,7 +1174,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Only allow deletion from input ports
     if (!port.isInput) {
-      debugPrint('Deletion only allowed from input ports. Ignoring tap on output port: ${port.id}');
+      debugPrint(
+        'Deletion only allowed from input ports. Ignoring tap on output port: ${port.id}',
+      );
       return;
     }
 
@@ -1183,7 +1202,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Search through all ports to find the tapped port
     Port? tappedPort;
-    
+
     // Check physical inputs
     for (final port in state.physicalInputs) {
       if (port.id == portId) {
@@ -1191,7 +1210,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         break;
       }
     }
-    
+
     // Check physical outputs if not found
     if (tappedPort == null) {
       for (final port in state.physicalOutputs) {
@@ -1201,11 +1220,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
       }
     }
-    
+
     // Check algorithm ports if not found
     if (tappedPort == null) {
       for (final algorithm in state.algorithms) {
-        for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
+        for (final port in [
+          ...algorithm.inputPorts,
+          ...algorithm.outputPorts,
+        ]) {
           if (port.id == portId) {
             tappedPort = port;
             break;
@@ -1222,7 +1244,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Only allow deletion from input ports
     if (!tappedPort.isInput) {
-      debugPrint('Deletion only allowed from input ports. Ignoring tap on output port: $portId');
+      debugPrint(
+        'Deletion only allowed from input ports. Ignoring tap on output port: $portId',
+      );
       return;
     }
 
@@ -1282,13 +1306,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Debounced port detection (16ms for 60fps)
     _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 16), () {
-      if (!mounted || !_isDraggingConnection || _dragSourcePort?.id != port.id) {
+      if (!mounted ||
+          !_isDraggingConnection ||
+          _dragSourcePort?.id != port.id) {
         return;
       }
 
       final targetPort = _findPortAtPosition(localPosition);
       final newHighlight = targetPort?.isInput == true ? targetPort?.id : null;
-      
+
       // Only setState if highlight actually changed
       if (newHighlight != _highlightedPortId) {
         setState(() {
@@ -1303,68 +1329,70 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Find the port in the current state
     final state = context.read<RoutingEditorCubit>().state;
     if (state is! RoutingEditorStateLoaded) return;
-    
+
     // Find port in algorithms
     Port? port;
     for (final algorithm in state.algorithms) {
       port = algorithm.outputPorts.firstWhereOrNull((p) => p.id == portId);
       if (port != null) break;
     }
-    
+
     if (port == null) {
       debugPrint('Port not found: $portId');
       return;
     }
-    
+
     // Allow dragging from output ports even when connected to enable fan-out patterns
     // (Only output ports can be dragged from, checked above)
-    
+
     // Get the current port position
     final portPosition = _getPortPosition(portId);
     if (portPosition == null) {
       debugPrint('Cannot find position for port: $portId');
       return;
     }
-    
+
     setState(() {
       _isDraggingConnection = true;
       _dragSourcePort = port;
       _dragCurrentPosition = portPosition;
     });
-    
-    debugPrint('Started connection drag from algorithm output port: ${port.name}');
+
+    debugPrint(
+      'Started connection drag from algorithm output port: ${port.name}',
+    );
   }
-  
+
   void _handleAlgorithmPortDragUpdate(String portId, Offset position) {
     // Only update if we're dragging a connection and this is the source port
     if (!_isDraggingConnection || _dragSourcePort?.id != portId) {
       return;
     }
-    
+
     // Convert global position to local canvas coordinates
     final ctx = _canvasKey.currentContext;
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.attached) return;
     final localPosition = box.globalToLocal(position);
-    
+
     // Immediate position update for fluid preview
     setState(() {
       _dragCurrentPosition = localPosition;
     });
-    
+
     // Cancel previous debounce timer
     _dragUpdateDebounceTimer?.cancel();
-    
+
     // Debounced port detection (16ms for 60fps)
     _dragUpdateDebounceTimer = Timer(const Duration(milliseconds: 16), () {
       if (!mounted || !_isDraggingConnection || _dragSourcePort?.id != portId) {
         return;
       }
-      
+
       final targetPort = _findPortAtPosition(localPosition);
       final newHighlight = targetPort?.isInput == true ? targetPort?.id : null;
-      
+
       // Only setState if highlight actually changed
       if (newHighlight != _highlightedPortId) {
         setState(() {
@@ -1373,58 +1401,66 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
     });
   }
-  
-  Future<void> _handleAlgorithmPortDragEnd(String portId, Offset position) async {
+
+  Future<void> _handleAlgorithmPortDragEnd(
+    String portId,
+    Offset position,
+  ) async {
     // Convert global position to local canvas coordinates
     final ctx = _canvasKey.currentContext;
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.attached) return;
     final localPosition = box.globalToLocal(position);
-    
+
     // Only handle if we're dragging a connection and this is the source port
     if (!_isDraggingConnection || _dragSourcePort?.id != portId) {
       return;
     }
-    
+
     // Cancel any pending drag update
     _dragUpdateDebounceTimer?.cancel();
-    
+
     try {
       // Find port at drop position
       final targetPort = _findPortAtPosition(localPosition);
-      
+
       if (targetPort != null) {
-        debugPrint('Port found at drop position: ${targetPort.name}, isInput: ${targetPort.isInput}, direction: ${targetPort.direction}, id: ${targetPort.id}');
+        debugPrint(
+          'Port found at drop position: ${targetPort.name}, isInput: ${targetPort.isInput}, direction: ${targetPort.direction}, id: ${targetPort.id}',
+        );
       }
-      
+
       if (targetPort != null && targetPort.isInput) {
         debugPrint('Valid drop target found: ${targetPort.name}');
-        
+
         // Check for duplicate connection before attempting to create
         final cubit = context.read<RoutingEditorCubit>();
         final currentState = cubit.state;
         if (currentState is RoutingEditorStateLoaded) {
-          final exists = currentState.connections.any((conn) =>
-            conn.sourcePortId == _dragSourcePort!.id &&
-            conn.destinationPortId == targetPort.id
+          final exists = currentState.connections.any(
+            (conn) =>
+                conn.sourcePortId == _dragSourcePort!.id &&
+                conn.destinationPortId == targetPort.id,
           );
-          
+
           if (exists) {
             _showError('Connection already exists between these ports');
             return;
           }
-          
+
           // Only check aux buses for algorithm-to-algorithm connections
           // Hardware connections (buses 1-20) are always available
-          final isHardwareConnection = _dragSourcePort!.id.startsWith('hw_') || targetPort.id.startsWith('hw_');
+          final isHardwareConnection =
+              _dragSourcePort!.id.startsWith('hw_') ||
+              targetPort.id.startsWith('hw_');
           if (!isHardwareConnection) {
             if (!(await _checkAvailableAuxBuses(currentState))) {
               return;
             }
           }
         }
-        
+
         // Create the connection
         try {
           await cubit.createConnection(
@@ -1456,7 +1492,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.attached) return;
     final localPosition = box.globalToLocal(position);
-    
+
     // Only handle if we're dragging a connection and this is the source port
     if (!_isDraggingConnection || _dragSourcePort?.id != port.id) {
       return;
@@ -1470,36 +1506,45 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final targetPort = _findPortAtPosition(localPosition);
 
       if (targetPort != null) {
-        debugPrint('Port found at drop position: ${targetPort.name}, isInput: ${targetPort.isInput}, direction: ${targetPort.direction}, id: ${targetPort.id}');
+        debugPrint(
+          'Port found at drop position: ${targetPort.name}, isInput: ${targetPort.isInput}, direction: ${targetPort.direction}, id: ${targetPort.id}',
+        );
       }
-      
+
       if (targetPort != null && targetPort.isInput) {
         debugPrint('Valid drop target found: ${targetPort.name}');
-        
+
         // Check for duplicate connection before attempting to create
         final currentState = context.read<RoutingEditorCubit>().state;
         if (currentState is RoutingEditorStateLoaded) {
           final existingConnection = currentState.connections.any(
-            (conn) => conn.sourcePortId == _dragSourcePort!.id && 
-                     conn.destinationPortId == targetPort.id,
+            (conn) =>
+                conn.sourcePortId == _dragSourcePort!.id &&
+                conn.destinationPortId == targetPort.id,
           );
-          
+
           if (existingConnection) {
             _showError('Connection already exists between these ports');
             return;
           }
         }
-        
+
         // Create the connection using the cubit
         final cubit = context.read<RoutingEditorCubit>();
-        await _createConnectionWithErrorHandling(cubit, _dragSourcePort!.id, targetPort.id);
-        
+        await _createConnectionWithErrorHandling(
+          cubit,
+          _dragSourcePort!.id,
+          targetPort.id,
+        );
+
         debugPrint(
           'Connection creation requested: ${_dragSourcePort!.name} -> ${targetPort.name}',
         );
       } else {
         // Invalid drop - silently clear drag state (no error message)
-        debugPrint('No valid input port found at drop position - silent failure');
+        debugPrint(
+          'No valid input port found at drop position - silent failure',
+        );
       }
     } catch (e) {
       _showError('Failed to create connection: ${e.toString()}');
@@ -1649,12 +1694,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         previous.nodePositions.length != current.nodePositions.length) {
       return true;
     }
-    
+
     // Check if node positions have changed
     for (final entry in current.nodePositions.entries) {
       final prevPosition = previous.nodePositions[entry.key];
-      if (prevPosition == null || 
-          prevPosition.x != entry.value.x || 
+      if (prevPosition == null ||
+          prevPosition.x != entry.value.x ||
           prevPosition.y != entry.value.y) {
         return true;
       }
@@ -1722,23 +1767,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     if (previous.algorithms.length != current.algorithms.length) {
       return true;
     }
-    
+
     for (int i = 0; i < current.algorithms.length; i++) {
       final prevAlg = previous.algorithms[i];
       final currAlg = current.algorithms[i];
-      
+
       // Algorithm changed (different type or position)
       if (prevAlg.algorithm.guid != currAlg.algorithm.guid ||
           prevAlg.index != currAlg.index) {
         return true;
       }
-      
+
       // Port structure changed
       if (prevAlg.inputPorts.length != currAlg.inputPorts.length ||
           prevAlg.outputPorts.length != currAlg.outputPorts.length) {
         return true;
       }
-      
+
       // Port IDs changed (indicates different routing)
       for (int p = 0; p < currAlg.inputPorts.length; p++) {
         if (prevAlg.inputPorts[p].id != currAlg.inputPorts[p].id) {
@@ -1751,13 +1796,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
       }
     }
-    
+
     // Physical ports structure changed
     if (previous.physicalInputs.length != current.physicalInputs.length ||
         previous.physicalOutputs.length != current.physicalOutputs.length) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -2036,8 +2081,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Check if this is a partial connection bus label
       if (connectionId.startsWith('partial_')) {
         // This is an unconnected bus label - add tap handler to clear the output
-        final actualConnectionId = connectionId.substring(8); // Remove 'partial_' prefix
-        
+        final actualConnectionId = connectionId.substring(
+          8,
+        ); // Remove 'partial_' prefix
+
         overlays.add(
           Positioned(
             left: bounds.left,
@@ -2046,7 +2093,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             height: bounds.height,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => _clearOutputBusForPartialConnection(actualConnectionId),
+              onTap: () =>
+                  _clearOutputBusForPartialConnection(actualConnectionId),
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: Container(
@@ -2139,9 +2187,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   void _clearOutputBusForPartialConnection(String connectionId) {
     final routingCubit = context.read<RoutingEditorCubit>();
     final routingState = routingCubit.state;
-    
+
     if (routingState is! RoutingEditorStateLoaded) return;
-    
+
     // Find the partial connection
     final connection = routingState.connections.firstWhere(
       (conn) => conn.id == connectionId && conn.isPartial,
@@ -2152,22 +2200,24 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         connectionType: ConnectionType.algorithmToAlgorithm,
       ),
     );
-    
+
     if (connection.id.isEmpty) {
       debugPrint('Partial connection not found: $connectionId');
       return;
     }
-    
+
     // For partial output-to-bus connections, the source is the output port
     if (connection.connectionType == ConnectionType.partialOutputToBus) {
       final sourcePortId = connection.sourcePortId;
-      
+
       // Find the port and its algorithm
       for (final algorithm in routingState.algorithms) {
         for (final port in algorithm.outputPorts) {
           if (port.id == sourcePortId && port.parameterNumber != null) {
-            debugPrint('Clearing output bus for port ${port.name} (algorithm ${algorithm.index})');
-            
+            debugPrint(
+              'Clearing output bus for port ${port.name} (algorithm ${algorithm.index})',
+            );
+
             // Clear the bus assignment by setting parameter to 0
             context.read<DistingCubit>().updateParameterValue(
               algorithmIndex: algorithm.index,

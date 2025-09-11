@@ -15,7 +15,8 @@ List<Port> _createTestInputPorts() {
       id: 'hw_in_$portNum',
       name: 'Input $portNum',
       type: PortType.audio,
-      direction: PortDirection.output, // Physical inputs act as outputs to algorithms
+      direction:
+          PortDirection.output, // Physical inputs act as outputs to algorithms
       isPhysical: true,
       busValue: portNum,
     );
@@ -30,7 +31,8 @@ List<Port> _createTestOutputPorts() {
       id: 'hw_out_$portNum',
       name: 'Output $portNum',
       type: PortType.audio,
-      direction: PortDirection.input, // Physical outputs act as inputs from algorithms
+      direction:
+          PortDirection.input, // Physical outputs act as inputs from algorithms
       isPhysical: true,
       busValue: portNum + 12,
     );
@@ -101,21 +103,33 @@ void main() {
       await tester.pump(); // Allow position callbacks to fire
 
       // Both types of port callbacks should have fired
-      expect(algorithmPortCallbackFired, isTrue,
-          reason: 'Algorithm port position callbacks should fire');
-      expect(physicalPortCallbackFired, isTrue,
-          reason: 'Physical port position callbacks should fire');
+      expect(
+        algorithmPortCallbackFired,
+        isTrue,
+        reason: 'Algorithm port position callbacks should fire',
+      );
+      expect(
+        physicalPortCallbackFired,
+        isTrue,
+        reason: 'Physical port position callbacks should fire',
+      );
 
       // Should have positions for both algorithm and physical ports
-      expect(allPortPositions.keys.where((k) => k.startsWith('algo_')),
-          isNotEmpty,
-          reason: 'Should have algorithm port positions');
-      expect(allPortPositions.keys.where((k) => k.startsWith('physical_')),
-          isNotEmpty,
-          reason: 'Should have physical port positions');
+      expect(
+        allPortPositions.keys.where((k) => k.startsWith('algo_')),
+        isNotEmpty,
+        reason: 'Should have algorithm port positions',
+      );
+      expect(
+        allPortPositions.keys.where((k) => k.startsWith('physical_')),
+        isNotEmpty,
+        reason: 'Should have physical port positions',
+      );
     });
 
-    testWidgets('Port widgets handle hover states consistently', (tester) async {
+    testWidgets('Port widgets handle hover states consistently', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -163,10 +177,16 @@ void main() {
       );
 
       // Both node types should use PortWidget internally
-      expect(algorithmPorts, findsWidgets,
-          reason: 'Algorithm nodes should use PortWidget');
-      expect(physicalPorts, findsWidgets,
-          reason: 'Physical nodes should use PortWidget');
+      expect(
+        algorithmPorts,
+        findsWidgets,
+        reason: 'Algorithm nodes should use PortWidget',
+      );
+      expect(
+        physicalPorts,
+        findsWidgets,
+        reason: 'Physical nodes should use PortWidget',
+      );
 
       // Test interaction behavior works consistently - use tap instead of hover
       await tester.tap(algorithmPorts.first);
@@ -263,10 +283,12 @@ void main() {
       await tester.pump(); // Allow callbacks
 
       // Should have tracked positions for the ports
-      expect(positions, isNotEmpty,
-          reason: 'Should track port positions');
-      expect(positions.length, greaterThan(0),
-          reason: 'Should have at least one port position');
+      expect(positions, isNotEmpty, reason: 'Should track port positions');
+      expect(
+        positions.length,
+        greaterThan(0),
+        reason: 'Should have at least one port position',
+      );
     });
 
     testWidgets('Drag operations work across node types', (tester) async {
@@ -318,10 +340,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(inputNodeDragCalled, isTrue,
-          reason: 'Input node drag callback should fire');
-      expect(outputNodeDragCalled, isTrue,
-          reason: 'Output node drag callback should fire');
+      expect(
+        inputNodeDragCalled,
+        isTrue,
+        reason: 'Input node drag callback should fire',
+      );
+      expect(
+        outputNodeDragCalled,
+        isTrue,
+        reason: 'Output node drag callback should fire',
+      );
     });
 
     testWidgets('Port widgets maintain consistent sizing', (tester) async {
@@ -364,25 +392,43 @@ void main() {
         matching: find.byType(PortWidget),
       );
 
-      expect(inputPorts, findsWidgets,
-          reason: 'Should find input port widgets');
-      expect(outputPorts, findsWidgets,
-          reason: 'Should find output port widgets');
+      expect(
+        inputPorts,
+        findsWidgets,
+        reason: 'Should find input port widgets',
+      );
+      expect(
+        outputPorts,
+        findsWidgets,
+        reason: 'Should find output port widgets',
+      );
 
       // Get sizes of port widgets (they should be consistent)
-      final inputPortSizes = inputPorts.evaluate().map((e) => tester.getSize(find.byWidget(e.widget))).toList();
-      final outputPortSizes = outputPorts.evaluate().map((e) => tester.getSize(find.byWidget(e.widget))).toList();
+      final inputPortSizes = inputPorts
+          .evaluate()
+          .map((e) => tester.getSize(find.byWidget(e.widget)))
+          .toList();
+      final outputPortSizes = outputPorts
+          .evaluate()
+          .map((e) => tester.getSize(find.byWidget(e.widget)))
+          .toList();
 
       // All input ports should have the same size
       for (int i = 1; i < inputPortSizes.length; i++) {
-        expect(inputPortSizes[i], equals(inputPortSizes[0]),
-            reason: 'All input port widgets should have consistent size');
+        expect(
+          inputPortSizes[i],
+          equals(inputPortSizes[0]),
+          reason: 'All input port widgets should have consistent size',
+        );
       }
 
       // All output ports should have the same size
       for (int i = 1; i < outputPortSizes.length; i++) {
-        expect(outputPortSizes[i], equals(outputPortSizes[0]),
-            reason: 'All output port widgets should have consistent size');
+        expect(
+          outputPortSizes[i],
+          equals(outputPortSizes[0]),
+          reason: 'All output port widgets should have consistent size',
+        );
       }
     });
   });

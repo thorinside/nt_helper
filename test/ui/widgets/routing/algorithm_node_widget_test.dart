@@ -14,7 +14,9 @@ class MockDistingCubit extends Mock implements DistingCubit {
   @override
   Stream<DistingState> get stream => const Stream.empty();
 }
+
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
+
 class MockMidiListenerCubit extends Mock implements MidiListenerCubit {}
 
 void main() {
@@ -32,7 +34,9 @@ void main() {
       mockManager = MockDistingMidiManager();
     });
 
-    testWidgets('should show mapping icon when slot has mapped parameters', (tester) async {
+    testWidgets('should show mapping icon when slot has mapped parameters', (
+      tester,
+    ) async {
       // Create a mapped parameter data (not filler = mapped)
       final mappedData = PackedMappingData(
         source: 1,
@@ -56,7 +60,7 @@ void main() {
         i2cMax: 127,
         version: 1,
       );
-      
+
       // Create a slot with a mapped parameter
       final mappedSlot = Slot(
         algorithm: Algorithm(
@@ -64,14 +68,8 @@ void main() {
           guid: 'test',
           name: 'Test Algorithm',
         ),
-        routing: RoutingInfo(
-          algorithmIndex: 0,
-          routingInfo: const [],
-        ),
-        pages: ParameterPages(
-          algorithmIndex: 0,
-          pages: const [],
-        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
         parameters: [
           ParameterInfo(
             algorithmIndex: 0,
@@ -85,11 +83,7 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            value: 50,
-          ),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
         ],
         enums: [
           ParameterEnumStrings(
@@ -153,199 +147,190 @@ void main() {
 
       // Verify the icon is inside a container with the correct background color
       final container = tester.widget<Container>(
-        find.ancestor(
-          of: mappingIcon,
-          matching: find.byType(Container),
-        ).first,
+        find.ancestor(of: mappingIcon, matching: find.byType(Container)).first,
       );
       expect(container.decoration, isNotNull);
     });
 
-    testWidgets('should show mapped parameter menu items when slot has mappings', (tester) async {
-      // Create multiple mapped parameters
-      final mappedData1 = PackedMappingData(
-        source: 1,
-        cvInput: 0,
-        isUnipolar: true,
-        isGate: false,
-        volts: 5,
-        delta: 1,
-        midiChannel: 1,
-        midiMappingType: MidiMappingType.cc,
-        midiCC: 1,
-        isMidiEnabled: true,
-        isMidiSymmetric: false,
-        isMidiRelative: false,
-        midiMin: 0,
-        midiMax: 127,
-        i2cCC: 0,
-        isI2cEnabled: false,
-        isI2cSymmetric: false,
-        i2cMin: 0,
-        i2cMax: 127,
-        version: 1,
-      );
+    testWidgets(
+      'should show mapped parameter menu items when slot has mappings',
+      (tester) async {
+        // Create multiple mapped parameters
+        final mappedData1 = PackedMappingData(
+          source: 1,
+          cvInput: 0,
+          isUnipolar: true,
+          isGate: false,
+          volts: 5,
+          delta: 1,
+          midiChannel: 1,
+          midiMappingType: MidiMappingType.cc,
+          midiCC: 1,
+          isMidiEnabled: true,
+          isMidiSymmetric: false,
+          isMidiRelative: false,
+          midiMin: 0,
+          midiMax: 127,
+          i2cCC: 0,
+          isI2cEnabled: false,
+          isI2cSymmetric: false,
+          i2cMin: 0,
+          i2cMax: 127,
+          version: 1,
+        );
 
-      final mappedData2 = PackedMappingData(
-        source: 2,
-        cvInput: 1,
-        isUnipolar: false,
-        isGate: false,
-        volts: 10,
-        delta: 2,
-        midiChannel: 2,
-        midiMappingType: MidiMappingType.cc,
-        midiCC: 2,
-        isMidiEnabled: true,
-        isMidiSymmetric: false,
-        isMidiRelative: false,
-        midiMin: 0,
-        midiMax: 127,
-        i2cCC: 0,
-        isI2cEnabled: false,
-        isI2cSymmetric: false,
-        i2cMin: 0,
-        i2cMax: 127,
-        version: 1,
-      );
-      
-      // Create a slot with mapped parameters
-      final mappedSlot = Slot(
-        algorithm: Algorithm(
-          algorithmIndex: 0,
-          guid: 'test',
-          name: 'Test Algorithm',
-        ),
-        routing: RoutingInfo(
-          algorithmIndex: 0,
-          routingInfo: const [],
-        ),
-        pages: ParameterPages(
-          algorithmIndex: 0,
-          pages: const [],
-        ),
-        parameters: [
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            min: 0,
-            max: 100,
-            defaultValue: 50,
-            unit: 0,
-            name: 'Frequency',
-            powerOfTen: 0,
-          ),
-          ParameterInfo(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            min: 0,
-            max: 100,
-            defaultValue: 75,
-            unit: 0,
-            name: 'Resonance',
-            powerOfTen: 0,
-          ),
-        ],
-        values: [
-          ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            value: 50,
-          ),
-          ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            value: 75,
-          ),
-        ],
-        enums: [
-          ParameterEnumStrings(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            values: const [],
-          ),
-          ParameterEnumStrings(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            values: const [],
-          ),
-        ],
-        mappings: [
-          Mapping(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            packedMappingData: mappedData1,
-          ),
-          Mapping(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            packedMappingData: mappedData2,
-          ),
-        ],
-        valueStrings: [
-          ParameterValueString(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            value: '50',
-          ),
-          ParameterValueString(
-            algorithmIndex: 0,
-            parameterNumber: 1,
-            value: '75',
-          ),
-        ],
-      );
+        final mappedData2 = PackedMappingData(
+          source: 2,
+          cvInput: 1,
+          isUnipolar: false,
+          isGate: false,
+          volts: 10,
+          delta: 2,
+          midiChannel: 2,
+          midiMappingType: MidiMappingType.cc,
+          midiCC: 2,
+          isMidiEnabled: true,
+          isMidiSymmetric: false,
+          isMidiRelative: false,
+          midiMin: 0,
+          midiMax: 127,
+          i2cCC: 0,
+          isI2cEnabled: false,
+          isI2cSymmetric: false,
+          i2cMin: 0,
+          i2cMax: 127,
+          version: 1,
+        );
 
-      final state = DistingStateSynchronized(
-        disting: mockManager,
-        distingVersion: 'v1.0',
-        firmwareVersion: FirmwareVersion('1.0.0'),
-        presetName: 'Test Preset',
-        algorithms: [],
-        slots: [mappedSlot],
-        unitStrings: const [],
-      );
+        // Create a slot with mapped parameters
+        final mappedSlot = Slot(
+          algorithm: Algorithm(
+            algorithmIndex: 0,
+            guid: 'test',
+            name: 'Test Algorithm',
+          ),
+          routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+          pages: ParameterPages(algorithmIndex: 0, pages: const []),
+          parameters: [
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              min: 0,
+              max: 100,
+              defaultValue: 50,
+              unit: 0,
+              name: 'Frequency',
+              powerOfTen: 0,
+            ),
+            ParameterInfo(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              min: 0,
+              max: 100,
+              defaultValue: 75,
+              unit: 0,
+              name: 'Resonance',
+              powerOfTen: 0,
+            ),
+          ],
+          values: [
+            ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
+            ParameterValue(algorithmIndex: 0, parameterNumber: 1, value: 75),
+          ],
+          enums: [
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              values: const [],
+            ),
+            ParameterEnumStrings(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              values: const [],
+            ),
+          ],
+          mappings: [
+            Mapping(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              packedMappingData: mappedData1,
+            ),
+            Mapping(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              packedMappingData: mappedData2,
+            ),
+          ],
+          valueStrings: [
+            ParameterValueString(
+              algorithmIndex: 0,
+              parameterNumber: 0,
+              value: '50',
+            ),
+            ParameterValueString(
+              algorithmIndex: 0,
+              parameterNumber: 1,
+              value: '75',
+            ),
+          ],
+        );
 
-      when(() => mockCubit.state).thenReturn(state);
+        final state = DistingStateSynchronized(
+          disting: mockManager,
+          distingVersion: 'v1.0',
+          firmwareVersion: FirmwareVersion('1.0.0'),
+          presetName: 'Test Preset',
+          algorithms: [],
+          slots: [mappedSlot],
+          unitStrings: const [],
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: BlocProvider<DistingCubit>.value(
-              value: mockCubit,
-              child: AlgorithmNodeWidget(
-                algorithmName: 'Test Algorithm',
-                slotNumber: 1,
-                position: const Offset(100, 100),
+        when(() => mockCubit.state).thenReturn(state);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BlocProvider<DistingCubit>.value(
+                value: mockCubit,
+                child: AlgorithmNodeWidget(
+                  algorithmName: 'Test Algorithm',
+                  slotNumber: 1,
+                  position: const Offset(100, 100),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Tap the popup menu button
-      final popupMenuButton = find.byIcon(Icons.more_vert);
-      await tester.tap(popupMenuButton);
-      await tester.pumpAndSettle();
+        // Tap the popup menu button
+        final popupMenuButton = find.byIcon(Icons.more_vert);
+        await tester.tap(popupMenuButton);
+        await tester.pumpAndSettle();
 
-      // Verify mapped parameter items are present
-      expect(find.text('Frequency'), findsOneWidget);
-      expect(find.text('Resonance'), findsOneWidget);
+        // Verify mapped parameter items are present
+        expect(find.text('Frequency'), findsOneWidget);
+        expect(find.text('Resonance'), findsOneWidget);
 
-      // Verify mapping icons are present for each mapped parameter
-      final mappingIcons = find.byIcon(Icons.map_sharp);
-      expect(mappingIcons, findsAtLeast(2)); // At least 2 in menu items (plus title bar icon)
+        // Verify mapping icons are present for each mapped parameter
+        final mappingIcons = find.byIcon(Icons.map_sharp);
+        expect(
+          mappingIcons,
+          findsAtLeast(2),
+        ); // At least 2 in menu items (plus title bar icon)
 
-      // Verify divider is present
-      expect(find.byType(PopupMenuDivider), findsOneWidget);
+        // Verify divider is present
+        expect(find.byType(PopupMenuDivider), findsOneWidget);
 
-      // Verify delete item is still present at the bottom
-      expect(find.text('Delete'), findsOneWidget);
-    });
+        // Verify delete item is still present at the bottom
+        expect(find.text('Delete'), findsOneWidget);
+      },
+    );
 
-    testWidgets('should not show mapping icon when no parameters are mapped', (tester) async {
+    testWidgets('should not show mapping icon when no parameters are mapped', (
+      tester,
+    ) async {
       // Create a slot with no mapped parameters
       final unmappedSlot = Slot(
         algorithm: Algorithm(
@@ -353,14 +338,8 @@ void main() {
           guid: 'test',
           name: 'Test Algorithm',
         ),
-        routing: RoutingInfo(
-          algorithmIndex: 0,
-          routingInfo: const [],
-        ),
-        pages: ParameterPages(
-          algorithmIndex: 0,
-          pages: const [],
-        ),
+        routing: RoutingInfo(algorithmIndex: 0, routingInfo: const []),
+        pages: ParameterPages(algorithmIndex: 0, pages: const []),
         parameters: [
           ParameterInfo(
             algorithmIndex: 0,
@@ -374,11 +353,7 @@ void main() {
           ),
         ],
         values: [
-          ParameterValue(
-            algorithmIndex: 0,
-            parameterNumber: 0,
-            value: 50,
-          ),
+          ParameterValue(algorithmIndex: 0, parameterNumber: 0, value: 50),
         ],
         enums: [
           ParameterEnumStrings(
@@ -391,7 +366,8 @@ void main() {
           Mapping(
             algorithmIndex: 0,
             parameterNumber: 0,
-            packedMappingData: PackedMappingData.filler(), // Filler = not mapped
+            packedMappingData:
+                PackedMappingData.filler(), // Filler = not mapped
           ),
         ],
         valueStrings: [

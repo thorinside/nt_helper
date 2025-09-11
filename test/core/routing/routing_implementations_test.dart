@@ -127,7 +127,7 @@ void main() {
               },
               {
                 'id': 'test_pycv_123_gate_out_1',
-                'name': 'Gate Out 1', 
+                'name': 'Gate Out 1',
                 'type': 'gate',
                 'busValue': 18,
                 'busParam': 'Gate output 1',
@@ -180,7 +180,7 @@ void main() {
         final gate1 = gateOutputs.firstWhere((p) => p.name == 'Gate Out 1');
         expect(gate1.busValue, equals(18));
 
-        // Verify pitch outputs  
+        // Verify pitch outputs
         final pitchOutputs = outputPorts
             .where((p) => p.type == PortType.cv)
             .toList();

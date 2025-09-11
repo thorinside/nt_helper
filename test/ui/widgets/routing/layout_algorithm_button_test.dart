@@ -10,7 +10,9 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 
 // Mock classes
 class MockDistingCubit extends Mock implements DistingCubit {}
+
 class MockRoutingEditorCubit extends Mock implements RoutingEditorCubit {}
+
 class MockNodeLayoutAlgorithm extends Mock implements NodeLayoutAlgorithm {}
 
 void main() {
@@ -23,14 +25,20 @@ void main() {
       mockRoutingEditorCubit = MockRoutingEditorCubit();
 
       // Set up default mock behaviors
-      when(() => mockDistingCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockDistingCubit.state).thenReturn(const DistingState.initial());
-      when(() => mockRoutingEditorCubit.stream).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockDistingCubit.stream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockDistingCubit.state,
+      ).thenReturn(const DistingState.initial());
+      when(
+        () => mockRoutingEditorCubit.stream,
+      ).thenAnswer((_) => const Stream.empty());
     });
 
     Widget createTestWidget({required RoutingEditorState state}) {
       when(() => mockRoutingEditorCubit.state).thenReturn(state);
-      
+
       return MaterialApp(
         home: Scaffold(
           body: BlocProvider<RoutingEditorCubit>.value(
@@ -41,7 +49,9 @@ void main() {
       );
     }
 
-    testWidgets('shows layout algorithm button when routing editor is loaded', (WidgetTester tester) async {
+    testWidgets('shows layout algorithm button when routing editor is loaded', (
+      WidgetTester tester,
+    ) async {
       final loadedState = RoutingEditorState.loaded(
         physicalInputs: const [
           Port(
@@ -63,17 +73,22 @@ void main() {
       expect(find.byTooltip('Apply Layout Algorithm'), findsOneWidget);
     });
 
-    testWidgets('hides layout algorithm button when routing editor not loaded', (WidgetTester tester) async {
-      const initialState = RoutingEditorState.initial();
+    testWidgets(
+      'hides layout algorithm button when routing editor not loaded',
+      (WidgetTester tester) async {
+        const initialState = RoutingEditorState.initial();
 
-      await tester.pumpWidget(createTestWidget(state: initialState));
+        await tester.pumpWidget(createTestWidget(state: initialState));
 
-      // Verify the layout algorithm button is not present
-      expect(find.byIcon(Icons.auto_fix_high), findsNothing);
-      expect(find.byTooltip('Apply Layout Algorithm'), findsNothing);
-    });
+        // Verify the layout algorithm button is not present
+        expect(find.byIcon(Icons.auto_fix_high), findsNothing);
+        expect(find.byTooltip('Apply Layout Algorithm'), findsNothing);
+      },
+    );
 
-    testWidgets('calls applyLayoutAlgorithm when button is tapped', (WidgetTester tester) async {
+    testWidgets('calls applyLayoutAlgorithm when button is tapped', (
+      WidgetTester tester,
+    ) async {
       final loadedState = RoutingEditorState.loaded(
         physicalInputs: const [
           Port(
@@ -88,7 +103,9 @@ void main() {
         connections: const [],
       );
 
-      when(() => mockRoutingEditorCubit.applyLayoutAlgorithm()).thenAnswer((_) async {});
+      when(
+        () => mockRoutingEditorCubit.applyLayoutAlgorithm(),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(createTestWidget(state: loadedState));
 
@@ -100,30 +117,35 @@ void main() {
       verify(() => mockRoutingEditorCubit.applyLayoutAlgorithm()).called(1);
     });
 
-    testWidgets('shows loading indicator when layout calculation is in progress', (WidgetTester tester) async {
-      final loadingState = RoutingEditorState.loaded(
-        physicalInputs: const [
-          Port(
-            id: 'hw_in_1',
-            name: 'I1',
-            type: PortType.cv,
-            direction: PortDirection.output,
-          ),
-        ],
-        physicalOutputs: const [],
-        algorithms: const [],
-        connections: const [],
-        subState: SubState.syncing, // Layout calculation in progress
-      );
+    testWidgets(
+      'shows loading indicator when layout calculation is in progress',
+      (WidgetTester tester) async {
+        final loadingState = RoutingEditorState.loaded(
+          physicalInputs: const [
+            Port(
+              id: 'hw_in_1',
+              name: 'I1',
+              type: PortType.cv,
+              direction: PortDirection.output,
+            ),
+          ],
+          physicalOutputs: const [],
+          algorithms: const [],
+          connections: const [],
+          subState: SubState.syncing, // Layout calculation in progress
+        );
 
-      await tester.pumpWidget(createTestWidget(state: loadingState));
+        await tester.pumpWidget(createTestWidget(state: loadingState));
 
-      // Verify loading indicator is shown instead of normal icon
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.auto_fix_high), findsNothing);
-    });
+        // Verify loading indicator is shown instead of normal icon
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byIcon(Icons.auto_fix_high), findsNothing);
+      },
+    );
 
-    testWidgets('button is positioned beside refresh routing button', (WidgetTester tester) async {
+    testWidgets('button is positioned beside refresh routing button', (
+      WidgetTester tester,
+    ) async {
       final loadedState = RoutingEditorState.loaded(
         physicalInputs: const [],
         physicalOutputs: const [],
@@ -159,9 +181,12 @@ void main() {
 
       // Layout button should be to the right of refresh button
       expect(layoutButtonPosition.dx, greaterThan(refreshButtonPosition.dx));
-      
+
       // They should be at approximately the same height
-      expect((layoutButtonPosition.dy - refreshButtonPosition.dy).abs(), lessThan(5));
+      expect(
+        (layoutButtonPosition.dy - refreshButtonPosition.dy).abs(),
+        lessThan(5),
+      );
     });
 
     testWidgets('shows appropriate tooltip text', (WidgetTester tester) async {
@@ -191,74 +216,8 @@ class _TestLayoutButtonWidget extends StatelessWidget {
     return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
       builder: (context, state) {
         return state.maybeWhen(
-          loaded: (
-            physicalInputs,
-            physicalOutputs,
-            algorithms,
-            connections,
-            buses,
-            portOutputModes,
-            nodePositions,
-            isHardwareSynced,
-            isPersistenceEnabled,
-            lastSyncTime,
-            lastPersistTime,
-            lastError,
-            subState,
-          ) {
-            // Show loading during layout calculation
-            if (subState == SubState.syncing) {
-              return IconButton(
-                icon: const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                onPressed: null,
-                tooltip: 'Calculating Layout...',
-              );
-            }
-
-            // Show normal layout button
-            return IconButton(
-              icon: const Icon(Icons.auto_fix_high),
-              onPressed: () {
-                context.read<RoutingEditorCubit>().applyLayoutAlgorithm();
-              },
-              tooltip: 'Apply Layout Algorithm',
-            );
-          },
-          orElse: () => const SizedBox.shrink(),
-        );
-      },
-    );
-  }
-}
-
-/// Test widget that shows both refresh and layout buttons in a row
-class _TestButtonsRowWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
-      builder: (context, state) {
-        return Row(
-          children: [
-            // Refresh button (existing)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: state.maybeWhen(
-                loaded: (_, __, ___, ____, _____, ______, _______, ________, _________, __________, ___________, ____________, _____________) {
-                  return () {
-                    // Refresh routing logic would go here
-                  };
-                },
-                orElse: () => null,
-              ),
-              tooltip: 'Refresh Routing',
-            ),
-            // Layout algorithm button (new)
-            state.maybeWhen(
-              loaded: (
+          loaded:
+              (
                 physicalInputs,
                 physicalOutputs,
                 algorithms,
@@ -295,6 +254,91 @@ class _TestButtonsRowWidget extends StatelessWidget {
                   tooltip: 'Apply Layout Algorithm',
                 );
               },
+          orElse: () => const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+}
+
+/// Test widget that shows both refresh and layout buttons in a row
+class _TestButtonsRowWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
+      builder: (context, state) {
+        return Row(
+          children: [
+            // Refresh button (existing)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: state.maybeWhen(
+                loaded:
+                    (
+                      _,
+                      __,
+                      ___,
+                      ____,
+                      _____,
+                      ______,
+                      _______,
+                      ________,
+                      _________,
+                      __________,
+                      ___________,
+                      ____________,
+                      _____________,
+                    ) {
+                      return () {
+                        // Refresh routing logic would go here
+                      };
+                    },
+                orElse: () => null,
+              ),
+              tooltip: 'Refresh Routing',
+            ),
+            // Layout algorithm button (new)
+            state.maybeWhen(
+              loaded:
+                  (
+                    physicalInputs,
+                    physicalOutputs,
+                    algorithms,
+                    connections,
+                    buses,
+                    portOutputModes,
+                    nodePositions,
+                    isHardwareSynced,
+                    isPersistenceEnabled,
+                    lastSyncTime,
+                    lastPersistTime,
+                    lastError,
+                    subState,
+                  ) {
+                    // Show loading during layout calculation
+                    if (subState == SubState.syncing) {
+                      return IconButton(
+                        icon: const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        onPressed: null,
+                        tooltip: 'Calculating Layout...',
+                      );
+                    }
+
+                    // Show normal layout button
+                    return IconButton(
+                      icon: const Icon(Icons.auto_fix_high),
+                      onPressed: () {
+                        context
+                            .read<RoutingEditorCubit>()
+                            .applyLayoutAlgorithm();
+                      },
+                      tooltip: 'Apply Layout Algorithm',
+                    );
+                  },
               orElse: () => const SizedBox.shrink(),
             ),
           ],

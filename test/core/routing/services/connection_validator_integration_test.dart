@@ -38,7 +38,7 @@ void main() {
           ),
           RoutingAlgorithm(
             id: 'alg_2',
-            index: 1, // Slot 1  
+            index: 1, // Slot 1
             algorithm: Algorithm(
               algorithmIndex: 1,
               guid: 'test-guid-2',
@@ -126,20 +126,18 @@ void main() {
         );
 
         // Before reordering: slot 1 -> slot 0 (INVALID)
-        final beforeValidated = ConnectionValidator.validateConnections(
-          [connection],
-          algorithmsBeforeReorder,
-        );
+        final beforeValidated = ConnectionValidator.validateConnections([
+          connection,
+        ], algorithmsBeforeReorder);
 
         expect(beforeValidated.length, equals(1));
         expect(beforeValidated.first.isBackwardEdge, isTrue);
         expect(beforeValidated.first.id, equals('test_connection'));
 
         // After reordering: slot 0 -> slot 1 (VALID)
-        final afterValidated = ConnectionValidator.validateConnections(
-          [connection],
-          algorithmsAfterReorder,
-        );
+        final afterValidated = ConnectionValidator.validateConnections([
+          connection,
+        ], algorithmsAfterReorder);
 
         expect(afterValidated.length, equals(1));
         expect(afterValidated.first.isBackwardEdge, isFalse);
@@ -217,10 +215,9 @@ void main() {
           busLabel: 'Bus 7',
         );
 
-        final validatedConnections = ConnectionValidator.validateConnections(
-          [originalConnection],
-          algorithms,
-        );
+        final validatedConnections = ConnectionValidator.validateConnections([
+          originalConnection,
+        ], algorithms);
 
         expect(validatedConnections.length, equals(1));
         final validated = validatedConnections.first;
@@ -231,8 +228,14 @@ void main() {
         // All other properties should be preserved
         expect(validated.id, equals(originalConnection.id));
         expect(validated.sourcePortId, equals(originalConnection.sourcePortId));
-        expect(validated.destinationPortId, equals(originalConnection.destinationPortId));
-        expect(validated.connectionType, equals(originalConnection.connectionType));
+        expect(
+          validated.destinationPortId,
+          equals(originalConnection.destinationPortId),
+        );
+        expect(
+          validated.connectionType,
+          equals(originalConnection.connectionType),
+        );
         expect(validated.status, equals(originalConnection.status));
         expect(validated.name, equals(originalConnection.name));
         expect(validated.description, equals(originalConnection.description));
@@ -369,11 +372,21 @@ void main() {
         expect(validatedConnections.length, equals(5));
 
         // Check each connection's validation status
-        final validConnection1 = validatedConnections.firstWhere((c) => c.id == 'valid_0_to_1');
-        final validConnection2 = validatedConnections.firstWhere((c) => c.id == 'valid_1_to_2');
-        final invalidConnection1 = validatedConnections.firstWhere((c) => c.id == 'invalid_2_to_0');
-        final invalidConnection2 = validatedConnections.firstWhere((c) => c.id == 'invalid_2_to_1');
-        final physicalConnection = validatedConnections.firstWhere((c) => c.id == 'physical_input');
+        final validConnection1 = validatedConnections.firstWhere(
+          (c) => c.id == 'valid_0_to_1',
+        );
+        final validConnection2 = validatedConnections.firstWhere(
+          (c) => c.id == 'valid_1_to_2',
+        );
+        final invalidConnection1 = validatedConnections.firstWhere(
+          (c) => c.id == 'invalid_2_to_0',
+        );
+        final invalidConnection2 = validatedConnections.firstWhere(
+          (c) => c.id == 'invalid_2_to_1',
+        );
+        final physicalConnection = validatedConnections.firstWhere(
+          (c) => c.id == 'physical_input',
+        );
 
         expect(validConnection1.isBackwardEdge, isFalse);
         expect(validConnection2.isBackwardEdge, isFalse);
@@ -551,7 +564,7 @@ void main() {
             destinationPortId: 'alg_B_input_1',
             connectionType: ConnectionType.algorithmToAlgorithm,
           ),
-          // B -> C connection  
+          // B -> C connection
           Connection(
             id: 'B_to_C',
             sourcePortId: 'alg_B_output_1',
@@ -566,8 +579,12 @@ void main() {
           initialAlgorithms,
         );
 
-        final initialAtoB = initialValidated.firstWhere((c) => c.id == 'A_to_B');
-        final initialBtoC = initialValidated.firstWhere((c) => c.id == 'B_to_C');
+        final initialAtoB = initialValidated.firstWhere(
+          (c) => c.id == 'A_to_B',
+        );
+        final initialBtoC = initialValidated.firstWhere(
+          (c) => c.id == 'B_to_C',
+        );
 
         expect(initialAtoB.isBackwardEdge, isFalse); // A(0) -> B(1) = valid
         expect(initialBtoC.isBackwardEdge, isFalse); // B(1) -> C(2) = valid
@@ -578,11 +595,15 @@ void main() {
           reorderedAlgorithms,
         );
 
-        final reorderedAtoB = reorderedValidated.firstWhere((c) => c.id == 'A_to_B');
-        final reorderedBtoC = reorderedValidated.firstWhere((c) => c.id == 'B_to_C');
+        final reorderedAtoB = reorderedValidated.firstWhere(
+          (c) => c.id == 'A_to_B',
+        );
+        final reorderedBtoC = reorderedValidated.firstWhere(
+          (c) => c.id == 'B_to_C',
+        );
 
         expect(reorderedAtoB.isBackwardEdge, isFalse); // A(1) -> B(2) = valid
-        expect(reorderedBtoC.isBackwardEdge, isTrue);  // B(2) -> C(0) = invalid
+        expect(reorderedBtoC.isBackwardEdge, isTrue); // B(2) -> C(0) = invalid
       });
     });
   });

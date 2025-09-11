@@ -10,6 +10,7 @@ import 'package:nt_helper/ui/widgets/routing/movable_physical_io_node.dart';
 class PhysicalInputNode extends StatelessWidget {
   /// The list of ports from the routing state to display in this node.
   final List<Port> ports;
+
   /// Callback when a port is tapped.
   final Function(Port)? onPortTapped;
 

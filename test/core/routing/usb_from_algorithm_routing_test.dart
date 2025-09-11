@@ -67,7 +67,9 @@ void main() {
     test('extracts correct number of io and mode parameters', () {
       final slot = createTestSlot();
       final ioParams = AlgorithmRouting.extractIOParameters(slot);
-      final modeParams = AlgorithmRouting.extractModeParametersWithNumbers(slot);
+      final modeParams = AlgorithmRouting.extractModeParametersWithNumbers(
+        slot,
+      );
 
       expect(ioParams.length, 8);
       expect(modeParams.length, 8);

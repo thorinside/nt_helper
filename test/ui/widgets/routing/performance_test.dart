@@ -12,7 +12,8 @@ List<Port> _createTestInputPorts() {
       id: 'hw_in_$portNum',
       name: 'Input $portNum',
       type: PortType.audio,
-      direction: PortDirection.output, // Physical inputs act as outputs to algorithms
+      direction:
+          PortDirection.output, // Physical inputs act as outputs to algorithms
       isPhysical: true,
       busValue: portNum,
     );
@@ -27,7 +28,8 @@ List<Port> _createTestOutputPorts() {
       id: 'hw_out_$portNum',
       name: 'Output $portNum',
       type: PortType.audio,
-      direction: PortDirection.input, // Physical outputs act as inputs from algorithms
+      direction:
+          PortDirection.input, // Physical outputs act as inputs from algorithms
       isPhysical: true,
       busValue: portNum + 12,
     );
@@ -79,7 +81,8 @@ void main() {
                     child: PhysicalInputNode(
                       ports: _createTestInputPorts(),
                       position: const Offset(50, 50),
-                      onPositionChanged: (_) => recordDragTime('physical_input'),
+                      onPositionChanged: (_) =>
+                          recordDragTime('physical_input'),
                     ),
                   ),
                   Positioned(
@@ -88,7 +91,8 @@ void main() {
                     child: PhysicalOutputNode(
                       ports: _createTestOutputPorts(),
                       position: const Offset(300, 50),
-                      onPositionChanged: (_) => recordDragTime('physical_output'),
+                      onPositionChanged: (_) =>
+                          recordDragTime('physical_output'),
                     ),
                   ),
                 ],
@@ -124,13 +128,16 @@ void main() {
         // Verify performance (all drags should complete in reasonable time)
         for (final nodeType in dragTimesByNodeType.keys) {
           final times = dragTimesByNodeType[nodeType]!;
-          final averageTime = times.fold<Duration>(
-                  Duration.zero, (sum, time) => sum + time) ~/
+          final averageTime =
+              times.fold<Duration>(Duration.zero, (sum, time) => sum + time) ~/
               times.length;
 
-          expect(averageTime.inMilliseconds, lessThan(100),
-              reason:
-                  '$nodeType drag operations should be fast (< 100ms average)');
+          expect(
+            averageTime.inMilliseconds,
+            lessThan(100),
+            reason:
+                '$nodeType drag operations should be fast (< 100ms average)',
+          );
         }
       });
     });
@@ -178,12 +185,18 @@ void main() {
 
         // Should have fast port position updates
         if (updateTimes.isNotEmpty) {
-          final averageUpdateTime = updateTimes.fold<Duration>(
-                  Duration.zero, (sum, time) => sum + time) ~/
+          final averageUpdateTime =
+              updateTimes.fold<Duration>(
+                Duration.zero,
+                (sum, time) => sum + time,
+              ) ~/
               updateTimes.length;
 
-          expect(averageUpdateTime.inMicroseconds, lessThan(1000),
-              reason: 'Port position updates should be fast (< 1ms average)');
+          expect(
+            averageUpdateTime.inMicroseconds,
+            lessThan(1000),
+            reason: 'Port position updates should be fast (< 1ms average)',
+          );
         }
       });
     });
@@ -227,8 +240,11 @@ void main() {
         stopwatch.stop();
 
         // Should render large routing graph quickly
-        expect(stopwatch.elapsedMilliseconds, lessThan(1000),
-            reason: 'Large routing graph should render quickly (< 1s)');
+        expect(
+          stopwatch.elapsedMilliseconds,
+          lessThan(1000),
+          reason: 'Large routing graph should render quickly (< 1s)',
+        );
 
         // Should find all nodes
         expect(find.byType(PhysicalInputNode), findsNWidgets(3));
@@ -244,8 +260,13 @@ void main() {
         void trackFrame() {
           final now = DateTime.now();
           if (lastFrameTime != null) {
-            frameTimes.add(now.difference(DateTime.fromMillisecondsSinceEpoch(
-                lastFrameTime!.inMilliseconds)));
+            frameTimes.add(
+              now.difference(
+                DateTime.fromMillisecondsSinceEpoch(
+                  lastFrameTime!.inMilliseconds,
+                ),
+              ),
+            );
           }
           lastFrameTime = Duration(milliseconds: now.millisecondsSinceEpoch);
         }
@@ -272,8 +293,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Perform drag with frame timing
-        final gesture =
-            await tester.startGesture(tester.getCenter(find.byType(PhysicalInputNode)));
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(PhysicalInputNode)),
+        );
 
         for (int i = 0; i < 10; i++) {
           trackFrame();
@@ -286,12 +308,18 @@ void main() {
 
         // Verify smooth animation (consistent frame times)
         if (frameTimes.length >= 2) {
-          final averageFrameTime = frameTimes.fold<Duration>(
-                  Duration.zero, (sum, time) => sum + time) ~/
+          final averageFrameTime =
+              frameTimes.fold<Duration>(
+                Duration.zero,
+                (sum, time) => sum + time,
+              ) ~/
               frameTimes.length;
 
-          expect(averageFrameTime.inMilliseconds, lessThan(20),
-              reason: 'Frame times should be smooth (< 20ms for 60fps)');
+          expect(
+            averageFrameTime.inMilliseconds,
+            lessThan(20),
+            reason: 'Frame times should be smooth (< 20ms for 60fps)',
+          );
         }
       });
     });

@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 
 /// A specialized tooltip widget for explaining invalid connections
-/// 
+///
 /// Invalid connections represent algorithm-to-algorithm connections that violate
 /// the Disting NT's slot ordering constraints. This tooltip provides clear
 /// explanations and actionable guidance to help users fix the issue.
 class InvalidConnectionTooltip extends StatefulWidget {
   /// The connection to show tooltip information for
   final Connection connection;
-  
+
   /// The child widget that triggers the tooltip on hover
   final Widget child;
-  
+
   /// Custom tooltip message (optional - defaults to standard invalid connection explanation)
   final String? customMessage;
-  
+
   /// Whether the tooltip should be shown
   final bool show;
-  
+
   /// Delay before showing the tooltip
   final Duration delay;
 
@@ -40,7 +40,8 @@ class InvalidConnectionTooltip extends StatefulWidget {
   });
 
   @override
-  State<InvalidConnectionTooltip> createState() => _InvalidConnectionTooltipState();
+  State<InvalidConnectionTooltip> createState() =>
+      _InvalidConnectionTooltipState();
 }
 
 class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
@@ -48,34 +49,26 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   bool _isHovering = false;
   bool _isShowingTooltip = false;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutBack,
-    ));
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
   }
 
   @override
@@ -87,18 +80,18 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
   /// Show the tooltip with animation
   void _showTooltip() {
     if (!widget.show || _isShowingTooltip) return;
-    
+
     setState(() {
       _isShowingTooltip = true;
     });
-    
+
     _animationController.forward();
   }
 
   /// Hide the tooltip with animation
   void _hideTooltip() {
     if (!_isShowingTooltip) return;
-    
+
     _animationController.reverse().then((_) {
       if (mounted) {
         setState(() {
@@ -113,7 +106,7 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
     setState(() {
       _isHovering = true;
     });
-    
+
     // Show tooltip after delay
     Future.delayed(widget.delay, () {
       if (_isHovering && mounted) {
@@ -127,7 +120,7 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
     setState(() {
       _isHovering = false;
     });
-    
+
     _hideTooltip();
   }
 
@@ -136,28 +129,32 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
     if (widget.customMessage != null) {
       return widget.customMessage!;
     }
-    
+
     if (widget.connection.isBackwardEdge) {
-      final sourceSlotText = widget.sourceSlot != null ? 'Slot ${widget.sourceSlot! + 1}' : 'Higher slot';
-      final destSlotText = widget.destinationSlot != null ? 'Slot ${widget.destinationSlot! + 1}' : 'Lower slot';
-      
+      final sourceSlotText = widget.sourceSlot != null
+          ? 'Slot ${widget.sourceSlot! + 1}'
+          : 'Higher slot';
+      final destSlotText = widget.destinationSlot != null
+          ? 'Slot ${widget.destinationSlot! + 1}'
+          : 'Lower slot';
+
       return 'Invalid Connection Order\n'
-             '$sourceSlotText → $destSlotText\n\n'
-             'This connection violates the Disting NT\'s processing order. '
-             'Algorithms process in slot order (1, 2, 3...), so connections '
-             'from higher-numbered slots to lower-numbered slots won\'t work.\n\n'
-             'Solution: Use the up/down arrows to reorder algorithms so the '
-             'source algorithm comes before the destination algorithm.';
+          '$sourceSlotText → $destSlotText\n\n'
+          'This connection violates the Disting NT\'s processing order. '
+          'Algorithms process in slot order (1, 2, 3...), so connections '
+          'from higher-numbered slots to lower-numbered slots won\'t work.\n\n'
+          'Solution: Use the up/down arrows to reorder algorithms so the '
+          'source algorithm comes before the destination algorithm.';
     } else {
       return 'Valid Connection\n'
-             'This connection follows the correct slot ordering.';
+          'This connection follows the correct slot ordering.';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return MouseRegion(
       onEnter: (_) => _onHoverEnter(),
       onExit: (_) => _onHoverExit(),
@@ -187,7 +184,8 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
   /// Build the actual tooltip content widget
   Widget _buildTooltipContent(ThemeData theme) {
     return Positioned(
-      top: -120, // Position above the connection (taller for invalid connections)
+      top:
+          -120, // Position above the connection (taller for invalid connections)
       left: 0,
       right: 0,
       child: IgnorePointer(
@@ -196,12 +194,12 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
             constraints: const BoxConstraints(maxWidth: 320),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: widget.connection.isBackwardEdge 
+              color: widget.connection.isBackwardEdge
                   ? theme.colorScheme.errorContainer
                   : theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: widget.connection.isBackwardEdge 
+                color: widget.connection.isBackwardEdge
                     ? theme.colorScheme.error.withValues(alpha: 0.5)
                     : theme.colorScheme.outline.withValues(alpha: 0.3),
                 width: 1,
@@ -300,7 +298,9 @@ class _InvalidConnectionTooltipState extends State<InvalidConnectionTooltip>
                     'Gain: ${widget.connection.gain.toStringAsFixed(2)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: widget.connection.isBackwardEdge
-                          ? theme.colorScheme.onErrorContainer.withValues(alpha: 0.7)
+                          ? theme.colorScheme.onErrorContainer.withValues(
+                              alpha: 0.7,
+                            )
                           : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       fontStyle: FontStyle.italic,
                     ),

@@ -60,8 +60,9 @@ class ConnectionDiscoveryService {
 
       // Determine if this is a hardware bus
       final isHardwareInput = busNumber >= 1 && busNumber <= 12;
-      final isHardwareOutput = (busNumber >= 13 && busNumber <= 20) || 
-                               (busNumber >= 29 && busNumber <= 30); // ES-5 L/R
+      final isHardwareOutput =
+          (busNumber >= 13 && busNumber <= 20) ||
+          (busNumber >= 29 && busNumber <= 30); // ES-5 L/R
       // Create hardware input connections (buses 1-12)
       if (isHardwareInput && inputs.isNotEmpty) {
         connections.addAll(_createHardwareInputConnections(busNumber, inputs));
@@ -261,7 +262,7 @@ class ConnectionDiscoveryService {
     if (routing.algorithmUuid != null) {
       return routing.algorithmUuid!;
     }
-    
+
     // Fallback: Try to extract from port IDs (for backward compatibility)
     if (routing.inputPorts.isNotEmpty) {
       final firstPort = routing.inputPorts.first;
@@ -366,10 +367,11 @@ class ConnectionDiscoveryService {
         // so replace mode shows as "O# R" or "A# R". Inputs ignore mode.
         final String busLabel = port.isOutput
             ? (BusLabelFormatter.formatBusLabelWithMode(
-                    busNumber, port.outputMode) ??
-                'Bus$busNumber')
-            : (BusLabelFormatter.formatBusNumber(busNumber) ??
-                'Bus$busNumber');
+                    busNumber,
+                    port.outputMode,
+                  ) ??
+                  'Bus$busNumber')
+            : (BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber');
 
         final partialConnection = _createPartialConnection(
           port,

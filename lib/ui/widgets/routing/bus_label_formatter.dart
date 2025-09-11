@@ -10,7 +10,7 @@ enum BusType {
 
   /// Auxiliary buses (21-28)
   auxiliary,
-  
+
   /// ES-5 output buses (29-30)
   es5,
 }
@@ -27,9 +27,10 @@ class BusLabelFormatter {
 
   /// Minimum valid bus number
   static const int minBusNumber = 1;
-  
+
   /// Maximum valid bus number (includes ES-5)
   static const int maxBusNumber = 30;
+
   /// Input bus range
   static const int minInputBus = 1;
   static const int maxInputBus = 12;
@@ -41,18 +42,18 @@ class BusLabelFormatter {
   /// Auxiliary bus range
   static const int minAuxBus = 21;
   static const int maxAuxBus = 28;
-  
+
   /// ES-5 bus range
   static const int minES5Bus = 29;
   static const int maxES5Bus = 30;
 
   /// Formats a bus value (alias for formatBusNumber)
-  /// 
+  ///
   /// This is provided for convenience and compatibility.
   static String formatBusValue(int busValue) {
     return formatBusNumber(busValue) ?? 'Bus$busValue';
   }
-  
+
   /// Formats a bus number into its display label
   ///
   /// Returns:
@@ -146,7 +147,7 @@ class BusLabelFormatter {
   }
 
   /// Checks if a bus number is valid
-  /// 
+  ///
   /// Valid bus numbers are 1-30 inclusive (includes ES-5)
   static bool isValidBusNumber(int? busNumber) {
     if (busNumber == null) return false;

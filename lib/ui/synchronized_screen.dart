@@ -322,43 +322,48 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         ),
                         // Layout Algorithm Button
                         state.maybeWhen(
-                          loaded: (
-                            physicalInputs,
-                            physicalOutputs,
-                            algorithms,
-                            connections,
-                            buses,
-                            portOutputModes,
-                            nodePositions,
-                            isHardwareSynced,
-                            isPersistenceEnabled,
-                            lastSyncTime,
-                            lastPersistTime,
-                            lastError,
-                            subState,
-                          ) {
-                            // Show loading during layout calculation
-                            if (subState == SubState.syncing) {
-                              return IconButton(
-                                icon: const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                onPressed: null,
-                                tooltip: 'Calculating Layout...',
-                              );
-                            }
+                          loaded:
+                              (
+                                physicalInputs,
+                                physicalOutputs,
+                                algorithms,
+                                connections,
+                                buses,
+                                portOutputModes,
+                                nodePositions,
+                                isHardwareSynced,
+                                isPersistenceEnabled,
+                                lastSyncTime,
+                                lastPersistTime,
+                                lastError,
+                                subState,
+                              ) {
+                                // Show loading during layout calculation
+                                if (subState == SubState.syncing) {
+                                  return IconButton(
+                                    icon: const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    onPressed: null,
+                                    tooltip: 'Calculating Layout...',
+                                  );
+                                }
 
-                            // Show normal layout button
-                            return IconButton(
-                              icon: const Icon(Icons.auto_fix_high),
-                              onPressed: () {
-                                context.read<RoutingEditorCubit>().applyLayoutAlgorithm();
+                                // Show normal layout button
+                                return IconButton(
+                                  icon: const Icon(Icons.auto_fix_high),
+                                  onPressed: () {
+                                    context
+                                        .read<RoutingEditorCubit>()
+                                        .applyLayoutAlgorithm();
+                                  },
+                                  tooltip: 'Apply Layout Algorithm',
+                                );
                               },
-                              tooltip: 'Apply Layout Algorithm',
-                            );
-                          },
                           orElse: () => const SizedBox.shrink(),
                         ),
                       ],
