@@ -935,7 +935,8 @@ void main() {
           await tester.pump();
 
           final state = tester.state<MiniMapWidgetState>(find.byType(MiniMapWidget));
-          final initialOffset = state.viewportOffset;
+          // Store initial offset for comparison
+          state.viewportOffset;
 
           // Start drag and move
           const dragStartPosition = Offset(50, 40);
@@ -996,7 +997,8 @@ void main() {
             ),
           );
 
-          final state = tester.state<MiniMapWidgetState>(find.byType(MiniMapWidget));
+          // Access state to test drag functionality
+          tester.state<MiniMapWidgetState>(find.byType(MiniMapWidget));
           
           // Start drag
           const dragStart = Offset(50, 40);

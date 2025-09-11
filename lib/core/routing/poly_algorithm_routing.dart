@@ -445,9 +445,11 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
 
   /// Determines if this routing implementation can handle the given slot.
   ///
-  /// Returns true if the algorithm GUID starts with 'py' (polysynth algorithms).
+  /// Returns true if the algorithm GUID starts with 'py' (polysynth algorithms)
+  /// or is 'gran' (Granulator algorithm).
   static bool canHandle(Slot slot) {
-    return slot.algorithm.guid.startsWith('py');
+    final guid = slot.algorithm.guid;
+    return guid.startsWith('py') || guid == 'gran';
   }
 
   /// Creates a PolyAlgorithmRouting instance from a slot.

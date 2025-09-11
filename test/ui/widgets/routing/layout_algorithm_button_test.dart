@@ -4,11 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
-import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
 // Mock classes
 class MockDistingCubit extends Mock implements DistingCubit {}
@@ -19,12 +17,10 @@ void main() {
   group('Layout Algorithm Button UI Integration', () {
     late MockDistingCubit mockDistingCubit;
     late MockRoutingEditorCubit mockRoutingEditorCubit;
-    late MockNodeLayoutAlgorithm mockLayoutAlgorithm;
 
     setUp(() {
       mockDistingCubit = MockDistingCubit();
       mockRoutingEditorCubit = MockRoutingEditorCubit();
-      mockLayoutAlgorithm = MockNodeLayoutAlgorithm();
 
       // Set up default mock behaviors
       when(() => mockDistingCubit.stream).thenAnswer((_) => const Stream.empty());

@@ -123,7 +123,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
     super.validator,
     RoutingState? initialState,
   }) : _state = initialState ?? const RoutingState(),
-        super(algorithmUuid: config.algorithmProperties?['algorithmUuid'] as String?) {
+        super(algorithmUuid: config.algorithmProperties['algorithmUuid'] as String?) {
     debugPrint(
       'MultiChannelAlgorithmRouting: Initialized with ${config.channelCount} channels, '
       'stereo: ${config.supportsStereoChannels}, mix: ${config.createMasterMix}',
@@ -175,7 +175,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               busValue: item['busValue'] as int?,
               busParam: item['busParam']?.toString(),
               parameterNumber: item['parameterNumber'] as int?,
-              channelNumber: item['channelNumber'] as int?,
+              channelNumber: item['channelNumber'] is int ? item['channelNumber'] as int : null,
               isMultiChannel: item['channelNumber'] != null,
             ),
           );
@@ -316,7 +316,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
               busParam: item['busParam']?.toString(),
               parameterNumber: item['parameterNumber'] as int?,
               modeParameterNumber: modeParameterNumber,
-              channelNumber: item['channel'] as int?,
+              channelNumber: item['channel'] is int ? item['channel'] as int : null,
               isStereoChannel: item['channel'] != null,
               stereoSide: item['channel']?.toString(),
             ),
