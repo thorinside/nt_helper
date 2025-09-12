@@ -188,6 +188,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             _portPositions.clear();
             _portsReady = false;
             _connectionsVisible = false;
+            _pruneAndInitNodePositions(current);
           }
         }
 
@@ -238,6 +239,50 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         );
       },
     );
+  }
+
+  /// Remove stale node positions and ensure required defaults exist for the
+  /// current routing structure (e.g., after loading a new preset).
+  void _pruneAndInitNodePositions(RoutingEditorStateLoaded current) {
+    // Keep only physical nodes and current algorithm IDs
+    final allowedKeys = <String>{
+      'physical_inputs',
+      'physical_outputs',
+      ...current.algorithms.map((a) => a.id),
+    };
+
+    _nodePositions.removeWhere((key, value) => !allowedKeys.contains(key));
+
+    // Ensure physical nodes exist
+    const double centerX = _canvasWidth / 2;
+    const double centerY = _canvasHeight / 2;
+    _nodePositions.putIfAbsent(
+      'physical_inputs',
+      () => const Offset(centerX - 800, centerY - 300),
+    );
+    _nodePositions.putIfAbsent(
+      'physical_outputs',
+      () => const Offset(centerX + 600, centerY - 300),
+    );
+
+    // Initialize missing algorithm nodes in reasonable default grid positions
+    const double algorithmStartX = centerX - 250;
+    const double algorithmSpacing = 300.0;
+    const double algorithmRowSpacing = 200.0;
+    for (int i = 0; i < current.algorithms.length && i < 8; i++) {
+      final algo = current.algorithms[i];
+      _nodePositions.putIfAbsent(
+        algo.id,
+        () {
+          final column = i % 2;
+          final row = i ~/ 2;
+          return Offset(
+            algorithmStartX + (column * algorithmSpacing),
+            centerY - 300 + (row * algorithmRowSpacing),
+          );
+        },
+      );
+    }
   }
 
   /// Build dismissable error display widget
@@ -358,17 +403,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
 
-      // Only check aux buses for algorithm-to-algorithm connections
-      // Hardware input/output connections (buses 1-20) are always available
-      final isHardwareConnection =
-          sourcePortId.startsWith('hw_') || targetPortId.startsWith('hw_');
-      if (!isHardwareConnection) {
-        final availableAuxBuses = await _checkAvailableAuxBuses(currentState);
-        if (!availableAuxBuses) {
-          _showError('No available buses for algorithm connection');
-          return;
-        }
-      }
+      // Let the cubit choose a suitable internal bus (aux preferred),
+      // so we do not hard-block when aux buses are exhausted.
+      // Hardware connections remain always available.
 
       // Attempt to create the connection
       await cubit.createConnection(
@@ -387,29 +424,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
   }
 
-  /// Check if there are available aux buses for algorithm-to-algorithm connections
-  Future<bool> _checkAvailableAuxBuses(RoutingEditorStateLoaded state) async {
-    // Get all currently used bus numbers from existing connections
-    final usedBuses = <int>{};
-
-    // Check all algorithm ports for their current bus assignments
-    for (final algorithm in state.algorithms) {
-      for (final port in [...algorithm.inputPorts, ...algorithm.outputPorts]) {
-        if (port.busValue != null && port.busValue! > 0) {
-          usedBuses.add(port.busValue!);
-        }
-      }
-    }
-
-    // Check if aux buses (21-28) are available
-    for (int busNumber = 21; busNumber <= 28; busNumber++) {
-      if (!usedBuses.contains(busNumber)) {
-        return true; // Found at least one available bus
-      }
-    }
-
-    return false; // All aux buses are in use
-  }
+  // No longer used: previously pre-checked for aux-only availability.
+  // The cubit now picks an appropriate internal bus (aux preferred),
+  // so we skip rigid preflight here to avoid blocking valid cases.
 
   Widget _buildCanvasContent(BuildContext context, RoutingEditorState state) {
     return state.when(
@@ -1449,16 +1466,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             return;
           }
 
-          // Only check aux buses for algorithm-to-algorithm connections
-          // Hardware connections (buses 1-20) are always available
-          final isHardwareConnection =
-              _dragSourcePort!.id.startsWith('hw_') ||
-              targetPort.id.startsWith('hw_');
-          if (!isHardwareConnection) {
-            if (!(await _checkAvailableAuxBuses(currentState))) {
-              return;
-            }
-          }
+          // Let the cubit choose a suitable internal bus (aux preferred),
+          // so we do not hard-block when aux buses are exhausted.
+          // Hardware connections remain always available.
         }
 
         // Create the connection

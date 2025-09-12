@@ -1,4 +1,5 @@
 import '../../../core/routing/models/port.dart';
+import '../../../core/routing/bus_spec.dart';
 
 /// Enum representing the type of bus
 enum BusType {
@@ -26,26 +27,10 @@ class BusLabelFormatter {
   BusLabelFormatter._();
 
   /// Minimum valid bus number
-  static const int minBusNumber = 1;
+  static const int minBusNumber = BusSpec.min;
 
   /// Maximum valid bus number (includes ES-5)
-  static const int maxBusNumber = 30;
-
-  /// Input bus range
-  static const int minInputBus = 1;
-  static const int maxInputBus = 12;
-
-  /// Output bus range
-  static const int minOutputBus = 13;
-  static const int maxOutputBus = 20;
-
-  /// Auxiliary bus range
-  static const int minAuxBus = 21;
-  static const int maxAuxBus = 28;
-
-  /// ES-5 bus range
-  static const int minES5Bus = 29;
-  static const int maxES5Bus = 30;
+  static const int maxBusNumber = BusSpec.max;
 
   /// Formats a bus value (alias for formatBusNumber)
   ///
@@ -132,14 +117,13 @@ class BusLabelFormatter {
   /// Returns the [BusType] for valid bus numbers, null otherwise
   static BusType? getBusType(int? busNumber) {
     if (busNumber == null) return null;
-
-    if (busNumber >= minInputBus && busNumber <= maxInputBus) {
+    if (BusSpec.isPhysicalInput(busNumber)) {
       return BusType.input;
-    } else if (busNumber >= minOutputBus && busNumber <= maxOutputBus) {
+    } else if (BusSpec.isPhysicalOutput(busNumber)) {
       return BusType.output;
-    } else if (busNumber >= minAuxBus && busNumber <= maxAuxBus) {
+    } else if (BusSpec.isAux(busNumber)) {
       return BusType.auxiliary;
-    } else if (busNumber >= minES5Bus && busNumber <= maxES5Bus) {
+    } else if (BusSpec.isEs5(busNumber)) {
       return BusType.es5;
     }
 
@@ -151,7 +135,7 @@ class BusLabelFormatter {
   /// Valid bus numbers are 1-30 inclusive (includes ES-5)
   static bool isValidBusNumber(int? busNumber) {
     if (busNumber == null) return false;
-    return busNumber >= minBusNumber && busNumber <= maxBusNumber;
+    return BusSpec.isValid(busNumber);
   }
 
   /// Gets the range of bus numbers for a specific bus type
@@ -160,13 +144,13 @@ class BusLabelFormatter {
   static List<int> getBusRange(BusType busType) {
     switch (busType) {
       case BusType.input:
-        return [minInputBus, maxInputBus];
+        return [BusSpec.inputMin, BusSpec.inputMax];
       case BusType.output:
-        return [minOutputBus, maxOutputBus];
+        return [BusSpec.outputMin, BusSpec.outputMax];
       case BusType.auxiliary:
-        return [minAuxBus, maxAuxBus];
+        return [BusSpec.auxMin, BusSpec.auxMax];
       case BusType.es5:
-        return [minES5Bus, maxES5Bus];
+        return [BusSpec.es5Min, BusSpec.es5Max];
     }
   }
 
@@ -187,11 +171,11 @@ class BusLabelFormatter {
       case BusType.input:
         return busNumber; // Inputs are already 1-based
       case BusType.output:
-        return busNumber - (minOutputBus - 1); // Convert 13-20 to 1-8
+        return busNumber - (BusSpec.outputMin - 1); // Convert 13-20 to 1-8
       case BusType.auxiliary:
-        return busNumber - (minAuxBus - 1); // Convert 21-28 to 1-8
+        return busNumber - (BusSpec.auxMin - 1); // Convert 21-28 to 1-8
       case BusType.es5:
-        return busNumber - (minES5Bus - 1); // Convert 29-30 to 1-2
+        return busNumber - (BusSpec.es5Min - 1); // Convert 29-30 to 1-2
       case null:
         return null;
     }

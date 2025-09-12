@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'algorithm_routing.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
+import 'bus_spec.dart';
 import '../../ui/widgets/routing/bus_label_formatter.dart';
 
 /// Service for discovering connections between algorithms based on shared bus assignments.
@@ -59,10 +60,9 @@ class ConnectionDiscoveryService {
       final inputs = assignments.where((a) => !a.isOutput).toList();
 
       // Determine if this is a hardware bus
-      final isHardwareInput = busNumber >= 1 && busNumber <= 12;
+      final isHardwareInput = BusSpec.isPhysicalInput(busNumber);
       final isHardwareOutput =
-          (busNumber >= 13 && busNumber <= 20) ||
-          (busNumber >= 29 && busNumber <= 30); // ES-5 L/R
+          BusSpec.isPhysicalOutput(busNumber) || BusSpec.isEs5(busNumber);
       // Create hardware input connections (buses 1-12)
       if (isHardwareInput && inputs.isNotEmpty) {
         connections.addAll(_createHardwareInputConnections(busNumber, inputs));
@@ -433,10 +433,6 @@ class ConnectionDiscoveryService {
     );
   }
 
-  /// Generates a human-readable bus label for the given bus number (legacy helper)
-  static String _generateBusLabel(int busNumber) {
-    return BusLabelFormatter.formatBusNumber(busNumber) ?? 'Bus$busNumber';
-  }
 }
 
 /// Internal class to track port assignments in the bus registry

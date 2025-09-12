@@ -684,16 +684,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       busToUse = existingBus;
       debugPrint('Using existing bus $busToUse for algorithm connection');
     } else {
-      // Find the first available aux bus (21-28)
-      final availableBus = await _findFirstAvailableAuxBus(state);
+      // Prefer aux buses first, then fall back to any free internal bus.
+      final availableBus = await _findFirstAvailableInternalBus(state);
       if (availableBus == null) {
-        debugPrint('No available aux buses for algorithm connection');
-        throw StateError(
-          'No available aux buses for algorithm connections (limit: 8 buses)',
-        );
+        debugPrint('No available internal buses for algorithm connection');
+        throw StateError('No available internal buses for algorithm connections');
       }
       busToUse = availableBus;
-      debugPrint('Using new aux bus $busToUse for algorithm connection');
+      debugPrint('Using new internal bus $busToUse for algorithm connection');
     }
 
     // Update both source output and target input bus parameters
@@ -810,8 +808,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     return null;
   }
 
-  /// Find the first available aux bus (21-28) that's not currently in use
-  Future<int?> _findFirstAvailableAuxBus(RoutingEditorStateLoaded state) async {
+  /// Find the first available internal bus, preferring aux (21-28),
+  /// then input (1-12), then output (13-20), excluding ES-5 by default.
+  Future<int?> _findFirstAvailableInternalBus(
+    RoutingEditorStateLoaded state,
+  ) async {
     // Get actual parameter values from live slot data to determine bus usage
     final distingState = _distingCubit?.state;
     if (distingState is! DistingStateSynchronized) {
@@ -875,20 +876,19 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     }
 
-    debugPrint(
-      'Currently used buses from hardware: ${usedBuses.toList()..sort()}',
-    );
+    debugPrint('Currently used buses from hardware: '
+        '${usedBuses.toList()..sort()}');
 
-    // Find first available aux bus (21-28)
-    for (int busNumber = 21; busNumber <= 28; busNumber++) {
-      if (!usedBuses.contains(busNumber)) {
-        debugPrint('Found available aux bus: $busNumber');
-        return busNumber;
+    // Search order: AUX (21–28) → INPUT (1–12) → OUTPUT (13–20)
+    // AUX preferred to avoid implicitly tying to physical I/O.
+    int? pickFrom(int min, int max) {
+      for (int b = min; b <= max; b++) {
+        if (!usedBuses.contains(b)) return b;
       }
+      return null;
     }
 
-    debugPrint('No available aux buses (21-28 all in use)');
-    return null; // No available aux buses
+    return pickFrom(21, 28) ?? pickFrom(1, 12) ?? pickFrom(13, 20);
   }
 
   /// Delete an existing connection by ID
@@ -2162,31 +2162,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final distingState = _distingCubit?.state;
     if (distingState == null) return;
 
-    // Get preset name from DistingState
-    String? presetName;
-    distingState.whenOrNull(
-      synchronized:
-          (
-            _,
-            __,
-            ___,
-            name,
-            ____,
-            _____,
-            ______,
-            _______,
-            ________,
-            _________,
-            __________,
-            ___________,
-            ____________,
-            _____________,
-          ) {
-            presetName = name;
-          },
-    );
-
-    if (presetName == null || presetName!.isEmpty) return;
+    // Get preset name from synchronized state directly
+    if (distingState is! DistingStateSynchronized) return;
+    final presetName = distingState.presetName;
+    if (presetName.isEmpty) return;
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -2216,31 +2195,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final distingState = _distingCubit?.state;
     if (distingState == null) return;
 
-    // Get preset name from DistingState
-    String? presetName;
-    distingState.whenOrNull(
-      synchronized:
-          (
-            _,
-            __,
-            ___,
-            name,
-            ____,
-            _____,
-            ______,
-            _______,
-            ________,
-            _________,
-            __________,
-            ___________,
-            ____________,
-            _____________,
-          ) {
-            presetName = name;
-          },
-    );
-
-    if (presetName == null || presetName!.isEmpty) return;
+    if (distingState is! DistingStateSynchronized) return;
+    final presetName = distingState.presetName;
+    if (presetName.isEmpty) return;
 
     try {
       final prefs = await SharedPreferences.getInstance();
