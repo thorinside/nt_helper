@@ -249,11 +249,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
       final bytes = byteData.buffer.asUint8List();
+      bool ok = true;
       try {
         await Pasteboard.writeImage(bytes);
+      } catch (_) {
+        ok = false;
+      }
+      if (ok) {
         _showFeedback('Canvas image copied to clipboard');
         return;
-      } catch (_) {
+      } else {
         // Fallback to data URL if native image copy is unsupported
         final b64 = convert.base64Encode(bytes);
         await Clipboard.setData(
@@ -306,10 +311,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
       final bytes = byteData.buffer.asUint8List();
+      bool ok = true;
       try {
         await Pasteboard.writeImage(bytes);
-        _showFeedback('Viewport copied to clipboard');
       } catch (_) {
+        ok = false;
+      }
+      if (ok) {
+        _showFeedback('Viewport copied to clipboard');
+      } else {
         final b64 = convert.base64Encode(bytes);
         await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
         _showFeedback('Viewport copied (data URL)');
@@ -378,10 +388,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
       final bytes = byteData.buffer.asUint8List();
+      bool ok = true;
       try {
         await Pasteboard.writeImage(bytes);
-        _showFeedback('Nodes image copied to clipboard');
       } catch (_) {
+        ok = false;
+      }
+      if (ok) {
+        _showFeedback('Nodes image copied to clipboard');
+      } else {
         final b64 = convert.base64Encode(bytes);
         await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
         _showFeedback('Nodes image copied (data URL)');
