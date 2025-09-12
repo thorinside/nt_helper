@@ -34,6 +34,7 @@ import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
 import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
@@ -85,6 +86,7 @@ class SynchronizedScreen extends StatefulWidget {
 
 class _SynchronizedScreenState extends State<SynchronizedScreen>
     with TickerProviderStateMixin {
+  final RoutingEditorController _editorController = RoutingEditorController();
   late int _selectedIndex;
   late TabController _tabController;
   EditMode _currentMode = EditMode.parameters;
@@ -366,6 +368,24 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               },
                           orElse: () => const SizedBox.shrink(),
                         ),
+                        // Fit To View
+                        IconButton(
+                          icon: const Icon(Icons.center_focus_strong),
+                          onPressed: () => _editorController.fitToView(),
+                          tooltip: 'Fit To View',
+                        ),
+                        // Reset Pan/Zoom
+                        IconButton(
+                          icon: const Icon(Icons.zoom_out_map),
+                          onPressed: () => _editorController.resetPanZoom(),
+                          tooltip: 'Reset Pan/Zoom',
+                        ),
+                        // Copy Canvas Image
+                        IconButton(
+                          icon: const Icon(Icons.image_outlined),
+                          onPressed: () => _editorController.copyCanvasImage(),
+                          tooltip: 'Copy Canvas Image',
+                        ),
                       ],
                     );
                   },
@@ -378,6 +398,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return RoutingEditorWidget(
+                    controller: _editorController,
                     canvasSize: Size(
                       constraints.maxWidth,
                       constraints.maxHeight,

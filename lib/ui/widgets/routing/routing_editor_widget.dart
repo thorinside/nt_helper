@@ -4,6 +4,9 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:ui' as ui;
+import 'dart:convert' as convert;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
@@ -14,6 +17,7 @@ import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
     as painter;
 import 'package:nt_helper/core/platform/platform_interaction_service.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
@@ -32,6 +36,7 @@ class RoutingEditorWidget extends StatefulWidget {
   final Function(String sourcePortId, String targetPortId)? onConnectionCreated;
   final Function(String connectionId)? onConnectionRemoved;
   final PlatformInteractionService? platformService;
+  final RoutingEditorController? controller;
 
   RoutingEditorWidget({
     super.key,
@@ -43,6 +48,7 @@ class RoutingEditorWidget extends StatefulWidget {
     this.onConnectionCreated,
     this.onConnectionRemoved,
     this.platformService,
+    this.controller,
   }) : showBusLabels = showBusLabels ?? (canvasSize.width >= 800);
 
   @override
@@ -78,6 +84,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   late ScrollController _verticalScrollController;
   // Canvas container key for coordinate transforms
   final GlobalKey _canvasKey = GlobalKey();
+  final GlobalKey _captureKey = GlobalKey();
 
   // Canvas dimensions
   static const double _canvasWidth = 5000.0;
@@ -100,6 +107,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     _platformService = widget.platformService ?? PlatformInteractionService();
     _horizontalScrollController = ScrollController();
     _verticalScrollController = ScrollController();
+
+    // Attach controller if provided
+    widget.controller?.attach(
+      fitToView: _fitToView,
+      resetPanZoom: _centerCanvas,
+      copyCanvasImage: _copyCanvasImageToClipboard,
+    );
 
     // Center the view on the canvas after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -168,6 +182,69 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     super.dispose();
+  }
+
+  // Fit viewport to current content center (no zoom)
+  void _fitToView() {
+    if (_nodePositions.isEmpty) {
+      _centerCanvas();
+      return;
+    }
+    double minX = double.infinity, maxX = double.negativeInfinity;
+    double minY = double.infinity, maxY = double.negativeInfinity;
+    for (final p in _nodePositions.values) {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dy > maxY) maxY = p.dy;
+    }
+    final contentCenterX = ((minX + maxX) / 2).clamp(0.0, _canvasWidth);
+    final contentCenterY = ((minY + maxY) / 2).clamp(0.0, _canvasHeight);
+    final targetHX = (contentCenterX - widget.canvasSize.width / 2)
+        .clamp(0.0, _canvasWidth - widget.canvasSize.width);
+    final targetVY = (contentCenterY - widget.canvasSize.height / 2)
+        .clamp(0.0, _canvasHeight - widget.canvasSize.height);
+
+    if (_horizontalScrollController.hasClients) {
+      _horizontalScrollController.animateTo(
+        targetHX,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
+    if (_verticalScrollController.hasClients) {
+      _verticalScrollController.animateTo(
+        targetVY,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  Future<void> _copyCanvasImageToClipboard() async {
+    try {
+      final ctx = _captureKey.currentContext;
+      if (ctx == null) {
+        _showFeedback('Canvas not ready');
+        return;
+      }
+      final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showFeedback('Capture unavailable');
+        return;
+      }
+      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showFeedback('Encode failed');
+        return;
+      }
+      final b64 = convert.base64Encode(byteData.buffer.asUint8List());
+      await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+      _showFeedback('Canvas image copied (data URL)');
+    } catch (e) {
+      _showError('Copy failed: $e');
+    }
   }
 
   @override
@@ -389,6 +466,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     });
   }
 
+  void _showFeedback(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
   /// Create connection with comprehensive error handling
   Future<void> _createConnectionWithErrorHandling(
     RoutingEditorCubit cubit,
@@ -570,12 +654,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                           .translucent, // Allow events to pass through to child widgets
                       child: CustomPaint(
                         painter: _CanvasGridPainter(
-                          minorGridColor: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.1),
-                          majorGridColor: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.2),
+                          minorGridColor: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.1),
+                          majorGridColor: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.2),
                           gridSize: 50.0,
                           majorEvery: 5,
                         ),
@@ -614,8 +700,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     _buildTemporaryConnection(),
                 ],
               ),
-            ),
           ),
+        ),
         ),
       ),
     );

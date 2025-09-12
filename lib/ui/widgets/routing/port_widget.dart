@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math_64.dart' as math;
 import 'package:nt_helper/core/routing/models/port.dart';
 
 /// Enum for configurable label positioning relative to port
