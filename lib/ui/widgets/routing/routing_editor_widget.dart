@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'dart:convert' as convert;
+import 'package:pasteboard/pasteboard.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
@@ -233,15 +234,30 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         _showFeedback('Capture unavailable');
         return;
       }
-      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
+      // Scale output to approximately the visible viewport size to keep
+      // clipboard images small and avoid platform limits.
+      final double scaleX = widget.canvasSize.width / _canvasWidth;
+      final double scaleY = widget.canvasSize.height / _canvasHeight;
+      final double pixelRatio = (math.min(scaleX, scaleY)).clamp(0.2, 1.0);
+      final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
         _showFeedback('Encode failed');
         return;
       }
-      final b64 = convert.base64Encode(byteData.buffer.asUint8List());
-      await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
-      _showFeedback('Canvas image copied (data URL)');
+      final bytes = byteData.buffer.asUint8List();
+      try {
+        await Pasteboard.writeImage(bytes);
+        _showFeedback('Canvas image copied to clipboard');
+        return;
+      } catch (_) {
+        // Fallback to data URL if native image copy is unsupported
+        final b64 = convert.base64Encode(bytes);
+        await Clipboard.setData(
+          ClipboardData(text: 'data:image/png;base64,$b64'),
+        );
+        _showFeedback('Canvas image copied (data URL)');
+      }
     } catch (e) {
       _showError('Copy failed: $e');
     }
