@@ -759,6 +759,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<Connection> connections,
     Map<String, NodePosition> stateNodePositions,
   ) {
+    // Compute shadowed outputs once for all algorithms
+    final shadowedOutputPortIds = _computeShadowedOutputPortIds(algorithms);
+
     return algorithms.map((algorithm) {
       // Use stable algorithm ID instead of index for consistent positioning
       final nodeId = algorithm.id;
@@ -800,6 +803,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
           outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
           connectedPorts: _getConnectedPortIds(connections),
+          shadowedPortIds: shadowedOutputPortIds,
           onPortPositionResolved: (portId, globalCenter, isInput) {
             _updatePortAnchor(portId, globalCenter);
           },
@@ -857,6 +861,66 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         ),
       );
     }).toList();
+  }
+
+  /// Determine which output ports are shadowed (later replace before any reader).
+  Set<String> _computeShadowedOutputPortIds(List<RoutingAlgorithm> algorithms) {
+    final result = <String>{};
+
+    // Build per-bus lists of outputs and inputs with slot indices
+    final outputsByBus = <int, List<({int slot, String portId, OutputMode? mode})>>{};
+    final inputsByBus = <int, List<int>>{}; // bus -> reader slots
+
+    for (final algo in algorithms) {
+      final slot = algo.index;
+      for (final p in algo.outputPorts) {
+        final bus = p.busValue;
+        if (bus != null && bus > 0) {
+          outputsByBus.putIfAbsent(bus, () => []).add((slot: slot, portId: p.id, mode: p.outputMode));
+        }
+      }
+      for (final p in algo.inputPorts) {
+        final bus = p.busValue;
+        if (bus != null && bus > 0) {
+          inputsByBus.putIfAbsent(bus, () => []).add(slot);
+        }
+      }
+    }
+
+    for (final entry in outputsByBus.entries) {
+      final bus = entry.key;
+      final outs = List.of(entry.value)
+        ..sort((a, b) => a.slot.compareTo(b.slot));
+      final readers = (inputsByBus[bus] ?? const <int>[]).toList()
+        ..sort();
+
+      for (int i = 0; i < outs.length; i++) {
+        final w = outs[i];
+        // Find next replace after this writer
+        int? nextReplaceSlot;
+        for (int j = i + 1; j < outs.length; j++) {
+          final cand = outs[j];
+          final mode = cand.mode ?? OutputMode.add;
+          if (mode == OutputMode.replace) {
+            nextReplaceSlot = cand.slot;
+            break;
+          }
+        }
+
+        if (nextReplaceSlot == null) {
+          // No later replace: not shadowed by definition
+          continue;
+        }
+
+        // Is there any reader between (w.slot, nextReplaceSlot]?
+        final hasReaderBeforeNext = readers.any((k) => k > w.slot && k <= nextReplaceSlot!);
+        if (!hasReaderBeforeNext) {
+          result.add(w.portId);
+        }
+      }
+    }
+
+    return result;
   }
 
   Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {

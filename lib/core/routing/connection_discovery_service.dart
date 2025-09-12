@@ -3,6 +3,7 @@ import 'algorithm_routing.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
 import 'bus_spec.dart';
+import 'bus_session_resolver.dart';
 import '../../ui/widgets/routing/bus_label_formatter.dart';
 
 /// Service for discovering connections between algorithms based on shared bus assignments.
@@ -50,7 +51,9 @@ class ConnectionDiscoveryService {
     // Track matched ports to identify unmatched ones for partial connections
     final matchedPorts = <String>{};
 
-    // Create connections based on bus assignments
+    final totalSlots = routings.length;
+
+    // Create connections based on bus assignments, but session-aware
     for (final entry in busRegistry.entries) {
       final busNumber = entry.key;
       final assignments = entry.value;
@@ -59,42 +62,84 @@ class ConnectionDiscoveryService {
       final outputs = assignments.where((a) => a.isOutput).toList();
       final inputs = assignments.where((a) => !a.isOutput).toList();
 
-      // Determine if this is a hardware bus
+      // Build session resolver from output writes on this bus
+      final builder = BusSessionBuilder();
+      for (final o in outputs) {
+        builder.addWrite(
+          bus: busNumber,
+          slot: o.algorithmIndex,
+          portId: o.portId,
+          mode: o.outputMode,
+        );
+      }
+      final resolver = builder.build(totalSlots: totalSlots);
+
       final isHardwareInput = BusSpec.isPhysicalInput(busNumber);
       final isHardwareOutput =
           BusSpec.isPhysicalOutput(busNumber) || BusSpec.isEs5(busNumber);
-      // Create hardware input connections (buses 1-12)
-      if (isHardwareInput && inputs.isNotEmpty) {
-        connections.addAll(_createHardwareInputConnections(busNumber, inputs));
-        // Mark these input ports as matched
+
+      // Algorithm-to-algorithm: connect only from contributing writers for each reader slot
+      if (outputs.isNotEmpty && inputs.isNotEmpty) {
         for (final input in inputs) {
+          final contributingPortIds =
+              resolver.contributorsForReader(busNumber, input.algorithmIndex);
+          if (contributingPortIds.isEmpty) continue;
+
+          for (final output in outputs) {
+            if (!contributingPortIds.contains(output.portId)) continue;
+            if (output.algorithmId == input.algorithmId) continue; // no self
+
+            // Ensure forward order (contributors always have lower slot)
+            if (output.algorithmIndex >= input.algorithmIndex) continue;
+
+            connections.add(
+              Connection(
+                id: 'conn_${output.portId}_to_${input.portId}',
+                sourcePortId: output.portId,
+                destinationPortId: input.portId,
+                connectionType: ConnectionType.algorithmToAlgorithm,
+                busNumber: busNumber,
+                algorithmId: output.algorithmId,
+                algorithmIndex: output.algorithmIndex,
+                parameterNumber: output.parameterNumber,
+                signalType: _toSignalType(output.portType),
+                isBackwardEdge: false,
+                isOutput: true,
+                outputMode: output.outputMode,
+              ),
+            );
+
+            matchedPorts.add(output.portId);
+            matchedPorts.add(input.portId);
+          }
+        }
+      }
+
+      // Hardware input (buses 1-12): only contributes until first replace before reader
+      if (isHardwareInput && inputs.isNotEmpty) {
+        for (final input in inputs) {
+          final contributes = resolver.hardwareSeedContributes(
+            busNumber,
+            input.algorithmIndex,
+          );
+          if (!contributes) continue;
+          connections.addAll(_createHardwareInputConnections(busNumber, [input]));
           matchedPorts.add(input.portId);
         }
       }
 
-      // Create hardware output connections (buses 13-20)
+      // Hardware output (buses 13-20, ES-5): only from final contributors at end of frame
       if (isHardwareOutput && outputs.isNotEmpty) {
-        connections.addAll(
-          _createHardwareOutputConnections(busNumber, outputs),
-        );
-        // Mark these output ports as matched
-        for (final output in outputs) {
-          matchedPorts.add(output.portId);
-        }
-      }
-
-      // Create algorithm-to-algorithm connections (ANY bus with both inputs and outputs)
-      if (outputs.isNotEmpty && inputs.isNotEmpty) {
-        connections.addAll(
-          _createAlgorithmConnections(busNumber, outputs, inputs),
-        );
-        // Mark all algorithm ports involved in connections as matched
-        for (final output in outputs) {
-          for (final input in inputs) {
-            if (output.algorithmId != input.algorithmId) {
-              matchedPorts.add(output.portId);
-              matchedPorts.add(input.portId);
-            }
+        final finalPortIds = resolver.finalContributors(busNumber);
+        if (finalPortIds.isNotEmpty) {
+          final selectedOutputs = outputs
+              .where((o) => finalPortIds.contains(o.portId))
+              .toList();
+          connections.addAll(
+            _createHardwareOutputConnections(busNumber, selectedOutputs),
+          );
+          for (final o in selectedOutputs) {
+            matchedPorts.add(o.portId);
           }
         }
       }
@@ -211,50 +256,7 @@ class ConnectionDiscoveryService {
     return connections;
   }
 
-  /// Creates algorithm-to-algorithm connections
-  static List<Connection> _createAlgorithmConnections(
-    int busNumber,
-    List<_PortAssignment> outputs,
-    List<_PortAssignment> inputs,
-  ) {
-    final connections = <Connection>[];
-
-    debugPrint(
-      '[ConnectionDiscovery] Bus $busNumber has potential algo-to-algo connections',
-    );
-    for (final output in outputs) {
-      for (final input in inputs) {
-        // Skip self-connections
-        if (output.algorithmId != input.algorithmId) {
-          debugPrint(
-            '[ConnectionDiscovery]   Creating: ${output.algorithmId} -> ${input.algorithmId}',
-          );
-
-          // Check for backward edge (output from later algorithm to earlier algorithm)
-          final isBackwardEdge = output.algorithmIndex > input.algorithmIndex;
-
-          connections.add(
-            Connection(
-              id: 'conn_${output.portId}_to_${input.portId}',
-              sourcePortId: output.portId,
-              destinationPortId: input.portId,
-              connectionType: ConnectionType.algorithmToAlgorithm,
-              busNumber: busNumber,
-              algorithmId: output.algorithmId,
-              algorithmIndex: output.algorithmIndex,
-              parameterNumber: output.parameterNumber,
-              signalType: _toSignalType(output.portType),
-              isBackwardEdge: isBackwardEdge,
-              isOutput: true,
-              outputMode: output.outputMode,
-            ),
-          );
-        }
-      }
-    }
-
-    return connections;
-  }
+  // Removed legacy _createAlgorithmConnections; discovery is now session-aware
 
   /// Extracts algorithm ID from routing instance
   static String _extractAlgorithmId(AlgorithmRouting routing) {

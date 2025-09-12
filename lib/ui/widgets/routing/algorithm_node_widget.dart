@@ -39,6 +39,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
   final List<String>? outputPortIds;
   // Set of port IDs that are currently connected
   final Set<String>? connectedPorts;
+  // Set of output port IDs that are shadowed (red dot indicator)
+  final Set<String>? shadowedPortIds;
   // Callback to report per-port anchor global position
   final void Function(String portId, Offset globalCenter, bool isInput)?
   onPortPositionResolved;
@@ -76,6 +78,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.inputPortIds,
     this.outputPortIds,
     this.connectedPorts,
+    this.shadowedPortIds,
     this.onPortPositionResolved,
     this.onRoutingAction,
     this.onPortTapped,
@@ -380,6 +383,9 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }) {
     final isConnected =
         portId != null && (widget.connectedPorts?.contains(portId) ?? false);
+    final showShadowDot = !isInput &&
+        portId != null &&
+        (widget.shadowedPortIds?.contains(portId) ?? false);
 
     return PortWidget(
       label: label,
@@ -390,6 +396,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
       isConnected:
           isConnected, // Keep using the passed connection info for algorithm ports
       isHighlighted: portId != null && portId == widget.highlightedPortId,
+      showShadowDot: showShadowDot,
       onPortPositionResolved: widget.onPortPositionResolved,
       onRoutingAction: widget.onRoutingAction,
       onTap: portId != null && isInput

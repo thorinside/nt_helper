@@ -81,6 +81,9 @@ class PortWidget extends StatefulWidget {
   /// Whether this port is currently highlighted (e.g., during drag operations)
   final bool isHighlighted;
 
+  /// Show a centered red dot to indicate a "shadowed" output
+  final bool showShadowDot;
+
   const PortWidget({
     super.key,
     required this.label,
@@ -101,6 +104,7 @@ class PortWidget extends StatefulWidget {
     this.connectionIds = const [],
     this.onRoutingAction,
     this.isHighlighted = false,
+    this.showShadowDot = false,
   });
 
   @override
@@ -281,7 +285,8 @@ class _PortWidgetState extends State<PortWidget> {
 
   /// Builds the visual port dot/circle
   Widget _buildPortDot(ThemeData theme) {
-    Widget dot = AnimatedContainer(
+    // Base port circle
+    final Widget base = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       key: _dotKey,
       width: 12,
@@ -311,28 +316,50 @@ class _PortWidgetState extends State<PortWidget> {
       ),
     );
 
-    // Add hover detection only to the dot when routing action callback is provided
+    // Overlay: centered red dot when shadowed (non-blocking)
+    final Widget withOverlay = Stack(
+      alignment: Alignment.center,
+      children: [
+        base,
+        if (widget.showShadowDot)
+          IgnorePointer(
+            ignoring: true,
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.error,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.surface,
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    // Add hover detection only when routing action callback is provided
     if (widget.onRoutingAction != null) {
-      dot = MouseRegion(
+      return MouseRegion(
         onEnter: (_) {
           widget.onHoverEnter?.call();
-          // Notify routing cubit about hover start - it will determine if port is connected
           if (widget.portId != null) {
             widget.onRoutingAction?.call(widget.portId!, 'hover_start');
           }
         },
         onExit: (_) {
           widget.onHoverExit?.call();
-          // Notify routing cubit about hover end
           if (widget.portId != null) {
             widget.onRoutingAction?.call(widget.portId!, 'hover_end');
           }
         },
-        child: dot,
+        child: withOverlay,
       );
     }
 
-    return dot;
+    return withOverlay;
   }
 
   /// Builds the port label text
