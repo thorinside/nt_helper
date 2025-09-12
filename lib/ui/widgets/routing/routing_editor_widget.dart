@@ -625,7 +625,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 }
               }
             },
-            child: Container(
+            child: RepaintBoundary(
+              key: _captureKey,
+              child: Container(
               key: _canvasKey,
               width: _canvasWidth,
               height: _canvasHeight,
@@ -700,6 +702,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     _buildTemporaryConnection(),
                 ],
               ),
+            ),
           ),
         ),
         ),
