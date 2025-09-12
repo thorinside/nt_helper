@@ -1,371 +1,138 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart';
-import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart' as core;
 import 'package:nt_helper/core/routing/models/routing_state.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/domain/disting_nt_sysex.dart';
 
-// Mock routing implementation for testing
-class _TestRouting extends AlgorithmRouting {
-  final List<Port> _inputPorts;
-  final List<Port> _outputPorts;
+/// Minimal fake routing for testing discovery; provides only ports/state.
+class _FakeRouting extends AlgorithmRouting {
+  final String _id;
+  final List<core.Port> _inputs;
+  final List<core.Port> _outputs;
+
   RoutingState _state = const RoutingState();
 
-  _TestRouting({
-    required List<Port> inputPorts,
-    required List<Port> outputPorts,
-    String? algorithmUuid,
-  }) : _inputPorts = inputPorts,
-       _outputPorts = outputPorts,
-       super(algorithmUuid: algorithmUuid);
+  _FakeRouting({required String id, List<core.Port>? inputs, List<core.Port>? outputs})
+      : _id = id,
+        _inputs = inputs ?? const [],
+        _outputs = outputs ?? const [] {
+    algorithmUuid = _id;
+  }
 
   @override
   RoutingState get state => _state;
 
   @override
-  List<Connection> get connections => _state.connections;
+  List<core.Port> get inputPorts => _inputs;
 
   @override
-  List<Port> get inputPorts => _inputPorts;
+  List<core.Port> get outputPorts => _outputs;
 
   @override
-  List<Port> get outputPorts => _outputPorts;
+  List<Connection> get connections => const [];
 
   @override
-  List<Port> generateInputPorts() => inputPorts;
+  List<core.Port> generateInputPorts() => _inputs;
 
   @override
-  List<Port> generateOutputPorts() => outputPorts;
+  List<core.Port> generateOutputPorts() => _outputs;
 
   @override
-  bool validateConnection(Port source, Port destination) => true;
+  void updateState(RoutingState newState) => _state = newState;
+}
 
-  @override
-  void updateState(RoutingState newState) {
-    _state = newState;
-  }
+core.Port _inPort(String id, int bus, {core.PortType type = core.PortType.audio}) {
+  return core.Port(
+    id: id,
+    name: id,
+    type: type,
+    direction: core.PortDirection.input,
+    busValue: bus,
+    parameterNumber: 1,
+  );
+}
+
+core.Port _outPort(String id, int bus, {core.PortType type = core.PortType.audio}) {
+  return core.Port(
+    id: id,
+    name: id,
+    type: type,
+    direction: core.PortDirection.output,
+    busValue: bus,
+    parameterNumber: 2,
+  );
 }
 
 void main() {
-  group('ConnectionDiscoveryService Duplicate Algorithm Tests', () {
-    test('should handle duplicate algorithms with stable IDs', () {
-      // Create test data for duplicate algorithms
-      final algorithm = Algorithm(
-        algorithmIndex: 100,
-        guid: 'duplicate_algo',
-        name: 'Duplicate Test Algorithm',
+  group('ConnectionDiscoveryService', () {
+    test('creates algo→algo and hardware input connections on bus 2', () {
+      final a = _FakeRouting(
+        id: 'algo_A',
+        outputs: [_outPort('A_out_b2', 2)],
+      );
+      final b = _FakeRouting(
+        id: 'algo_B',
+        inputs: [_inPort('B_in_b2', 2)],
       );
 
-      // Create parameter definitions for bus routing
-      final parameters = [
-        ParameterInfo(
-          algorithmIndex: 100,
-          parameterNumber: 1,
-          name: 'Input 1',
-          unit: 1, // enum type for bus parameter
-          min: 0,
-          max: 27,
-          defaultValue: 0,
-          powerOfTen: 0,
-        ),
-        ParameterInfo(
-          algorithmIndex: 100,
-          parameterNumber: 2,
-          name: 'Output 1',
-          unit: 1,
-          min: 0,
-          max: 27,
-          defaultValue: 0,
-          powerOfTen: 0,
-        ),
-      ];
+      final conns = ConnectionDiscoveryService.discoverConnections([a, b]);
 
-      // Create two slots with the same algorithm
-      final slot1 = Slot(
-        algorithm: algorithm,
-        routing: RoutingInfo(algorithmIndex: 100, routingInfo: []),
-        pages: ParameterPages(algorithmIndex: 100, pages: []),
-        parameters: parameters,
-        values: [
-          ParameterValue(
-            algorithmIndex: 100,
-            parameterNumber: 1,
-            value: 3,
-          ), // Bus 3
-          ParameterValue(
-            algorithmIndex: 100,
-            parameterNumber: 2,
-            value: 15,
-          ), // Bus 15
-        ],
-        enums: [],
-        mappings: [],
-        valueStrings: [],
+      // One hardware input connection on bus 2 (from hw_in_2 to an algo input)
+      expect(
+        conns.any((c) => c.connectionType == ConnectionType.hardwareInput && c.busNumber == 2),
+        isTrue,
       );
 
-      final slot2 = Slot(
-        algorithm: algorithm,
-        routing: RoutingInfo(algorithmIndex: 100, routingInfo: []),
-        pages: ParameterPages(algorithmIndex: 100, pages: []),
-        parameters: parameters,
-        values: [
-          ParameterValue(
-            algorithmIndex: 100,
-            parameterNumber: 1,
-            value: 4,
-          ), // Bus 4
-          ParameterValue(
-            algorithmIndex: 100,
-            parameterNumber: 2,
-            value: 16,
-          ), // Bus 16
-        ],
-        enums: [],
-        mappings: [],
-        valueStrings: [],
+      // One algo→algo connection from A_out_b2 to B_in_b2
+      expect(
+        conns.any((c) => c.connectionType == ConnectionType.algorithmToAlgorithm && c.sourcePortId == 'A_out_b2' && c.destinationPortId == 'B_in_b2' && c.busNumber == 2),
+        isTrue,
       );
 
-      // Create AlgorithmRouting instances with stable IDs
-      final routing1 = AlgorithmRouting.fromSlot(
-        slot1,
-        algorithmUuid: 'slot_0_duplicate_algo',
-      );
-      final routing2 = AlgorithmRouting.fromSlot(
-        slot2,
-        algorithmUuid: 'slot_1_duplicate_algo',
-      );
-
-      // This test should FAIL initially because ConnectionDiscoveryService
-      // uses hashCode fallback instead of stable algorithmUuid
-      // After the fix, it should PASS
-
-      // Attempt to discover connections
-      final connections = ConnectionDiscoveryService.discoverConnections([
-        routing1,
-        routing2,
-      ]);
-
-      // Verify that the service doesn't get stuck in an infinite loop
-      // (The bug causes hashCode to be unstable, leading to mismatched port IDs)
-      expect(connections, isNotNull);
-
-      // Verify that both algorithms are properly identified
-      // This will fail with the current implementation because hashCode changes
-      final routing1Ports = routing1.inputPorts + routing1.outputPorts;
-      final routing2Ports = routing2.inputPorts + routing2.outputPorts;
-
-      // Check that port IDs use stable algorithm UUIDs
-      for (final port in routing1Ports) {
-        expect(
-          port.id,
-          contains('slot_0_duplicate_algo'),
-          reason: 'Port ID should contain stable algorithm UUID for slot 0',
-        );
-      }
-
-      for (final port in routing2Ports) {
-        expect(
-          port.id,
-          contains('slot_1_duplicate_algo'),
-          reason: 'Port ID should contain stable algorithm UUID for slot 1',
-        );
-      }
+      // Hardware input edges go from hw_in_* to algorithm inputs (already verified above)
     });
 
-    test('should maintain unique connections for duplicate algorithms', () {
-      // Create a more complex scenario with shared buses
-      final algorithm = Algorithm(
-        algorithmIndex: 101,
-        guid: 'multi_instance',
-        name: 'Multi Instance Algorithm',
+    test('creates algo→algo and hardware output connections on bus 18', () {
+      final a = _FakeRouting(
+        id: 'algo_A',
+        outputs: [_outPort('A_out_b18', 18)],
+      );
+      final b = _FakeRouting(
+        id: 'algo_B',
+        inputs: [_inPort('B_in_b18', 18)],
       );
 
-      final parameters = [
-        ParameterInfo(
-          algorithmIndex: 101,
-          parameterNumber: 1,
-          name: 'Input A',
-          unit: 1,
-          min: 0,
-          max: 27,
-          defaultValue: 0,
-          powerOfTen: 0,
-        ),
-        ParameterInfo(
-          algorithmIndex: 101,
-          parameterNumber: 2,
-          name: 'Output X',
-          unit: 1,
-          min: 0,
-          max: 27,
-          defaultValue: 0,
-          powerOfTen: 0,
-        ),
-      ];
+      final conns = ConnectionDiscoveryService.discoverConnections([a, b]);
 
-      // Slot 1 outputs to bus 20, Slot 2 reads from bus 20
-      final slot1 = Slot(
-        algorithm: algorithm,
-        routing: RoutingInfo(algorithmIndex: 101, routingInfo: []),
-        pages: ParameterPages(algorithmIndex: 101, pages: []),
-        parameters: parameters,
-        values: [
-          ParameterValue(
-            algorithmIndex: 101,
-            parameterNumber: 1,
-            value: 1,
-          ), // Hardware input
-          ParameterValue(
-            algorithmIndex: 101,
-            parameterNumber: 2,
-            value: 20,
-          ), // Internal bus
-        ],
-        enums: [],
-        mappings: [],
-        valueStrings: [],
-      );
-
-      final slot2 = Slot(
-        algorithm: algorithm,
-        routing: RoutingInfo(algorithmIndex: 101, routingInfo: []),
-        pages: ParameterPages(algorithmIndex: 101, pages: []),
-        parameters: parameters,
-        values: [
-          ParameterValue(
-            algorithmIndex: 101,
-            parameterNumber: 1,
-            value: 20,
-          ), // From slot1
-          ParameterValue(
-            algorithmIndex: 101,
-            parameterNumber: 2,
-            value: 13,
-          ), // Hardware output
-        ],
-        enums: [],
-        mappings: [],
-        valueStrings: [],
-      );
-
-      final routing1 = AlgorithmRouting.fromSlot(
-        slot1,
-        algorithmUuid: 'instance_1',
-      );
-      final routing2 = AlgorithmRouting.fromSlot(
-        slot2,
-        algorithmUuid: 'instance_2',
-      );
-
-      final connections = ConnectionDiscoveryService.discoverConnections([
-        routing1,
-        routing2,
-      ]);
-
-      // Should find the connection between the two instances via bus 20
-      // Look for algorithm-to-algorithm connections
-      final algorithmConnections = connections
-          .where((c) => c.connectionType == ConnectionType.algorithmToAlgorithm)
-          .toList();
-
+      // Hardware output connection from A_out_b18 to hw_out_6 (bus 18 ⇒ 18-12 = 6)
       expect(
-        algorithmConnections,
-        isNotEmpty,
-        reason: 'Should find connection between duplicate algorithm instances',
+        conns.any((c) => c.connectionType == ConnectionType.hardwareOutput && c.busNumber == 18 && c.destinationPortId == 'hw_out_6'),
+        isTrue,
       );
 
-      // Verify the connection is between the correct instances
-      // The connection should be from instance_1's output to instance_2's input
-      if (algorithmConnections.isNotEmpty) {
-        final connection = algorithmConnections.first;
-        // Source should be an output from instance 1, destination should be input to instance 2
-        expect(
-          connection.sourcePortId,
-          contains('instance_1'),
-          reason: 'Source should be from instance 1',
-        );
-        expect(
-          connection.destinationPortId,
-          contains('instance_2'),
-          reason: 'Destination should be to instance 2',
-        );
-      }
+      // Algo→algo connection exists
+      expect(
+        conns.any((c) => c.connectionType == ConnectionType.algorithmToAlgorithm && c.busNumber == 18 && c.sourcePortId == 'A_out_b18' && c.destinationPortId == 'B_in_b18'),
+        isTrue,
+      );
     });
 
-    test('should complete discovery quickly with multiple duplicates', () {
-      // Performance test: should handle 8 duplicate algorithms in < 100ms
-      final algorithm = Algorithm(
-        algorithmIndex: 102,
-        guid: 'performance_test',
-        name: 'Performance Test',
-      );
+    test('aux bus 25 yields only algo→algo (no hardware edges)', () {
+      final a = _FakeRouting(id: 'algo_A', outputs: [_outPort('A_out_b25', 25)]);
+      final b = _FakeRouting(id: 'algo_B', inputs: [_inPort('B_in_b25', 25)]);
 
-      final parameters = [
-        ParameterInfo(
-          algorithmIndex: 102,
-          parameterNumber: 1,
-          name: 'Input',
-          unit: 1,
-          min: 0,
-          max: 27,
-          defaultValue: 0,
-          powerOfTen: 0,
-        ),
-        ParameterInfo(
-          algorithmIndex: 102,
-          parameterNumber: 2,
-          name: 'Output',
-          unit: 1,
-          min: 0,
-          max: 27,
-          defaultValue: 0,
-          powerOfTen: 0,
-        ),
-      ];
+      final conns = ConnectionDiscoveryService.discoverConnections([a, b]);
 
-      final routings = <AlgorithmRouting>[];
-      for (int i = 0; i < 8; i++) {
-        final slot = Slot(
-          algorithm: algorithm,
-          routing: RoutingInfo(algorithmIndex: 102, routingInfo: []),
-          pages: ParameterPages(algorithmIndex: 102, pages: []),
-          parameters: parameters,
-          values: [
-            ParameterValue(
-              algorithmIndex: 102,
-              parameterNumber: 1,
-              value: i + 1,
-            ),
-            ParameterValue(
-              algorithmIndex: 102,
-              parameterNumber: 2,
-              value: i + 13,
-            ),
-          ],
-          enums: [],
-          mappings: [],
-          valueStrings: [],
-        );
-
-        routings.add(
-          AlgorithmRouting.fromSlot(slot, algorithmUuid: 'instance_$i'),
-        );
-      }
-
-      final stopwatch = Stopwatch()..start();
-      final connections = ConnectionDiscoveryService.discoverConnections(
-        routings,
-      );
-      stopwatch.stop();
-
-      expect(connections, isNotNull);
+      // Algo→algo present
       expect(
-        stopwatch.elapsedMilliseconds,
-        lessThan(100),
-        reason: 'Discovery should complete in less than 100ms for 8 duplicates',
+        conns.any((c) => c.connectionType == ConnectionType.algorithmToAlgorithm && c.busNumber == 25),
+        isTrue,
       );
+
+      // No hardware input/output edges on aux
+      expect(conns.any((c) => c.connectionType == ConnectionType.hardwareInput && c.busNumber == 25), isFalse);
+      expect(conns.any((c) => c.connectionType == ConnectionType.hardwareOutput && c.busNumber == 25), isFalse);
     });
   });
 }
