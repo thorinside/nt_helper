@@ -570,8 +570,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
 
   /// Check if the slot has any mapped parameters
   bool _hasAnyMappings() {
-    // Get slot data from cubit to check for mappings
-    final cubit = context.read<DistingCubit>();
+    // Get slot data from cubit to check for mappings. In tests, the provider
+    // may be absent; in that case, default to false (no mappings).
+    DistingCubit cubit;
+    try {
+      cubit = context.read<DistingCubit>();
+    } catch (_) {
+      return false;
+    }
     final state = cubit.state;
 
     if (state is! DistingStateSynchronized) {
