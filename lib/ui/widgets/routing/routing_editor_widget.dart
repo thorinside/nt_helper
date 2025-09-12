@@ -113,7 +113,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     widget.controller?.attach(
       fitToView: _fitToView,
       resetPanZoom: _centerCanvas,
-      copyCanvasImage: _copyCanvasImageToClipboard,
+      // Default copy uses exact viewport crop (same size/aspect, no minimap).
+      copyCanvasImage: _copyCanvasImageViewport,
+      copyCanvasImageFit: _copyCanvasImageToClipboardFit,
     );
 
     // Center the view on the canvas after the first frame
@@ -257,6 +259,132 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           ClipboardData(text: 'data:image/png;base64,$b64'),
         );
         _showFeedback('Canvas image copied (data URL)');
+      }
+    } catch (e) {
+      _showError('Copy failed: $e');
+    }
+  }
+
+  // Copy exactly the current viewport (same size/aspect), excluding UI outside
+  // the canvas repaint boundary (e.g., minimap/toolbar).
+  Future<void> _copyCanvasImageViewport() async {
+    try {
+      final ctx = _captureKey.currentContext;
+      if (ctx == null) {
+        _showFeedback('Canvas not ready');
+        return;
+      }
+      final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showFeedback('Capture unavailable');
+        return;
+      }
+
+      final dpr = MediaQuery.of(context).devicePixelRatio;
+      final ui.Image full = await boundary.toImage(pixelRatio: dpr);
+
+      final double vx = _horizontalScrollController.hasClients
+          ? _horizontalScrollController.offset * dpr
+          : 0.0;
+      final double vy = _verticalScrollController.hasClients
+          ? _verticalScrollController.offset * dpr
+          : 0.0;
+      final int outW = (widget.canvasSize.width * dpr).round();
+      final int outH = (widget.canvasSize.height * dpr).round();
+      final Rect src = Rect.fromLTWH(vx, vy, outW.toDouble(), outH.toDouble());
+
+      final recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(recorder);
+      final Rect dst = Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble());
+      final Paint paint = Paint()..isAntiAlias = true;
+      canvas.drawImageRect(full, src, dst, paint);
+      final ui.Image out = await recorder.endRecording().toImage(outW, outH);
+      final byteData = await out.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showFeedback('Encode failed');
+        return;
+      }
+      final bytes = byteData.buffer.asUint8List();
+      try {
+        await Pasteboard.writeImage(bytes);
+        _showFeedback('Viewport copied to clipboard');
+      } catch (_) {
+        final b64 = convert.base64Encode(bytes);
+        await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+        _showFeedback('Viewport copied (data URL)');
+      }
+    } catch (e) {
+      _showError('Copy failed: $e');
+    }
+  }
+
+  // Copy a scale-to-fit image of content bounds to clipboard (native image).
+  Future<void> _copyCanvasImageToClipboardFit() async {
+    try {
+      final ctx = _captureKey.currentContext;
+      if (ctx == null) {
+        _showFeedback('Canvas not ready');
+        return;
+      }
+      final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showFeedback('Capture unavailable');
+        return;
+      }
+
+      // Capture full canvas at 1x for compositing
+      final ui.Image full = await boundary.toImage(pixelRatio: 1.0);
+
+      // Compute tight content bounds from node positions
+      if (_nodePositions.isEmpty) {
+        // Fall back to plain copy
+        return _copyCanvasImageToClipboard();
+      }
+      double minX = double.infinity, maxX = double.negativeInfinity;
+      double minY = double.infinity, maxY = double.negativeInfinity;
+      // Use rough node sizes (algorithm ~300x180, physical ~180x300)
+      for (final entry in _nodePositions.entries) {
+        final id = entry.key;
+        final p = entry.value;
+        final bool isPhysical = id == 'physical_inputs' || id == 'physical_outputs';
+        final double w = isPhysical ? 180 : 300;
+        final double h = isPhysical ? 300 : 180;
+        if (p.dx < minX) minX = p.dx;
+        if (p.dy < minY) minY = p.dy;
+        if (p.dx + w > maxX) maxX = p.dx + w;
+        if (p.dy + h > maxY) maxY = p.dy + h;
+      }
+      const double pad = 60.0;
+      final src = Rect.fromLTWH(
+        (minX - pad).clamp(0.0, _canvasWidth),
+        (minY - pad).clamp(0.0, _canvasHeight),
+        (maxX - minX + 2 * pad).clamp(1.0, _canvasWidth),
+        (maxY - minY + 2 * pad).clamp(1.0, _canvasHeight),
+      );
+
+      // Target size: viewport
+      final int outW = widget.canvasSize.width.round();
+      final int outH = widget.canvasSize.height.round();
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final dst = Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble());
+      final paint = Paint()..isAntiAlias = true;
+      canvas.drawImageRect(full, src, dst, paint);
+      final ui.Image out = await recorder.endRecording().toImage(outW, outH);
+      final byteData = await out.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showFeedback('Encode failed');
+        return;
+      }
+      final bytes = byteData.buffer.asUint8List();
+      try {
+        await Pasteboard.writeImage(bytes);
+        _showFeedback('Canvas (fit) copied to clipboard');
+      } catch (_) {
+        final b64 = convert.base64Encode(bytes);
+        await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+        _showFeedback('Canvas (fit) copied (data URL)');
       }
     } catch (e) {
       _showError('Copy failed: $e');
