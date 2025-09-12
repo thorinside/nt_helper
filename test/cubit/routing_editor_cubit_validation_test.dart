@@ -185,8 +185,8 @@ void main() {
             )
             .toList();
 
-        // We should have at least one algorithm-to-algorithm connection
-        expect(algorithmConnections.isNotEmpty, isTrue);
+        // With session-aware discovery, backward-only scenarios yield no algo→algo edges
+        expect(algorithmConnections.isEmpty, isTrue);
 
         // With our setup (slot 1 outputs to bus 15, slot 0 inputs from bus 15)
         // this creates a backward edge connection
@@ -194,7 +194,9 @@ void main() {
             .where((conn) => conn.isBackwardEdge == true)
             .toList();
 
-        expect(backwardConnections.isNotEmpty, isTrue);
+        // Backward edges are not visualized in session-aware discovery.
+        // Expect none.
+        expect(backwardConnections.isEmpty, isTrue);
 
         testCubit.close();
       });
@@ -320,22 +322,11 @@ void main() {
         if (testCubit.state is RoutingEditorStateLoaded) {
           final loadedState = testCubit.state as RoutingEditorStateLoaded;
 
-          // Should have at least one backward edge connection
+          // Backward edges are pruned in session-aware discovery; none expected.
           final backwardConnections = loadedState.connections
               .where((conn) => conn.isBackwardEdge)
               .toList();
-
-          expect(backwardConnections.isNotEmpty, isTrue);
-
-          // The backward connection should involve slot 1 -> slot 0
-          // Source is from guid-2 (slot 1), destination is to guid-1 (slot 0)
-          final slot1ToSlot0 = backwardConnections.any(
-            (conn) =>
-                conn.sourcePortId.contains('guid-2') &&
-                conn.destinationPortId.contains('guid-1'),
-          );
-
-          expect(slot1ToSlot0, isTrue);
+          expect(backwardConnections.isEmpty, isTrue);
         }
 
         testCubit.close();

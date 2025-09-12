@@ -43,25 +43,42 @@ void main() {
           ),
         ];
 
+        final algorithms = [
+          RoutingAlgorithm(
+            id: 'algo_a',
+            index: 0,
+            algorithm: Algorithm(algorithmIndex: 0, guid: 'a', name: 'A'),
+            inputPorts: const [
+              Port(
+                id: 'algo_a_in',
+                name: 'In',
+                type: PortType.cv,
+                direction: PortDirection.input,
+              ),
+            ],
+            outputPorts: const [
+              Port(
+                id: 'algo_a_out',
+                name: 'Out',
+                type: PortType.cv,
+                direction: PortDirection.output,
+              ),
+            ],
+          ),
+        ];
+
         final result = layoutAlgorithm.calculateLayout(
           physicalInputs: physicalInputs,
-          physicalOutputs: [],
-          algorithms: [],
-          connections: [],
+          physicalOutputs: const [],
+          algorithms: algorithms,
+          connections: const [],
         );
 
-        expect(result.physicalInputPositions, hasLength(2));
-
-        // All inputs should be on left side (x = physicalInputX = 50.0)
-        for (final position in result.physicalInputPositions.values) {
-          expect(position.x, equals(50.0));
-        }
-
-        // Should be vertically centered with spacing
-        expect(
-          result.physicalInputPositions['hw_in_1']!.y,
-          lessThan(result.physicalInputPositions['hw_in_2']!.y),
-        );
+        expect(result.physicalInputPositions, hasLength(1));
+        expect(result.physicalInputPositions.containsKey('physical_inputs'), isTrue);
+        final inPos = result.physicalInputPositions['physical_inputs']!;
+        final algoPos = result.algorithmPositions['algo_a']!;
+        expect(inPos.x, lessThan(algoPos.x));
       });
 
       test('positions physical outputs on right side', () {
@@ -80,25 +97,42 @@ void main() {
           ),
         ];
 
+        final algorithms = [
+          RoutingAlgorithm(
+            id: 'algo_b',
+            index: 0,
+            algorithm: Algorithm(algorithmIndex: 0, guid: 'b', name: 'B'),
+            inputPorts: const [
+              Port(
+                id: 'algo_b_in',
+                name: 'In',
+                type: PortType.cv,
+                direction: PortDirection.input,
+              ),
+            ],
+            outputPorts: const [
+              Port(
+                id: 'algo_b_out',
+                name: 'Out',
+                type: PortType.cv,
+                direction: PortDirection.output,
+              ),
+            ],
+          ),
+        ];
+
         final result = layoutAlgorithm.calculateLayout(
-          physicalInputs: [],
+          physicalInputs: const [],
           physicalOutputs: physicalOutputs,
-          algorithms: [],
-          connections: [],
+          algorithms: algorithms,
+          connections: const [],
         );
 
-        expect(result.physicalOutputPositions, hasLength(2));
-
-        // All outputs should be on right side (x = physicalOutputX = 750.0)
-        for (final position in result.physicalOutputPositions.values) {
-          expect(position.x, equals(750.0));
-        }
-
-        // Should be vertically centered with spacing
-        expect(
-          result.physicalOutputPositions['hw_out_1']!.y,
-          lessThan(result.physicalOutputPositions['hw_out_2']!.y),
-        );
+        expect(result.physicalOutputPositions, hasLength(1));
+        expect(result.physicalOutputPositions.containsKey('physical_outputs'), isTrue);
+        final outPos = result.physicalOutputPositions['physical_outputs']!;
+        final algoPos = result.algorithmPositions['algo_b']!;
+        expect(outPos.x, greaterThan(algoPos.x));
       });
 
       test('positions algorithms in center with slot ordering', () {
@@ -251,8 +285,8 @@ void main() {
 
         // Algorithm should be positioned between input and output for optimal routing
         final algoPosition = result.algorithmPositions['algo_0']!;
-        final inputPosition = result.physicalInputPositions['hw_in_1']!;
-        final outputPosition = result.physicalOutputPositions['hw_out_1']!;
+        final inputPosition = result.physicalInputPositions['physical_inputs']!;
+        final outputPosition = result.physicalOutputPositions['physical_outputs']!;
 
         expect(algoPosition.x, greaterThan(inputPosition.x));
         expect(algoPosition.x, lessThan(outputPosition.x));
@@ -337,8 +371,8 @@ void main() {
         );
 
         expect(result.algorithmPositions, hasLength(5));
-        expect(result.physicalInputPositions, hasLength(3));
-        expect(result.physicalOutputPositions, hasLength(2));
+        expect(result.physicalInputPositions, hasLength(1));
+        expect(result.physicalOutputPositions, hasLength(1));
 
         // All positions should be within canvas bounds
         final allPositions = [

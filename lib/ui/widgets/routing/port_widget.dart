@@ -286,59 +286,43 @@ class _PortWidgetState extends State<PortWidget> {
   /// Builds the visual port dot/circle
   Widget _buildPortDot(ThemeData theme) {
     // Base port circle
-    final Widget base = AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    final Widget base = Container(
       key: _dotKey,
       width: 12,
       height: 12,
-      transform: widget.isHighlighted
-          ? (Matrix4.identity()..scaleByVector3(math.Vector3(1.1, 1.1, 1.0)))
-          : Matrix4.identity(),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: widget.isInput
             ? theme.colorScheme.primary
             : theme.colorScheme.secondary,
         border: Border.all(color: theme.colorScheme.outline, width: 1),
-        boxShadow: widget.isHighlighted
-            ? [
-                BoxShadow(
-                  color:
-                      (widget.isInput
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.secondary)
-                          .withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
       ),
     );
 
     // Overlay: centered red dot when shadowed (non-blocking)
-    final Widget withOverlay = Stack(
-      alignment: Alignment.center,
-      children: [
-        base,
-        if (widget.showShadowDot)
-          IgnorePointer(
-            ignoring: true,
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.error,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: theme.colorScheme.surface,
-                  width: 1,
+    final Widget withOverlay = widget.showShadowDot
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              base,
+              IgnorePointer(
+                ignoring: true,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.surface,
+                      width: 1,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-      ],
-    );
+            ],
+          )
+        : base;
 
     // Add hover detection only when routing action callback is provided
     if (widget.onRoutingAction != null) {

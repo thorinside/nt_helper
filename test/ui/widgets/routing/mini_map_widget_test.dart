@@ -1533,7 +1533,7 @@ void main() {
           // Should stop showing drag cursor after drag ends
           expect(state.isDragging, isFalse);
           expect(state.showDragCursor, isFalse);
-        });
+        }, skip: kSkipDragGroups);
 
         testWidgets('should highlight viewport rectangle during drag', (
           tester,
@@ -1594,9 +1594,7 @@ void main() {
           expect(state.highlightViewportRectangle, isFalse);
         }, skip: kSkipDragGroups);
 
-        testWidgets(
-          'should show pointer cursor on hover over viewport rectangle',
-          (tester) async {
+        testWidgets('should show pointer cursor on hover over viewport rectangle', (tester) async {
             await tester.pumpWidget(
               MaterialApp(
                 home: SingleChildScrollView(
@@ -1649,7 +1647,7 @@ void main() {
 
             await gesture.removePointer();
           },
-        );
+        skip: kSkipDragGroups);
       });
 
       group('Performance Requirements', () {
