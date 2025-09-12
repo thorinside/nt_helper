@@ -116,6 +116,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Default copy uses exact viewport crop (same size/aspect, no minimap).
       copyCanvasImage: _copyCanvasImageViewport,
       copyCanvasImageFit: _copyCanvasImageToClipboardFit,
+      copyNodesImage: _copyNodesAreaToClipboard,
     );
 
     // Center the view on the canvas after the first frame
@@ -312,6 +313,78 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final b64 = convert.base64Encode(bytes);
         await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
         _showFeedback('Viewport copied (data URL)');
+      }
+    } catch (e) {
+      _showError('Copy failed: $e');
+    }
+  }
+
+  // Copy tight nodes area with 24px margin all around, preserving canvas theme.
+  Future<void> _copyNodesAreaToClipboard() async {
+    try {
+      if (_nodePositions.isEmpty) {
+        _showFeedback('Nothing to copy');
+        return;
+      }
+      final ctx = _captureKey.currentContext;
+      if (ctx == null) {
+        _showFeedback('Canvas not ready');
+        return;
+      }
+      final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _showFeedback('Capture unavailable');
+        return;
+      }
+
+      // Full canvas at DPR for crisp crop
+      final dpr = MediaQuery.of(context).devicePixelRatio;
+      final ui.Image full = await boundary.toImage(pixelRatio: dpr);
+
+      // Compute content bounds from node positions (approximate node size)
+      double minX = double.infinity, maxX = double.negativeInfinity;
+      double minY = double.infinity, maxY = double.negativeInfinity;
+      for (final e in _nodePositions.entries) {
+        final id = e.key;
+        final p = e.value;
+        final bool isPhysical = id == 'physical_inputs' || id == 'physical_outputs';
+        final double w = isPhysical ? 180 : 340; // slightly wider algo node
+        final double h = isPhysical ? 320 : 200; // include title/ports
+        if (p.dx < minX) minX = p.dx;
+        if (p.dy < minY) minY = p.dy;
+        if (p.dx + w > maxX) maxX = p.dx + w;
+        if (p.dy + h > maxY) maxY = p.dy + h;
+      }
+      // 24px margin in canvas logical pixels
+      const double margin = 24.0;
+      final double sx = ((minX - margin).clamp(0.0, _canvasWidth)) * dpr;
+      final double sy = ((minY - margin).clamp(0.0, _canvasHeight)) * dpr;
+      final double sw = ((maxX - minX + 2 * margin).clamp(1.0, _canvasWidth)) * dpr;
+      final double sh = ((maxY - minY + 2 * margin).clamp(1.0, _canvasHeight)) * dpr;
+
+      final int outW = sw.round();
+      final int outH = sh.round();
+
+      final recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(recorder);
+      final Rect src = Rect.fromLTWH(sx, sy, sw, sh);
+      final Rect dst = Rect.fromLTWH(0, 0, outW.toDouble(), outH.toDouble());
+      final Paint paint = Paint()..isAntiAlias = true;
+      canvas.drawImageRect(full, src, dst, paint);
+      final ui.Image out = await recorder.endRecording().toImage(outW, outH);
+      final byteData = await out.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _showFeedback('Encode failed');
+        return;
+      }
+      final bytes = byteData.buffer.asUint8List();
+      try {
+        await Pasteboard.writeImage(bytes);
+        _showFeedback('Nodes image copied to clipboard');
+      } catch (_) {
+        final b64 = convert.base64Encode(bytes);
+        await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+        _showFeedback('Nodes image copied (data URL)');
       }
     } catch (e) {
       _showError('Copy failed: $e');

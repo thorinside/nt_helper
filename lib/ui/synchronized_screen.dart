@@ -380,17 +380,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           onPressed: () => _editorController.resetPanZoom(),
                           tooltip: 'Reset Pan/Zoom',
                         ),
-                        // Copy Canvas Image (visible area)
+                        // Copy Nodes Image (tight bounds, 24px margin)
                         IconButton(
                           icon: const Icon(Icons.image_outlined),
-                          onPressed: () => _editorController.copyCanvasImage(),
-                          tooltip: 'Copy Canvas Image',
-                        ),
-                        // Copy Canvas Image (scale-to-fit)
-                        IconButton(
-                          icon: const Icon(Icons.crop_free),
-                          onPressed: () => _editorController.copyCanvasImageFit(),
-                          tooltip: 'Copy Canvas (Fit)',
+                          onPressed: () => _editorController.copyNodesImage(),
+                          tooltip: 'Copy Nodes Image',
                         ),
                       ],
                     );
