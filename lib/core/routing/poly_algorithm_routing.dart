@@ -688,7 +688,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           }
 
           outputPorts.add({
-            'id': '${algId}_gate_output_${voiceNum}',
+            'id': '${algId}_gate_output_$voiceNum',
             'name': 'Gate output $voiceNum',
             'type': 'gate',
             'busValue': currentBus + busOffset,
@@ -709,7 +709,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           }
 
           outputPorts.add({
-            'id': '${algId}_pitch_output_${voiceNum}',
+            'id': '${algId}_pitch_output_$voiceNum',
             'name': 'Pitch output $voiceNum',
             'type': 'cv',
             'busValue': currentBus + busOffset,
@@ -732,7 +732,7 @@ class PolyAlgorithmRouting extends AlgorithmRouting {
           }
 
           outputPorts.add({
-            'id': '${algId}_velocity_output_${voiceNum}',
+            'id': '${algId}_velocity_output_$voiceNum',
             'name': 'Velocity output $voiceNum',
             'type': 'cv',
             'busValue': currentBus + busOffset,

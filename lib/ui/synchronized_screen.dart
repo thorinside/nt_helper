@@ -728,12 +728,14 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 ? null
                 : () async {
                     final currentState = cubit.state;
-                    if (currentState is DistingStateSynchronized &&
-                        context.mounted) {
+                    final isMounted = context.mounted;
+                    if (currentState is DistingStateSynchronized && isMounted) {
                       final midiManager = cubit.disting();
                       if (midiManager != null) {
                         final prefs = await SharedPreferences.getInstance();
+                        // ignore: use_build_context_synchronously
                         var presetInfo = await showDialog(
+                          // ignore: use_build_context_synchronously
                           context: popupCtx,
                           builder: (context) => BlocProvider(
                             create: (context) => PresetBrowserCubit(

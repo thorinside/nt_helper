@@ -231,8 +231,9 @@ class MiniMapWidgetState extends State<MiniMapWidget> {
   void _handlePanUpdate(DragUpdateDetails details) {
     if (!_isDragging ||
         _dragStartPosition == null ||
-        _initialScrollOffset == null)
+        _initialScrollOffset == null) {
       return;
+    }
 
     final currentPosition = details.localPosition;
     final dragDelta = currentPosition - _dragStartPosition!;

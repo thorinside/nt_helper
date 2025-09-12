@@ -291,8 +291,12 @@ class NodeLayoutAlgorithm {
     final indexById = <String, int>{};
     for (final a in algorithms) {
       indexById[a.id] = a.index;
-      for (final p in a.inputPorts) idByPort[p.id] = a.id;
-      for (final p in a.outputPorts) idByPort[p.id] = a.id;
+      for (final p in a.inputPorts) {
+        idByPort[p.id] = a.id;
+      }
+      for (final p in a.outputPorts) {
+        idByPort[p.id] = a.id;
+      }
     }
 
     // Separate forward edges (slot increases) and feedback edges (slot decreases)
@@ -303,17 +307,20 @@ class NodeLayoutAlgorithm {
       feedback[a.id] = {};
     }
     for (final c in connections) {
-      if (c.sourcePortId.contains('hw_') || c.destinationPortId.contains('hw_'))
+      if (c.sourcePortId.contains('hw_') ||
+          c.destinationPortId.contains('hw_')) {
         continue;
+      }
       final u = idByPort[c.sourcePortId];
       final v = idByPort[c.destinationPortId];
       if (u == null || v == null || u == v) continue;
       final ui = indexById[u] ?? 0;
       final vi = indexById[v] ?? 0;
-      if (ui <= vi)
+      if (ui <= vi) {
         forward[u]!.add(v);
-      else
+      } else {
         feedback[u]!.add(v);
+      }
     }
 
     // Initial columns: longest path depth using only forward edges
@@ -368,7 +375,9 @@ class NodeLayoutAlgorithm {
     // Normalize columns to 0..N-1 (dense)
     final unique = assignments.values.toSet().toList()..sort();
     final remap = <int, int>{};
-    for (var i = 0; i < unique.length; i++) remap[unique[i]] = i;
+    for (var i = 0; i < unique.length; i++) {
+      remap[unique[i]] = i;
+    }
     for (final id in assignments.keys) {
       assignments[id] = remap[assignments[id]!]!;
     }
@@ -384,6 +393,7 @@ class NodeLayoutAlgorithm {
   }
 
   /// Calculate the maximum dependency depth for an algorithm (memoized)
+  // ignore: unused_element
   int _calculateMaxDependencyDepth(
     String algorithmId,
     Map<String, Set<String>> dependencies,
@@ -635,6 +645,7 @@ class NodeLayoutAlgorithm {
   }
 
   /// Find optimal position for a specific algorithm based on its connections
+  // ignore: unused_element
   NodePosition _findOptimalPositionForAlgorithm(
     RoutingAlgorithm algorithm,
     List<Connection> connections,
