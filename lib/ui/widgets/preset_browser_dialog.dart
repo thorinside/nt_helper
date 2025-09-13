@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
+import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 import 'package:nt_helper/ui/widgets/load_preset_dialog.dart';
+import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
 
 class PresetBrowserDialog extends StatefulWidget {
-  const PresetBrowserDialog({super.key});
+  final DistingCubit distingCubit;
+
+  const PresetBrowserDialog({super.key, required this.distingCubit});
 
   @override
   State<PresetBrowserDialog> createState() => _PresetBrowserDialogState();
@@ -144,17 +149,45 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
             final selectedPath = context
                 .read<PresetBrowserCubit>()
                 .getSelectedPath();
-            return ElevatedButton(
-              onPressed: selectedPath.isNotEmpty
-                  ? () {
-                      Navigator.of(context).pop({
-                        'sdCardPath': selectedPath,
-                        'action': PresetAction.load,
-                        'displayName': selectedPath.split('/').last,
-                      });
-                    }
-                  : null,
-              child: const Text('Load'),
+            final isPresetFile =
+                selectedPath.isNotEmpty &&
+                selectedPath.toLowerCase().endsWith('.json');
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isPresetFile) ...[
+                  OutlinedButton(
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await showDialog<void>(
+                        context: context,
+                        builder: (dialogContext) => PresetPackageDialog(
+                          presetFilePath: selectedPath,
+                          fileSystem: PresetFileSystemImpl(
+                            widget.distingCubit.requireDisting(),
+                          ),
+                          database: widget.distingCubit.database,
+                        ),
+                      );
+                    },
+                    child: const Text('Export'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                ElevatedButton(
+                  onPressed: isPresetFile
+                      ? () {
+                          Navigator.of(context).pop({
+                            'sdCardPath': selectedPath,
+                            'action': PresetAction.load,
+                            'displayName': selectedPath.split('/').last,
+                          });
+                        }
+                      : null,
+                  child: const Text('Load'),
+                ),
+              ],
             );
           },
         ),

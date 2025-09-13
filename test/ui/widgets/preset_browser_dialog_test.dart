@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
 import 'package:nt_helper/models/sd_card_file_system.dart';
@@ -9,6 +10,8 @@ import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockPresetBrowserCubit extends Mock implements PresetBrowserCubit {}
+
+class MockDistingCubit extends Mock implements DistingCubit {}
 
 class MockDistingMidiManager extends Mock implements IDistingMidiManager {}
 
@@ -18,6 +21,7 @@ class FakeDirectoryEntry extends Fake implements DirectoryEntry {}
 
 void main() {
   late MockPresetBrowserCubit mockCubit;
+  late MockDistingCubit mockDistingCubit;
 
   setUpAll(() {
     registerFallbackValue(FakeDirectoryEntry());
@@ -26,6 +30,7 @@ void main() {
 
   setUp(() {
     mockCubit = MockPresetBrowserCubit();
+    mockDistingCubit = MockDistingCubit();
     // Mock loadRootDirectory to return a Future<void>
     when(() => mockCubit.loadRootDirectory()).thenAnswer((_) async {});
     // Mock getSelectedPath to return empty string by default
@@ -59,7 +64,9 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(child: const PresetBrowserDialog()),
+        createTestWidget(
+          child: PresetBrowserDialog(distingCubit: mockDistingCubit),
+        ),
       );
 
       // Should find three panel containers
@@ -82,7 +89,9 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(child: const PresetBrowserDialog()),
+        createTestWidget(
+          child: PresetBrowserDialog(distingCubit: mockDistingCubit),
+        ),
       );
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -95,7 +104,9 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(child: const PresetBrowserDialog()),
+        createTestWidget(
+          child: PresetBrowserDialog(distingCubit: mockDistingCubit),
+        ),
       );
 
       expect(find.text('Test error message'), findsOneWidget);
@@ -118,7 +129,9 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(child: const PresetBrowserDialog()),
+        createTestWidget(
+          child: PresetBrowserDialog(distingCubit: mockDistingCubit),
+        ),
       );
 
       // Mock the navigateBack and toggleSortMode methods
