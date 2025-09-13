@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show ParameterPages, RoutingInfo;
-import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/widgets/parameter_editor_view.dart';
 
 class PerformanceScreen extends StatefulWidget {
   const PerformanceScreen({super.key, required this.units});

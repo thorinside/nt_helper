@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,23 +9,14 @@ import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show
-        AlgorithmInfo,
-        DisplayMode,
-        ParameterPages,
-        ParameterInfo,
-        ParameterValue,
-        ParameterEnumStrings,
-        Mapping,
-        ParameterValueString;
+    show AlgorithmInfo, DisplayMode;
 
 import 'package:nt_helper/ui/widgets/floating_video_overlay.dart';
 import 'package:nt_helper/cubit/video_frame_cubit.dart';
 import 'package:nt_helper/ui/widgets/load_preset_dialog.dart' show PresetAction;
 import 'package:nt_helper/ui/widgets/preset_browser_dialog.dart';
 import 'package:nt_helper/cubit/preset_browser_cubit.dart';
-import 'package:nt_helper/models/packed_mapping_data.dart';
-import 'package:nt_helper/ui/widgets/packed_mapping_data_editor.dart';
+
 import 'package:nt_helper/ui/performance_screen.dart';
 import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
@@ -38,21 +28,21 @@ import 'package:nt_helper/cubit/routing_editor_state.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/mcp_server_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
-import 'package:nt_helper/services/algorithm_metadata_service.dart';
-import 'package:nt_helper/ui/algorithm_documentation_screen.dart';
-import 'package:nt_helper/ui/algorithm_registry.dart';
-import 'package:nt_helper/ui/bpm_editor_widget.dart';
-import 'package:nt_helper/ui/parameter_editor_registry.dart';
+
 import 'package:nt_helper/ui/cpu_monitor_widget.dart';
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_page.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
 import 'package:nt_helper/ui/plugin_manager_screen.dart';
-import 'package:nt_helper/ui/reset_outputs_dialog.dart';
+
 import 'package:nt_helper/util/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nt_helper/models/firmware_version.dart';
+import 'package:nt_helper/ui/widgets/algorithm_list_view.dart';
+import 'package:nt_helper/ui/widgets/disting_version.dart';
+import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
+import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
 
 enum EditMode { parameters, routing }
 
@@ -443,7 +433,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   _currentMode = modes.first;
                 });
               },
-              style: ButtonStyle(
+              style: const ButtonStyle(
                 // Material 3 styling for prominence
                 visualDensity: VisualDensity.comfortable,
               ),
@@ -486,7 +476,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           DisplayMode.parameters,
                         );
                       },
-                      icon: Icon(Icons.list_alt_rounded),
+                      icon: const Icon(Icons.list_alt_rounded),
                     ),
                     IconButton(
                       tooltip: "Algorithm UI",
@@ -495,7 +485,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           DisplayMode.algorithmUI,
                         );
                       },
-                      icon: Icon(Icons.line_axis_rounded),
+                      icon: const Icon(Icons.line_axis_rounded),
                     ),
                     IconButton(
                       tooltip: "Overview UI",
@@ -504,7 +494,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           DisplayMode.overview,
                         );
                       },
-                      icon: Icon(Icons.line_weight_rounded),
+                      icon: const Icon(Icons.line_weight_rounded),
                     ),
                     IconButton(
                       tooltip: "Overview VU Meters",
@@ -513,7 +503,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                           DisplayMode.overviewVUs,
                         );
                       },
-                      icon: Icon(Icons.leaderboard_rounded),
+                      icon: const Icon(Icons.leaderboard_rounded),
                     ),
                   ],
                 );
@@ -529,7 +519,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               value: McpServerService.instance,
               child: Consumer<McpServerService>(
                 builder: (context, mcpService, child) {
-                  return _McpStatusIndicator();
+                  return const McpStatusIndicator();
                 },
               ),
             ),
@@ -588,8 +578,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           notification.depth == 1,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(
-          66.0,
-        ), // Consistent height for both modes
+          66.0, // Consistent height for both modes
+        ),
         child: Column(
           children: [
             _buildPresetInfoEditor(context), // The preset info
@@ -615,7 +605,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     return [
       // Refresh: Only disabled by loading OR offline
       IconButton(
-        icon: Icon(Icons.refresh_rounded),
+        icon: const Icon(Icons.refresh_rounded),
         tooltip: 'Refresh',
         onPressed: widget.loading || isOffline
             ? null
@@ -625,7 +615,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       ),
       // Wake: Disabled by loading OR offline
       IconButton(
-        icon: Icon(Icons.alarm_on_rounded),
+        icon: const Icon(Icons.alarm_on_rounded),
         tooltip: "Wake",
         onPressed: widget.loading || isOffline
             ? null
@@ -1098,7 +1088,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                       ),
                     );
                   },
-            child: Text('About'),
+            child: const Text('About'),
           ),
         ];
       },
@@ -1244,1088 +1234,5 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     debugPrint('[SynchronizedScreen] Inserting overlay entry');
     Overlay.of(context).insert(overlayEntry);
     debugPrint('[SynchronizedScreen] Overlay entry inserted successfully');
-  }
-}
-
-/// A vertical list widget that displays algorithm slots in a list view
-class AlgorithmListView extends StatelessWidget {
-  final List<Slot> slots;
-  final int selectedIndex;
-  final ValueChanged<int> onSelectionChanged;
-
-  const AlgorithmListView({
-    super.key,
-    required this.slots,
-    required this.selectedIndex,
-    required this.onSelectionChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<DistingCubit, DistingState>(
-      builder: (context, state) {
-        return switch (state) {
-          DistingStateSynchronized(slots: final _) => ListView.builder(
-            padding: const EdgeInsets.only(top: 8.0),
-            itemCount: slots.length,
-            itemBuilder: (context, index) {
-              final slot = slots[index];
-              final displayName = slot.algorithm.name;
-
-              return GestureDetector(
-                onDoubleTap: () async {
-                  var cubit = context.read<DistingCubit>();
-                  cubit.disting()?.let((manager) {
-                    manager.requestSetFocus(index, 0);
-                    manager.requestSetDisplayMode(DisplayMode.algorithmUI);
-                  });
-                  if (SettingsService().hapticsEnabled) {
-                    Haptics.vibrate(HapticsType.medium);
-                  }
-                },
-                child: ListTile(
-                  title: Text(
-                    displayName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                  selected: index == selectedIndex,
-                  selectedTileColor: Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer,
-                  selectedColor: Theme.of(
-                    context,
-                  ).colorScheme.onSecondaryContainer,
-                  onTap: () => onSelectionChanged(index),
-                  onLongPress: () async {
-                    var cubit = context.read<DistingCubit>();
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (dialogCtx) =>
-                          RenameSlotDialog(initialName: displayName),
-                    );
-
-                    if (newName != null && newName != displayName) {
-                      cubit.renameSlot(index, newName);
-                    }
-                  },
-                ),
-              );
-            },
-          ),
-          _ => const Center(child: Text("Loading slots...")),
-        };
-      },
-    );
-  }
-}
-
-class DistingVersion extends StatelessWidget {
-  const DistingVersion({
-    super.key,
-    required this.distingVersion,
-    required this.requiredVersion,
-  });
-
-  final String distingVersion;
-  final String requiredVersion;
-
-  @override
-  Widget build(BuildContext context) {
-    final isNotSupported = !FirmwareVersion(
-      distingVersion,
-    ).isSupported(requiredVersion);
-    return Tooltip(
-      message: isNotSupported
-          ? "nt_helper requires at least $requiredVersion"
-          : "",
-      child: Text(
-        distingVersion,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: isNotSupported
-              ? Theme.of(context).colorScheme.error
-              : Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-class SlotDetailView extends StatefulWidget {
-  final Slot slot;
-  final List<String> units;
-  final FirmwareVersion firmwareVersion;
-
-  const SlotDetailView({
-    super.key,
-    required this.slot,
-    required this.units,
-    required this.firmwareVersion,
-  });
-
-  @override
-  State<SlotDetailView> createState() => _SlotDetailViewState();
-}
-
-class _SlotDetailViewState extends State<SlotDetailView>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-
-    // Provide a full replacement view
-    final view = AlgorithmViewRegistry.findViewFor(
-      widget.slot,
-      widget.firmwareVersion,
-    );
-    if (view != null) return view;
-
-    // Create a set of list sections for the parameters of the
-    // algorithm initially based off Os' organization on the module firmware.
-
-    return SafeArea(
-      child: SectionParameterListView(
-        slot: widget.slot,
-        units: widget.units,
-        pages: widget.slot.pages,
-      ),
-    );
-  }
-}
-
-class SectionParameterListView extends StatefulWidget {
-  final Slot slot;
-  final List<String> units;
-  final ParameterPages pages;
-
-  const SectionParameterListView({
-    super.key,
-    required this.slot,
-    required this.units,
-    required this.pages,
-  });
-
-  @override
-  State<SectionParameterListView> createState() =>
-      _SectionParameterListViewState();
-}
-
-class _SectionParameterListViewState extends State<SectionParameterListView> {
-  late final List<ExpansibleController> _tileControllers;
-  late bool _isCollapsed;
-
-  @override
-  void initState() {
-    super.initState();
-    _tileControllers = List.generate(
-      widget.pages.pages.length,
-      (_) => ExpansibleController(),
-    );
-    _isCollapsed = SettingsService().startPagesCollapsed;
-  }
-
-  void _collapseAllTiles() {
-    for (var element in _tileControllers) {
-      _isCollapsed ? element.expand() : element.collapse();
-    }
-    setState(() {
-      _isCollapsed = !_isCollapsed;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTileTheme(
-      data: ListTileThemeData(
-        titleTextStyle: Theme.of(context).textTheme.titleLarge,
-      ),
-      child: ExpansionTileTheme(
-        data: ExpansionTileThemeData(
-          shape: RoundedRectangleBorder(side: BorderSide.none),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Tooltip(
-                    message: _isCollapsed ? 'Expand all' : 'Collapse all',
-                    child: IconButton.filledTonal(
-                      onPressed: () {
-                        _collapseAllTiles();
-                      },
-                      enableFeedback: true,
-                      icon: _isCollapsed
-                          ? Icon(Icons.keyboard_double_arrow_down_sharp)
-                          : Icon(Icons.keyboard_double_arrow_up_sharp),
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    itemBuilder: (context) {
-                      final metadata = AlgorithmMetadataService()
-                          .getAlgorithmByGuid(widget.slot.algorithm.guid);
-                      final bool isHelpAvailable = metadata != null;
-
-                      return <PopupMenuEntry<String>>[
-                        if (isHelpAvailable)
-                          PopupMenuItem(
-                            value: 'Show Help',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      AlgorithmDocumentationScreen(
-                                        metadata: metadata,
-                                      ),
-                                ),
-                              );
-                            },
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Show Help'),
-                                Icon(Icons.help_outline_rounded),
-                              ],
-                            ),
-                          ),
-                        if (isHelpAvailable) const PopupMenuDivider(),
-                        PopupMenuItem(
-                          value: 'Reset Outputs',
-                          onTap: () {
-                            showResetOutputsDialog(
-                              context: context,
-                              initialCvInput: 0,
-                              onReset: (outputIndex) {
-                                context.read<DistingCubit>().resetOutputs(
-                                  widget.slot,
-                                  outputIndex,
-                                );
-                              },
-                            );
-                          },
-                          child: const Text('Reset Outputs'),
-                        ),
-                      ];
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                cacheExtent: double.infinity,
-                padding: EdgeInsets.only(bottom: 24, left: 8, right: 8),
-                itemCount: widget.pages.pages.length,
-                itemBuilder: (context, index) {
-                  final page = widget.pages.pages.elementAt(index);
-                  return ExpansionTile(
-                    initiallyExpanded: !_isCollapsed,
-                    controller: _tileControllers.elementAt(index),
-                    title: Text(page.name),
-                    children: page.parameters.map((parameterNumber) {
-                      final value = widget.slot.values.elementAt(
-                        parameterNumber,
-                      );
-                      final enumStrings = widget.slot.enums.elementAt(
-                        parameterNumber,
-                      );
-                      final mapping = widget.slot.mappings.elementAtOrNull(
-                        parameterNumber,
-                      );
-                      final valueString = widget.slot.valueStrings.elementAt(
-                        parameterNumber,
-                      );
-                      var parameterInfo = widget.slot.parameters.elementAt(
-                        parameterNumber,
-                      );
-                      final unit = parameterInfo.getUnitString(widget.units);
-
-                      return ParameterEditorView(
-                        slot: widget.slot,
-                        parameterInfo: parameterInfo,
-                        value: value,
-                        enumStrings: enumStrings,
-                        mapping: mapping,
-                        valueString: valueString,
-                        unit: unit,
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ParameterListView extends StatelessWidget {
-  final Slot slot;
-  final List<String> units;
-
-  const ParameterListView({super.key, required this.slot, required this.units});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      cacheExtent: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      itemCount: slot.parameters.length,
-      itemBuilder: (context, index) {
-        final parameter = slot.parameters.elementAt(index);
-        final value = slot.values.elementAt(index);
-        final enumStrings = slot.enums.elementAt(index);
-        final mapping = slot.mappings.elementAtOrNull(index);
-        final valueString = slot.valueStrings.elementAt(index);
-        final unit = parameter.getUnitString(units);
-
-        return ParameterEditorView(
-          slot: slot,
-          parameterInfo: parameter,
-          value: value,
-          enumStrings: enumStrings,
-          mapping: mapping,
-          valueString: valueString,
-          unit: unit,
-        );
-      },
-    );
-  }
-}
-
-class ParameterEditorView extends StatelessWidget {
-  final Slot slot;
-  final ParameterInfo parameterInfo;
-  final ParameterValue value;
-  final ParameterEnumStrings enumStrings;
-  final Mapping? mapping;
-  final ParameterValueString valueString;
-  final String? unit;
-
-  const ParameterEditorView({
-    super.key,
-    required this.slot,
-    required this.parameterInfo,
-    required this.value,
-    required this.enumStrings,
-    required this.mapping,
-    required this.valueString,
-    this.unit,
-  });
-
-  @override
-  Widget build(BuildContext context) => ParameterViewRow(
-    name: parameterInfo.name,
-    min: parameterInfo.min,
-    max: parameterInfo.max,
-    algorithmIndex: parameterInfo.algorithmIndex,
-    parameterNumber: parameterInfo.parameterNumber,
-    powerOfTen: parameterInfo.powerOfTen,
-    defaultValue: parameterInfo.defaultValue,
-    displayString: valueString.value.isNotEmpty ? valueString.value : null,
-    dropdownItems: enumStrings.values.isNotEmpty ? enumStrings.values : null,
-    isOnOff:
-        (enumStrings.values.isNotEmpty &&
-        enumStrings.values[0] == "Off" &&
-        enumStrings.values[1] == "On"),
-    initialValue:
-        (value.value >= parameterInfo.min && value.value <= parameterInfo.max)
-        ? value.value
-        : parameterInfo.defaultValue,
-    unit: unit,
-    mappingData: mapping?.packedMappingData,
-    slot: slot,
-  );
-}
-
-class ParameterViewRow extends StatefulWidget {
-  final String name;
-  final int min;
-  final int max;
-  final int defaultValue;
-  final String?
-  displayString; // For additional display string instead of dropdown
-  final String? unit;
-  final int powerOfTen;
-  final List<String>? dropdownItems; // For enums as a dropdown
-  final bool isOnOff; // Whether the parameter is an "on/off" type
-  final int initialValue;
-  final int algorithmIndex;
-  final int parameterNumber;
-  final PackedMappingData? mappingData;
-  final Slot slot;
-
-  const ParameterViewRow({
-    super.key,
-    required this.name,
-    required this.min,
-    required this.max,
-    required this.defaultValue,
-    required this.parameterNumber,
-    required this.algorithmIndex,
-    this.unit,
-    this.powerOfTen = 0,
-    this.displayString,
-    this.dropdownItems,
-    this.isOnOff = false,
-    this.mappingData,
-    required this.initialValue,
-    required this.slot,
-  });
-
-  @override
-  State<ParameterViewRow> createState() => _ParameterViewRowState();
-}
-
-class _ParameterViewRowState extends State<ParameterViewRow> {
-  late int currentValue;
-  late bool isChecked;
-  bool isChanging = false;
-  bool _showAlternateEditor = false;
-
-  @override
-  void initState() {
-    super.initState();
-    currentValue = widget.initialValue.clamp(widget.min, widget.max);
-    isChecked = widget.isOnOff && currentValue == 1;
-  }
-
-  @override
-  void didUpdateWidget(covariant ParameterViewRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Update internal state when the widget is updated
-    if (widget.initialValue != oldWidget.initialValue ||
-        widget.min != oldWidget.min ||
-        widget.max != oldWidget.max) {
-      setState(() {
-        currentValue = widget.initialValue.clamp(widget.min, widget.max);
-        isChecked = widget.isOnOff && currentValue == 1;
-      });
-    }
-  }
-
-  void _updateCubitValue(int value) {
-    // Send updated value to the Cubit
-    context.read<DistingCubit>().updateParameterValue(
-      algorithmIndex: widget.algorithmIndex,
-      parameterNumber: widget.parameterNumber,
-      value: value,
-      userIsChangingTheValue: widget.displayString?.isNotEmpty == true
-          ? false
-          : isChanging,
-    );
-  }
-
-  DateTime? _lastSent;
-  Duration throttleDuration = const Duration(milliseconds: 100);
-
-  void onSliderChanged(int value) async {
-    final now = DateTime.now();
-    if (_lastSent == null || now.difference(_lastSent!) > throttleDuration) {
-      // Enough time has passed -> proceed
-      _lastSent = now;
-      _updateCubitValue(value);
-    }
-
-    if (SettingsService().hapticsEnabled) {
-      Haptics.vibrate(HapticsType.light);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    // Check if we are on a wide screen or a smaller screen
-    bool widescreen = MediaQuery.of(context).size.width > 600;
-
-    // Determine if the unit is BPM
-    final bool isBpmUnit = widget.unit?.toUpperCase().contains('BPM') ?? false;
-
-    // Check if this parameter should use a specialized file editor
-    final Widget? fileEditor =
-        widget.slot.parameters.length > widget.parameterNumber
-        ? ParameterEditorRegistry.findEditorFor(
-            slot: widget.slot,
-            parameterInfo: widget.slot.parameters[widget.parameterNumber],
-            parameterNumber: widget.parameterNumber,
-            currentValue: currentValue,
-            onValueChanged: (newValue) {
-              setState(() {
-                currentValue = newValue;
-              });
-              _updateCubitValue(newValue);
-            },
-          )
-        : null;
-
-    debugPrint("${widget.name} isBpmUnit: $isBpmUnit ${widget.unit}");
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
-      child: Row(
-        key: ValueKey(widescreen),
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          MappingEditButton(widget: widget),
-          // Name column with reduced width
-          Expanded(
-            flex: widescreen ? 2 : 3,
-            child: GestureDetector(
-              onDoubleTap: () async {
-                var cubit = context.read<DistingCubit>();
-                cubit.disting()?.let((manager) {
-                  manager.requestSetFocus(
-                    widget.algorithmIndex,
-                    widget.parameterNumber,
-                  );
-                  manager.requestSetDisplayMode(DisplayMode.parameters);
-                  if (SettingsService().hapticsEnabled) {
-                    Haptics.vibrate(HapticsType.medium);
-                  }
-                });
-              },
-              onLongPress: () {
-                // Get the manager from the cubit
-                final manager = context.read<DistingCubit>().requireDisting();
-                // Call requestSetFocus on the manager
-                manager.requestSetFocus(
-                  widget.algorithmIndex,
-                  widget.parameterNumber,
-                );
-                if (SettingsService().hapticsEnabled) {
-                  Haptics.vibrate(HapticsType.medium);
-                }
-              },
-              child: Text(
-                cleanTitle(widget.name),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 3,
-                softWrap: false,
-                textAlign: TextAlign.start,
-                style: widescreen
-                    ? textTheme.titleMedium
-                    : textTheme.labelMedium,
-              ),
-            ),
-          ),
-
-          // Slider column
-          Expanded(
-            flex: widescreen ? 8 : 6, // Decreased flex
-            // Proportionally larger space for the slider
-            child: GestureDetector(
-              onDoubleTap: () =>
-                  isBpmUnit ||
-                      fileEditor != null ||
-                      _showAlternateEditor // Do not allow double tap to change editor for BPM, file editor, or if alternate is already shown
-                  ? {}
-                  : setState(() {
-                      currentValue = widget.defaultValue;
-                      _updateCubitValue(currentValue);
-                    }),
-              child: AnimatedSwitcher(
-                duration: Duration(milliseconds: 150),
-                child: SizedBox(
-                  height: 45,
-                  child: isBpmUnit
-                      ? BpmEditorWidget(
-                          initialValue: currentValue,
-                          min: widget.min,
-                          max: widget.max,
-                          powerOfTen: widget.powerOfTen,
-                          onChanged: (newBpm) {
-                            setState(() {
-                              currentValue = newBpm;
-                            });
-                            _updateCubitValue(newBpm);
-                          },
-                          onEditingStatusChanged: (isEditing) {
-                            setState(() {
-                              isChanging = isEditing;
-                            });
-                          },
-                        )
-                      : fileEditor ??
-                            (_showAlternateEditor
-                                ? Row(
-                                    // Alternate +/- editor
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    spacing: 16,
-                                    children: [
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            currentValue = min(
-                                              max(currentValue - 1, widget.min),
-                                              widget.max,
-                                            );
-                                          });
-                                          _updateCubitValue(currentValue);
-                                        },
-                                        child: Text("-"),
-                                      ),
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            currentValue = min(
-                                              max(currentValue + 1, widget.min),
-                                              widget.max,
-                                            );
-                                          });
-                                          _updateCubitValue(currentValue);
-                                        },
-                                        child: Text("+"),
-                                      ),
-                                    ],
-                                  )
-                                : Slider(
-                                    // Default Slider editor
-                                    value: currentValue.toDouble(),
-                                    min: widget.min.toDouble(),
-                                    max: widget.max.toDouble(),
-                                    divisions: (widget.max - widget.min > 0)
-                                        ? widget.max - widget.min
-                                        : null,
-                                    onChangeStart: (value) {
-                                      isChanging = true;
-                                    },
-                                    onChangeEnd: (value) {
-                                      isChanging = false;
-                                      setState(() {
-                                        currentValue = value.toInt();
-                                        if (widget.isOnOff) {
-                                          isChecked = currentValue == 1;
-                                        }
-                                      });
-                                      _updateCubitValue(currentValue);
-                                    },
-                                    onChanged: (value) {
-                                      setState(() {
-                                        currentValue = value.toInt();
-                                        if (widget.isOnOff) {
-                                          isChecked = currentValue == 1;
-                                        }
-                                      });
-                                      // Throttle a bit
-                                      onSliderChanged(currentValue);
-                                    },
-                                  )),
-                ),
-              ),
-            ),
-          ),
-          // Control column
-          Expanded(
-            flex: widescreen ? 4 : 5, // Increased flex
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child:
-                  isBpmUnit ||
-                      fileEditor !=
-                          null // Check if it's the BPM unit or file editor
-                  ? const SizedBox.shrink() // If BPM or file editor, render an empty box to hide default text
-                  : widget.isOnOff
-                  ? Checkbox(
-                      value: isChecked,
-                      onChanged: (value) {
-                        setState(() {
-                          isChecked = value!;
-                          currentValue = isChecked ? 1 : 0;
-                        });
-                        _updateCubitValue(currentValue);
-                      },
-                    )
-                  : widget.dropdownItems != null
-                  ? DropdownMenu(
-                      requestFocusOnTap: false,
-                      initialSelection: widget.dropdownItems![currentValue],
-                      inputDecorationTheme: const InputDecorationTheme(
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12.0,
-                          vertical: 8.0,
-                        ),
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      textStyle: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelMedium,
-                      dropdownMenuEntries: widget.dropdownItems!
-                          .map(
-                            (item) =>
-                                DropdownMenuEntry(value: item, label: item),
-                          )
-                          .toList(),
-                      onSelected: (value) {
-                        setState(() {
-                          currentValue = min(
-                            max(
-                              widget.dropdownItems!.indexOf(value!),
-                              widget.min,
-                            ),
-                            widget.max,
-                          );
-                        });
-                        _updateCubitValue(currentValue);
-                      },
-                    )
-                  : widget.name.toLowerCase().contains("note")
-                  ? Text(midiNoteToNoteString(currentValue))
-                  : widget.name.toLowerCase().contains("midi channel")
-                  ? Text(
-                      currentValue == 0 ? "None" : currentValue.toString(),
-                      style: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelSmall,
-                    )
-                  : widget.displayString != null
-                  ? GestureDetector(
-                      onLongPress: () => setState(() {
-                        // Show alternate editor only if not BPM or file editor
-                        if (!isBpmUnit && fileEditor == null) {
-                          _showAlternateEditor = !_showAlternateEditor;
-                        }
-                      }),
-                      child: Text(
-                        widget.displayString!,
-                        overflow: TextOverflow.ellipsis,
-                        style: widescreen
-                            ? textTheme.labelLarge
-                            : textTheme.labelSmall,
-                      ),
-                    )
-                  // Only show unit text if it's NOT BPM, NOT file editor, and unit is present
-                  : widget.unit != null && !isBpmUnit && fileEditor == null
-                  ? Text(
-                      formatWithUnit(
-                        currentValue,
-                        name: widget.name,
-                        min: widget.min,
-                        max: widget.max,
-                        unit: widget.unit,
-                        powerOfTen: widget.powerOfTen,
-                      ),
-                      style: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelSmall,
-                    )
-                  : Text(
-                      currentValue.toString(),
-                      style: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelSmall,
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String cleanTitle(String name) {
-    // If name starts with a number followed by a colon, strip that off
-    final RegExp regex = RegExp(r'^\d+:\s*');
-    return name.replaceAll(regex, '');
-  }
-}
-
-class MappingEditButton extends StatelessWidget {
-  const MappingEditButton({super.key, required this.widget});
-
-  final ParameterViewRow widget;
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.scale(
-      scale: 0.6,
-      child: Builder(
-        builder: (context) {
-          final bool hasMapping =
-              widget.mappingData != null &&
-              widget.mappingData != PackedMappingData.filler() &&
-              widget.mappingData?.isMapped() == true;
-
-          // Define your two styles:
-          final ButtonStyle defaultStyle = IconButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onSurface,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerHighest,
-          );
-          final ButtonStyle mappedStyle = IconButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.primaryContainer, // or any color you prefer
-          );
-
-          return IconButton.filledTonal(
-            // Decide which style to use based on `hasMapping`
-            style: hasMapping ? mappedStyle : defaultStyle,
-            icon: const Icon(Icons.map_sharp),
-            tooltip: 'Edit mapping',
-            onPressed: () async {
-              final cubit = context.read<DistingCubit>();
-              final currentState = cubit.state;
-              List<Slot> currentSlots = [];
-              if (currentState is DistingStateSynchronized) {
-                currentSlots = currentState.slots;
-              }
-
-              final data = widget.mappingData ?? PackedMappingData.filler();
-              final myMidiCubit = context.read<MidiListenerCubit>();
-              final updatedData = await showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) {
-                  return MappingEditorBottomSheet(
-                    myMidiCubit: myMidiCubit,
-                    data: data,
-                    slots: currentSlots,
-                  );
-                },
-              );
-
-              if (updatedData != null) {
-                cubit.saveMapping(
-                  widget.algorithmIndex,
-                  widget.parameterNumber,
-                  updatedData,
-                );
-              }
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class MappingEditorBottomSheet extends StatelessWidget {
-  const MappingEditorBottomSheet({
-    super.key,
-    required this.myMidiCubit,
-    required this.data,
-    required this.slots,
-  });
-
-  final MidiListenerCubit myMidiCubit;
-  final PackedMappingData data;
-  final List<Slot> slots;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom > 0
-              ? MediaQuery.of(context).viewInsets.bottom
-              : MediaQuery.of(context).padding.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: BlocProvider.value(
-            value: myMidiCubit,
-            child: PackedMappingDataEditor(
-              initialData: data,
-              slots: slots,
-              onSave: (updatedData) {
-                // do something with updatedData
-                Navigator.of(context).pop(updatedData);
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-String formatWithUnit(
-  int currentValue, {
-  required int min,
-  required int max,
-  required String name,
-  String? unit,
-  required int powerOfTen,
-}) {
-  if (unit == null || unit.isEmpty) return currentValue.toString();
-
-  final trimmedUnit = unit.trim();
-  return '${((currentValue / pow(10, powerOfTen)).toStringAsFixed(powerOfTen))} $trimmedUnit';
-}
-
-String midiNoteToNoteString(int midiNoteNumber) {
-  if (midiNoteNumber == -1) return "";
-
-  if (midiNoteNumber < 0 || midiNoteNumber > 127) {
-    throw ArgumentError('MIDI note number must be between 0 and 127.');
-  }
-
-  // Note names
-  List<String> noteNames = [
-    'C',
-    'C#',
-    'D',
-    'D#',
-    'E',
-    'F',
-    'F#',
-    'G',
-    'G#',
-    'A',
-    'A#',
-    'B',
-  ];
-
-  // Calculate the octave and note index
-  int octave = (midiNoteNumber ~/ 12) - 1;
-  String note = noteNames[midiNoteNumber % 12];
-
-  return '$note$octave';
-}
-
-/// Small round LED indicator for MCP server status with tooltip
-class _McpStatusIndicator extends StatelessWidget {
-  static const int mcpPort = 3000;
-
-  const _McpStatusIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = SettingsService(); // Get SettingsService instance
-    final mcpInstance =
-        McpServerService.instance; // Get McpServerService instance
-    final isRunning = context.watch<McpServerService>().isRunning;
-    final baseColor = isRunning ? Colors.green.shade600 : Colors.grey.shade600;
-    final highlightColor = isRunning
-        ? Colors.green.shade300
-        : Colors.grey.shade400;
-    final shadowColor = isRunning
-        ? Colors.green.shade800
-        : Colors.grey.shade800;
-
-    final tooltip = isRunning
-        ? 'MCP server running at http://localhost:$mcpPort (Tap to disable)'
-        : 'MCP server is disabled (Tap to enable)';
-
-    return GestureDetector(
-      onTap: () async {
-        // Check if on supported platform first
-        if (!(Platform.isMacOS || Platform.isWindows)) {
-          debugPrint("[McpIndicatorTap] Not on MacOS/Windows. Toggle ignored.");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "MCP Service can only be toggled on macOS or Windows.",
-              ),
-            ),
-          );
-          return;
-        }
-
-        final bool currentMcpSetting = settings.mcpEnabled;
-        final newMcpSetting = !currentMcpSetting;
-        await settings.setMcpEnabled(newMcpSetting);
-        debugPrint(
-          "[McpIndicatorTap] Toggled MCP setting. Old: $currentMcpSetting, New: $newMcpSetting",
-        );
-
-        // Now apply the logic to start/stop the server
-        final bool isServerCurrentlyRunning = mcpInstance.isRunning;
-        debugPrint(
-          "[McpIndicatorTap] Server was running: $isServerCurrentlyRunning. New MCP setting: $newMcpSetting",
-        );
-
-        if (newMcpSetting) {
-          // Try to turn ON
-          if (!isServerCurrentlyRunning) {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is ON, Server is OFF. Attempting to START server.",
-            );
-            await mcpInstance.start().catchError((e) {
-              debugPrint('[McpIndicatorTap] Error starting MCP Server: $e');
-            });
-            debugPrint(
-              "[McpIndicatorTap] MCP Server START attempt finished. Now Running: ${mcpInstance.isRunning}",
-            );
-          } else {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is ON, Server is ALREADY ON. No action taken. Running: ${mcpInstance.isRunning}",
-            );
-          }
-        } else {
-          // Try to turn OFF
-          if (isServerCurrentlyRunning) {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is OFF, Server is ON. Attempting to STOP server.",
-            );
-            await mcpInstance.stop().catchError((e) {
-              debugPrint('[McpIndicatorTap] Error stopping MCP Server: $e');
-            });
-            debugPrint(
-              "[McpIndicatorTap] MCP Server STOP attempt finished. Now Running: ${mcpInstance.isRunning}",
-            );
-          } else {
-            debugPrint(
-              "[McpIndicatorTap] MCP Setting is OFF, Server is ALREADY OFF. No action taken. Running: ${mcpInstance.isRunning}",
-            );
-          }
-        }
-        // McpServerService.notifyListeners() is called by start()/stop(), which Consumer listens to.
-      },
-      child: Tooltip(
-        message: tooltip,
-        child: Container(
-          width: 16, // Slightly larger for better effect
-          height: 16,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              center: Alignment(
-                -0.3,
-                -0.4,
-              ), // Offset center for top-right light source
-              radius: 0.9,
-              colors: [highlightColor, baseColor, shadowColor],
-              stops: [0.0, 0.6, 1.0],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 2,
-                offset: Offset(1, 1),
-              ),
-            ],
-          ),
-          child: Center(
-            // For specular highlight
-            child: Container(
-              width: 5, // Size of specular highlight
-              height: 5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-              margin: const EdgeInsets.only(
-                right: 3,
-                bottom: 3,
-              ), // Position highlight
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

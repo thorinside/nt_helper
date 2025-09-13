@@ -4,7 +4,8 @@ import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/models/packed_mapping_data.dart';
 import 'package:nt_helper/ui/midi_listener/midi_listener_cubit.dart';
-import 'package:nt_helper/ui/synchronized_screen.dart';
+import 'package:nt_helper/ui/widgets/mapping_editor_bottom_sheet.dart';
+
 import 'package:nt_helper/ui/widgets/routing/accessibility_colors.dart';
 import 'package:nt_helper/ui/widgets/routing/port_widget.dart';
 // No direct dependency on RoutingEditorWidget static members
@@ -128,14 +129,12 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                     theme.colorScheme.surface,
                     minRatio: AccessibilityColors.wcagAANormal,
                   )
-                : theme.colorScheme.outline.withValues(
-                    alpha: 0.7,
-                  ), // Higher alpha for better visibility
+                : theme.colorScheme.outline.withAlpha(179),
             width: widget.isSelected ? 3 : 1, // Thicker border when selected
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: _isDragging ? 0.3 : 0.1),
+              color: Colors.black.withAlpha(_isDragging ? 77 : 26),
               blurRadius: _isDragging ? 8 : 4,
               offset: Offset(0, _isDragging ? 4 : 2),
             ),
