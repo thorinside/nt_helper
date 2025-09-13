@@ -6,7 +6,7 @@
     "Modulation",
     "Filter"
   ],
-  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. You may like to view the video on that algorithm, which is here^79. It’s a classic phaser effect, using a number of all-pass filters to introduce notches into the audio’s frequency spectrum. You may like to apply an LFO to the sweep CV input.",
+  "description": "This algorithm is based on the Phaser algorithm on the disting mk4. You may like to view the video on that algorithm, which is here^79. It's a classic phaser effect, using a number of all-pass filters to introduce notches into the audio's frequency spectrum. You may like to apply an LFO to the sweep CV input.",
   "specifications": [],
   "parameters": [
     {

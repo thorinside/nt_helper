@@ -248,7 +248,7 @@
       "defaultValue": -24.0,
       "minValue": -24.0,
       "maxValue": 0.0,
-      "description": "The amount by which existing buffer content is attenuated on each recording pass. -24dB is treated as –∞dB i.e. the previous content is completely replaced."
+      "description": "The amount by which existing buffer content is attenuated on each recording pass. -24dB is treated as -dB i.e. the previous content is completely replaced."
     },
     {
       "name": "Detect",

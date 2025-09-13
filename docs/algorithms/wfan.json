@@ -130,7 +130,7 @@
       "description": "The CV input bus for the comparator threshold."
     },
     {
-      "name": "around the value set by ‘Threshold’. Mix",
+      "name": "around the value set by 'Threshold'. Mix",
       "unit": "%",
       "min": -100,
       "max": 100,
@@ -162,7 +162,7 @@
       "scope": "routing"
     },
     {
-      "name": "around the value set by ‘Threshold’. Mix",
+      "name": "around the value set by 'Threshold'. Mix",
       "unit": "%",
       "min": -100,
       "max": 100,

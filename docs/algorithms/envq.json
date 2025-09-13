@@ -72,7 +72,7 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "See ‘Clock modes’, below."
+      "description": "See 'Clock modes', below."
     },
     {
       "name": "MIDI divisor",
@@ -106,19 +106,19 @@
       "description": "The amount by which the trigger velocity affects the"
     },
     {
-      "name": "Trigger input 0 28 The bus to use for the envelope’s trigger input. Clock input",
+      "name": "Trigger input 0 28 The bus to use for the envelope's trigger input. Clock input",
       "min": 0,
       "max": 28,
       "default": 0,
-      "description": "The bus to use for the envelope’s clock input.",
+      "description": "The bus to use for the envelope's clock input.",
       "scope": "routing"
     },
     {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the envelope’s end of cycle output. Active output",
+      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the envelope's end of cycle output. Active output",
       "min": 0,
       "max": 28,
       "default": 0,
-      "description": "The bus to use for the envelope’s active output.",
+      "description": "The bus to use for the envelope's active output.",
       "scope": "routing"
     },
     {
@@ -181,7 +181,7 @@
       "min": 0,
       "max": 4,
       "default": 2,
-      "description": "The time range (multiplier), from ‘x 0.01’ to ‘x 100’."
+      "description": "The time range (multiplier), from 'x 0.01' to 'x 100'."
     }
   ],
   "features": [],

@@ -6,7 +6,7 @@
     "Resonator",
     "Polysynth"
   ],
-  "description": "A polyphonic synthesizer where each voice is an implementation of the open-source Rings module by Émilie Gillet. Supports microtuning.",
+  "description": "A polyphonic synthesizer where each voice is an implementation of the open-source Rings module by Emilie Gillet. Supports microtuning.",
   "specifications": [
     {
       "name": "Voices",

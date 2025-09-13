@@ -4,7 +4,7 @@
   "categories": [
     "Sampler"
   ],
-  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It’s your go-to algorithm for breakbeat slicing. Please review the section on the features common to the various Sample Players, above.",
+  "description": "This algorithm allows you to place a number of marker points on a sample, and conveniently trigger playback from the various marker points. It's your go-to algorithm for breakbeat slicing. Please review the section on the features common to the various Sample Players, above.",
   "specifications": [],
   "parameters": [
     {
@@ -14,7 +14,7 @@
       "minValue": 1,
       "maxValue": 24,
       "scope": "global",
-      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the ‘Play’ parameter.",
+      "description": "Offsets the choice of which slice to play. Provided as a convenience when triggering playback with the 'Play' parameter.",
       "min": 1,
       "max": 24,
       "default": 1
@@ -47,7 +47,7 @@
       "minValue": 0,
       "maxValue": 2,
       "scope": "global",
-      "description": "Sets the clock source: ‘Off’, ‘External’, or ‘MIDI’.",
+      "description": "Sets the clock source: 'Off', 'External', or 'MIDI'.",
       "min": 0,
       "max": 2,
       "default": 0
@@ -71,7 +71,7 @@
       "minValue": 0,
       "maxValue": 19,
       "scope": "global",
-      "description": "Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’."
+      "description": "Sets how often the sample will be triggered, if 'Auto trigger' is 'Fixed'."
     },
     {
       "name": "Time sig num",
@@ -170,7 +170,7 @@
       "description": ""
     },
     {
-      "name": "as a convenience when triggering playback with the ‘Play’ parameter. Slices",
+      "name": "as a convenience when triggering playback with the 'Play' parameter. Slices",
       "min": 1,
       "max": 24,
       "default": 24,
@@ -192,14 +192,14 @@
       "description": "The fine slice position, in sample frames."
     },
     {
-      "name": "as a convenience when triggering playback with the ‘Play’ parameter. Slices",
+      "name": "as a convenience when triggering playback with the 'Play' parameter. Slices",
       "min": 1,
       "max": 24,
       "default": 24,
       "description": "Sets the number of slices in use."
     },
     {
-      "name": "0 19 15 Sets how often the sample will be triggered, if ‘Auto trigger’ is ‘Fixed’. Time sig num",
+      "name": "0 19 15 Sets how often the sample will be triggered, if 'Auto trigger' is 'Fixed'. Time sig num",
       "min": 1,
       "max": 99,
       "default": 4,

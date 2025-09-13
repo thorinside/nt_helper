@@ -108,7 +108,7 @@
       "description": ""
     },
     {
-      "name": "● ‘Single’ - use ‘Up/shared slew’ for both slew times. ● ‘Dual’ - use separate slew times for rising and falling signals. ● ‘Common single’ and ‘Common dual’ - as above but using the shared times from the Common parameters. Up/shared",
+      "name": " 'Single' - use 'Up/shared slew' for both slew times.  'Dual' - use separate slew times for rising and falling signals.  'Common single' and 'Common dual' - as above but using the shared times from the Common parameters. Up/shared",
       "min": 0,
       "max": 1000,
       "default": 0,

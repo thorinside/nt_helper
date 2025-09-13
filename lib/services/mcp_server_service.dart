@@ -648,10 +648,30 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         },
       ),
       callback: ({args, extra}) async {
-        final resultJson = await tools.getAlgorithmDetails(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
+        try {
+          // Add a timeout to prevent hanging
+          final resultJson = await tools
+              .getAlgorithmDetails(args ?? {})
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution timed out after 5 seconds',
+                  'requested_algorithm': args?['algorithm_guid'] ?? args?['algorithm_name'] ?? 'unknown',
+                }),
+              );
+          return CallToolResult.fromContent(
+            content: [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          final errorJson = jsonEncode({
+            'success': false,
+            'error': 'Tool execution failed: ${e.toString()}',
+          });
+          return CallToolResult.fromContent(
+            content: [TextContent(text: errorJson)],
+          );
+        }
       },
     );
 
@@ -665,10 +685,20 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
         },
       ),
       callback: ({args, extra}) async {
-        final resultJson = await tools.listAlgorithms(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
+        try {
+          final resultJson = await tools.listAlgorithms(args ?? {});
+          return CallToolResult.fromContent(
+            content: [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          final errorJson = jsonEncode({
+            'success': false,
+            'error': 'Tool execution failed: ${e.toString()}',
+          });
+          return CallToolResult.fromContent(
+            content: [TextContent(text: errorJson)],
+          );
+        }
       },
     );
 
@@ -678,10 +708,20 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Get current routing state. Always use physical names (Input N, Output N, Aux N, None).',
       toolInputSchema: const ToolInputSchema(properties: {}),
       callback: ({args, extra}) async {
-        final resultJson = await tools.getCurrentRoutingState(args ?? {});
-        return CallToolResult.fromContent(
-          content: [TextContent(text: resultJson)],
-        );
+        try {
+          final resultJson = await tools.getCurrentRoutingState(args ?? {});
+          return CallToolResult.fromContent(
+            content: [TextContent(text: resultJson)],
+          );
+        } catch (e) {
+          final errorJson = jsonEncode({
+            'success': false,
+            'error': 'Tool execution failed: ${e.toString()}',
+          });
+          return CallToolResult.fromContent(
+            content: [TextContent(text: errorJson)],
+          );
+        }
       },
     );
   }

@@ -581,18 +581,18 @@
       "description": ""
     },
     {
-      "name": "0 1 0 Activates ‘octave down’ (toggles the target loops between playing at normal speed and half speed). Retrigger",
+      "name": "0 1 0 Activates 'octave down' (toggles the target loops between playing at normal speed and half speed). Retrigger",
       "min": 0,
       "max": 1,
       "default": 0,
       "description": "Activates retrigger."
     },
     {
-      "name": "0 1 0 While this parameter is held, commands such as Record, Play, etc. behave as if the ‘Clock source’ parameters were ‘None’. Undo",
+      "name": "0 1 0 While this parameter is held, commands such as Record, Play, etc. behave as if the 'Clock source' parameters were 'None'. Undo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates ‘Undo’. See Layers, above."
+      "description": "Activates 'Undo'. See Layers, above."
     },
     {
       "name": "Target",
@@ -654,11 +654,11 @@
       "description": "Sets how long Record needs to be held before a"
     },
     {
-      "name": "0 2 0 The clock source for synchronisation – one of ‘None’, ‘Clock input’, or ‘MIDI clock’. Clock input",
+      "name": "0 2 0 The clock source for synchronisation - one of 'None', 'Clock input', or 'MIDI clock'. Clock input",
       "min": 1,
       "max": 28,
       "default": 3,
-      "description": "The input bus to use as clock if the ‘Clock source’ is",
+      "description": "The input bus to use as clock if the 'Clock source' is",
       "scope": "routing"
     },
     {
@@ -667,7 +667,7 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "description": "See ‘Clocked operation’, above."
+      "description": "See 'Clocked operation', above."
     },
     {
       "name": "2nd press cancels",
@@ -681,7 +681,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent",
+      "description": "Enables internal MIDI output - that is, MIDI is sent",
       "scope": "routing"
     },
     {
@@ -711,63 +711,63 @@
       "min": 1,
       "max": 0,
       "default": 127,
-      "description": "48 The MIDI note to automate ‘Target 1’."
+      "description": "48 The MIDI note to automate 'Target 1'."
     },
     {
       "name": "Target",
       "min": 2,
       "max": 0,
       "default": 127,
-      "description": "50 The MIDI note to automate ‘Target 2’."
+      "description": "50 The MIDI note to automate 'Target 2'."
     },
     {
       "name": "Target",
       "min": 3,
       "max": 0,
       "default": 127,
-      "description": "52 The MIDI note to automate ‘Target 3’."
+      "description": "52 The MIDI note to automate 'Target 3'."
     },
     {
       "name": "Target",
       "min": 4,
       "max": 0,
       "default": 127,
-      "description": "53 The MIDI note to automate ‘Target 4’."
+      "description": "53 The MIDI note to automate 'Target 4'."
     },
     {
-      "name": "0 127 60 The MIDI note to automate ‘Octave down’. Retrigger",
+      "name": "0 127 60 The MIDI note to automate 'Octave down'. Retrigger",
       "min": 0,
       "max": 127,
       "default": 58,
-      "description": "The MIDI note to automate ‘Retrigger’."
+      "description": "The MIDI note to automate 'Retrigger'."
     },
     {
-      "name": "0 127 71 The MIDI note to automate ‘Bypass clock’. Undo",
+      "name": "0 127 71 The MIDI note to automate 'Bypass clock'. Undo",
       "min": 0,
       "max": 127,
       "default": 72,
-      "description": "The MIDI note to automate ‘Undo’."
+      "description": "The MIDI note to automate 'Undo'."
     },
     {
       "name": "Fade to clear",
       "min": 0,
       "max": 127,
       "default": 76,
-      "description": "The MIDI note to automate ‘Fade to clear’."
+      "description": "The MIDI note to automate 'Fade to clear'."
     },
     {
-      "name": "0 1 0 Activates ‘octave down’ (toggles the target loops between playing at normal speed and half speed). Retrigger",
+      "name": "0 1 0 Activates 'octave down' (toggles the target loops between playing at normal speed and half speed). Retrigger",
       "min": 0,
       "max": 1,
       "default": 0,
       "description": "Activates retrigger."
     },
     {
-      "name": "0 1 0 While this parameter is held, commands such as Record, Play, etc. behave as if the ‘Clock source’ parameters were ‘None’. Undo",
+      "name": "0 1 0 While this parameter is held, commands such as Record, Play, etc. behave as if the 'Clock source' parameters were 'None'. Undo",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Activates ‘Undo’. See Layers, above."
+      "description": "Activates 'Undo'. See Layers, above."
     },
     {
       "name": "Target",
@@ -829,11 +829,11 @@
       "description": "Sets how long Record needs to be held before a"
     },
     {
-      "name": "0 2 0 The clock source for synchronisation – one of ‘None’, ‘Clock input’, or ‘MIDI clock’. Clock input",
+      "name": "0 2 0 The clock source for synchronisation - one of 'None', 'Clock input', or 'MIDI clock'. Clock input",
       "min": 1,
       "max": 28,
       "default": 3,
-      "description": "The input bus to use as clock if the ‘Clock source’ is",
+      "description": "The input bus to use as clock if the 'Clock source' is",
       "scope": "routing"
     },
     {
@@ -842,7 +842,7 @@
       "min": 0,
       "max": 1000,
       "default": 0,
-      "description": "See ‘Clocked operation’, above."
+      "description": "See 'Clocked operation', above."
     },
     {
       "name": "Output to USB",
@@ -857,7 +857,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent",
+      "description": "Enables internal MIDI output - that is, MIDI is sent",
       "scope": "routing"
     },
     {
@@ -895,35 +895,35 @@
       "min": 1,
       "max": 0,
       "default": 127,
-      "description": "48 The MIDI note to automate ‘Target 1’."
+      "description": "48 The MIDI note to automate 'Target 1'."
     },
     {
       "name": "Target",
       "min": 2,
       "max": 0,
       "default": 127,
-      "description": "50 The MIDI note to automate ‘Target 2’."
+      "description": "50 The MIDI note to automate 'Target 2'."
     },
     {
       "name": "Target",
       "min": 3,
       "max": 0,
       "default": 127,
-      "description": "52 The MIDI note to automate ‘Target 3’."
+      "description": "52 The MIDI note to automate 'Target 3'."
     },
     {
       "name": "Target",
       "min": 4,
       "max": 0,
       "default": 127,
-      "description": "53 The MIDI note to automate ‘Target 4’."
+      "description": "53 The MIDI note to automate 'Target 4'."
     },
     {
-      "name": "0 127 60 The MIDI note to automate ‘Octave down’. Retrigger",
+      "name": "0 127 60 The MIDI note to automate 'Octave down'. Retrigger",
       "min": 0,
       "max": 127,
       "default": 58,
-      "description": "The MIDI note to automate ‘Retrigger’."
+      "description": "The MIDI note to automate 'Retrigger'."
     }
   ],
   "input_ports": [

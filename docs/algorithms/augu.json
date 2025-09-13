@@ -181,7 +181,7 @@
           "max": 6,
           "default": -40,
           "unit": "dB",
-          "description": "The amount of the dry signal to mix into the outputs. At \"-40\" there is no dry signal at all i.e. it's actually –∞dB."
+          "description": "The amount of the dry signal to mix into the outputs. At \"-40\" there is no dry signal at all i.e. it's actually -dB."
         },
         {
           "name": "Effect gain",
@@ -189,7 +189,7 @@
           "max": 6,
           "default": -3,
           "unit": "dB",
-          "description": "The amount of the effect (delay) signal to mix into the outputs. At \"-40\" there is no effect signal at all i.e. it's actually –∞dB."
+          "description": "The amount of the effect (delay) signal to mix into the outputs. At \"-40\" there is no effect signal at all i.e. it's actually -dB."
         },
         {
           "name": "Input level",

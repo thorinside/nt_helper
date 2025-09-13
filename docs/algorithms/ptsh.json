@@ -113,7 +113,7 @@
       "scope": "global"
     },
     {
-      "name": "0 1 1 Chooses the pitch shifting algorithm, ‘2-phase’ or ‘3- phase’. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
+      "name": "0 1 1 Chooses the pitch shifting algorithm, '2-phase' or '3- phase'. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
       "unit": "ms",
       "min": 1,
       "max": 682,
@@ -128,7 +128,7 @@
       "description": "The pitch shift amount, in octaves."
     },
     {
-      "name": "0 1 1 Chooses the pitch shifting algorithm, ‘2-phase’ or ‘3- phase’. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
+      "name": "0 1 1 Chooses the pitch shifting algorithm, '2-phase' or '3- phase'. The latter usually sounds better, at the expense of more CPU usage. Grain delay",
       "unit": "ms",
       "min": 1,
       "max": 682,

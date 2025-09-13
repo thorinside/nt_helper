@@ -155,7 +155,7 @@
       "max": 28,
       "default": 0,
       "scope": "routing",
-      "description": "The waveshape CV input (±5V = ±100% range)."
+      "description": "The waveshape CV input (+/-5V = +/-100% range)."
     },
     {
       "name": "Sync input",
@@ -264,7 +264,7 @@
       "description": "Add/Replace mode for the sine signal."
     },
     {
-      "name": "0 2 0 Enables oversampling, to reduce aliasing noise at higher frequencies. The options are “None”, “2x”, and “4x”. FM scale",
+      "name": "0 2 0 Enables oversampling, to reduce aliasing noise at higher frequencies. The options are \"None\", \"2x\", and \"4x\". FM scale",
       "unit": "Hz",
       "min": 1,
       "max": 1000,
@@ -272,12 +272,12 @@
       "description": "Sets the Hz/V sensitivity of the linear FM input."
     },
     {
-      "name": "0.00 10.00 10.00 V Sets the amplitude of the sub-octave output (before it’s affected by the gain). Sine amplitude",
+      "name": "0.00 10.00 10.00 V Sets the amplitude of the sub-octave output (before it's affected by the gain). Sine amplitude",
       "unit": "V",
       "min": 0,
       "max": 10,
       "default": 10,
-      "description": "Sets the amplitude of the sine output (before it’s",
+      "description": "Sets the amplitude of the sine output (before it's",
       "scope": "routing"
     },
     {
@@ -288,7 +288,7 @@
       "description": "The add/replace mode for the triangle/saw signal."
     },
     {
-      "name": "0 2 0 Enables oversampling, to reduce aliasing noise at higher frequencies. The options are “None”, “2x”, and “4x”. FM scale",
+      "name": "0 2 0 Enables oversampling, to reduce aliasing noise at higher frequencies. The options are \"None\", \"2x\", and \"4x\". FM scale",
       "unit": "Hz",
       "min": 1,
       "max": 1000,
@@ -296,12 +296,12 @@
       "description": "Sets the Hz/V sensitivity of the linear FM input."
     },
     {
-      "name": "0.00 10.00 10.00 V Sets the amplitude of the sub-octave output (before it’s affected by the gain). Sine amplitude",
+      "name": "0.00 10.00 10.00 V Sets the amplitude of the sub-octave output (before it's affected by the gain). Sine amplitude",
       "unit": "V",
       "min": 0,
       "max": 10,
       "default": 10,
-      "description": "Sets the amplitude of the sine output (before it’s",
+      "description": "Sets the amplitude of the sine output (before it's",
       "scope": "routing"
     }
   ],

@@ -224,7 +224,7 @@
       "description": "The emphasised harmonic at the end of the bounces."
     },
     {
-      "name": "0 28 0 The bus to use for CV control over the ‘bridge shape’. Reset",
+      "name": "0 28 0 The bus to use for CV control over the 'bridge shape'. Reset",
       "min": 0,
       "max": 28,
       "default": 0,
@@ -268,7 +268,7 @@
       "description": "The emphasised harmonic at the end of the bounces."
     },
     {
-      "name": "0 28 0 The bus to use for CV control over the ‘bridge shape’. Reset",
+      "name": "0 28 0 The bus to use for CV control over the 'bridge shape'. Reset",
       "min": 0,
       "max": 28,
       "default": 0,
@@ -285,7 +285,7 @@
     {
       "id": "Bridge shape",
       "name": "Bridge shape",
-      "description": "The bus to use for CV control over the ‘bridge shape’.",
+      "description": "The bus to use for CV control over the 'bridge shape'.",
       "busIdRef": "0"
     },
     {

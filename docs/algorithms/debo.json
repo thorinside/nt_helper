@@ -126,12 +126,12 @@
       "description": "Enables debouncing on this channel."
     },
     {
-      "name": "-10 10 5 V The output voltage when the input is ‘high’, in Volts. Output semitones",
+      "name": "-10 10 5 V The output voltage when the input is 'high', in Volts. Output semitones",
       "unit": "ST",
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "The output voltage when the input is ‘high’, in 12-",
+      "description": "The output voltage when the input is 'high', in 12-",
       "scope": "routing"
     },
     {
@@ -142,12 +142,12 @@
       "description": "Enables debouncing on this channel."
     },
     {
-      "name": "-10 10 5 V The output voltage when the input is ‘high’, in Volts. Output semitones",
+      "name": "-10 10 5 V The output voltage when the input is 'high', in Volts. Output semitones",
       "unit": "ST",
       "min": -60,
       "max": 60,
       "default": 0,
-      "description": "The output voltage when the input is ‘high’, in 12-",
+      "description": "The output voltage when the input is 'high', in 12-",
       "scope": "routing"
     }
   ],

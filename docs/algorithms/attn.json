@@ -2,7 +2,7 @@
   "name": "Attenuverter",
   "guid": "attn",
   "short_description": "Attenuates and offsets signals",
-  "description": "This simple algorithm scales and offsets signals. It is probably most useful for CVs, but can be used for audio as well. The signal is scaled and then offset i.e. output = offset + ( input × scale ). Various offset parameters are provided, which might be useful in different scenarios – they are all simply added together. Note that it is valid to use this algorithm with no input bus selected, in which case the output is simply the offset voltage.",
+  "description": "This simple algorithm scales and offsets signals. It is probably most useful for CVs, but can be used for audio as well. The signal is scaled and then offset i.e. output = offset + ( input x scale ). Various offset parameters are provided, which might be useful in different scenarios - they are all simply added together. Note that it is valid to use this algorithm with no input bus selected, in which case the output is simply the offset voltage.",
   "categories": [
     "Utility",
     "CV"

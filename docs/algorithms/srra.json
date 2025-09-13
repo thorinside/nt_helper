@@ -183,7 +183,7 @@
       "description": "Sets whether the pattern moves forwards or in"
     },
     {
-      "name": "● The new bit value is high. ● The new bit value is low. ● The bit changes. ● The bit goes from low to high. ● The bit goes from high to low. Type",
+      "name": " The new bit value is high.  The new bit value is low.  The bit changes.  The bit goes from low to high.  The bit goes from high to low. Type",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -229,7 +229,7 @@
       "description": "Sets whether the pattern moves forwards or in"
     },
     {
-      "name": "● The new bit value is high. ● The new bit value is low. ● The bit changes. ● The bit goes from low to high. ● The bit goes from high to low. Type",
+      "name": " The new bit value is high.  The new bit value is low.  The bit changes.  The bit goes from low to high.  The bit goes from high to low. Type",
       "min": 0,
       "max": 1,
       "default": 0,

@@ -249,7 +249,7 @@
       "description": "The output bus for the send. Note that the send"
     },
     {
-      "name": "always uses ‘Add’ output mode. Pre/post",
+      "name": "always uses 'Add' output mode. Pre/post",
       "min": 0,
       "max": 1,
       "default": 1,

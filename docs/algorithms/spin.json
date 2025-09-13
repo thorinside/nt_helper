@@ -176,72 +176,72 @@
       "min": 1,
       "max": 0,
       "default": 100,
-      "description": "50.0 % The first program ‘pot’ parameter."
+      "description": "50.0 % The first program 'pot' parameter."
     },
     {
       "name": "Pot",
       "min": 2,
       "max": 0,
       "default": 100,
-      "description": "50.0 % The second program ‘pot’ parameter."
+      "description": "50.0 % The second program 'pot' parameter."
     },
     {
       "name": "Pot",
       "min": 3,
       "max": 0,
       "default": 100,
-      "description": "50.0 % The third program ‘pot’ parameter."
+      "description": "50.0 % The third program 'pot' parameter."
     },
     {
-      "name": "-36 0 -20 dB Sets the gain adjustment applied before the program’s DSP code. See above. Mix style",
+      "name": "-36 0 -20 dB Sets the gain adjustment applied before the program's DSP code. See above. Mix style",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Chooses the dry/wet mix style: ‘None’, ‘Wet/dry’, or"
+      "description": "Chooses the dry/wet mix style: 'None', 'Wet/dry', or"
     },
     {
-      "name": "‘Independent’. Mix",
+      "name": "'Independent'. Mix",
       "unit": "%",
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "Sets the mix if the style is ‘Wet/dry’."
+      "description": "Sets the mix if the style is 'Wet/dry'."
     },
     {
       "name": "Pot",
       "min": 1,
       "max": 0,
       "default": 100,
-      "description": "50.0 % The first program ‘pot’ parameter."
+      "description": "50.0 % The first program 'pot' parameter."
     },
     {
       "name": "Pot",
       "min": 2,
       "max": 0,
       "default": 100,
-      "description": "50.0 % The second program ‘pot’ parameter."
+      "description": "50.0 % The second program 'pot' parameter."
     },
     {
       "name": "Pot",
       "min": 3,
       "max": 0,
       "default": 100,
-      "description": "50.0 % The third program ‘pot’ parameter."
+      "description": "50.0 % The third program 'pot' parameter."
     },
     {
-      "name": "-36 0 -20 dB Sets the gain adjustment applied before the program’s DSP code. See above. Mix style",
+      "name": "-36 0 -20 dB Sets the gain adjustment applied before the program's DSP code. See above. Mix style",
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Chooses the dry/wet mix style: ‘None’, ‘Wet/dry’, or"
+      "description": "Chooses the dry/wet mix style: 'None', 'Wet/dry', or"
     },
     {
-      "name": "‘Independent’. Mix",
+      "name": "'Independent'. Mix",
       "unit": "%",
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "Sets the mix if the style is ‘Wet/dry’."
+      "description": "Sets the mix if the style is 'Wet/dry'."
     }
   ],
   "input_ports": [

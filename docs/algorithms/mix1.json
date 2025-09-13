@@ -200,7 +200,7 @@
       "scope": "routing"
     },
     {
-      "name": "1 28 13 The output bus for the send. Note that the send always uses ‘Add’ output mode. Pre/post",
+      "name": "1 28 13 The output bus for the send. Note that the send always uses 'Add' output mode. Pre/post",
       "min": 0,
       "max": 1,
       "default": 1,

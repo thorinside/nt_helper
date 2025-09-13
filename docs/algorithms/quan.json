@@ -246,7 +246,7 @@
       "description": "Sets the mode, that is, the rotation of the notes within"
     },
     {
-      "name": "0 2 0 Sets the behaviour of the gate/trigger outputs. The options are: ‘Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output. Gate offset",
+      "name": "0 2 0 Sets the behaviour of the gate/trigger outputs. The options are: 'Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output. Gate offset",
       "unit": "ms",
       "min": 0,
       "max": 10,
@@ -270,7 +270,7 @@
       "description": "Sets the mode, that is, the rotation of the notes within"
     },
     {
-      "name": "0 2 0 Sets the behaviour of the gate/trigger outputs. The options are: ‘Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output. Gate offset",
+      "name": "0 2 0 Sets the behaviour of the gate/trigger outputs. The options are: 'Triggers', 'Inv Triggers' (inverted triggers, always high except for a low pulse when the trigger is fired, useful for driving an envelope generator which is generally in sustain but which needs to be retriggered when the chord changes), and 'Gates' (in which case the output is gated by the corresponding gate input). Note that this also applies to any MIDI output. Gate offset",
       "unit": "ms",
       "min": 0,
       "max": 10,

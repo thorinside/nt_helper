@@ -5,7 +5,7 @@
     "VCO",
     "Oscillator"
   ],
-  "description": "Implementation of the open source Plaits module by Émilie Gillet, offering a wide range of synthesis models.",
+  "description": "Implementation of the open source Plaits module by Emilie Gillet, offering a wide range of synthesis models.",
   "specifications": [],
   "parameters": [
     {
@@ -330,7 +330,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "The level of the ‘Main’ output signal."
+      "description": "The level of the 'Main' output signal."
     },
     {
       "name": "below. I2C mode",
@@ -345,7 +345,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "The level of the ‘Main’ output signal."
+      "description": "The level of the 'Main' output signal."
     },
     {
       "name": "below. I2C mode",

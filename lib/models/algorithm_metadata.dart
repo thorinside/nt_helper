@@ -27,7 +27,7 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
   for (final item in jsonList) {
     if (item is Map<String, dynamic>) {
       if (item.containsKey('params') && item['params'] is List) {
-        // It's a page object
+        // It's a page object with nested params array
         final pageParams = item['params'] as List;
         for (final paramJson in pageParams) {
           if (paramJson is Map<String, dynamic>) {
@@ -44,8 +44,12 @@ List<AlgorithmParameter> _parametersFromJson(List<dynamic>? jsonList) {
             }
           }
         }
+      } else if (item.containsKey('page') && !item.containsKey('params')) {
+        // It's a page object but params might be missing (malformed)
+        // Skip this page
+        continue;
       } else if (item.containsKey('name')) {
-        // It might be a parameter directly in the list
+        // It's a parameter directly in the list (flat structure)
         try {
           // Attempt to read parameterNumber, defaults to null if not present
           final int? pNum = item['parameterNumber'] as int?;

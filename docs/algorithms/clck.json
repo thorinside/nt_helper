@@ -281,10 +281,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The clock source. The options are “Internal”,"
+      "description": "The clock source. The options are \"Internal\","
     },
     {
-      "name": "“External”, and “MIDI”. Tempo",
+      "name": "\"External\", and \"MIDI\". Tempo",
       "min": 30,
       "max": 240,
       "default": 120,
@@ -333,10 +333,10 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "The output type, one of “Clock”, “Run/stop”,"
+      "description": "The output type, one of \"Clock\", \"Run/stop\","
     },
     {
-      "name": "“Reset”, or “Trigger”. Divisor",
+      "name": "\"Reset\", or \"Trigger\". Divisor",
       "min": 0,
       "max": 19,
       "default": 9,
@@ -347,17 +347,17 @@
       "min": 0,
       "max": 2,
       "default": 1,
-      "description": "The ratchet mode, one of “Off”, “Twos”, and"
+      "description": "The ratchet mode, one of \"Off\", \"Twos\", and"
     },
     {
-      "name": "“Twos and threes”. Ratchet",
+      "name": "\"Twos and threes\". Ratchet",
       "min": 0,
       "max": 7,
       "default": 0,
       "description": "The ratchet division for the clock."
     },
     {
-      "name": "If mode is “Twos”, selects from 1, 2, 4, 8, 16. If mode is “Twos and threes”, selects from 1, 2, 3, 4, 6, 8, 12, 16. Trigger length",
+      "name": "If mode is \"Twos\", selects from 1, 2, 4, 8, 16. If mode is \"Twos and threes\", selects from 1, 2, 3, 4, 6, 8, 12, 16. Trigger length",
       "unit": "ms",
       "min": 1,
       "max": 100,
@@ -369,10 +369,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The clock source. The options are “Internal”,"
+      "description": "The clock source. The options are \"Internal\","
     },
     {
-      "name": "“External”, and “MIDI”. Tempo",
+      "name": "\"External\", and \"MIDI\". Tempo",
       "min": 30,
       "max": 240,
       "default": 120,
@@ -413,10 +413,10 @@
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "The output type, one of “Clock”, “Run/stop”,"
+      "description": "The output type, one of \"Clock\", \"Run/stop\","
     },
     {
-      "name": "“Reset”, or “Trigger”. Divisor",
+      "name": "\"Reset\", or \"Trigger\". Divisor",
       "min": 0,
       "max": 19,
       "default": 9,
@@ -431,7 +431,7 @@
       "description": "The output voltage when the clock is low/inactive."
     },
     {
-      "name": "0 2 1 The ratchet mode, one of “Off”, “Twos”, and “Twos and threes”. Ratchet",
+      "name": "0 2 1 The ratchet mode, one of \"Off\", \"Twos\", and \"Twos and threes\". Ratchet",
       "min": 0,
       "max": 7,
       "default": 0,

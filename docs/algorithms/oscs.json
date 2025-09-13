@@ -140,7 +140,7 @@
       "scope": "routing"
     },
     {
-      "name": "0 4 0 The type of trigger, to synchronise the display to the waveform. The options are: ● Free running. ● “1 rising” - trigger on the rising edge of input 1. ● “1 falling” - trigger on the falling edge of input 1. ● “2 rising” - trigger on the rising edge of input 2. ● “2 falling” - trigger on the falling edge of input 2. Trigger",
+      "name": "0 4 0 The type of trigger, to synchronise the display to the waveform. The options are:  Free running.  \"1 rising\" - trigger on the rising edge of input 1.  \"1 falling\" - trigger on the falling edge of input 1.  \"2 rising\" - trigger on the rising edge of input 2.  \"2 falling\" - trigger on the falling edge of input 2. Trigger",
       "unit": "V",
       "min": -11,
       "max": 11,
@@ -156,7 +156,7 @@
       "description": "Sets the time range corresponding to the full width"
     },
     {
-      "name": "0 4 2 Sets which waveforms are displayed and how. The options are “Overlaid”, “Split”, “Channel 1”, “Channel 2”, and “XY”. In “XY” mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
+      "name": "0 4 2 Sets which waveforms are displayed and how. The options are \"Overlaid\", \"Split\", \"Channel 1\", \"Channel 2\", and \"XY\". In \"XY\" mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
       "min": 0,
       "max": 2,
       "default": 0,
@@ -187,7 +187,7 @@
       "scope": "routing"
     },
     {
-      "name": "options are “Overlaid”, “Split”, “Channel 1”, “Channel 2”, and “XY”. In “XY” mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
+      "name": "options are \"Overlaid\", \"Split\", \"Channel 1\", \"Channel 2\", and \"XY\". In \"XY\" mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
       "min": 0,
       "max": 2,
       "default": 0,
@@ -195,7 +195,7 @@
       "scope": "routing"
     },
     {
-      "name": "options are “Lines (antialiased)”, “Lines”, and “Points”. Vertical scale 1",
+      "name": "options are \"Lines (antialiased)\", \"Lines\", and \"Points\". Vertical scale 1",
       "min": 0,
       "max": 3,
       "default": 0,

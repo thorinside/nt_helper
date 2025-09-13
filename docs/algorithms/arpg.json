@@ -2,7 +2,7 @@
   "name": "Arpeggiator",
   "guid": "arpg",
   "short_description": "Makes sequences from held chords",
-  "description": "This algorithm is a very flexible arpeggiator, in some respects an interactive, performance-oriented sequencer. It is based on the arpeggiator in our FH-2 module. It takes MIDI or CV/gate input and generates MIDI and/or CV/gate output. The key to using this as an interactive sequencer is to map the 'Commands' parameters, so you can use them alongside playing notes to manipulate your patterns. When using it as a MIDI-to-MIDI arpeggiator, and sending the MIDI internally to other algorithms, remember that algorithms in the disting NT do not 'consume' their input MIDI – the MIDI entering the arpeggiator will still arrive at the other algorithms as well. So, set the output channel of the arpeggiator to a different channel than the input, and have the other algorithms listen to that channel. For the purposes of MIDI and CV/gate input this algorithm is a polysynth.",
+  "description": "This algorithm is a very flexible arpeggiator, in some respects an interactive, performance-oriented sequencer. It is based on the arpeggiator in our FH-2 module. It takes MIDI or CV/gate input and generates MIDI and/or CV/gate output. The key to using this as an interactive sequencer is to map the 'Commands' parameters, so you can use them alongside playing notes to manipulate your patterns. When using it as a MIDI-to-MIDI arpeggiator, and sending the MIDI internally to other algorithms, remember that algorithms in the disting NT do not 'consume' their input MIDI - the MIDI entering the arpeggiator will still arrive at the other algorithms as well. So, set the output channel of the arpeggiator to a different channel than the input, and have the other algorithms listen to that channel. For the purposes of MIDI and CV/gate input this algorithm is a polysynth.",
   "categories": [
     "Sequencer",
     "Arpeggiator",
@@ -27,7 +27,7 @@
           "max": 11,
           "default": 0,
           "unit": null,
-          "description": "The arpeggiation mode – see below.",
+          "description": "The arpeggiation mode - see below.",
           "enum_values": [
             "Off",
             "Up",
@@ -158,7 +158,7 @@
           "max": 1,
           "default": 0,
           "unit": null,
-          "description": "Like Transpose, but rather than a straight chromatic transposition, the pattern is transposed within the key defined by the root note. For example, if the pattern is C-E-G (root note C) and D is played, 'Transpose' will produce D-F♯-A, whereas 'Transpose in key' will produce D-F-A.",
+          "description": "Like Transpose, but rather than a straight chromatic transposition, the pattern is transposed within the key defined by the root note. For example, if the pattern is C-E-G (root note C) and D is played, 'Transpose' will produce D-F-A, whereas 'Transpose in key' will produce D-F-A.",
           "enum_values": [
             "Off",
             "On"
@@ -347,7 +347,7 @@
           "max": 1,
           "default": 0,
           "unit": null,
-          "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms.",
+          "description": "Enables internal MIDI output - that is, MIDI is sent to the other algorithms.",
           "enum_values": [
             "Off",
             "On"

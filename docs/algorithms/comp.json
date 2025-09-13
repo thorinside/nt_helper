@@ -5,7 +5,7 @@
     "Dynamics",
     "Effect"
   ],
-  "description": "Multi‑channel compressor with optional sidechain; operates as an insert effect (output replaces input).",
+  "description": "Multichannel compressor with optional sidechain; operates as an insert effect (output replaces input).",
   "specifications": [
     {
       "name": "Channels",
@@ -104,7 +104,7 @@
       "description": "The release time of the compressor. Exponential"
     },
     {
-      "name": "0 1 0 Enables auto make-up gain, raising the gain automatically according to the threshold and ratio. Make-up gain The make-up gain, if “Auto make-up” is off. Lookahead",
+      "name": "0 1 0 Enables auto make-up gain, raising the gain automatically according to the threshold and ratio. Make-up gain The make-up gain, if \"Auto make-up\" is off. Lookahead",
       "unit": "ms",
       "min": 0,
       "max": 10,

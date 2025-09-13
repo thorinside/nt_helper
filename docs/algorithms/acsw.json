@@ -67,7 +67,7 @@
           "min": 1,
           "max": 470,
           "default": 47,
-          "unit": "kΩ",
+          "unit": "k",
           "description": "The value of the charge resistor."
         },
         {
@@ -75,7 +75,7 @@
           "min": 1,
           "max": 470,
           "default": 100,
-          "unit": "kΩ",
+          "unit": "k",
           "description": "The value of the discharge resistor."
         },
         {
@@ -83,7 +83,7 @@
           "min": 1,
           "max": 470,
           "default": 100,
-          "unit": "kΩ",
+          "unit": "k",
           "description": "The value of the potentiometer."
         },
         {
@@ -91,7 +91,7 @@
           "min": 0.1,
           "max": 10.0,
           "default": 1.0,
-          "unit": "μF",
+          "unit": "F",
           "description": "The value of the capacitor."
         }
       ]

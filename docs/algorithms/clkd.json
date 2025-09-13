@@ -179,28 +179,28 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The divisor type. The options are “Free”, “Metrical"
+      "description": "The divisor type. The options are \"Free\", \"Metrical"
     },
     {
-      "name": "(2)”, and “Metrical (2,3)”. Divisor",
+      "name": "(2)\", and \"Metrical (2,3)\". Divisor",
       "min": 1,
       "max": 32,
       "default": 2,
-      "description": "The divisor, if the type is “Free”. The divisor value"
+      "description": "The divisor, if the type is \"Free\". The divisor value"
     },
     {
       "name": "is simply the parameter value. Divisor",
       "min": 0,
       "max": 5,
       "default": 1,
-      "description": "The divisor, if the type is “Metrical (2)”. Chooses"
+      "description": "The divisor, if the type is \"Metrical (2)\". Chooses"
     },
     {
       "name": "between 1, 2, 4, 8, 16, & 32. Divisor",
       "min": 0,
       "max": 9,
       "default": 1,
-      "description": "The divisor, if the type is “Metrical (2,3)”. Chooses"
+      "description": "The divisor, if the type is \"Metrical (2,3)\". Chooses"
     },
     {
       "name": "between 1, 2, 3, 4, 6, 8, 12, 16, 24, & 32. Enable",
@@ -222,28 +222,28 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The divisor type. The options are “Free”, “Metrical"
+      "description": "The divisor type. The options are \"Free\", \"Metrical"
     },
     {
-      "name": "(2)”, and “Metrical (2,3)”. Divisor",
+      "name": "(2)\", and \"Metrical (2,3)\". Divisor",
       "min": 1,
       "max": 32,
       "default": 2,
-      "description": "The divisor, if the type is “Free”. The divisor value"
+      "description": "The divisor, if the type is \"Free\". The divisor value"
     },
     {
       "name": "is simply the parameter value. Divisor",
       "min": 0,
       "max": 5,
       "default": 1,
-      "description": "The divisor, if the type is “Metrical (2)”. Chooses"
+      "description": "The divisor, if the type is \"Metrical (2)\". Chooses"
     },
     {
       "name": "between 1, 2, 4, 8, 16, & 32. Divisor",
       "min": 0,
       "max": 9,
       "default": 1,
-      "description": "The divisor, if the type is “Metrical (2,3)”. Chooses"
+      "description": "The divisor, if the type is \"Metrical (2,3)\". Chooses"
     },
     {
       "name": "between 1, 2, 3, 4, 6, 8, 12, 16, 24, & 32. Enable",

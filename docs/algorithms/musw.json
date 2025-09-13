@@ -79,19 +79,19 @@
       "scope": "routing"
     },
     {
-      "name": "0 34 0 The control source for the input switch – one of the 28 busses, or one of the 6 macro parameters. In link switch",
+      "name": "0 34 0 The control source for the input switch - one of the 28 busses, or one of the 6 macro parameters. In link switch",
       "min": 0,
       "max": 6,
       "default": 0,
-      "description": "The linked switch, if the ‘In control type’ is ‘Link’.",
+      "description": "The linked switch, if the 'In control type' is 'Link'.",
       "scope": "routing"
     },
     {
-      "name": "0 11 0 The linked switch offset, if the ‘Out control type’ is ‘Link’. Reset source",
+      "name": "0 11 0 The linked switch offset, if the 'Out control type' is 'Link'. Reset source",
       "min": 0,
       "max": 34,
       "default": 0,
-      "description": "The reset source for the switch – one of the 28"
+      "description": "The reset source for the switch - one of the 28"
     },
     {
       "name": "busses, or one of the 6 macro parameters. Fade",

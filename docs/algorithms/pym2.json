@@ -164,7 +164,7 @@
       "min": 0,
       "max": 28,
       "default": 13,
-      "description": "The bus for the ‘Main’ output.",
+      "description": "The bus for the 'Main' output.",
       "scope": "routing"
     },
     {
@@ -173,7 +173,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "The level of the ‘Main’ output signal."
+      "description": "The level of the 'Main' output signal."
     },
     {
       "name": "Aux gain",
@@ -181,7 +181,7 @@
       "min": -40,
       "max": 6,
       "default": 0,
-      "description": "The level of the ‘Aux’ output signal."
+      "description": "The level of the 'Aux' output signal."
     },
     {
       "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",

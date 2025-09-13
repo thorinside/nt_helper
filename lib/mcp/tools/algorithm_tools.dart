@@ -27,8 +27,19 @@ class MCPAlgorithmTools {
     final String? algorithmName = params['algorithm_name'];
     final bool expandFeatures = params['expand_features'] ?? false;
 
+
     // Use shared algorithm resolver
-    final algorithms = _metadataService.getAllAlgorithms();
+    List<AlgorithmMetadata> algorithms;
+    try {
+      algorithms = _metadataService.getAllAlgorithms();
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'AlgorithmMetadataService error: ${e.toString()}',
+        }),
+      );
+    }
     final resolution = AlgorithmResolver.resolveAlgorithm(
       guid: algorithmGuid,
       algorithmName: algorithmName,
@@ -63,16 +74,48 @@ class MCPAlgorithmTools {
       algoToProcess = algorithm;
     }
 
-    Map<String, dynamic> algoJson = algoToProcess.toJson();
-    if (algoJson['parameters'] is List) {
-      List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
-      for (var param in paramsList) {
-        if (param is Map<String, dynamic>) {
-          param.remove('parameterNumber');
+    Map<String, dynamic> algoJson;
+    try {
+      algoJson = algoToProcess.toJson();
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Failed to serialize algorithm: ${e.toString()}',
+        }),
+      );
+    }
+
+    // Remove parameterNumber from params to clean up response
+    try {
+      if (algoJson['parameters'] is List) {
+        List<dynamic> paramsList = algoJson['parameters'] as List<dynamic>;
+        for (var param in paramsList) {
+          if (param is Map<String, dynamic>) {
+            param.remove('parameterNumber');
+          }
         }
       }
+    } catch (e) {
+      // If parameter processing fails, return the algorithm without modification
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Failed to process parameters: ${e.toString()}',
+        }),
+      );
     }
-    return jsonEncode(convertToSnakeCaseKeys(algoJson));
+
+    try {
+      return jsonEncode(convertToSnakeCaseKeys(algoJson));
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'Failed to encode response: ${e.toString()}',
+        }),
+      );
+    }
   }
 
   /// MCP Tool: Lists algorithms, optionally filtered by category or a text query.
@@ -86,7 +129,17 @@ class MCPAlgorithmTools {
     final String? category = params['category'];
     final String? query = params['query']; // Added query parameter
 
-    List<AlgorithmMetadata> algorithms = _metadataService.getAllAlgorithms();
+    List<AlgorithmMetadata> algorithms;
+    try {
+      algorithms = _metadataService.getAllAlgorithms();
+    } catch (e) {
+      return jsonEncode(
+        convertToSnakeCaseKeys({
+          'success': false,
+          'error': 'AlgorithmMetadataService error: ${e.toString()}',
+        }),
+      );
+    }
 
     // Apply filters
     if (category != null && category.isNotEmpty) {

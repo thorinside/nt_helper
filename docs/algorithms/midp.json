@@ -273,14 +273,14 @@
       "description": "Sets the behaviour when a new file is chosen. The"
     },
     {
-      "name": "options are: ● Wait until the end of the bar and then change to the new file. ● Wait until the end of the file and then change to the new file. ● Change immediately. File restart",
+      "name": "options are:  Wait until the end of the bar and then change to the new file.  Wait until the end of the file and then change to the new file.  Change immediately. File restart",
       "min": 0,
       "max": 1,
       "default": 0,
       "description": "Sets how the file position changes when switching to"
     },
     {
-      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are: ● clock is interpreted as 24ppqn. ● clock is interpreted as 1/32 notes. ● clock is interpreted as 1/16 notes. ● clock is interpreted as 1/8 notes. ● clock is interpreted as 1/4 notes. Clock input",
+      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are:  clock is interpreted as 24ppqn.  clock is interpreted as 1/32 notes.  clock is interpreted as 1/16 notes.  clock is interpreted as 1/8 notes.  clock is interpreted as 1/4 notes. Clock input",
       "min": 0,
       "max": 28,
       "default": 0,
@@ -295,14 +295,14 @@
       "description": "Sets the behaviour when a new file is chosen. The"
     },
     {
-      "name": "options are: ● Wait until the end of the bar and then change to the new file. ● Wait until the end of the file and then change to the new file. ● Change immediately. File restart",
+      "name": "options are:  Wait until the end of the bar and then change to the new file.  Wait until the end of the file and then change to the new file.  Change immediately. File restart",
       "min": 0,
       "max": 1,
       "default": 0,
       "description": "Sets how the file position changes when switching to"
     },
     {
-      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are: ● clock is interpreted as 24ppqn. ● clock is interpreted as 1/32 notes. ● clock is interpreted as 1/16 notes. ● clock is interpreted as 1/8 notes. ● clock is interpreted as 1/4 notes. Clock input",
+      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are:  clock is interpreted as 24ppqn.  clock is interpreted as 1/32 notes.  clock is interpreted as 1/16 notes.  clock is interpreted as 1/8 notes.  clock is interpreted as 1/4 notes. Clock input",
       "min": 0,
       "max": 28,
       "default": 0,

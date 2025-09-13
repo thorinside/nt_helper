@@ -569,7 +569,7 @@
       "description": ""
     },
     {
-      "name": "clock”. Trigger length",
+      "name": "clock\". Trigger length",
       "unit": "ms",
       "min": 1,
       "max": 100,
@@ -577,7 +577,7 @@
       "description": "Sets the length of the gate output if the type is"
     },
     {
-      "name": "“Trigger”. Glide",
+      "name": "\"Trigger\". Glide",
       "unit": "ms",
       "min": 0,
       "max": 1000,
@@ -585,28 +585,28 @@
       "description": "Sets the glide time for tied notes."
     },
     {
-      "name": "0 1 0 Chooses the probability distribution for the note pitches – “Uniform” or “Normal”. Min note",
+      "name": "0 1 0 Chooses the probability distribution for the note pitches - \"Uniform\" or \"Normal\". Min note",
       "min": 0,
       "max": 127,
       "default": 36,
       "description": "The minimum note pitch, if the distribution is"
     },
     {
-      "name": "“Uniform”. Max note",
+      "name": "\"Uniform\". Max note",
       "min": 0,
       "max": 127,
       "default": 60,
       "description": "The maximum note pitch, if the distribution is"
     },
     {
-      "name": "“Uniform”. Mean note",
+      "name": "\"Uniform\". Mean note",
       "min": 0,
       "max": 127,
       "default": 48,
-      "description": "The mean note pitch, if the distribution is “Normal”."
+      "description": "The mean note pitch, if the distribution is \"Normal\"."
     },
     {
-      "name": "0 127 12 The note pitch deviation, if the distribution is “Normal”. Min repeat",
+      "name": "0 127 12 The note pitch deviation, if the distribution is \"Normal\". Min repeat",
       "min": 2,
       "max": 8,
       "default": 2,
@@ -648,7 +648,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent",
+      "description": "Enables internal MIDI output - that is, MIDI is sent",
       "scope": "routing"
     },
     {
@@ -659,7 +659,7 @@
       "description": "The MIDI CC to generate from the modulation lane."
     },
     {
-      "name": "1 100 10 ms Sets the length of the gate output if the type is “Trigger”. Glide",
+      "name": "1 100 10 ms Sets the length of the gate output if the type is \"Trigger\". Glide",
       "unit": "ms",
       "min": 0,
       "max": 1000,
@@ -668,35 +668,35 @@
       "scope": "routing"
     },
     {
-      "name": "0 1 0 Chooses the probability distribution for the note pitches – “Uniform” or “Normal”. Min note",
+      "name": "0 1 0 Chooses the probability distribution for the note pitches - \"Uniform\" or \"Normal\". Min note",
       "min": 0,
       "max": 127,
       "default": 36,
       "description": "The minimum note pitch, if the distribution is"
     },
     {
-      "name": "“Uniform”. Max note",
+      "name": "\"Uniform\". Max note",
       "min": 0,
       "max": 127,
       "default": 60,
       "description": "The maximum note pitch, if the distribution is"
     },
     {
-      "name": "“Uniform”. Mean note",
+      "name": "\"Uniform\". Mean note",
       "min": 0,
       "max": 127,
       "default": 48,
-      "description": "The mean note pitch, if the distribution is “Normal”."
+      "description": "The mean note pitch, if the distribution is \"Normal\"."
     },
     {
-      "name": "“Normal”. Min repeat",
+      "name": "\"Normal\". Min repeat",
       "min": 2,
       "max": 8,
       "default": 2,
       "description": "The minimum repeat count, if a step is a repeat."
     },
     {
-      "name": "● the input is a reset trigger. ● the input is a run/stop signal. ● the input is a ‘one shot’ trigger. Pitch output",
+      "name": " the input is a reset trigger.  the input is a run/stop signal.  the input is a 'one shot' trigger. Pitch output",
       "min": 0,
       "max": 28,
       "default": 15,
@@ -724,7 +724,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Enables internal MIDI output – that is, MIDI is sent",
+      "description": "Enables internal MIDI output - that is, MIDI is sent",
       "scope": "routing"
     },
     {

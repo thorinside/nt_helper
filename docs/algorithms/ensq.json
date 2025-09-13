@@ -5,7 +5,7 @@
     "Sequencer",
     "Envelope"
   ],
-  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer (below), and some of the documentation for this algorithm cross-references with that for the other. Each step has a curve shape, a scale, and an offset. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock). The algorithm has a function for randomising the curves in various ways. Each Envelope Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures. Remember that every curve shape, level, etc. is a parameter and therefore mappable.",
+  "description": "This algorithm is a 16-step envelope or curve sequencer. It can output a CV and/or MIDI. It shares a lot of its design with the Step Sequencer (below), and some of the documentation for this algorithm cross-references with that for the other. Each step has a curve shape, a scale, and an offset. It also has a \"Division\", which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step repeats a number of times within the duration of one clock). The algorithm has a function for randomising the curves in various ways. Each Envelope Sequencer has internal storage for 32 sequences, which you can use like 'snapshots' or 'patterns' to prepare a number of sequences and then switch between them (manually, or under CV control) to build up larger structures. Remember that every curve shape, level, etc. is a parameter and therefore mappable.",
   "specifications": [],
   "parameters": [
     {
@@ -87,7 +87,7 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "global",
-      "description": "Sets how the length of a step is determined: “% of clock” or “Fixed”."
+      "description": "Sets how the length of a step is determined: \"% of clock\" or \"Fixed\"."
     },
     {
       "name": "% length",
@@ -96,7 +96,7 @@
       "minValue": 1,
       "maxValue": 100,
       "scope": "global",
-      "description": "Sets the length of the step if the type is “% of clock”."
+      "description": "Sets the length of the step if the type is \"% of clock\"."
     },
     {
       "name": "Fixed length",
@@ -105,7 +105,7 @@
       "minValue": 1,
       "maxValue": 1000,
       "scope": "global",
-      "description": "Sets the length of the step if the type is “Fixed”.",
+      "description": "Sets the length of the step if the type is \"Fixed\".",
       "min": 1,
       "max": 1000,
       "default": 100
@@ -351,7 +351,7 @@
       "minValue": 0,
       "maxValue": 2,
       "scope": "routing",
-      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger, the input is a run/stop signal, the input is a ‘one shot’ trigger.",
+      "description": "Sets the mode for the reset input. The options are: the input is a reset trigger, the input is a run/stop signal, the input is a 'one shot' trigger.",
       "min": 0,
       "max": 2,
       "default": 0
@@ -405,7 +405,7 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "routing",
-      "description": "How the sequence CV will be used to change sequences: ‘Switch’ or ‘Load’."
+      "description": "How the sequence CV will be used to change sequences: 'Switch' or 'Load'."
     },
     {
       "name": "Follow MIDI clock",
@@ -489,7 +489,7 @@
       "minValue": 0,
       "maxValue": 1,
       "scope": "MIDI",
-      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms.",
+      "description": "Enables internal MIDI output - that is, MIDI is sent to the other algorithms.",
       "min": 0,
       "max": 1,
       "default": 0
@@ -499,15 +499,15 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets how the length of a step is determined: “% of"
+      "description": "Sets how the length of a step is determined: \"% of"
     },
     {
-      "name": "clock” or “Fixed”. % length",
+      "name": "clock\" or \"Fixed\". % length",
       "unit": "%",
       "min": 1,
       "max": 100,
       "default": 100,
-      "description": "Sets the length of the step if the type is “% of clock”."
+      "description": "Sets the length of the step if the type is \"% of clock\"."
     },
     {
       "name": "sequence steps between the current start and end steps will be randomised according to the parameters that follow. Levels",
@@ -517,7 +517,7 @@
       "description": "If set, the curve levels (scales) will be randomised."
     },
     {
-      "name": "● the input is a reset trigger. ● the input is a run/stop signal. ● the input is a ‘one shot’ trigger. Output",
+      "name": " the input is a reset trigger.  the input is a run/stop signal.  the input is a 'one shot' trigger. Output",
       "min": 0,
       "max": 28,
       "default": 15,
@@ -539,7 +539,7 @@
       "description": "If set, the curve levels (scales) will be randomised."
     },
     {
-      "name": "● the input is a reset trigger. ● the input is a run/stop signal. ● the input is a ‘one shot’ trigger. Output",
+      "name": " the input is a reset trigger.  the input is a run/stop signal.  the input is a 'one shot' trigger. Output",
       "min": 0,
       "max": 28,
       "default": 15,

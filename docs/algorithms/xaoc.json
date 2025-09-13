@@ -2,7 +2,7 @@
   "name": "Chaos",
   "guid": "xaoc",
   "short_description": "CVs from the Lorenz equations",
-  "description": "This algorithm generates chaotic CVs according to a variety of so-called 'attractors', including the well-known Lorenz equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation – 'Rho mod' affects 'r' (aka 'ρ'), and 'Beta mod' affects 'b' (aka 'β'). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
+  "description": "This algorithm generates chaotic CVs according to a variety of so-called 'attractors', including the well-known Lorenz equations. Each generates three CVs, named X, Y, and Z, which are available on separate outputs. You can modify the parameters of the Lorenz equation - 'Rho mod' affects 'r' (aka ''), and 'Beta mod' affects 'b' (aka ''). With the values at 0V, the parameters are the classic values as studied by Lorenz (28 and 8/3 respectively).",
   "use_cases": [
     "Generating chaotic CV modulation",
     "Creating unpredictable, evolving patterns",
@@ -20,10 +20,10 @@
           "max": 4,
           "default": 0,
           "unit": null,
-          "description": "Chooses which equations to use: Lorenz, Rössler, Aizawa, Arneodo, or Thomas.",
+          "description": "Chooses which equations to use: Lorenz, Rossler, Aizawa, Arneodo, or Thomas.",
           "enum_values": [
             "Lorenz",
-            "Rössler", 
+            "Rossler",
             "Aizawa",
             "Arneodo",
             "Thomas"
@@ -82,7 +82,7 @@
           "description": "The X value to reset to."
         },
         {
-          "name": "Reset Y", 
+          "name": "Reset Y",
           "min": -20.0,
           "max": 20.0,
           "default": 0.0,

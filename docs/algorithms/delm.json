@@ -297,14 +297,14 @@
       "description": "The delay feedback."
     },
     {
-      "name": "0 23 15 Sets a multiplier to apply to the delay time. Affects both the ‘Time’ parameter and the delay time set by the clock. Time change",
+      "name": "0 23 15 Sets a multiplier to apply to the delay time. Affects both the 'Time' parameter and the delay time set by the clock. Time change",
       "min": 0,
       "max": 1,
       "default": 0,
       "description": "Sets how changes of delay time will be handled. The"
     },
     {
-      "name": "options are ‘Slew’ (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and ‘Crossfade’ (the effect rapidly crossfades from one time setting to the other). Fractional",
+      "name": "options are 'Slew' (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and 'Crossfade' (the effect rapidly crossfades from one time setting to the other). Fractional",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -318,11 +318,11 @@
       "description": "Enables a DC blocker at the delay input."
     },
     {
-      "name": "0 28 0 The input bus to use for the clock, if the source is ‘Clock input’. MIDI divisor",
+      "name": "0 28 0 The input bus to use for the clock, if the source is 'Clock input'. MIDI divisor",
       "min": 0,
       "max": 19,
       "default": 9,
-      "description": "The MIDI divisor, if the clock source is ‘MIDI",
+      "description": "The MIDI divisor, if the clock source is 'MIDI",
       "scope": "routing"
     },
     {
@@ -366,14 +366,14 @@
       "description": "The delay feedback."
     },
     {
-      "name": "0 23 15 Sets a multiplier to apply to the delay time. Affects both the ‘Time’ parameter and the delay time set by the clock. Time change",
+      "name": "0 23 15 Sets a multiplier to apply to the delay time. Affects both the 'Time' parameter and the delay time set by the clock. Time change",
       "min": 0,
       "max": 1,
       "default": 0,
       "description": "Sets how changes of delay time will be handled. The"
     },
     {
-      "name": "options are ‘Slew’ (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and ‘Crossfade’ (the effect rapidly crossfades from one time setting to the other). Fractional",
+      "name": "options are 'Slew' (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and 'Crossfade' (the effect rapidly crossfades from one time setting to the other). Fractional",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -387,11 +387,11 @@
       "description": "Enables a DC blocker at the delay input."
     },
     {
-      "name": "0 28 0 The input bus to use for the clock, if the source is ‘Clock input’. MIDI divisor",
+      "name": "0 28 0 The input bus to use for the clock, if the source is 'Clock input'. MIDI divisor",
       "min": 0,
       "max": 19,
       "default": 9,
-      "description": "The MIDI divisor, if the clock source is ‘MIDI",
+      "description": "The MIDI divisor, if the clock source is 'MIDI",
       "scope": "routing"
     },
     {

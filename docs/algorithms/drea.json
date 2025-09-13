@@ -239,7 +239,7 @@
       "min": 0,
       "max": -40,
       "default": 6,
-      "description": "0 dB Gain for the fundamental. “-40” is treated as –∞dB."
+      "description": "0 dB Gain for the fundamental. \"-40\" is treated as -dB."
     },
     {
       "name": "Gain",
@@ -413,7 +413,7 @@
       "min": 0,
       "max": -40,
       "default": 6,
-      "description": "0 dB Gain for the fundamental. “-40” is treated as –∞dB."
+      "description": "0 dB Gain for the fundamental. \"-40\" is treated as -dB."
     },
     {
       "name": "Gain",

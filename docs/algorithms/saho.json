@@ -92,7 +92,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Chooses between ‘Sample and hold’ and ‘Track"
+      "description": "Chooses between 'Sample and hold' and 'Track"
     },
     {
       "name": "Input 1 28 The signal input bus to sample/track. Output",
@@ -107,7 +107,7 @@
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Chooses between ‘Sample and hold’ and ‘Track"
+      "description": "Chooses between 'Sample and hold' and 'Track"
     }
   ],
   "input_ports": [

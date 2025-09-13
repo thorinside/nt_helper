@@ -283,7 +283,7 @@
       "description": "An internal parameter of the pitch tracking"
     },
     {
-      "name": "0 2 0 Sets the harmony mode – one of ‘Shape’, ‘SATB’, or ‘MIDI’. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes. MIDI channel",
+      "name": "0 2 0 Sets the harmony mode - one of 'Shape', 'SATB', or 'MIDI'. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes. MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
@@ -302,7 +302,7 @@
       "min": 0,
       "max": 28,
       "default": 0,
-      "description": "The change trigger output bus – emits a trigger pulse",
+      "description": "The change trigger output bus - emits a trigger pulse",
       "scope": "routing"
     },
     {
@@ -314,7 +314,7 @@
       "description": "An internal parameter of the pitch tracking"
     },
     {
-      "name": "0 2 0 Sets the harmony mode – one of ‘Shape’, ‘SATB’, or ‘MIDI’. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes. MIDI channel",
+      "name": "0 2 0 Sets the harmony mode - one of 'Shape', 'SATB', or 'MIDI'. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes. MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,

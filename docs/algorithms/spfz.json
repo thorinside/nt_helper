@@ -210,18 +210,18 @@
       "description": "Sets the input audio bus."
     },
     {
-      "name": "‘Forwards’, ‘Backwards’, ‘Alternating’, ‘Random walk’, and ‘Random skip’. Rate",
+      "name": "'Forwards', 'Backwards', 'Alternating', 'Random walk', and 'Random skip'. Rate",
       "min": 0,
       "max": 1000,
       "default": 340,
-      "description": "Sets the rate of movement. ‘0’ is stopped; ‘1000’ is"
+      "description": "Sets the rate of movement. '0' is stopped; '1000' is"
     },
     {
       "name": "0.0 % Drops out transient elements of the sound. Live process",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "When this parameter changes to ‘1’, a new voice is"
+      "description": "When this parameter changes to '1', a new voice is"
     },
     {
       "name": "started which uses live audio input instead of actually freezing. This is provided mainly as a means to use the etherization effect on live audio. Attack",
@@ -239,18 +239,18 @@
       "description": "cents Sets the fine pitch shift amount for all voices. Added"
     },
     {
-      "name": "‘Forwards’, ‘Backwards’, ‘Alternating’, ‘Random walk’, and ‘Random skip’. Rate",
+      "name": "'Forwards', 'Backwards', 'Alternating', 'Random walk', and 'Random skip'. Rate",
       "min": 0,
       "max": 1000,
       "default": 340,
-      "description": "Sets the rate of movement. ‘0’ is stopped; ‘1000’ is"
+      "description": "Sets the rate of movement. '0' is stopped; '1000' is"
     },
     {
       "name": "0.0 % Drops out transient elements of the sound. Live process",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "When this parameter changes to ‘1’, a new voice is"
+      "description": "When this parameter changes to '1', a new voice is"
     },
     {
       "name": "started which uses live audio input instead of actually freezing. This is provided mainly as a means to use the etherization effect on live audio. Attack",

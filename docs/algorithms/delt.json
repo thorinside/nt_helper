@@ -205,10 +205,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "Controls the wet/dry mix, unless the ‘Mix mode’ is"
+      "description": "Controls the wet/dry mix, unless the 'Mix mode' is"
     },
     {
-      "name": "‘With feedback’. Feedback",
+      "name": "'With feedback'. Feedback",
       "unit": "%",
       "min": 0,
       "max": 110,
@@ -251,10 +251,10 @@
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "Controls the wet/dry mix, unless the ‘Mix mode’ is"
+      "description": "Controls the wet/dry mix, unless the 'Mix mode' is"
     },
     {
-      "name": "‘With feedback’. Feedback",
+      "name": "'With feedback'. Feedback",
       "unit": "%",
       "min": 0,
       "max": 110,

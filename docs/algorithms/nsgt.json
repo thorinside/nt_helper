@@ -120,7 +120,7 @@
       "defaultValue": -80,
       "minValue": -80,
       "maxValue": 0,
-      "description": "Amount signal is attenuated when gate is closed (-80 treated as -∞dB). Indexed per channel.",
+      "description": "Amount signal is attenuated when gate is closed (-80 treated as -dB). Indexed per channel.",
       "scope": "channel"
     },
     {

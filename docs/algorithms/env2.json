@@ -162,60 +162,60 @@
       "description": "The MIDI or I2C note number that will trigger the envelope generator, or '-1' for 'Any'."
     },
     {
-      "name": "0 2 0 The trigger mode. The options are: ● Attack/release ● Attack/decay ● Looped AD Time mode",
+      "name": "0 2 0 The trigger mode. The options are:  Attack/release  Attack/decay  Looped AD Time mode",
       "min": 0,
       "max": 2,
       "default": 0,
       "description": "The envelope time mode. The options are:"
     },
     {
-      "name": "● Macro (asymmetric) ● Macro (symmetric) ● Independent Joint time",
+      "name": " Macro (asymmetric)  Macro (symmetric)  Independent Joint time",
       "min": 0,
       "max": 1023,
       "default": 0,
-      "description": "Sets the attack and release times if the ‘Time mode’"
+      "description": "Sets the attack and release times if the 'Time mode'"
     },
     {
-      "name": "is one of the two ‘Macro’ options. Attack time",
+      "name": "is one of the two 'Macro' options. Attack time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "description": "Sets the attack time if the ‘Time mode’ is"
+      "description": "Sets the attack time if the 'Time mode' is"
     },
     {
-      "name": "‘Independent’. Release time",
+      "name": "'Independent'. Release time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "description": "Sets the release time if the ‘Time mode’ is"
+      "description": "Sets the release time if the 'Time mode' is"
     },
     {
-      "name": "0 2 0 The trigger mode. The options are: ● Attack/release ● Attack/decay ● Looped AD Time mode",
+      "name": "0 2 0 The trigger mode. The options are:  Attack/release  Attack/decay  Looped AD Time mode",
       "min": 0,
       "max": 2,
       "default": 0,
       "description": "The envelope time mode. The options are:"
     },
     {
-      "name": "● Macro (asymmetric) ● Macro (symmetric) ● Independent Joint time",
+      "name": " Macro (asymmetric)  Macro (symmetric)  Independent Joint time",
       "min": 0,
       "max": 1023,
       "default": 0,
-      "description": "Sets the attack and release times if the ‘Time mode’"
+      "description": "Sets the attack and release times if the 'Time mode'"
     },
     {
-      "name": "is one of the two ‘Macro’ options. Attack time",
+      "name": "is one of the two 'Macro' options. Attack time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "description": "Sets the attack time if the ‘Time mode’ is"
+      "description": "Sets the attack time if the 'Time mode' is"
     },
     {
-      "name": "‘Independent’. Release time",
+      "name": "'Independent'. Release time",
       "min": 0,
       "max": 1023,
       "default": 64,
-      "description": "Sets the release time if the ‘Time mode’ is"
+      "description": "Sets the release time if the 'Time mode' is"
     }
   ],
   "input_ports": [

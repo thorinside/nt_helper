@@ -323,10 +323,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The delay mode. The options are “Stereo”, “Stereo"
+      "description": "The delay mode. The options are \"Stereo\", \"Stereo"
     },
     {
-      "name": "ping-pong” (each echo swaps left and right), and “Ping-pong” (the input to the delay is summed to mono, panned, and then swaps left and right on each echo). Mix",
+      "name": "ping-pong\" (each echo swaps left and right), and \"Ping-pong\" (the input to the delay is summed to mono, panned, and then swaps left and right on each echo). Mix",
       "unit": "%",
       "min": 0,
       "max": 100,
@@ -356,10 +356,10 @@
       "min": -100,
       "max": 100,
       "default": -100,
-      "description": "If the mode is “Ping-pong”, sets the pan position of"
+      "description": "If the mode is \"Ping-pong\", sets the pan position of"
     },
     {
-      "name": "0 1 0 Sets how changes of delay time will be handled. The options are ‘Slew’ (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and ‘Crossfade’ (the effect rapidly crossfades from one time setting to the other). Fractional",
+      "name": "0 1 0 Sets how changes of delay time will be handled. The options are 'Slew' (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and 'Crossfade' (the effect rapidly crossfades from one time setting to the other). Fractional",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -373,11 +373,11 @@
       "description": "Enables a DC blocker at the delay input."
     },
     {
-      "name": "0 19 9 The MIDI divisor, if the clock source is ‘MIDI clock’. MIDI numerator",
+      "name": "0 19 9 The MIDI divisor, if the clock source is 'MIDI clock'. MIDI numerator",
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "The MIDI numerator, if the clock source is ‘MIDI"
+      "description": "The MIDI numerator, if the clock source is 'MIDI"
     },
     {
       "name": "0 1 0 The standard Add/Replace mode selector as described above. V/oct input",
@@ -392,10 +392,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The delay mode. The options are “Stereo”, “Stereo"
+      "description": "The delay mode. The options are \"Stereo\", \"Stereo"
     },
     {
-      "name": "ping-pong” (each echo swaps left and right), and “Ping-pong” (the input to the delay is summed to mono, panned, and then swaps left and right on each echo). Mix",
+      "name": "ping-pong\" (each echo swaps left and right), and \"Ping-pong\" (the input to the delay is summed to mono, panned, and then swaps left and right on each echo). Mix",
       "unit": "%",
       "min": 0,
       "max": 100,
@@ -425,10 +425,10 @@
       "min": -100,
       "max": 100,
       "default": -100,
-      "description": "If the mode is “Ping-pong”, sets the pan position of"
+      "description": "If the mode is \"Ping-pong\", sets the pan position of"
     },
     {
-      "name": "0 1 0 Sets how changes of delay time will be handled. The options are ‘Slew’ (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and ‘Crossfade’ (the effect rapidly crossfades from one time setting to the other). Fractional",
+      "name": "0 1 0 Sets how changes of delay time will be handled. The options are 'Slew' (the delay time is smoothly interpolated, sounding a bit like a tape being played slower or faster) and 'Crossfade' (the effect rapidly crossfades from one time setting to the other). Fractional",
       "min": 0,
       "max": 1,
       "default": 0,
@@ -442,11 +442,11 @@
       "description": "Enables a DC blocker at the delay input."
     },
     {
-      "name": "0 19 9 The MIDI divisor, if the clock source is ‘MIDI clock’. MIDI numerator",
+      "name": "0 19 9 The MIDI divisor, if the clock source is 'MIDI clock'. MIDI numerator",
       "min": 1,
       "max": 16,
       "default": 1,
-      "description": "The MIDI numerator, if the clock source is ‘MIDI"
+      "description": "The MIDI numerator, if the clock source is 'MIDI"
     },
     {
       "name": "0 1 0 The standard Add/Replace mode selector as described above. V/oct input",

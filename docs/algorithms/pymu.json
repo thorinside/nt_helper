@@ -47,7 +47,7 @@
       "description": "Right output bus for stereo (0=None)."
     },
     {
-      "name": "Sample -1 -1 Allows you to choose a single sample within the folder to play, or “<MULTISAMPLE>” for the usual case where you want the algorithm to choose the sample automatically based on the note pitch. Gain",
+      "name": "Sample -1 -1 Allows you to choose a single sample within the folder to play, or \"<MULTISAMPLE>\" for the usual case where you want the algorithm to choose the sample automatically based on the note pitch. Gain",
       "unit": "dB",
       "min": -40,
       "max": 24,
@@ -97,10 +97,10 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "Sets whether the sample will loop. ‘From WAV file’"
+      "description": "Sets whether the sample will loop. 'From WAV file'"
     },
     {
-      "name": "will loop if the sample has loop points defined in the file – see above – and not otherwise. ‘Off’ and ‘On’ force the sample to loop or not. Bend range",
+      "name": "will loop if the sample has loop points defined in the file - see above - and not otherwise. 'Off' and 'On' force the sample to loop or not. Bend range",
       "unit": "ST",
       "min": 0,
       "max": 48,

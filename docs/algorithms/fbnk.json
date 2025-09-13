@@ -161,7 +161,7 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The filter mode – see above."
+      "description": "The filter mode - see above."
     },
     {
       "name": "1 100 50 % Sets the filter gain (for resonators) or resonance (for bandpass/multiband). Attack time",
@@ -184,7 +184,7 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "description": "The filter’s gain."
+      "description": "The filter's gain."
     },
     {
       "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
@@ -234,7 +234,7 @@
       "min": 0,
       "max": 2,
       "default": 0,
-      "description": "The filter mode – see above."
+      "description": "The filter mode - see above."
     },
     {
       "name": "1 100 50 % Sets the filter gain (for resonators) or resonance (for bandpass/multiband). Attack time",
@@ -257,7 +257,7 @@
       "min": -40,
       "max": 24,
       "default": 0,
-      "description": "The filter’s gain."
+      "description": "The filter's gain."
     },
     {
       "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
