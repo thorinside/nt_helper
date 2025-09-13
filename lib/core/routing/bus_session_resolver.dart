@@ -16,10 +16,11 @@ class BusSessionResolver {
 
   // Private constructor to avoid exposing private types in public API
   BusSessionResolver._(Map<int, List<_Write>> busWrites, this.totalSlots)
-      : _busWrites = {
-          for (final e in busWrites.entries)
-            e.key: List<_Write>.from(e.value)..sort((a, b) => a.slot.compareTo(b.slot))
-        };
+    : _busWrites = {
+        for (final e in busWrites.entries)
+          e.key: List<_Write>.from(e.value)
+            ..sort((a, b) => a.slot.compareTo(b.slot)),
+      };
 
   /// Returns portIds of writers that contribute to the value read at [readerSlot]
   /// on [bus]. Slots >= readerSlot never contribute.
@@ -91,11 +92,16 @@ class _Write {
 class BusSessionBuilder {
   final Map<int, List<_Write>> _busWrites = {};
 
-  void addWrite({required int bus, required int slot, required String portId, required OutputMode? mode}) {
+  void addWrite({
+    required int bus,
+    required int slot,
+    required String portId,
+    required OutputMode? mode,
+  }) {
     final effective = mode ?? OutputMode.add; // default to ADD when unspecified
-    _busWrites.putIfAbsent(bus, () => <_Write>[]).add(
-          _Write(slot: slot, portId: portId, mode: effective),
-        );
+    _busWrites
+        .putIfAbsent(bus, () => <_Write>[])
+        .add(_Write(slot: slot, portId: portId, mode: effective));
   }
 
   BusSessionResolver build({required int totalSlots}) =>

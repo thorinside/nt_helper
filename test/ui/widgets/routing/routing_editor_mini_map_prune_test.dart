@@ -66,10 +66,20 @@ void main() {
 
       state.RoutingEditorState currentState = state.RoutingEditorStateLoaded(
         physicalInputs: const [
-          Port(id: 'hw_in_1', name: 'I1', type: PortType.cv, direction: PortDirection.output),
+          Port(
+            id: 'hw_in_1',
+            name: 'I1',
+            type: PortType.cv,
+            direction: PortDirection.output,
+          ),
         ],
         physicalOutputs: const [
-          Port(id: 'hw_out_1', name: 'O1', type: PortType.audio, direction: PortDirection.input),
+          Port(
+            id: 'hw_out_1',
+            name: 'O1',
+            type: PortType.audio,
+            direction: PortDirection.input,
+          ),
         ],
         algorithms: [algo1, algo2],
         connections: const [],
@@ -109,15 +119,33 @@ void main() {
       // Read minimap’s nodePositions via the widget instance
       final miniMap = tester.widget<MiniMapWidget>(find.byType(MiniMapWidget));
       final positions1 = miniMap.nodePositions!;
-      expect(positions1.keys, containsAll(['physical_inputs', 'physical_outputs', 'algo_1', 'algo_2']));
+      expect(
+        positions1.keys,
+        containsAll([
+          'physical_inputs',
+          'physical_outputs',
+          'algo_1',
+          'algo_2',
+        ]),
+      );
 
       // Now change routing structure: only algo_3
       currentState = state.RoutingEditorStateLoaded(
         physicalInputs: const [
-          Port(id: 'hw_in_1', name: 'I1', type: PortType.cv, direction: PortDirection.output),
+          Port(
+            id: 'hw_in_1',
+            name: 'I1',
+            type: PortType.cv,
+            direction: PortDirection.output,
+          ),
         ],
         physicalOutputs: const [
-          Port(id: 'hw_out_1', name: 'O1', type: PortType.audio, direction: PortDirection.input),
+          Port(
+            id: 'hw_out_1',
+            name: 'O1',
+            type: PortType.audio,
+            direction: PortDirection.input,
+          ),
         ],
         algorithms: [algo3],
         connections: const [],
@@ -138,7 +166,10 @@ void main() {
       // Grab latest minimap widget and assert stale nodes were pruned
       final miniMap2 = tester.widget<MiniMapWidget>(find.byType(MiniMapWidget));
       final positions2 = miniMap2.nodePositions!;
-      expect(positions2.keys, containsAll(['physical_inputs', 'physical_outputs', 'algo_3']));
+      expect(
+        positions2.keys,
+        containsAll(['physical_inputs', 'physical_outputs', 'algo_3']),
+      );
       expect(positions2.keys, isNot(contains('algo_1')));
       expect(positions2.keys, isNot(contains('algo_2')));
     });

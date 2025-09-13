@@ -81,8 +81,10 @@ class ConnectionDiscoveryService {
       // Algorithm-to-algorithm: connect only from contributing writers for each reader slot
       if (outputs.isNotEmpty && inputs.isNotEmpty) {
         for (final input in inputs) {
-          final contributingPortIds =
-              resolver.contributorsForReader(busNumber, input.algorithmIndex);
+          final contributingPortIds = resolver.contributorsForReader(
+            busNumber,
+            input.algorithmIndex,
+          );
           if (contributingPortIds.isEmpty) continue;
 
           for (final output in outputs) {
@@ -123,7 +125,9 @@ class ConnectionDiscoveryService {
             input.algorithmIndex,
           );
           if (!contributes) continue;
-          connections.addAll(_createHardwareInputConnections(busNumber, [input]));
+          connections.addAll(
+            _createHardwareInputConnections(busNumber, [input]),
+          );
           matchedPorts.add(input.portId);
         }
       }
@@ -434,7 +438,6 @@ class ConnectionDiscoveryService {
       isOutput: portAssignment.isOutput,
     );
   }
-
 }
 
 /// Internal class to track port assignments in the bus registry

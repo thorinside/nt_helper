@@ -383,7 +383,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
   }) {
     final isConnected =
         portId != null && (widget.connectedPorts?.contains(portId) ?? false);
-    final showShadowDot = !isInput &&
+    final showShadowDot =
+        !isInput &&
         portId != null &&
         (widget.shadowedPortIds?.contains(portId) ?? false);
 

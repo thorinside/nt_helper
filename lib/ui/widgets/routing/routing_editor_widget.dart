@@ -112,7 +112,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Attach controller if provided
     widget.controller?.attach(
       fitToView: _fitToView,
-      resetPanZoom: _centerCanvas,
       // Default copy uses exact viewport crop (same size/aspect, no minimap).
       copyCanvasImage: _copyCanvasImageViewport,
       copyCanvasImageFit: _copyCanvasImageToClipboardFit,
@@ -204,10 +203,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
     final contentCenterX = ((minX + maxX) / 2).clamp(0.0, _canvasWidth);
     final contentCenterY = ((minY + maxY) / 2).clamp(0.0, _canvasHeight);
-    final targetHX = (contentCenterX - widget.canvasSize.width / 2)
-        .clamp(0.0, _canvasWidth - widget.canvasSize.width);
-    final targetVY = (contentCenterY - widget.canvasSize.height / 2)
-        .clamp(0.0, _canvasHeight - widget.canvasSize.height);
+    final targetHX = (contentCenterX - widget.canvasSize.width / 2).clamp(
+      0.0,
+      _canvasWidth - widget.canvasSize.width,
+    );
+    final targetVY = (contentCenterY - widget.canvasSize.height / 2).clamp(
+      0.0,
+      _canvasHeight - widget.canvasSize.height,
+    );
 
     if (_horizontalScrollController.hasClients) {
       _horizontalScrollController.animateTo(
@@ -321,7 +324,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         _showFeedback('Viewport copied to clipboard');
       } else {
         final b64 = convert.base64Encode(bytes);
-        await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+        await Clipboard.setData(
+          ClipboardData(text: 'data:image/png;base64,$b64'),
+        );
         _showFeedback('Viewport copied (data URL)');
       }
     } catch (e) {
@@ -357,7 +362,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (final e in _nodePositions.entries) {
         final id = e.key;
         final p = e.value;
-        final bool isPhysical = id == 'physical_inputs' || id == 'physical_outputs';
+        final bool isPhysical =
+            id == 'physical_inputs' || id == 'physical_outputs';
         final double w = isPhysical ? 180 : 340; // slightly wider algo node
         final double h = isPhysical ? 320 : 200; // include title/ports
         if (p.dx < minX) minX = p.dx;
@@ -369,8 +375,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       const double margin = 24.0;
       final double sx = ((minX - margin).clamp(0.0, _canvasWidth)) * dpr;
       final double sy = ((minY - margin).clamp(0.0, _canvasHeight)) * dpr;
-      final double sw = ((maxX - minX + 2 * margin).clamp(1.0, _canvasWidth)) * dpr;
-      final double sh = ((maxY - minY + 2 * margin).clamp(1.0, _canvasHeight)) * dpr;
+      final double sw =
+          ((maxX - minX + 2 * margin).clamp(1.0, _canvasWidth)) * dpr;
+      final double sh =
+          ((maxY - minY + 2 * margin).clamp(1.0, _canvasHeight)) * dpr;
 
       final int outW = sw.round();
       final int outH = sh.round();
@@ -398,7 +406,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         _showFeedback('Nodes image copied to clipboard');
       } else {
         final b64 = convert.base64Encode(bytes);
-        await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+        await Clipboard.setData(
+          ClipboardData(text: 'data:image/png;base64,$b64'),
+        );
         _showFeedback('Nodes image copied (data URL)');
       }
     } catch (e) {
@@ -434,7 +444,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (final entry in _nodePositions.entries) {
         final id = entry.key;
         final p = entry.value;
-        final bool isPhysical = id == 'physical_inputs' || id == 'physical_outputs';
+        final bool isPhysical =
+            id == 'physical_inputs' || id == 'physical_outputs';
         final double w = isPhysical ? 180 : 300;
         final double h = isPhysical ? 300 : 180;
         if (p.dx < minX) minX = p.dx;
@@ -471,7 +482,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         _showFeedback('Canvas (fit) copied to clipboard');
       } catch (_) {
         final b64 = convert.base64Encode(bytes);
-        await Clipboard.setData(ClipboardData(text: 'data:image/png;base64,$b64'));
+        await Clipboard.setData(
+          ClipboardData(text: 'data:image/png;base64,$b64'),
+        );
         _showFeedback('Canvas (fit) copied (data URL)');
       }
     } catch (e) {
@@ -580,17 +593,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     const double algorithmRowSpacing = 200.0;
     for (int i = 0; i < current.algorithms.length && i < 8; i++) {
       final algo = current.algorithms[i];
-      _nodePositions.putIfAbsent(
-        algo.id,
-        () {
-          final column = i % 2;
-          final row = i ~/ 2;
-          return Offset(
-            algorithmStartX + (column * algorithmSpacing),
-            centerY - 300 + (row * algorithmRowSpacing),
-          );
-        },
-      );
+      _nodePositions.putIfAbsent(algo.id, () {
+        final column = i % 2;
+        final row = i ~/ 2;
+        return Offset(
+          algorithmStartX + (column * algorithmSpacing),
+          centerY - 300 + (row * algorithmRowSpacing),
+        );
+      });
     }
   }
 
@@ -860,83 +870,81 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             child: RepaintBoundary(
               key: _captureKey,
               child: Container(
-              key: _canvasKey,
-              width: _canvasWidth,
-              height: _canvasHeight,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Grid background with gesture detector for empty space (bottom layer)
-                  SizedBox(
-                    width: _canvasWidth,
-                    height: _canvasHeight,
-                    child: GestureDetector(
-                      // Handle taps and panning on empty space
-                      onTapDown: (details) {
-                        debugPrint(
-                          '=== GRID TAP DOWN: ${details.localPosition}',
-                        );
-                        _handleCanvasTap(details.localPosition, connections);
-                      },
-                      onPanStart: _handleCanvasPanStart,
-                      onPanUpdate: _handleCanvasPanUpdate,
-                      onPanEnd: _handleCanvasPanEnd,
-                      behavior: HitTestBehavior
-                          .translucent, // Allow events to pass through to child widgets
-                      child: CustomPaint(
-                        painter: _CanvasGridPainter(
-                          minorGridColor: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withValues(alpha: 0.1),
-                          majorGridColor: Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withValues(alpha: 0.2),
-                          gridSize: 50.0,
-                          majorEvery: 5,
+                key: _canvasKey,
+                width: _canvasWidth,
+                height: _canvasHeight,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Grid background with gesture detector for empty space (bottom layer)
+                    SizedBox(
+                      width: _canvasWidth,
+                      height: _canvasHeight,
+                      child: GestureDetector(
+                        // Handle taps and panning on empty space
+                        onTapDown: (details) {
+                          debugPrint(
+                            '=== GRID TAP DOWN: ${details.localPosition}',
+                          );
+                          _handleCanvasTap(details.localPosition, connections);
+                        },
+                        onPanStart: _handleCanvasPanStart,
+                        onPanUpdate: _handleCanvasPanUpdate,
+                        onPanEnd: _handleCanvasPanEnd,
+                        behavior: HitTestBehavior
+                            .translucent, // Allow events to pass through to child widgets
+                        child: CustomPaint(
+                          painter: _CanvasGridPainter(
+                            minorGridColor: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.1),
+                            majorGridColor: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.2),
+                            gridSize: 50.0,
+                            majorEvery: 5,
+                          ),
+                          size: Size(_canvasWidth, _canvasHeight),
                         ),
-                        size: Size(_canvasWidth, _canvasHeight),
                       ),
                     ),
-                  ),
-                  // Nodes on middle layer (connections will draw above to overlay ports)
-                  if (widget.showPhysicalPorts)
-                    ..._buildPhysicalInputNodes(
-                      physicalInputs,
+                    // Nodes on middle layer (connections will draw above to overlay ports)
+                    if (widget.showPhysicalPorts)
+                      ..._buildPhysicalInputNodes(
+                        physicalInputs,
+                        connections,
+                        stateNodePositions,
+                      ),
+                    if (widget.showPhysicalPorts)
+                      ..._buildPhysicalOutputNodes(
+                        physicalOutputs,
+                        connections,
+                        stateNodePositions,
+                      ),
+                    ..._buildAlgorithmNodes(
+                      algorithms,
                       connections,
                       stateNodePositions,
                     ),
-                  if (widget.showPhysicalPorts)
-                    ..._buildPhysicalOutputNodes(
-                      physicalOutputs,
-                      connections,
-                      stateNodePositions,
-                    ),
-                  ..._buildAlgorithmNodes(
-                    algorithms,
-                    connections,
-                    stateNodePositions,
-                  ),
-                  // Draw all connections with unified canvas
-                  // Use RepaintBoundary to isolate canvas repaints
-                  // Keep connections visible if they were already visible and ports haven't been cleared
-                  if (_connectionsVisible || _portsReady)
-                    RepaintBoundary(
-                      child: _buildUnifiedConnectionCanvas(connections),
-                    )
-                  else
-                    const SizedBox.shrink(),
-                  if (_isDraggingConnection && _dragCurrentPosition != null)
-                    _buildTemporaryConnection(),
-                ],
+                    // Draw all connections with unified canvas
+                    // Use RepaintBoundary to isolate canvas repaints
+                    // Keep connections visible if they were already visible and ports haven't been cleared
+                    if (_connectionsVisible || _portsReady)
+                      RepaintBoundary(
+                        child: _buildUnifiedConnectionCanvas(connections),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    if (_isDraggingConnection && _dragCurrentPosition != null)
+                      _buildTemporaryConnection(),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -1189,7 +1197,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     final result = <String>{};
 
     // Build per-bus lists of outputs and inputs with slot indices
-    final outputsByBus = <int, List<({int slot, String portId, OutputMode? mode})>>{};
+    final outputsByBus =
+        <int, List<({int slot, String portId, OutputMode? mode})>>{};
     final inputsByBus = <int, List<int>>{}; // bus -> reader slots
 
     for (final algo in algorithms) {
@@ -1197,7 +1206,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       for (final p in algo.outputPorts) {
         final bus = p.busValue;
         if (bus != null && bus > 0) {
-          outputsByBus.putIfAbsent(bus, () => []).add((slot: slot, portId: p.id, mode: p.outputMode));
+          outputsByBus.putIfAbsent(bus, () => []).add((
+            slot: slot,
+            portId: p.id,
+            mode: p.outputMode,
+          ));
         }
       }
       for (final p in algo.inputPorts) {
@@ -1212,8 +1225,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final bus = entry.key;
       final outs = List.of(entry.value)
         ..sort((a, b) => a.slot.compareTo(b.slot));
-      final readers = (inputsByBus[bus] ?? const <int>[]).toList()
-        ..sort();
+      final readers = (inputsByBus[bus] ?? const <int>[]).toList()..sort();
 
       for (int i = 0; i < outs.length; i++) {
         final w = outs[i];
@@ -1234,7 +1246,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         }
 
         // Is there any reader between (w.slot, nextReplaceSlot]?
-        final hasReaderBeforeNext = readers.any((k) => k > w.slot && k <= nextReplaceSlot!);
+        final hasReaderBeforeNext = readers.any(
+          (k) => k > w.slot && k <= nextReplaceSlot!,
+        );
         if (!hasReaderBeforeNext) {
           result.add(w.portId);
         }

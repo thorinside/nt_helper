@@ -75,7 +75,10 @@ void main() {
         );
 
         expect(result.physicalInputPositions, hasLength(1));
-        expect(result.physicalInputPositions.containsKey('physical_inputs'), isTrue);
+        expect(
+          result.physicalInputPositions.containsKey('physical_inputs'),
+          isTrue,
+        );
         final inPos = result.physicalInputPositions['physical_inputs']!;
         final algoPos = result.algorithmPositions['algo_a']!;
         expect(inPos.x, lessThan(algoPos.x));
@@ -129,7 +132,10 @@ void main() {
         );
 
         expect(result.physicalOutputPositions, hasLength(1));
-        expect(result.physicalOutputPositions.containsKey('physical_outputs'), isTrue);
+        expect(
+          result.physicalOutputPositions.containsKey('physical_outputs'),
+          isTrue,
+        );
         final outPos = result.physicalOutputPositions['physical_outputs']!;
         final algoPos = result.algorithmPositions['algo_b']!;
         expect(outPos.x, greaterThan(algoPos.x));
@@ -286,7 +292,8 @@ void main() {
         // Algorithm should be positioned between input and output for optimal routing
         final algoPosition = result.algorithmPositions['algo_0']!;
         final inputPosition = result.physicalInputPositions['physical_inputs']!;
-        final outputPosition = result.physicalOutputPositions['physical_outputs']!;
+        final outputPosition =
+            result.physicalOutputPositions['physical_outputs']!;
 
         expect(algoPosition.x, greaterThan(inputPosition.x));
         expect(algoPosition.x, lessThan(outputPosition.x));

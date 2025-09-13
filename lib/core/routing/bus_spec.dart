@@ -41,4 +41,3 @@ class BusSpec {
     return null;
   }
 }
-

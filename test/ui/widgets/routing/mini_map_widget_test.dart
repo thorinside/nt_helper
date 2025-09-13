@@ -913,70 +913,72 @@ void main() {
     group('Viewport Rectangle Dragging', () {
       const bool kSkipDragGroups = true; // Pending stabilization; UI-only.
       group('Drag Gesture Handling', () {
-        testWidgets('should detect pan start gesture on viewport rectangle', (
-          tester,
-        ) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              home: SingleChildScrollView(
-                controller: horizontalController,
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  controller: verticalController,
-                  scrollDirection: Axis.vertical,
-                  child: SizedBox(
-                    width: 5000,
-                    height: 5000,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 20,
-                          left: 20,
-                          child: MiniMapWidget(
-                            horizontalScrollController: horizontalController,
-                            verticalScrollController: verticalController,
-                            canvasWidth: 5000.0,
-                            canvasHeight: 5000.0,
-                            width: 200.0,
-                            height: 150.0,
+        testWidgets(
+          'should detect pan start gesture on viewport rectangle',
+          (tester) async {
+            await tester.pumpWidget(
+              MaterialApp(
+                home: SingleChildScrollView(
+                  controller: horizontalController,
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: verticalController,
+                    scrollDirection: Axis.vertical,
+                    child: SizedBox(
+                      width: 5000,
+                      height: 5000,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 20,
+                            left: 20,
+                            child: MiniMapWidget(
+                              horizontalScrollController: horizontalController,
+                              verticalScrollController: verticalController,
+                              canvasWidth: 5000.0,
+                              canvasHeight: 5000.0,
+                              width: 200.0,
+                              height: 150.0,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
 
-          final state = tester.state<MiniMapWidgetState>(
-            find.byType(MiniMapWidget),
-          );
+            final state = tester.state<MiniMapWidgetState>(
+              find.byType(MiniMapWidget),
+            );
 
-          // Initially, should not be dragging
-          expect(state.isDragging, isFalse);
+            // Initially, should not be dragging
+            expect(state.isDragging, isFalse);
 
-          // Start drag from viewport rectangle position
-          const dragStartPosition = Offset(
-            40,
-            35,
-          ); // Should be within viewport rectangle
+            // Start drag from viewport rectangle position
+            const dragStartPosition = Offset(
+              40,
+              35,
+            ); // Should be within viewport rectangle
 
-          // Use gesture to trigger pan start by moving slightly
-          final gesture = await tester.startGesture(
-            dragStartPosition.translate(20, 20),
-          );
-          await gesture.moveBy(
-            const Offset(1, 1),
-          ); // Small movement to trigger pan
-          await tester.pump();
+            // Use gesture to trigger pan start by moving slightly
+            final gesture = await tester.startGesture(
+              dragStartPosition.translate(20, 20),
+            );
+            await gesture.moveBy(
+              const Offset(1, 1),
+            ); // Small movement to trigger pan
+            await tester.pump();
 
-          // Should now be dragging after pan start
-          expect(state.isDragging, isTrue);
+            // Should now be dragging after pan start
+            expect(state.isDragging, isTrue);
 
-          // Complete the gesture
-          await gesture.up();
-        }, skip: kSkipDragGroups);
+            // Complete the gesture
+            await gesture.up();
+          },
+          skip: kSkipDragGroups,
+        );
 
         testWidgets('should track drag state during pan gesture', (
           tester,
@@ -1113,79 +1115,83 @@ void main() {
             );
 
             await gesture.up();
-          }, skip: kSkipDragGroups);
+          },
+          skip: kSkipDragGroups,
+        );
       });
 
       group('Real-time Position Updates', () {
-        testWidgets('should update scroll positions continuously during drag', (
-          tester,
-        ) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              home: SingleChildScrollView(
-                controller: horizontalController,
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  controller: verticalController,
-                  scrollDirection: Axis.vertical,
-                  child: SizedBox(
-                    width: 5000,
-                    height: 5000,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 20,
-                          left: 20,
-                          child: MiniMapWidget(
-                            horizontalScrollController: horizontalController,
-                            verticalScrollController: verticalController,
-                            canvasWidth: 5000.0,
-                            canvasHeight: 5000.0,
-                            width: 200.0,
-                            height: 150.0,
+        testWidgets(
+          'should update scroll positions continuously during drag',
+          (tester) async {
+            await tester.pumpWidget(
+              MaterialApp(
+                home: SingleChildScrollView(
+                  controller: horizontalController,
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: verticalController,
+                    scrollDirection: Axis.vertical,
+                    child: SizedBox(
+                      width: 5000,
+                      height: 5000,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 20,
+                            left: 20,
+                            child: MiniMapWidget(
+                              horizontalScrollController: horizontalController,
+                              verticalScrollController: verticalController,
+                              canvasWidth: 5000.0,
+                              canvasHeight: 5000.0,
+                              width: 200.0,
+                              height: 150.0,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
 
-          // Access state to test drag functionality
-          tester.state<MiniMapWidgetState>(find.byType(MiniMapWidget));
+            // Access state to test drag functionality
+            tester.state<MiniMapWidgetState>(find.byType(MiniMapWidget));
 
-          // Start drag
-          const dragStart = Offset(50, 40);
-          final gesture = await tester.startGesture(
-            dragStart.translate(20, 20),
-          );
-          await tester.pump();
-
-          final initialHorizontalOffset = horizontalController.offset;
-          final initialVerticalOffset = verticalController.offset;
-
-          // Move in small increments to test continuous updates
-          const moveSteps = [Offset(5, 3), Offset(10, 6), Offset(15, 9)];
-
-          for (final step in moveSteps) {
-            await gesture.moveBy(step);
+            // Start drag
+            const dragStart = Offset(50, 40);
+            final gesture = await tester.startGesture(
+              dragStart.translate(20, 20),
+            );
             await tester.pump();
 
-            // Scroll positions should update with each move
-            expect(
-              horizontalController.offset,
-              isNot(equals(initialHorizontalOffset)),
-            );
-            expect(
-              verticalController.offset,
-              isNot(equals(initialVerticalOffset)),
-            );
-          }
+            final initialHorizontalOffset = horizontalController.offset;
+            final initialVerticalOffset = verticalController.offset;
 
-          await gesture.up();
-        }, skip: kSkipDragGroups);
+            // Move in small increments to test continuous updates
+            const moveSteps = [Offset(5, 3), Offset(10, 6), Offset(15, 9)];
+
+            for (final step in moveSteps) {
+              await gesture.moveBy(step);
+              await tester.pump();
+
+              // Scroll positions should update with each move
+              expect(
+                horizontalController.offset,
+                isNot(equals(initialHorizontalOffset)),
+              );
+              expect(
+                verticalController.offset,
+                isNot(equals(initialVerticalOffset)),
+              );
+            }
+
+            await gesture.up();
+          },
+          skip: kSkipDragGroups,
+        );
 
         testWidgets(
           'should maintain smooth updates during rapid drag movements',
@@ -1250,7 +1256,9 @@ void main() {
               verticalController.offset,
               greaterThan(expectedCanvasDeltaY * 0.8),
             );
-          }, skip: kSkipDragGroups);
+          },
+          skip: kSkipDragGroups,
+        );
       });
 
       group('Edge Clamping', () {
@@ -1472,68 +1480,70 @@ void main() {
       });
 
       group('Visual Feedback', () {
-        testWidgets('should show drag cursor during viewport rectangle drag', (
-          tester,
-        ) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              home: SingleChildScrollView(
-                controller: horizontalController,
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  controller: verticalController,
-                  scrollDirection: Axis.vertical,
-                  child: SizedBox(
-                    width: 5000,
-                    height: 5000,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 20,
-                          left: 20,
-                          child: MiniMapWidget(
-                            horizontalScrollController: horizontalController,
-                            verticalScrollController: verticalController,
-                            canvasWidth: 5000.0,
-                            canvasHeight: 5000.0,
-                            width: 200.0,
-                            height: 150.0,
+        testWidgets(
+          'should show drag cursor during viewport rectangle drag',
+          (tester) async {
+            await tester.pumpWidget(
+              MaterialApp(
+                home: SingleChildScrollView(
+                  controller: horizontalController,
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: verticalController,
+                    scrollDirection: Axis.vertical,
+                    child: SizedBox(
+                      width: 5000,
+                      height: 5000,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 20,
+                            left: 20,
+                            child: MiniMapWidget(
+                              horizontalScrollController: horizontalController,
+                              verticalScrollController: verticalController,
+                              canvasWidth: 5000.0,
+                              canvasHeight: 5000.0,
+                              width: 200.0,
+                              height: 150.0,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
 
-          final state = tester.state<MiniMapWidgetState>(
-            find.byType(MiniMapWidget),
-          );
+            final state = tester.state<MiniMapWidgetState>(
+              find.byType(MiniMapWidget),
+            );
 
-          // Initially should not be dragging
-          expect(state.isDragging, isFalse);
-          expect(state.showDragCursor, isFalse);
+            // Initially should not be dragging
+            expect(state.isDragging, isFalse);
+            expect(state.showDragCursor, isFalse);
 
-          // Start drag
-          const dragStart = Offset(50, 40);
-          final gesture = await tester.startGesture(
-            dragStart.translate(20, 20),
-          );
-          await tester.pump();
+            // Start drag
+            const dragStart = Offset(50, 40);
+            final gesture = await tester.startGesture(
+              dragStart.translate(20, 20),
+            );
+            await tester.pump();
 
-          // Should show drag cursor while dragging
-          expect(state.isDragging, isTrue);
-          expect(state.showDragCursor, isTrue);
+            // Should show drag cursor while dragging
+            expect(state.isDragging, isTrue);
+            expect(state.showDragCursor, isTrue);
 
-          await gesture.up();
-          await tester.pump();
+            await gesture.up();
+            await tester.pump();
 
-          // Should stop showing drag cursor after drag ends
-          expect(state.isDragging, isFalse);
-          expect(state.showDragCursor, isFalse);
-        }, skip: kSkipDragGroups);
+            // Should stop showing drag cursor after drag ends
+            expect(state.isDragging, isFalse);
+            expect(state.showDragCursor, isFalse);
+          },
+          skip: kSkipDragGroups,
+        );
 
         testWidgets('should highlight viewport rectangle during drag', (
           tester,
@@ -1594,7 +1604,9 @@ void main() {
           expect(state.highlightViewportRectangle, isFalse);
         }, skip: kSkipDragGroups);
 
-        testWidgets('should show pointer cursor on hover over viewport rectangle', (tester) async {
+        testWidgets(
+          'should show pointer cursor on hover over viewport rectangle',
+          (tester) async {
             await tester.pumpWidget(
               MaterialApp(
                 home: SingleChildScrollView(
@@ -1647,7 +1659,8 @@ void main() {
 
             await gesture.removePointer();
           },
-        skip: kSkipDragGroups);
+          skip: kSkipDragGroups,
+        );
       });
 
       group('Performance Requirements', () {
@@ -1770,7 +1783,9 @@ void main() {
             expect(stopwatch.elapsedMilliseconds, lessThan(16));
 
             await gesture.up();
-          }, skip: kSkipDragGroups);
+          },
+          skip: kSkipDragGroups,
+        );
       });
     });
   });

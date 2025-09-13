@@ -688,7 +688,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final availableBus = await _findFirstAvailableInternalBus(state);
       if (availableBus == null) {
         debugPrint('No available internal buses for algorithm connection');
-        throw StateError('No available internal buses for algorithm connections');
+        throw StateError(
+          'No available internal buses for algorithm connections',
+        );
       }
       busToUse = availableBus;
       debugPrint('Using new internal bus $busToUse for algorithm connection');
@@ -876,8 +878,10 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       }
     }
 
-    debugPrint('Currently used buses from hardware: '
-        '${usedBuses.toList()..sort()}');
+    debugPrint(
+      'Currently used buses from hardware: '
+      '${usedBuses.toList()..sort()}',
+    );
 
     // Search order: AUX (21–28) → INPUT (1–12) → OUTPUT (13–20)
     // AUX preferred to avoid implicitly tying to physical I/O.

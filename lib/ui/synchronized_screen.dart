@@ -366,18 +366,13 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               },
                           orElse: () => const SizedBox.shrink(),
                         ),
-                        // Fit To View
+                        // Center View
                         IconButton(
                           icon: const Icon(Icons.center_focus_strong),
                           onPressed: () => _editorController.fitToView(),
-                          tooltip: 'Fit To View',
+                          tooltip: 'Center View',
                         ),
-                        // Reset Pan/Zoom
-                        IconButton(
-                          icon: const Icon(Icons.zoom_out_map),
-                          onPressed: () => _editorController.resetPanZoom(),
-                          tooltip: 'Reset Pan/Zoom',
-                        ),
+
                         // Copy Nodes Image (tight bounds, 24px margin)
                         IconButton(
                           icon: const Icon(Icons.image_outlined),
