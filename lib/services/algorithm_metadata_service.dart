@@ -5,6 +5,7 @@ import 'package:nt_helper/models/algorithm_metadata.dart';
 import 'package:nt_helper/models/algorithm_feature.dart';
 import 'package:nt_helper/models/algorithm_parameter.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:nt_helper/services/metadata_import_service.dart';
 
 class AlgorithmMetadataService {
   // Singleton pattern
@@ -22,6 +23,9 @@ class AlgorithmMetadataService {
   Future<void> initialize(AppDatabase database) async {
     if (_isInitialized) return;
 
+    // Check if database is empty and we have a bundled metadata asset
+    await _checkAndImportBundledMetadata(database);
+
     await _loadFeatures();
     await _loadAlgorithms();
 
@@ -31,6 +35,50 @@ class AlgorithmMetadataService {
     debugPrint(
       'AlgorithmMetadataService initialized with a total of ${_algorithms.length} algorithms (from JSON and DB) and ${_features.length} features.',
     );
+  }
+
+  /// Checks if the database is empty and imports bundled metadata if available
+  Future<void> _checkAndImportBundledMetadata(AppDatabase database) async {
+    try {
+      // Check if we already have metadata in the database
+      final hasMetadata = await database.metadataDao.hasCachedAlgorithms();
+      if (hasMetadata) {
+        debugPrint('Database already has metadata, skipping bundled import');
+        return;
+      }
+
+      // Try to import bundled metadata
+      const bundledMetadataPath = 'assets/metadata/full_metadata.json';
+
+      // Check if the asset exists
+      try {
+        final manifestContent = await rootBundle.loadString('AssetManifest.json');
+        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+
+        if (!manifestMap.containsKey(bundledMetadataPath)) {
+          debugPrint('No bundled metadata asset found at $bundledMetadataPath');
+          return;
+        }
+
+        // Import the bundled metadata
+        debugPrint('Found bundled metadata, importing to enable offline mode...');
+        final importService = MetadataImportService(database);
+        final success = await importService.importFromAsset(bundledMetadataPath);
+
+        if (success) {
+          debugPrint('Successfully imported bundled metadata for offline mode');
+        } else {
+          debugPrint('Failed to import bundled metadata');
+        }
+      } catch (e) {
+        // Asset doesn't exist, which is normal if metadata hasn't been exported yet
+        debugPrint('No bundled metadata available: $e');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error checking/importing bundled metadata: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // Continue initialization even if import fails
+    }
   }
 
   Future<void> _loadAlgorithms() async {

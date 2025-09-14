@@ -258,6 +258,44 @@ class MetadataDao extends DatabaseAccessor<AppDatabase>
 
   Future<List<UnitEntry>> getAllUnits() => select(units).get();
 
+  // --- Bulk Retrieval Methods for Full Export ---
+
+  Future<List<SpecificationEntry>> getAllSpecifications() {
+    return (select(specifications)
+      ..orderBy([(s) => OrderingTerm.asc(s.algorithmGuid)])
+      ..orderBy([(s) => OrderingTerm.asc(s.specIndex)])).get();
+  }
+
+  Future<List<ParameterEntry>> getAllParameters() {
+    return (select(parameters)
+      ..orderBy([(p) => OrderingTerm.asc(p.algorithmGuid)])
+      ..orderBy([(p) => OrderingTerm.asc(p.parameterNumber)])).get();
+  }
+
+  Future<List<ParameterEnumEntry>> getAllParameterEnums() {
+    return (select(parameterEnums)
+      ..orderBy([(e) => OrderingTerm.asc(e.algorithmGuid)])
+      ..orderBy([(e) => OrderingTerm.asc(e.parameterNumber)])
+      ..orderBy([(e) => OrderingTerm.asc(e.enumIndex)])).get();
+  }
+
+  Future<List<ParameterPageEntry>> getAllParameterPages() {
+    return (select(parameterPages)
+      ..orderBy([(p) => OrderingTerm.asc(p.algorithmGuid)])
+      ..orderBy([(p) => OrderingTerm.asc(p.pageIndex)])).get();
+  }
+
+  Future<List<ParameterPageItemEntry>> getAllParameterPageItems() {
+    return (select(parameterPageItems)
+      ..orderBy([(i) => OrderingTerm.asc(i.algorithmGuid)])
+      ..orderBy([(i) => OrderingTerm.asc(i.pageIndex)])
+      ..orderBy([(i) => OrderingTerm.asc(i.parameterNumber)])).get();
+  }
+
+  Future<List<MetadataCacheEntry>> getMetadataCacheEntries() {
+    return select(metadataCache).get();
+  }
+
   // Example: Get full details for one algorithm
   Future<FullAlgorithmDetails?> getFullAlgorithmDetails(String guid) async {
     final algoQuery = select(algorithms)..where((a) => a.guid.equals(guid));

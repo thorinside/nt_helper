@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
@@ -9,6 +10,7 @@ import 'package:nt_helper/domain/disting_nt_sysex.dart' show AlgorithmInfo;
 import 'package:nt_helper/ui/metadata_sync/metadata_sync_cubit.dart';
 import 'package:nt_helper/services/metadata_sync_service.dart';
 import 'package:nt_helper/ui/widgets/algorithm_export_dialog.dart';
+import 'package:nt_helper/ui/widgets/debug_metadata_export_dialog.dart';
 
 class MetadataSyncPage extends StatelessWidget {
   // Accept DistingCubit as a parameter
@@ -216,6 +218,11 @@ class MetadataSyncPage extends StatelessWidget {
                                   case 'export_algorithms':
                                     _showExportDialog(metaCtx);
                                     break;
+                                  case 'debug_export_full':
+                                    if (kDebugMode) {
+                                      _showDebugFullExportDialog(metaCtx);
+                                    }
+                                    break;
                                 }
                               },
                               itemBuilder: (context) => [
@@ -242,6 +249,26 @@ class MetadataSyncPage extends StatelessWidget {
                                     ],
                                   ),
                                 ),
+                                if (kDebugMode) ...[
+                                  const PopupMenuDivider(),
+                                  PopupMenuItem<String>(
+                                    value: 'debug_export_full',
+                                    enabled: !isBusy,
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.bug_report,
+                                          size: 20,
+                                          color: Colors.orange.shade600),
+                                        const SizedBox(width: 12),
+                                        Text('DEBUG: Export Full Metadata',
+                                          style: TextStyle(
+                                            color: Colors.orange.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ],
                             );
                           },
@@ -824,6 +851,18 @@ class MetadataSyncPage extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlgorithmExportDialog(database: context.read<AppDatabase>());
+      },
+    );
+  }
+
+  // Show Debug Full Export Dialog
+  void _showDebugFullExportDialog(BuildContext context) {
+    if (!kDebugMode) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return DebugMetadataExportDialog(database: context.read<AppDatabase>());
       },
     );
   }
