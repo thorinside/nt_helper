@@ -330,6 +330,9 @@ abstract class AlgorithmRouting {
   /// - min is 0 or 1
   /// - max is 27 or 28
   ///
+  /// Additionally, any bus parameter that has a corresponding mode parameter
+  /// (same prefix + " mode" suffix) is definitively an output parameter.
+  ///
   /// Parameters:
   /// - [slot]: The slot to analyze
   ///
@@ -351,11 +354,44 @@ abstract class AlgorithmRouting {
       for (final v in slot.values) v.parameterNumber: v.value,
     };
 
+    // Build enum lookup map for mode detection
+    final enumsByParam = <int, List<String>>{
+      for (final e in slot.enums) e.parameterNumber: e.values,
+    };
+
+    // First pass: identify all mode parameters and extract their prefixes
+    // These prefixes indicate definitive output parameters
+    final outputParameterPrefixes = <String>{};
     for (final param in slot.parameters) {
+      final enumValues = enumsByParam[param.parameterNumber];
+      final isModeParameter =
+          param.name.toLowerCase().endsWith(' mode') &&
+          param.unit == 1 &&
+          enumValues != null &&
+          enumValues.length >= 2 &&
+          enumValues.contains('Add') &&
+          enumValues.contains('Replace');
+
+      if (isModeParameter) {
+        // Extract the prefix by removing " mode" suffix
+        final prefix = param.name.substring(0, param.name.length - 5);
+        outputParameterPrefixes.add(prefix);
+        debugPrint(
+          'AlgorithmRouting: Found mode parameter "${param.name}" - marking "$prefix" as output',
+        );
+      }
+    }
+
+    // Second pass: identify IO parameters
+    for (final param in slot.parameters) {
+      // Check if this parameter has a corresponding mode parameter
+      // If it does, it's definitively an output parameter
+      final hasMatchingModeParameter = outputParameterPrefixes.contains(param.name);
+
       // Bus parameters are identified by:
       // - unit == 1 (enum type)
       // - min is 0 or 1
-      // - max is 27 or 28
+      // - max is 27 or 28 or 30
       final isBusParameter =
           param.unit == 1 &&
           (param.min == 0 || param.min == 1) &&
@@ -380,14 +416,22 @@ abstract class AlgorithmRouting {
           param.unit == 0 &&
           (param.name == 'Voices' || param.name == 'First output');
 
+      // Include if it matches any criteria OR if it has a matching mode parameter
       if (isBusParameter ||
           isCvCountParameter ||
           isBooleanOutputParameter ||
-          isPolyCvNumericParameter) {
+          isPolyCvNumericParameter ||
+          (hasMatchingModeParameter && isBusParameter)) {
         final value = valueByParam[param.parameterNumber] ?? param.defaultValue;
         // Include all relevant parameters
         // The subclass will decide how to handle them
         ioParameters[param.name] = value;
+
+        if (hasMatchingModeParameter) {
+          debugPrint(
+            'AlgorithmRouting: Including "${param.name}" as IO parameter (has matching mode parameter)',
+          );
+        }
       }
     }
 

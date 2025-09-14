@@ -782,8 +782,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
 
       // Determine if this is an input or output based on parameter name
       final lowerName = paramName.toLowerCase();
+      // Check if this parameter has a matching mode parameter (definitive output indicator)
+      final hasMatchingModeParameter = modeParameters?.containsKey('$paramName mode') ?? false;
       final isOutput =
-          lowerName.contains('output') && !lowerName.contains('mode');
+          hasMatchingModeParameter ||
+          (lowerName.contains('output') && !lowerName.contains('mode')) ||
+          lowerName.contains('out') && !lowerName.contains('input');
 
       // Infer port type from parameter name
       String portType = 'audio';
