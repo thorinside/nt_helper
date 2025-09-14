@@ -706,6 +706,56 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       for (final p in slot.parameters) p.name: p,
     };
 
+    // Build a map of parameter numbers to their send page (if any)
+    final parameterToSendPage = <int, String>{};
+    for (final page in slot.pages.pages) {
+      // Check if this is a send page (e.g., "Send 1", "Send 2")
+      if (page.name.startsWith('Send ') &&
+          RegExp(r'Send \d+').hasMatch(page.name)) {
+        // Map all parameters in this page to the send name
+        for (final paramNum in page.parameters) {
+          parameterToSendPage[paramNum] = page.name;
+        }
+      }
+    }
+
+    // Group send parameters by send number
+    final sendGroups = <String, Map<String, dynamic>>{};
+
+    // First pass: collect all send-related parameters (including non-bus ones like width/mode)
+    for (final param in slot.parameters) {
+      final sendPage = parameterToSendPage[param.parameterNumber];
+      if (sendPage != null) {
+        sendGroups[sendPage] ??= {};
+        final lowerName = param.name.toLowerCase();
+
+        if (lowerName.contains('width')) {
+          // Get the actual width value from parameter values
+          // Width is an enum: 0 = Mono, 1 = Stereo
+          final widthValue = slot.values
+              .firstWhere((v) => v.parameterNumber == param.parameterNumber,
+                  orElse: () => ParameterValue(
+                      algorithmIndex: 0,
+                      parameterNumber: param.parameterNumber,
+                      value: param.defaultValue))
+              .value;
+          sendGroups[sendPage]!['width'] = widthValue;
+        } else if (lowerName.contains('output mode')) {
+          // Get the actual mode value
+          final modeValue = slot.values
+              .firstWhere((v) => v.parameterNumber == param.parameterNumber,
+                  orElse: () => ParameterValue(
+                      algorithmIndex: 0,
+                      parameterNumber: param.parameterNumber,
+                      value: param.defaultValue))
+              .value;
+          sendGroups[sendPage]!['outputMode'] = modeValue;
+          sendGroups[sendPage]!['modeParameterNumber'] = param.parameterNumber;
+        }
+      }
+    }
+
+    // Process routing parameters as regular ports
     for (final entry in ioParameters.entries) {
       final paramName = entry.key;
       final busValue = entry.value;
@@ -713,6 +763,22 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       // Get parameter number for unique ID generation
       final paramInfo = paramsByName[paramName];
       final paramNumber = paramInfo?.parameterNumber ?? 0;
+
+      // Check if this parameter belongs to a send page
+      final sendPage = parameterToSendPage[paramNumber];
+      if (sendPage != null) {
+        // This is a send parameter - handle destination
+        sendGroups[sendPage] ??= {};
+        final lowerName = paramName.toLowerCase();
+
+        if (lowerName.contains('destination')) {
+          sendGroups[sendPage]!['destination'] = busValue;
+          sendGroups[sendPage]!['destinationParam'] = paramName;
+          sendGroups[sendPage]!['destinationNumber'] = paramNumber;
+        }
+        // Skip normal processing for send parameters
+        continue;
+      }
 
       // Determine if this is an input or output based on parameter name
       final lowerName = paramName.toLowerCase();
@@ -829,6 +895,67 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       }
     }
 
+    // Process send groups to create output ports
+    for (final entry in sendGroups.entries) {
+      final sendName = entry.key;
+      final sendData = entry.value;
+
+      final destination = sendData['destination'] as int?;
+      final width = sendData['width'] as int? ?? 0; // Default to 0 (Mono)
+      final outputMode = sendData['outputMode'] as int? ?? 0;
+      final destinationParam = sendData['destinationParam'] as String? ?? sendName;
+      final destinationNumber = sendData['destinationNumber'] as int? ?? 0;
+      final modeParamNumber = sendData['modeParameterNumber'] as int?;
+
+      if (destination == null || destination == 0) {
+        // Skip sends with no destination
+        continue;
+      }
+
+      // Extract send number from name (e.g., "Send 1" -> "1")
+      final sendNumber = sendName.replaceAll(RegExp(r'[^0-9]'), '');
+
+      // Width is an enum: 0 = Mono, 1 = Stereo
+      if (width == 1) {
+        // Stereo send - create L and R outputs
+        outputPorts.add({
+          'id': '${algorithmUuid ?? 'algo'}_send_${sendNumber}_l',
+          'name': '$sendName L',
+          'type': 'audio',
+          'busParam': destinationParam,
+          'busValue': destination,
+          'parameterNumber': destinationNumber,
+          'outputMode': outputMode == 1 ? 'replace' : 'add',
+          'modeParameterNumber': modeParamNumber,
+          'channel': 'left',
+        });
+        outputPorts.add({
+          'id': '${algorithmUuid ?? 'algo'}_send_${sendNumber}_r',
+          'name': '$sendName R',
+          'type': 'audio',
+          'busParam': '$destinationParam R',
+          'busValue': destination + 1, // Right channel uses next bus
+          'parameterNumber': destinationNumber,
+          'outputMode': outputMode == 1 ? 'replace' : 'add',
+          'modeParameterNumber': modeParamNumber,
+          'channel': 'right',
+        });
+      } else {
+        // Mono send - create single output
+        outputPorts.add({
+          'id': '${algorithmUuid ?? 'algo'}_send_$sendNumber',
+          'name': sendName,
+          'type': 'audio',
+          'busParam': destinationParam,
+          'busValue': destination,
+          'parameterNumber': destinationNumber,
+          'outputMode': outputMode == 1 ? 'replace' : 'add',
+          'modeParameterNumber': modeParamNumber,
+        });
+      }
+
+    }
+
     // Check for Width parameter to determine channel count
     final channelCount = getWidthFromSlot(slot);
 
@@ -901,6 +1028,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       'channelCount': channelCount,
       'isMultiChannel': isMultiChannel,
     };
+
 
     return MultiChannelAlgorithmRouting(
       config: MultiChannelAlgorithmConfig(

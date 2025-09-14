@@ -63,7 +63,7 @@ void main() {
         final decoded = json.decode(result);
 
         if (decoded['success'] == false) {
-          print('Error response: ${decoded['error']}');
+          // Error response: ${decoded['error']}
         }
 
         expect(decoded['guid'], equals('clck'));
@@ -93,9 +93,9 @@ void main() {
             // Check for any self-referential fields
             expect(param, isA<Map>(), reason: 'Each param should be a map');
 
-            // Print any enum_values to check for issues
+            // Check any enum_values for issues
             if (param['enum_values'] != null) {
-              print('Parameter ${param['name']} has enum_values: ${param['enum_values']}');
+              // Parameter ${param['name']} has enum_values: ${param['enum_values']}
             }
           }
         }
