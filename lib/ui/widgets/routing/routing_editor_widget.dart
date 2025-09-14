@@ -193,16 +193,33 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       _centerCanvas();
       return;
     }
+
+    // Compute content bounds from node positions including their dimensions
     double minX = double.infinity, maxX = double.negativeInfinity;
     double minY = double.infinity, maxY = double.negativeInfinity;
-    for (final p in _nodePositions.values) {
+
+    for (final e in _nodePositions.entries) {
+      final id = e.key;
+      final p = e.value;
+
+      // Estimate node dimensions based on type
+      final bool isPhysical =
+          id == 'physical_inputs' || id == 'physical_outputs';
+      final double nodeWidth = isPhysical ? 180 : 340;  // Physical nodes are narrower
+      final double nodeHeight = isPhysical ? 320 : 200; // Physical nodes are taller
+
+      // Update bounding box considering node dimensions
       if (p.dx < minX) minX = p.dx;
-      if (p.dx > maxX) maxX = p.dx;
       if (p.dy < minY) minY = p.dy;
-      if (p.dy > maxY) maxY = p.dy;
+      if (p.dx + nodeWidth > maxX) maxX = p.dx + nodeWidth;
+      if (p.dy + nodeHeight > maxY) maxY = p.dy + nodeHeight;
     }
+
+    // Calculate the true center of the content bounding box
     final contentCenterX = ((minX + maxX) / 2).clamp(0.0, _canvasWidth);
     final contentCenterY = ((minY + maxY) / 2).clamp(0.0, _canvasHeight);
+
+    // Calculate target scroll positions to center the content
     final targetHX = (contentCenterX - widget.canvasSize.width / 2).clamp(
       0.0,
       _canvasWidth - widget.canvasSize.width,
