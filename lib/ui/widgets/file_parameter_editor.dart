@@ -51,7 +51,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   String? _currentDirectory;
   String? _selectedFolderName;
   String? _selectedFileName;
-  int? _optimisticValue; // Track optimistic value during updates
 
   // Development mode state for Lua Script
   Timer? _fileWatchTimer;
@@ -103,6 +102,8 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   @override
   void didUpdateWidget(FileParameterEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+
     if (oldWidget.currentValue != widget.currentValue) {
       _updateSelectedNameForValue(widget.currentValue);
 
@@ -178,7 +179,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   }
 
   String? _getDisplayValueForCurrentValue() {
-    final currentVal = _optimisticValue ?? widget.currentValue;
+    final currentVal = widget.currentValue;
     // Use min value to determine display offset: if min=0, show currentVal+1; if min=1, show currentVal
     final displayVal = widget.parameterInfo.min == 0
         ? currentVal + 1
@@ -214,7 +215,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
     if (_currentDirectory == null || _availableFiles.isEmpty) return;
 
     // Convert parameter value to array index using min value
-    final paramValue = _optimisticValue ?? widget.currentValue;
+    final paramValue = widget.currentValue;
     final index = paramValue - widget.parameterInfo.min;
 
     if (index >= 0 && index < _availableFiles.length) {
@@ -553,7 +554,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
                   itemCount: _availableFiles.length,
                   itemBuilder: (context, index) {
                     final entry = _availableFiles[index];
-                    final paramValue = _optimisticValue ?? widget.currentValue;
+                    final paramValue = widget.currentValue;
                     final selectedIndex = paramValue - widget.parameterInfo.min;
                     final isSelected = index == selectedIndex;
                     final displayName = _cleanDisplayName(
@@ -633,10 +634,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       if (selectedIndex != -1) {
         // Convert array index to parameter value using min value
         final newValue = selectedIndex + widget.parameterInfo.min;
-        // Optimistic update - immediately update UI
-        setState(() {
-          _optimisticValue = newValue;
-        });
+        // Update the name immediately for UI feedback
         _updateSelectedNameForValue(newValue);
         // Then notify parent to update hardware
         widget.onValueChanged(newValue);
@@ -835,8 +833,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         // Previous button
         InkWell(
           onTap:
-              (_optimisticValue ?? widget.currentValue) >
-                  widget.parameterInfo.min
+              widget.currentValue > widget.parameterInfo.min
               ? _decrementValue
               : null,
           borderRadius: BorderRadius.circular(8),
@@ -846,8 +843,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               Icons.navigate_before,
               size: 24,
               color:
-                  (_optimisticValue ?? widget.currentValue) >
-                      widget.parameterInfo.min
+                  widget.currentValue > widget.parameterInfo.min
                   ? null
                   : Colors.grey.shade400,
             ),
@@ -884,8 +880,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
         // Next button
         InkWell(
           onTap:
-              (_optimisticValue ?? widget.currentValue) <
-                  widget.parameterInfo.max
+              widget.currentValue < widget.parameterInfo.max
               ? _incrementValue
               : null,
           borderRadius: BorderRadius.circular(8),
@@ -895,8 +890,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
               Icons.navigate_next,
               size: 24,
               color:
-                  (_optimisticValue ?? widget.currentValue) <
-                      widget.parameterInfo.max
+                  widget.currentValue < widget.parameterInfo.max
                   ? null
                   : Colors.grey.shade400,
             ),

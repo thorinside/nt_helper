@@ -74,7 +74,12 @@ class DistingCubit extends Cubit<DistingState> {
   }
 
   MidiCommand _midiCommand = MidiCommand();
-  CancelableOperation<void>? _programSlotUpdate;
+
+  // Simple program refresh queue with retry
+  Timer? _programRefreshTimer;
+  int? _programRefreshSlot;
+  int _programRefreshRetries = 0;
+
   CancelableOperation<void>?
   _moveVerificationOperation; // Add verification operation tracker
   // Keep track of the offline manager instance when offline
@@ -131,6 +136,9 @@ class DistingCubit extends Cubit<DistingState> {
     _offlineManager?.dispose(); // Dispose offline manager too
     _parameterQueue?.dispose(); // Dispose parameter queue
     _midiCommand.dispose();
+
+    // Cancel program refresh timer
+    _programRefreshTimer?.cancel();
 
     // Dispose CPU usage streaming resources
     _cpuUsageTimer?.cancel();
@@ -1254,7 +1262,7 @@ class DistingCubit extends Cubit<DistingState> {
         case DistingStateConnected():
           break;
         case DistingStateSynchronized syncstate:
-          var disting = requireDisting();
+          requireDisting();
 
           // Always queue the parameter update for sending to device
           final currentSlot = syncstate.slots[algorithmIndex];
@@ -1304,23 +1312,7 @@ class DistingCubit extends Cubit<DistingState> {
               algorithmIndex,
               parameterNumber,
             )) {
-              _programSlotUpdate?.cancel();
-
-              _programSlotUpdate = CancelableOperation.fromFuture(
-                Future.delayed(Duration(seconds: 2), () async {
-                  final updatedSlot = await fetchSlot(disting, algorithmIndex);
-
-                  emit(
-                    syncstate.copyWith(
-                      slots: updateSlot(algorithmIndex, syncstate.slots, (
-                        slot,
-                      ) {
-                        return updatedSlot;
-                      }),
-                    ),
-                  );
-                }),
-              );
+              _queueProgramRefresh(algorithmIndex);
             }
 
             // Anomaly Check - using the value we're setting
@@ -2006,6 +1998,88 @@ class DistingCubit extends Cubit<DistingState> {
           )
           .toList(),
     );
+  }
+
+  // Simple program refresh queue with retry logic
+  void _queueProgramRefresh(int algorithmIndex) {
+    // Cancel existing timer if any
+    _programRefreshTimer?.cancel();
+
+    // Store the slot to refresh and reset retry counter
+    _programRefreshSlot = algorithmIndex;
+    _programRefreshRetries = 0;
+
+    debugPrint('[ProgramRefresh] Queuing refresh for slot $algorithmIndex');
+
+    // Start new timer with 2 second delay to give hardware time to load the new program
+    _programRefreshTimer = Timer(const Duration(seconds: 2), () {
+      _executeProgramRefresh();
+    });
+  }
+
+  Future<void> _executeProgramRefresh() async {
+    final slotIndex = _programRefreshSlot;
+    if (slotIndex == null) return;
+
+    debugPrint('[ProgramRefresh] Executing refresh for slot $slotIndex (attempt ${_programRefreshRetries + 1})');
+
+    final currentState = state;
+    if (currentState is! DistingStateSynchronized) {
+      debugPrint('[ProgramRefresh] State not synchronized, aborting');
+      _programRefreshTimer = null;
+      _programRefreshSlot = null;
+      return;
+    }
+
+    try {
+      final disting = requireDisting();
+      final updatedSlot = await fetchSlot(disting, slotIndex);
+
+      // Check if state is still synchronized
+      final newState = state;
+      if (newState is! DistingStateSynchronized) {
+        debugPrint('[ProgramRefresh] State changed during refresh, aborting');
+        return;
+      }
+
+      // Update the slot in the state
+      emit(
+        newState.copyWith(
+          slots: updateSlot(slotIndex, newState.slots, (slot) => updatedSlot),
+        ),
+      );
+
+      debugPrint('[ProgramRefresh] Successfully refreshed slot $slotIndex');
+
+      // Clear the queue
+      _programRefreshTimer = null;
+      _programRefreshSlot = null;
+      _programRefreshRetries = 0;
+
+    } catch (e, stackTrace) {
+      debugPrint('[ProgramRefresh] Error refreshing slot $slotIndex: $e');
+
+      // Retry with exponential backoff if we haven't exceeded max retries
+      if (_programRefreshRetries < 3) {
+        _programRefreshRetries++;
+        final delaySeconds = _programRefreshRetries; // 1s, 2s, 3s
+
+        debugPrint('[ProgramRefresh] Retrying in ${delaySeconds}s (attempt ${_programRefreshRetries + 1}/4)');
+
+        _programRefreshTimer = Timer(
+          Duration(seconds: delaySeconds),
+          _executeProgramRefresh,
+        );
+      } else {
+        debugPrint('[ProgramRefresh] Max retries exceeded, giving up');
+        debugPrintStack(stackTrace: stackTrace);
+
+        // Clear the queue
+        _programRefreshTimer = null;
+        _programRefreshSlot = null;
+        _programRefreshRetries = 0;
+      }
+    }
   }
 
   void setDisplayMode(DisplayMode displayMode) {

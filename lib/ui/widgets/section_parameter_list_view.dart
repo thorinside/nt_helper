@@ -141,30 +141,45 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                     controller: _tileControllers.elementAt(index),
                     title: Text(page.name),
                     children: page.parameters.map((parameterNumber) {
-                      final value = widget.slot.values.elementAt(
+                      // Use safe access with bounds checking
+                      final value = widget.slot.values.elementAtOrNull(
                         parameterNumber,
                       );
-                      final enumStrings = widget.slot.enums.elementAt(
+                      final enumStrings = widget.slot.enums.elementAtOrNull(
                         parameterNumber,
                       );
                       final mapping = widget.slot.mappings.elementAtOrNull(
                         parameterNumber,
                       );
-                      final valueString = widget.slot.valueStrings.elementAt(
+                      final valueString = widget.slot.valueStrings.elementAtOrNull(
                         parameterNumber,
                       );
-                      var parameterInfo = widget.slot.parameters.elementAt(
+                      var parameterInfo = widget.slot.parameters.elementAtOrNull(
                         parameterNumber,
                       );
+
+                      // Skip this parameter if we don't have essential data
+                      // Note: valueString and enumStrings can be empty/filler for many parameters
+                      if (value == null || parameterInfo == null) {
+                        debugPrint(
+                          '[SectionParameterListView] Missing essential data for parameter $parameterNumber in slot ${widget.slot.algorithm.algorithmIndex}'
+                        );
+                        return const SizedBox.shrink();
+                      }
+
+                      // Use filler/empty data if not available
+                      final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
+                      final safeValueString = valueString ?? ParameterValueString.filler();
+
                       final unit = parameterInfo.getUnitString(widget.units);
 
                       return ParameterEditorView(
                         slot: widget.slot,
                         parameterInfo: parameterInfo,
                         value: value,
-                        enumStrings: enumStrings,
+                        enumStrings: safeEnumStrings,
                         mapping: mapping,
-                        valueString: valueString,
+                        valueString: safeValueString,
                         unit: unit,
                       );
                     }).toList(),
