@@ -51,6 +51,11 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             navigationHistory: [],
             sortByDate: false,
             directoryCache: Map.from(_directoryCache),
+            // Initialize mobile fields
+            drillPath: rootPath,
+            breadcrumbs: _getBreadcrumbsFromPath(rootPath),
+            currentDrillItems: sortedEntries,
+            selectedDrillItem: null,
           ),
         );
       } else {
@@ -372,6 +377,15 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   String getSelectedPath() {
     return state.maybeMap(
       loaded: (currentState) {
+        // For mobile drill-down mode, use the drill path
+        if (currentState.selectedDrillItem != null &&
+            !currentState.selectedDrillItem!.isDirectory) {
+          final drillPath = currentState.drillPath ?? currentState.currentPath;
+          return drillPath.endsWith('/')
+              ? '$drillPath${currentState.selectedDrillItem!.name}'
+              : '$drillPath/${currentState.selectedDrillItem!.name}';
+        }
+
         // Build the complete path from the base path and selected items
         String fullPath = currentState.currentPath;
 
@@ -433,5 +447,135 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       },
       orElse: () => '',
     );
+  }
+
+  // Mobile drill-down navigation methods
+
+  Future<void> navigateIntoDirectory(DirectoryEntry entry) async {
+    await state.maybeMap(
+      loaded: (currentState) async {
+        if (!entry.isDirectory) return;
+
+        emit(const PresetBrowserState.loading());
+
+        try {
+          final currentDrillPath = currentState.drillPath ?? currentState.currentPath;
+          final cleanName = entry.name.endsWith('/')
+              ? entry.name.substring(0, entry.name.length - 1)
+              : entry.name;
+          final newPath = currentDrillPath.endsWith('/')
+              ? '$currentDrillPath$cleanName'
+              : '$currentDrillPath/$cleanName';
+
+          // Check cache first
+          List<DirectoryEntry>? entries = _directoryCache[newPath];
+
+          if (entries == null) {
+            // Load from device
+            final listing = await midiManager.requestDirectoryListing(newPath);
+            if (listing != null) {
+              entries = _sortEntries(listing.entries, currentState.sortByDate);
+              _directoryCache[newPath] = entries;
+            } else {
+              entries = [];
+            }
+          }
+
+          emit(
+            currentState.copyWith(
+              drillPath: newPath,
+              breadcrumbs: _getBreadcrumbsFromPath(newPath),
+              currentDrillItems: entries,
+              selectedDrillItem: null,
+            ),
+          );
+        } catch (e) {
+          emit(
+            PresetBrowserState.error(
+              message: 'Error loading directory: $e',
+              lastPath: currentState.drillPath ?? currentState.currentPath,
+            ),
+          );
+        }
+      },
+      orElse: () async {},
+    );
+  }
+
+  Future<void> navigateToPathSegment(int index) async {
+    await state.maybeMap(
+      loaded: (currentState) async {
+        final breadcrumbs = currentState.breadcrumbs ?? [];
+        if (index < 0 || index >= breadcrumbs.length) return;
+
+        emit(const PresetBrowserState.loading());
+
+        try {
+          // Build path up to the selected segment
+          final pathSegments = breadcrumbs.take(index + 1).toList();
+          final newPath = pathSegments.isEmpty ? '/' : '/${pathSegments.join('/')}';
+
+          // Check cache first
+          List<DirectoryEntry>? entries = _directoryCache[newPath];
+
+          if (entries == null) {
+            // Load from device
+            final listing = await midiManager.requestDirectoryListing(newPath);
+            if (listing != null) {
+              entries = _sortEntries(listing.entries, currentState.sortByDate);
+              _directoryCache[newPath] = entries;
+            } else {
+              entries = [];
+            }
+          }
+
+          emit(
+            currentState.copyWith(
+              drillPath: newPath,
+              breadcrumbs: _getBreadcrumbsFromPath(newPath),
+              currentDrillItems: entries,
+              selectedDrillItem: null,
+            ),
+          );
+        } catch (e) {
+          emit(
+            PresetBrowserState.error(
+              message: 'Error navigating to path: $e',
+              lastPath: currentState.drillPath ?? currentState.currentPath,
+            ),
+          );
+        }
+      },
+      orElse: () async {},
+    );
+  }
+
+  void selectDrillItem(DirectoryEntry entry) {
+    state.maybeMap(
+      loaded: (currentState) {
+        emit(
+          currentState.copyWith(
+            selectedDrillItem: entry,
+          ),
+        );
+
+        // Add to history if it's a JSON preset file
+        if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.json')) {
+          final drillPath = currentState.drillPath ?? currentState.currentPath;
+          final fullPath = drillPath.endsWith('/')
+              ? '$drillPath${entry.name}'
+              : '$drillPath/${entry.name}';
+          addToHistory(fullPath);
+        }
+      },
+      orElse: () {},
+    );
+  }
+
+  List<String> _getBreadcrumbsFromPath(String path) {
+    if (path == '/' || path.isEmpty) return [];
+
+    final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+    return segments;
   }
 }

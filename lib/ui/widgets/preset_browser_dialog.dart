@@ -6,6 +6,8 @@ import 'package:nt_helper/models/sd_card_file_system.dart';
 import 'package:nt_helper/interfaces/impl/preset_file_system_impl.dart';
 import 'package:nt_helper/ui/widgets/load_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/preset_package_dialog.dart';
+import 'package:nt_helper/ui/widgets/mobile_drill_down_navigator.dart';
+import 'package:nt_helper/utils/responsive.dart';
 
 class PresetBrowserDialog extends StatefulWidget {
   final DistingCubit distingCubit;
@@ -26,6 +28,8 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
     return AlertDialog(
       title: Row(
         children: [
@@ -73,8 +77,12 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
         ],
       ),
       content: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.6,
+        width: isMobile
+            ? MediaQuery.of(context).size.width * 0.95
+            : MediaQuery.of(context).size.width * 0.8,
+        height: isMobile
+            ? MediaQuery.of(context).size.height * 0.7
+            : MediaQuery.of(context).size.height * 0.6,
         child: Column(
           children: [
             // Main content area
@@ -86,15 +94,24 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                         const Center(child: CircularProgressIndicator()),
                     loading: (_) =>
                         const Center(child: CircularProgressIndicator()),
-                    loaded: (loaded) => ThreePanelNavigator(
-                      leftPanelItems: loaded.leftPanelItems,
-                      centerPanelItems: loaded.centerPanelItems,
-                      rightPanelItems: loaded.rightPanelItems,
-                      selectedLeftItem: loaded.selectedLeftItem,
-                      selectedCenterItem: loaded.selectedCenterItem,
-                      selectedRightItem: loaded.selectedRightItem,
-                      onItemSelected: _handleItemSelected,
-                    ),
+                    loaded: (loaded) => isMobile
+                        ? MobileDrillDownNavigator(
+                            items: loaded.currentDrillItems ?? loaded.leftPanelItems,
+                            selectedItem: loaded.selectedDrillItem,
+                            breadcrumbs: loaded.breadcrumbs ?? [],
+                            onItemTap: _handleMobileItemTap,
+                            onBreadcrumbTap: _handleBreadcrumbTap,
+                            onRefresh: _handleRefresh,
+                          )
+                        : ThreePanelNavigator(
+                            leftPanelItems: loaded.leftPanelItems,
+                            centerPanelItems: loaded.centerPanelItems,
+                            rightPanelItems: loaded.rightPanelItems,
+                            selectedLeftItem: loaded.selectedLeftItem,
+                            selectedCenterItem: loaded.selectedCenterItem,
+                            selectedRightItem: loaded.selectedRightItem,
+                            onItemSelected: _handleItemSelected,
+                          ),
                     error: (error) => Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -152,11 +169,12 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
             final isPresetFile =
                 selectedPath.isNotEmpty &&
                 selectedPath.toLowerCase().endsWith('.json');
+            final isMobile = Responsive.isMobile(context);
 
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isPresetFile) ...[
+                if (isPresetFile && !isMobile) ...[
                   OutlinedButton(
                     onPressed: () async {
                       Navigator.of(context).pop();
@@ -205,6 +223,50 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       // Update the state to enable the Load button
       setState(() {});
     }
+  }
+
+  void _handleMobileItemTap(DirectoryEntry item) {
+    final cubit = context.read<PresetBrowserCubit>();
+
+    if (item.isDirectory) {
+      cubit.navigateIntoDirectory(item);
+    } else {
+      cubit.selectDrillItem(item);
+      // Update the state to enable the Load button
+      setState(() {});
+    }
+  }
+
+  void _handleBreadcrumbTap(int index) {
+    final cubit = context.read<PresetBrowserCubit>();
+
+    if (index == -1) {
+      // Go to root
+      cubit.loadRootDirectory();
+    } else {
+      cubit.navigateToPathSegment(index);
+    }
+  }
+
+  void _handleRefresh() {
+    final cubit = context.read<PresetBrowserCubit>();
+    cubit.clearCache();
+
+    // Refresh current directory
+    final state = cubit.state;
+    state.maybeMap(
+      loaded: (loaded) {
+        if (loaded.drillPath != null && loaded.drillPath!.isNotEmpty) {
+          // Reload current drill path
+          cubit.navigateToPathSegment(
+            (loaded.breadcrumbs?.length ?? 1) - 1,
+          );
+        } else {
+          cubit.loadRootDirectory();
+        }
+      },
+      orElse: () => cubit.loadRootDirectory(),
+    );
   }
 }
 

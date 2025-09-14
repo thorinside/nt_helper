@@ -128,12 +128,12 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( String currentPath,  List<DirectoryEntry> leftPanelItems,  List<DirectoryEntry> centerPanelItems,  List<DirectoryEntry> rightPanelItems,  DirectoryEntry? selectedLeftItem,  DirectoryEntry? selectedCenterItem,  DirectoryEntry? selectedRightItem,  List<String> navigationHistory,  bool sortByDate,  Map<String, List<DirectoryEntry>>? directoryCache)?  loaded,TResult Function( String message,  String? lastPath)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( String currentPath,  List<DirectoryEntry> leftPanelItems,  List<DirectoryEntry> centerPanelItems,  List<DirectoryEntry> rightPanelItems,  DirectoryEntry? selectedLeftItem,  DirectoryEntry? selectedCenterItem,  DirectoryEntry? selectedRightItem,  List<String> navigationHistory,  bool sortByDate,  Map<String, List<DirectoryEntry>>? directoryCache,  String? drillPath,  List<String>? breadcrumbs,  List<DirectoryEntry>? currentDrillItems,  DirectoryEntry? selectedDrillItem)?  loaded,TResult Function( String message,  String? lastPath)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial();case _Loading() when loading != null:
 return loading();case _Loaded() when loaded != null:
-return loaded(_that.currentPath,_that.leftPanelItems,_that.centerPanelItems,_that.rightPanelItems,_that.selectedLeftItem,_that.selectedCenterItem,_that.selectedRightItem,_that.navigationHistory,_that.sortByDate,_that.directoryCache);case _Error() when error != null:
+return loaded(_that.currentPath,_that.leftPanelItems,_that.centerPanelItems,_that.rightPanelItems,_that.selectedLeftItem,_that.selectedCenterItem,_that.selectedRightItem,_that.navigationHistory,_that.sortByDate,_that.directoryCache,_that.drillPath,_that.breadcrumbs,_that.currentDrillItems,_that.selectedDrillItem);case _Error() when error != null:
 return error(_that.message,_that.lastPath);case _:
   return orElse();
 
@@ -152,12 +152,12 @@ return error(_that.message,_that.lastPath);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( String currentPath,  List<DirectoryEntry> leftPanelItems,  List<DirectoryEntry> centerPanelItems,  List<DirectoryEntry> rightPanelItems,  DirectoryEntry? selectedLeftItem,  DirectoryEntry? selectedCenterItem,  DirectoryEntry? selectedRightItem,  List<String> navigationHistory,  bool sortByDate,  Map<String, List<DirectoryEntry>>? directoryCache)  loaded,required TResult Function( String message,  String? lastPath)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( String currentPath,  List<DirectoryEntry> leftPanelItems,  List<DirectoryEntry> centerPanelItems,  List<DirectoryEntry> rightPanelItems,  DirectoryEntry? selectedLeftItem,  DirectoryEntry? selectedCenterItem,  DirectoryEntry? selectedRightItem,  List<String> navigationHistory,  bool sortByDate,  Map<String, List<DirectoryEntry>>? directoryCache,  String? drillPath,  List<String>? breadcrumbs,  List<DirectoryEntry>? currentDrillItems,  DirectoryEntry? selectedDrillItem)  loaded,required TResult Function( String message,  String? lastPath)  error,}) {final _that = this;
 switch (_that) {
 case _Initial():
 return initial();case _Loading():
 return loading();case _Loaded():
-return loaded(_that.currentPath,_that.leftPanelItems,_that.centerPanelItems,_that.rightPanelItems,_that.selectedLeftItem,_that.selectedCenterItem,_that.selectedRightItem,_that.navigationHistory,_that.sortByDate,_that.directoryCache);case _Error():
+return loaded(_that.currentPath,_that.leftPanelItems,_that.centerPanelItems,_that.rightPanelItems,_that.selectedLeftItem,_that.selectedCenterItem,_that.selectedRightItem,_that.navigationHistory,_that.sortByDate,_that.directoryCache,_that.drillPath,_that.breadcrumbs,_that.currentDrillItems,_that.selectedDrillItem);case _Error():
 return error(_that.message,_that.lastPath);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +175,12 @@ return error(_that.message,_that.lastPath);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( String currentPath,  List<DirectoryEntry> leftPanelItems,  List<DirectoryEntry> centerPanelItems,  List<DirectoryEntry> rightPanelItems,  DirectoryEntry? selectedLeftItem,  DirectoryEntry? selectedCenterItem,  DirectoryEntry? selectedRightItem,  List<String> navigationHistory,  bool sortByDate,  Map<String, List<DirectoryEntry>>? directoryCache)?  loaded,TResult? Function( String message,  String? lastPath)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( String currentPath,  List<DirectoryEntry> leftPanelItems,  List<DirectoryEntry> centerPanelItems,  List<DirectoryEntry> rightPanelItems,  DirectoryEntry? selectedLeftItem,  DirectoryEntry? selectedCenterItem,  DirectoryEntry? selectedRightItem,  List<String> navigationHistory,  bool sortByDate,  Map<String, List<DirectoryEntry>>? directoryCache,  String? drillPath,  List<String>? breadcrumbs,  List<DirectoryEntry>? currentDrillItems,  DirectoryEntry? selectedDrillItem)?  loaded,TResult? Function( String message,  String? lastPath)?  error,}) {final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial();case _Loading() when loading != null:
 return loading();case _Loaded() when loaded != null:
-return loaded(_that.currentPath,_that.leftPanelItems,_that.centerPanelItems,_that.rightPanelItems,_that.selectedLeftItem,_that.selectedCenterItem,_that.selectedRightItem,_that.navigationHistory,_that.sortByDate,_that.directoryCache);case _Error() when error != null:
+return loaded(_that.currentPath,_that.leftPanelItems,_that.centerPanelItems,_that.rightPanelItems,_that.selectedLeftItem,_that.selectedCenterItem,_that.selectedRightItem,_that.navigationHistory,_that.sortByDate,_that.directoryCache,_that.drillPath,_that.breadcrumbs,_that.currentDrillItems,_that.selectedDrillItem);case _Error() when error != null:
 return error(_that.message,_that.lastPath);case _:
   return null;
 
@@ -257,7 +257,7 @@ String toString() {
 
 
 class _Loaded implements PresetBrowserState {
-  const _Loaded({required this.currentPath, required final  List<DirectoryEntry> leftPanelItems, required final  List<DirectoryEntry> centerPanelItems, required final  List<DirectoryEntry> rightPanelItems, this.selectedLeftItem, this.selectedCenterItem, this.selectedRightItem, required final  List<String> navigationHistory, required this.sortByDate, final  Map<String, List<DirectoryEntry>>? directoryCache}): _leftPanelItems = leftPanelItems,_centerPanelItems = centerPanelItems,_rightPanelItems = rightPanelItems,_navigationHistory = navigationHistory,_directoryCache = directoryCache;
+  const _Loaded({required this.currentPath, required final  List<DirectoryEntry> leftPanelItems, required final  List<DirectoryEntry> centerPanelItems, required final  List<DirectoryEntry> rightPanelItems, this.selectedLeftItem, this.selectedCenterItem, this.selectedRightItem, required final  List<String> navigationHistory, required this.sortByDate, final  Map<String, List<DirectoryEntry>>? directoryCache, this.drillPath, final  List<String>? breadcrumbs, final  List<DirectoryEntry>? currentDrillItems, this.selectedDrillItem}): _leftPanelItems = leftPanelItems,_centerPanelItems = centerPanelItems,_rightPanelItems = rightPanelItems,_navigationHistory = navigationHistory,_directoryCache = directoryCache,_breadcrumbs = breadcrumbs,_currentDrillItems = currentDrillItems;
   
 
  final  String currentPath;
@@ -302,6 +302,27 @@ class _Loaded implements PresetBrowserState {
   return EqualUnmodifiableMapView(value);
 }
 
+// Mobile drill-down navigation fields
+ final  String? drillPath;
+ final  List<String>? _breadcrumbs;
+ List<String>? get breadcrumbs {
+  final value = _breadcrumbs;
+  if (value == null) return null;
+  if (_breadcrumbs is EqualUnmodifiableListView) return _breadcrumbs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  List<DirectoryEntry>? _currentDrillItems;
+ List<DirectoryEntry>? get currentDrillItems {
+  final value = _currentDrillItems;
+  if (value == null) return null;
+  if (_currentDrillItems is EqualUnmodifiableListView) return _currentDrillItems;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  DirectoryEntry? selectedDrillItem;
 
 /// Create a copy of PresetBrowserState
 /// with the given fields replaced by the non-null parameter values.
@@ -313,16 +334,16 @@ _$LoadedCopyWith<_Loaded> get copyWith => __$LoadedCopyWithImpl<_Loaded>(this, _
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loaded&&(identical(other.currentPath, currentPath) || other.currentPath == currentPath)&&const DeepCollectionEquality().equals(other._leftPanelItems, _leftPanelItems)&&const DeepCollectionEquality().equals(other._centerPanelItems, _centerPanelItems)&&const DeepCollectionEquality().equals(other._rightPanelItems, _rightPanelItems)&&(identical(other.selectedLeftItem, selectedLeftItem) || other.selectedLeftItem == selectedLeftItem)&&(identical(other.selectedCenterItem, selectedCenterItem) || other.selectedCenterItem == selectedCenterItem)&&(identical(other.selectedRightItem, selectedRightItem) || other.selectedRightItem == selectedRightItem)&&const DeepCollectionEquality().equals(other._navigationHistory, _navigationHistory)&&(identical(other.sortByDate, sortByDate) || other.sortByDate == sortByDate)&&const DeepCollectionEquality().equals(other._directoryCache, _directoryCache));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loaded&&(identical(other.currentPath, currentPath) || other.currentPath == currentPath)&&const DeepCollectionEquality().equals(other._leftPanelItems, _leftPanelItems)&&const DeepCollectionEquality().equals(other._centerPanelItems, _centerPanelItems)&&const DeepCollectionEquality().equals(other._rightPanelItems, _rightPanelItems)&&(identical(other.selectedLeftItem, selectedLeftItem) || other.selectedLeftItem == selectedLeftItem)&&(identical(other.selectedCenterItem, selectedCenterItem) || other.selectedCenterItem == selectedCenterItem)&&(identical(other.selectedRightItem, selectedRightItem) || other.selectedRightItem == selectedRightItem)&&const DeepCollectionEquality().equals(other._navigationHistory, _navigationHistory)&&(identical(other.sortByDate, sortByDate) || other.sortByDate == sortByDate)&&const DeepCollectionEquality().equals(other._directoryCache, _directoryCache)&&(identical(other.drillPath, drillPath) || other.drillPath == drillPath)&&const DeepCollectionEquality().equals(other._breadcrumbs, _breadcrumbs)&&const DeepCollectionEquality().equals(other._currentDrillItems, _currentDrillItems)&&(identical(other.selectedDrillItem, selectedDrillItem) || other.selectedDrillItem == selectedDrillItem));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,currentPath,const DeepCollectionEquality().hash(_leftPanelItems),const DeepCollectionEquality().hash(_centerPanelItems),const DeepCollectionEquality().hash(_rightPanelItems),selectedLeftItem,selectedCenterItem,selectedRightItem,const DeepCollectionEquality().hash(_navigationHistory),sortByDate,const DeepCollectionEquality().hash(_directoryCache));
+int get hashCode => Object.hash(runtimeType,currentPath,const DeepCollectionEquality().hash(_leftPanelItems),const DeepCollectionEquality().hash(_centerPanelItems),const DeepCollectionEquality().hash(_rightPanelItems),selectedLeftItem,selectedCenterItem,selectedRightItem,const DeepCollectionEquality().hash(_navigationHistory),sortByDate,const DeepCollectionEquality().hash(_directoryCache),drillPath,const DeepCollectionEquality().hash(_breadcrumbs),const DeepCollectionEquality().hash(_currentDrillItems),selectedDrillItem);
 
 @override
 String toString() {
-  return 'PresetBrowserState.loaded(currentPath: $currentPath, leftPanelItems: $leftPanelItems, centerPanelItems: $centerPanelItems, rightPanelItems: $rightPanelItems, selectedLeftItem: $selectedLeftItem, selectedCenterItem: $selectedCenterItem, selectedRightItem: $selectedRightItem, navigationHistory: $navigationHistory, sortByDate: $sortByDate, directoryCache: $directoryCache)';
+  return 'PresetBrowserState.loaded(currentPath: $currentPath, leftPanelItems: $leftPanelItems, centerPanelItems: $centerPanelItems, rightPanelItems: $rightPanelItems, selectedLeftItem: $selectedLeftItem, selectedCenterItem: $selectedCenterItem, selectedRightItem: $selectedRightItem, navigationHistory: $navigationHistory, sortByDate: $sortByDate, directoryCache: $directoryCache, drillPath: $drillPath, breadcrumbs: $breadcrumbs, currentDrillItems: $currentDrillItems, selectedDrillItem: $selectedDrillItem)';
 }
 
 
@@ -333,7 +354,7 @@ abstract mixin class _$LoadedCopyWith<$Res> implements $PresetBrowserStateCopyWi
   factory _$LoadedCopyWith(_Loaded value, $Res Function(_Loaded) _then) = __$LoadedCopyWithImpl;
 @useResult
 $Res call({
- String currentPath, List<DirectoryEntry> leftPanelItems, List<DirectoryEntry> centerPanelItems, List<DirectoryEntry> rightPanelItems, DirectoryEntry? selectedLeftItem, DirectoryEntry? selectedCenterItem, DirectoryEntry? selectedRightItem, List<String> navigationHistory, bool sortByDate, Map<String, List<DirectoryEntry>>? directoryCache
+ String currentPath, List<DirectoryEntry> leftPanelItems, List<DirectoryEntry> centerPanelItems, List<DirectoryEntry> rightPanelItems, DirectoryEntry? selectedLeftItem, DirectoryEntry? selectedCenterItem, DirectoryEntry? selectedRightItem, List<String> navigationHistory, bool sortByDate, Map<String, List<DirectoryEntry>>? directoryCache, String? drillPath, List<String>? breadcrumbs, List<DirectoryEntry>? currentDrillItems, DirectoryEntry? selectedDrillItem
 });
 
 
@@ -350,7 +371,7 @@ class __$LoadedCopyWithImpl<$Res>
 
 /// Create a copy of PresetBrowserState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? currentPath = null,Object? leftPanelItems = null,Object? centerPanelItems = null,Object? rightPanelItems = null,Object? selectedLeftItem = freezed,Object? selectedCenterItem = freezed,Object? selectedRightItem = freezed,Object? navigationHistory = null,Object? sortByDate = null,Object? directoryCache = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? currentPath = null,Object? leftPanelItems = null,Object? centerPanelItems = null,Object? rightPanelItems = null,Object? selectedLeftItem = freezed,Object? selectedCenterItem = freezed,Object? selectedRightItem = freezed,Object? navigationHistory = null,Object? sortByDate = null,Object? directoryCache = freezed,Object? drillPath = freezed,Object? breadcrumbs = freezed,Object? currentDrillItems = freezed,Object? selectedDrillItem = freezed,}) {
   return _then(_Loaded(
 currentPath: null == currentPath ? _self.currentPath : currentPath // ignore: cast_nullable_to_non_nullable
 as String,leftPanelItems: null == leftPanelItems ? _self._leftPanelItems : leftPanelItems // ignore: cast_nullable_to_non_nullable
@@ -362,7 +383,11 @@ as DirectoryEntry?,selectedRightItem: freezed == selectedRightItem ? _self.selec
 as DirectoryEntry?,navigationHistory: null == navigationHistory ? _self._navigationHistory : navigationHistory // ignore: cast_nullable_to_non_nullable
 as List<String>,sortByDate: null == sortByDate ? _self.sortByDate : sortByDate // ignore: cast_nullable_to_non_nullable
 as bool,directoryCache: freezed == directoryCache ? _self._directoryCache : directoryCache // ignore: cast_nullable_to_non_nullable
-as Map<String, List<DirectoryEntry>>?,
+as Map<String, List<DirectoryEntry>>?,drillPath: freezed == drillPath ? _self.drillPath : drillPath // ignore: cast_nullable_to_non_nullable
+as String?,breadcrumbs: freezed == breadcrumbs ? _self._breadcrumbs : breadcrumbs // ignore: cast_nullable_to_non_nullable
+as List<String>?,currentDrillItems: freezed == currentDrillItems ? _self._currentDrillItems : currentDrillItems // ignore: cast_nullable_to_non_nullable
+as List<DirectoryEntry>?,selectedDrillItem: freezed == selectedDrillItem ? _self.selectedDrillItem : selectedDrillItem // ignore: cast_nullable_to_non_nullable
+as DirectoryEntry?,
   ));
 }
 

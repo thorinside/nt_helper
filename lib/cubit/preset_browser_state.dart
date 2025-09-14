@@ -24,6 +24,11 @@ class PresetBrowserState with _$PresetBrowserState {
     required List<String> navigationHistory,
     required bool sortByDate,
     Map<String, List<DirectoryEntry>>? directoryCache,
+    // Mobile drill-down navigation fields
+    String? drillPath,
+    List<String>? breadcrumbs,
+    List<DirectoryEntry>? currentDrillItems,
+    DirectoryEntry? selectedDrillItem,
   }) = _Loaded;
 
   const factory PresetBrowserState.error({
