@@ -547,25 +547,26 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 right: 16.0,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    // Get the screen width from MediaQuery for responsive sizing
-                    final screenWidth = MediaQuery.of(context).size.width;
-
-                    // Define responsive breakpoints
+                    // Define responsive breakpoints based on platform
                     double miniMapWidth;
                     double miniMapHeight;
 
-                    if (screenWidth < 600) {
+                    if (_platformService.isMobilePlatform()) {
                       // Mobile: smaller minimap
                       miniMapWidth = 120.0;
                       miniMapHeight = 90.0;
-                    } else if (screenWidth < 900) {
-                      // Tablet: medium minimap
-                      miniMapWidth = 160.0;
-                      miniMapHeight = 120.0;
                     } else {
-                      // Desktop: default size
-                      miniMapWidth = 200.0;
-                      miniMapHeight = 150.0;
+                      // Desktop/Web: Check screen width for more granular sizing
+                      final screenWidth = MediaQuery.of(context).size.width;
+                      if (screenWidth < 900) {
+                        // Smaller desktop window or tablet: medium minimap
+                        miniMapWidth = 160.0;
+                        miniMapHeight = 120.0;
+                      } else {
+                        // Large desktop window: default size
+                        miniMapWidth = 200.0;
+                        miniMapHeight = 150.0;
+                      }
                     }
 
                     return MiniMapWidget(

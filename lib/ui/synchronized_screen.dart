@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:nt_helper/ui/add_algorithm_screen.dart';
 import 'package:nt_helper/constants.dart';
+import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
     show AlgorithmInfo, DisplayMode;
@@ -74,6 +75,7 @@ class SynchronizedScreen extends StatefulWidget {
 
 class _SynchronizedScreenState extends State<SynchronizedScreen>
     with TickerProviderStateMixin {
+  final _platformService = PlatformInteractionService();
   final RoutingEditorController _editorController = RoutingEditorController();
   late int _selectedIndex;
   late TabController _tabController;
@@ -402,7 +404,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   BottomAppBar _buildBottomAppBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     bool isWideScreen = screenWidth > 900;
-    bool isSmallScreen = screenWidth <= 360;
+    bool isMobile = _platformService.isMobilePlatform();
 
     return BottomAppBar(
       child: Row(
@@ -520,7 +522,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
               ),
             ),
           const SizedBox(width: 8),
-          if (!isSmallScreen)
+          // Only show version on tablets and desktop, not mobile
+          if (!isMobile)
             DistingVersion(
               distingVersion: widget.distingVersion,
               requiredVersion: Constants.requiredDistingVersion,
