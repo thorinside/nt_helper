@@ -78,8 +78,6 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       loaded: (currentState) async {
         if (!entry.isDirectory) return;
 
-        emit(const PresetBrowserState.loading());
-
         try {
           final path = _buildPath(currentState.currentPath, entry.name, panel);
 
@@ -170,8 +168,6 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
     await state.maybeMap(
       loaded: (currentState) async {
         if (currentState.navigationHistory.isEmpty) return;
-
-        emit(const PresetBrowserState.loading());
 
         try {
           final previousPath = currentState.navigationHistory.last;
@@ -456,8 +452,6 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       loaded: (currentState) async {
         if (!entry.isDirectory) return;
 
-        emit(const PresetBrowserState.loading());
-
         try {
           final currentDrillPath = currentState.drillPath ?? currentState.currentPath;
           final cleanName = entry.name.endsWith('/')
@@ -507,8 +501,6 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       loaded: (currentState) async {
         final breadcrumbs = currentState.breadcrumbs ?? [];
         if (index < 0 || index >= breadcrumbs.length) return;
-
-        emit(const PresetBrowserState.loading());
 
         try {
           // Build path up to the selected segment

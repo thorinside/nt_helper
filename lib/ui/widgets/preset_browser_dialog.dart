@@ -220,8 +220,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       cubit.selectDirectory(item, position);
     } else {
       cubit.selectFile(item, position);
-      // Update the state to enable the Load button
-      setState(() {});
     }
   }
 
@@ -232,8 +230,6 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       cubit.navigateIntoDirectory(item);
     } else {
       cubit.selectDrillItem(item);
-      // Update the state to enable the Load button
-      setState(() {});
     }
   }
 
