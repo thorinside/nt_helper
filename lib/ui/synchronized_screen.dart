@@ -273,12 +273,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
           children: [
             // Header with routing controls
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  'Algorithm Routing Visualization',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const Spacer(),
                 BlocBuilder<RoutingEditorCubit, RoutingEditorState>(
                   builder: (context, state) {
                     return Row(
