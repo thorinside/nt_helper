@@ -81,4 +81,7 @@ node_modules/
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
+
+# Backup files
+docs/algorithms/*.bak 
