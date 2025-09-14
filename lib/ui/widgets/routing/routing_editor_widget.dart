@@ -545,14 +545,41 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               Positioned(
                 bottom: 16.0,
                 right: 16.0,
-                child: MiniMapWidget(
-                  horizontalScrollController: _horizontalScrollController,
-                  verticalScrollController: _verticalScrollController,
-                  canvasWidth: _canvasWidth,
-                  canvasHeight: _canvasHeight,
-                  nodePositions: _nodePositions,
-                  connections: state.connections,
-                  portPositions: _portPositions,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Get the screen width from MediaQuery for responsive sizing
+                    final screenWidth = MediaQuery.of(context).size.width;
+
+                    // Define responsive breakpoints
+                    double miniMapWidth;
+                    double miniMapHeight;
+
+                    if (screenWidth < 600) {
+                      // Mobile: smaller minimap
+                      miniMapWidth = 120.0;
+                      miniMapHeight = 90.0;
+                    } else if (screenWidth < 900) {
+                      // Tablet: medium minimap
+                      miniMapWidth = 160.0;
+                      miniMapHeight = 120.0;
+                    } else {
+                      // Desktop: default size
+                      miniMapWidth = 200.0;
+                      miniMapHeight = 150.0;
+                    }
+
+                    return MiniMapWidget(
+                      horizontalScrollController: _horizontalScrollController,
+                      verticalScrollController: _verticalScrollController,
+                      canvasWidth: _canvasWidth,
+                      canvasHeight: _canvasHeight,
+                      width: miniMapWidth,
+                      height: miniMapHeight,
+                      nodePositions: _nodePositions,
+                      connections: state.connections,
+                      portPositions: _portPositions,
+                    );
+                  },
                 ),
               ),
             // Error display widget in top-right corner (above mini-map in z-order)
