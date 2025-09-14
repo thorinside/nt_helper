@@ -345,7 +345,7 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
                         _updateCubitValue(currentValue);
                       },
                     )
-                  : widget.name.toLowerCase().contains("note")
+                  : widget.name.toLowerCase().contains("note") && widget.unit != "%"
                   ? Text(midiNoteToNoteString(currentValue))
                   : widget.name.toLowerCase().contains("midi channel")
                   ? Text(
