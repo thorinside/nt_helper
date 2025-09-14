@@ -128,6 +128,7 @@ class NodeLayoutAlgorithm {
         _positionPhysicalOutputsRelativeToAlgorithms(
           physicalOutputs,
           algorithmPositions,
+          sortedAlgorithms,
         );
 
     // Step 6: Detect remaining overlaps after optimization
@@ -168,9 +169,9 @@ class NodeLayoutAlgorithm {
     if (physicalInputs.isEmpty || algorithmPositions.isEmpty) return positions;
 
     const double gridSize = 50.0;
-    const double nodeWidthInGrids = 6.0; // Slightly smaller node width estimate
+    const double physicalNodeWidthInGrids = 3.0; // Physical I/O nodes are narrower ~150px
     const double gapInGrids =
-        2.4; // 2.4 * 50 = 120px gap to algorithms (3x ~40px)
+        1.0; // 1.0 * 50 = 50px gap to algorithms (1 grid square)
 
     // Calculate algorithm bounding box
     double minX = double.infinity;
@@ -185,8 +186,7 @@ class NodeLayoutAlgorithm {
       if (pos.y > maxY) maxY = pos.y;
     }
 
-    // Add approximate node width to maxX for right edge
-    maxX += nodeWidthInGrids * gridSize;
+    // No need to add width here as minX already represents the left edge of algorithms
     // Add approximate node height for bottom edge
     maxY += 3.0 * gridSize; // Approximate node height
 
@@ -195,9 +195,9 @@ class NodeLayoutAlgorithm {
     final physicalNodeHeight =
         (physicalInputs.length * 30.0 + 60.0); // Header + padding
 
-    // Position physical inputs to the left with 3 grid squares gap
+    // Position physical inputs to the left with 1 grid square gap
     final x =
-        ((minX - (nodeWidthInGrids + gapInGrids) * gridSize) / gridSize)
+        ((minX - (physicalNodeWidthInGrids + gapInGrids) * gridSize) / gridSize)
             .round() *
         gridSize;
 
@@ -211,7 +211,7 @@ class NodeLayoutAlgorithm {
     positions['physical_inputs'] = NodePosition(x: x, y: y);
 
     debugPrint(
-      '[NodeLayout] Physical inputs positioned at x=$x, y=$y (left of algorithms with 1.5 grid gap)',
+      '[NodeLayout] Physical inputs positioned at x=$x, y=$y (left of algorithms with 1 grid gap)',
     );
     debugPrint('[NodeLayout] Physical inputs height: $physicalNodeHeight px');
 
@@ -222,30 +222,56 @@ class NodeLayoutAlgorithm {
   Map<String, NodePosition> _positionPhysicalOutputsRelativeToAlgorithms(
     List<Port> physicalOutputs,
     Map<String, NodePosition> algorithmPositions,
+    List<RoutingAlgorithm> algorithms,
   ) {
     final positions = <String, NodePosition>{};
 
     if (physicalOutputs.isEmpty || algorithmPositions.isEmpty) return positions;
 
     const double gridSize = 50.0;
-    const double nodeWidthInGrids = 6.0; // Slightly smaller node width estimate
-    const double gapInGrids = 2.4; // 120px gap to algorithms
+    const double gapInGrids = 1.0; // 50px gap to algorithms (1 grid square)
 
-    // Calculate algorithm bounding box
+    // Calculate algorithm bounding box and find rightmost algorithm
     double minX = double.infinity;
     double maxX = double.negativeInfinity;
     double minY = double.infinity;
     double maxY = double.negativeInfinity;
+    String? rightmostAlgorithmId;
 
-    for (final pos in algorithmPositions.values) {
+    for (final entry in algorithmPositions.entries) {
+      final pos = entry.value;
       if (pos.x < minX) minX = pos.x;
-      if (pos.x > maxX) maxX = pos.x;
+      if (pos.x >= maxX) {
+        maxX = pos.x;
+        rightmostAlgorithmId = entry.key;
+      }
       if (pos.y < minY) minY = pos.y;
       if (pos.y > maxY) maxY = pos.y;
     }
 
-    // Add approximate node width to maxX for right edge
-    maxX += nodeWidthInGrids * gridSize;
+    // Find the rightmost algorithm and estimate its width
+    double algorithmWidth = 250.0; // Default estimate
+    if (rightmostAlgorithmId != null) {
+      final rightmostAlgorithm = algorithms.firstWhere(
+        (a) => a.id == rightmostAlgorithmId,
+        orElse: () => algorithms.first,
+      );
+      // Use the same estimation logic as in _positionAlgorithmsByColumn
+      final titleWidth = rightmostAlgorithm.algorithm.name.length * 8.0 + 150.0;
+
+      double maxLabelWidth = 100.0;
+      for (final port in rightmostAlgorithm.inputPorts) {
+        maxLabelWidth = math.max(maxLabelWidth, port.name.length * 7.0);
+      }
+      for (final port in rightmostAlgorithm.outputPorts) {
+        maxLabelWidth = math.max(maxLabelWidth, port.name.length * 7.0);
+      }
+
+      final portAreaWidth = maxLabelWidth * 2 + 100.0;
+      algorithmWidth = math.max(math.max(titleWidth, portAreaWidth), 200.0);
+    }
+
+    maxX += algorithmWidth;
     // Add approximate node height for bottom edge
     maxY += 3.0 * gridSize; // Approximate node height
 
@@ -254,7 +280,7 @@ class NodeLayoutAlgorithm {
     final physicalNodeHeight =
         (physicalOutputs.length * 30.0 + 60.0); // Header + padding
 
-    // Position physical outputs to the right with 3 grid squares gap
+    // Position physical outputs to the right with 1 grid square gap
     final x = ((maxX + gapInGrids * gridSize) / gridSize).round() * gridSize;
 
     // Center vertically relative to algorithm bounding box
@@ -267,7 +293,7 @@ class NodeLayoutAlgorithm {
     positions['physical_outputs'] = NodePosition(x: x, y: y);
 
     debugPrint(
-      '[NodeLayout] Physical outputs positioned at x=$x, y=$y (right of algorithms with 1.5 grid gap)',
+      '[NodeLayout] Physical outputs positioned at x=$x, y=$y (right of algorithms with 1 grid gap)',
     );
     debugPrint('[NodeLayout] Physical outputs height: $physicalNodeHeight px');
 
@@ -437,11 +463,33 @@ class NodeLayoutAlgorithm {
 
     // Grid-based spacing (compact + non-overlapping using estimated sizes)
     const double gridSize = 50.0;
-    const double colGapPx = 40.0; // min horizontal gap between columns
-    const double rowGapPx = 40.0; // min vertical gap between algorithms
+    const double colGapPx = 50.0; // min horizontal gap between columns (1 grid square)
+    const double rowGapPx = 50.0; // min vertical gap between algorithms (1 grid square)
 
-    // Estimate node sizes from port counts
-    double estimateWidth(RoutingAlgorithm a) => 340.0;
+    // Estimate node sizes from port counts and algorithm name
+    double estimateWidth(RoutingAlgorithm a) {
+      // Algorithm nodes use IntrinsicWidth, so they size to content
+      // Title bar has: icon(24) + gap(8) + text + spacer + buttons(~100)
+      // Port area has: labels on both sides + ports + padding
+
+      // Estimate based on algorithm name with typical font metrics
+      final titleWidth = a.algorithm.name.length * 8.0 + 150.0; // name + icons/buttons
+
+      // Estimate based on longest port label
+      double maxLabelWidth = 100.0; // minimum for short labels
+      for (final port in a.inputPorts) {
+        maxLabelWidth = math.max(maxLabelWidth, port.name.length * 7.0);
+      }
+      for (final port in a.outputPorts) {
+        maxLabelWidth = math.max(maxLabelWidth, port.name.length * 7.0);
+      }
+
+      // Port area width: left labels + gap + ports + gap + right labels + padding
+      final portAreaWidth = maxLabelWidth * 2 + 100.0;
+
+      // Use the larger of title width or port area width
+      return math.max(math.max(titleWidth, portAreaWidth), 200.0);
+    }
     double estimateHeight(RoutingAlgorithm a) {
       const header = 52.0;
       const padding = 16.0;
