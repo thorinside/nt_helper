@@ -8,6 +8,7 @@ import 'port_compatibility_validator.dart';
 import 'poly_algorithm_routing.dart';
 import 'multi_channel_algorithm_routing.dart';
 import 'usb_from_algorithm_routing.dart';
+import 'es5_encoder_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 ///
@@ -297,7 +298,13 @@ abstract class AlgorithmRouting {
 
     // Ask each implementation if it can handle this slot
     AlgorithmRouting instance;
-    if (PolyAlgorithmRouting.canHandle(slot)) {
+    if (ES5EncoderAlgorithmRouting.canHandle(slot)) {
+      // ES-5 Encoder has special handling for conditional channel inputs
+      instance = ES5EncoderAlgorithmRouting.createFromSlot(
+        slot,
+        algorithmUuid: algorithmUuid,
+      );
+    } else if (PolyAlgorithmRouting.canHandle(slot)) {
       instance = PolyAlgorithmRouting.createFromSlot(
         slot,
         ioParameters: ioParameters,
