@@ -21,7 +21,6 @@ import 'package:nt_helper/cubit/preset_browser_cubit.dart';
 import 'package:nt_helper/ui/performance_screen.dart';
 import 'package:nt_helper/ui/widgets/rename_preset_dialog.dart';
 import 'package:nt_helper/ui/widgets/rename_slot_dialog.dart';
-import 'package:nt_helper/ui/routing_page.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
@@ -855,25 +854,6 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [Text('Save Preset'), Icon(Icons.save_alt_rounded)],
-            ),
-          ),
-          // Routing: Disabled by loading OR offline
-          PopupMenuItem(
-            value: 'routing',
-            enabled: !widget.loading && !isOffline,
-            onTap: widget.loading || isOffline
-                ? null
-                : () async {
-                    Navigator.push(
-                      popupCtx,
-                      MaterialPageRoute(
-                        builder: (_) => RoutingPage(cubit: cubit),
-                      ),
-                    );
-                  },
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text('Routing'), Icon(Icons.route_rounded)],
             ),
           ),
           // Video: Disabled by loading OR offline
