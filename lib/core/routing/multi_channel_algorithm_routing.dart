@@ -833,6 +833,12 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         if (firstWord.isNotEmpty && firstWord != paramName) {
           possibleModeNames.add('$firstWord mode'); // First word mode
         }
+        // Add generic "Output mode" as fallback for any output parameter
+        // This handles cases like Reverb (Clouds) where a single "Output mode"
+        // controls both "Left output" and "Right output"
+        if (isOutput) {
+          possibleModeNames.add('Output mode');
+        }
         final uniquePossibleModeNames = possibleModeNames.toSet().toList();
 
         // Apply output mode if available
@@ -866,6 +872,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           String? actualModeNameForNumber;
           ({int parameterNumber, int value})? modeInfo;
 
+          // Use the same list of possible mode names that we built above
+          // This ensures we check for generic "Output mode" as well
           for (final name in uniquePossibleModeNames) {
             if (modeParametersWithNumbers.containsKey(name)) {
               actualModeNameForNumber = name;
