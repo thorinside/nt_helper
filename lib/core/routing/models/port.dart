@@ -170,22 +170,9 @@ sealed class Port with _$Port {
   }
 
   /// Returns true if this port is compatible with another port's type
+  /// In Eurorack, all connections are voltage-based, so all types are compatible
   bool isCompatibleWith(Port other) {
-    // Same types are always compatible
-    if (type == other.type) return true;
-
-    // CV and audio can be cross-compatible in many cases
-    if ((type == PortType.cv && other.type == PortType.audio) ||
-        (type == PortType.audio && other.type == PortType.cv)) {
-      return true;
-    }
-
-    // Clock and gate signals can sometimes be compatible
-    if ((type == PortType.clock && other.type == PortType.gate) ||
-        (type == PortType.gate && other.type == PortType.clock)) {
-      return true;
-    }
-
-    return false;
+    // All port types are compatible since everything is voltage in Eurorack
+    return true;
   }
 }

@@ -94,19 +94,18 @@ void main() {
         },
       );
 
-      test('should reject incompatible audio to MIDI connection', () {
+      test('should accept all type connections (Eurorack voltage)', () {
         final result = validator.validateConnection(
           audioOutputPort,
           midiInputPort,
         );
 
-        expect(result.isValid, isFalse);
-        expect(result.errors.length, equals(1));
-        expect(
-          result.errors[0].type,
-          equals(ValidationErrorType.incompatibleType),
-        );
-        expect(result.errors[0].message, contains('not compatible'));
+        // All types are now compatible since everything is voltage in Eurorack
+        expect(result.isValid, isTrue);
+        expect(result.errors, isEmpty);
+        // Should have a warning about cross-type connection
+        expect(result.warnings.length, equals(1));
+        expect(result.warnings[0].message, contains('Cross-type connection'));
       });
 
       test('should reject connection from input to input', () {

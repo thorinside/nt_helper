@@ -398,18 +398,37 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     try {
       // Validate ports exist
+      debugPrint('=== LOOKING FOR PORTS ===');
+      debugPrint('Looking for source port: $sourcePortId');
+      debugPrint('Looking for target port: $targetPortId');
+
+      // Debug: List all available ports
+      debugPrint('Available algorithm ports:');
+      for (final algo in currentState.algorithms) {
+        debugPrint('  Algorithm ${algo.index}: ${algo.algorithm}');
+        for (final port in algo.inputPorts) {
+          debugPrint('    Input: ${port.id} - "${port.name}" (direction: ${port.direction})');
+        }
+        for (final port in algo.outputPorts) {
+          debugPrint('    Output: ${port.id} - "${port.name}" (direction: ${port.direction})');
+        }
+      }
+
       final sourcePort = _findPortById(currentState, sourcePortId);
       final targetPort = _findPortById(currentState, targetPortId);
 
       if (sourcePort == null) {
-        debugPrint('Source port not found: $sourcePortId');
+        debugPrint('ERROR: Source port not found: $sourcePortId');
         throw ArgumentError('Source port not found: $sourcePortId');
       }
 
       if (targetPort == null) {
-        debugPrint('Target port not found: $targetPortId');
+        debugPrint('ERROR: Target port not found: $targetPortId');
         throw ArgumentError('Target port not found: $targetPortId');
       }
+
+      debugPrint('Found source port: ${sourcePort.name} (${sourcePort.id}) - direction: ${sourcePort.direction}');
+      debugPrint('Found target port: ${targetPort.name} (${targetPort.id}) - direction: ${targetPort.direction}');
 
       // Validate connection is valid (output -> input)
       debugPrint(

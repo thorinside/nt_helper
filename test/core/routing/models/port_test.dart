@@ -313,7 +313,7 @@ void main() {
         expect(gatePort.isCompatibleWith(clockPort), isTrue);
       });
 
-      test('audio and gate should not be directly compatible', () {
+      test('audio and gate should be compatible (all types are voltage)', () {
         const audioPort = Port(
           id: 'audio',
           name: 'Audio',
@@ -328,10 +328,9 @@ void main() {
           direction: PortDirection.input,
         );
 
-        // Audio and gate are different signal types, so they're not compatible
-        // unless there's a clock/gate exception
-        expect(audioPort.isCompatibleWith(gatePort), isFalse);
-        expect(gatePort.isCompatibleWith(audioPort), isFalse);
+        // All port types are compatible in Eurorack (everything is voltage)
+        expect(audioPort.isCompatibleWith(gatePort), isTrue);
+        expect(gatePort.isCompatibleWith(audioPort), isTrue);
       });
     });
 

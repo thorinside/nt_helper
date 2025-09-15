@@ -803,10 +803,19 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
         portType = 'clock';
       }
 
+      // Create a sanitized version of the parameter name for the port ID
+      // This preserves numbered prefixes like "1:" in "1:Trigger input"
+      final sanitizedName = paramName
+          .replaceAll(' ', '_')
+          .replaceAll('/', '_')
+          .replaceAll('\\', '_')
+          .replaceAll('(', '')
+          .replaceAll(')', '');
+
       final port = {
-        'id': '${algorithmUuid ?? 'algo'}_param_$paramNumber',
-        // Use algorithm UUID and parameter number for uniqueness
-        'name': paramName,
+        'id': '${algorithmUuid ?? 'algo'}_${sanitizedName}_$paramNumber',
+        // Use algorithm UUID, sanitized name, and parameter number for uniqueness
+        'name': paramName,  // Keep original name for display
         'type': portType,
         'busParam': paramName,
         'busValue': busValue,

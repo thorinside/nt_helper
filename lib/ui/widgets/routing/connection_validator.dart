@@ -178,10 +178,7 @@ class ConnectionValidator {
       return 'Port directions are incompatible. You can only connect outputs to inputs.';
     }
 
-    // Type mismatch
-    if (!source.isCompatibleWith(target)) {
-      return 'Port types are incompatible. ${source.type.name} cannot connect to ${target.type.name}.';
-    }
+    // No type validation needed - all Eurorack connections are voltage
 
     return 'These ports cannot be connected. Check port directions and types.';
   }
@@ -238,16 +235,10 @@ class ConnectionValidator {
     return 'Direct signal routing';
   }
 
-  /// Validates port type compatibility with additional hardware-specific rules.
+  /// Validates port type compatibility.
+  /// All types are compatible in Eurorack since everything is voltage.
   static bool arePortTypesCompatible(Port source, Port target) {
-    // Use the built-in port compatibility check first
-    if (!source.isCompatibleWith(target)) {
-      return false;
-    }
-
-    // Additional hardware-specific rules can be added here
-    // For example, certain physical ports might have restrictions
-
+    // All port types are compatible in Eurorack
     return true;
   }
 }

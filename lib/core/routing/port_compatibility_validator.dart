@@ -305,22 +305,12 @@ class PortCompatibilityValidator {
   }
 
   /// Validates type compatibility between ports
+  /// Since all Eurorack connections are voltage-based, type validation is informational only
   ValidationResult _validateType(Port source, Port destination) {
     final warnings = <ValidationWarning>[];
 
-    if (!source.isCompatibleWith(destination)) {
-      return ValidationResult.failure([
-        ValidationError(
-          type: ValidationErrorType.incompatibleType,
-          message:
-              'Port types ${source.type.name} and ${destination.type.name} are not compatible',
-          sourcePortId: source.id,
-          destinationPortId: destination.id,
-        ),
-      ]);
-    }
-
-    // Add warning for cross-type connections that are allowed but may need attention
+    // All types are compatible in Eurorack (everything is voltage)
+    // Just add an informational warning for cross-type connections
     if (source.type != destination.type) {
       warnings.add(
         ValidationWarning(
