@@ -19,9 +19,6 @@ class MetadataSyncService {
 
   MetadataSyncService(this._distingManager, this._database);
 
-  // Corrected regex (removed extra ^)
-  final RegExp _parameterPrefixRegex = RegExp(r"^([0-9]+|A|B|C|D):\s*");
-
   /// Fetches all static algorithm metadata from the connected device
   /// by temporarily manipulating a preset, and caches it in the database.
   ///
@@ -708,12 +705,9 @@ class MetadataSyncService {
       if (uniqueBaseParams.contains(paramNumKey)) continue;
       uniqueBaseParams.add(paramNumKey);
 
-      // Parse base name (simple prefix removal for now)
+      // Preserve the full parameter name including channel prefixes
+      // This ensures multi-channel algorithms have distinguishable parameters
       String baseName = paramInfo.name;
-      final match = _parameterPrefixRegex.firstMatch(paramInfo.name);
-      if (match != null) {
-        baseName = paramInfo.name.substring(match.end);
-      }
 
       final unitStr = paramInfo.getUnitString(dbUnitStrings);
       final unitId = (unitStr == null) ? null : unitIdMap[unitStr];
