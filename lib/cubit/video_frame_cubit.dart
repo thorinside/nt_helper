@@ -41,6 +41,8 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
 
   /// Handle incoming video frame
   void _onFrameReceived(dynamic data) {
+    debugPrint('[VideoFrameCubit] Frame received: ${data.runtimeType}, size: ${data is Uint8List ? data.length : 'unknown'}');
+
     // Cast data to Uint8List (EventChannel provides correct type for binary data)
     final frameData = data as Uint8List;
 
