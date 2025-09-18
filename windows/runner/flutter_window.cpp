@@ -10,6 +10,10 @@
 #include "flutter/encodable_value.h" // Required for flutter::EncodableValue()
 #include "flutter/method_result.h"   // Changed from method_result_functions.h
 
+// Forward declaration for USB video plugin registration
+extern void UsbVideoCapturePluginRegisterWithRegistrar(
+    FlutterDesktopPluginRegistrarRef registrar);
+
 #pragma comment(lib, "Pathcch.lib") // Link Pathcch.lib
 
 // Custom MethodResult for WM_CLOSE handling
@@ -270,6 +274,11 @@ bool FlutterWindow::Create(const std::wstring &title, const Point &default_origi
           &flutter::StandardMethodCodec::GetInstance());
 
   RegisterPlugins(flutter_controller_->engine());
+
+  // Register USB video capture plugin
+  UsbVideoCapturePluginRegisterWithRegistrar(
+      flutter_controller_->engine()->GetRegistrarForPlugin("UsbVideoCapturePlugin"));
+
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]()
