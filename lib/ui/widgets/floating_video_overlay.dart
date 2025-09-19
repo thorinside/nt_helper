@@ -28,6 +28,7 @@ class FloatingVideoOverlay extends StatefulWidget {
 class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   Uint8List? _lastFrame;
   Uint8List? _displayFrame; // Stable frame buffer for display
+  bool _isConnected = false;
 
   @override
   void initState() {
@@ -48,6 +49,12 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   }
 
   void _connectVideoFrameCubit() {
+    // Don't reconnect if already connected
+    if (_isConnected) {
+      debugPrint('[FloatingVideoOverlay] Already connected, skipping reconnection');
+      return;
+    }
+
     // Listen for video manager state changes to connect VideoFrameCubit
     // Get the video manager directly from the DistingCubit
     final videoManager = widget.cubit.videoManager;
@@ -58,12 +65,13 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
           '[FloatingVideoOverlay] Connecting VideoFrameCubit to raw stream',
         );
         widget.videoFrameCubit.connectToStream(rawStream);
+        _isConnected = true;
         return;
       }
     }
 
     debugPrint(
-      '[FloatingVideoOverlay] Video stream not available yet, will retry',
+      '[FloatingVideoOverlay] Video stream not available yet, will retry in 500ms',
     );
     // Retry after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -73,6 +81,8 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
 
   @override
   void dispose() {
+    // Reset connection flag
+    _isConnected = false;
     // Stop video stream when widget is disposed
     widget.videoFrameCubit.disconnect();
     widget.cubit.stopVideoStream();

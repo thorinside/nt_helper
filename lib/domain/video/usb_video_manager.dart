@@ -5,9 +5,11 @@ import 'package:collection/collection.dart';
 import 'package:nt_helper/domain/video/usb_device_info.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/services/platform_channels/usb_video_channel.dart';
+import 'package:nt_helper/services/debug_service.dart';
 
 class UsbVideoManager {
   final UsbVideoChannel _channel;
+  final DebugService _debugService = DebugService();
 
   UsbVideoManager({UsbVideoChannel? channel})
     : _channel = channel ?? UsbVideoChannel();
@@ -24,6 +26,10 @@ class UsbVideoManager {
   static const int distintgVendorId = 0x16C0; // Expert Sleepers vendor ID
   static const Duration _recoveryCheckInterval = Duration(seconds: 5);
 
+  void _debugLog(String message) {
+    _debugService.addLocalMessage('[UsbVideoManager] $message');
+  }
+
   Future<void> initialize() async {
     _stateController = StreamController<VideoStreamState>.broadcast();
     _updateState(const VideoStreamState.disconnected());
@@ -32,10 +38,10 @@ class UsbVideoManager {
   Future<bool> isSupported() async {
     try {
       final supported = await _channel.isSupported();
-      debugPrint('[USB_VIDEO] isSupported() returned: $supported');
+      _debugLog('isSupported() returned: $supported');
       return supported;
     } catch (e) {
-      debugPrint('[USB_VIDEO] ERROR checking video support: $e');
+      _debugLog('ERROR checking video support: $e');
       return false;
     }
   }
@@ -67,12 +73,12 @@ class UsbVideoManager {
 
   Future<void> connectToDevice(String deviceId) async {
     try {
-      debugPrint('[UsbVideoManager] Connecting to device: $deviceId');
+      _debugLog('Connecting to device: $deviceId');
       _updateState(const VideoStreamState.connecting());
 
       // Request permission if needed (Android)
       final hasPermission = await _channel.requestUsbPermission(deviceId);
-      debugPrint('[UsbVideoManager] USB permission: $hasPermission');
+      _debugLog('USB permission: $hasPermission');
       if (!hasPermission) {
         _updateState(const VideoStreamState.error('USB permission denied'));
         _startRecoveryTimer();
@@ -80,8 +86,14 @@ class UsbVideoManager {
       }
 
       // Start video stream
-      debugPrint('[UsbVideoManager] Starting video stream...');
+      _debugLog('Starting video stream...');
       final videoStream = _channel.startVideoStream(deviceId);
+
+      // Add debug monitoring to the stream
+      final monitoredStream = videoStream.map((data) {
+        _debugLog('Received frame data: ${data?.runtimeType} ${data is Uint8List ? data.length : 'unknown'} bytes');
+        return data;
+      });
 
       // Wait a moment to ensure the platform channel is fully set up
       await Future.delayed(const Duration(milliseconds: 100));
@@ -92,10 +104,10 @@ class UsbVideoManager {
       // Stop any recovery timer since we're now connected
       _stopRecoveryTimer();
 
-      // Set to streaming state with platform stream directly
+      // Set to streaming state with monitored stream
       _updateState(
         VideoStreamState.streaming(
-          videoStream: videoStream,
+          videoStream: monitoredStream,
           width: 256, // Disting NT display width
           height: 64, // Disting NT display height
           fps: 15.0, // Target FPS

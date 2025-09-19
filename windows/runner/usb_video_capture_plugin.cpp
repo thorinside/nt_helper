@@ -361,45 +361,10 @@ void UsbVideoCapturePlugin::StopVideoCapture() {
 void UsbVideoCapturePlugin::CaptureThread() {
   OutputDebugStringA("[USB_VIDEO_CPP] Capture thread started\n");
 
-  int frame_counter = 0;
-  bool sent_test_frames = false;
-
   while (capturing_) {
     if (!stream_active_ || !event_sink_) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
-    }
-
-    // Send test frames for the first few seconds to verify connection
-    if (!sent_test_frames && frame_counter < 30) {
-      std::vector<uint8_t> test_rgb(256 * 64 * 3);
-
-      // Create a simple pattern that changes color over time
-      uint8_t red = static_cast<uint8_t>((frame_counter * 8) % 256);
-      uint8_t green = static_cast<uint8_t>(128);
-      uint8_t blue = static_cast<uint8_t>(255 - red);
-
-      for (int i = 0; i < 256 * 64; i++) {
-        test_rgb[i * 3] = red;
-        test_rgb[i * 3 + 1] = green;
-        test_rgb[i * 3 + 2] = blue;
-      }
-
-      std::vector<uint8_t> test_bmp = EncodeBMP(test_rgb.data(), 256, 64);
-      event_sink_->Success(flutter::EncodableValue(test_bmp));
-
-      char debugMsg[256];
-      sprintf_s(debugMsg, "[USB_VIDEO_CPP] Sent test frame %d\n", frame_counter);
-      OutputDebugStringA(debugMsg);
-
-      frame_counter++;
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      continue;
-    }
-
-    if (frame_counter >= 30) {
-      sent_test_frames = true;
-      OutputDebugStringA("[USB_VIDEO_CPP] Finished sending test frames, attempting real video\n");
     }
 
     // Try to read real video frames
@@ -414,7 +379,7 @@ void UsbVideoCapturePlugin::CaptureThread() {
 
       if (FAILED(hr)) {
         char debugMsg[256];
-        sprintf_s(debugMsg, "[USB_VIDEO_CPP] ReadSample failed: 0x%08X, continuing with test frames\n", hr);
+        sprintf_s(debugMsg, "[USB_VIDEO_CPP] ReadSample failed: 0x%08X\n", hr);
         OutputDebugStringA(debugMsg);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;

@@ -43,6 +43,8 @@ import 'package:nt_helper/ui/widgets/algorithm_list_view.dart';
 import 'package:nt_helper/ui/widgets/disting_version.dart';
 import 'package:nt_helper/ui/widgets/slot_detail_view.dart';
 import 'package:nt_helper/ui/widgets/mcp_status_indicator.dart';
+import 'package:nt_helper/ui/widgets/debug_panel.dart';
+import 'package:nt_helper/services/debug_service.dart';
 
 enum EditMode { parameters, routing }
 
@@ -86,6 +88,11 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     _selectedIndex = 0;
     _tabController = TabController(length: widget.slots.length, vsync: this);
     _tabController.addListener(_handleTabSelection);
+
+    // Initialize debug service in debug mode
+    if (kDebugMode) {
+      DebugService().initialize();
+    }
 
     // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
     int newValidIndex = _selectedIndex;
@@ -157,9 +164,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       return Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(context, isWideScreen),
-        body: IndexedStack(
-          index: _currentMode == EditMode.parameters ? 0 : 1,
-          children: [_buildWideScreenBody(), _buildRoutingCanvas()],
+        body: Column(
+          children: [
+            Expanded(
+              child: IndexedStack(
+                index: _currentMode == EditMode.parameters ? 0 : 1,
+                children: [_buildWideScreenBody(), _buildRoutingCanvas()],
+              ),
+            ),
+            if (kDebugMode) const DebugPanel(),
+          ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
@@ -170,9 +184,16 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
       return Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _buildAppBar(context, isWideScreen),
-        body: IndexedStack(
-          index: _currentMode == EditMode.parameters ? 0 : 1,
-          children: [_buildBody(), _buildRoutingCanvas()],
+        body: Column(
+          children: [
+            Expanded(
+              child: IndexedStack(
+                index: _currentMode == EditMode.parameters ? 0 : 1,
+                children: [_buildBody(), _buildRoutingCanvas()],
+              ),
+            ),
+            if (kDebugMode) const DebugPanel(),
+          ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
         floatingActionButton: _buildFloatingActionButton(),
