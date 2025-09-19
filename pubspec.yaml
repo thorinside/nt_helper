@@ -86,6 +86,7 @@ dependencies:
   universal_ble: ^0.9.11
   vector_math: ^2.1.4
   webview_flutter: ^4.10.0
+  uvccamera: ^0.0.13
 
 dev_dependencies:
   flutter_test:

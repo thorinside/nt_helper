@@ -229,5 +229,6 @@ class UsbVideoManager {
     _stopRecoveryTimer();
     _stateController?.close();
     _channel.stopVideoStream();
+    _channel.dispose();
   }
 }
