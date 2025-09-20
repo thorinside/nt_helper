@@ -301,6 +301,50 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                   builder: (context, state) {
                     return Row(
                       children: [
+                        // Zoom controls
+                        if (state is RoutingEditorStateLoaded) ...[
+                          IconButton(
+                            onPressed: () => context.read<RoutingEditorCubit>().zoomOut(),
+                            icon: const Icon(Icons.zoom_out),
+                            tooltip: 'Zoom out (Ctrl/Cmd + -)',
+                          ),
+                          Container(
+                            constraints: const BoxConstraints(minWidth: 80),
+                            child: DropdownButton<double>(
+                              value: _findClosestZoomLevel(state.zoomLevel),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  context.read<RoutingEditorCubit>().setZoomLevel(value);
+                                }
+                              },
+                              items: RoutingEditorCubit.availableZoomLevels.map((zoom) {
+                                return DropdownMenuItem<double>(
+                                  value: zoom,
+                                  child: Text('${(zoom * 100).round()}%'),
+                                );
+                              }).toList(),
+                              underline: const SizedBox.shrink(),
+                              isDense: true,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => context.read<RoutingEditorCubit>().zoomIn(),
+                            icon: const Icon(Icons.zoom_in),
+                            tooltip: 'Zoom in (Ctrl/Cmd + +)',
+                          ),
+                          IconButton(
+                            onPressed: () => context.read<RoutingEditorCubit>().resetZoom(),
+                            icon: const Icon(Icons.zoom_out_map),
+                            tooltip: 'Reset zoom (100%)',
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            height: 24,
+                            width: 1,
+                            color: Theme.of(context).dividerColor,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         IconButton(
                           icon: const Icon(Icons.refresh),
                           onPressed: state.maybeWhen(
@@ -313,6 +357,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                   buses,
                                   portOutputModes,
                                   nodePositions,
+                                  zoomLevel,
+                                  panOffset,
                                   isHardwareSynced,
                                   isPersistenceEnabled,
                                   lastSyncTime,
@@ -339,6 +385,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 buses,
                                 portOutputModes,
                                 nodePositions,
+                                zoomLevel,
+                                panOffset,
                                 isHardwareSynced,
                                 isPersistenceEnabled,
                                 lastSyncTime,
@@ -1234,5 +1282,21 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     debugPrint('[SynchronizedScreen] Inserting overlay entry');
     Overlay.of(context).insert(overlayEntry);
     debugPrint('[SynchronizedScreen] Overlay entry inserted successfully');
+  }
+
+  double _findClosestZoomLevel(double currentZoom) {
+    final levels = RoutingEditorCubit.availableZoomLevels;
+    double closest = levels.first;
+    double minDifference = (currentZoom - closest).abs();
+
+    for (final level in levels) {
+      final difference = (currentZoom - level).abs();
+      if (difference < minDifference) {
+        minDifference = difference;
+        closest = level;
+      }
+    }
+
+    return closest;
   }
 }

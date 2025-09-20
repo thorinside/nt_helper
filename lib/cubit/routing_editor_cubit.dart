@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -210,12 +211,23 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // For backward compatibility, keep empty lists for now
       // These will be removed in the next refactoring step
 
+      // Preserve zoom level and pan offset from current state if it exists
+      final currentState = state;
+      final zoomLevel = currentState is RoutingEditorStateLoaded
+          ? currentState.zoomLevel
+          : 1.0;
+      final panOffset = currentState is RoutingEditorStateLoaded
+          ? currentState.panOffset
+          : Offset.zero;
+
       emit(
         RoutingEditorState.loaded(
           physicalInputs: physicalInputs,
           physicalOutputs: physicalOutputs,
           algorithms: algorithms,
           connections: connections,
+          zoomLevel: zoomLevel,
+          panOffset: panOffset,
           isHardwareSynced: true,
           lastSyncTime: DateTime.now(),
         ),
