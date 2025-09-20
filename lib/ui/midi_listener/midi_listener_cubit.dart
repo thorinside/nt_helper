@@ -74,6 +74,34 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
     }
   }
 
+  Future<void> disconnectDevice() async {
+    // Cancel subscription
+    await _midiSubscription?.cancel();
+    _midiSubscription = null;
+
+    // Disconnect device
+    final currentState = state;
+    if (currentState is Data) {
+      if (currentState.selectedDevice != null) {
+        _midiCommand.disconnectDevice(currentState.selectedDevice!);
+      }
+      // Update the state to show disconnected
+      emit(currentState.copyWith(
+        selectedDevice: null,
+        isConnected: false,
+        lastDetectedType: null,
+        lastDetectedChannel: null,
+        lastDetectedCc: null,
+        lastDetectedNote: null,
+        lastDetectedTime: null,
+      ));
+    }
+
+    // Reset consecutive count and signature
+    _consecutiveCount = 0;
+    _lastEventSignature = null;
+  }
+
   void _handleMidiData(MidiPacket packet) {
     final data = packet.data;
     // Basic validation: need at least 3 bytes for most channel messages
