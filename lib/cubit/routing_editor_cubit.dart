@@ -2266,6 +2266,65 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     await saveNodePositions();
   }
 
+  /// Update zoom level with bounds checking
+  void setZoomLevel(double zoomLevel) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    // Clamp zoom level between 0.1x and 5.0x
+    final clampedZoom = zoomLevel.clamp(0.1, 5.0);
+    
+    emit(currentState.copyWith(zoomLevel: clampedZoom));
+    debugPrint('[RoutingEditor] Zoom level updated to ${(clampedZoom * 100).round()}%');
+  }
+
+  /// Zoom in by a factor
+  void zoomIn([double factor = 1.2]) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    setZoomLevel(currentState.zoomLevel * factor);
+  }
+
+  /// Zoom out by a factor
+  void zoomOut([double factor = 1.2]) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    setZoomLevel(currentState.zoomLevel / factor);
+  }
+
+  /// Reset zoom to 100%
+  void resetZoom() {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    emit(currentState.copyWith(zoomLevel: 1.0));
+    debugPrint('[RoutingEditor] Zoom reset to 100%');
+  }
+
+  /// Update pan offset
+  void updatePanOffset(Offset offset) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    emit(currentState.copyWith(panOffset: offset));
+  }
+
+  /// Get available zoom levels for dropdown
+  static List<double> get availableZoomLevels => [
+        0.25, 0.33, 0.5, 0.67, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0
+      ];
+
+  /// Get zoom percentage as integer
+  int get zoomPercentage {
+    final currentState = state;
+    if (currentState is RoutingEditorStateLoaded) {
+      return (currentState.zoomLevel * 100).round();
+    }
+    return 100;
+  }
+
   @override
   Future<void> close() {
     _distingStateSubscription?.cancel();

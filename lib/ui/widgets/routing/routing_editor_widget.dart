@@ -557,6 +557,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     : _buildCanvasContent(context, state),
               ),
             ),
+            // Zoom controls positioned in top-left corner
+            if (state is RoutingEditorStateLoaded)
+              Positioned(
+                top: 16.0,
+                left: 16.0,
+                child: _buildZoomControls(context, state),
+              ),
             // MiniMapWidget positioned in bottom-right corner with 16px margin
             if (state is RoutingEditorStateLoaded)
               Positioned(
@@ -704,15 +711,57 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Handle keyboard events for desktop platforms
   KeyEventResult _handleKeyEvent(KeyEvent event) {
-    if (_platformService.isDesktopPlatform() &&
-        event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
-      // Cancel drag operation if in progress
+    if (!_platformService.isDesktopPlatform() || event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final routingCubit = context.read<RoutingEditorCubit>();
+    final isCtrlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+    
+    final isCmdPressed = event.logicalKey == LogicalKeyboardKey.metaLeft ||
+        event.logicalKey == LogicalKeyboardKey.metaRight ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaLeft) ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight);
+
+    final isModifierPressed = isCtrlPressed || isCmdPressed;
+
+    // Zoom in with Ctrl/Cmd + Plus or Equals
+    if (isModifierPressed && 
+        (event.logicalKey == LogicalKeyboardKey.equal ||
+         event.logicalKey == LogicalKeyboardKey.add ||
+         event.logicalKey == LogicalKeyboardKey.numpadAdd)) {
+      routingCubit.zoomIn();
+      return KeyEventResult.handled;
+    }
+
+    // Zoom out with Ctrl/Cmd + Minus
+    if (isModifierPressed && 
+        (event.logicalKey == LogicalKeyboardKey.minus ||
+         event.logicalKey == LogicalKeyboardKey.subtract ||
+         event.logicalKey == LogicalKeyboardKey.numpadSubtract)) {
+      routingCubit.zoomOut();
+      return KeyEventResult.handled;
+    }
+
+    // Reset zoom with Ctrl/Cmd + 0
+    if (isModifierPressed && 
+        (event.logicalKey == LogicalKeyboardKey.digit0 ||
+         event.logicalKey == LogicalKeyboardKey.numpad0)) {
+      routingCubit.resetZoom();
+      return KeyEventResult.handled;
+    }
+
+    // Cancel drag operation with Escape
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
       if (_isDraggingConnection) {
         _cancelDragOperation();
         return KeyEventResult.handled;
       }
     }
+
     return KeyEventResult.ignored;
   }
 
@@ -813,6 +862,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             buses,
             portOutputModes,
             nodePositions,
+            zoomLevel,
+            panOffset,
             isHardwareSynced,
             isPersistenceEnabled,
             lastSyncTime,
@@ -865,6 +916,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<Connection> connections,
     Map<String, NodePosition> stateNodePositions,
   ) {
+    final routingCubit = context.read<RoutingEditorCubit>();
+    final currentState = routingCubit.state;
+    final zoomLevel = currentState is RoutingEditorStateLoaded 
+        ? currentState.zoomLevel 
+        : 1.0;
+
     return Semantics(
       label:
           'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
@@ -882,9 +939,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           physics:
               const NeverScrollableScrollPhysics(), // Disable scroll gestures
           child: Listener(
-            // Handle mouse wheel and trackpad scrolling
+            // Handle mouse wheel and trackpad scrolling/zooming
             onPointerSignal: (pointerSignal) {
               if (pointerSignal is PointerScrollEvent) {
+                // Check for zoom modifier keys (Ctrl/Cmd + wheel)
+                if (HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight) ||
+                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaLeft) ||
+                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight)) {
+                  // Zoom with mouse wheel
+                  final zoomDelta = -pointerSignal.scrollDelta.dy * 0.001;
+                  final newZoom = (zoomLevel + zoomDelta).clamp(0.1, 5.0);
+                  routingCubit.setZoomLevel(newZoom);
+                  return;
+                }
+
+                // Regular panning
                 // Handle horizontal scrolling (trackpad side-scroll or shift+wheel)
                 if (_horizontalScrollController.hasClients) {
                   final newHorizontal =
@@ -914,14 +984,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             },
             child: RepaintBoundary(
               key: _captureKey,
-              child: Container(
-                key: _canvasKey,
-                width: _canvasWidth,
-                height: _canvasHeight,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-                child: Stack(
+              child: Transform.scale(
+                scale: zoomLevel,
+                child: Container(
+                  key: _canvasKey,
+                  width: _canvasWidth,
+                  height: _canvasHeight,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                  child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     // Grid background with gesture detector for empty space (bottom layer)
@@ -935,6 +1007,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                             '=== GRID TAP DOWN: ${details.localPosition}',
                           );
                           _handleCanvasTap(details.localPosition, connections);
+                        },
+                        onDoubleTap: () {
+                          // Double tap to reset zoom
+                          final routingCubit = context.read<RoutingEditorCubit>();
+                          routingCubit.resetZoom();
                         },
                         onPanStart: _handleCanvasPanStart,
                         onPanUpdate: _handleCanvasPanUpdate,
@@ -986,6 +1063,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     if (_isDraggingConnection && _dragCurrentPosition != null)
                       _buildTemporaryConnection(),
                   ],
+                  ),
                 ),
               ),
             ),
@@ -993,6 +1071,89 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         ),
       ),
     );
+  }
+
+  /// Build zoom controls widget
+  Widget _buildZoomControls(BuildContext context, RoutingEditorStateLoaded state) {
+    final routingCubit = context.read<RoutingEditorCubit>();
+    
+    return Material(
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(8),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Zoom out button
+            IconButton(
+              onPressed: () => routingCubit.zoomOut(),
+              icon: const Icon(Icons.zoom_out),
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              tooltip: 'Zoom out (Ctrl/Cmd + -)',
+            ),
+            const SizedBox(width: 4),
+            // Zoom level dropdown
+            Container(
+              constraints: const BoxConstraints(minWidth: 80),
+              child: DropdownButton<double>(
+                value: _findClosestZoomLevel(state.zoomLevel),
+                onChanged: (value) {
+                  if (value != null) {
+                    routingCubit.setZoomLevel(value);
+                  }
+                },
+                items: RoutingEditorCubit.availableZoomLevels.map((zoom) {
+                  return DropdownMenuItem<double>(
+                    value: zoom,
+                    child: Text('${(zoom * 100).round()}%'),
+                  );
+                }).toList(),
+                underline: const SizedBox.shrink(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(width: 4),
+            // Zoom in button
+            IconButton(
+              onPressed: () => routingCubit.zoomIn(),
+              icon: const Icon(Icons.zoom_in),
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              tooltip: 'Zoom in (Ctrl/Cmd + +)',
+            ),
+            const SizedBox(width: 8),
+            // Reset zoom button
+            IconButton(
+              onPressed: () => routingCubit.resetZoom(),
+              icon: const Icon(Icons.zoom_out_map),
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              tooltip: 'Reset zoom (100%)',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Find the closest available zoom level for the dropdown
+  double _findClosestZoomLevel(double currentZoom) {
+    final levels = RoutingEditorCubit.availableZoomLevels;
+    double closest = levels.first;
+    double minDifference = (currentZoom - closest).abs();
+    
+    for (final level in levels) {
+      final difference = (currentZoom - level).abs();
+      if (difference < minDifference) {
+        minDifference = difference;
+        closest = level;
+      }
+    }
+    
+    return closest;
   }
 
   // Below methods are copied from RoutingCanvas (handlers, builders, validators)

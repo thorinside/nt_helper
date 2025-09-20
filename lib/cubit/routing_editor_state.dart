@@ -77,6 +77,8 @@ sealed class RoutingEditorState with _$RoutingEditorState {
     Map<String, OutputMode> portOutputModes, // Output modes per port
     @Default({})
     Map<String, NodePosition> nodePositions, // Node positions for layout
+    @Default(1.0) double zoomLevel, // Current zoom level (1.0 = 100%)
+    @Default(Offset.zero) Offset panOffset, // Current pan offset
     @Default(false) bool isHardwareSynced, // Hardware sync status
     @Default(false) bool isPersistenceEnabled, // State persistence status
     DateTime? lastSyncTime, // Last hardware sync timestamp
