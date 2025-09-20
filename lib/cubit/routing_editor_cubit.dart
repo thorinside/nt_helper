@@ -690,19 +690,15 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       );
     }
 
-    // Check if either port already has a bus assignment - use that if available
-    int? existingBus;
-    if (sourceBusValue != null && sourceBusValue > 0) {
-      existingBus = sourceBusValue;
-    } else if (targetBusValue != null && targetBusValue > 0) {
-      existingBus = targetBusValue;
-    }
-
+    // New logic: Use source bus if it exists (non-zero), otherwise allocate new
+    // Always overwrite target bus regardless of its current value
     int busToUse;
-    if (existingBus != null) {
-      busToUse = existingBus;
-      debugPrint('Using existing bus $busToUse for algorithm connection');
+    if (sourceBusValue != null && sourceBusValue > 0) {
+      // Source already has a bus - reuse it for fan-out
+      busToUse = sourceBusValue;
+      debugPrint('Using existing source bus $busToUse for algorithm connection (fan-out)');
     } else {
+      // Source has no bus - allocate a new one
       // Prefer aux buses first, then fall back to any free internal bus.
       final availableBus = await _findFirstAvailableInternalBus(state);
       if (availableBus == null) {
@@ -712,7 +708,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         );
       }
       busToUse = availableBus;
-      debugPrint('Using new internal bus $busToUse for algorithm connection');
+      debugPrint('Allocated new internal bus $busToUse for algorithm connection');
+    }
+
+    // Note: We're intentionally ignoring targetBusValue to allow easy overwriting
+    if (targetBusValue != null && targetBusValue > 0) {
+      debugPrint('Overwriting target\'s existing bus $targetBusValue with bus $busToUse');
     }
 
     // Update both source output and target input bus parameters
