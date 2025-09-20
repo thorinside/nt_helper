@@ -361,11 +361,15 @@ class _PortWidgetState extends State<PortWidget> {
       final render = ctx.findRenderObject() as RenderBox?;
       if (render == null || !render.attached) return;
 
-      final topLeft = render.localToGlobal(Offset.zero);
+      // Get the port's position relative to the nearest ancestor that will handle the coordinate
+      // We need the canvas coordinate, not the global coordinate
       final size = render.size; // 12x12
-      final center = topLeft + Offset(size.width / 2, size.height / 2);
+      final center = Offset(size.width / 2.0, size.height / 2.0);
 
-      widget.onPortPositionResolved!(widget.portId!, center, widget.isInput);
+      // Convert to global first, then let the callback convert to canvas coordinates
+      final globalCenter = render.localToGlobal(center);
+
+      widget.onPortPositionResolved!(widget.portId!, globalCenter, widget.isInput);
     });
   }
 }

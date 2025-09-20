@@ -225,6 +225,8 @@ class _TestLayoutButtonWidget extends StatelessWidget {
                 buses,
                 portOutputModes,
                 nodePositions,
+                zoomLevel,
+                panOffset,
                 isHardwareSynced,
                 isPersistenceEnabled,
                 lastSyncTime,
@@ -288,6 +290,8 @@ class _TestButtonsRowWidget extends StatelessWidget {
                       ___________,
                       ____________,
                       _____________,
+                      ______________,
+                      _______________,
                     ) {
                       return () {
                         // Refresh routing logic would go here
@@ -308,6 +312,8 @@ class _TestButtonsRowWidget extends StatelessWidget {
                     buses,
                     portOutputModes,
                     nodePositions,
+                    zoomLevel,
+                    panOffset,
                     isHardwareSynced,
                     isPersistenceEnabled,
                     lastSyncTime,

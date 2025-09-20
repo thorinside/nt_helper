@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -210,12 +211,23 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // For backward compatibility, keep empty lists for now
       // These will be removed in the next refactoring step
 
+      // Preserve zoom level and pan offset from current state if it exists
+      final currentState = state;
+      final zoomLevel = currentState is RoutingEditorStateLoaded
+          ? currentState.zoomLevel
+          : 1.0;
+      final panOffset = currentState is RoutingEditorStateLoaded
+          ? currentState.panOffset
+          : Offset.zero;
+
       emit(
         RoutingEditorState.loaded(
           physicalInputs: physicalInputs,
           physicalOutputs: physicalOutputs,
           algorithms: algorithms,
           connections: connections,
+          zoomLevel: zoomLevel,
+          panOffset: panOffset,
           isHardwareSynced: true,
           lastSyncTime: DateTime.now(),
         ),
@@ -2264,6 +2276,65 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Save positions after update
     await saveNodePositions();
+  }
+
+  /// Update zoom level with bounds checking
+  void setZoomLevel(double zoomLevel) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    // Clamp zoom level between 0.1x and 2.0x
+    final clampedZoom = zoomLevel.clamp(0.1, 2.0);
+    
+    emit(currentState.copyWith(zoomLevel: clampedZoom));
+    debugPrint('[RoutingEditor] Zoom level updated to ${(clampedZoom * 100).round()}%');
+  }
+
+  /// Zoom in by a factor
+  void zoomIn([double factor = 1.2]) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    setZoomLevel(currentState.zoomLevel * factor);
+  }
+
+  /// Zoom out by a factor
+  void zoomOut([double factor = 1.2]) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    setZoomLevel(currentState.zoomLevel / factor);
+  }
+
+  /// Reset zoom to 100%
+  void resetZoom() {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    emit(currentState.copyWith(zoomLevel: 1.0));
+    debugPrint('[RoutingEditor] Zoom reset to 100%');
+  }
+
+  /// Update pan offset
+  void updatePanOffset(Offset offset) {
+    final currentState = state;
+    if (currentState is! RoutingEditorStateLoaded) return;
+
+    emit(currentState.copyWith(panOffset: offset));
+  }
+
+  /// Get available zoom levels for dropdown
+  static List<double> get availableZoomLevels => [
+        0.25, 0.33, 0.5, 0.67, 0.75, 1.0, 1.25, 1.5, 2.0
+      ];
+
+  /// Get zoom percentage as integer
+  int get zoomPercentage {
+    final currentState = state;
+    if (currentState is RoutingEditorStateLoaded) {
+      return (currentState.zoomLevel * 100).round();
+    }
+    return 100;
   }
 
   @override

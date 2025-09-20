@@ -58,7 +58,6 @@ class RoutingEditorWidget extends StatefulWidget {
 
 class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   final Map<String, Offset> _nodePositions = {};
-  final Map<String, Offset> _portPositions = {}; // Store actual port positions
   final Set<String> _selectedNodes = {};
 
   // Drag state management for connection creation
@@ -96,11 +95,19 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Offset _lastPanPosition = Offset.zero;
   bool _isDraggingNode = false;
 
-  bool _portsReady = false;
-  bool _connectionsVisible = false; // Track connection visibility separately
+  bool _connectionsVisible = true; // Always visible since we have port positions
 
   // Store the current connection label bounds for hit testing
   Map<String, Rect> _connectionLabelBounds = {};
+
+  // Actual port positions from widget callbacks
+  final Map<String, Offset> _portPositions = {};
+
+  // Track when all ports have been positioned
+  bool _portsReady = false;
+
+  // Current zoom level for coordinate calculations
+  double _currentZoomLevel = 1.0;
 
   @override
   void initState() {
@@ -185,6 +192,49 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     super.dispose();
+  }
+
+  /// Update a port's anchor position from widget callback
+  void _updatePortAnchor(String portId, Offset globalCenter, bool isInput) {
+    if (!mounted) return;
+
+    // The port widget provides its global position
+    // We need to convert this to the canvas's local coordinate system
+    // The canvas is the Container with _canvasKey, which is inside Transform.scale
+
+    final canvasContext = _canvasKey.currentContext;
+    if (canvasContext == null) return;
+
+    final canvasBox = canvasContext.findRenderObject() as RenderBox?;
+    if (canvasBox == null || !canvasBox.attached) return;
+
+    // Convert from global to local coordinates within the canvas
+    // This gives us the position in the canvas's coordinate space
+    final canvasPosition = canvasBox.globalToLocal(globalCenter);
+
+    setState(() {
+      _portPositions[portId] = canvasPosition;
+      // Check if all ports are positioned
+      _checkPortsReady();
+    });
+  }
+
+  /// Check if all expected ports have positions
+  void _checkPortsReady() {
+    final cubit = context.read<RoutingEditorCubit>();
+    final state = cubit.state;
+    if (state is! RoutingEditorStateLoaded) {
+      _portsReady = false;
+      return;
+    }
+
+    // Count expected ports
+    int expectedPorts = state.physicalInputs.length + state.physicalOutputs.length;
+    for (final algo in state.algorithms) {
+      expectedPorts += algo.inputPorts.length + algo.outputPorts.length;
+    }
+
+    _portsReady = _portPositions.length >= expectedPorts;
   }
 
   // Fit viewport to current content center (no zoom)
@@ -520,12 +570,10 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 _hasLoadedStateChanged(previous, current));
 
         // Only clear port positions when the routing structure actually changes
-        // This prevents flicker when state updates don't affect the visual layout
+        // Since we now calculate positions from node layout, we don't need to clear on zoom
         if (shouldRebuild && current is RoutingEditorStateLoaded) {
           if (previous is! RoutingEditorStateLoaded ||
               _hasRoutingStructureChanged(previous, current)) {
-            _portPositions.clear();
-            _portsReady = false;
             _connectionsVisible = false;
             _pruneAndInitNodePositions(current);
           }
@@ -551,6 +599,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                 borderRadius: BorderRadius.circular(8),
                 child: _platformService.isDesktopPlatform()
                     ? Focus(
+                        autofocus: true,
                         onKeyEvent: (node, event) => _handleKeyEvent(event),
                         child: _buildCanvasContent(context, state),
                       )
@@ -595,7 +644,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                       height: miniMapHeight,
                       nodePositions: _nodePositions,
                       connections: state.connections,
-                      portPositions: _portPositions,
                     );
                   },
                 ),
@@ -704,15 +752,56 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   /// Handle keyboard events for desktop platforms
   KeyEventResult _handleKeyEvent(KeyEvent event) {
-    if (_platformService.isDesktopPlatform() &&
-        event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
-      // Cancel drag operation if in progress
+    if (!_platformService.isDesktopPlatform() || event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final routingCubit = context.read<RoutingEditorCubit>();
+    final isCtrlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+    
+    final isCmdPressed = event.logicalKey == LogicalKeyboardKey.metaLeft ||
+        event.logicalKey == LogicalKeyboardKey.metaRight ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaLeft) ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight);
+
+    final isModifierPressed = isCtrlPressed || isCmdPressed;
+
+    // Zoom in with Ctrl/Cmd + Plus or Equals
+    if (isModifierPressed && 
+        (event.logicalKey == LogicalKeyboardKey.equal ||
+         event.logicalKey == LogicalKeyboardKey.add ||
+         event.logicalKey == LogicalKeyboardKey.numpadAdd)) {
+      routingCubit.zoomIn();
+      return KeyEventResult.handled;
+    }
+
+    // Zoom out with Ctrl/Cmd + Minus
+    if (isModifierPressed &&
+        (event.logicalKey == LogicalKeyboardKey.minus ||
+         event.logicalKey == LogicalKeyboardKey.numpadSubtract)) {
+      routingCubit.zoomOut();
+      return KeyEventResult.handled;
+    }
+
+    // Reset zoom with Ctrl/Cmd + 0
+    if (isModifierPressed && 
+        (event.logicalKey == LogicalKeyboardKey.digit0 ||
+         event.logicalKey == LogicalKeyboardKey.numpad0)) {
+      routingCubit.resetZoom();
+      return KeyEventResult.handled;
+    }
+
+    // Cancel drag operation with Escape
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
       if (_isDraggingConnection) {
         _cancelDragOperation();
         return KeyEventResult.handled;
       }
     }
+
     return KeyEventResult.ignored;
   }
 
@@ -813,6 +902,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             buses,
             portOutputModes,
             nodePositions,
+            zoomLevel,
+            panOffset,
             isHardwareSynced,
             isPersistenceEnabled,
             lastSyncTime,
@@ -826,6 +917,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             algorithms,
             connections,
             nodePositions,
+            zoomLevel,
+            panOffset,
           ),
     );
   }
@@ -864,7 +957,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
     Map<String, NodePosition> stateNodePositions,
+    double zoomLevel,
+    Offset panOffset,
   ) {
+    final routingCubit = context.read<RoutingEditorCubit>();
+
+    // Store current zoom level for coordinate calculations
+    _currentZoomLevel = zoomLevel;
+
     return Semantics(
       label:
           'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
@@ -882,9 +982,22 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           physics:
               const NeverScrollableScrollPhysics(), // Disable scroll gestures
           child: Listener(
-            // Handle mouse wheel and trackpad scrolling
+            // Handle mouse wheel and trackpad scrolling/zooming
             onPointerSignal: (pointerSignal) {
               if (pointerSignal is PointerScrollEvent) {
+                // Check for zoom modifier keys (Ctrl/Cmd + wheel)
+                if (HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight) ||
+                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaLeft) ||
+                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight)) {
+                  // Zoom with mouse wheel
+                  final zoomDelta = -pointerSignal.scrollDelta.dy * 0.001;
+                  final newZoom = (zoomLevel + zoomDelta).clamp(0.1, 2.0);
+                  routingCubit.setZoomLevel(newZoom);
+                  return;
+                }
+
+                // Regular panning
                 // Handle horizontal scrolling (trackpad side-scroll or shift+wheel)
                 if (_horizontalScrollController.hasClients) {
                   final newHorizontal =
@@ -914,14 +1027,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             },
             child: RepaintBoundary(
               key: _captureKey,
-              child: Container(
-                key: _canvasKey,
-                width: _canvasWidth,
-                height: _canvasHeight,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-                child: Stack(
+              child: Transform.scale(
+                scale: zoomLevel,
+                child: Container(
+                  key: _canvasKey,
+                  width: _canvasWidth,
+                  height: _canvasHeight,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                  child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     // Grid background with gesture detector for empty space (bottom layer)
@@ -935,6 +1050,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                             '=== GRID TAP DOWN: ${details.localPosition}',
                           );
                           _handleCanvasTap(details.localPosition, connections);
+                        },
+                        onDoubleTap: () {
+                          // Double tap to reset zoom
+                          final routingCubit = context.read<RoutingEditorCubit>();
+                          routingCubit.resetZoom();
                         },
                         onPanStart: _handleCanvasPanStart,
                         onPanUpdate: _handleCanvasPanUpdate,
@@ -977,7 +1097,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     // Draw all connections with unified canvas
                     // Use RepaintBoundary to isolate canvas repaints
                     // Keep connections visible if they were already visible and ports haven't been cleared
-                    if (_connectionsVisible || _portsReady)
+                    if (_connectionsVisible)
                       RepaintBoundary(
                         child: _buildUnifiedConnectionCanvas(connections),
                       )
@@ -986,6 +1106,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     if (_isDraggingConnection && _dragCurrentPosition != null)
                       _buildTemporaryConnection(),
                   ],
+                  ),
                 ),
               ),
             ),
@@ -994,6 +1115,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       ),
     );
   }
+
+
 
   // Below methods are copied from RoutingCanvas (handlers, builders, validators)
   List<Widget> _buildPhysicalInputNodes(
@@ -1046,7 +1169,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               _handlePortDragUpdate(port, position),
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
           onPortPositionResolved: (port, globalCenter) {
-            _updatePortAnchor(port.id, globalCenter);
+            // Update port position cache - physical inputs/outputs have opposite directions from algorithm perspective
+            final isInput = port.direction == PortDirection.input;
+            _updatePortAnchor(port.id, globalCenter, isInput);
           },
           onRoutingAction: (portId, action) =>
               _handlePortRoutingAction(portId, action, connections),
@@ -1112,7 +1237,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               _handlePortDragUpdate(port, position),
           onDragEnd: (port, position) => _handlePortDragEnd(port, position),
           onPortPositionResolved: (port, globalCenter) {
-            _updatePortAnchor(port.id, globalCenter);
+            // Update port position cache - physical inputs/outputs have opposite directions from algorithm perspective
+            final isInput = port.direction == PortDirection.input;
+            _updatePortAnchor(port.id, globalCenter, isInput);
           },
           onRoutingAction: (portId, action) =>
               _handlePortRoutingAction(portId, action, connections),
@@ -1179,7 +1306,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           connectedPorts: _getConnectedPortIds(connections),
           shadowedPortIds: shadowedOutputPortIds,
           onPortPositionResolved: (portId, globalCenter, isInput) {
-            _updatePortAnchor(portId, globalCenter);
+            _updatePortAnchor(portId, globalCenter, isInput);
           },
           onDragStart: () {
             if (!_isDraggingNode) {
@@ -1335,6 +1462,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         // Regular connection handling
         sourcePosition = _getPortPosition(connection.sourcePortId);
         targetPosition = _getPortPosition(connection.destinationPortId);
+
+        // Debug the first connection
+        if (connection.sourcePortId.contains('hw_in_1') || connection.destinationPortId.contains('Clock_input_1')) {
+          debugPrint('Connection positions for ${connection.id}:');
+          debugPrint('  Source ${connection.sourcePortId}: $sourcePosition');
+          debugPrint('  Target ${connection.destinationPortId}: $targetPosition');
+        }
       }
 
       if (sourcePosition == null || targetPosition == null) {
@@ -1751,6 +1885,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
 
     // Convert global position to local canvas coordinates
+    // The canvas is already scaled by Transform.scale, so globalToLocal gives us
+    // the correct coordinates in the scaled space
     final ctx = _canvasKey.currentContext;
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
@@ -1941,6 +2077,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   Future<void> _handlePortDragEnd(Port port, Offset position) async {
     // Convert global position to local canvas coordinates
+    // The canvas is already scaled by Transform.scale, so globalToLocal gives us
+    // the correct coordinates in the scaled space
     final ctx = _canvasKey.currentContext;
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
@@ -2145,7 +2283,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         previous.physicalOutputs.length != current.physicalOutputs.length ||
         previous.algorithms.length != current.algorithms.length ||
         previous.connections.length != current.connections.length ||
-        previous.nodePositions.length != current.nodePositions.length) {
+        previous.nodePositions.length != current.nodePositions.length ||
+        previous.zoomLevel != current.zoomLevel ||
+        previous.panOffset != current.panOffset) {
       return true;
     }
 
@@ -2276,93 +2416,98 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     cubit.onRemoveAlgorithm(algorithmIndex);
   }
 
-  Offset? _getPortPosition(String portId) {
-    // First check if we have a stored position from the actual widget
-    if (_portPositions.containsKey(portId)) {
-      return _portPositions[portId];
-    }
-
-    // Fallback to calculating port positions based on algorithm positions and port indices
-    // This is synchronous and doesn't depend on widget measurement
-
+  /// Calculate port position based on node position and port layout
+  /// This provides consistent positions without relying on cached values
+  Offset? _calculatePortPositionFromNodeLayout(String portId) {
     final routingState = context.read<RoutingEditorCubit>().state;
     if (routingState is! RoutingEditorStateLoaded) return null;
 
-    // Check physical inputs (hw_in_1 through hw_in_12)
+    // Physical input ports
     if (portId.startsWith('hw_in_')) {
-      final inputNum = int.tryParse(portId.substring(6));
-      if (inputNum != null && inputNum >= 1 && inputNum <= 12) {
-        // Physical inputs are on the left side
-        const double centerX = _canvasWidth / 2;
-        const double centerY = _canvasHeight / 2;
-        final nodePos =
-            _nodePositions['physical_inputs'] ??
-            const Offset(centerX - 800, centerY - 300);
-        // Physical input node width is ~150px, ports are on the right edge
-        final portOffset = Offset(
-          150,
-          50 + (inputNum - 1) * 30,
-        ); // Stack vertically
-        return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
-      }
+      final nodePos = _nodePositions['physical_inputs'] ??
+          const Offset(100, _canvasHeight / 2);
+      // Find the port in the physical inputs list
+      final portIndex = routingState.physicalInputs
+          .indexWhere((p) => p.id == portId);
+      if (portIndex == -1) return null;
+
+      // Physical inputs node layout:
+      // - Header: ~48px height (includes padding and icon row)
+      // - Each port: ~32px height (including spacing)
+      // - Port dot is on the right side of the node
+      final headerHeight = 48.0;
+      final portHeight = 32.0;
+      final nodeWidth = 145.0; // Approximate width of physical input node
+
+      final yOffset = headerHeight + (portIndex * portHeight) + (portHeight / 2);
+      return Offset(nodePos.dx + nodeWidth, nodePos.dy + yOffset);
     }
 
-    // Check physical outputs (hw_out_1 through hw_out_8)
+    // Physical output ports
     if (portId.startsWith('hw_out_')) {
-      final outputNum = int.tryParse(portId.substring(7));
-      if (outputNum != null && outputNum >= 1 && outputNum <= 8) {
-        // Physical outputs are on the right side
-        const double centerX = _canvasWidth / 2;
-        const double centerY = _canvasHeight / 2;
-        final nodePos =
-            _nodePositions['physical_outputs'] ??
-            const Offset(centerX + 600, centerY - 300);
-        // Physical output node ports are on the left edge
-        final portOffset = Offset(
-          0,
-          50 + (outputNum - 1) * 30,
-        ); // Stack vertically
-        return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
-      }
+      final nodePos = _nodePositions['physical_outputs'] ??
+          Offset(_canvasWidth - 300, _canvasHeight / 2);
+      // Find the port in the physical outputs list
+      final portIndex = routingState.physicalOutputs
+          .indexWhere((p) => p.id == portId);
+      if (portIndex == -1) return null;
+
+      // Physical outputs node layout (similar to inputs):
+      // - Header: ~40px height
+      // - Each port: ~28px height
+      // - Port dot is on the left side of the node
+      final headerHeight = 40.0;
+      final portHeight = 28.0;
+
+      final yOffset = headerHeight + (portIndex * portHeight) + (portHeight / 2);
+      return Offset(nodePos.dx, nodePos.dy + yOffset);
     }
 
-    // Skip virtual bus endpoint positions - we handle these differently for partial connections
-    if (portId.startsWith('bus_') && portId.endsWith('_endpoint')) {
-      // Return null for virtual bus endpoints - they shouldn't be used directly
-      return null;
-    }
-
+    // Algorithm ports
     for (final algo in routingState.algorithms) {
-      // Check inputs
-      final inputIndex = algo.inputPorts.indexWhere((p) => p.id == portId);
-      if (inputIndex != -1) {
-        final nodeId = algo.id;
-        final nodePos = _nodePositions[nodeId];
-        if (nodePos != null) {
-          // Calculate position based on index
-          // Header is ~40px, each port is ~35px height
-          // Adjust for the actual port center position
-          final portOffset = Offset(0, 50 + inputIndex * 35);
-          return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
-        }
+      // Check input ports
+      final inputPortIndex = algo.inputPorts.indexWhere((p) => p.id == portId);
+      if (inputPortIndex != -1) {
+        final nodePos = _nodePositions[algo.id];
+        if (nodePos == null) return null;
+
+        // Algorithm node layout:
+        // - Header: ~52px height (title + index + padding)
+        // - Each port: ~32px height (including spacing)
+        // - Inputs on left edge
+        final headerHeight = 52.0;
+        final portHeight = 32.0;
+
+        final yOffset = headerHeight + (inputPortIndex * portHeight) + (portHeight / 2);
+        return Offset(nodePos.dx, nodePos.dy + yOffset);
       }
 
-      // Check outputs
-      final outputIndex = algo.outputPorts.indexWhere((p) => p.id == portId);
-      if (outputIndex != -1) {
-        final nodeId = algo.id;
-        final nodePos = _nodePositions[nodeId];
-        if (nodePos != null) {
-          // Outputs are on the right edge (assuming 300px width)
-          // Adjust for the actual port center position
-          final portOffset = Offset(300, 50 + outputIndex * 35);
-          return Offset(nodePos.dx + portOffset.dx, nodePos.dy + portOffset.dy);
-        }
+      // Check output ports
+      final outputPortIndex = algo.outputPorts.indexWhere((p) => p.id == portId);
+      if (outputPortIndex != -1) {
+        final nodePos = _nodePositions[algo.id];
+        if (nodePos == null) return null;
+
+        // Algorithm node layout (outputs on right)
+        final headerHeight = 52.0;
+        final portHeight = 32.0;
+        final nodeWidth = 280.0; // Approximate width of algorithm node
+
+        final yOffset = headerHeight + (outputPortIndex * portHeight) + (portHeight / 2);
+        return Offset(nodePos.dx + nodeWidth, nodePos.dy + yOffset);
       }
     }
 
+    // Port not found
     return null;
   }
+
+  Offset? _getPortPosition(String portId) {
+    // Use actual port position from widget callbacks
+    // Fall back to calculated position if not yet available
+    return _portPositions[portId] ?? _calculatePortPositionFromNodeLayout(portId);
+  }
+
 
   /// Find a port at the given position within a reasonable hit radius
   Port? _findPortAtPosition(Offset position) {
@@ -2410,45 +2555,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     return closestPort;
   }
 
-  /// Create a theme for a specific algorithm connection type
-
-  void _updatePortAnchor(String portId, Offset globalCenter) {
-    final ctx = _canvasKey.currentContext;
-    if (ctx == null) return;
-    final box = ctx.findRenderObject() as RenderBox?;
-    if (box == null || !box.attached) return;
-    final local = box.globalToLocal(globalCenter);
-    // Check if position has changed significantly
-    final existingPosition = _portPositions[portId];
-    final needsUpdate =
-        existingPosition == null || (existingPosition - local).distance > 1.0;
-
-    if (needsUpdate) {
-      // Store port position
-      _portPositions[portId] = local;
-
-      // If ports aren't ready yet, check if we have enough positions to start rendering
-      if (!_portsReady && _portPositions.isNotEmpty) {
-        // Delay slightly to collect all port positions in the same frame
-        Future.microtask(() {
-          if (mounted && !_portsReady) {
-            setState(() {
-              _portsReady = true;
-              _connectionsVisible = true;
-            });
-          }
-        });
-      } else if (_portsReady) {
-        // After initial setup, update immediately but don't change connection visibility
-        // if it's already true (prevents flicker)
-        setState(() {
-          if (!_connectionsVisible) {
-            _connectionsVisible = true;
-          }
-        });
-      }
-    }
-  }
 
   /// Get a set of all connected port IDs
   Set<String> _getConnectedPortIds(List<Connection> connections) {
