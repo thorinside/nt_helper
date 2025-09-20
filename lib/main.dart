@@ -2,19 +2,24 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for MethodChannel
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nt_helper/core/routing/routing_service_locator.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:nt_helper/disting_app.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/node_positions_persistence_service.dart';
 import 'package:nt_helper/services/settings_service.dart' show SettingsService;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/services/zoom_hotkey_service.dart';
 import 'package:nt_helper/util/in_app_logger.dart';
 import 'package:provider/provider.dart';
-import 'package:nt_helper/core/routing/routing_service_locator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Define the static MethodChannel
 const MethodChannel _windowEventsChannel = MethodChannel(
   'com.nt_helper.app/window_events',
+);
+
+const MethodChannel _zoomHotkeysChannel = MethodChannel(
+  'com.nt_helper.app/zoom_hotkeys',
 );
 
 void main() async {
@@ -80,6 +85,21 @@ void main() async {
       return prefsSavedSuccessfully; // Signal success/failure of prefs saving
     }
     return null; // For unhandled methods
+  });
+
+  _zoomHotkeysChannel.setMethodCallHandler((call) async {
+    switch (call.method) {
+      case 'zoomIn':
+        ZoomHotkeyService.instance.dispatch(ZoomHotkeyAction.zoomIn);
+        break;
+      case 'zoomOut':
+        ZoomHotkeyService.instance.dispatch(ZoomHotkeyAction.zoomOut);
+        break;
+      case 'resetZoom':
+        ZoomHotkeyService.instance.dispatch(ZoomHotkeyAction.resetZoom);
+        break;
+    }
+    return null;
   });
 
   doWhenWindowReady(() async {

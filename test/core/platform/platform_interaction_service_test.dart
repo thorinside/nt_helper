@@ -105,5 +105,27 @@ void main() {
         debugDefaultTargetPlatformOverride = null;
       });
     });
+
+    group('usesCommandModifier', () {
+      testWidgets('returns true on macOS', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+
+        final usesCommand = service.usesCommandModifier();
+
+        expect(usesCommand, isTrue);
+
+        debugDefaultTargetPlatformOverride = null;
+      });
+
+      testWidgets('returns false on Windows', (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+
+        final usesCommand = service.usesCommandModifier();
+
+        expect(usesCommand, isFalse);
+
+        debugDefaultTargetPlatformOverride = null;
+      });
+    });
   });
 }

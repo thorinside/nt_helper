@@ -4,6 +4,7 @@ import bitsdojo_window_macos
 
 class MainFlutterWindow: BitsdojoWindow, NSWindowDelegate { // Conforming to NSWindowDelegate
     private var windowEventsChannel: FlutterMethodChannel?
+    private var zoomHotkeyChannel: FlutterMethodChannel?
 
     override func bitsdojo_window_configure() -> UInt {
       return BDW_HIDE_ON_STARTUP
@@ -27,10 +28,47 @@ class MainFlutterWindow: BitsdojoWindow, NSWindowDelegate { // Conforming to NSW
     let registrar = flutterViewController.registrar(forPlugin: "com.nt_helper.app.WindowStatePlugin")
     self.windowEventsChannel = FlutterMethodChannel(name: "com.nt_helper.app/window_events",
                                                     binaryMessenger: registrar.messenger) // Removed parentheses
+    self.zoomHotkeyChannel = FlutterMethodChannel(name: "com.nt_helper.app/zoom_hotkeys",
+                                                  binaryMessenger: registrar.messenger)
 
     super.awakeFromNib()
     // Set the window delegate to self to ensure windowShouldClose is called.
     self.delegate = self
+  }
+
+  override func performKeyEquivalent(with event: NSEvent) -> Bool {
+      if handleZoomHotkey(event) {
+          return true
+      }
+      return super.performKeyEquivalent(with: event)
+  }
+
+  override func keyDown(with event: NSEvent) {
+      if handleZoomHotkey(event) {
+          return
+      }
+      super.keyDown(with: event)
+  }
+
+  private func handleZoomHotkey(_ event: NSEvent) -> Bool {
+      guard event.modifierFlags.contains(.command),
+            let characters = event.charactersIgnoringModifiers else {
+          return false
+      }
+
+      switch characters {
+      case "=", "+":
+          zoomHotkeyChannel?.invokeMethod("zoomIn", arguments: nil)
+          return true
+      case "-", "_":
+          zoomHotkeyChannel?.invokeMethod("zoomOut", arguments: nil)
+          return true
+      case "0":
+          zoomHotkeyChannel?.invokeMethod("resetZoom", arguments: nil)
+          return true
+      default:
+          return false
+      }
   }
 
   @objc func windowShouldClose(_ sender: NSWindow) -> Bool {

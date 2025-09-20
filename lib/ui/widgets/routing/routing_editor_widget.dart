@@ -1,29 +1,33 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'dart:convert' as convert;
-import 'package:pasteboard/pasteboard.dart';
+
+import 'package:collection/collection.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pasteboard/pasteboard.dart';
+
+import 'package:nt_helper/core/platform/platform_interaction_service.dart';
+import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/models/port.dart';
+import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
-import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/core/routing/models/port.dart';
-import 'package:nt_helper/core/routing/models/connection.dart';
+import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
+import 'package:nt_helper/services/key_binding_service.dart';
+import 'package:nt_helper/services/zoom_hotkey_service.dart';
 // Haptics can be reintroduced later if needed
+import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
     as painter;
-import 'package:nt_helper/core/platform/platform_interaction_service.dart';
-import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
-import 'package:nt_helper/ui/widgets/routing/algorithm_node_widget.dart';
+import 'package:nt_helper/ui/widgets/routing/mini_map_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
-import 'package:nt_helper/ui/widgets/routing/mini_map_widget.dart';
-import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
+import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 // Removed unused imports from previous canvas split
 
 /// RoutingEditorWidget is the canonical widget for the routing editor UI.
@@ -38,6 +42,7 @@ class RoutingEditorWidget extends StatefulWidget {
   final Function(String connectionId)? onConnectionRemoved;
   final PlatformInteractionService? platformService;
   final RoutingEditorController? controller;
+  final KeyBindingService? keyBindingService;
 
   RoutingEditorWidget({
     super.key,
@@ -50,6 +55,7 @@ class RoutingEditorWidget extends StatefulWidget {
     this.onConnectionRemoved,
     this.platformService,
     this.controller,
+    this.keyBindingService,
   }) : showBusLabels = showBusLabels ?? (canvasSize.width >= 800);
 
   @override
@@ -78,6 +84,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
   // Platform service for hover detection
   late final PlatformInteractionService _platformService;
+  late final KeyBindingService _keyBindingService;
 
   // ScrollControllers for manual pan control
   late ScrollController _horizontalScrollController;
@@ -95,24 +102,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Offset _lastPanPosition = Offset.zero;
   bool _isDraggingNode = false;
 
-  bool _connectionsVisible = true; // Always visible since we have port positions
+  bool _connectionsVisible =
+      true; // Always visible since we have port positions
 
   // Store the current connection label bounds for hit testing
   Map<String, Rect> _connectionLabelBounds = {};
 
   // Actual port positions from widget callbacks
   final Map<String, Offset> _portPositions = {};
-
-  // Track when all ports have been positioned
-  bool _portsReady = false;
-
-  // Current zoom level for coordinate calculations
-  double _currentZoomLevel = 1.0;
+  StreamSubscription<ZoomHotkeyAction>? _zoomHotkeySubscription;
 
   @override
   void initState() {
     super.initState();
     _platformService = widget.platformService ?? PlatformInteractionService();
+    _keyBindingService =
+        widget.keyBindingService ??
+        KeyBindingService(platformInteractionService: _platformService);
     _horizontalScrollController = ScrollController();
     _verticalScrollController = ScrollController();
 
@@ -128,10 +134,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     // Center the view on the canvas after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCanvas();
-      // Ports will set _portsReady when they register their positions
     });
 
     _initializeNodePositions();
+
+    if (_platformService.usesCommandModifier()) {
+      _zoomHotkeySubscription = ZoomHotkeyService.instance.stream.listen(
+        _handleZoomHotkeyAction,
+      );
+    }
   }
 
   void _centerCanvas() {
@@ -191,7 +202,26 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     _dragUpdateDebounceTimer?.cancel();
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
+    _zoomHotkeySubscription?.cancel();
     super.dispose();
+  }
+
+  void _handleZoomHotkeyAction(ZoomHotkeyAction action) {
+    if (!mounted) {
+      return;
+    }
+    final routingCubit = context.read<RoutingEditorCubit>();
+    switch (action) {
+      case ZoomHotkeyAction.zoomIn:
+        routingCubit.zoomIn();
+        break;
+      case ZoomHotkeyAction.zoomOut:
+        routingCubit.zoomOut();
+        break;
+      case ZoomHotkeyAction.resetZoom:
+        routingCubit.resetZoom();
+        break;
+    }
   }
 
   /// Update a port's anchor position from widget callback
@@ -214,27 +244,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     setState(() {
       _portPositions[portId] = canvasPosition;
-      // Check if all ports are positioned
-      _checkPortsReady();
     });
-  }
-
-  /// Check if all expected ports have positions
-  void _checkPortsReady() {
-    final cubit = context.read<RoutingEditorCubit>();
-    final state = cubit.state;
-    if (state is! RoutingEditorStateLoaded) {
-      _portsReady = false;
-      return;
-    }
-
-    // Count expected ports
-    int expectedPorts = state.physicalInputs.length + state.physicalOutputs.length;
-    for (final algo in state.algorithms) {
-      expectedPorts += algo.inputPorts.length + algo.outputPorts.length;
-    }
-
-    _portsReady = _portPositions.length >= expectedPorts;
   }
 
   // Fit viewport to current content center (no zoom)
@@ -255,8 +265,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       // Estimate node dimensions based on type
       final bool isPhysical =
           id == 'physical_inputs' || id == 'physical_outputs';
-      final double nodeWidth = isPhysical ? 180 : 340;  // Physical nodes are narrower
-      final double nodeHeight = isPhysical ? 320 : 200; // Physical nodes are taller
+      final double nodeWidth = isPhysical
+          ? 180
+          : 340; // Physical nodes are narrower
+      final double nodeHeight = isPhysical
+          ? 320
+          : 200; // Physical nodes are taller
 
       // Update bounding box considering node dimensions
       if (p.dx < minX) minX = p.dx;
@@ -598,10 +612,23 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: _platformService.isDesktopPlatform()
-                    ? Focus(
-                        autofocus: true,
-                        onKeyEvent: (node, event) => _handleKeyEvent(event),
-                        child: _buildCanvasContent(context, state),
+                    ? Shortcuts(
+                        shortcuts: _keyBindingService.desktopZoomShortcuts,
+                        child: Actions(
+                          actions: _keyBindingService.buildZoomActions(
+                            onZoomIn: () =>
+                                context.read<RoutingEditorCubit>().zoomIn(),
+                            onZoomOut: () =>
+                                context.read<RoutingEditorCubit>().zoomOut(),
+                            onResetZoom: () =>
+                                context.read<RoutingEditorCubit>().resetZoom(),
+                          ),
+                          child: Focus(
+                            autofocus: true,
+                            onKeyEvent: _handleKeyEvent,
+                            child: _buildCanvasContent(context, state),
+                          ),
+                        ),
                       )
                     : _buildCanvasContent(context, state),
               ),
@@ -750,52 +777,14 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     );
   }
 
-  /// Handle keyboard events for desktop platforms
-  KeyEventResult _handleKeyEvent(KeyEvent event) {
-    if (!_platformService.isDesktopPlatform() || event is! KeyDownEvent) {
+  /// Handle keyboard events not covered by shortcuts (Escape for drag cancel).
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (!_platformService.isDesktopPlatform()) {
       return KeyEventResult.ignored;
     }
 
-    final routingCubit = context.read<RoutingEditorCubit>();
-    final isCtrlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
-        event.logicalKey == LogicalKeyboardKey.controlRight ||
-        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
-        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
-    
-    final isCmdPressed = event.logicalKey == LogicalKeyboardKey.metaLeft ||
-        event.logicalKey == LogicalKeyboardKey.metaRight ||
-        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaLeft) ||
-        HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight);
-
-    final isModifierPressed = isCtrlPressed || isCmdPressed;
-
-    // Zoom in with Ctrl/Cmd + Plus or Equals
-    if (isModifierPressed && 
-        (event.logicalKey == LogicalKeyboardKey.equal ||
-         event.logicalKey == LogicalKeyboardKey.add ||
-         event.logicalKey == LogicalKeyboardKey.numpadAdd)) {
-      routingCubit.zoomIn();
-      return KeyEventResult.handled;
-    }
-
-    // Zoom out with Ctrl/Cmd + Minus
-    if (isModifierPressed &&
-        (event.logicalKey == LogicalKeyboardKey.minus ||
-         event.logicalKey == LogicalKeyboardKey.numpadSubtract)) {
-      routingCubit.zoomOut();
-      return KeyEventResult.handled;
-    }
-
-    // Reset zoom with Ctrl/Cmd + 0
-    if (isModifierPressed && 
-        (event.logicalKey == LogicalKeyboardKey.digit0 ||
-         event.logicalKey == LogicalKeyboardKey.numpad0)) {
-      routingCubit.resetZoom();
-      return KeyEventResult.handled;
-    }
-
-    // Cancel drag operation with Escape
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
       if (_isDraggingConnection) {
         _cancelDragOperation();
         return KeyEventResult.handled;
@@ -962,9 +951,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   ) {
     final routingCubit = context.read<RoutingEditorCubit>();
 
-    // Store current zoom level for coordinate calculations
-    _currentZoomLevel = zoomLevel;
-
     return Semantics(
       label:
           'Routing canvas with ${algorithms.length} algorithm nodes and ${connections.length} connections',
@@ -986,10 +972,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             onPointerSignal: (pointerSignal) {
               if (pointerSignal is PointerScrollEvent) {
                 // Check for zoom modifier keys (Ctrl/Cmd + wheel)
-                if (HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
-                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight) ||
-                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaLeft) ||
-                    HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight)) {
+                if (_keyBindingService.isZoomModifierPressed()) {
                   // Zoom with mouse wheel
                   final zoomDelta = -pointerSignal.scrollDelta.dy * 0.001;
                   final newZoom = (zoomLevel + zoomDelta).clamp(0.1, 2.0);
@@ -1037,75 +1020,79 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     color: Theme.of(context).colorScheme.surface,
                   ),
                   child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Grid background with gesture detector for empty space (bottom layer)
-                    SizedBox(
-                      width: _canvasWidth,
-                      height: _canvasHeight,
-                      child: GestureDetector(
-                        // Handle taps and panning on empty space
-                        onTapDown: (details) {
-                          debugPrint(
-                            '=== GRID TAP DOWN: ${details.localPosition}',
-                          );
-                          _handleCanvasTap(details.localPosition, connections);
-                        },
-                        onDoubleTap: () {
-                          // Double tap to reset zoom
-                          final routingCubit = context.read<RoutingEditorCubit>();
-                          routingCubit.resetZoom();
-                        },
-                        onPanStart: _handleCanvasPanStart,
-                        onPanUpdate: _handleCanvasPanUpdate,
-                        onPanEnd: _handleCanvasPanEnd,
-                        behavior: HitTestBehavior
-                            .translucent, // Allow events to pass through to child widgets
-                        child: CustomPaint(
-                          painter: _CanvasGridPainter(
-                            minorGridColor: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.1),
-                            majorGridColor: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.2),
-                            gridSize: 50.0,
-                            majorEvery: 5,
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Grid background with gesture detector for empty space (bottom layer)
+                      SizedBox(
+                        width: _canvasWidth,
+                        height: _canvasHeight,
+                        child: GestureDetector(
+                          // Handle taps and panning on empty space
+                          onTapDown: (details) {
+                            debugPrint(
+                              '=== GRID TAP DOWN: ${details.localPosition}',
+                            );
+                            _handleCanvasTap(
+                              details.localPosition,
+                              connections,
+                            );
+                          },
+                          onDoubleTap: () {
+                            // Double tap to reset zoom
+                            final routingCubit = context
+                                .read<RoutingEditorCubit>();
+                            routingCubit.resetZoom();
+                          },
+                          onPanStart: _handleCanvasPanStart,
+                          onPanUpdate: _handleCanvasPanUpdate,
+                          onPanEnd: _handleCanvasPanEnd,
+                          behavior: HitTestBehavior
+                              .translucent, // Allow events to pass through to child widgets
+                          child: CustomPaint(
+                            painter: _CanvasGridPainter(
+                              minorGridColor: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.1),
+                              majorGridColor: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.2),
+                              gridSize: 50.0,
+                              majorEvery: 5,
+                            ),
+                            size: Size(_canvasWidth, _canvasHeight),
                           ),
-                          size: Size(_canvasWidth, _canvasHeight),
                         ),
                       ),
-                    ),
-                    // Nodes on middle layer (connections will draw above to overlay ports)
-                    if (widget.showPhysicalPorts)
-                      ..._buildPhysicalInputNodes(
-                        physicalInputs,
+                      // Nodes on middle layer (connections will draw above to overlay ports)
+                      if (widget.showPhysicalPorts)
+                        ..._buildPhysicalInputNodes(
+                          physicalInputs,
+                          connections,
+                          stateNodePositions,
+                        ),
+                      if (widget.showPhysicalPorts)
+                        ..._buildPhysicalOutputNodes(
+                          physicalOutputs,
+                          connections,
+                          stateNodePositions,
+                        ),
+                      ..._buildAlgorithmNodes(
+                        algorithms,
                         connections,
                         stateNodePositions,
                       ),
-                    if (widget.showPhysicalPorts)
-                      ..._buildPhysicalOutputNodes(
-                        physicalOutputs,
-                        connections,
-                        stateNodePositions,
-                      ),
-                    ..._buildAlgorithmNodes(
-                      algorithms,
-                      connections,
-                      stateNodePositions,
-                    ),
-                    // Draw all connections with unified canvas
-                    // Use RepaintBoundary to isolate canvas repaints
-                    // Keep connections visible if they were already visible and ports haven't been cleared
-                    if (_connectionsVisible)
-                      RepaintBoundary(
-                        child: _buildUnifiedConnectionCanvas(connections),
-                      )
-                    else
-                      const SizedBox.shrink(),
-                    if (_isDraggingConnection && _dragCurrentPosition != null)
-                      _buildTemporaryConnection(),
-                  ],
+                      // Draw all connections with unified canvas
+                      // Use RepaintBoundary to isolate canvas repaints
+                      // Keep connections visible if they were already visible and ports haven't been cleared
+                      if (_connectionsVisible)
+                        RepaintBoundary(
+                          child: _buildUnifiedConnectionCanvas(connections),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      if (_isDraggingConnection && _dragCurrentPosition != null)
+                        _buildTemporaryConnection(),
+                    ],
                   ),
                 ),
               ),
@@ -1115,8 +1102,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       ),
     );
   }
-
-
 
   // Below methods are copied from RoutingCanvas (handlers, builders, validators)
   List<Widget> _buildPhysicalInputNodes(
@@ -1464,10 +1449,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         targetPosition = _getPortPosition(connection.destinationPortId);
 
         // Debug the first connection
-        if (connection.sourcePortId.contains('hw_in_1') || connection.destinationPortId.contains('Clock_input_1')) {
+        if (connection.sourcePortId.contains('hw_in_1') ||
+            connection.destinationPortId.contains('Clock_input_1')) {
           debugPrint('Connection positions for ${connection.id}:');
           debugPrint('  Source ${connection.sourcePortId}: $sourcePosition');
-          debugPrint('  Target ${connection.destinationPortId}: $targetPosition');
+          debugPrint(
+            '  Target ${connection.destinationPortId}: $targetPosition',
+          );
         }
       }
 
@@ -2424,11 +2412,13 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Physical input ports
     if (portId.startsWith('hw_in_')) {
-      final nodePos = _nodePositions['physical_inputs'] ??
+      final nodePos =
+          _nodePositions['physical_inputs'] ??
           const Offset(100, _canvasHeight / 2);
       // Find the port in the physical inputs list
-      final portIndex = routingState.physicalInputs
-          .indexWhere((p) => p.id == portId);
+      final portIndex = routingState.physicalInputs.indexWhere(
+        (p) => p.id == portId,
+      );
       if (portIndex == -1) return null;
 
       // Physical inputs node layout:
@@ -2439,17 +2429,20 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final portHeight = 32.0;
       final nodeWidth = 145.0; // Approximate width of physical input node
 
-      final yOffset = headerHeight + (portIndex * portHeight) + (portHeight / 2);
+      final yOffset =
+          headerHeight + (portIndex * portHeight) + (portHeight / 2);
       return Offset(nodePos.dx + nodeWidth, nodePos.dy + yOffset);
     }
 
     // Physical output ports
     if (portId.startsWith('hw_out_')) {
-      final nodePos = _nodePositions['physical_outputs'] ??
+      final nodePos =
+          _nodePositions['physical_outputs'] ??
           Offset(_canvasWidth - 300, _canvasHeight / 2);
       // Find the port in the physical outputs list
-      final portIndex = routingState.physicalOutputs
-          .indexWhere((p) => p.id == portId);
+      final portIndex = routingState.physicalOutputs.indexWhere(
+        (p) => p.id == portId,
+      );
       if (portIndex == -1) return null;
 
       // Physical outputs node layout (similar to inputs):
@@ -2459,7 +2452,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       final headerHeight = 40.0;
       final portHeight = 28.0;
 
-      final yOffset = headerHeight + (portIndex * portHeight) + (portHeight / 2);
+      final yOffset =
+          headerHeight + (portIndex * portHeight) + (portHeight / 2);
       return Offset(nodePos.dx, nodePos.dy + yOffset);
     }
 
@@ -2478,12 +2472,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final headerHeight = 52.0;
         final portHeight = 32.0;
 
-        final yOffset = headerHeight + (inputPortIndex * portHeight) + (portHeight / 2);
+        final yOffset =
+            headerHeight + (inputPortIndex * portHeight) + (portHeight / 2);
         return Offset(nodePos.dx, nodePos.dy + yOffset);
       }
 
       // Check output ports
-      final outputPortIndex = algo.outputPorts.indexWhere((p) => p.id == portId);
+      final outputPortIndex = algo.outputPorts.indexWhere(
+        (p) => p.id == portId,
+      );
       if (outputPortIndex != -1) {
         final nodePos = _nodePositions[algo.id];
         if (nodePos == null) return null;
@@ -2493,7 +2490,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         final portHeight = 32.0;
         final nodeWidth = 280.0; // Approximate width of algorithm node
 
-        final yOffset = headerHeight + (outputPortIndex * portHeight) + (portHeight / 2);
+        final yOffset =
+            headerHeight + (outputPortIndex * portHeight) + (portHeight / 2);
         return Offset(nodePos.dx + nodeWidth, nodePos.dy + yOffset);
       }
     }
@@ -2505,9 +2503,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Offset? _getPortPosition(String portId) {
     // Use actual port position from widget callbacks
     // Fall back to calculated position if not yet available
-    return _portPositions[portId] ?? _calculatePortPositionFromNodeLayout(portId);
+    return _portPositions[portId] ??
+        _calculatePortPositionFromNodeLayout(portId);
   }
-
 
   /// Find a port at the given position within a reasonable hit radius
   Port? _findPortAtPosition(Offset position) {
@@ -2554,7 +2552,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     return closestPort;
   }
-
 
   /// Get a set of all connected port IDs
   Set<String> _getConnectedPortIds(List<Connection> connections) {
