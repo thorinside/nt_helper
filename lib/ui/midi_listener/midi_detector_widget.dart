@@ -183,12 +183,23 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
       mainAxisSize: MainAxisSize.min,
       children: [
         DropdownMenu<MidiDevice>(
-          width: 250,
+          width: 200,
           requestFocusOnTap: false,
           label: const Text('MIDI Device'),
           initialSelection: _selectedDevice,
           dropdownMenuEntries: entries,
           onSelected: _onDeviceSelected,
+        ),
+        const SizedBox(width: 8),
+        BlocBuilder<MidiListenerCubit, MidiListenerState>(
+          builder: (context, state) {
+            final isConnected = state is Data && state.isConnected;
+            return ElevatedButton.icon(
+              onPressed: isConnected ? _onDisconnectPressed : null,
+              icon: const Icon(Icons.close),
+              label: const Text('Disconnect'),
+            );
+          },
         ),
       ],
     );
@@ -217,6 +228,11 @@ class _MidiDetectorContentsState extends State<_MidiDetectorContents> {
     if (device == null) return;
     setState(() => _selectedDevice = device);
     _cubit.connectToDevice(device);
+  }
+
+  void _onDisconnectPressed() {
+    setState(() => _selectedDevice = null);
+    _cubit.disconnectDevice();
   }
 
   void _showStatusMessage(String newMessage) {
