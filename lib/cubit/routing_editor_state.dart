@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
