@@ -949,7 +949,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                     HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.metaRight)) {
                   // Zoom with mouse wheel
                   final zoomDelta = -pointerSignal.scrollDelta.dy * 0.001;
-                  final newZoom = (zoomLevel + zoomDelta).clamp(0.1, 5.0);
+                  final newZoom = (zoomLevel + zoomDelta).clamp(0.1, 2.0);
                   routingCubit.setZoomLevel(newZoom);
                   return;
                 }

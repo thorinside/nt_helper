@@ -2271,8 +2271,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final currentState = state;
     if (currentState is! RoutingEditorStateLoaded) return;
 
-    // Clamp zoom level between 0.1x and 5.0x
-    final clampedZoom = zoomLevel.clamp(0.1, 5.0);
+    // Clamp zoom level between 0.1x and 2.0x
+    final clampedZoom = zoomLevel.clamp(0.1, 2.0);
     
     emit(currentState.copyWith(zoomLevel: clampedZoom));
     debugPrint('[RoutingEditor] Zoom level updated to ${(clampedZoom * 100).round()}%');
@@ -2313,7 +2313,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Get available zoom levels for dropdown
   static List<double> get availableZoomLevels => [
-        0.25, 0.33, 0.5, 0.67, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0
+        0.25, 0.33, 0.5, 0.67, 0.75, 1.0, 1.25, 1.5, 2.0
       ];
 
   /// Get zoom percentage as integer
