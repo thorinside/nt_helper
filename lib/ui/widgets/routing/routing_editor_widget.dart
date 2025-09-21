@@ -102,9 +102,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
   Offset _lastPanPosition = Offset.zero;
   bool _isDraggingNode = false;
 
-  bool _connectionsVisible =
-      true; // Always visible since we have port positions
-
   // Store the current connection label bounds for hit testing
   Map<String, Rect> _connectionLabelBounds = {};
 
@@ -588,7 +585,6 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         if (shouldRebuild && current is RoutingEditorStateLoaded) {
           if (previous is! RoutingEditorStateLoaded ||
               _hasRoutingStructureChanged(previous, current)) {
-            _connectionsVisible = false;
             _pruneAndInitNodePositions(current);
           }
         }
@@ -1083,13 +1079,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                       ),
                       // Draw all connections with unified canvas
                       // Use RepaintBoundary to isolate canvas repaints
-                      // Keep connections visible if they were already visible and ports haven't been cleared
-                      if (_connectionsVisible)
-                        RepaintBoundary(
-                          child: _buildUnifiedConnectionCanvas(connections),
-                        )
-                      else
-                        const SizedBox.shrink(),
+                      RepaintBoundary(
+                        child: _buildUnifiedConnectionCanvas(connections),
+                      ),
                       if (_isDraggingConnection && _dragCurrentPosition != null)
                         _buildTemporaryConnection(),
                     ],
