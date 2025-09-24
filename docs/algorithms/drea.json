@@ -4,584 +4,441 @@
   "categories": [
     "VCO",
     "Oscillator",
-    "Polysynth"
+    "Drone",
+    "Just Intonation"
   ],
-  "description": "Creates dreamy pads, strings and bells. Based on the Mutable Instruments Plaits physical modelling oscillator models.",
-  "specifications": [
-    {
-      "name": "Polyphony",
-      "unit": null,
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 8,
-      "description": "The number of voices."
-    }
+  "use_cases": [
+    "Drone generation",
+    "Just intonation exploration",
+    "Harmonic exploration using prime ratios",
+    "La Monte Young style compositions"
   ],
+  "short_description": "Just intonation drone synth",
+  "description": "Implementation of the original Dream Machine algorithm on the disting EX. Designed to generate drones, allowing exploration of non-traditional harmonies based on prime ratios. Inspired by composer La Monte Young's theories. The output is a combination of five sounds – the fundamental and four harmonies. The prime ratios that define the frequency relationships are controlled by parameters. Uses wavetable synthesis to generate tones, with the fundamental optionally being a pure sine, triangle, or square wave. Each tone has a simple attack/release envelope, controlled by its own gate parameter.",
+  "gui_description": "The display shows the current waveform within the wavetable on the right of the screen. The rest of the screen shows the frequency, ratio, and gate level of the five tones (from left to right).",
+  "specifications": [],
   "parameters": [
     {
-      "name": "V/Oct",
-      "unit": "bus",
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The V/Oct input."
-    },
-    {
-      "name": "Trigger",
-      "unit": "bus",
-      "defaultValue": 2,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The trigger input."
-    },
-    {
-      "name": "Mode CV",
-      "unit": "bus",
-      "defaultValue": 3,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The CV input selecting the oscillator mode."
-    },
-    {
-      "name": "Timbre CV",
-      "unit": "bus",
-      "defaultValue": 4,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The CV input for the timbre parameter."
-    },
-    {
-      "name": "Harmonics CV",
-      "unit": "bus",
-      "defaultValue": 5,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The CV input for the harmonics parameter."
-    },
-    {
-      "name": "Morph CV",
-      "unit": "bus",
-      "defaultValue": 6,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The CV input for the morph parameter."
-    },
-    {
-      "name": "Level CV",
-      "unit": "bus",
-      "defaultValue": 7,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The CV input for the level parameter."
-    },
-    {
-      "name": "Mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 2,
-      "enumValues": [
-        "String and pads",
-        "Bells and chimes",
-        "Flutes and pipes"
-      ],
-      "description": "Selects the oscillator mode."
-    },
-    {
-      "name": "Timbre",
-      "unit": null,
-      "defaultValue": 0.5,
-      "minValue": 0.0,
-      "maxValue": 1.0,
-      "description": "The timbre parameter."
-    },
-    {
-      "name": "Harmonics",
-      "unit": null,
-      "defaultValue": 0.5,
-      "minValue": 0.0,
-      "maxValue": 1.0,
-      "description": "The harmonics parameter."
-    },
-    {
-      "name": "Morph",
-      "unit": null,
-      "defaultValue": 0.5,
-      "minValue": 0.0,
-      "maxValue": 1.0,
-      "description": "The morph parameter."
-    },
-    {
-      "name": "Level",
-      "unit": null,
-      "defaultValue": 1.0,
-      "minValue": 0.0,
-      "maxValue": 1.0,
-      "description": "The level parameter."
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "defaultValue": 15,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The output bus."
-    },
-    {
-      "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "The standard Add/Replace mode selector as described above.",
-      "min": 0,
-      "max": 1,
-      "default": 0
-    },
-    {
-      "name": "Wave input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Left output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Right output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 14,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "0.0 % Sets the position within the wavetable. Wave input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "Sets an input bus to modulate the wave offset.",
-      "scope": "routing"
-    },
-    {
-      "name": "Octave",
-      "min": -8,
-      "max": 8,
-      "default": 1,
-      "description": "Sets an octave shift for the fundamental."
-    },
-    {
-      "name": "Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Adjusts the tuning of all frequencies in (12-TET)"
-    },
-    {
-      "name": "Numerator 3",
-      "min": 1,
-      "max": 1024,
-      "default": 62,
-      "description": "Sets the numerator of the frequency ratio of tone 3."
-    },
-    {
-      "name": "Gate",
-      "min": 0,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 0."
-    },
-    {
-      "name": "Gate",
-      "min": 1,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 1."
-    },
-    {
-      "name": "Gate",
-      "min": 2,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 2."
-    },
-    {
-      "name": "Gate",
-      "min": 3,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 3."
-    },
-    {
-      "name": "Gate",
-      "min": 4,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 4."
-    },
-    {
-      "name": "Gain",
-      "min": 0,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for the fundamental. \"-40\" is treated as -dB."
-    },
-    {
-      "name": "Gain",
-      "min": 1,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 1."
-    },
-    {
-      "name": "Gain",
-      "min": 2,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 2."
-    },
-    {
-      "name": "Gain",
-      "min": 3,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 3."
-    },
-    {
-      "name": "Gain",
-      "min": 4,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 4."
-    },
-    {
-      "name": "Pan",
-      "min": 1,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 1."
-    },
-    {
-      "name": "Pan",
-      "min": 2,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 2."
-    },
-    {
-      "name": "Pan",
-      "min": 3,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 3."
-    },
-    {
-      "name": "Pan",
-      "min": 4,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 4."
-    },
-    {
-      "name": "Decay time",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "Decay time for the envelopes."
-    },
-    {
-      "name": "FM input",
-      "min": 1,
-      "max": 0,
-      "default": 28,
-      "description": "0 Which input bus to use to frequency modulate",
-      "scope": "routing"
-    },
-    {
-      "name": "(FM) tone 1. The input is scaled according to the FM Range parameter. FM input",
-      "min": 2,
-      "max": 0,
-      "default": 28,
-      "description": "0 As above for tone 2.",
-      "scope": "routing"
-    },
-    {
-      "name": "FM input",
-      "min": 3,
-      "max": 0,
-      "default": 28,
-      "description": "0 As above for tone 3.",
-      "scope": "routing"
-    },
-    {
-      "name": "FM input",
-      "min": 4,
-      "max": 0,
-      "default": 28,
-      "description": "0 As above for tone 4.",
-      "scope": "routing"
-    },
-    {
-      "name": "FM Range",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Sets the scaling for the FM inputs. The options are"
-    },
-    {
-      "name": "0.0 % Sets the position within the wavetable. Wave input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "Sets an input bus to modulate the wave offset.",
-      "scope": "routing"
-    },
-    {
-      "name": "Octave",
-      "min": -8,
-      "max": 8,
-      "default": 1,
-      "description": "Sets an octave shift for the fundamental."
-    },
-    {
-      "name": "Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Adjusts the tuning of all frequencies in (12-TET)"
-    },
-    {
-      "name": "Numerator 3",
-      "min": 1,
-      "max": 1024,
-      "default": 62,
-      "description": "Sets the numerator of the frequency ratio of tone 3."
-    },
-    {
-      "name": "Gate",
-      "min": 0,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 0."
-    },
-    {
-      "name": "Gate",
-      "min": 1,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 1."
-    },
-    {
-      "name": "Gate",
-      "min": 2,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 2."
-    },
-    {
-      "name": "Gate",
-      "min": 3,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 3."
-    },
-    {
-      "name": "Gate",
-      "min": 4,
-      "max": 0,
-      "default": 1,
-      "description": "0 Gate for tone 4."
-    },
-    {
-      "name": "Gain",
-      "min": 0,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for the fundamental. \"-40\" is treated as -dB."
-    },
-    {
-      "name": "Gain",
-      "min": 1,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 1."
-    },
-    {
-      "name": "Gain",
-      "min": 2,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 2."
-    },
-    {
-      "name": "Gain",
-      "min": 3,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 3."
-    },
-    {
-      "name": "Gain",
-      "min": 4,
-      "max": -40,
-      "default": 6,
-      "description": "0 dB Gain for tone 4."
-    },
-    {
-      "name": "Pan",
-      "min": 1,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 1."
-    },
-    {
-      "name": "Pan",
-      "min": 2,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 2."
-    },
-    {
-      "name": "Pan",
-      "min": 3,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 3."
-    },
-    {
-      "name": "Pan",
-      "min": 4,
-      "max": -100,
-      "default": 100,
-      "description": "0 % Stereo pan position for tone 4."
-    },
-    {
-      "name": "Decay time",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "Decay time for the envelopes."
-    },
-    {
-      "name": "FM input",
-      "min": 1,
-      "max": 0,
-      "default": 28,
-      "description": "0 Which input bus to use to frequency modulate",
-      "scope": "routing"
-    },
-    {
-      "name": "(FM) tone 1. The input is scaled according to the FM Range parameter. FM input",
-      "min": 2,
-      "max": 0,
-      "default": 28,
-      "description": "0 As above for tone 2.",
-      "scope": "routing"
-    },
-    {
-      "name": "FM input",
-      "min": 3,
-      "max": 0,
-      "default": 28,
-      "description": "0 As above for tone 3.",
-      "scope": "routing"
-    },
-    {
-      "name": "FM input",
-      "min": 4,
-      "max": 0,
-      "default": 28,
-      "description": "0 As above for tone 4.",
-      "scope": "routing"
-    },
-    {
-      "name": "FM Range",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Sets the scaling for the FM inputs. The options are"
+      "page": "Wavetable",
+      "params": [
+        {
+          "name": "Wavetable",
+          "type": "file",
+          "description": "Chooses the wavetable for the oscillators.",
+          "scope": "timbre"
+        },
+        {
+          "name": "Wave offset",
+          "unit": "%",
+          "min": -100.0,
+          "max": 100.0,
+          "default": 0.0,
+          "description": "Sets the position within the wavetable.",
+          "scope": "timbre"
+        },
+        {
+          "name": "Wave input",
+          "type": "bus",
+          "unit": "bus",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "description": "Sets an input bus to modulate the wave offset.",
+          "scope": "routing"
+        },
+        {
+          "name": "Waveform 0",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "enumValues": ["Wavetable", "Sine", "Triangle", "Square"],
+          "description": "Chooses the waveform for the fundamental.",
+          "scope": "timbre"
+        }
+      ]
+    },
+    {
+      "page": "Pitches",
+      "params": [
+        {
+          "name": "Prime 1",
+          "min": 2,
+          "max": 32749,
+          "default": 2,
+          "description": "Sets one of the four primes that may be multiplied to create the denominator and numerators of the frequency ratios."
+        },
+        {
+          "name": "Prime 2",
+          "min": 1,
+          "max": 32749,
+          "default": 3,
+          "description": "Sets the second prime."
+        },
+        {
+          "name": "Prime 3",
+          "min": 1,
+          "max": 32749,
+          "default": 7,
+          "description": "Sets the third prime."
+        },
+        {
+          "name": "Prime 4",
+          "min": 1,
+          "max": 32749,
+          "default": 11,
+          "description": "Sets the fourth prime."
+        },
+        {
+          "name": "Fundamental",
+          "unit": "Hz",
+          "min": 0.001,
+          "max": 32767,
+          "default": 29.135,
+          "description": "Sets the fundamental frequency."
+        },
+        {
+          "name": "Octave",
+          "min": -8,
+          "max": 8,
+          "default": 1,
+          "description": "Sets an octave shift for the fundamental."
+        },
+        {
+          "name": "Transpose",
+          "unit": "ST",
+          "min": -60,
+          "max": 60,
+          "default": 0,
+          "description": "Adjusts the tuning of all frequencies in (12-TET) semitone steps."
+        },
+        {
+          "name": "Denominator",
+          "min": 1,
+          "max": 256,
+          "default": 32,
+          "description": "Sets the denominator of the frequency ratios."
+        },
+        {
+          "name": "Numerator 1",
+          "min": 1,
+          "max": 1024,
+          "default": 42,
+          "description": "Sets the numerator of the frequency ratio of tone 1."
+        },
+        {
+          "name": "Numerator 2",
+          "min": 1,
+          "max": 1024,
+          "default": 56,
+          "description": "Sets the numerator of the frequency ratio of tone 2."
+        },
+        {
+          "name": "Numerator 3",
+          "min": 1,
+          "max": 1024,
+          "default": 62,
+          "description": "Sets the numerator of the frequency ratio of tone 3."
+        },
+        {
+          "name": "Numerator 4",
+          "min": 1,
+          "max": 1024,
+          "default": 63,
+          "description": "Sets the numerator of the frequency ratio of tone 4."
+        }
+      ]
+    },
+    {
+      "page": "Gates",
+      "params": [
+        {
+          "name": "Gate 0",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "description": "Gate for tone 0.",
+          "scope": "trigger"
+        },
+        {
+          "name": "Gate 1",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "description": "Gate for tone 1.",
+          "scope": "trigger"
+        },
+        {
+          "name": "Gate 2",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "description": "Gate for tone 2.",
+          "scope": "trigger"
+        },
+        {
+          "name": "Gate 3",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "description": "Gate for tone 3.",
+          "scope": "trigger"
+        },
+        {
+          "name": "Gate 4",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "description": "Gate for tone 4.",
+          "scope": "trigger"
+        }
+      ]
+    },
+    {
+      "page": "Mix",
+      "params": [
+        {
+          "name": "Gain 0",
+          "unit": "dB",
+          "min": -40,
+          "max": 6,
+          "default": 0,
+          "description": "Gain for the fundamental. -40 is treated as -∞dB.",
+          "scope": "gain"
+        },
+        {
+          "name": "Gain 1",
+          "unit": "dB",
+          "min": -40,
+          "max": 6,
+          "default": 0,
+          "description": "Gain for tone 1.",
+          "scope": "gain"
+        },
+        {
+          "name": "Gain 2",
+          "unit": "dB",
+          "min": -40,
+          "max": 6,
+          "default": 0,
+          "description": "Gain for tone 2.",
+          "scope": "gain"
+        },
+        {
+          "name": "Gain 3",
+          "unit": "dB",
+          "min": -40,
+          "max": 6,
+          "default": 0,
+          "description": "Gain for tone 3.",
+          "scope": "gain"
+        },
+        {
+          "name": "Gain 4",
+          "unit": "dB",
+          "min": -40,
+          "max": 6,
+          "default": 0,
+          "description": "Gain for tone 4.",
+          "scope": "gain"
+        },
+        {
+          "name": "Pan 1",
+          "unit": "%",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "description": "Stereo pan position for tone 1.",
+          "scope": "mix"
+        },
+        {
+          "name": "Pan 2",
+          "unit": "%",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "description": "Stereo pan position for tone 2.",
+          "scope": "mix"
+        },
+        {
+          "name": "Pan 3",
+          "unit": "%",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "description": "Stereo pan position for tone 3.",
+          "scope": "mix"
+        },
+        {
+          "name": "Pan 4",
+          "unit": "%",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "description": "Stereo pan position for tone 4.",
+          "scope": "mix"
+        }
+      ]
+    },
+    {
+      "page": "Other",
+      "params": [
+        {
+          "name": "Attack time",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "description": "Attack time for the envelopes."
+        },
+        {
+          "name": "Decay time",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "description": "Decay time for the envelopes."
+        },
+        {
+          "name": "FM input 1",
+          "type": "bus",
+          "unit": "bus",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "description": "Which input bus to use to frequency modulate (FM) tone 1. The input is scaled according to the FM Range parameter.",
+          "scope": "routing"
+        },
+        {
+          "name": "FM input 2",
+          "type": "bus",
+          "unit": "bus",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "description": "As above for tone 2.",
+          "scope": "routing"
+        },
+        {
+          "name": "FM input 3",
+          "type": "bus",
+          "unit": "bus",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "description": "As above for tone 3.",
+          "scope": "routing"
+        },
+        {
+          "name": "FM input 4",
+          "type": "bus",
+          "unit": "bus",
+          "min": 0,
+          "max": 28,
+          "default": 0,
+          "description": "As above for tone 4.",
+          "scope": "routing"
+        },
+        {
+          "name": "FM Range",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "enumValues": ["1Hz/V", "10Hz/V", "100Hz/V", "1kHz/V"],
+          "description": "Sets the scaling for the FM inputs."
+        },
+        {
+          "name": "Frequency slew",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "description": "Sets a slew rate for any change in voice frequency."
+        },
+        {
+          "name": "Crossfade time",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "description": "Sets a crossfade time for any change in voice frequency."
+        }
+      ]
+    },
+    {
+      "page": "Routing",
+      "params": [
+        {
+          "name": "Left output",
+          "type": "bus",
+          "unit": "bus",
+          "min": 1,
+          "max": 28,
+          "default": 13,
+          "description": "The left output bus.",
+          "scope": "routing"
+        },
+        {
+          "name": "Right output",
+          "type": "bus",
+          "unit": "bus",
+          "min": 1,
+          "max": 28,
+          "default": 14,
+          "description": "The right output bus.",
+          "scope": "routing"
+        },
+        {
+          "name": "Output mode",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "enumValues": ["Add", "Replace"],
+          "description": "The standard Add/Replace mode selector.",
+          "scope": "routing"
+        }
+      ]
     }
   ],
-  "features": [
-    "feat_poly_params"
-  ],
+  "features": [],
   "input_ports": [
     {
-      "id": "v_oct",
-      "name": "V/Oct",
-      "description": "V/Oct input bus.",
-      "busIdRef": "V/Oct"
-    },
-    {
-      "id": "trigger",
-      "name": "Trigger",
-      "description": "Trigger input bus.",
-      "busIdRef": "Trigger"
-    },
-    {
-      "id": "mode_cv",
-      "name": "Mode CV",
-      "description": "Mode CV input bus.",
-      "busIdRef": "Mode CV"
-    },
-    {
-      "id": "timbre_cv",
-      "name": "Timbre CV",
-      "description": "Timbre CV input bus.",
-      "busIdRef": "Timbre CV"
-    },
-    {
-      "id": "harmonics_cv",
-      "name": "Harmonics CV",
-      "description": "Harmonics CV input bus.",
-      "busIdRef": "Harmonics CV"
-    },
-    {
-      "id": "morph_cv",
-      "name": "Morph CV",
-      "description": "Morph CV input bus.",
-      "busIdRef": "Morph CV"
-    },
-    {
-      "id": "level_cv",
-      "name": "Level CV",
-      "description": "Level CV input bus.",
-      "busIdRef": "Level CV"
-    },
-    {
+      "id": "wave_input",
       "name": "Wave input",
+      "description": "Input bus to modulate the wave offset.",
       "busIdRef": "Wave input"
+    },
+    {
+      "id": "fm_input_1",
+      "name": "FM input 1",
+      "description": "Frequency modulation input for tone 1.",
+      "busIdRef": "FM input 1"
+    },
+    {
+      "id": "fm_input_2",
+      "name": "FM input 2",
+      "description": "Frequency modulation input for tone 2.",
+      "busIdRef": "FM input 2"
+    },
+    {
+      "id": "fm_input_3",
+      "name": "FM input 3",
+      "description": "Frequency modulation input for tone 3.",
+      "busIdRef": "FM input 3"
+    },
+    {
+      "id": "fm_input_4",
+      "name": "FM input 4",
+      "description": "Frequency modulation input for tone 4.",
+      "busIdRef": "FM input 4"
     }
   ],
   "output_ports": [
     {
-      "id": "output",
-      "name": "Output",
-      "description": "Output bus.",
-      "busIdRef": "Output"
-    },
-    {
+      "id": "left_output",
       "name": "Left output",
+      "description": "Left stereo output bus.",
       "busIdRef": "Left output"
     },
     {
+      "id": "right_output",
       "name": "Right output",
+      "description": "Right stereo output bus.",
       "busIdRef": "Right output"
     }
   ]
