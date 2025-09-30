@@ -48,6 +48,152 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     });
   }
 
+  // Get list of parameter indices that have perfPageIndex > 0
+  List<int> _getPerformanceParameterIndices() {
+    final perfParams = <int>[];
+    for (int i = 0; i < widget.slot.mappings.length; i++) {
+      final mapping = widget.slot.mappings[i];
+      if (mapping.packedMappingData.perfPageIndex > 0) {
+        perfParams.add(i);
+      }
+    }
+    // Sort by perfPageIndex, then by parameter number
+    perfParams.sort((a, b) {
+      final mappingA = widget.slot.mappings[a];
+      final mappingB = widget.slot.mappings[b];
+      final pageCompare = mappingA.packedMappingData.perfPageIndex
+          .compareTo(mappingB.packedMappingData.perfPageIndex);
+      if (pageCompare != 0) return pageCompare;
+      return a.compareTo(b);
+    });
+    return perfParams;
+  }
+
+  // Build page badge widget
+  Widget _buildPageBadge(int pageIndex) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+    ];
+    final color = colors[(pageIndex - 1) % colors.length];
+
+    return Chip(
+      label: Text('P$pageIndex'),
+      backgroundColor: color,
+      labelStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  // Build performance parameter row
+  Widget _buildPerformanceParameterRow(int parameterNumber) {
+    final value = widget.slot.values.elementAtOrNull(parameterNumber);
+    final enumStrings = widget.slot.enums.elementAtOrNull(parameterNumber);
+    final mapping = widget.slot.mappings.elementAtOrNull(parameterNumber);
+    final valueString = widget.slot.valueStrings.elementAtOrNull(parameterNumber);
+    final parameterInfo = widget.slot.parameters.elementAtOrNull(parameterNumber);
+
+    // Skip if missing essential data
+    if (value == null || parameterInfo == null || mapping == null) {
+      return const SizedBox.shrink();
+    }
+
+    final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
+    final safeValueString = valueString ?? ParameterValueString.filler();
+    final unit = parameterInfo.getUnitString(widget.units);
+    final perfPageIndex = mapping.packedMappingData.perfPageIndex;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: Row(
+        children: [
+          // Page badge
+          _buildPageBadge(perfPageIndex),
+          const SizedBox(width: 12),
+          // Parameter editor (expanded)
+          Expanded(
+            child: ParameterEditorView(
+              slot: widget.slot,
+              parameterInfo: parameterInfo,
+              value: value,
+              enumStrings: safeEnumStrings,
+              mapping: mapping,
+              valueString: safeValueString,
+              unit: unit,
+            ),
+          ),
+          // Remove button
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: 'Remove from performance page',
+            onPressed: () => _removeFromPerformancePage(parameterNumber),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Remove parameter from performance page
+  Future<void> _removeFromPerformancePage(int parameterNumber) async {
+    final cubit = context.read<DistingCubit>();
+    try {
+      await cubit.setPerformancePageMapping(
+        widget.slot.algorithm.algorithmIndex,
+        parameterNumber,
+        0, // Remove from performance page
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Removed from performance page'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[SectionParameterListView] Error removing from performance page: $e');
+    }
+  }
+
+  // Build performance parameters section
+  Widget _buildPerformanceParametersSection() {
+    final perfParams = _getPerformanceParameterIndices();
+    final isEmpty = perfParams.isEmpty;
+
+    return ExpansionTile(
+      initiallyExpanded: !isEmpty,
+      title: Text(
+        'Performance Parameters (${perfParams.length})',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      children: isEmpty
+          ? [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'No parameters assigned to performance pages',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ]
+          : perfParams.map((paramIndex) {
+              return _buildPerformanceParameterRow(paramIndex);
+            }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListTileTheme(
@@ -129,6 +275,12 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 ],
               ),
             ),
+            // Performance Parameters Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: _buildPerformanceParametersSection(),
+            ),
+            // Regular parameter pages
             Expanded(
               child: ListView.builder(
                 cacheExtent: double.infinity,

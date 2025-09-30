@@ -1862,6 +1862,31 @@ class DistingCubit extends Cubit<DistingState> {
     }
   }
 
+  /// Sets the performance page assignment for a parameter.
+  ///
+  /// - [slotIndex]: Slot index (0-31)
+  /// - [parameterNumber]: Parameter number within the algorithm
+  /// - [perfPageIndex]: Performance page index (0-15, where 0 = not assigned)
+  Future<void> setPerformancePageMapping(
+    int slotIndex,
+    int parameterNumber,
+    int perfPageIndex,
+  ) async {
+    final currentState = state;
+    if (currentState is DistingStateSynchronized) {
+      final disting = requireDisting();
+      // Send the performance page mapping update to the manager
+      await disting.setPerformancePageMapping(
+        slotIndex,
+        parameterNumber,
+        perfPageIndex,
+      );
+
+      // Trigger a refresh to get the updated mapping from the manager
+      await _refreshStateFromManager();
+    }
+  }
+
   // --- Helper Methods ---
 
   // Helper to refresh state from the current manager (online or offline)
