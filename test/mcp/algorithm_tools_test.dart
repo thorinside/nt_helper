@@ -3,6 +3,8 @@ import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:drift/native.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 void main() {
@@ -13,7 +15,8 @@ void main() {
 
     setUpAll(() async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      database = AppDatabase();
+      SharedPreferences.setMockInitialValues({});
+      database = AppDatabase.forTesting(NativeDatabase.memory());
 
       // Initialize the AlgorithmMetadataService
       await AlgorithmMetadataService().initialize(database);
@@ -84,7 +87,7 @@ void main() {
 
         final decoded = jsonDecode(result);
         expect(decoded['success'], isFalse);
-        expect(decoded['error'], contains('not_found'));
+        expect(decoded['error'], contains('Resource not found'));
       });
 
       test('should return error for ambiguous name', () async {

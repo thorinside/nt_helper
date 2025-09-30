@@ -3,12 +3,17 @@ import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/mcp/tools/algorithm_tools.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/db/database.dart';
+import 'package:drift/native.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 void main() {
   group('CLCK Algorithm Specific Tests', () {
+    setUpAll(() {
+      SharedPreferences.setMockInitialValues({});
+    });
     test('clck.json should be valid and loadable', () async {
       final file = File('docs/algorithms/clck.json');
       expect(file.existsSync(), isTrue, reason: 'clck.json file should exist');
@@ -25,7 +30,7 @@ void main() {
 
     test('AlgorithmMetadataService should load clck', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      final database = AppDatabase();
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
 
       try {
         await AlgorithmMetadataService().initialize(database);
@@ -43,7 +48,7 @@ void main() {
 
     test('MCPAlgorithmTools.getAlgorithmDetails should handle clck', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      final database = AppDatabase();
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
 
       try {
         await AlgorithmMetadataService().initialize(database);

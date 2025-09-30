@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/db/database.dart';
 import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/native.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -9,7 +10,7 @@ void main() {
     late AppDatabase database;
 
     setUpAll(() async {
-      database = AppDatabase();
+      database = AppDatabase.forTesting(NativeDatabase.memory());
     });
 
     tearDownAll(() async {

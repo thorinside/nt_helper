@@ -85,6 +85,7 @@ void main() {
         final specialCases = {
           'note': 'Notes display algorithm',
           'stpw': 'Stopwatch utility (no audio/CV I/O)',
+          'es5e': 'ES-5 Encoder (Expert Sleepers output encoder)',
         };
 
         for (final algorithmJson in algorithms) {

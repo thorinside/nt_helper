@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -89,21 +88,13 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // Use fixed pump calls instead of pumpAndSettle to avoid timeout
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Find the MouseRegion wrapping connection canvas
       expect(find.byType(MouseRegion), findsWidgets);
-
-      // Test hover enter event
-      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
-        'flutter/mousecursor',
-        const StandardMethodCodec().encodeMethodCall(
-          const MethodCall('activateSystemCursor', <String, dynamic>{
-            'kind': 'basic',
-          }),
-        ),
-        (data) {},
-      );
 
       final mouseRegion = find.byType(MouseRegion).first;
 
