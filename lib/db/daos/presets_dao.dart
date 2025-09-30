@@ -301,6 +301,7 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
                       presetSlotId: slotId,
                       parameterNumber: e.key,
                       packedData: e.value,
+                      perfPageIndex: Value(e.value.perfPageIndex),
                     ),
                   )
                   .toList(),

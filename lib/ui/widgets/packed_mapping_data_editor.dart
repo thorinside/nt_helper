@@ -641,6 +641,7 @@ extension on PackedMappingData {
     bool? isI2cSymmetric,
     int? i2cMin,
     int? i2cMax,
+    int? perfPageIndex,
     int? version,
   }) {
     return PackedMappingData(
@@ -663,6 +664,7 @@ extension on PackedMappingData {
       isI2cSymmetric: isI2cSymmetric ?? this.isI2cSymmetric,
       i2cMin: i2cMin ?? this.i2cMin,
       i2cMax: i2cMax ?? this.i2cMax,
+      perfPageIndex: perfPageIndex ?? this.perfPageIndex,
       version: version ?? this.version,
     );
   }

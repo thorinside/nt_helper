@@ -58,6 +58,7 @@ void main() {
         isI2cSymmetric: false,
         i2cMin: 0,
         i2cMax: 127,
+        perfPageIndex: 0,
         version: 1,
       );
 
@@ -176,6 +177,7 @@ void main() {
           isI2cSymmetric: false,
           i2cMin: 0,
           i2cMax: 127,
+          perfPageIndex: 0,
           version: 1,
         );
 
@@ -199,6 +201,7 @@ void main() {
           isI2cSymmetric: false,
           i2cMin: 0,
           i2cMax: 127,
+          perfPageIndex: 0,
           version: 1,
         );
 

@@ -3792,11 +3792,24 @@ class $PresetMappingsTable extends PresetMappings
     type: DriftSqlType.blob,
     requiredDuringInsert: true,
   ).withConverter<PackedMappingData>($PresetMappingsTable.$converterpackedData);
+  static const VerificationMeta _perfPageIndexMeta = const VerificationMeta(
+    'perfPageIndex',
+  );
+  @override
+  late final GeneratedColumn<int> perfPageIndex = GeneratedColumn<int>(
+    'perf_page_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     presetSlotId,
     parameterNumber,
     packedData,
+    perfPageIndex,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3832,6 +3845,15 @@ class $PresetMappingsTable extends PresetMappings
     } else if (isInserting) {
       context.missing(_parameterNumberMeta);
     }
+    if (data.containsKey('perf_page_index')) {
+      context.handle(
+        _perfPageIndexMeta,
+        perfPageIndex.isAcceptableOrUnknown(
+          data['perf_page_index']!,
+          _perfPageIndexMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3855,6 +3877,10 @@ class $PresetMappingsTable extends PresetMappings
           data['${effectivePrefix}packed_data'],
         )!,
       ),
+      perfPageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}perf_page_index'],
+      )!,
     );
   }
 
@@ -3872,10 +3898,12 @@ class PresetMappingEntry extends DataClass
   final int presetSlotId;
   final int parameterNumber;
   final PackedMappingData packedData;
+  final int perfPageIndex;
   const PresetMappingEntry({
     required this.presetSlotId,
     required this.parameterNumber,
     required this.packedData,
+    required this.perfPageIndex,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3887,6 +3915,7 @@ class PresetMappingEntry extends DataClass
         $PresetMappingsTable.$converterpackedData.toSql(packedData),
       );
     }
+    map['perf_page_index'] = Variable<int>(perfPageIndex);
     return map;
   }
 
@@ -3895,6 +3924,7 @@ class PresetMappingEntry extends DataClass
       presetSlotId: Value(presetSlotId),
       parameterNumber: Value(parameterNumber),
       packedData: Value(packedData),
+      perfPageIndex: Value(perfPageIndex),
     );
   }
 
@@ -3907,6 +3937,7 @@ class PresetMappingEntry extends DataClass
       presetSlotId: serializer.fromJson<int>(json['presetSlotId']),
       parameterNumber: serializer.fromJson<int>(json['parameterNumber']),
       packedData: serializer.fromJson<PackedMappingData>(json['packedData']),
+      perfPageIndex: serializer.fromJson<int>(json['perfPageIndex']),
     );
   }
   @override
@@ -3916,6 +3947,7 @@ class PresetMappingEntry extends DataClass
       'presetSlotId': serializer.toJson<int>(presetSlotId),
       'parameterNumber': serializer.toJson<int>(parameterNumber),
       'packedData': serializer.toJson<PackedMappingData>(packedData),
+      'perfPageIndex': serializer.toJson<int>(perfPageIndex),
     };
   }
 
@@ -3923,10 +3955,12 @@ class PresetMappingEntry extends DataClass
     int? presetSlotId,
     int? parameterNumber,
     PackedMappingData? packedData,
+    int? perfPageIndex,
   }) => PresetMappingEntry(
     presetSlotId: presetSlotId ?? this.presetSlotId,
     parameterNumber: parameterNumber ?? this.parameterNumber,
     packedData: packedData ?? this.packedData,
+    perfPageIndex: perfPageIndex ?? this.perfPageIndex,
   );
   PresetMappingEntry copyWithCompanion(PresetMappingsCompanion data) {
     return PresetMappingEntry(
@@ -3939,6 +3973,9 @@ class PresetMappingEntry extends DataClass
       packedData: data.packedData.present
           ? data.packedData.value
           : this.packedData,
+      perfPageIndex: data.perfPageIndex.present
+          ? data.perfPageIndex.value
+          : this.perfPageIndex,
     );
   }
 
@@ -3947,37 +3984,43 @@ class PresetMappingEntry extends DataClass
     return (StringBuffer('PresetMappingEntry(')
           ..write('presetSlotId: $presetSlotId, ')
           ..write('parameterNumber: $parameterNumber, ')
-          ..write('packedData: $packedData')
+          ..write('packedData: $packedData, ')
+          ..write('perfPageIndex: $perfPageIndex')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(presetSlotId, parameterNumber, packedData);
+  int get hashCode =>
+      Object.hash(presetSlotId, parameterNumber, packedData, perfPageIndex);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PresetMappingEntry &&
           other.presetSlotId == this.presetSlotId &&
           other.parameterNumber == this.parameterNumber &&
-          other.packedData == this.packedData);
+          other.packedData == this.packedData &&
+          other.perfPageIndex == this.perfPageIndex);
 }
 
 class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
   final Value<int> presetSlotId;
   final Value<int> parameterNumber;
   final Value<PackedMappingData> packedData;
+  final Value<int> perfPageIndex;
   final Value<int> rowid;
   const PresetMappingsCompanion({
     this.presetSlotId = const Value.absent(),
     this.parameterNumber = const Value.absent(),
     this.packedData = const Value.absent(),
+    this.perfPageIndex = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PresetMappingsCompanion.insert({
     required int presetSlotId,
     required int parameterNumber,
     required PackedMappingData packedData,
+    this.perfPageIndex = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : presetSlotId = Value(presetSlotId),
        parameterNumber = Value(parameterNumber),
@@ -3986,12 +4029,14 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
     Expression<int>? presetSlotId,
     Expression<int>? parameterNumber,
     Expression<Uint8List>? packedData,
+    Expression<int>? perfPageIndex,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (presetSlotId != null) 'preset_slot_id': presetSlotId,
       if (parameterNumber != null) 'parameter_number': parameterNumber,
       if (packedData != null) 'packed_data': packedData,
+      if (perfPageIndex != null) 'perf_page_index': perfPageIndex,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4000,12 +4045,14 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
     Value<int>? presetSlotId,
     Value<int>? parameterNumber,
     Value<PackedMappingData>? packedData,
+    Value<int>? perfPageIndex,
     Value<int>? rowid,
   }) {
     return PresetMappingsCompanion(
       presetSlotId: presetSlotId ?? this.presetSlotId,
       parameterNumber: parameterNumber ?? this.parameterNumber,
       packedData: packedData ?? this.packedData,
+      perfPageIndex: perfPageIndex ?? this.perfPageIndex,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4024,6 +4071,9 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
         $PresetMappingsTable.$converterpackedData.toSql(packedData.value),
       );
     }
+    if (perfPageIndex.present) {
+      map['perf_page_index'] = Variable<int>(perfPageIndex.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4036,6 +4086,7 @@ class PresetMappingsCompanion extends UpdateCompanion<PresetMappingEntry> {
           ..write('presetSlotId: $presetSlotId, ')
           ..write('parameterNumber: $parameterNumber, ')
           ..write('packedData: $packedData, ')
+          ..write('perfPageIndex: $perfPageIndex, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9805,6 +9856,7 @@ typedef $$PresetMappingsTableCreateCompanionBuilder =
       required int presetSlotId,
       required int parameterNumber,
       required PackedMappingData packedData,
+      Value<int> perfPageIndex,
       Value<int> rowid,
     });
 typedef $$PresetMappingsTableUpdateCompanionBuilder =
@@ -9812,6 +9864,7 @@ typedef $$PresetMappingsTableUpdateCompanionBuilder =
       Value<int> presetSlotId,
       Value<int> parameterNumber,
       Value<PackedMappingData> packedData,
+      Value<int> perfPageIndex,
       Value<int> rowid,
     });
 
@@ -9872,6 +9925,11 @@ class $$PresetMappingsTableFilterComposer
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
+  ColumnFilters<int> get perfPageIndex => $composableBuilder(
+    column: $table.perfPageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$PresetSlotsTableFilterComposer get presetSlotId {
     final $$PresetSlotsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -9912,6 +9970,11 @@ class $$PresetMappingsTableOrderingComposer
 
   ColumnOrderings<Uint8List> get packedData => $composableBuilder(
     column: $table.packedData,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get perfPageIndex => $composableBuilder(
+    column: $table.perfPageIndex,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9956,6 +10019,11 @@ class $$PresetMappingsTableAnnotationComposer
   GeneratedColumnWithTypeConverter<PackedMappingData, Uint8List>
   get packedData => $composableBuilder(
     column: $table.packedData,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get perfPageIndex => $composableBuilder(
+    column: $table.perfPageIndex,
     builder: (column) => column,
   );
 
@@ -10016,11 +10084,13 @@ class $$PresetMappingsTableTableManager
                 Value<int> presetSlotId = const Value.absent(),
                 Value<int> parameterNumber = const Value.absent(),
                 Value<PackedMappingData> packedData = const Value.absent(),
+                Value<int> perfPageIndex = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PresetMappingsCompanion(
                 presetSlotId: presetSlotId,
                 parameterNumber: parameterNumber,
                 packedData: packedData,
+                perfPageIndex: perfPageIndex,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10028,11 +10098,13 @@ class $$PresetMappingsTableTableManager
                 required int presetSlotId,
                 required int parameterNumber,
                 required PackedMappingData packedData,
+                Value<int> perfPageIndex = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PresetMappingsCompanion.insert(
                 presetSlotId: presetSlotId,
                 parameterNumber: parameterNumber,
                 packedData: packedData,
+                perfPageIndex: perfPageIndex,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

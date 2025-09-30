@@ -38,6 +38,9 @@ class PackedMappingData {
   final int i2cMin; // Minimum I2C value
   final int i2cMax; // Maximum I2C value
 
+  // Performance Page
+  final int perfPageIndex; // Performance page index (0 = not assigned, 1-15 = valid pages)
+
   // Constructor
   PackedMappingData({
     required this.source,
@@ -59,6 +62,7 @@ class PackedMappingData {
     required this.isI2cSymmetric,
     required this.i2cMin,
     required this.i2cMax,
+    required this.perfPageIndex,
     required this.version,
   });
 
@@ -83,13 +87,14 @@ class PackedMappingData {
       isI2cSymmetric: false,
       i2cMin: -1,
       i2cMax: -1,
+      perfPageIndex: 0,
       version: -1,
     );
   }
 
   // Decode from packed Uint8List with bounds checking
   factory PackedMappingData.fromBytes(int version, Uint8List data) {
-    if (version < 1 || version > 4) {
+    if (version < 1 || version > 5) {
       debugPrint(
         "Warning: Unknown PackedMappingData version $version. Returning filler.",
       );
@@ -128,7 +133,9 @@ class PackedMappingData {
         ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
         : (version == 3)
         ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-        : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+        : (version == 4)
+        ? 25 // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+        : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
 
     if (dataLength != expectedLength) {
       debugPrint(
@@ -191,6 +198,9 @@ class PackedMappingData {
     final i2cMax = safeDecode16Unsigned(offset);
     offset += 3;
 
+    // --- Decode Performance Page ---
+    final perfPageIndex = (version >= 5) ? safeReadByte(offset++) : 0;
+
     // Final validation: offset should equal expected length
     if (offset != expectedLength) {
       debugPrint(
@@ -219,6 +229,7 @@ class PackedMappingData {
       isI2cSymmetric: isI2cSymmetric,
       i2cMin: i2cMin,
       i2cMax: i2cMax,
+      perfPageIndex: perfPageIndex,
       version: version,
     );
   }
@@ -302,6 +313,18 @@ class PackedMappingData {
 
     final allBytes = [...cvBytes, ...midiBytes, ...i2cBytes];
 
+    // Add performance page index for version 5+
+    if (version >= 5) {
+      // Validate and clamp perfPageIndex to valid range (0-15)
+      final clampedIndex = perfPageIndex.clamp(0, 15);
+      if (clampedIndex != perfPageIndex) {
+        debugPrint(
+          'Warning: perfPageIndex $perfPageIndex out of range (0-15), clamping to $clampedIndex',
+        );
+      }
+      allBytes.add(clampedIndex & 0x7F);
+    }
+
     final result = Uint8List.fromList(allBytes);
 
     // Validate the output length matches expected length for this version
@@ -311,7 +334,9 @@ class PackedMappingData {
         ? 23 // 6 + 9 + 8 = CV(6) + MIDI(9) + I2C(8)
         : (version == 3)
         ? 24 // 6 + 9 + 9 = CV(6) + MIDI(9) + I2C(9)
-        : 25; // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+        : (version == 4)
+        ? 25 // 7 + 9 + 9 = CV(7) + MIDI(9) + I2C(9)
+        : 26; // 7 + 9 + 9 + 1 = CV(7) + MIDI(9) + I2C(9) + Perf(1)
 
     if (result.length != expectedLength) {
       debugPrint(
@@ -345,7 +370,8 @@ class PackedMappingData {
         other.isI2cEnabled == isI2cEnabled &&
         other.isI2cSymmetric == isI2cSymmetric &&
         other.i2cMin == i2cMin &&
-        other.i2cMax == i2cMax;
+        other.i2cMax == i2cMax &&
+        other.perfPageIndex == perfPageIndex;
   }
 
   @override
@@ -369,7 +395,7 @@ class PackedMappingData {
       isI2cEnabled,
       isI2cSymmetric,
       i2cMin,
-      i2cMax,
+      Object.hash(i2cMax, perfPageIndex),
     );
   }
 

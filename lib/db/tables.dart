@@ -199,6 +199,8 @@ class PresetMappings extends Table {
   IntColumn get parameterNumber => integer()();
   // Store PackedMappingData as a BLOB using a type converter
   BlobColumn get packedData => blob().map(const PackedMappingDataConverter())();
+  // Performance page index (0 = not assigned, 1-15 = valid pages)
+  IntColumn get perfPageIndex => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {presetSlotId, parameterNumber};
