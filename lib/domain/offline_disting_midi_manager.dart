@@ -635,6 +635,15 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   }
 
   @override
+  Future<void> setPerformancePageMapping(
+    int slotIndex,
+    int parameterNumber,
+    int perfPageIndex,
+  ) async {
+    // Offline mode - performance page changes not persisted
+  }
+
+  @override
   Future<String?> executeLua(String luaScript) async {
     debugPrint("[Offline] executeLua: script='$luaScript'");
     // Lua execution is not supported in offline mode

@@ -40,6 +40,7 @@ import 'package:nt_helper/domain/sysex/requests/set_i2c_mapping.dart';
 import 'package:nt_helper/domain/sysex/requests/set_midi_mapping.dart';
 import 'package:nt_helper/domain/sysex/requests/set_parameter_value.dart';
 import 'package:nt_helper/domain/sysex/requests/set_parameter_string.dart';
+import 'package:nt_helper/domain/sysex/requests/set_performance_page_message.dart';
 import 'package:nt_helper/domain/sysex/requests/set_preset_name.dart';
 import 'package:nt_helper/domain/sysex/requests/set_real_time_clock.dart';
 import 'package:nt_helper/domain/sysex/requests/set_slot_name.dart';
@@ -767,6 +768,28 @@ class DistingMidiManager implements IDistingMidiManager {
       packet,
       key,
       responseExpectation: ResponseExpectation.optional,
+    );
+  }
+
+  @override
+  Future<void> setPerformancePageMapping(
+    int slotIndex,
+    int parameterNumber,
+    int perfPageIndex,
+  ) {
+    final message = SetPerformancePageMessage(
+      sysExId: sysExId,
+      slotIndex: slotIndex,
+      parameterNumber: parameterNumber,
+      perfPageIndex: perfPageIndex,
+    );
+    final packet = message.encode();
+    final key = RequestKey(sysExId: sysExId);
+
+    return _scheduler.sendRequest<void>(
+      packet,
+      key,
+      responseExpectation: ResponseExpectation.none,
     );
   }
 

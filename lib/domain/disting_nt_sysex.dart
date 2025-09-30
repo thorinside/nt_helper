@@ -385,6 +385,7 @@ enum DistingNTRequestMessageType {
   setSlotName(0x51),
   requestParameterPages(0x52),
   setParameterString(0x53),
+  setPerformancePageMapping(0x54),
   requestNumAlgorithmsInPreset(0x60),
   requestRouting(0x61),
   requestCpuUsage(0x62),

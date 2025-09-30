@@ -1116,6 +1116,15 @@ class MockDistingMidiManager implements IDistingMidiManager {
     // No-op
   }
 
+  @override
+  Future<void> setPerformancePageMapping(
+    int slotIndex,
+    int parameterNumber,
+    int perfPageIndex,
+  ) async {
+    // Demo mode - performance page changes not persisted
+  }
+
   Future<void> requestSetCVMapping(
     int algorithmIndex,
     int parameterNumber,

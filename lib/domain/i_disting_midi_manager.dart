@@ -77,6 +77,11 @@ abstract class IDistingMidiManager {
     int parameterNumber,
     PackedMappingData data,
   );
+  Future<void> setPerformancePageMapping(
+    int slotIndex,
+    int parameterNumber,
+    int perfPageIndex,
+  );
   Future<void> requestSendSlotName(int algorithmIndex, String newName);
   Future<void> requestSetDisplayMode(DisplayMode displayMode);
   Future<void> requestSetRealTimeClock(int unixTimeSeconds);

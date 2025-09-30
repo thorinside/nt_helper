@@ -1,31 +1,25 @@
 schema: 1
 story: '1.1'
 story_title: 'Story 1.1: Extend Mapping Data Model to Include Performance Page Index'
-gate: CONCERNS
-status_reason: 'New perf_page_index column is never populated, so performance page assignments cannot be queried yet.'
+gate: PASS
+status_reason: 'Full test matrix restored and green; hover regression fixed and perfPageIndex persistence verified.'
 reviewer: 'Quinn (Test Architect)'
-updated: '2025-09-30T18:57:46Z'
+updated: '2025-09-30T19:45:12Z'
 waiver: { active: false }
-top_issues:
-  - id: 'DATA-001'
-    severity: medium
-    finding: 'Preset persistence leaves perf_page_index at the default 0 even when mappings have a page assigned.'
-    suggested_action: 'Write perfPageIndex when inserting PresetMappings rows and backfill existing data.'
-    suggested_owner: dev
+top_issues: []
 risk_summary:
-  totals: { critical: 0, high: 0, medium: 1, low: 0 }
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
   recommendations:
-    must_fix:
-      - 'Populate perf_page_index for saved mappings before relying on DB queries.'
+    must_fix: []
     monitor: []
-quality_score: 90
+quality_score: 100
 expires: '2025-10-14T00:00:00Z'
 evidence:
-  tests_reviewed: 11
+  tests_reviewed: 13
   risks_identified: 1
   trace:
-    ac_covered: [1, 2, 3, 4, 7, 8, 9, 10, 11]
-    ac_gaps: [5]
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    ac_gaps: []
 nfr_validation:
   security:
     status: PASS
@@ -37,12 +31,10 @@ nfr_validation:
     status: PASS
     notes: 'Version guards and length checks protect against malformed payloads.'
   maintainability:
-    status: CONCERNS
-    notes: 'DB column not populated, risking divergence between storage layers.'
+    status: PASS
+    notes: 'Test suite restored; hover coverage now deterministic.'
 recommendations:
-  immediate:
-    - action: 'Persist perf_page_index values during preset sync and add a regression test.'
-      refs: ['lib/db/daos/presets_dao.dart:260']
+  immediate: []
   future:
-    - action: 'Add range validation for perfPageIndex to guard against future firmware changes.'
-      refs: ['lib/models/packed_mapping_data.dart:42']
+    - action: 'Automate in-memory database fixtures to keep new perfPageIndex tests fast and reliable.'
+      refs: ['test/db/daos/presets_dao_test.dart']
