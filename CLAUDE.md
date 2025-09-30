@@ -2,6 +2,8 @@
 
 Cross-platform Flutter application for managing Disting NT Eurorack module presets and algorithms.
 
+> **Note:** This file contains high-level project information. Detailed documentation has been organized into the [CLAUDE/](./CLAUDE/) directory for better maintainability. See [CLAUDE/index.md](./CLAUDE/index.md) for the complete table of contents.
+
 ## Core Concepts
 
 **Purpose:** MIDI SysEx communication with Disting NT hardware for preset management, algorithm loading, and parameter control.
@@ -79,3 +81,16 @@ To connect MCP Dart tooling:
 2. Note the DTD URL from output
 3. Use URL after "The Flutter DevTools debugger and profiler on macOS is available at:"
 4. Connect MCP tool using the DTD URL
+
+---
+
+## Additional Documentation
+
+For detailed information about BMAD-METHOD agents, tasks, and workflows, see:
+
+- **[Full Documentation Index](./CLAUDE/index.md)** - Complete table of contents
+- **[BMAD Agents](./CLAUDE/agents.md)** - All available agent definitions
+- **[Tasks](./CLAUDE/tasks.md)** - Task documentation and usage
+- **[How To Use With Codex](./CLAUDE/how-to-use-with-codex.md)** - Codex integration guide
+
+The CLAUDE/ directory contains all detailed BMAD-METHOD documentation in an organized, maintainable structure.
