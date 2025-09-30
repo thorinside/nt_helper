@@ -1,0 +1,48 @@
+schema: 1
+story: '1.1'
+story_title: 'Story 1.1: Extend Mapping Data Model to Include Performance Page Index'
+gate: CONCERNS
+status_reason: 'New perf_page_index column is never populated, so performance page assignments cannot be queried yet.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-09-30T18:57:46Z'
+waiver: { active: false }
+top_issues:
+  - id: 'DATA-001'
+    severity: medium
+    finding: 'Preset persistence leaves perf_page_index at the default 0 even when mappings have a page assigned.'
+    suggested_action: 'Write perfPageIndex when inserting PresetMappings rows and backfill existing data.'
+    suggested_owner: dev
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 1, low: 0 }
+  recommendations:
+    must_fix:
+      - 'Populate perf_page_index for saved mappings before relying on DB queries.'
+    monitor: []
+quality_score: 90
+expires: '2025-10-14T00:00:00Z'
+evidence:
+  tests_reviewed: 11
+  risks_identified: 1
+  trace:
+    ac_covered: [1, 2, 3, 4, 7, 8, 9, 10, 11]
+    ac_gaps: [5]
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No new external inputs or privileges.'
+  performance:
+    status: PASS
+    notes: 'Encoding remains constant-time; migration additive only.'
+  reliability:
+    status: PASS
+    notes: 'Version guards and length checks protect against malformed payloads.'
+  maintainability:
+    status: CONCERNS
+    notes: 'DB column not populated, risking divergence between storage layers.'
+recommendations:
+  immediate:
+    - action: 'Persist perf_page_index values during preset sync and add a regression test.'
+      refs: ['lib/db/daos/presets_dao.dart:260']
+  future:
+    - action: 'Add range validation for perfPageIndex to guard against future firmware changes.'
+      refs: ['lib/models/packed_mapping_data.dart:42']
