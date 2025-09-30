@@ -77,6 +77,12 @@ abstract class IDistingMidiManager {
     int parameterNumber,
     PackedMappingData data,
   );
+
+  /// Sets the performance page assignment for a parameter.
+  ///
+  /// - [slotIndex]: Slot index (0-31)
+  /// - [parameterNumber]: Parameter number within the algorithm
+  /// - [perfPageIndex]: Performance page index (0-15, where 0 = not assigned)
   Future<void> setPerformancePageMapping(
     int slotIndex,
     int parameterNumber,

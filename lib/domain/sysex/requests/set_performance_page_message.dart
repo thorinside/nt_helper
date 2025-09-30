@@ -27,13 +27,16 @@ class SetPerformancePageMessage extends SysexMessage {
 
   @override
   Uint8List encode() {
+    // Clamp perfPageIndex to valid range (0-15)
+    final clampedPerfPageIndex = perfPageIndex.clamp(0, 15);
+
     final bytes = <int>[
       ...buildHeader(sysExId),
       DistingNTRequestMessageType.setPerformancePageMapping.value,
       slotIndex & 0x7F,
       ...encode16(parameterNumber),
       5, // mapping version
-      perfPageIndex & 0x7F,
+      clampedPerfPageIndex & 0x7F,
       ...buildFooter(),
     ];
     return Uint8List.fromList(bytes);

@@ -121,5 +121,33 @@ void main() {
       // Verify perfPageIndex = 15
       expect(encoded[12], equals(0x0F));
     });
+
+    test('clamps perfPageIndex above valid range to 15', () {
+      final message = SetPerformancePageMessage(
+        sysExId: 0,
+        slotIndex: 0,
+        parameterNumber: 0,
+        perfPageIndex: 100, // Out of range
+      );
+
+      final encoded = message.encode();
+
+      // Verify perfPageIndex clamped to 15
+      expect(encoded[12], equals(0x0F));
+    });
+
+    test('clamps negative perfPageIndex to 0', () {
+      final message = SetPerformancePageMessage(
+        sysExId: 0,
+        slotIndex: 0,
+        parameterNumber: 0,
+        perfPageIndex: -5, // Negative
+      );
+
+      final encoded = message.encode();
+
+      // Verify perfPageIndex clamped to 0
+      expect(encoded[12], equals(0x00));
+    });
   });
 }
