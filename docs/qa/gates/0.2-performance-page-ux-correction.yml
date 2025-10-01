@@ -1,0 +1,42 @@
+schema: 1
+story: '0.2'
+story_title: 'Story 0.2: Performance Page UX Correction'
+gate: PASS
+status_reason: 'Performance screen now lists all mapped parameters sorted by page and name with navigation UI removed, matching the corrected mental model.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-01T04:15:44Z'
+waiver: { active: false }
+top_issues: []
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - 'Validate on-device that alphabetical order within each page matches user expectations when parameter names collide.'
+quality_score: 94
+expires: '2025-10-15T04:15:44Z'
+evidence:
+  tests_reviewed: 6
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6]
+    ac_gaps: []
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No new external surfaces; UI-only refactor.'
+  performance:
+    status: PASS
+    notes: 'List rendering unchanged aside from sorting; no extra polling or queries.'
+  reliability:
+    status: PASS
+    notes: 'Unit tests cover empty state, nav removal, sorting, and filtering behaviors.'
+  maintainability:
+    status: PASS
+    notes: 'Sorting isolated in helper method with targeted tests.'
+recommendations:
+  immediate: []
+  future:
+    - action: 'Consider adding a subtle divider or label to show page groupings now that navigation is gone.'
+      refs:
+        - 'lib/ui/performance_screen.dart:34'

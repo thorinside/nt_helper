@@ -19,9 +19,6 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   bool _pollingEnabled = false;
   DistingCubit? _cubit;
 
-  // Selected page index (null if no pages exist)
-  int? _selectedPageIndex;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -34,28 +31,22 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     super.dispose();
   }
 
-  // Discover which performance pages have parameters assigned
-  List<int> _getPopulatedPages(List<MappedParameter> mappedParameters) {
-    final populatedPages = <int>{};
-    for (final param in mappedParameters) {
-      final perfPageIndex = param.mapping.packedMappingData.perfPageIndex;
-      if (perfPageIndex > 0) {
-        populatedPages.add(perfPageIndex);
-      }
-    }
-    final sorted = populatedPages.toList()..sort();
-    return sorted;
-  }
+  // Sort parameters by page (ascending), then alphabetically by parameter name
+  List<MappedParameter> _sortParameters(List<MappedParameter> mappedParameters) {
+    final sorted = List<MappedParameter>.from(mappedParameters);
+    sorted.sort((a, b) {
+      final pageA = a.mapping.packedMappingData.perfPageIndex;
+      final pageB = b.mapping.packedMappingData.perfPageIndex;
 
-  // Filter parameters for the selected page
-  List<MappedParameter> _getParametersForPage(
-    List<MappedParameter> mappedParameters,
-    int pageIndex,
-  ) {
-    return mappedParameters
-        .where((param) =>
-            param.mapping.packedMappingData.perfPageIndex == pageIndex)
-        .toList();
+      // First, sort by page number (ascending)
+      if (pageA != pageB) {
+        return pageA.compareTo(pageB);
+      }
+
+      // Within the same page, sort alphabetically by parameter name
+      return a.parameter.name.compareTo(b.parameter.name);
+    });
+    return sorted;
   }
 
   Widget _buildEmptyState() {
@@ -71,7 +62,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Assign parameters to performance pages in the property editor',
+            'Assign parameters in the property editor',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey,
                 ),
@@ -171,49 +162,15 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                 .read<DistingCubit>()
                 .buildMappedParameterList();
 
-            // Discover populated pages
-            final populatedPages = _getPopulatedPages(mappedParameters);
-
-            // If no pages have parameters, show empty state
-            if (populatedPages.isEmpty) {
+            // If no parameters, show empty state
+            if (mappedParameters.isEmpty) {
               return _buildEmptyState();
             }
 
-            // Set initial selection to first page if not set or invalid
-            if (_selectedPageIndex == null ||
-                !populatedPages.contains(_selectedPageIndex)) {
-              _selectedPageIndex = populatedPages.first;
-            }
+            // Sort parameters by page (ascending), then alphabetically within page
+            final sortedParameters = _sortParameters(mappedParameters);
 
-            // Filter parameters for selected page
-            final pageParameters =
-                _getParametersForPage(mappedParameters, _selectedPageIndex!);
-
-            return Row(
-              children: [
-                // Dynamic side navigation
-                NavigationRail(
-                  selectedIndex: populatedPages.indexOf(_selectedPageIndex!),
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedPageIndex = populatedPages[index];
-                    });
-                  },
-                  labelType: NavigationRailLabelType.all,
-                  destinations: populatedPages.map((pageIndex) {
-                    return NavigationRailDestination(
-                      icon: const Icon(Icons.music_note),
-                      label: Text('Page $pageIndex'),
-                    );
-                  }).toList(),
-                ),
-
-                // Parameter list (filtered by selected page)
-                Expanded(
-                  child: _buildParameterList(pageParameters),
-                ),
-              ],
-            );
+            return _buildParameterList(sortedParameters);
           }
           return const Center(child: CircularProgressIndicator());
         },

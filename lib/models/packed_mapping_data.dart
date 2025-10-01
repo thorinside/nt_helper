@@ -38,7 +38,7 @@ class PackedMappingData {
   final int i2cMin; // Minimum I2C value
   final int i2cMax; // Maximum I2C value
 
-  // Performance Page
+  // Performance Page (used for sort order only, not navigation)
   final int perfPageIndex; // Performance page index (0 = not assigned, 1-15 = valid pages)
 
   // Constructor
@@ -405,5 +405,53 @@ class PackedMappingData {
 
   bool isPerformance() {
     return perfPageIndex > 0;
+  }
+
+  PackedMappingData copyWith({
+    int? source,
+    int? cvInput,
+    bool? isUnipolar,
+    bool? isGate,
+    int? volts,
+    int? delta,
+    int? midiChannel,
+    MidiMappingType? midiMappingType,
+    int? midiCC,
+    bool? isMidiEnabled,
+    bool? isMidiSymmetric,
+    bool? isMidiRelative,
+    int? midiMin,
+    int? midiMax,
+    int? i2cCC,
+    bool? isI2cEnabled,
+    bool? isI2cSymmetric,
+    int? i2cMin,
+    int? i2cMax,
+    int? perfPageIndex,
+    int? version,
+  }) {
+    return PackedMappingData(
+      source: source ?? this.source,
+      cvInput: cvInput ?? this.cvInput,
+      isUnipolar: isUnipolar ?? this.isUnipolar,
+      isGate: isGate ?? this.isGate,
+      volts: volts ?? this.volts,
+      delta: delta ?? this.delta,
+      midiChannel: midiChannel ?? this.midiChannel,
+      midiMappingType: midiMappingType ?? this.midiMappingType,
+      midiCC: midiCC ?? this.midiCC,
+      isMidiEnabled: isMidiEnabled ?? this.isMidiEnabled,
+      isMidiSymmetric: isMidiSymmetric ?? this.isMidiSymmetric,
+      isMidiRelative: isMidiRelative ?? this.isMidiRelative,
+      midiMin: midiMin ?? this.midiMin,
+      midiMax: midiMax ?? this.midiMax,
+      i2cCC: i2cCC ?? this.i2cCC,
+      isI2cEnabled: isI2cEnabled ?? this.isI2cEnabled,
+      isI2cSymmetric: isI2cSymmetric ?? this.isI2cSymmetric,
+      i2cMin: i2cMin ?? this.i2cMin,
+      i2cMax: i2cMax ?? this.i2cMax,
+      perfPageIndex: perfPageIndex ?? this.perfPageIndex,
+      version: version ?? this.version,
+    );
   }
 }

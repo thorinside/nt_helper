@@ -120,11 +120,11 @@ void main() {
       );
 
       expect(find.text('No performance parameters assigned'), findsOneWidget);
-      expect(find.text('Assign parameters to performance pages in the property editor'), findsOneWidget);
+      expect(find.text('Assign parameters in the property editor'), findsOneWidget);
       expect(find.byIcon(Icons.music_note_outlined), findsOneWidget);
     });
 
-    testWidgets('displays navigation rail when pages have parameters', (tester) async {
+    testWidgets('displays all parameters without navigation rail', (tester) async {
       final params = [
         createMappedParameter(
           perfPageIndex: 1,
@@ -162,25 +162,36 @@ void main() {
         ),
       );
 
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('Page 1'), findsOneWidget);
-      expect(find.text('Page 2'), findsOneWidget);
+      // Should NOT show NavigationRail
+      expect(find.byType(NavigationRail), findsNothing);
+
+      // Should show both parameters
+      expect(find.text('Param 1'), findsOneWidget);
+      expect(find.text('Param 2'), findsOneWidget);
     });
 
-    testWidgets('filters parameters by selected page', (tester) async {
+    testWidgets('sorts parameters by page then alphabetically', (tester) async {
+      // Create parameters in intentionally unsorted order
       final params = [
-        createMappedParameter(
-          perfPageIndex: 1,
-          algorithmName: 'Algo 1',
-          algorithmIndex: 0,
-          parameterName: 'Page 1 Param',
-          parameterNumber: 0,
-        ),
         createMappedParameter(
           perfPageIndex: 2,
           algorithmName: 'Algo 2',
           algorithmIndex: 1,
-          parameterName: 'Page 2 Param',
+          parameterName: 'Zebra',
+          parameterNumber: 2,
+        ),
+        createMappedParameter(
+          perfPageIndex: 1,
+          algorithmName: 'Algo 1',
+          algorithmIndex: 0,
+          parameterName: 'Beta',
+          parameterNumber: 1,
+        ),
+        createMappedParameter(
+          perfPageIndex: 1,
+          algorithmName: 'Algo 1',
+          algorithmIndex: 0,
+          parameterName: 'Alpha',
           parameterNumber: 0,
         ),
       ];
@@ -205,28 +216,25 @@ void main() {
         ),
       );
 
-      // Should show Page 1 parameters by default (first page)
-      expect(find.text('Page 1 Param'), findsOneWidget);
-      expect(find.text('Page 2 Param'), findsNothing);
+      // All parameters should be visible
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Beta'), findsOneWidget);
+      expect(find.text('Zebra'), findsOneWidget);
 
-      // Switch to Page 2
-      await tester.tap(find.text('Page 2'));
-      await tester.pumpAndSettle();
+      // Verify sort order: Page 1 (Alpha, Beta), then Page 2 (Zebra)
+      // We can verify this by checking the vertical positions of the text widgets
+      final alphaY = tester.getTopLeft(find.text('Alpha')).dy;
+      final betaY = tester.getTopLeft(find.text('Beta')).dy;
+      final zebraY = tester.getTopLeft(find.text('Zebra')).dy;
 
-      // Should now show Page 2 parameters
-      expect(find.text('Page 1 Param'), findsNothing);
-      expect(find.text('Page 2 Param'), findsOneWidget);
+      expect(alphaY < betaY, true, reason: 'Alpha should appear before Beta');
+      expect(betaY < zebraY, true, reason: 'Beta should appear before Zebra');
     });
 
-    testWidgets('ignores parameters with perfPageIndex = 0', (tester) async {
+    testWidgets('shows only parameters returned by buildMappedParameterList', (tester) async {
+      // buildMappedParameterList already filters out perfPageIndex = 0,
+      // so we only include parameters with perfPageIndex > 0
       final params = [
-        createMappedParameter(
-          perfPageIndex: 0, // Not assigned to any page
-          algorithmName: 'Test Algo',
-          algorithmIndex: 0,
-          parameterName: 'Unassigned Param',
-          parameterNumber: 0,
-        ),
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Test Algo',
@@ -256,13 +264,11 @@ void main() {
         ),
       );
 
-      // Should only show Page 1 in navigation rail
-      expect(find.text('Page 1'), findsOneWidget);
-      expect(find.text('Page 0'), findsNothing);
-
-      // Should only show assigned parameter
+      // Should show assigned parameter
       expect(find.text('Page 1 Param'), findsOneWidget);
-      expect(find.text('Unassigned Param'), findsNothing);
+
+      // No NavigationRail should be present
+      expect(find.byType(NavigationRail), findsNothing);
     });
 
     testWidgets('handles multiple parameters on same page', (tester) async {
