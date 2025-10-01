@@ -332,6 +332,31 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
     );
   }
 
+  /// Updates the performance page index for a specific parameter in a preset slot.
+  ///
+  /// - [presetSlotId]: The ID of the preset slot (from PresetSlots table)
+  /// - [parameterNumber]: The parameter number within the algorithm
+  /// - [perfPageIndex]: The performance page index (0-15, where 0 = not assigned)
+  Future<void> updatePerformancePageIndex({
+    required int presetSlotId,
+    required int parameterNumber,
+    required int perfPageIndex,
+  }) async {
+    // Update the perfPageIndex column in the presetMappings table
+    await (update(presetMappings)
+      ..where((m) => m.presetSlotId.equals(presetSlotId))
+      ..where((m) => m.parameterNumber.equals(parameterNumber)))
+    .write(
+      PresetMappingsCompanion(
+        perfPageIndex: Value(perfPageIndex),
+      ),
+    );
+
+    debugPrint(
+      '[PresetsDao] Updated perfPageIndex to $perfPageIndex for presetSlotId=$presetSlotId param=$parameterNumber',
+    );
+  }
+
   // --- Deletion Methods ---
 
   Future<void> deletePreset(int presetId) async {

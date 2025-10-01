@@ -24,6 +24,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   // Internal state for the simulated preset
   int? _loadedPresetId;
   final List<String> _presetAlgorithmGuids = [];
+  final Map<int, int> _presetSlotIds = {}; // Maps slotIndex -> presetSlotId
   final Map<int, Map<int, int>> _parameterValues = {};
   final Map<int, Map<int, String>> _parameterStringValues = {};
   final Map<int, Map<int, PackedMappingData>> _mappings = {};
@@ -38,6 +39,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
   // Initialize state from loaded preset details
   Future<void> initializeFromDb(FullPresetDetails? details) async {
     _presetAlgorithmGuids.clear();
+    _presetSlotIds.clear();
     _parameterValues.clear();
     _parameterStringValues.clear();
     _mappings.clear();
@@ -56,6 +58,7 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
       final slotData = details.slots[i];
       final guid = slotData.algorithm.guid;
       _presetAlgorithmGuids.add(guid);
+      _presetSlotIds[i] = slotData.slot.id; // Store presetSlotId
 
       // Calculate default name with instance number during init
       String baseName = slotData.algorithm.name;
@@ -640,7 +643,77 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
     int perfPageIndex,
   ) async {
-    // Offline mode - performance page changes not persisted
+    // Offline mode - persist to database for offline editing
+    try {
+      // Update in-memory mapping data
+      if (!_mappings.containsKey(slotIndex)) {
+        _mappings[slotIndex] = {};
+      }
+
+      final currentMapping = _mappings[slotIndex]?[parameterNumber];
+      final updatedMapping = currentMapping != null
+          ? PackedMappingData(
+              source: currentMapping.source,
+              cvInput: currentMapping.cvInput,
+              isUnipolar: currentMapping.isUnipolar,
+              isGate: currentMapping.isGate,
+              volts: currentMapping.volts,
+              delta: currentMapping.delta,
+              midiChannel: currentMapping.midiChannel,
+              midiMappingType: currentMapping.midiMappingType,
+              midiCC: currentMapping.midiCC,
+              isMidiEnabled: currentMapping.isMidiEnabled,
+              isMidiSymmetric: currentMapping.isMidiSymmetric,
+              isMidiRelative: currentMapping.isMidiRelative,
+              midiMin: currentMapping.midiMin,
+              midiMax: currentMapping.midiMax,
+              i2cCC: currentMapping.i2cCC,
+              isI2cEnabled: currentMapping.isI2cEnabled,
+              isI2cSymmetric: currentMapping.isI2cSymmetric,
+              i2cMin: currentMapping.i2cMin,
+              i2cMax: currentMapping.i2cMax,
+              perfPageIndex: perfPageIndex, // Updated value
+              version: currentMapping.version,
+            )
+          : PackedMappingData(
+              source: 0,
+              cvInput: 0,
+              isUnipolar: false,
+              isGate: false,
+              volts: 0,
+              delta: 0,
+              midiChannel: 0,
+              midiMappingType: MidiMappingType.cc,
+              midiCC: 0,
+              isMidiEnabled: false,
+              isMidiSymmetric: false,
+              isMidiRelative: false,
+              midiMin: 0,
+              midiMax: 127,
+              i2cCC: 0,
+              isI2cEnabled: false,
+              isI2cSymmetric: false,
+              i2cMin: 0,
+              i2cMax: 127,
+              perfPageIndex: perfPageIndex,
+              version: 5, // Current version with perfPageIndex support
+            );
+
+      _mappings[slotIndex]![parameterNumber] = updatedMapping;
+
+      // Persist to database if we have a loaded preset
+      if (_loadedPresetId != null && _presetSlotIds.containsKey(slotIndex)) {
+        final presetSlotId = _presetSlotIds[slotIndex]!;
+        final presetsDao = _database.presetsDao;
+        await presetsDao.updatePerformancePageIndex(
+          presetSlotId: presetSlotId,
+          parameterNumber: parameterNumber,
+          perfPageIndex: perfPageIndex,
+        );
+      }
+    } catch (e) {
+      debugPrint('[OfflineDistingMidiManager] Error persisting perfPageIndex: $e');
+    }
   }
 
   @override

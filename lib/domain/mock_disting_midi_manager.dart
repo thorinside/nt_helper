@@ -1122,7 +1122,62 @@ class MockDistingMidiManager implements IDistingMidiManager {
     int parameterNumber,
     int perfPageIndex,
   ) async {
-    // Demo mode - performance page changes not persisted
+    // Demo mode - update in-memory mapping data
+    try {
+      if (slotIndex >= 0 && slotIndex < _state.presetSlots.length) {
+        final slot = _state.presetSlots[slotIndex];
+        if (parameterNumber >= 0 && parameterNumber < slot.mappings.length) {
+          final currentMapping = slot.mappings[parameterNumber];
+          final currentData = currentMapping.packedMappingData;
+
+          // Create updated mapping with new perfPageIndex
+          final updatedData = PackedMappingData(
+            source: currentData.source,
+            cvInput: currentData.cvInput,
+            isUnipolar: currentData.isUnipolar,
+            isGate: currentData.isGate,
+            volts: currentData.volts,
+            delta: currentData.delta,
+            midiChannel: currentData.midiChannel,
+            midiMappingType: currentData.midiMappingType,
+            midiCC: currentData.midiCC,
+            isMidiEnabled: currentData.isMidiEnabled,
+            isMidiSymmetric: currentData.isMidiSymmetric,
+            isMidiRelative: currentData.isMidiRelative,
+            midiMin: currentData.midiMin,
+            midiMax: currentData.midiMax,
+            i2cCC: currentData.i2cCC,
+            isI2cEnabled: currentData.isI2cEnabled,
+            isI2cSymmetric: currentData.isI2cSymmetric,
+            i2cMin: currentData.i2cMin,
+            i2cMax: currentData.i2cMax,
+            perfPageIndex: perfPageIndex, // Updated value
+            version: currentData.version,
+          );
+
+          // Update the slot with the new mapping
+          final updatedMapping = Mapping(
+            algorithmIndex: currentMapping.algorithmIndex,
+            parameterNumber: parameterNumber,
+            packedMappingData: updatedData,
+          );
+
+          // Replace the mapping in the slot's mappings list
+          final updatedMappings = List<Mapping>.from(slot.mappings);
+          updatedMappings[parameterNumber] = updatedMapping;
+
+          // Create updated slot using copyWith
+          final updatedSlot = slot.copyWith(
+            mappings: updatedMappings,
+          );
+
+          // Replace in state
+          _state.presetSlots[slotIndex] = updatedSlot;
+        }
+      }
+    } catch (e) {
+      debugPrint('[MockDistingMidiManager] Error updating perfPageIndex: $e');
+    }
   }
 
   Future<void> requestSetCVMapping(

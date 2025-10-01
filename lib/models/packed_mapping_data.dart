@@ -402,4 +402,8 @@ class PackedMappingData {
   bool isMapped() {
     return (cvInput > 0 || source > 0) || isMidiEnabled || isI2cEnabled;
   }
+
+  bool isPerformance() {
+    return perfPageIndex > 0;
+  }
 }

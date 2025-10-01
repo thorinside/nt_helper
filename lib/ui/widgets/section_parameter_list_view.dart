@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_midi_manager.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/services/algorithm_metadata_service.dart';
 import 'package:nt_helper/services/settings_service.dart';
@@ -28,6 +29,8 @@ class SectionParameterListView extends StatefulWidget {
 class _SectionParameterListViewState extends State<SectionParameterListView> {
   late final List<ExpansibleController> _tileControllers;
   late bool _isCollapsed;
+  // Track optimistic performance page assignments for immediate UI updates
+  final Map<int, int> _optimisticPerfPageAssignments = {};
 
   @override
   void initState() {
@@ -37,6 +40,15 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       (_) => ExpansibleController(),
     );
     _isCollapsed = SettingsService().startPagesCollapsed;
+  }
+
+  @override
+  void didUpdateWidget(SectionParameterListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Clear optimistic assignments when slot changes (state has been updated)
+    if (oldWidget.slot != widget.slot) {
+      _optimisticPerfPageAssignments.clear();
+    }
   }
 
   void _collapseAllTiles() {
@@ -161,6 +173,110 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     } catch (e) {
       debugPrint('[SectionParameterListView] Error removing from performance page: $e');
     }
+  }
+
+  // Assign parameter to performance page
+  Future<void> _assignToPerformancePage(int parameterNumber, int pageIndex) async {
+    // Optimistically update the UI immediately
+    setState(() {
+      _optimisticPerfPageAssignments[parameterNumber] = pageIndex;
+    });
+
+    final cubit = context.read<DistingCubit>();
+    try {
+      await cubit.setPerformancePageMapping(
+        widget.slot.algorithm.algorithmIndex,
+        parameterNumber,
+        pageIndex,
+      );
+      // Only show SnackBar feedback in connected mode (real hardware)
+      // Demo and offline modes are silent operations
+      if (mounted) {
+        final manager = cubit.disting();
+        final isConnectedMode = manager is DistingMidiManager;
+        if (isConnectedMode) {
+          final message = pageIndex > 0
+              ? 'Assigned to Page $pageIndex'
+              : 'Removed from performance pages';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[SectionParameterListView] Error assigning to performance page: $e');
+      // Revert optimistic update on error
+      if (mounted) {
+        setState(() {
+          _optimisticPerfPageAssignments.remove(parameterNumber);
+        });
+      }
+    }
+  }
+
+  // Build parameter row with performance page selector
+  Widget _buildParameterRowWithPageSelector({
+    required int parameterNumber,
+    required ParameterInfo parameterInfo,
+    required ParameterValue value,
+    required ParameterEnumStrings enumStrings,
+    required Mapping? mapping,
+    required ParameterValueString valueString,
+    required String? unit,
+  }) {
+    // Use optimistic value if available, otherwise use actual mapping data
+    final actualPerfPageIndex = mapping?.packedMappingData.perfPageIndex ?? 0;
+    final perfPageIndex = _optimisticPerfPageAssignments[parameterNumber] ?? actualPerfPageIndex;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: Row(
+        children: [
+          // Parameter editor (expanded)
+          Expanded(
+            child: ParameterEditorView(
+              slot: widget.slot,
+              parameterInfo: parameterInfo,
+              value: value,
+              enumStrings: enumStrings,
+              mapping: mapping,
+              valueString: valueString,
+              unit: unit,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Performance page selector
+          DropdownButton<int>(
+            value: perfPageIndex,
+            isDense: true,
+            underline: const SizedBox.shrink(),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+            hint: const Text('Page'),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            onChanged: (newValue) {
+              if (newValue != null) {
+                _assignToPerformancePage(parameterNumber, newValue);
+              }
+            },
+            items: [
+              const DropdownMenuItem(
+                value: 0,
+                child: Text('Not Assigned'),
+              ),
+              ...List.generate(15, (i) {
+                return DropdownMenuItem(
+                  value: i + 1,
+                  child: Text('Page ${i + 1}'),
+                );
+              }),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   // Build performance parameters section
@@ -325,8 +441,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
 
                       final unit = parameterInfo.getUnitString(widget.units);
 
-                      return ParameterEditorView(
-                        slot: widget.slot,
+                      return _buildParameterRowWithPageSelector(
+                        parameterNumber: parameterNumber,
                         parameterInfo: parameterInfo,
                         value: value,
                         enumStrings: safeEnumStrings,

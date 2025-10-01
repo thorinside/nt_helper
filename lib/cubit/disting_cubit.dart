@@ -2117,7 +2117,7 @@ class DistingCubit extends Cubit<DistingState> {
   List<MappedParameter> buildMappedParameterList() {
     switch (state) {
       case DistingStateSynchronized syncstate:
-        // return a list of parameters that have active mappings
+        // return a list of parameters that have performance page assignments
         // from the state.
         return syncstate.slots.fold(
           List<MappedParameter>.empty(growable: true),
@@ -2127,7 +2127,7 @@ class DistingCubit extends Cubit<DistingState> {
                   .where(
                     (mapping) =>
                         mapping.parameterNumber != -1 &&
-                        mapping.packedMappingData.isMapped(),
+                        mapping.packedMappingData.isPerformance(),
                   )
                   .map((mapping) {
                     var parameterNumber = mapping.parameterNumber;
