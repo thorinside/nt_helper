@@ -55,6 +55,11 @@ class _DistingAppState extends State<DistingApp> {
           fontWeight: FontWeight.w400,
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: baseColorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: baseColorScheme.onInverseSurface),
+        actionTextColor: baseColorScheme.inversePrimary,
+      ),
     );
   }
 

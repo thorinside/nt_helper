@@ -1867,23 +1867,192 @@ class DistingCubit extends Cubit<DistingState> {
   /// - [slotIndex]: Slot index (0-31)
   /// - [parameterNumber]: Parameter number within the algorithm
   /// - [perfPageIndex]: Performance page index (0-15, where 0 = not assigned)
+  ///
+  /// Uses optimistic update pattern:
+  /// 1. Update local state immediately for instant UI feedback
+  /// 2. Send update to hardware
+  /// 3. Verify by reading back specific parameter mapping
+  /// 4. If mismatch, hardware value wins and UI updates again
   Future<void> setPerformancePageMapping(
     int slotIndex,
     int parameterNumber,
     int perfPageIndex,
   ) async {
     final currentState = state;
-    if (currentState is DistingStateSynchronized) {
-      final disting = requireDisting();
-      // Send the performance page mapping update to the manager
-      await disting.setPerformancePageMapping(
-        slotIndex,
-        parameterNumber,
-        perfPageIndex,
+    if (currentState is! DistingStateSynchronized) {
+      debugPrint(
+        "[Cubit] Cannot set performance page mapping: Not in Synchronized state.",
+      );
+      return;
+    }
+
+    if (slotIndex >= currentState.slots.length) {
+      debugPrint(
+        "[Cubit] Cannot set performance page mapping: Invalid slot index $slotIndex.",
+      );
+      return;
+    }
+
+    final disting = requireDisting();
+
+    // 1. Optimistic Update - Update local state immediately
+    final slot = currentState.slots[slotIndex];
+
+    if (parameterNumber >= slot.mappings.length) {
+      debugPrint(
+        "[Cubit] Cannot set performance page mapping: Invalid parameter number $parameterNumber for slot $slotIndex.",
+      );
+      return;
+    }
+
+    final originalMapping = slot.mappings[parameterNumber];
+    final optimisticMapping = Mapping(
+      algorithmIndex: originalMapping.algorithmIndex,
+      parameterNumber: originalMapping.parameterNumber,
+      packedMappingData: originalMapping.packedMappingData.copyWith(
+        perfPageIndex: perfPageIndex,
+      ),
+    );
+
+    // Emit optimistic state immediately for instant UI feedback
+    emit(
+      currentState.copyWith(
+        slots: updateSlot(slotIndex, currentState.slots, (slot) {
+          return slot.copyWith(
+            mappings: replaceInList(
+              slot.mappings,
+              optimisticMapping,
+              index: parameterNumber,
+            ),
+          );
+        }),
+      ),
+    );
+
+    debugPrint(
+      "[Cubit] Optimistic update: Set performance page $perfPageIndex for slot $slotIndex param $parameterNumber",
+    );
+
+    // 2. Send update to hardware (non-blocking)
+    disting.setPerformancePageMapping(
+      slotIndex,
+      parameterNumber,
+      perfPageIndex,
+    ).catchError((e, s) {
+      debugPrint("Error sending performance page mapping to hardware: $e");
+      debugPrintStack(stackTrace: s);
+    });
+
+    // 3. Verify by reading back the specific parameter mapping with retry
+    const maxRetries = 4; // Try up to 4 times
+    const baseDelay = Duration(milliseconds: 100);
+    bool verified = false;
+
+    for (int attempt = 0; attempt < maxRetries && !verified; attempt++) {
+      try {
+        // Exponential backoff: 100ms, 200ms, 400ms, 800ms
+        final delay = baseDelay * (1 << attempt);
+        await Future.delayed(delay);
+
+        final actualMapping = await disting.requestMappings(
+          slotIndex,
+          parameterNumber,
+        );
+
+        if (actualMapping == null) {
+          debugPrint(
+            "[Cubit] Verification attempt ${attempt + 1}/$maxRetries: No response from hardware.",
+          );
+          continue; // Retry
+        }
+
+        // 4. If hardware value differs from optimistic value, hardware wins
+        if (actualMapping.packedMappingData.perfPageIndex !=
+            optimisticMapping.packedMappingData.perfPageIndex) {
+          debugPrint(
+            "[Cubit] Verification attempt ${attempt + 1}/$maxRetries: Mismatch detected. Expected: $perfPageIndex, Actual: ${actualMapping.packedMappingData.perfPageIndex}.",
+          );
+
+          // Check if this is the last attempt
+          if (attempt == maxRetries - 1) {
+            // Last attempt - accept hardware value as final
+            debugPrint(
+              "[Cubit] Final verification: Hardware value ${actualMapping.packedMappingData.perfPageIndex} differs from requested $perfPageIndex. Updating UI with hardware value.",
+            );
+
+            // Update UI with actual hardware value
+            final verificationState = state;
+            if (verificationState is DistingStateSynchronized) {
+              emit(
+                verificationState.copyWith(
+                  slots: updateSlot(slotIndex, verificationState.slots, (slot) {
+                    return slot.copyWith(
+                      mappings: replaceInList(
+                        slot.mappings,
+                        actualMapping,
+                        index: parameterNumber,
+                      ),
+                    );
+                  }),
+                ),
+              );
+            }
+            verified = true;
+          } else {
+            // Not the last attempt - retry to see if hardware catches up
+            debugPrint(
+              "[Cubit] Hardware not yet updated, retrying (attempt ${attempt + 1}/$maxRetries)...",
+            );
+            continue;
+          }
+        } else {
+          // Hardware matches optimistic value - success!
+          debugPrint(
+            "[Cubit] Verification successful on attempt ${attempt + 1}: Hardware confirms performance page $perfPageIndex.",
+          );
+          verified = true;
+        }
+      } catch (e, stackTrace) {
+        debugPrint(
+          "[Cubit] Error during verification attempt ${attempt + 1}/$maxRetries: $e",
+        );
+        debugPrintStack(stackTrace: stackTrace);
+
+        if (attempt == maxRetries - 1) {
+          // Last attempt failed - log error
+          debugPrint(
+            "[Cubit] All verification attempts failed. Performance page mapping may be out of sync with hardware.",
+          );
+        }
+      }
+    }
+
+    if (!verified) {
+      debugPrint(
+        "[Cubit] Warning: Could not verify performance page mapping after $maxRetries attempts. Reverting to original value.",
       );
 
-      // Trigger a refresh to get the updated mapping from the manager
-      await _refreshStateFromManager();
+      // Revert to original mapping since we couldn't verify the change
+      final revertState = state;
+      if (revertState is DistingStateSynchronized) {
+        emit(
+          revertState.copyWith(
+            slots: updateSlot(slotIndex, revertState.slots, (slot) {
+              return slot.copyWith(
+                mappings: replaceInList(
+                  slot.mappings,
+                  originalMapping,
+                  index: parameterNumber,
+                ),
+              );
+            }),
+          ),
+        );
+      }
+
+      debugPrint(
+        "[Cubit] Reverted performance page mapping for slot $slotIndex param $parameterNumber to original value ${originalMapping.packedMappingData.perfPageIndex}.",
+      );
     }
   }
 

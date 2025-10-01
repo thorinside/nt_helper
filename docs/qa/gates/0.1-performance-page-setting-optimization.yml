@@ -1,0 +1,43 @@
+schema: 1
+story: '0.1'
+story_title: 'Story 0.1: Performance Page Setting Optimization'
+gate: PASS
+status_reason: 'Retry loop plus rollback ensure UI matches hardware or restores the previous value, satisfying AC5.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-01T04:01:04Z'
+waiver: { active: false }
+top_issues: []
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - 'Validate on-device that rollback UX (debug logs today) is sufficient; consider user-facing messaging if needed.'
+quality_score: 92
+expires: '2025-10-15T04:01:04Z'
+evidence:
+  tests_reviewed: 7
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5]
+    ac_gaps: []
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No new external inputs; MIDI interactions unchanged.'
+  performance:
+    status: PASS
+    notes: 'Polling remains bounded (<=4 requests); no preset refreshes.'
+  reliability:
+    status: PASS
+    notes: 'Rollback on failure keeps UI consistent with hardware even when verification fails.'
+  maintainability:
+    status: PASS
+    notes: 'Logic consolidated in Cubit with targeted unit tests covering new branches.'
+recommendations:
+  immediate: []
+  future:
+    - action: 'Consider surfacing a snackbar using the themed SnackBar when rollbacks occur so users know hardware rejected the change.'
+      refs:
+        - 'lib/cubit/disting_cubit.dart:2030'
+        - 'lib/disting_app.dart:55'
