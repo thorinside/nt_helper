@@ -111,7 +111,7 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList()).thenReturn([]);
+      when(() => mockCubit.buildMappedParameterList(any())).thenReturn([]);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -154,7 +154,7 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList()).thenReturn(params);
+      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -208,7 +208,7 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList()).thenReturn(params);
+      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -256,7 +256,7 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList()).thenReturn(params);
+      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -301,7 +301,7 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList()).thenReturn(params);
+      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -331,7 +331,7 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList()).thenReturn([]);
+      when(() => mockCubit.buildMappedParameterList(any())).thenReturn([]);
       when(() => mockCubit.startPollingMappedParameters()).thenReturn(null);
       when(() => mockCubit.stopPollingMappedParameters()).thenReturn(null);
 

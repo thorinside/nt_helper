@@ -2283,8 +2283,9 @@ class DistingCubit extends Cubit<DistingState> {
     });
   }
 
-  List<MappedParameter> buildMappedParameterList() {
-    switch (state) {
+  List<MappedParameter> buildMappedParameterList([DistingState? providedState]) {
+    final stateToUse = providedState ?? state;
+    switch (stateToUse) {
       case DistingStateSynchronized syncstate:
         // return a list of parameters that have performance page assignments
         // from the state.

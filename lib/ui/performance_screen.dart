@@ -102,6 +102,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     )
                   : const SizedBox.shrink(),
               ParameterEditorView(
+                key: ValueKey(
+                  '${item.parameter.algorithmIndex}_${item.parameter.parameterNumber}',
+                ),
                 slot: Slot(
                   algorithm: item.algorithm,
                   routing: RoutingInfo.filler(),
@@ -160,7 +163,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           if (state is DistingStateSynchronized) {
             final mappedParameters = context
                 .read<DistingCubit>()
-                .buildMappedParameterList();
+                .buildMappedParameterList(state);
 
             // If no parameters, show empty state
             if (mappedParameters.isEmpty) {
