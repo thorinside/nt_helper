@@ -10,6 +10,7 @@ import 'package:nt_helper/services/settings_service.dart';
 import 'package:nt_helper/ui/bpm_editor_widget.dart';
 import 'package:nt_helper/ui/parameter_editor_registry.dart';
 import 'package:nt_helper/ui/widgets/mapping_edit_button.dart';
+import 'package:nt_helper/ui/widgets/parameter_value_display.dart';
 import 'package:nt_helper/util/extensions.dart';
 import 'package:nt_helper/util/ui_helpers.dart';
 
@@ -295,81 +296,36 @@ class _ParameterViewRowState extends State<ParameterViewRow> {
             flex: widescreen ? 4 : 5, // Increased flex
             child: Align(
               alignment: Alignment.centerLeft,
-              child:
-                  isBpmUnit ||
-                      fileEditor !=
-                          null // Check if it's the BPM unit or file editor
-                  ? const SizedBox.shrink() // If BPM or file editor, render an empty box to hide default text
-                  : widget.isOnOff
-                  ? Checkbox(
-                      value: isChecked,
-                      onChanged: (value) {
-                        setState(() {
-                          isChecked = value!;
-                          currentValue = isChecked ? 1 : 0;
-                        });
-                        _updateCubitValue(currentValue);
-                      },
-                    )
-                  : widget.dropdownItems != null
-                  ? DropdownMenu(
-                      requestFocusOnTap: false,
-                      initialSelection: widget.dropdownItems![currentValue],
-                      inputDecorationTheme: const InputDecorationTheme(
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12.0,
-                          vertical: 8.0,
-                        ),
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      textStyle: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelMedium,
-                      dropdownMenuEntries: widget.dropdownItems!
-                          .map(
-                            (item) =>
-                                DropdownMenuEntry(value: item, label: item),
-                          )
-                          .toList(),
-                      onSelected: (value) {
-                        setState(() {
-                          currentValue = min(
-                            max(
-                              widget.dropdownItems!.indexOf(value!),
-                              widget.min,
-                            ),
-                            widget.max,
-                          );
-                        });
-                        _updateCubitValue(currentValue);
-                      },
-                    )
-                  : widget.name.toLowerCase().contains("note") && widget.unit != "%"
-                  ? Text(midiNoteToNoteString(currentValue))
-                  : widget.name.toLowerCase().contains("midi channel")
-                  ? Text(
-                      currentValue == 0 ? "None" : currentValue.toString(),
-                      style: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelSmall,
-                    )
-                  : widget.displayString != null
-                  ? GestureDetector(
-                      onLongPress: () => setState(() {
-                        // Show alternate editor only if not BPM or file editor
-                        if (!isBpmUnit && fileEditor == null) {
-                          _showAlternateEditor = !_showAlternateEditor;
-                        }
-                      }),
-                      child: Text(widget.displayString!),
-                    )
-                  : Text(
-                      currentValue.toString(),
-                      style: widescreen
-                          ? textTheme.labelLarge
-                          : textTheme.labelSmall,
-                    ),
+              child: ParameterValueDisplay(
+                currentValue: currentValue,
+                min: widget.min,
+                max: widget.max,
+                name: widget.name,
+                unit: widget.unit,
+                powerOfTen: widget.powerOfTen,
+                displayString: widget.displayString,
+                dropdownItems: widget.dropdownItems,
+                isOnOff: widget.isOnOff,
+                widescreen: widescreen,
+                isBpmUnit: isBpmUnit,
+                hasFileEditor: fileEditor != null,
+                showAlternateEditor: _showAlternateEditor,
+                onValueChanged: (newValue) {
+                  setState(() {
+                    currentValue = newValue;
+                    if (widget.isOnOff) {
+                      isChecked = currentValue == 1;
+                    }
+                  });
+                  _updateCubitValue(newValue);
+                },
+                onLongPress: () => setState(() {
+                  // Show alternate editor only if not BPM or file editor
+                  if (!isBpmUnit && fileEditor == null) {
+                    _showAlternateEditor = !_showAlternateEditor;
+                  }
+                }),
+              ),
             ),
           ),
         ],
