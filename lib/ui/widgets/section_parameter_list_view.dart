@@ -120,7 +120,11 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
 
     final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
     final safeValueString = valueString ?? ParameterValueString.filler();
-    final unit = parameterInfo.getUnitString(widget.units);
+    // For string-type parameters (units 13, 14, 17), don't fetch unit
+    final shouldShowUnit = parameterInfo.unit != 13 &&
+        parameterInfo.unit != 14 &&
+        parameterInfo.unit != 17;
+    final unit = shouldShowUnit ? parameterInfo.getUnitString(widget.units) : null;
     final perfPageIndex = mapping.packedMappingData.perfPageIndex;
 
     return Padding(
@@ -439,7 +443,11 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                       final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
                       final safeValueString = valueString ?? ParameterValueString.filler();
 
-                      final unit = parameterInfo.getUnitString(widget.units);
+                      // For string-type parameters (units 13, 14, 17), don't fetch unit
+                      final shouldShowUnit = parameterInfo.unit != 13 &&
+                          parameterInfo.unit != 14 &&
+                          parameterInfo.unit != 17;
+                      final unit = shouldShowUnit ? parameterInfo.getUnitString(widget.units) : null;
 
                       return _buildParameterRowWithPageSelector(
                         parameterNumber: parameterNumber,

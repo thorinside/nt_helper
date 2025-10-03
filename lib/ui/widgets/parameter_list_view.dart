@@ -36,7 +36,12 @@ class ParameterListView extends StatelessWidget {
         final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
         final safeValueString = valueString ?? ParameterValueString.filler();
 
-        final unit = parameter.getUnitString(units);
+        // For string-type parameters (units 13, 14, 17), don't fetch unit
+        // These parameters rely entirely on value strings or raw values
+        final shouldShowUnit = parameter.unit != 13 &&
+            parameter.unit != 14 &&
+            parameter.unit != 17;
+        final unit = shouldShowUnit ? parameter.getUnitString(units) : null;
 
         return ParameterEditorView(
           slot: slot,
