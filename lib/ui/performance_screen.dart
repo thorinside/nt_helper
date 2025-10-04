@@ -18,6 +18,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   // Local flag to track whether polling is enabled.
   bool _pollingEnabled = false;
   DistingCubit? _cubit;
+  int? _selectedPageIndex; // Nullable - null if no pages
 
   @override
   void didChangeDependencies() {
@@ -29,6 +30,18 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   void dispose() {
     _cubit?.stopPollingMappedParameters();
     super.dispose();
+  }
+
+  // Discover which pages have parameters assigned
+  List<int> _getPopulatedPages(List<MappedParameter> mappedParameters) {
+    final populatedPages = <int>{};
+    for (final param in mappedParameters) {
+      final pageIndex = param.mapping.packedMappingData.perfPageIndex;
+      if (pageIndex > 0) {
+        populatedPages.add(pageIndex);
+      }
+    }
+    return populatedPages.toList()..sort();
   }
 
   // Sort parameters by page (ascending), then alphabetically by parameter name
@@ -47,6 +60,16 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       return a.parameter.name.compareTo(b.parameter.name);
     });
     return sorted;
+  }
+
+  // Filter parameters for a specific page
+  List<MappedParameter> _filterParametersForPage(
+    List<MappedParameter> mappedParameters,
+    int pageIndex,
+  ) {
+    return mappedParameters
+        .where((p) => p.mapping.packedMappingData.perfPageIndex == pageIndex)
+        .toList();
   }
 
   Widget _buildEmptyState() {
@@ -168,10 +191,61 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               return _buildEmptyState();
             }
 
-            // Sort parameters by page (ascending), then alphabetically within page
-            final sortedParameters = _sortParameters(mappedParameters);
+            // Discover populated pages
+            final populatedPages = _getPopulatedPages(mappedParameters);
 
-            return _buildParameterList(sortedParameters);
+            // Set initial selection to first page if not set or if current selection is no longer valid
+            if (_selectedPageIndex == null ||
+                !populatedPages.contains(_selectedPageIndex)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _selectedPageIndex =
+                        populatedPages.isNotEmpty ? populatedPages.first : null;
+                  });
+                }
+              });
+            }
+
+            // If no pages exist, show empty state
+            if (populatedPages.isEmpty || _selectedPageIndex == null) {
+              return _buildEmptyState();
+            }
+
+            // Filter parameters for selected page
+            final pageParameters = _filterParametersForPage(
+              mappedParameters,
+              _selectedPageIndex!,
+            );
+
+            // Sort parameters alphabetically within the page
+            final sortedParameters = _sortParameters(pageParameters);
+
+            return Row(
+              children: [
+                // Navigation rail for page selection
+                NavigationRail(
+                  selectedIndex: populatedPages.indexOf(_selectedPageIndex!),
+                  onDestinationSelected: (int index) {
+                    setState(() {
+                      _selectedPageIndex = populatedPages[index];
+                    });
+                  },
+                  labelType: NavigationRailLabelType.all,
+                  destinations: populatedPages.map((pageIndex) {
+                    return NavigationRailDestination(
+                      icon: const Icon(Icons.music_note),
+                      label: Text('Page $pageIndex'),
+                    );
+                  }).toList(),
+                ),
+                const VerticalDivider(thickness: 1, width: 1),
+                // Parameter list for selected page
+                Expanded(
+                  child: _buildParameterList(sortedParameters),
+                ),
+              ],
+            );
           }
           return const Center(child: CircularProgressIndicator());
         },

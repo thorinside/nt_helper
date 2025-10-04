@@ -187,7 +187,7 @@ void main() {
       expect(find.byIcon(Icons.music_note_outlined), findsOneWidget);
     });
 
-    testWidgets('displays all parameters without navigation rail', (tester) async {
+    testWidgets('displays navigation rail with page filtering', (tester) async {
       final params = [
         createMappedParameter(
           perfPageIndex: 1,
@@ -224,16 +224,31 @@ void main() {
         ),
       );
 
-      // Should NOT show NavigationRail
-      expect(find.byType(NavigationRail), findsNothing);
+      // Wait for post-frame callback to set initial page selection
+      await tester.pumpAndSettle();
 
-      // Should show both parameters
+      // Should show NavigationRail
+      expect(find.byType(NavigationRail), findsOneWidget);
+
+      // Should show two pages in navigation rail
+      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Page 2'), findsOneWidget);
+
+      // Should show only Param 1 initially (first page selected)
       expect(find.text('Param 1'), findsOneWidget);
+      expect(find.text('Param 2'), findsNothing);
+
+      // Tap Page 2
+      await tester.tap(find.text('Page 2'));
+      await tester.pumpAndSettle();
+
+      // Should now show only Param 2
+      expect(find.text('Param 1'), findsNothing);
       expect(find.text('Param 2'), findsOneWidget);
     });
 
-    testWidgets('sorts parameters by page then alphabetically', (tester) async {
-      // Create parameters in intentionally unsorted order
+    testWidgets('sorts parameters alphabetically within same page', (tester) async {
+      // Create parameters in intentionally unsorted order on same page
       final algo0Params = [
         createMappedParameter(
           perfPageIndex: 1,
@@ -251,16 +266,6 @@ void main() {
         ),
       ];
 
-      final algo1Params = [
-        createMappedParameter(
-          perfPageIndex: 2,
-          algorithmName: 'Algo 2',
-          algorithmIndex: 1,
-          parameterName: 'Zebra',
-          parameterNumber: 2,
-        ),
-      ];
-
       when(() => mockCubit.state).thenReturn(
         DistingStateSynchronized(
           disting: MockDistingMidiManager(),
@@ -268,7 +273,6 @@ void main() {
           firmwareVersion: FirmwareVersion('1.0.0'),
           slots: [
             createSlotFromMappedParameters(algo0Params),
-            createSlotFromMappedParameters(algo1Params),
           ],
           algorithms: const [],
           unitStrings: const [],
@@ -283,22 +287,21 @@ void main() {
         ),
       );
 
-      // All parameters should be visible
+      // Wait for post-frame callback
+      await tester.pumpAndSettle();
+
+      // Both parameters should be visible (same page)
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Beta'), findsOneWidget);
-      expect(find.text('Zebra'), findsOneWidget);
 
-      // Verify sort order: Page 1 (Alpha, Beta), then Page 2 (Zebra)
-      // We can verify this by checking the vertical positions of the text widgets
+      // Verify alphabetical sort order within page
       final alphaY = tester.getTopLeft(find.text('Alpha')).dy;
       final betaY = tester.getTopLeft(find.text('Beta')).dy;
-      final zebraY = tester.getTopLeft(find.text('Zebra')).dy;
 
       expect(alphaY < betaY, true, reason: 'Alpha should appear before Beta');
-      expect(betaY < zebraY, true, reason: 'Beta should appear before Zebra');
     });
 
-    testWidgets('shows only parameters returned by buildMappedParameterList', (tester) async {
+    testWidgets('shows only parameters for selected page', (tester) async {
       // buildMappedParameterList already filters out perfPageIndex = 0,
       // so we only include parameters with perfPageIndex > 0
       final params = [
@@ -330,11 +333,15 @@ void main() {
         ),
       );
 
+      // Wait for post-frame callback
+      await tester.pumpAndSettle();
+
       // Should show assigned parameter
       expect(find.text('Page 1 Param'), findsOneWidget);
 
-      // No NavigationRail should be present
-      expect(find.byType(NavigationRail), findsNothing);
+      // NavigationRail should be present with single page
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('Page 1'), findsOneWidget);
     });
 
     testWidgets('handles multiple parameters on same page', (tester) async {
@@ -380,13 +387,20 @@ void main() {
         ),
       );
 
-      // Should show both parameters
+      // Wait for post-frame callback
+      await tester.pumpAndSettle();
+
+      // Should show both parameters (same page)
       expect(find.text('Param 1'), findsOneWidget);
       expect(find.text('Param 2'), findsOneWidget);
 
       // Should show both algorithm names
       expect(find.text('Algo 1'), findsOneWidget);
       expect(find.text('Algo 2'), findsOneWidget);
+
+      // Should have NavigationRail with Page 1 only
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('Page 1'), findsOneWidget);
     });
 
     testWidgets('displays polling controls', (tester) async {
