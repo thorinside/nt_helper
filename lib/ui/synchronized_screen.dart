@@ -352,6 +352,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                                 (
                                   physicalInputs,
                                   physicalOutputs,
+                                  es5Inputs,
                                   algorithms,
                                   connections,
                                   buses,
@@ -380,6 +381,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               (
                                 physicalInputs,
                                 physicalOutputs,
+                                es5Inputs,
                                 algorithms,
                                 connections,
                                 buses,

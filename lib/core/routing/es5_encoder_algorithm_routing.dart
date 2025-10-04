@@ -21,6 +21,15 @@ import 'models/port.dart';
 ///
 /// Only channels with Enable = 1 will have input ports created.
 class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
+  /// Special marker for ES-5 encoder mirror connections
+  static const String mirrorBusParam = 'es5_encoder_mirror';
+
+  /// Default algorithm UUID when none provided
+  static const String defaultAlgorithmUuid = 'es5e';
+
+  /// Pattern for extracting channel number from port ID
+  static const String channelIdPattern = r'channel_(\d+)_input';
+
   /// The slot containing all algorithm data
   final Slot slot;
 
@@ -132,7 +141,7 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
 
         // Create the input port for this enabled channel
         final port = Port(
-          id: '${algorithmUuid ?? 'es5e'}_channel_${channelNumber}_input',
+          id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_input',
           name: 'Channel $channelNumber',
           type: PortType.gate, // ES-5 handles gates/triggers
           direction: PortDirection.input,
@@ -164,14 +173,41 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
 
   /// Generates output ports for the ES-5 Encoder.
   ///
-  /// ES-5 Encoder outputs are handled internally via S/PDIF to the hardware module,
-  /// so no output ports need to be represented in the routing visualization.
+  /// Each enabled input channel creates a corresponding output port that mirrors
+  /// to the physical ES-5 expander output. This creates the visual flow:
+  /// Input Bus → ES-5 Encoder → ES-5 Port
   @override
   List<Port> generateOutputPorts() {
+    final ports = <Port>[];
+
+    // inputPorts already contains only enabled channels
+    for (final inputPort in inputPorts) {
+      // Input ID format: '${algorithmUuid}_channel_${channelNumber}_input'
+      final channelMatch = RegExp(channelIdPattern).firstMatch(inputPort.id);
+
+      if (channelMatch != null) {
+        final channelNumber = int.parse(channelMatch.group(1)!);
+
+        ports.add(Port(
+          id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_output',
+          name: 'To ES-5 $channelNumber',
+          type: PortType.gate,
+          direction: PortDirection.output,
+          description: 'Mirror to ES-5 Output $channelNumber',
+          channelNumber: channelNumber,
+          busParam: mirrorBusParam, // Special marker for connection discovery
+        ));
+
+        debugPrint(
+          'ES5EncoderAlgorithmRouting: Created output port for Channel $channelNumber',
+        );
+      }
+    }
+
     debugPrint(
-      'ES5EncoderAlgorithmRouting: No output ports (S/PDIF outputs are internal)',
+      'ES5EncoderAlgorithmRouting: Generated ${ports.length} output ports',
     );
-    return [];
+    return ports;
   }
 
   /// Checks if this routing implementation can handle the given slot.

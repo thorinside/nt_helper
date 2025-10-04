@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'algorithm_routing.dart';
+import 'es5_encoder_algorithm_routing.dart';
 import 'models/port.dart';
 import 'models/connection.dart';
 import 'bus_spec.dart';
@@ -149,6 +150,18 @@ class ConnectionDiscoveryService {
       }
     }
 
+    // Create ES-5 Encoder mirror connections
+    for (final routing in routings) {
+      if (routing is ES5EncoderAlgorithmRouting) {
+        connections.addAll(_createEs5EncoderConnections(routing));
+      }
+    }
+
+    // Create ES-5 direct connections for Clock/Euclidean algorithms
+    for (final routing in routings) {
+      connections.addAll(_createEs5DirectConnections(routing));
+    }
+
     // Create partial connections for unmatched ports with non-zero bus values
     final partialConnections = _createPartialConnections(
       busRegistry,
@@ -237,6 +250,36 @@ class ConnectionDiscoveryService {
     List<_PortAssignment> outputs,
   ) {
     final connections = <Connection>[];
+
+    // Check for ES-5 buses first (29-30)
+    if (BusSpec.isEs5(busNumber)) {
+      final es5PortId = busNumber == 29 ? 'es5_L' : 'es5_R';
+
+      debugPrint(
+        '[ConnectionDiscovery] Creating ES-5 connections: bus $busNumber -> $es5PortId',
+      );
+
+      for (final output in outputs) {
+        connections.add(
+          Connection(
+            id: 'conn_${output.portId}_to_$es5PortId',
+            sourcePortId: output.portId,
+            destinationPortId: es5PortId,
+            connectionType: ConnectionType.hardwareOutput,
+            busNumber: busNumber,
+            algorithmId: output.algorithmId,
+            algorithmIndex: output.algorithmIndex,
+            parameterNumber: output.parameterNumber,
+            signalType: SignalType.audio, // ES-5 L/R are audio
+            isOutput: true,
+            outputMode: output.outputMode,
+          ),
+        );
+      }
+      return connections;
+    }
+
+    // Standard hardware output logic (buses 13-20)
     final hwPortId = 'hw_out_${busNumber - 12}'; // Bus 13->hw_out_1, etc.
 
     for (final output in outputs) {
@@ -254,6 +297,87 @@ class ConnectionDiscoveryService {
           isOutput: true,
           outputMode: output.outputMode,
         ),
+      );
+    }
+
+    return connections;
+  }
+
+  /// Creates ES-5 Encoder mirror connections from output ports to ES-5 hardware ports
+  static List<Connection> _createEs5EncoderConnections(
+    ES5EncoderAlgorithmRouting routing,
+  ) {
+    final connections = <Connection>[];
+
+    debugPrint(
+      '[ConnectionDiscovery] Creating ES-5 Encoder mirror connections',
+    );
+
+    for (final outputPort in routing.outputPorts) {
+      if (outputPort.busParam == ES5EncoderAlgorithmRouting.mirrorBusParam &&
+          outputPort.channelNumber != null) {
+        final es5PortId = 'es5_${outputPort.channelNumber}';
+
+        connections.add(
+          Connection(
+            id: 'conn_${outputPort.id}_to_$es5PortId',
+            sourcePortId: outputPort.id,
+            destinationPortId: es5PortId,
+            connectionType: ConnectionType.algorithmToAlgorithm,
+            algorithmId: routing.algorithmUuid ?? ES5EncoderAlgorithmRouting.defaultAlgorithmUuid,
+            signalType: SignalType.gate,
+            description: 'ES-5 Encoder mirror connection',
+          ),
+        );
+
+        debugPrint(
+          '[ConnectionDiscovery]   Mirror: ${outputPort.id} -> $es5PortId',
+        );
+      }
+    }
+
+    debugPrint(
+      '[ConnectionDiscovery] Created ${connections.length} ES-5 Encoder mirror connections',
+    );
+
+    return connections;
+  }
+
+  /// Creates ES-5 direct connections for Clock/Euclidean algorithms
+  ///
+  /// When Clock or Euclidean algorithms have ES-5 Expander active,
+  /// their outputs connect directly to ES-5 ports, bypassing normal bus routing.
+  static List<Connection> _createEs5DirectConnections(
+    AlgorithmRouting routing,
+  ) {
+    final connections = <Connection>[];
+
+    for (final outputPort in routing.outputPorts) {
+      if (outputPort.busParam == 'es5_direct' &&
+          outputPort.channelNumber != null) {
+        final es5PortId = 'es5_${outputPort.channelNumber}';
+
+        connections.add(
+          Connection(
+            id: 'conn_${outputPort.id}_to_$es5PortId',
+            sourcePortId: outputPort.id,
+            destinationPortId: es5PortId,
+            connectionType: ConnectionType.algorithmToAlgorithm,
+            algorithmId: routing.algorithmUuid!,
+            signalType: SignalType.gate,
+            description: 'ES-5 direct connection',
+          ),
+        );
+
+        debugPrint(
+          '[ConnectionDiscovery]   ES-5 Direct: ${outputPort.id} -> $es5PortId',
+        );
+      }
+    }
+
+    if (connections.isNotEmpty) {
+      debugPrint(
+        '[ConnectionDiscovery] Created ${connections.length} ES-5 direct connections',
       );
     }
 

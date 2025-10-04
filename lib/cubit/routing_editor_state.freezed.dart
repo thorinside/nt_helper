@@ -687,12 +687,12 @@ return loaded(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  Map<String, NodePosition> nodePositions,  double zoomLevel,  Offset panOffset,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)?  loaded,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  disconnected,TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<Port> es5Inputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  Map<String, NodePosition> nodePositions,  double zoomLevel,  Offset panOffset,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)?  loaded,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
 return disconnected();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.nodePositions,_that.zoomLevel,_that.panOffset,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);case _:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.es5Inputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.nodePositions,_that.zoomLevel,_that.panOffset,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);case _:
   return orElse();
 
 }
@@ -710,12 +710,12 @@ return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  Map<String, NodePosition> nodePositions,  double zoomLevel,  Offset panOffset,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)  loaded,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  disconnected,required TResult Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<Port> es5Inputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  Map<String, NodePosition> nodePositions,  double zoomLevel,  Offset panOffset,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)  loaded,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial():
 return initial();case RoutingEditorStateDisconnected():
 return disconnected();case RoutingEditorStateLoaded():
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.nodePositions,_that.zoomLevel,_that.panOffset,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);}
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.es5Inputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.nodePositions,_that.zoomLevel,_that.panOffset,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -729,12 +729,12 @@ return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  Map<String, NodePosition> nodePositions,  double zoomLevel,  Offset panOffset,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)?  loaded,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  disconnected,TResult? Function( List<Port> physicalInputs,  List<Port> physicalOutputs,  List<Port> es5Inputs,  List<RoutingAlgorithm> algorithms,  List<Connection> connections,  List<RoutingBus> buses,  Map<String, OutputMode> portOutputModes,  Map<String, NodePosition> nodePositions,  double zoomLevel,  Offset panOffset,  bool isHardwareSynced,  bool isPersistenceEnabled,  DateTime? lastSyncTime,  DateTime? lastPersistTime,  String? lastError,  SubState subState)?  loaded,}) {final _that = this;
 switch (_that) {
 case RoutingEditorStateInitial() when initial != null:
 return initial();case RoutingEditorStateDisconnected() when disconnected != null:
 return disconnected();case RoutingEditorStateLoaded() when loaded != null:
-return loaded(_that.physicalInputs,_that.physicalOutputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.nodePositions,_that.zoomLevel,_that.panOffset,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);case _:
+return loaded(_that.physicalInputs,_that.physicalOutputs,_that.es5Inputs,_that.algorithms,_that.connections,_that.buses,_that.portOutputModes,_that.nodePositions,_that.zoomLevel,_that.panOffset,_that.isHardwareSynced,_that.isPersistenceEnabled,_that.lastSyncTime,_that.lastPersistTime,_that.lastError,_that.subState);case _:
   return null;
 
 }
@@ -810,7 +810,7 @@ String toString() {
 
 
 class RoutingEditorStateLoaded implements RoutingEditorState {
-  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, final  Map<String, NodePosition> nodePositions = const {}, this.zoomLevel = 1.0, this.panOffset = Offset.zero, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError, this.subState = SubState.idle}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes,_nodePositions = nodePositions;
+  const RoutingEditorStateLoaded({required final  List<Port> physicalInputs, required final  List<Port> physicalOutputs, final  List<Port> es5Inputs = const [], required final  List<RoutingAlgorithm> algorithms, required final  List<Connection> connections, final  List<RoutingBus> buses = const [], final  Map<String, OutputMode> portOutputModes = const {}, final  Map<String, NodePosition> nodePositions = const {}, this.zoomLevel = 1.0, this.panOffset = Offset.zero, this.isHardwareSynced = false, this.isPersistenceEnabled = false, this.lastSyncTime, this.lastPersistTime, this.lastError, this.subState = SubState.idle}): _physicalInputs = physicalInputs,_physicalOutputs = physicalOutputs,_es5Inputs = es5Inputs,_algorithms = algorithms,_connections = connections,_buses = buses,_portOutputModes = portOutputModes,_nodePositions = nodePositions;
   
 
  final  List<Port> _physicalInputs;
@@ -830,8 +830,17 @@ class RoutingEditorStateLoaded implements RoutingEditorState {
 }
 
 // 8 physical output ports
- final  List<RoutingAlgorithm> _algorithms;
+ final  List<Port> _es5Inputs;
 // 8 physical output ports
+@JsonKey() List<Port> get es5Inputs {
+  if (_es5Inputs is EqualUnmodifiableListView) return _es5Inputs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_es5Inputs);
+}
+
+// ES-5 expander input ports (conditional)
+ final  List<RoutingAlgorithm> _algorithms;
+// ES-5 expander input ports (conditional)
  List<RoutingAlgorithm> get algorithms {
   if (_algorithms is EqualUnmodifiableListView) return _algorithms;
   // ignore: implicit_dynamic_type
@@ -901,16 +910,16 @@ $RoutingEditorStateLoadedCopyWith<RoutingEditorStateLoaded> get copyWith => _$Ro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&const DeepCollectionEquality().equals(other._nodePositions, _nodePositions)&&(identical(other.zoomLevel, zoomLevel) || other.zoomLevel == zoomLevel)&&(identical(other.panOffset, panOffset) || other.panOffset == panOffset)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.subState, subState) || other.subState == subState));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoutingEditorStateLoaded&&const DeepCollectionEquality().equals(other._physicalInputs, _physicalInputs)&&const DeepCollectionEquality().equals(other._physicalOutputs, _physicalOutputs)&&const DeepCollectionEquality().equals(other._es5Inputs, _es5Inputs)&&const DeepCollectionEquality().equals(other._algorithms, _algorithms)&&const DeepCollectionEquality().equals(other._connections, _connections)&&const DeepCollectionEquality().equals(other._buses, _buses)&&const DeepCollectionEquality().equals(other._portOutputModes, _portOutputModes)&&const DeepCollectionEquality().equals(other._nodePositions, _nodePositions)&&(identical(other.zoomLevel, zoomLevel) || other.zoomLevel == zoomLevel)&&(identical(other.panOffset, panOffset) || other.panOffset == panOffset)&&(identical(other.isHardwareSynced, isHardwareSynced) || other.isHardwareSynced == isHardwareSynced)&&(identical(other.isPersistenceEnabled, isPersistenceEnabled) || other.isPersistenceEnabled == isPersistenceEnabled)&&(identical(other.lastSyncTime, lastSyncTime) || other.lastSyncTime == lastSyncTime)&&(identical(other.lastPersistTime, lastPersistTime) || other.lastPersistTime == lastPersistTime)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.subState, subState) || other.subState == subState));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),const DeepCollectionEquality().hash(_nodePositions),zoomLevel,panOffset,isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError,subState);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_physicalInputs),const DeepCollectionEquality().hash(_physicalOutputs),const DeepCollectionEquality().hash(_es5Inputs),const DeepCollectionEquality().hash(_algorithms),const DeepCollectionEquality().hash(_connections),const DeepCollectionEquality().hash(_buses),const DeepCollectionEquality().hash(_portOutputModes),const DeepCollectionEquality().hash(_nodePositions),zoomLevel,panOffset,isHardwareSynced,isPersistenceEnabled,lastSyncTime,lastPersistTime,lastError,subState);
 
 @override
 String toString() {
-  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, nodePositions: $nodePositions, zoomLevel: $zoomLevel, panOffset: $panOffset, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError, subState: $subState)';
+  return 'RoutingEditorState.loaded(physicalInputs: $physicalInputs, physicalOutputs: $physicalOutputs, es5Inputs: $es5Inputs, algorithms: $algorithms, connections: $connections, buses: $buses, portOutputModes: $portOutputModes, nodePositions: $nodePositions, zoomLevel: $zoomLevel, panOffset: $panOffset, isHardwareSynced: $isHardwareSynced, isPersistenceEnabled: $isPersistenceEnabled, lastSyncTime: $lastSyncTime, lastPersistTime: $lastPersistTime, lastError: $lastError, subState: $subState)';
 }
 
 
@@ -921,7 +930,7 @@ abstract mixin class $RoutingEditorStateLoadedCopyWith<$Res> implements $Routing
   factory $RoutingEditorStateLoadedCopyWith(RoutingEditorStateLoaded value, $Res Function(RoutingEditorStateLoaded) _then) = _$RoutingEditorStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Port> physicalInputs, List<Port> physicalOutputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, Map<String, NodePosition> nodePositions, double zoomLevel, Offset panOffset, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError, SubState subState
+ List<Port> physicalInputs, List<Port> physicalOutputs, List<Port> es5Inputs, List<RoutingAlgorithm> algorithms, List<Connection> connections, List<RoutingBus> buses, Map<String, OutputMode> portOutputModes, Map<String, NodePosition> nodePositions, double zoomLevel, Offset panOffset, bool isHardwareSynced, bool isPersistenceEnabled, DateTime? lastSyncTime, DateTime? lastPersistTime, String? lastError, SubState subState
 });
 
 
@@ -938,10 +947,11 @@ class _$RoutingEditorStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of RoutingEditorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? nodePositions = null,Object? zoomLevel = null,Object? panOffset = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,Object? subState = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? physicalInputs = null,Object? physicalOutputs = null,Object? es5Inputs = null,Object? algorithms = null,Object? connections = null,Object? buses = null,Object? portOutputModes = null,Object? nodePositions = null,Object? zoomLevel = null,Object? panOffset = null,Object? isHardwareSynced = null,Object? isPersistenceEnabled = null,Object? lastSyncTime = freezed,Object? lastPersistTime = freezed,Object? lastError = freezed,Object? subState = null,}) {
   return _then(RoutingEditorStateLoaded(
 physicalInputs: null == physicalInputs ? _self._physicalInputs : physicalInputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,physicalOutputs: null == physicalOutputs ? _self._physicalOutputs : physicalOutputs // ignore: cast_nullable_to_non_nullable
+as List<Port>,es5Inputs: null == es5Inputs ? _self._es5Inputs : es5Inputs // ignore: cast_nullable_to_non_nullable
 as List<Port>,algorithms: null == algorithms ? _self._algorithms : algorithms // ignore: cast_nullable_to_non_nullable
 as List<RoutingAlgorithm>,connections: null == connections ? _self._connections : connections // ignore: cast_nullable_to_non_nullable
 as List<Connection>,buses: null == buses ? _self._buses : buses // ignore: cast_nullable_to_non_nullable

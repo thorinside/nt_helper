@@ -13,6 +13,7 @@ import 'package:nt_helper/core/routing/connection_discovery_service.dart';
 import 'package:nt_helper/core/routing/services/connection_validator.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nt_helper/core/routing/models/es5_hardware_node.dart';
 
 import 'routing_editor_state.dart';
 
@@ -112,6 +113,23 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     );
   }
 
+  /// Check if ES-5 node should be displayed based on algorithm GUIDs
+  bool shouldShowEs5Node(List<Slot> slots) {
+    const es5AlgorithmGuids = {'usbf', 'clck', 'eucp', 'es5e'};
+
+    for (final slot in slots) {
+      if (es5AlgorithmGuids.contains(slot.algorithm.guid)) {
+        debugPrint(
+          '[RoutingEditor] ES-5 capable algorithm detected: ${slot.algorithm.name} (${slot.algorithm.guid})',
+        );
+        return true;
+      }
+    }
+
+    debugPrint('[RoutingEditor] No ES-5 capable algorithms found');
+    return false;
+  }
+
   /// Extract routing data from synchronized state and build visual representation.
   ///
   /// This method implements performance optimization by only being called when the
@@ -125,6 +143,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // Create physical hardware ports
       final physicalInputs = _createPhysicalInputPorts();
       final physicalOutputs = _createPhysicalOutputPorts();
+
+      // Conditionally create ES-5 ports based on algorithm presence
+      final es5Inputs = shouldShowEs5Node(slots)
+          ? ES5HardwareNode.createInputPorts()
+          : <Port>[];
 
       // Build algorithm representations with ports determined by AlgorithmRouting
       final algorithms = <RoutingAlgorithm>[];
@@ -224,6 +247,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         RoutingEditorState.loaded(
           physicalInputs: physicalInputs,
           physicalOutputs: physicalOutputs,
+          es5Inputs: es5Inputs,
           algorithms: algorithms,
           connections: connections,
           zoomLevel: zoomLevel,
@@ -1060,6 +1084,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       if (port.id == portId) return port;
     }
 
+    // Check ES-5 inputs
+    for (final port in state.es5Inputs) {
+      if (port.id == portId) return port;
+    }
+
     // Check algorithm ports
     for (final algorithm in state.algorithms) {
       for (final port in algorithm.inputPorts) {
@@ -1085,6 +1114,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Check physical outputs (no algorithm index)
     for (final port in state.physicalOutputs) {
+      if (port.id == portId) return (port, null);
+    }
+
+    // Check ES-5 inputs (no algorithm index)
+    for (final port in state.es5Inputs) {
       if (port.id == portId) return (port, null);
     }
 

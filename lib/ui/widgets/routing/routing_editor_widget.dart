@@ -27,6 +27,7 @@ import 'package:nt_helper/ui/widgets/routing/connection_painter.dart'
 import 'package:nt_helper/ui/widgets/routing/mini_map_widget.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_input_node.dart';
 import 'package:nt_helper/ui/widgets/routing/physical_output_node.dart';
+import 'package:nt_helper/ui/widgets/routing/es5_node.dart';
 import 'package:nt_helper/ui/widgets/routing/routing_editor_controller.dart';
 // Removed unused imports from previous canvas split
 
@@ -882,6 +883,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           (
             physicalInputs,
             physicalOutputs,
+            es5Inputs,
             algorithms,
             connections,
             buses,
@@ -899,6 +901,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
             context,
             physicalInputs,
             physicalOutputs,
+            es5Inputs,
             algorithms,
             connections,
             nodePositions,
@@ -939,6 +942,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     BuildContext context,
     List<Port> physicalInputs,
     List<Port> physicalOutputs,
+    List<Port> es5Inputs,
     List<RoutingAlgorithm> algorithms,
     List<Connection> connections,
     Map<String, NodePosition> stateNodePositions,
@@ -1069,6 +1073,12 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
                       if (widget.showPhysicalPorts)
                         ..._buildPhysicalOutputNodes(
                           physicalOutputs,
+                          connections,
+                          stateNodePositions,
+                        ),
+                      if (widget.showPhysicalPorts)
+                        ..._buildEs5Nodes(
+                          es5Inputs,
                           connections,
                           stateNodePositions,
                         ),
@@ -1226,6 +1236,75 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           },
           onNodeDragEnd: () {
             // Node drag end handler (could be used for cleanup)
+          },
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildEs5Nodes(
+    List<Port> es5Inputs,
+    List<Connection> connections,
+    Map<String, NodePosition> stateNodePositions,
+  ) {
+    if (es5Inputs.isEmpty) return [];
+    // Position after Physical Outputs in the layout
+    const double centerX = _canvasWidth / 2;
+    const double centerY = _canvasHeight / 2;
+
+    // Check for position from state first
+    final statePosition = stateNodePositions['es5_node'];
+    final Offset nodePosition;
+
+    if (statePosition != null) {
+      nodePosition = Offset(statePosition.x, statePosition.y);
+      _nodePositions['es5_node'] = nodePosition;
+    } else {
+      // Position after physical outputs with consistent spacing
+      nodePosition =
+          _nodePositions['es5_node'] ??
+          const Offset(centerX + 600, centerY + 200);
+    }
+
+    return [
+      Positioned(
+        key: const ValueKey('es5_node'),
+        left: nodePosition.dx,
+        top: nodePosition.dy,
+        child: ES5Node(
+          ports: es5Inputs,
+          connectedPorts: _getConnectedPortIds(connections).toSet(),
+          position: nodePosition,
+          onPositionChanged: (newPosition) {
+            setState(() {
+              _nodePositions['es5_node'] = newPosition;
+            });
+            // Save position to preferences
+            context.read<RoutingEditorCubit>().updateNodePosition(
+              'es5_node',
+              newPosition.dx,
+              newPosition.dy,
+            );
+          },
+          showLabels: widget.canvasSize.width >= 800,
+          onPortTapped: (port) => _handlePortTap(port),
+          onDragStart: (port) => _handlePortDragStart(port),
+          onDragUpdate: (port, position) =>
+              _handlePortDragUpdate(port, position),
+          onDragEnd: (port, position) => _handlePortDragEnd(port, position),
+          onPortPositionResolved: (port, globalCenter) {
+            // Update port position cache
+            final isInput = port.direction == PortDirection.input;
+            _updatePortAnchor(port.id, globalCenter, isInput);
+          },
+          onRoutingAction: (portId, action) =>
+              _handlePortRoutingAction(portId, action, connections),
+          highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
+          onNodeDragStart: () {
+            // Node drag start handler
+          },
+          onNodeDragEnd: () {
+            // Node drag end handler
           },
         ),
       ),

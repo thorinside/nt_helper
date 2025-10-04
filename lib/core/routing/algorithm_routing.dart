@@ -9,6 +9,8 @@ import 'poly_algorithm_routing.dart';
 import 'multi_channel_algorithm_routing.dart';
 import 'usb_from_algorithm_routing.dart';
 import 'es5_encoder_algorithm_routing.dart';
+import 'clock_algorithm_routing.dart';
+import 'euclidean_algorithm_routing.dart';
 
 /// Abstract base class for algorithm routing implementations.
 ///
@@ -302,6 +304,24 @@ abstract class AlgorithmRouting {
       // ES-5 Encoder has special handling for conditional channel inputs
       instance = ES5EncoderAlgorithmRouting.createFromSlot(
         slot,
+        algorithmUuid: algorithmUuid,
+      );
+    } else if (ClockAlgorithmRouting.canHandle(slot)) {
+      // Clock algorithm with ES-5 direct output support
+      instance = ClockAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
+        algorithmUuid: algorithmUuid,
+      );
+    } else if (EuclideanAlgorithmRouting.canHandle(slot)) {
+      // Euclidean algorithm with ES-5 direct output support
+      instance = EuclideanAlgorithmRouting.createFromSlot(
+        slot,
+        ioParameters: ioParameters,
+        modeParameters: modeParameters,
+        modeParametersWithNumbers: modeParametersWithNumbers,
         algorithmUuid: algorithmUuid,
       );
     } else if (PolyAlgorithmRouting.canHandle(slot)) {

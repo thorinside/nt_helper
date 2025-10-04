@@ -220,6 +220,7 @@ class _TestLayoutButtonWidget extends StatelessWidget {
               (
                 physicalInputs,
                 physicalOutputs,
+                es5Inputs,
                 algorithms,
                 connections,
                 buses,
@@ -292,6 +293,7 @@ class _TestButtonsRowWidget extends StatelessWidget {
                       _____________,
                       ______________,
                       _______________,
+                      ________________,
                     ) {
                       return () {
                         // Refresh routing logic would go here
@@ -307,6 +309,7 @@ class _TestButtonsRowWidget extends StatelessWidget {
                   (
                     physicalInputs,
                     physicalOutputs,
+                    es5Inputs,
                     algorithms,
                     connections,
                     buses,
