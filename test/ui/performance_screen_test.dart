@@ -149,10 +149,22 @@ void main() {
       valueStrings[paramNum] = param.valueString;
     }
 
+    // Create parameter pages with parameters in order by parameter number
+    final paramNums = params.map((p) => p.parameter.parameterNumber).toList()..sort();
+    final parameterPages = ParameterPages(
+      algorithmIndex: algorithmIndex,
+      pages: [
+        ParameterPage(
+          name: 'Page 1',
+          parameters: paramNums,
+        ),
+      ],
+    );
+
     return Slot(
       algorithm: params.first.algorithm,
       routing: RoutingInfo.filler(),
-      pages: ParameterPages(algorithmIndex: algorithmIndex, pages: []),
+      pages: parameterPages,
       parameters: parameters,
       values: values,
       enums: enums,
@@ -247,22 +259,23 @@ void main() {
       expect(find.text('Param 2'), findsOneWidget);
     });
 
-    testWidgets('sorts parameters alphabetically within same page', (tester) async {
-      // Create parameters in intentionally unsorted order on same page
+    testWidgets('sorts parameters by parameter page order within same page', (tester) async {
+      // Create parameters where alphabetical order would differ from parameter number order
+      // Zebra (param 0) should come before Apple (param 1) because param 0 < param 1
       final algo0Params = [
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Algo 1',
           algorithmIndex: 0,
-          parameterName: 'Beta',
-          parameterNumber: 1,
+          parameterName: 'Zebra',  // Alphabetically last
+          parameterNumber: 0,      // But parameter page order first
         ),
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Algo 1',
           algorithmIndex: 0,
-          parameterName: 'Alpha',
-          parameterNumber: 0,
+          parameterName: 'Apple',  // Alphabetically first
+          parameterNumber: 1,      // But parameter page order second
         ),
       ];
 
@@ -291,14 +304,16 @@ void main() {
       await tester.pumpAndSettle();
 
       // Both parameters should be visible (same page)
-      expect(find.text('Alpha'), findsOneWidget);
-      expect(find.text('Beta'), findsOneWidget);
+      expect(find.text('Zebra'), findsOneWidget);
+      expect(find.text('Apple'), findsOneWidget);
 
-      // Verify alphabetical sort order within page
-      final alphaY = tester.getTopLeft(find.text('Alpha')).dy;
-      final betaY = tester.getTopLeft(find.text('Beta')).dy;
+      // Verify parameter page order (not alphabetical)
+      // Zebra (param 0) should appear before Apple (param 1)
+      final zebraY = tester.getTopLeft(find.text('Zebra')).dy;
+      final appleY = tester.getTopLeft(find.text('Apple')).dy;
 
-      expect(alphaY < betaY, true, reason: 'Alpha should appear before Beta');
+      expect(zebraY < appleY, true,
+        reason: 'Zebra (param 0) should appear before Apple (param 1) due to parameter page order');
     });
 
     testWidgets('shows only parameters for selected page', (tester) async {

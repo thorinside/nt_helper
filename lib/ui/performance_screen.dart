@@ -44,8 +44,30 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     return populatedPages.toList()..sort();
   }
 
-  // Sort parameters by page (ascending), then alphabetically by parameter name
-  List<MappedParameter> _sortParameters(List<MappedParameter> mappedParameters) {
+  // Build a map of (algorithmIndex, parameterNumber) -> order
+  // based on the order parameters appear in the parameter pages
+  Map<String, int> _buildParameterOrderMap(List<Slot> slots) {
+    final orderMap = <String, int>{};
+    var globalOrder = 0;
+
+    for (final slot in slots) {
+      // Flatten all parameter numbers across all pages in order
+      for (final page in slot.pages.pages) {
+        for (final paramNum in page.parameters) {
+          final key = '${slot.algorithm.algorithmIndex}_$paramNum';
+          orderMap[key] = globalOrder++;
+        }
+      }
+    }
+
+    return orderMap;
+  }
+
+  // Sort parameters by page (ascending), then by parameter page order
+  List<MappedParameter> _sortParameters(
+    List<MappedParameter> mappedParameters,
+    Map<String, int> orderMap,
+  ) {
     final sorted = List<MappedParameter>.from(mappedParameters);
     sorted.sort((a, b) {
       final pageA = a.mapping.packedMappingData.perfPageIndex;
@@ -56,8 +78,13 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         return pageA.compareTo(pageB);
       }
 
-      // Within the same page, sort alphabetically by parameter name
-      return a.parameter.name.compareTo(b.parameter.name);
+      // Within the same page, sort by parameter page order
+      final keyA = '${a.parameter.algorithmIndex}_${a.parameter.parameterNumber}';
+      final keyB = '${b.parameter.algorithmIndex}_${b.parameter.parameterNumber}';
+      final orderA = orderMap[keyA] ?? 999999;
+      final orderB = orderMap[keyB] ?? 999999;
+
+      return orderA.compareTo(orderB);
     });
     return sorted;
   }
@@ -252,14 +279,17 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               return _buildEmptyState();
             }
 
+            // Build parameter order map from slots
+            final orderMap = _buildParameterOrderMap(state.slots);
+
             // Filter parameters for selected page
             final pageParameters = _filterParametersForPage(
               mappedParameters,
               _selectedPageIndex!,
             );
 
-            // Sort parameters alphabetically within the page
-            final sortedParameters = _sortParameters(pageParameters);
+            // Sort parameters by parameter page order within the page
+            final sortedParameters = _sortParameters(pageParameters, orderMap);
 
             return Row(
               children: [
