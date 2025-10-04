@@ -81,6 +81,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
   late int _selectedIndex;
   late TabController _tabController;
   EditMode _currentMode = EditMode.parameters;
+  bool _showDebugPanel = true;
 
   @override
   void initState() {
@@ -92,6 +93,7 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
     // Initialize debug service in debug mode
     if (kDebugMode) {
       DebugService().initialize();
+      _showDebugPanel = SettingsService().showDebugPanel;
     }
 
     // Determine the new_valid_index based on the current _selectedIndex and the new slots length.
@@ -172,7 +174,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 children: [_buildWideScreenBody(), _buildRoutingCanvas()],
               ),
             ),
-            if (kDebugMode) const DebugPanel(),
+            if (kDebugMode && _showDebugPanel)
+              DebugPanel(
+                onDismiss: () {
+                  setState(() {
+                    _showDebugPanel = false;
+                  });
+                  SettingsService().setShowDebugPanel(false);
+                },
+              ),
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
@@ -192,7 +202,15 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                 children: [_buildBody(), _buildRoutingCanvas()],
               ),
             ),
-            if (kDebugMode) const DebugPanel(),
+            if (kDebugMode && _showDebugPanel)
+              DebugPanel(
+                onDismiss: () {
+                  setState(() {
+                    _showDebugPanel = false;
+                  });
+                  SettingsService().setShowDebugPanel(false);
+                },
+              ),
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endContained,

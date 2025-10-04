@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:nt_helper/services/debug_service.dart';
 
 class DebugPanel extends StatefulWidget {
-  const DebugPanel({super.key});
+  final VoidCallback? onDismiss;
+
+  const DebugPanel({super.key, this.onDismiss});
 
   @override
   State<DebugPanel> createState() => _DebugPanelState();
@@ -59,14 +61,23 @@ class _DebugPanelState extends State<DebugPanel> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  iconSize: 16,
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: const Text('Clear'),
                   onPressed: () {
                     _debugService.clearMessages();
                     setState(() {});
                   },
-                  tooltip: 'Clear log',
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  iconSize: 16,
+                  onPressed: widget.onDismiss,
+                  tooltip: 'Dismiss panel',
                 ),
               ],
             ),

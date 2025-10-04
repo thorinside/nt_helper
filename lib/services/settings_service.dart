@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -32,6 +33,7 @@ class SettingsService {
   static const String _overlayPositionXKey = 'overlay_position_x';
   static const String _overlayPositionYKey = 'overlay_position_y';
   static const String _overlaySizeScaleKey = 'overlay_size_scale';
+  static const String _showDebugPanelKey = 'show_debug_panel';
 
   // Default values
   static const int defaultRequestTimeout = 1000;
@@ -47,6 +49,7 @@ class SettingsService {
   static const double defaultOverlayPositionY =
       -1.0; // -1 means use default positioning
   static const double defaultOverlaySizeScale = 1.0;
+  static const bool defaultShowDebugPanel = true;
 
   /// Initialize the settings service
   Future<void> init() async {
@@ -143,6 +146,15 @@ class SettingsService {
     return await _prefs?.setDouble(_overlaySizeScaleKey, value) ?? false;
   }
 
+  /// Check if debug panel should be shown
+  bool get showDebugPanel =>
+      _prefs?.getBool(_showDebugPanelKey) ?? defaultShowDebugPanel;
+
+  /// Set whether debug panel should be shown
+  Future<bool> setShowDebugPanel(bool value) async {
+    return await _prefs?.setBool(_showDebugPanelKey, value) ?? false;
+  }
+
   /// Reset all settings to their default values
   Future<void> resetToDefaults() async {
     await setRequestTimeout(defaultRequestTimeout);
@@ -155,6 +167,7 @@ class SettingsService {
     await setOverlayPositionX(defaultOverlayPositionX);
     await setOverlayPositionY(defaultOverlayPositionY);
     await setOverlaySizeScale(defaultOverlaySizeScale);
+    await setShowDebugPanel(defaultShowDebugPanel);
   }
 }
 
@@ -174,6 +187,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late bool _hapticsEnabled;
   late bool _mcpEnabled;
   late bool _startPagesCollapsed;
+  late bool _showDebugPanel;
 
   @override
   void initState() {
@@ -190,6 +204,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       _hapticsEnabled = settings.hapticsEnabled;
       _mcpEnabled = settings.mcpEnabled;
       _startPagesCollapsed = settings.startPagesCollapsed;
+      _showDebugPanel = settings.showDebugPanel;
     });
   }
 
@@ -206,6 +221,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       await settings.setHapticsEnabled(_hapticsEnabled);
       await settings.setMcpEnabled(_mcpEnabled);
       await settings.setStartPagesCollapsed(_startPagesCollapsed);
+      await settings.setShowDebugPanel(_showDebugPanel);
 
       if (mounted) {
         Navigator.of(
@@ -386,6 +402,25 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         onChanged: (value) {
                           setState(() {
                             _mcpEnabled = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+
+                    // Debug panel visibility setting (debug mode only)
+                    if (kDebugMode)
+                      SwitchListTile(
+                        title: Text(
+                          'Show USB Video Debug Panel',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        subtitle: const Text(
+                          'Display debug log panel for USB video operations (debug mode only)',
+                        ),
+                        value: _showDebugPanel,
+                        onChanged: (value) {
+                          setState(() {
+                            _showDebugPanel = value;
                           });
                         },
                         contentPadding: EdgeInsets.zero,
