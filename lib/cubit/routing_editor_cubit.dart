@@ -2355,6 +2355,7 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       final layoutResult = _layoutAlgorithm!.calculateLayout(
         physicalInputs: currentState.physicalInputs,
         physicalOutputs: currentState.physicalOutputs,
+        es5Inputs: currentState.es5Inputs,
         algorithms: currentState.algorithms,
         connections: currentState.connections,
       );
@@ -2370,6 +2371,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
       // Update physical output positions
       updatedNodePositions.addAll(layoutResult.physicalOutputPositions);
+
+      // Update ES-5 input positions
+      updatedNodePositions.addAll(layoutResult.es5InputPositions);
 
       // Update algorithm positions
       updatedNodePositions.addAll(layoutResult.algorithmPositions);

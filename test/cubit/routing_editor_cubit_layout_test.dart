@@ -142,6 +142,7 @@ void main() {
           physicalOutputPositions: {
             'hw_out_1': const NodePosition(x: 750.0, y: 100.0),
           },
+          es5InputPositions: {},
           algorithmPositions: {
             'algo_0': const NodePosition(x: 400.0, y: 100.0),
           },
@@ -246,6 +247,7 @@ void main() {
             'hw_in_1': const NodePosition(x: 50.0, y: 100.0),
           },
           physicalOutputPositions: {},
+          es5InputPositions: {},
           algorithmPositions: {},
           reducedOverlaps: [],
           totalOverlapReduction: 0.0,
@@ -383,6 +385,7 @@ void main() {
             'hw_in_1': const NodePosition(x: 50.0, y: 120.0),
           },
           physicalOutputPositions: {},
+          es5InputPositions: {},
           algorithmPositions: {
             'algo_0': const NodePosition(x: 400.0, y: 180.0),
           },

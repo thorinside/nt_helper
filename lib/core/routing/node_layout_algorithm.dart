@@ -45,6 +45,7 @@ class ConnectionOverlap {
 class LayoutResult {
   final Map<String, NodePosition> physicalInputPositions;
   final Map<String, NodePosition> physicalOutputPositions;
+  final Map<String, NodePosition> es5InputPositions;
   final Map<String, NodePosition> algorithmPositions;
   final List<ConnectionOverlap> reducedOverlaps;
   final double totalOverlapReduction;
@@ -52,6 +53,7 @@ class LayoutResult {
   const LayoutResult({
     required this.physicalInputPositions,
     required this.physicalOutputPositions,
+    required this.es5InputPositions,
     required this.algorithmPositions,
     required this.reducedOverlaps,
     required this.totalOverlapReduction,
@@ -77,12 +79,14 @@ class NodeLayoutAlgorithm {
   LayoutResult calculateLayout({
     required List<Port> physicalInputs,
     required List<Port> physicalOutputs,
+    List<Port> es5Inputs = const [],
     required List<RoutingAlgorithm> algorithms,
     required List<Connection> connections,
   }) {
     debugPrint('[NodeLayoutAlgorithm] Starting layout calculation');
     debugPrint('  Physical inputs: ${physicalInputs.length}');
     debugPrint('  Physical outputs: ${physicalOutputs.length}');
+    debugPrint('  ES-5 inputs: ${es5Inputs.length}');
     debugPrint('  Algorithms: ${algorithms.length}');
     debugPrint('  Connections: ${connections.length}');
 
@@ -131,10 +135,16 @@ class NodeLayoutAlgorithm {
           sortedAlgorithms,
         );
 
+    final es5InputPositions = _positionEs5InputsRelativeToAlgorithms(
+      es5Inputs,
+      algorithmPositions,
+    );
+
     // Step 6: Detect remaining overlaps after optimization
     final allPositions = {
       ...physicalInputPositions,
       ...physicalOutputPositions,
+      ...es5InputPositions,
       ...algorithmPositions,
     };
 
@@ -150,6 +160,7 @@ class NodeLayoutAlgorithm {
     return LayoutResult(
       physicalInputPositions: physicalInputPositions,
       physicalOutputPositions: physicalOutputPositions,
+      es5InputPositions: es5InputPositions,
       algorithmPositions: algorithmPositions,
       reducedOverlaps: overlapsAfterOptimization,
       totalOverlapReduction: _calculateOverlapReduction(
@@ -214,6 +225,62 @@ class NodeLayoutAlgorithm {
       '[NodeLayout] Physical inputs positioned at x=$x, y=$y (left of algorithms with 1 grid gap)',
     );
     debugPrint('[NodeLayout] Physical inputs height: $physicalNodeHeight px');
+
+    return positions;
+  }
+
+  /// Position ES-5 input node below physical inputs
+  Map<String, NodePosition> _positionEs5InputsRelativeToAlgorithms(
+    List<Port> es5Inputs,
+    Map<String, NodePosition> algorithmPositions,
+  ) {
+    final positions = <String, NodePosition>{};
+
+    if (es5Inputs.isEmpty || algorithmPositions.isEmpty) return positions;
+
+    const double gridSize = 50.0;
+    const double physicalNodeWidthInGrids = 3.0;
+    const double gapInGrids = 1.0;
+    const double verticalGapBetweenNodes = 100.0; // Gap between physical inputs and ES-5
+
+    // Calculate algorithm bounding box
+    double minX = double.infinity;
+    double maxX = double.negativeInfinity;
+    double minY = double.infinity;
+    double maxY = double.negativeInfinity;
+
+    for (final pos in algorithmPositions.values) {
+      if (pos.x < minX) minX = pos.x;
+      if (pos.x > maxX) maxX = pos.x;
+      if (pos.y < minY) minY = pos.y;
+      if (pos.y > maxY) maxY = pos.y;
+    }
+
+    maxY += 3.0 * gridSize;
+
+    // Calculate height of ES-5 inputs node
+    final es5NodeHeight = (es5Inputs.length * 30.0 + 60.0);
+
+    // Position ES-5 inputs at same X as physical inputs (left side)
+    final x =
+        ((minX - (physicalNodeWidthInGrids + gapInGrids) * gridSize) / gridSize)
+            .round() *
+        gridSize;
+
+    // Position below physical inputs
+    // Estimate physical inputs height and add gap
+    final physicalInputsEstimatedHeight = 12 * 30.0 + 60.0; // 12 inputs typical
+    final algorithmCenterY = (minY + maxY) / 2;
+    final physicalInputsY = algorithmCenterY - physicalInputsEstimatedHeight / 2;
+
+    final y = ((physicalInputsY + physicalInputsEstimatedHeight + verticalGapBetweenNodes) / gridSize).round() * gridSize;
+
+    positions['es5_inputs'] = NodePosition(x: x, y: y);
+
+    debugPrint(
+      '[NodeLayout] ES-5 inputs positioned at x=$x, y=$y (below physical inputs)',
+    );
+    debugPrint('[NodeLayout] ES-5 inputs height: $es5NodeHeight px');
 
     return positions;
   }
