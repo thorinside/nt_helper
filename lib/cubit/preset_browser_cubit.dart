@@ -36,7 +36,12 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       }
 
       if (listing != null) {
-        final sortedEntries = _sortEntries(listing.entries, false);
+        final sortedEntries = _sortEntries(
+          listing.entries,
+          false,
+          currentPath: rootPath,
+          addParentEntry: true, // Add ".." in left panel
+        );
         _directoryCache[rootPath] = sortedEntries;
 
         emit(
@@ -79,6 +84,16 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
         if (!entry.isDirectory) return;
 
         try {
+          // Handle parent directory navigation
+          if (entry.name == '..') {
+            final parentPath = _getParentPath(currentState.currentPath);
+            if (parentPath != null) {
+              // Navigate to parent directory
+              await _navigateToPath(parentPath, currentState);
+            }
+            return;
+          }
+
           final path = _buildPath(currentState.currentPath, entry.name, panel);
 
           // Check cache first
@@ -88,7 +103,12 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             // Load from device
             final listing = await midiManager.requestDirectoryListing(path);
             if (listing != null) {
-              entries = _sortEntries(listing.entries, currentState.sortByDate);
+              // Don't add ".." in center/right panels
+              entries = _sortEntries(
+                listing.entries,
+                currentState.sortByDate,
+                currentPath: path,
+              );
               _directoryCache[path] = entries;
             } else {
               entries = [];
@@ -142,20 +162,35 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
       loaded: (currentState) {
         final newSortByDate = !currentState.sortByDate;
 
+        // Filter out ".." before re-sorting, then re-add it
+        final leftFiltered = currentState.leftPanelItems
+            .where((e) => e.name != '..')
+            .toList();
+        final centerFiltered = currentState.centerPanelItems
+            .where((e) => e.name != '..')
+            .toList();
+        final rightFiltered = currentState.rightPanelItems
+            .where((e) => e.name != '..')
+            .toList();
+
         emit(
           currentState.copyWith(
             sortByDate: newSortByDate,
             leftPanelItems: _sortEntries(
-              currentState.leftPanelItems,
+              leftFiltered,
               newSortByDate,
+              currentPath: currentState.currentPath,
+              addParentEntry: true, // Only left panel gets ".."
             ),
             centerPanelItems: _sortEntries(
-              currentState.centerPanelItems,
+              centerFiltered,
               newSortByDate,
+              currentPath: currentState.currentPath,
             ),
             rightPanelItems: _sortEntries(
-              currentState.rightPanelItems,
+              rightFiltered,
               newSortByDate,
+              currentPath: currentState.currentPath,
             ),
           ),
         );
@@ -182,7 +217,12 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
               previousPath,
             );
             if (listing != null) {
-              entries = _sortEntries(listing.entries, currentState.sortByDate);
+              entries = _sortEntries(
+                listing.entries,
+                currentState.sortByDate,
+                currentPath: previousPath,
+                addParentEntry: true, // Add ".." in left panel
+              );
               _directoryCache[previousPath] = entries;
             } else {
               entries = [];
@@ -241,7 +281,12 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
   // Helper methods
 
-  List<DirectoryEntry> _sortEntries(List<DirectoryEntry> entries, bool byDate) {
+  List<DirectoryEntry> _sortEntries(
+    List<DirectoryEntry> entries,
+    bool byDate, {
+    String? currentPath,
+    bool addParentEntry = false,
+  }) {
     final sorted = List<DirectoryEntry>.from(entries);
 
     if (byDate) {
@@ -270,6 +315,18 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             : b.name;
         return aName.toLowerCase().compareTo(bName.toLowerCase());
       });
+    }
+
+    // Add synthetic ".." parent directory entry only for left panel
+    if (addParentEntry && currentPath != null && currentPath != '/') {
+      final parentEntry = DirectoryEntry(
+        name: '..',
+        attributes: 0x10, // Directory attribute
+        date: 0,
+        time: 0,
+        size: 0,
+      );
+      sorted.insert(0, parentEntry);
     }
 
     return sorted;
@@ -454,12 +511,21 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
         try {
           final currentDrillPath = currentState.drillPath ?? currentState.currentPath;
-          final cleanName = entry.name.endsWith('/')
-              ? entry.name.substring(0, entry.name.length - 1)
-              : entry.name;
-          final newPath = currentDrillPath.endsWith('/')
-              ? '$currentDrillPath$cleanName'
-              : '$currentDrillPath/$cleanName';
+
+          // Handle parent directory navigation
+          String newPath;
+          if (entry.name == '..') {
+            final parentPath = _getParentPath(currentDrillPath);
+            if (parentPath == null) return; // Already at root
+            newPath = parentPath;
+          } else {
+            final cleanName = entry.name.endsWith('/')
+                ? entry.name.substring(0, entry.name.length - 1)
+                : entry.name;
+            newPath = currentDrillPath.endsWith('/')
+                ? '$currentDrillPath$cleanName'
+                : '$currentDrillPath/$cleanName';
+          }
 
           // Check cache first
           List<DirectoryEntry>? entries = _directoryCache[newPath];
@@ -468,7 +534,12 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             // Load from device
             final listing = await midiManager.requestDirectoryListing(newPath);
             if (listing != null) {
-              entries = _sortEntries(listing.entries, currentState.sortByDate);
+              entries = _sortEntries(
+                listing.entries,
+                currentState.sortByDate,
+                currentPath: newPath,
+                addParentEntry: true, // Add ".." in mobile drill-down
+              );
               _directoryCache[newPath] = entries;
             } else {
               entries = [];
@@ -514,7 +585,12 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
             // Load from device
             final listing = await midiManager.requestDirectoryListing(newPath);
             if (listing != null) {
-              entries = _sortEntries(listing.entries, currentState.sortByDate);
+              entries = _sortEntries(
+                listing.entries,
+                currentState.sortByDate,
+                currentPath: newPath,
+                addParentEntry: true, // Add ".." in mobile drill-down
+              );
               _directoryCache[newPath] = entries;
             } else {
               entries = [];
@@ -569,5 +645,66 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
 
     final segments = path.split('/').where((s) => s.isNotEmpty).toList();
     return segments;
+  }
+
+  String? _getParentPath(String currentPath) {
+    if (currentPath == '/') return null;
+
+    final segments = currentPath.split('/').where((s) => s.isNotEmpty).toList();
+    if (segments.isEmpty) return '/';
+    if (segments.length == 1) return '/';
+
+    segments.removeLast();
+    return '/${segments.join('/')}';
+  }
+
+  Future<void> _navigateToPath(String path, dynamic currentState) async {
+    try {
+      // Check cache first
+      List<DirectoryEntry>? entries = _directoryCache[path];
+
+      if (entries == null) {
+        // Load from device
+        final listing = await midiManager.requestDirectoryListing(path);
+        if (listing != null) {
+          entries = _sortEntries(
+            listing.entries,
+            currentState.sortByDate,
+            currentPath: path,
+            addParentEntry: true, // Add ".." in left panel
+          );
+          _directoryCache[path] = entries;
+        } else {
+          entries = [];
+        }
+      }
+
+      emit(
+        PresetBrowserState.loaded(
+          currentPath: path,
+          leftPanelItems: entries,
+          centerPanelItems: const [],
+          rightPanelItems: const [],
+          selectedLeftItem: null,
+          selectedCenterItem: null,
+          selectedRightItem: null,
+          navigationHistory: [],
+          sortByDate: currentState.sortByDate,
+          directoryCache: Map.from(_directoryCache),
+          // Mobile fields
+          drillPath: path,
+          breadcrumbs: _getBreadcrumbsFromPath(path),
+          currentDrillItems: entries,
+          selectedDrillItem: null,
+        ),
+      );
+    } catch (e) {
+      emit(
+        PresetBrowserState.error(
+          message: 'Error navigating to path: $e',
+          lastPath: currentState.currentPath,
+        ),
+      );
+    }
   }
 }

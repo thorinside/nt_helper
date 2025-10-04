@@ -126,16 +126,21 @@ class MobileDrillDownNavigator extends StatelessWidget {
 
                       final isJsonPreset =
                           !item.isDirectory && item.name.toLowerCase().endsWith('.json');
+                      final isParentDir = item.name == '..';
 
                       return ListTile(
                         leading: Icon(
-                          item.isDirectory
+                          isParentDir
+                              ? Icons.folder_open
+                              : item.isDirectory
                               ? Icons.folder
                               : isJsonPreset
                                   ? Icons.music_note
                                   : Icons.insert_drive_file,
                           size: 28,
-                          color: item.isDirectory
+                          color: isParentDir
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+                              : item.isDirectory
                               ? Theme.of(context).colorScheme.primary
                               : isJsonPreset
                                   ? Theme.of(context).colorScheme.tertiary
