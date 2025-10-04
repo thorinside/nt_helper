@@ -72,6 +72,38 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         .toList();
   }
 
+  // Get color for page badge
+  Color _getPageColor(int pageIndex) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+    ];
+    return colors[(pageIndex - 1) % colors.length];
+  }
+
+  // Build colored page badge for navigation rail
+  Widget _buildPageBadge(int pageIndex) {
+    final color = _getPageColor(pageIndex);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'P$pageIndex',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -231,11 +263,11 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       _selectedPageIndex = populatedPages[index];
                     });
                   },
-                  labelType: NavigationRailLabelType.all,
+                  labelType: NavigationRailLabelType.none,
                   destinations: populatedPages.map((pageIndex) {
                     return NavigationRailDestination(
-                      icon: const Icon(Icons.music_note),
-                      label: Text('Page $pageIndex'),
+                      icon: _buildPageBadge(pageIndex),
+                      label: const Text(''),
                     );
                   }).toList(),
                 ),

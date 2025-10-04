@@ -230,16 +230,16 @@ void main() {
       // Should show NavigationRail
       expect(find.byType(NavigationRail), findsOneWidget);
 
-      // Should show two pages in navigation rail
-      expect(find.text('Page 1'), findsOneWidget);
-      expect(find.text('Page 2'), findsOneWidget);
+      // Should show two pages in navigation rail (as badges P1, P2)
+      expect(find.text('P1'), findsOneWidget);
+      expect(find.text('P2'), findsOneWidget);
 
       // Should show only Param 1 initially (first page selected)
       expect(find.text('Param 1'), findsOneWidget);
       expect(find.text('Param 2'), findsNothing);
 
-      // Tap Page 2
-      await tester.tap(find.text('Page 2'));
+      // Tap P2 badge
+      await tester.tap(find.text('P2'));
       await tester.pumpAndSettle();
 
       // Should now show only Param 2
@@ -339,9 +339,9 @@ void main() {
       // Should show assigned parameter
       expect(find.text('Page 1 Param'), findsOneWidget);
 
-      // NavigationRail should be present with single page
+      // NavigationRail should be present with single page (as badge P1)
       expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('P1'), findsOneWidget);
     });
 
     testWidgets('handles multiple parameters on same page', (tester) async {
@@ -398,9 +398,9 @@ void main() {
       expect(find.text('Algo 1'), findsOneWidget);
       expect(find.text('Algo 2'), findsOneWidget);
 
-      // Should have NavigationRail with Page 1 only
+      // Should have NavigationRail with Page 1 only (as badge P1)
       expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('P1'), findsOneWidget);
     });
 
     testWidgets('displays polling controls', (tester) async {
