@@ -320,11 +320,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         _showFeedback('Capture unavailable');
         return;
       }
-      // Scale output to approximately the visible viewport size to keep
-      // clipboard images small and avoid platform limits.
-      final double scaleX = widget.canvasSize.width / _canvasWidth;
-      final double scaleY = widget.canvasSize.height / _canvasHeight;
-      final double pixelRatio = (math.min(scaleX, scaleY)).clamp(0.2, 1.0);
+      // Capture at device pixel ratio for consistent high quality output
+      // regardless of zoom level
+      final double pixelRatio = MediaQuery.of(context).devicePixelRatio;
       final ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
@@ -510,8 +508,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
         return;
       }
 
-      // Capture full canvas at 1x for compositing
-      final ui.Image full = await boundary.toImage(pixelRatio: 1.0);
+      // Capture full canvas at device pixel ratio for high quality output
+      final dpr = MediaQuery.of(context).devicePixelRatio;
+      final ui.Image full = await boundary.toImage(pixelRatio: dpr);
 
       // Compute tight content bounds from node positions
       if (_nodePositions.isEmpty) {
@@ -535,15 +534,15 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
       const double pad = 60.0;
       final src = Rect.fromLTWH(
-        (minX - pad).clamp(0.0, _canvasWidth),
-        (minY - pad).clamp(0.0, _canvasHeight),
-        (maxX - minX + 2 * pad).clamp(1.0, _canvasWidth),
-        (maxY - minY + 2 * pad).clamp(1.0, _canvasHeight),
+        ((minX - pad).clamp(0.0, _canvasWidth)) * dpr,
+        ((minY - pad).clamp(0.0, _canvasHeight)) * dpr,
+        ((maxX - minX + 2 * pad).clamp(1.0, _canvasWidth)) * dpr,
+        ((maxY - minY + 2 * pad).clamp(1.0, _canvasHeight)) * dpr,
       );
 
-      // Target size: viewport
-      final int outW = widget.canvasSize.width.round();
-      final int outH = widget.canvasSize.height.round();
+      // Target size: viewport at device pixel ratio for high quality
+      final int outW = (widget.canvasSize.width * dpr).round();
+      final int outH = (widget.canvasSize.height * dpr).round();
 
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
