@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/core/routing/models/connection.dart';
 
 /// Helper function to create a test Slot with minimal required parameters
 Slot createTestSlot({
@@ -101,6 +102,54 @@ void main() {
       final slots = <Slot>[];
 
       expect(cubit.shouldShowEs5Node(slots), isFalse);
+    });
+  });
+
+  group('RoutingEditorCubit ES-5 L/R Connection Support', () {
+    late RoutingEditorCubit cubit;
+
+    setUp(() {
+      cubit = RoutingEditorCubit(null);
+    });
+
+    tearDown(() {
+      cubit.close();
+    });
+
+    test('_determineConnectionType recognizes es5_L as hardwareOutput', () {
+      final connectionType = cubit.testDetermineConnectionType(
+        'algo_usbf_1_usb_ch1',
+        'es5_L',
+      );
+
+      expect(connectionType, ConnectionType.hardwareOutput);
+    });
+
+    test('_determineConnectionType recognizes es5_R as hardwareOutput', () {
+      final connectionType = cubit.testDetermineConnectionType(
+        'algo_usbf_1_usb_ch1',
+        'es5_R',
+      );
+
+      expect(connectionType, ConnectionType.hardwareOutput);
+    });
+
+    test('_determineConnectionType still recognizes hw_out_ as hardwareOutput', () {
+      final connectionType = cubit.testDetermineConnectionType(
+        'algo_usbf_1_usb_ch1',
+        'hw_out_1',
+      );
+
+      expect(connectionType, ConnectionType.hardwareOutput);
+    });
+
+    test('_determineConnectionType recognizes algorithm to algorithm', () {
+      final connectionType = cubit.testDetermineConnectionType(
+        'algo_usbf_1_usb_ch1',
+        'algo_adsr_1_input',
+      );
+
+      expect(connectionType, ConnectionType.algorithmToAlgorithm);
     });
   });
 }

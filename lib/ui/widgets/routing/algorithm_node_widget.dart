@@ -38,6 +38,8 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // Port IDs aligned with labels, used for accurate connection anchors
   final List<String>? inputPortIds;
   final List<String>? outputPortIds;
+  // Channel numbers aligned with output labels (for ES-5 toggle support)
+  final List<int>? outputChannelNumbers;
   // Set of port IDs that are currently connected
   final Set<String>? connectedPorts;
   // Set of output port IDs that are shadowed (red dot indicator)
@@ -60,6 +62,14 @@ class AlgorithmNodeWidget extends StatefulWidget {
   // ID of the port that should be highlighted (during drag operations)
   final String? highlightedPortId;
 
+  // ES-5 direct output support (for Clock/Euclidean algorithms)
+  // Map of channel number to ES-5 Expander enabled state
+  final Map<int, bool>? es5ChannelToggles;
+  // Map of channel number to ES-5 Expander parameter number
+  final Map<int, int>? es5ExpanderParameterNumbers;
+  // Callback when ES-5 toggle is changed
+  final void Function(int channel, bool enabled)? onEs5ToggleChanged;
+
   const AlgorithmNodeWidget({
     super.key,
     required this.algorithmName,
@@ -78,6 +88,7 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.outputLabels = const [],
     this.inputPortIds,
     this.outputPortIds,
+    this.outputChannelNumbers,
     this.connectedPorts,
     this.shadowedPortIds,
     this.onPortPositionResolved,
@@ -87,6 +98,9 @@ class AlgorithmNodeWidget extends StatefulWidget {
     this.onPortDragUpdate,
     this.onPortDragEnd,
     this.highlightedPortId,
+    this.es5ChannelToggles,
+    this.es5ExpanderParameterNumbers,
+    this.onEs5ToggleChanged,
   });
 
   @override
@@ -366,6 +380,11 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                         index < widget.outputPortIds!.length)
                     ? widget.outputPortIds![index]
                     : null,
+                channelNumber:
+                    (widget.outputChannelNumbers != null &&
+                        index < widget.outputChannelNumbers!.length)
+                    ? widget.outputChannelNumbers![index]
+                    : null,
               ),
             ),
           ),
@@ -379,6 +398,7 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
     String label,
     bool isInput, {
     String? portId,
+    int? channelNumber,
   }) {
     final isConnected =
         portId != null && (widget.connectedPorts?.contains(portId) ?? false);
@@ -387,7 +407,15 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         portId != null &&
         (widget.shadowedPortIds?.contains(portId) ?? false);
 
-    return PortWidget(
+    // Check if this output port has an ES-5 toggle
+    final hasEs5Toggle = !isInput &&
+        channelNumber != null &&
+        widget.es5ChannelToggles != null &&
+        widget.es5ChannelToggles!.containsKey(channelNumber);
+
+    final isEs5Enabled = hasEs5Toggle && (widget.es5ChannelToggles![channelNumber] ?? false);
+
+    Widget portWidget = PortWidget(
       label: label,
       isInput: isInput,
       portId: portId,
@@ -413,6 +441,38 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
           ? (position) => widget.onPortDragEnd!(portId, position)
           : null,
     );
+
+    // If this port has an ES-5 toggle, wrap it with the toggle button
+    if (hasEs5Toggle) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ES-5 toggle button
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              iconSize: 16,
+              tooltip: isEs5Enabled ? 'ES-5 Mode: On' : 'ES-5 Mode: Off',
+              icon: Icon(
+                Icons.output,
+                color: isEs5Enabled
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withAlpha(128),
+              ),
+              onPressed: widget.onEs5ToggleChanged != null
+                  ? () => widget.onEs5ToggleChanged!(channelNumber, !isEs5Enabled)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 4),
+          portWidget,
+        ],
+      );
+    }
+
+    return portWidget;
   }
 
   String _truncateWithEllipsis(String text, int maxChars) {

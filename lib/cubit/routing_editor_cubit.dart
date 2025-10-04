@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
 import 'package:nt_helper/core/routing/algorithm_routing.dart' as core_routing;
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
@@ -629,18 +630,50 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     String hardwareOutputPortId,
     RoutingEditorStateLoaded state,
   ) async {
-    // Hardware outputs use buses 13-20
-    final hardwareOutputNumber = int.tryParse(
-      hardwareOutputPortId.replaceAll('hw_out_', ''),
-    );
-    if (hardwareOutputNumber == null ||
-        hardwareOutputNumber < 1 ||
-        hardwareOutputNumber > 8) {
-      debugPrint('Invalid hardware output port: $hardwareOutputPortId');
-      return null;
-    }
+    int? busNumber;
 
-    final busNumber = 12 + hardwareOutputNumber; // Bus 13 for hw_out_1, etc.
+    // Check for ES-5 L/R ports first
+    if (hardwareOutputPortId == 'es5_L') {
+      busNumber = 29; // ES-5 L
+      debugPrint('Assigning bus 29 for ES-5 L');
+    } else if (hardwareOutputPortId == 'es5_R') {
+      busNumber = 30; // ES-5 R
+      debugPrint('Assigning bus 30 for ES-5 R');
+    } else if (hardwareOutputPortId.startsWith('es5_') && hardwareOutputPortId.length == 5) {
+      // ES-5 direct output ports (es5_1 through es5_8)
+      final es5PortNumber = int.tryParse(hardwareOutputPortId.substring(4));
+      if (es5PortNumber != null && es5PortNumber >= 1 && es5PortNumber <= 8) {
+        // Check if this is ES-5 Encoder output (busParam = 'es5_encoder_mirror')
+        if (algorithmOutputPort.busParam == 'es5_encoder_mirror') {
+          return await _assignEs5EncoderOutput(
+            algorithmOutputPort,
+            es5PortNumber,
+            state,
+          );
+        }
+        // Otherwise it's Clock/Euclidean ES-5 direct output
+        return await _assignEs5DirectOutput(
+          algorithmOutputPort,
+          es5PortNumber,
+          state,
+        );
+      }
+      debugPrint('Invalid ES-5 port: $hardwareOutputPortId');
+      return null;
+    } else {
+      // Hardware outputs use buses 13-20
+      final hardwareOutputNumber = int.tryParse(
+        hardwareOutputPortId.replaceAll('hw_out_', ''),
+      );
+      if (hardwareOutputNumber == null ||
+          hardwareOutputNumber < 1 ||
+          hardwareOutputNumber > 8) {
+        debugPrint('Invalid hardware output port: $hardwareOutputPortId');
+        return null;
+      }
+
+      busNumber = 12 + hardwareOutputNumber; // Bus 13 for hw_out_1, etc.
+    }
 
     // Find the algorithm that owns this output port and update its parameter
     if (algorithmOutputPort.parameterNumber != null) {
@@ -666,6 +699,142 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       'Could not find algorithm for output port: ${algorithmOutputPort.id}',
     );
     return null;
+  }
+
+  /// Assign ES-5 direct output for Clock/Euclidean algorithms.
+  ///
+  /// Sets the ES-5 Output parameter for the channel to route to the specified ES-5 port (1-8).
+  Future<int?> _assignEs5DirectOutput(
+    Port algorithmOutputPort,
+    int es5PortNumber,
+    RoutingEditorStateLoaded state,
+  ) async {
+    final algorithmIndex = _findAlgorithmIndexForPort(
+      state,
+      algorithmOutputPort.id,
+    );
+    if (algorithmIndex == null) {
+      debugPrint('Could not find algorithm for port: ${algorithmOutputPort.id}');
+      return null;
+    }
+
+    // Get the slot from DistingCubit
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) {
+      debugPrint('Cannot assign ES-5 direct output - Disting not synchronized');
+      return null;
+    }
+
+    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+      debugPrint('Algorithm index out of range: $algorithmIndex');
+      return null;
+    }
+
+    final slot = distingState.slots[algorithmIndex];
+
+    // Extract channel number from port ID (format: {uuid}_channel_{N}_es5_output or similar)
+    final channelMatch = RegExp(r'_channel_(\d+)_').firstMatch(algorithmOutputPort.id);
+    if (channelMatch == null) {
+      debugPrint('Could not extract channel number from port ID: ${algorithmOutputPort.id}');
+      return null;
+    }
+
+    final channel = int.parse(channelMatch.group(1)!);
+
+    // Find the ES-5 Output parameter for this channel
+    final es5OutputParamName = '$channel:ES-5 Output';
+    final es5OutputParam = slot.parameters.firstWhere(
+      (p) => p.name == es5OutputParamName,
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    if (es5OutputParam.parameterNumber < 0) {
+      debugPrint('ES-5 Output parameter not found for channel $channel');
+      return null;
+    }
+
+    // Set the ES-5 Output parameter to the target ES-5 port number
+    debugPrint(
+      'Setting ES-5 Output for algorithm $algorithmIndex, channel $channel, parameter ${es5OutputParam.parameterNumber} to ES-5 port $es5PortNumber',
+    );
+    await _distingCubit!.updateParameterValue(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: es5OutputParam.parameterNumber,
+      value: es5PortNumber,
+      userIsChangingTheValue: false,
+    );
+
+    // Return a dummy bus number to indicate success
+    // The actual connection will be discovered via ConnectionDiscoveryService
+    return 1; // Non-null indicates success
+  }
+
+  /// Assign ES-5 Encoder output for dragged connections.
+  ///
+  /// Sets the Output parameter for the channel to route to the specified ES-5 port (1-8).
+  Future<int?> _assignEs5EncoderOutput(
+    Port algorithmOutputPort,
+    int es5PortNumber,
+    RoutingEditorStateLoaded state,
+  ) async {
+    final algorithmIndex = _findAlgorithmIndexForPort(
+      state,
+      algorithmOutputPort.id,
+    );
+    if (algorithmIndex == null) {
+      debugPrint('Could not find algorithm for port: ${algorithmOutputPort.id}');
+      return null;
+    }
+
+    // Get the slot from DistingCubit
+    final distingState = _distingCubit?.state;
+    if (distingState is! DistingStateSynchronized) {
+      debugPrint('Cannot assign ES-5 Encoder output - Disting not synchronized');
+      return null;
+    }
+
+    if (algorithmIndex < 0 || algorithmIndex >= distingState.slots.length) {
+      debugPrint('Algorithm index out of range: $algorithmIndex');
+      return null;
+    }
+
+    final slot = distingState.slots[algorithmIndex];
+
+    // Extract channel number from port ID (format: {uuid}_channel_{N}_output)
+    final channelMatch = RegExp(r'_channel_(\d+)_output').firstMatch(algorithmOutputPort.id);
+    if (channelMatch == null) {
+      debugPrint('Could not extract channel number from port ID: ${algorithmOutputPort.id}');
+      return null;
+    }
+
+    final channel = int.parse(channelMatch.group(1)!);
+
+    // Find the Output parameter for this channel (format: "N:Output")
+    final outputParamName = '$channel:Output';
+    final outputParam = slot.parameters.firstWhere(
+      (p) => p.name == outputParamName,
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    if (outputParam.parameterNumber < 0) {
+      debugPrint('Output parameter not found for channel $channel');
+      return null;
+    }
+
+    // Set the Output parameter to the target ES-5 port number
+    debugPrint(
+      'Setting ES-5 Encoder Output for algorithm $algorithmIndex, channel $channel, parameter ${outputParam.parameterNumber} to ES-5 port $es5PortNumber',
+    );
+    await _distingCubit!.updateParameterValue(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: outputParam.parameterNumber,
+      value: es5PortNumber,
+      userIsChangingTheValue: false,
+    );
+
+    // Return a dummy bus number to indicate success
+    // The actual connection will be discovered via ConnectionDiscoveryService
+    return 1; // Non-null indicates success
   }
 
   /// Assign bus for algorithm-to-algorithm connection using aux buses
@@ -1147,14 +1316,24 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
   ) {
     final isSourceHardware = sourcePortId.startsWith('hw_in_');
     final isTargetHardware = targetPortId.startsWith('hw_out_');
+    final isTargetEs5 = targetPortId.startsWith('es5_');
 
     if (isSourceHardware) {
       return ConnectionType.hardwareInput;
-    } else if (isTargetHardware) {
+    } else if (isTargetHardware || isTargetEs5) {
       return ConnectionType.hardwareOutput;
     } else {
       return ConnectionType.algorithmToAlgorithm;
     }
+  }
+
+  /// Test helper method to expose _determineConnectionType for testing
+  @visibleForTesting
+  ConnectionType testDetermineConnectionType(
+    String sourcePortId,
+    String targetPortId,
+  ) {
+    return _determineConnectionType(sourcePortId, targetPortId);
   }
 
   /// Helper method to find existing connection between two ports
@@ -2087,8 +2266,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       // 1. If target is a physical output: Clear the SOURCE output bus (physical outputs don't have parameters)
       // 2. Otherwise: Clear only the TARGET input bus (preserves multi-connections from outputs)
 
-      if (connection.destinationPortId.startsWith('hw_out_')) {
-        // Target is physical output - clear the SOURCE output bus
+      if (connection.destinationPortId.startsWith('hw_out_') ||
+          connection.destinationPortId.startsWith('es5_')) {
+        // Target is physical output (hardware or ES-5) - clear the SOURCE output bus
         if (sourcePort.parameterNumber != null &&
             !connection.sourcePortId.startsWith('hw_')) {
           // Find which algorithm this port belongs to

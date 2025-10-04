@@ -174,11 +174,16 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
   /// Generates output ports for the ES-5 Encoder.
   ///
   /// Each enabled input channel creates a corresponding output port that mirrors
-  /// to the physical ES-5 expander output. This creates the visual flow:
-  /// Input Bus → ES-5 Encoder → ES-5 Port
+  /// to the physical ES-5 expander output based on the Output parameter (1-8).
+  /// This creates the visual flow: Input Bus → ES-5 Encoder → ES-5 Port
   @override
   List<Port> generateOutputPorts() {
     final ports = <Port>[];
+
+    // Find all channel pages to access Output parameter values
+    final channelPages = slot.pages.pages
+        .where((page) => page.name.startsWith('Channel '))
+        .toList();
 
     // inputPorts already contains only enabled channels
     for (final inputPort in inputPorts) {
@@ -188,18 +193,43 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
       if (channelMatch != null) {
         final channelNumber = int.parse(channelMatch.group(1)!);
 
+        // Find the channel page for this channel to get Output parameter
+        final channelPage = channelPages.firstWhere(
+          (page) => page.name == 'Channel $channelNumber',
+          orElse: () => throw StateError(
+              'No channel page found for channel $channelNumber'),
+        );
+
+        // Get the Output parameter number (index 3: Enable, Input, Expander, Output)
+        final outputParamNum =
+            channelPage.parameters.length >= 4 ? channelPage.parameters[3] : -1;
+
+        // Read the Output parameter value (1-8) - defaults to channel number
+        final outputValue = outputParamNum >= 0
+            ? slot.values
+                .firstWhere(
+                  (v) => v.parameterNumber == outputParamNum,
+                  orElse: () => ParameterValue(
+                    algorithmIndex: 0,
+                    parameterNumber: outputParamNum,
+                    value: channelNumber,
+                  ),
+                )
+                .value
+            : channelNumber;
+
         ports.add(Port(
           id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_output',
-          name: 'To ES-5 $channelNumber',
+          name: 'To ES-5 $outputValue',
           type: PortType.gate,
           direction: PortDirection.output,
-          description: 'Mirror to ES-5 Output $channelNumber',
-          channelNumber: channelNumber,
+          description: 'Channel $channelNumber → ES-5 Output $outputValue',
+          channelNumber: outputValue, // FIX: Use Output parameter value
           busParam: mirrorBusParam, // Special marker for connection discovery
         ));
 
         debugPrint(
-          'ES5EncoderAlgorithmRouting: Created output port for Channel $channelNumber',
+          'ES5EncoderAlgorithmRouting: Created output port for Channel $channelNumber → ES-5 Port $outputValue',
         );
       }
     }

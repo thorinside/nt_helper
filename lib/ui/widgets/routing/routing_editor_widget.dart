@@ -15,8 +15,9 @@ import 'package:nt_helper/core/platform/platform_interaction_service.dart';
 import 'package:nt_helper/core/routing/models/connection.dart';
 import 'package:nt_helper/core/routing/models/port.dart';
 import 'package:nt_helper/cubit/disting_cubit.dart';
-import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/cubit/routing_editor_state.dart';
+import 'package:nt_helper/domain/disting_nt_sysex.dart';
+import 'package:nt_helper/cubit/routing_editor_cubit.dart';
 import 'package:nt_helper/core/routing/node_layout_algorithm.dart';
 import 'package:nt_helper/services/key_binding_service.dart';
 import 'package:nt_helper/services/zoom_hotkey_service.dart';
@@ -1346,6 +1347,9 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
       }
       final isSelected = _selectedNodes.contains(nodeId);
 
+      // Extract ES-5 toggle data if this is a Clock or Euclidean algorithm
+      final es5Data = _extractEs5ToggleData(algorithm);
+
       return Positioned(
         left: position.dx,
         top: position.dy,
@@ -1359,6 +1363,7 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           outputLabels: algorithm.outputPorts.map((p) => p.name).toList(),
           inputPortIds: algorithm.inputPorts.map((p) => p.id).toList(),
           outputPortIds: algorithm.outputPorts.map((p) => p.id).toList(),
+          outputChannelNumbers: es5Data?.channelNumbers,
           connectedPorts: _getConnectedPortIds(connections),
           shadowedPortIds: shadowedOutputPortIds,
           onPortPositionResolved: (portId, globalCenter, isInput) {
@@ -1414,6 +1419,16 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           onPortDragUpdate: _handleAlgorithmPortDragUpdate,
           onPortDragEnd: _handleAlgorithmPortDragEnd,
           highlightedPortId: _isDraggingConnection ? _highlightedPortId : null,
+          // ES-5 toggle support for Clock/Euclidean algorithms
+          es5ChannelToggles: es5Data?.toggles,
+          es5ExpanderParameterNumbers: es5Data?.parameterNumbers,
+          onEs5ToggleChanged: es5Data != null
+              ? (channel, enabled) => _handleEs5ToggleChange(
+                    algorithm.index,
+                    channel,
+                    enabled,
+                  )
+              : null,
           // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
         ),
       );
@@ -1484,6 +1499,128 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     }
 
     return result;
+  }
+
+  /// Extract ES-5 toggle data for Clock/Euclidean algorithms.
+  ///
+  /// Returns null if the algorithm doesn't support ES-5 direct output.
+  /// Returns maps of channel numbers to:
+  /// - ES-5 Expander enabled state (true if value > 0)
+  /// - ES-5 Expander parameter numbers
+  /// - Channel numbers (for port identification)
+  ({
+    Map<int, bool> toggles,
+    Map<int, int> parameterNumbers,
+    List<int> channelNumbers,
+  })? _extractEs5ToggleData(RoutingAlgorithm algorithm) {
+    // Check if this is a Clock or Euclidean algorithm
+    final guid = algorithm.algorithm.guid;
+    if (guid != 'clck' && guid != 'eucp') {
+      return null;
+    }
+
+    // Get the slot from DistingCubit
+    final cubit = context.read<DistingCubit>();
+    final state = cubit.state;
+    if (state is! DistingStateSynchronized) {
+      return null;
+    }
+
+    final slotIndex = algorithm.index;
+    if (slotIndex < 0 || slotIndex >= state.slots.length) {
+      return null;
+    }
+
+    final slot = state.slots[slotIndex];
+
+    // Extract ES-5 Expander parameters for each channel
+    final toggles = <int, bool>{};
+    final parameterNumbers = <int, int>{};
+    final channelNumbers = <int>[];
+
+    // Find all ES-5 Expander parameters (format: "N:ES-5 Expander")
+    for (final param in slot.parameters) {
+      final match = RegExp(r'^(\d+):ES-5 Expander$').firstMatch(param.name);
+      if (match != null) {
+        final channel = int.parse(match.group(1)!);
+
+        // Get the parameter value
+        final value = slot.values
+            .firstWhere(
+              (v) => v.parameterNumber == param.parameterNumber,
+              orElse: () => ParameterValue(
+                algorithmIndex: slotIndex,
+                parameterNumber: param.parameterNumber,
+                value: param.defaultValue,
+              ),
+            )
+            .value;
+
+        toggles[channel] = value > 0;
+        parameterNumbers[channel] = param.parameterNumber;
+        channelNumbers.add(channel);
+      }
+    }
+
+    if (channelNumbers.isEmpty) {
+      return null;
+    }
+
+    channelNumbers.sort();
+
+    return (
+      toggles: toggles,
+      parameterNumbers: parameterNumbers,
+      channelNumbers: channelNumbers,
+    );
+  }
+
+  /// Handle ES-5 toggle change for a channel.
+  Future<void> _handleEs5ToggleChange(
+    int algorithmIndex,
+    int channel,
+    bool enabled,
+  ) async {
+    debugPrint(
+      'ES-5 toggle changed: algorithm=$algorithmIndex, channel=$channel, enabled=$enabled',
+    );
+
+    final cubit = context.read<DistingCubit>();
+    final state = cubit.state;
+    if (state is! DistingStateSynchronized) {
+      return;
+    }
+
+    if (algorithmIndex < 0 || algorithmIndex >= state.slots.length) {
+      return;
+    }
+
+    final slot = state.slots[algorithmIndex];
+
+    // Find the ES-5 Expander parameter for this channel
+    final paramName = '$channel:ES-5 Expander';
+    final param = slot.parameters.firstWhere(
+      (p) => p.name == paramName,
+      orElse: () => ParameterInfo.filler(),
+    );
+
+    if (param.parameterNumber < 0) {
+      debugPrint('ES-5 Expander parameter not found for channel $channel');
+      return;
+    }
+
+    // Update the parameter: 0 = Off, 1 = Expander 1
+    final newValue = enabled ? 1 : 0;
+    await cubit.updateParameterValue(
+      algorithmIndex: algorithmIndex,
+      parameterNumber: param.parameterNumber,
+      value: newValue,
+      userIsChangingTheValue: false,
+    );
+
+    debugPrint(
+      'ES-5 Expander parameter updated: algorithm=$algorithmIndex, param=${param.parameterNumber}, value=$newValue',
+    );
   }
 
   Widget _buildUnifiedConnectionCanvas(List<Connection> connections) {
@@ -2608,6 +2745,11 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
 
     // Check physical outputs
     for (final port in routingState.physicalOutputs) {
+      checkPort(port);
+    }
+
+    // Check ES-5 ports
+    for (final port in routingState.es5Inputs) {
       checkPort(port);
     }
 
