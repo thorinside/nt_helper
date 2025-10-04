@@ -422,6 +422,114 @@ void main() {
           equals(const NodePosition(x: 300.0, y: 200.0)),
         );
       });
+
+      test('positions ES-5 input node when present', () async {
+        final physicalInputPorts = <Port>[
+          const Port(
+            id: 'hw_in_1',
+            name: 'Input 1',
+            direction: PortDirection.input,
+            type: PortType.audio,
+          ),
+        ];
+
+        final physicalOutputPorts = <Port>[
+          const Port(
+            id: 'hw_out_1',
+            name: 'Output 1',
+            direction: PortDirection.output,
+            type: PortType.audio,
+          ),
+        ];
+
+        final es5InputPorts = <Port>[
+          const Port(
+            id: 'es5_in_1',
+            name: 'ES-5 In 1',
+            direction: PortDirection.input,
+            type: PortType.cv,
+          ),
+        ];
+
+        final algorithmPorts = <Port>[
+          const Port(
+            id: 'algo_0_in_1',
+            name: 'Algo Input',
+            direction: PortDirection.input,
+            type: PortType.audio,
+          ),
+        ];
+
+        final loadedState = RoutingEditorStateLoaded(
+          physicalInputs: physicalInputPorts,
+          physicalOutputs: physicalOutputPorts,
+          es5Inputs: es5InputPorts,
+          algorithms: [
+            RoutingAlgorithm(
+              id: 'algo_0',
+              index: 0,
+              algorithm: Algorithm(
+                algorithmIndex: 0,
+                guid: 'test-guid',
+                name: 'Test Algorithm',
+              ),
+              inputPorts: algorithmPorts,
+              outputPorts: [],
+            ),
+          ],
+          connections: [],
+        );
+
+        cubit.emit(loadedState);
+
+        // Mock layout result with ES-5 position
+        final layoutResult = LayoutResult(
+          physicalInputPositions: {
+            'hw_in_1': const NodePosition(x: 50.0, y: 100.0),
+          },
+          physicalOutputPositions: {
+            'hw_out_1': const NodePosition(x: 750.0, y: 100.0),
+          },
+          es5InputPositions: {
+            'es5_inputs': const NodePosition(x: 50.0, y: 500.0),
+          },
+          algorithmPositions: {
+            'algo_0': const NodePosition(x: 400.0, y: 100.0),
+          },
+          reducedOverlaps: [],
+          totalOverlapReduction: 0.0,
+        );
+
+        when(
+          () => mockLayoutAlgorithm.calculateLayout(
+            physicalInputs: any(named: 'physicalInputs'),
+            physicalOutputs: any(named: 'physicalOutputs'),
+            es5Inputs: any(named: 'es5Inputs'),
+            algorithms: any(named: 'algorithms'),
+            connections: any(named: 'connections'),
+          ),
+        ).thenReturn(layoutResult);
+
+        await cubit.applyLayoutAlgorithm();
+
+        final updatedState = cubit.state as RoutingEditorStateLoaded;
+
+        // Verify ES-5 node position was applied
+        expect(
+          updatedState.nodePositions['es5_inputs'],
+          equals(const NodePosition(x: 50.0, y: 500.0)),
+        );
+
+        // Verify other positions were also applied
+        expect(
+          updatedState.nodePositions['hw_in_1'],
+          equals(const NodePosition(x: 50.0, y: 100.0)),
+        );
+        expect(
+          updatedState.nodePositions['algo_0'],
+          equals(const NodePosition(x: 400.0, y: 100.0)),
+        );
+      });
     });
   });
 }
