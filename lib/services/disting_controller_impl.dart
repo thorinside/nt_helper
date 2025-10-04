@@ -3,7 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterValue, ParameterEnumStrings;
+    show Algorithm, ParameterInfo, ParameterValue, ParameterEnumStrings, Mapping;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/models/cpu_usage.dart';
@@ -331,6 +331,28 @@ class DistingControllerImpl implements DistingController {
       return enums;
     } catch (e) {
       debugPrint('Error getting parameter enum strings: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<Mapping?> getParameterMapping(
+    int slotIndex,
+    int parameterNumber,
+  ) async {
+    try {
+      final state = _getSynchronizedState();
+      _validateParameterNumber(slotIndex, parameterNumber, state);
+
+      final slot = state.slots[slotIndex];
+
+      // Get mapping data for this parameter
+      if (parameterNumber >= 0 && parameterNumber < slot.mappings.length) {
+        return slot.mappings[parameterNumber];
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting parameter mapping: $e');
       return null;
     }
   }

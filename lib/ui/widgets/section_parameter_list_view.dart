@@ -324,7 +324,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         data: const ExpansionTileThemeData(
           shape: RoundedRectangleBorder(side: BorderSide.none),
         ),
-        child: Column(
+        child: ListView(
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
@@ -401,14 +401,11 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               child: _buildPerformanceParametersSection(),
             ),
             // Regular parameter pages
-            Expanded(
-              child: ListView.builder(
-                cacheExtent: double.infinity,
-                padding: const EdgeInsets.only(bottom: 24, left: 8, right: 8),
-                itemCount: widget.pages.pages.length,
-                itemBuilder: (context, index) {
-                  final page = widget.pages.pages.elementAt(index);
-                  return ExpansionTile(
+            ...widget.pages.pages.map((page) {
+              final index = widget.pages.pages.indexOf(page);
+              return Padding(
+                padding: const EdgeInsets.only(left: 8, right: 8),
+                child: ExpansionTile(
                     initiallyExpanded: !_isCollapsed,
                     controller: _tileControllers.elementAt(index),
                     title: Text(page.name),
@@ -459,10 +456,10 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                         unit: unit,
                       );
                     }).toList(),
-                  );
-                },
-              ),
-            ),
+                ),
+              );
+            }),
+            const SizedBox(height: 24), // Bottom padding
           ],
         ),
       ),

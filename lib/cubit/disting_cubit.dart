@@ -2283,13 +2283,12 @@ class DistingCubit extends Cubit<DistingState> {
     });
   }
 
-  List<MappedParameter> buildMappedParameterList([DistingState? providedState]) {
-    final stateToUse = providedState ?? state;
-    switch (stateToUse) {
-      case DistingStateSynchronized syncstate:
+  static List<MappedParameter> buildMappedParameterList(DistingState state) {
+    switch (state) {
+      case DistingStateSynchronized():
         // return a list of parameters that have performance page assignments
         // from the state.
-        return syncstate.slots.fold(
+        return state.slots.fold(
           List<MappedParameter>.empty(growable: true),
           (acc, slot) {
             acc.addAll(
@@ -2328,7 +2327,7 @@ class DistingCubit extends Cubit<DistingState> {
   void startPollingMappedParameters() {
     stopPollingMappedParameters(); // Clear any previous tasks.
     if (state is! DistingStateSynchronized) return;
-    final mappedParams = buildMappedParameterList();
+    final mappedParams = buildMappedParameterList(state);
     for (final param in mappedParams) {
       final key =
           '${param.parameter.algorithmIndex}_${param.parameter.parameterNumber}';
@@ -2887,8 +2886,7 @@ class DistingCubit extends Cubit<DistingState> {
     /* Pre-calculate which params are enumerated / mappable / string */
     bool isEnum(int i) => parameters[i].unit == 1;
     bool isString(int i) => const {13, 14, 17}.contains(parameters[i].unit);
-    bool isMappable(int i) =>
-        parameters[i].unit != 0 && parameters[i].unit != -1;
+    bool isMappable(int i) => parameters[i].unit != -1;
 
     /* ------------------------------------------------------------------ *
    * 4. Enums, Mappings, Value-Strings  (all throttled in parallel)     *

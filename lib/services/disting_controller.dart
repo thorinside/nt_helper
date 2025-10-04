@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterEnumStrings;
+    show Algorithm, ParameterInfo, ParameterEnumStrings, Mapping;
 import 'package:nt_helper/models/cpu_usage.dart';
 
 /// Abstract interface defining operations to control the Disting state,
@@ -125,6 +125,16 @@ abstract class DistingController {
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
   Future<ParameterEnumStrings?> getParameterEnumStrings(
+    int slotIndex,
+    int parameterNumber,
+  );
+
+  /// Get mapping information for a parameter
+  /// Returns the mapping data including performance page assignment, MIDI/CV mappings, etc.
+  /// Returns null if the slot/parameter is invalid.
+  /// Throws StateError if the Disting is not in a synchronized state.
+  /// Throws ArgumentError if the slot index or parameterNumber is invalid.
+  Future<Mapping?> getParameterMapping(
     int slotIndex,
     int parameterNumber,
   );

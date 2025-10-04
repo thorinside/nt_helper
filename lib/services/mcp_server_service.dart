@@ -1232,6 +1232,43 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           'Get MCP server connection diagnostics and health information',
       toolInputSchema: const ToolInputSchema(properties: {}),
       callback: ({args, extra}) async {
+        // Get current Disting state
+        final distingState = _distingCubit.state;
+
+        // Build state-specific diagnostics
+        final Map<String, dynamic> stateInfo = {
+          'state_type': distingState.runtimeType.toString(),
+        };
+
+        if (distingState is DistingStateSynchronized) {
+          // Get manager type for connection mode
+          final manager = distingState.disting;
+          String connectionMode = 'unknown';
+          if (manager.runtimeType.toString().contains('Mock')) {
+            connectionMode = 'demo';
+          } else if (manager.runtimeType.toString().contains('Offline')) {
+            connectionMode = 'offline';
+          } else {
+            connectionMode = 'connected';
+          }
+
+          stateInfo.addAll({
+            'connection_mode': connectionMode,
+            'firmware_version': distingState.firmwareVersion.versionString,
+            'disting_version': distingState.distingVersion,
+            'preset_name': distingState.presetName,
+            'num_slots': distingState.slots.length,
+            'num_algorithms_available': distingState.algorithms.length,
+            'num_unit_strings': distingState.unitStrings.length,
+          });
+
+          // Count non-empty slots
+          final nonEmptySlots = distingState.slots.where(
+            (slot) => slot.algorithm.guid.isNotEmpty && slot.algorithm.guid != 'ERROR',
+          ).length;
+          stateInfo['num_loaded_slots'] = nonEmptySlots;
+        }
+
         final diagnostics = {
           'server_info': connectionDiagnostics,
           'transport_info': {
@@ -1239,6 +1276,7 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
             'sessions': _transports.keys.toList(),
             'transport_type': 'StreamableHTTPServerTransport',
           },
+          'disting_state': stateInfo,
         };
 
         debugPrint('[MCP] Diagnostics requested - Server running: $isRunning');

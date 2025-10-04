@@ -201,6 +201,12 @@ class PackedMappingData {
     // --- Decode Performance Page ---
     final perfPageIndex = (version >= 5) ? safeReadByte(offset++) : 0;
 
+    if (version < 5) {
+      debugPrint(
+        'PackedMappingData.fromBytes: Received version $version mapping data (does not include performance page field). Performance pages require version 5+.',
+      );
+    }
+
     // Final validation: offset should equal expected length
     if (offset != expectedLength) {
       debugPrint(

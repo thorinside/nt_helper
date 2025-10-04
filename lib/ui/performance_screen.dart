@@ -161,9 +161,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       body: BlocBuilder<DistingCubit, DistingState>(
         builder: (context, state) {
           if (state is DistingStateSynchronized) {
-            final mappedParameters = context
-                .read<DistingCubit>()
-                .buildMappedParameterList(state);
+            final mappedParameters = DistingCubit.buildMappedParameterList(state);
 
             // If no parameters, show empty state
             if (mappedParameters.isEmpty) {

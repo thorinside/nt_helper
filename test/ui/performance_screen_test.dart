@@ -97,6 +97,70 @@ void main() {
     );
   }
 
+  Slot createSlotFromMappedParameters(List<MappedParameter> params) {
+    if (params.isEmpty) {
+      return Slot(
+        algorithm: Algorithm(algorithmIndex: 0, guid: 'empty', name: 'Empty'),
+        routing: RoutingInfo.filler(),
+        pages: ParameterPages(algorithmIndex: 0, pages: []),
+        parameters: [],
+        values: [],
+        enums: [],
+        mappings: [],
+        valueStrings: [],
+      );
+    }
+
+    final algorithmIndex = params.first.parameter.algorithmIndex;
+
+    // Find the maximum parameter number to size our arrays
+    final maxParamNum = params.map((p) => p.parameter.parameterNumber).reduce((a, b) => a > b ? a : b);
+    final arraySize = maxParamNum + 1;
+
+    // Create properly indexed arrays (filled with filler values)
+    final parameters = List<ParameterInfo>.filled(
+      arraySize,
+      ParameterInfo.filler(),
+    );
+    final values = List<ParameterValue>.filled(
+      arraySize,
+      ParameterValue.filler(),
+    );
+    final enums = List<ParameterEnumStrings>.filled(
+      arraySize,
+      ParameterEnumStrings.filler(),
+    );
+    final mappings = List<Mapping>.filled(
+      arraySize,
+      Mapping.filler(),
+    );
+    final valueStrings = List<ParameterValueString>.filled(
+      arraySize,
+      ParameterValueString.filler(),
+    );
+
+    // Fill in the actual parameter data at the correct indices
+    for (final param in params) {
+      final paramNum = param.parameter.parameterNumber;
+      parameters[paramNum] = param.parameter;
+      values[paramNum] = param.value;
+      enums[paramNum] = param.enums;
+      mappings[paramNum] = param.mapping;
+      valueStrings[paramNum] = param.valueString;
+    }
+
+    return Slot(
+      algorithm: params.first.algorithm,
+      routing: RoutingInfo.filler(),
+      pages: ParameterPages(algorithmIndex: algorithmIndex, pages: []),
+      parameters: parameters,
+      values: values,
+      enums: enums,
+      mappings: mappings,
+      valueStrings: valueStrings,
+    );
+  }
+
   group('PerformanceScreen', () {
     testWidgets('displays empty state when no parameters assigned', (tester) async {
       when(() => mockCubit.state).thenReturn(
@@ -111,7 +175,6 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList(any())).thenReturn([]);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -147,14 +210,13 @@ void main() {
           disting: MockDistingMidiManager(),
           distingVersion: 'v1.0',
           firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [],
+          slots: [createSlotFromMappedParameters(params)],
           algorithms: const [],
           unitStrings: const [],
           presetName: 'Test',
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -172,14 +234,7 @@ void main() {
 
     testWidgets('sorts parameters by page then alphabetically', (tester) async {
       // Create parameters in intentionally unsorted order
-      final params = [
-        createMappedParameter(
-          perfPageIndex: 2,
-          algorithmName: 'Algo 2',
-          algorithmIndex: 1,
-          parameterName: 'Zebra',
-          parameterNumber: 2,
-        ),
+      final algo0Params = [
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Algo 1',
@@ -196,19 +251,31 @@ void main() {
         ),
       ];
 
+      final algo1Params = [
+        createMappedParameter(
+          perfPageIndex: 2,
+          algorithmName: 'Algo 2',
+          algorithmIndex: 1,
+          parameterName: 'Zebra',
+          parameterNumber: 2,
+        ),
+      ];
+
       when(() => mockCubit.state).thenReturn(
         DistingStateSynchronized(
           disting: MockDistingMidiManager(),
           distingVersion: 'v1.0',
           firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [],
+          slots: [
+            createSlotFromMappedParameters(algo0Params),
+            createSlotFromMappedParameters(algo1Params),
+          ],
           algorithms: const [],
           unitStrings: const [],
           presetName: 'Test',
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -249,14 +316,13 @@ void main() {
           disting: MockDistingMidiManager(),
           distingVersion: 'v1.0',
           firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [],
+          slots: [createSlotFromMappedParameters(params)],
           algorithms: const [],
           unitStrings: const [],
           presetName: 'Test',
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -272,7 +338,7 @@ void main() {
     });
 
     testWidgets('handles multiple parameters on same page', (tester) async {
-      final params = [
+      final algo0Params = [
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Algo 1',
@@ -280,6 +346,9 @@ void main() {
           parameterName: 'Param 1',
           parameterNumber: 0,
         ),
+      ];
+
+      final algo1Params = [
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Algo 2',
@@ -294,14 +363,16 @@ void main() {
           disting: MockDistingMidiManager(),
           distingVersion: 'v1.0',
           firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [],
+          slots: [
+            createSlotFromMappedParameters(algo0Params),
+            createSlotFromMappedParameters(algo1Params),
+          ],
           algorithms: const [],
           unitStrings: const [],
           presetName: 'Test',
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList(any())).thenReturn(params);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -331,7 +402,6 @@ void main() {
         ),
       );
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockCubit.buildMappedParameterList(any())).thenReturn([]);
       when(() => mockCubit.startPollingMappedParameters()).thenReturn(null);
       when(() => mockCubit.stopPollingMappedParameters()).thenReturn(null);
 
