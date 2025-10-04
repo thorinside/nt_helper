@@ -229,7 +229,7 @@ class NodeLayoutAlgorithm {
     return positions;
   }
 
-  /// Position ES-5 input node below physical inputs
+  /// Position ES-5 input node below physical outputs (right side)
   Map<String, NodePosition> _positionEs5InputsRelativeToAlgorithms(
     List<Port> es5Inputs,
     Map<String, NodePosition> algorithmPositions,
@@ -239,9 +239,8 @@ class NodeLayoutAlgorithm {
     if (es5Inputs.isEmpty || algorithmPositions.isEmpty) return positions;
 
     const double gridSize = 50.0;
-    const double physicalNodeWidthInGrids = 3.0;
     const double gapInGrids = 1.0;
-    const double verticalGapBetweenNodes = 100.0; // Gap between physical inputs and ES-5
+    const double verticalGapBetweenNodes = 100.0; // Gap between physical outputs and ES-5
 
     // Calculate algorithm bounding box
     double minX = double.infinity;
@@ -258,29 +257,30 @@ class NodeLayoutAlgorithm {
 
     maxY += 3.0 * gridSize;
 
-    // Calculate height of ES-5 inputs node
+    // Calculate height of ES-5 node
     final es5NodeHeight = (es5Inputs.length * 30.0 + 60.0);
 
-    // Position ES-5 inputs at same X as physical inputs (left side)
-    final x =
-        ((minX - (physicalNodeWidthInGrids + gapInGrids) * gridSize) / gridSize)
-            .round() *
-        gridSize;
+    // Position ES-5 at same X as physical outputs (right side)
+    // Use similar logic as physical outputs positioning
+    final algorithmWidth = 250.0; // Default estimate
+    final physicalOutputsX = ((maxX + algorithmWidth + gapInGrids * gridSize) / gridSize).round() * gridSize;
 
-    // Position below physical inputs
-    // Estimate physical inputs height and add gap
-    final physicalInputsEstimatedHeight = 12 * 30.0 + 60.0; // 12 inputs typical
+    final x = physicalOutputsX;
+
+    // Position below physical outputs
+    // Estimate physical outputs height and add gap
+    final physicalOutputsEstimatedHeight = 8 * 30.0 + 60.0; // 8 outputs typical
     final algorithmCenterY = (minY + maxY) / 2;
-    final physicalInputsY = algorithmCenterY - physicalInputsEstimatedHeight / 2;
+    final physicalOutputsY = algorithmCenterY - physicalOutputsEstimatedHeight / 2;
 
-    final y = ((physicalInputsY + physicalInputsEstimatedHeight + verticalGapBetweenNodes) / gridSize).round() * gridSize;
+    final y = ((physicalOutputsY + physicalOutputsEstimatedHeight + verticalGapBetweenNodes) / gridSize).round() * gridSize;
 
     positions['es5_node'] = NodePosition(x: x, y: y);
 
     debugPrint(
-      '[NodeLayout] ES-5 inputs positioned at x=$x, y=$y (below physical inputs)',
+      '[NodeLayout] ES-5 node positioned at x=$x, y=$y (below physical outputs on right side)',
     );
-    debugPrint('[NodeLayout] ES-5 inputs height: $es5NodeHeight px');
+    debugPrint('[NodeLayout] ES-5 node height: $es5NodeHeight px');
 
     return positions;
   }
