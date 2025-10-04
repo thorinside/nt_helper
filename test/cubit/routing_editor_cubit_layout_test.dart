@@ -491,7 +491,7 @@ void main() {
             'hw_out_1': const NodePosition(x: 750.0, y: 100.0),
           },
           es5InputPositions: {
-            'es5_inputs': const NodePosition(x: 50.0, y: 500.0),
+            'es5_node': const NodePosition(x: 50.0, y: 500.0),
           },
           algorithmPositions: {
             'algo_0': const NodePosition(x: 400.0, y: 100.0),
@@ -516,7 +516,7 @@ void main() {
 
         // Verify ES-5 node position was applied
         expect(
-          updatedState.nodePositions['es5_inputs'],
+          updatedState.nodePositions['es5_node'],
           equals(const NodePosition(x: 50.0, y: 500.0)),
         );
 

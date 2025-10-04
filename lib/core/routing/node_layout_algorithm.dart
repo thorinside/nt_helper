@@ -275,7 +275,7 @@ class NodeLayoutAlgorithm {
 
     final y = ((physicalInputsY + physicalInputsEstimatedHeight + verticalGapBetweenNodes) / gridSize).round() * gridSize;
 
-    positions['es5_inputs'] = NodePosition(x: x, y: y);
+    positions['es5_node'] = NodePosition(x: x, y: y);
 
     debugPrint(
       '[NodeLayout] ES-5 inputs positioned at x=$x, y=$y (below physical inputs)',
