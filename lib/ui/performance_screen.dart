@@ -85,20 +85,28 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   }
 
   // Build colored page badge for navigation rail
-  Widget _buildPageBadge(int pageIndex) {
+  Widget _buildPageBadge(int pageIndex, {bool isSelected = false}) {
     final color = _getPageColor(pageIndex);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'P$pageIndex',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
+    final scale = isSelected ? 1.3 : 1.0;
+
+    return Transform.scale(
+      scale: scale,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8),
+          border: isSelected
+              ? Border.all(color: Colors.white, width: 2)
+              : null,
+        ),
+        child: Text(
+          'P$pageIndex',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isSelected ? 16 : 14,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -265,8 +273,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                   },
                   labelType: NavigationRailLabelType.none,
                   destinations: populatedPages.map((pageIndex) {
+                    final isSelected = pageIndex == _selectedPageIndex;
                     return NavigationRailDestination(
-                      icon: _buildPageBadge(pageIndex),
+                      icon: _buildPageBadge(pageIndex, isSelected: isSelected),
                       label: const Text(''),
                     );
                   }).toList(),
