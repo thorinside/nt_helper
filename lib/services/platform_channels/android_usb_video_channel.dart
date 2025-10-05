@@ -40,10 +40,13 @@ class AndroidUsbVideoChannel {
 
       // Convert to our UsbDeviceInfo format
       return devices.values.map((device) {
-        _debugLog('Device: ${device.name}, VID: ${device.vendorId}, PID: ${device.productId}');
+        _debugLog(
+          'Device: ${device.name}, VID: ${device.vendorId}, PID: ${device.productId}',
+        );
         return UsbDeviceInfo(
           deviceId: device.name, // Use device name as ID
-          productName: device.name, // UvcCameraDevice doesn't have productName, use name
+          productName:
+              device.name, // UvcCameraDevice doesn't have productName, use name
           vendorId: device.vendorId,
           productId: device.productId,
           isDistingNT: device.vendorId == 0x16C0, // Expert Sleepers vendor ID
@@ -117,7 +120,8 @@ class AndroidUsbVideoChannel {
       // Create controller for the device
       _controller = UvcCameraController(
         device: device,
-        resolutionPreset: UvcCameraResolutionPreset.low, // Start with low res for Disting NT (256x64)
+        resolutionPreset: UvcCameraResolutionPreset
+            .low, // Start with low res for Disting NT (256x64)
       );
 
       // Initialize the controller
@@ -128,7 +132,6 @@ class AndroidUsbVideoChannel {
 
       // Start capturing frames
       await _startFrameCapture();
-
     } catch (e, stack) {
       _debugLog('ERROR connecting to device: $e');
       _debugLog('Stack trace: $stack');
@@ -157,7 +160,6 @@ class AndroidUsbVideoChannel {
       // For now, generate test frames to verify the pipeline
       // TODO: Replace with actual frame capture from uvccamera
       _generateTestFrames();
-
     } catch (e) {
       _debugLog('ERROR starting frame capture: $e');
     }

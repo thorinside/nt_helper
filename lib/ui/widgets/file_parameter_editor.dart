@@ -103,7 +103,6 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
   void didUpdateWidget(FileParameterEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-
     if (oldWidget.currentValue != widget.currentValue) {
       _updateSelectedNameForValue(widget.currentValue);
 
@@ -832,8 +831,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
       children: [
         // Previous button
         InkWell(
-          onTap:
-              widget.currentValue > widget.parameterInfo.min
+          onTap: widget.currentValue > widget.parameterInfo.min
               ? _decrementValue
               : null,
           borderRadius: BorderRadius.circular(8),
@@ -842,8 +840,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             child: Icon(
               Icons.navigate_before,
               size: 24,
-              color:
-                  widget.currentValue > widget.parameterInfo.min
+              color: widget.currentValue > widget.parameterInfo.min
                   ? null
                   : Colors.grey.shade400,
             ),
@@ -879,8 +876,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
 
         // Next button
         InkWell(
-          onTap:
-              widget.currentValue < widget.parameterInfo.max
+          onTap: widget.currentValue < widget.parameterInfo.max
               ? _incrementValue
               : null,
           borderRadius: BorderRadius.circular(8),
@@ -889,8 +885,7 @@ class _FileParameterEditorState extends State<FileParameterEditor> {
             child: Icon(
               Icons.navigate_next,
               size: 24,
-              color:
-                  widget.currentValue < widget.parameterInfo.max
+              color: widget.currentValue < widget.parameterInfo.max
                   ? null
                   : Colors.grey.shade400,
             ),

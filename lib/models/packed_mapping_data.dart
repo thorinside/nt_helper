@@ -39,7 +39,8 @@ class PackedMappingData {
   final int i2cMax; // Maximum I2C value
 
   // Performance Page (used for sort order only, not navigation)
-  final int perfPageIndex; // Performance page index (0 = not assigned, 1-15 = valid pages)
+  final int
+  perfPageIndex; // Performance page index (0 = not assigned, 1-15 = valid pages)
 
   // Constructor
   PackedMappingData({

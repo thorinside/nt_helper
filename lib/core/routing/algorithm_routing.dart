@@ -413,7 +413,9 @@ abstract class AlgorithmRouting {
     for (final param in slot.parameters) {
       // Check if this parameter has a corresponding mode parameter
       // If it does, it's definitively an output parameter
-      final hasMatchingModeParameter = outputParameterPrefixes.contains(param.name);
+      final hasMatchingModeParameter = outputParameterPrefixes.contains(
+        param.name,
+      );
 
       // Bus parameters are identified by:
       // - unit == 1 (enum type)

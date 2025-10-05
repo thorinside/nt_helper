@@ -145,7 +145,8 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
           name: 'Channel $channelNumber',
           type: PortType.gate, // ES-5 handles gates/triggers
           direction: PortDirection.input,
-          description: 'ES-5 Channel $channelNumber (Expander $expanderValue, Output $outputValue)',
+          description:
+              'ES-5 Channel $channelNumber (Expander $expanderValue, Output $outputValue)',
           // Direct properties
           busValue: inputBusValue,
           channelNumber: channelNumber,
@@ -197,36 +198,40 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
         final channelPage = channelPages.firstWhere(
           (page) => page.name == 'Channel $channelNumber',
           orElse: () => throw StateError(
-              'No channel page found for channel $channelNumber'),
+            'No channel page found for channel $channelNumber',
+          ),
         );
 
         // Get the Output parameter number (index 3: Enable, Input, Expander, Output)
-        final outputParamNum =
-            channelPage.parameters.length >= 4 ? channelPage.parameters[3] : -1;
+        final outputParamNum = channelPage.parameters.length >= 4
+            ? channelPage.parameters[3]
+            : -1;
 
         // Read the Output parameter value (1-8) - defaults to channel number
         final outputValue = outputParamNum >= 0
             ? slot.values
-                .firstWhere(
-                  (v) => v.parameterNumber == outputParamNum,
-                  orElse: () => ParameterValue(
-                    algorithmIndex: 0,
-                    parameterNumber: outputParamNum,
-                    value: channelNumber,
-                  ),
-                )
-                .value
+                  .firstWhere(
+                    (v) => v.parameterNumber == outputParamNum,
+                    orElse: () => ParameterValue(
+                      algorithmIndex: 0,
+                      parameterNumber: outputParamNum,
+                      value: channelNumber,
+                    ),
+                  )
+                  .value
             : channelNumber;
 
-        ports.add(Port(
-          id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_output',
-          name: 'To ES-5 $outputValue',
-          type: PortType.gate,
-          direction: PortDirection.output,
-          description: 'Channel $channelNumber → ES-5 Output $outputValue',
-          channelNumber: outputValue, // FIX: Use Output parameter value
-          busParam: mirrorBusParam, // Special marker for connection discovery
-        ));
+        ports.add(
+          Port(
+            id: '${algorithmUuid ?? defaultAlgorithmUuid}_channel_${channelNumber}_output',
+            name: 'To ES-5 $outputValue',
+            type: PortType.gate,
+            direction: PortDirection.output,
+            description: 'Channel $channelNumber → ES-5 Output $outputValue',
+            channelNumber: outputValue, // FIX: Use Output parameter value
+            busParam: mirrorBusParam, // Special marker for connection discovery
+          ),
+        );
 
         debugPrint(
           'ES5EncoderAlgorithmRouting: Created output port for Channel $channelNumber → ES-5 Port $outputValue',
@@ -281,9 +286,6 @@ class ES5EncoderAlgorithmRouting extends MultiChannelAlgorithmRouting {
       },
     );
 
-    return ES5EncoderAlgorithmRouting(
-      slot: slot,
-      config: config,
-    );
+    return ES5EncoderAlgorithmRouting(slot: slot, config: config);
   }
 }

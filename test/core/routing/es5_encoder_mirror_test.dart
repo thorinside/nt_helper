@@ -35,10 +35,7 @@ void main() {
         ]);
 
         pages.add(
-          ParameterPage(
-            name: 'Channel $channel',
-            parameters: pageParams,
-          ),
+          ParameterPage(name: 'Channel $channel', parameters: pageParams),
         );
 
         // Create parameter definitions
@@ -169,28 +166,13 @@ void main() {
         expect(routing.outputPorts.length, equals(3));
 
         // Verify only the enabled channels have outputs
-        expect(
-          routing.outputPorts.any((p) => p.channelNumber == 1),
-          isTrue,
-        );
-        expect(
-          routing.outputPorts.any((p) => p.channelNumber == 3),
-          isTrue,
-        );
-        expect(
-          routing.outputPorts.any((p) => p.channelNumber == 5),
-          isTrue,
-        );
+        expect(routing.outputPorts.any((p) => p.channelNumber == 1), isTrue);
+        expect(routing.outputPorts.any((p) => p.channelNumber == 3), isTrue);
+        expect(routing.outputPorts.any((p) => p.channelNumber == 5), isTrue);
 
         // Disabled channels should not have outputs
-        expect(
-          routing.outputPorts.any((p) => p.channelNumber == 2),
-          isFalse,
-        );
-        expect(
-          routing.outputPorts.any((p) => p.channelNumber == 4),
-          isFalse,
-        );
+        expect(routing.outputPorts.any((p) => p.channelNumber == 2), isFalse);
+        expect(routing.outputPorts.any((p) => p.channelNumber == 4), isFalse);
       });
 
       test('generates no output ports when all channels are disabled', () {
@@ -299,9 +281,7 @@ void main() {
       });
 
       test('creates no connections when all channels are disabled', () {
-        final slot = createEs5EncoderSlot(
-          enabledChannels: [],
-        );
+        final slot = createEs5EncoderSlot(enabledChannels: []);
 
         final routing = ES5EncoderAlgorithmRouting.createFromSlot(
           slot,
@@ -322,9 +302,7 @@ void main() {
       });
 
       test('visual flow: Input Bus → ES-5 Encoder → ES-5 Port', () {
-        final slot = createEs5EncoderSlot(
-          enabledChannels: [1],
-        );
+        final slot = createEs5EncoderSlot(enabledChannels: [1]);
 
         final routing = ES5EncoderAlgorithmRouting.createFromSlot(
           slot,
@@ -350,10 +328,7 @@ void main() {
               c.connectionType == ConnectionType.algorithmToAlgorithm &&
               c.destinationPortId == 'es5_1',
         );
-        expect(
-          mirrorConn.sourcePortId,
-          equals('es5e_test_channel_1_output'),
-        );
+        expect(mirrorConn.sourcePortId, equals('es5e_test_channel_1_output'));
         expect(mirrorConn.signalType, equals(SignalType.gate));
       });
     });

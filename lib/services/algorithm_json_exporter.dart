@@ -154,70 +154,92 @@ class AlgorithmJsonExporter {
         'debugExport': true,
         'tables': {
           // Units must be imported first (referenced by parameters)
-          'units': units.map((u) => {
-            'id': u.id,
-            'unitString': u.unitString,
-          }).toList(),
+          'units': units
+              .map((u) => {'id': u.id, 'unitString': u.unitString})
+              .toList(),
 
           // Algorithms must be imported before anything that references them
-          'algorithms': algorithms.map((a) => {
-            'guid': a.guid,
-            'name': a.name,
-            'numSpecifications': a.numSpecifications,
-            'pluginFilePath': a.pluginFilePath,
-          }).toList(),
+          'algorithms': algorithms
+              .map(
+                (a) => {
+                  'guid': a.guid,
+                  'name': a.name,
+                  'numSpecifications': a.numSpecifications,
+                  'pluginFilePath': a.pluginFilePath,
+                },
+              )
+              .toList(),
 
           // Specifications reference algorithms
-          'specifications': specifications.map((s) => {
-            'algorithmGuid': s.algorithmGuid,
-            'specIndex': s.specIndex,
-            'name': s.name,
-            'minValue': s.minValue,
-            'maxValue': s.maxValue,
-            'defaultValue': s.defaultValue,
-            'type': s.type,
-          }).toList(),
+          'specifications': specifications
+              .map(
+                (s) => {
+                  'algorithmGuid': s.algorithmGuid,
+                  'specIndex': s.specIndex,
+                  'name': s.name,
+                  'minValue': s.minValue,
+                  'maxValue': s.maxValue,
+                  'defaultValue': s.defaultValue,
+                  'type': s.type,
+                },
+              )
+              .toList(),
 
           // Parameters reference algorithms and units
-          'parameters': parameters.map((p) => {
-            'algorithmGuid': p.algorithmGuid,
-            'parameterNumber': p.parameterNumber,
-            'name': p.name,
-            'minValue': p.minValue,
-            'maxValue': p.maxValue,
-            'defaultValue': p.defaultValue,
-            'unitId': p.unitId,
-            'powerOfTen': p.powerOfTen,
-            'rawUnitIndex': p.rawUnitIndex,
-          }).toList(),
+          'parameters': parameters
+              .map(
+                (p) => {
+                  'algorithmGuid': p.algorithmGuid,
+                  'parameterNumber': p.parameterNumber,
+                  'name': p.name,
+                  'minValue': p.minValue,
+                  'maxValue': p.maxValue,
+                  'defaultValue': p.defaultValue,
+                  'unitId': p.unitId,
+                  'powerOfTen': p.powerOfTen,
+                  'rawUnitIndex': p.rawUnitIndex,
+                },
+              )
+              .toList(),
 
           // Parameter enums reference parameters
-          'parameterEnums': parameterEnums.map((e) => {
-            'algorithmGuid': e.algorithmGuid,
-            'parameterNumber': e.parameterNumber,
-            'enumIndex': e.enumIndex,
-            'enumString': e.enumString,
-          }).toList(),
+          'parameterEnums': parameterEnums
+              .map(
+                (e) => {
+                  'algorithmGuid': e.algorithmGuid,
+                  'parameterNumber': e.parameterNumber,
+                  'enumIndex': e.enumIndex,
+                  'enumString': e.enumString,
+                },
+              )
+              .toList(),
 
           // Parameter pages reference algorithms
-          'parameterPages': parameterPages.map((p) => {
-            'algorithmGuid': p.algorithmGuid,
-            'pageIndex': p.pageIndex,
-            'name': p.name,
-          }).toList(),
+          'parameterPages': parameterPages
+              .map(
+                (p) => {
+                  'algorithmGuid': p.algorithmGuid,
+                  'pageIndex': p.pageIndex,
+                  'name': p.name,
+                },
+              )
+              .toList(),
 
           // Parameter page items reference pages and parameters
-          'parameterPageItems': parameterPageItems.map((i) => {
-            'algorithmGuid': i.algorithmGuid,
-            'pageIndex': i.pageIndex,
-            'parameterNumber': i.parameterNumber,
-          }).toList(),
+          'parameterPageItems': parameterPageItems
+              .map(
+                (i) => {
+                  'algorithmGuid': i.algorithmGuid,
+                  'pageIndex': i.pageIndex,
+                  'parameterNumber': i.parameterNumber,
+                },
+              )
+              .toList(),
 
           // Metadata cache (no references)
-          'metadataCache': metadataCache.map((c) => {
-            'cacheKey': c.cacheKey,
-            'cacheValue': c.cacheValue,
-          }).toList(),
+          'metadataCache': metadataCache
+              .map((c) => {'cacheKey': c.cacheKey, 'cacheValue': c.cacheValue})
+              .toList(),
         },
         'summary': {
           'totalAlgorithms': algorithms.length,
@@ -269,16 +291,15 @@ class AlgorithmJsonExporter {
       final metadataCache = await dao.getMetadataCacheEntries();
 
       // Estimate size (rough approximation)
-      final estimatedSizeKB = (
-        algorithms.length * 0.5 +
-        specifications.length * 0.3 +
-        units.length * 0.1 +
-        parameters.length * 0.4 +
-        parameterEnums.length * 0.2 +
-        parameterPages.length * 0.2 +
-        parameterPageItems.length * 0.1 +
-        metadataCache.length * 0.5
-      );
+      final estimatedSizeKB =
+          (algorithms.length * 0.5 +
+          specifications.length * 0.3 +
+          units.length * 0.1 +
+          parameters.length * 0.4 +
+          parameterEnums.length * 0.2 +
+          parameterPages.length * 0.2 +
+          parameterPageItems.length * 0.1 +
+          metadataCache.length * 0.5);
 
       return {
         'exportType': 'full_metadata',

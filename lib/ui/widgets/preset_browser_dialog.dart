@@ -96,7 +96,9 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
                         const Center(child: CircularProgressIndicator()),
                     loaded: (loaded) => isMobile
                         ? MobileDrillDownNavigator(
-                            items: loaded.currentDrillItems ?? loaded.leftPanelItems,
+                            items:
+                                loaded.currentDrillItems ??
+                                loaded.leftPanelItems,
                             selectedItem: loaded.selectedDrillItem,
                             breadcrumbs: loaded.breadcrumbs ?? [],
                             onItemTap: _handleMobileItemTap,
@@ -254,9 +256,7 @@ class _PresetBrowserDialogState extends State<PresetBrowserDialog> {
       loaded: (loaded) {
         if (loaded.drillPath != null && loaded.drillPath!.isNotEmpty) {
           // Reload current drill path
-          cubit.navigateToPathSegment(
-            (loaded.breadcrumbs?.length ?? 1) - 1,
-          );
+          cubit.navigateToPathSegment((loaded.breadcrumbs?.length ?? 1) - 1);
         } else {
           cubit.loadRootDirectory();
         }

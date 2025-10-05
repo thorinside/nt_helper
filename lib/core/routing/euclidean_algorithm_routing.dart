@@ -44,9 +44,6 @@ class EuclideanAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       debugName: 'EuclideanAlgorithmRouting',
     );
 
-    return EuclideanAlgorithmRouting(
-      slot: slot,
-      config: configData.config,
-    );
+    return EuclideanAlgorithmRouting(slot: slot, config: configData.config);
   }
 }

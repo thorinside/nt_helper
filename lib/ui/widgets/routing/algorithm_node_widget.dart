@@ -408,12 +408,14 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
         (widget.shadowedPortIds?.contains(portId) ?? false);
 
     // Check if this output port has an ES-5 toggle
-    final hasEs5Toggle = !isInput &&
+    final hasEs5Toggle =
+        !isInput &&
         channelNumber != null &&
         widget.es5ChannelToggles != null &&
         widget.es5ChannelToggles!.containsKey(channelNumber);
 
-    final isEs5Enabled = hasEs5Toggle && (widget.es5ChannelToggles![channelNumber] ?? false);
+    final isEs5Enabled =
+        hasEs5Toggle && (widget.es5ChannelToggles![channelNumber] ?? false);
 
     Widget portWidget = PortWidget(
       label: label,
@@ -462,7 +464,8 @@ class _AlgorithmNodeWidgetState extends State<AlgorithmNodeWidget> {
                     : theme.colorScheme.onSurface.withAlpha(128),
               ),
               onPressed: widget.onEs5ToggleChanged != null
-                  ? () => widget.onEs5ToggleChanged!(channelNumber, !isEs5Enabled)
+                  ? () =>
+                        widget.onEs5ToggleChanged!(channelNumber, !isEs5Enabled)
                   : null,
             ),
           ),

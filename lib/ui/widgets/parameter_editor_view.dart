@@ -27,18 +27,21 @@ class ParameterEditorView extends StatelessWidget {
   Widget build(BuildContext context) {
     // For string-type parameters (units 13, 14, 17), don't pass unit
     // These parameters rely entirely on value strings or raw values
-    final shouldShowUnit = parameterInfo.unit != 13 &&
+    final shouldShowUnit =
+        parameterInfo.unit != 13 &&
         parameterInfo.unit != 14 &&
         parameterInfo.unit != 17;
 
     // Check if we have a complete set of enum strings (all non-empty)
     // Partial enums (e.g., ["Off", "", "", ...]) should not be treated as dropdowns
-    final hasCompleteEnumStrings = enumStrings.values.isNotEmpty &&
+    final hasCompleteEnumStrings =
+        enumStrings.values.isNotEmpty &&
         enumStrings.values.every((s) => s.isNotEmpty);
 
     // For the current value, check if there's a valid enum string to display
     // This handles partial enums where only some indices have strings (e.g., only index 0 = "Off")
-    final currentValueHasEnumString = enumStrings.values.isNotEmpty &&
+    final currentValueHasEnumString =
+        enumStrings.values.isNotEmpty &&
         value.value >= 0 &&
         value.value < enumStrings.values.length &&
         enumStrings.values[value.value].isNotEmpty;
@@ -51,8 +54,10 @@ class ParameterEditorView extends StatelessWidget {
     final effectiveDisplayString = currentValueHasEnumString
         ? enumStrings.values[value.value]
         : (parameterInfo.unit == 14
-            ? (value.value == 0 && valueString.value.isNotEmpty ? valueString.value : null)
-            : (valueString.value.isNotEmpty ? valueString.value : null));
+              ? (value.value == 0 && valueString.value.isNotEmpty
+                    ? valueString.value
+                    : null)
+              : (valueString.value.isNotEmpty ? valueString.value : null));
 
     return ParameterViewRow(
       name: parameterInfo.name,

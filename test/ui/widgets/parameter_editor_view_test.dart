@@ -26,10 +26,7 @@ void main() {
           algorithmIndex: algorithmIndex,
           routingInfo: List.filled(6, 0),
         ),
-        pages: ParameterPages(
-          algorithmIndex: algorithmIndex,
-          pages: [],
-        ),
+        pages: ParameterPages(algorithmIndex: algorithmIndex, pages: []),
         parameters: [
           ParameterInfo(
             algorithmIndex: algorithmIndex,
@@ -75,81 +72,85 @@ void main() {
       );
     }
 
-    testWidgets('ES-5 Expander (unit 14) shows "Off" for value 0 with valueString',
-        (tester) async {
-      final slot = createTestSlot(
-        algorithmIndex: 0,
-        unit: 14,
-        currentValue: 0,
-        valueString: 'Off',
-        enumValues: [], // Empty enum strings (sparse array)
-      );
+    testWidgets(
+      'ES-5 Expander (unit 14) shows "Off" for value 0 with valueString',
+      (tester) async {
+        final slot = createTestSlot(
+          algorithmIndex: 0,
+          unit: 14,
+          currentValue: 0,
+          valueString: 'Off',
+          enumValues: [], // Empty enum strings (sparse array)
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ParameterEditorView(
-              slot: slot,
-              parameterInfo: slot.parameters[0],
-              value: slot.values[0],
-              enumStrings: slot.enums[0],
-              mapping: slot.mappings[0],
-              valueString: slot.valueStrings[0],
-              unit: null, // Should be null for unit 14
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ParameterEditorView(
+                slot: slot,
+                parameterInfo: slot.parameters[0],
+                value: slot.values[0],
+                enumStrings: slot.enums[0],
+                mapping: slot.mappings[0],
+                valueString: slot.valueStrings[0],
+                unit: null, // Should be null for unit 14
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Should find a ParameterViewRow with displayString = "Off"
-      final parameterViewRow = tester.widget<ParameterViewRow>(
-        find.byType(ParameterViewRow),
-      );
-      expect(parameterViewRow.displayString, equals('Off'));
-      expect(parameterViewRow.unit, isNull);
-    });
+        // Should find a ParameterViewRow with displayString = "Off"
+        final parameterViewRow = tester.widget<ParameterViewRow>(
+          find.byType(ParameterViewRow),
+        );
+        expect(parameterViewRow.displayString, equals('Off'));
+        expect(parameterViewRow.unit, isNull);
+      },
+    );
 
     testWidgets(
-        'ES-5 Expander (unit 14) shows raw integer for value 1 with stale valueString',
-        (tester) async {
-      final slot = createTestSlot(
-        algorithmIndex: 0,
-        unit: 14,
-        currentValue: 1,
-        valueString: 'Off', // Stale valueString from previous value 0
-        enumValues: [], // Empty enum strings
-      );
+      'ES-5 Expander (unit 14) shows raw integer for value 1 with stale valueString',
+      (tester) async {
+        final slot = createTestSlot(
+          algorithmIndex: 0,
+          unit: 14,
+          currentValue: 1,
+          valueString: 'Off', // Stale valueString from previous value 0
+          enumValues: [], // Empty enum strings
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ParameterEditorView(
-              slot: slot,
-              parameterInfo: slot.parameters[0],
-              value: slot.values[0],
-              enumStrings: slot.enums[0],
-              mapping: slot.mappings[0],
-              valueString: slot.valueStrings[0],
-              unit: null,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ParameterEditorView(
+                slot: slot,
+                parameterInfo: slot.parameters[0],
+                value: slot.values[0],
+                enumStrings: slot.enums[0],
+                mapping: slot.mappings[0],
+                valueString: slot.valueStrings[0],
+                unit: null,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // displayString should be null, causing fallback to raw integer display
-      final parameterViewRow = tester.widget<ParameterViewRow>(
-        find.byType(ParameterViewRow),
-      );
-      expect(parameterViewRow.displayString, isNull);
-      expect(parameterViewRow.unit, isNull);
-    });
+        // displayString should be null, causing fallback to raw integer display
+        final parameterViewRow = tester.widget<ParameterViewRow>(
+          find.byType(ParameterViewRow),
+        );
+        expect(parameterViewRow.displayString, isNull);
+        expect(parameterViewRow.unit, isNull);
+      },
+    );
 
-    testWidgets('ES-5 Expander (unit 14) shows raw integer for value 6',
-        (tester) async {
+    testWidgets('ES-5 Expander (unit 14) shows raw integer for value 6', (
+      tester,
+    ) async {
       final slot = createTestSlot(
         algorithmIndex: 0,
         unit: 14,
@@ -182,8 +183,9 @@ void main() {
       expect(parameterViewRow.displayString, isNull);
     });
 
-    testWidgets('Complete enum strings are passed as dropdown items',
-        (tester) async {
+    testWidgets('Complete enum strings are passed as dropdown items', (
+      tester,
+    ) async {
       final slot = createTestSlot(
         algorithmIndex: 0,
         unit: 0,
@@ -217,43 +219,45 @@ void main() {
       expect(parameterViewRow.isOnOff, isTrue);
     });
 
-    testWidgets('Partial enum strings (with empty values) are not passed as dropdown',
-        (tester) async {
-      final slot = createTestSlot(
-        algorithmIndex: 0,
-        unit: 0,
-        currentValue: 0,
-        enumValues: ['Off', '', '', ''], // Partial enum array
-        valueString: '',
-      );
+    testWidgets(
+      'Partial enum strings (with empty values) are not passed as dropdown',
+      (tester) async {
+        final slot = createTestSlot(
+          algorithmIndex: 0,
+          unit: 0,
+          currentValue: 0,
+          enumValues: ['Off', '', '', ''], // Partial enum array
+          valueString: '',
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ParameterEditorView(
-              slot: slot,
-              parameterInfo: slot.parameters[0],
-              value: slot.values[0],
-              enumStrings: slot.enums[0],
-              mapping: slot.mappings[0],
-              valueString: slot.valueStrings[0],
-              unit: 'ms',
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ParameterEditorView(
+                slot: slot,
+                parameterInfo: slot.parameters[0],
+                value: slot.values[0],
+                enumStrings: slot.enums[0],
+                mapping: slot.mappings[0],
+                valueString: slot.valueStrings[0],
+                unit: 'ms',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      final parameterViewRow = tester.widget<ParameterViewRow>(
-        find.byType(ParameterViewRow),
-      );
-      // Should not be treated as dropdown because not all values are filled
-      expect(parameterViewRow.dropdownItems, isNull);
-      expect(parameterViewRow.isOnOff, isFalse);
-      // Should use the enum string for the current value (0 = "Off")
-      expect(parameterViewRow.displayString, equals('Off'));
-    });
+        final parameterViewRow = tester.widget<ParameterViewRow>(
+          find.byType(ParameterViewRow),
+        );
+        // Should not be treated as dropdown because not all values are filled
+        expect(parameterViewRow.dropdownItems, isNull);
+        expect(parameterViewRow.isOnOff, isFalse);
+        // Should use the enum string for the current value (0 = "Off")
+        expect(parameterViewRow.displayString, equals('Off'));
+      },
+    );
 
     testWidgets('Unit 13 parameters suppress unit display', (tester) async {
       final slot = createTestSlot(
@@ -351,8 +355,9 @@ void main() {
       expect(parameterViewRow.unit, equals('Hz'));
     });
 
-    testWidgets('valueString takes precedence for non-unit-14 parameters',
-        (tester) async {
+    testWidgets('valueString takes precedence for non-unit-14 parameters', (
+      tester,
+    ) async {
       final slot = createTestSlot(
         algorithmIndex: 0,
         unit: 0,
@@ -385,40 +390,42 @@ void main() {
       expect(parameterViewRow.displayString, equals('Custom Display'));
     });
 
-    testWidgets('Empty valueString and enum strings fallback to null displayString',
-        (tester) async {
-      final slot = createTestSlot(
-        algorithmIndex: 0,
-        unit: 0,
-        currentValue: 42,
-        valueString: '',
-        enumValues: [],
-      );
+    testWidgets(
+      'Empty valueString and enum strings fallback to null displayString',
+      (tester) async {
+        final slot = createTestSlot(
+          algorithmIndex: 0,
+          unit: 0,
+          currentValue: 42,
+          valueString: '',
+          enumValues: [],
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ParameterEditorView(
-              slot: slot,
-              parameterInfo: slot.parameters[0],
-              value: slot.values[0],
-              enumStrings: slot.enums[0],
-              mapping: slot.mappings[0],
-              valueString: slot.valueStrings[0],
-              unit: 'dB',
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ParameterEditorView(
+                slot: slot,
+                parameterInfo: slot.parameters[0],
+                value: slot.values[0],
+                enumStrings: slot.enums[0],
+                mapping: slot.mappings[0],
+                valueString: slot.valueStrings[0],
+                unit: 'dB',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      final parameterViewRow = tester.widget<ParameterViewRow>(
-        find.byType(ParameterViewRow),
-      );
-      // No displayString, should fall back to unit-based or raw value display
-      expect(parameterViewRow.displayString, isNull);
-      expect(parameterViewRow.unit, equals('dB'));
-    });
+        final parameterViewRow = tester.widget<ParameterViewRow>(
+          find.byType(ParameterViewRow),
+        );
+        // No displayString, should fall back to unit-based or raw value display
+        expect(parameterViewRow.displayString, isNull);
+        expect(parameterViewRow.unit, equals('dB'));
+      },
+    );
   });
 }

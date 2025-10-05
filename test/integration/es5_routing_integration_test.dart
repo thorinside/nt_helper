@@ -92,7 +92,7 @@ void main() {
       required String name,
       required int channelCount,
       required List<({int channel, int es5Expander, int es5Output, int output})>
-          channelConfigs,
+      channelConfigs,
       int algorithmIndex = 0,
     }) {
       final pages = <ParameterPage>[];
@@ -188,7 +188,7 @@ void main() {
     Slot createClockSlot({
       required int channelCount,
       required List<({int channel, int es5Expander, int es5Output, int output})>
-          channelConfigs,
+      channelConfigs,
       int algorithmIndex = 0,
     }) {
       return createEs5DirectOutputSlot(
@@ -204,7 +204,7 @@ void main() {
     Slot createEuclideanSlot({
       required int channelCount,
       required List<({int channel, int es5Expander, int es5Output, int output})>
-          channelConfigs,
+      channelConfigs,
       int algorithmIndex = 0,
     }) {
       return createEs5DirectOutputSlot(
@@ -240,10 +240,7 @@ void main() {
         ]);
 
         pages.add(
-          ParameterPage(
-            name: 'Channel $channel',
-            parameters: pageParams,
-          ),
+          ParameterPage(name: 'Channel $channel', parameters: pageParams),
         );
 
         parameters.addAll([
@@ -345,7 +342,10 @@ void main() {
           ],
         );
 
-        final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'usb_test');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'usb_test',
+        );
         final connections = ConnectionDiscoveryService.discoverConnections([
           routing,
         ]);
@@ -393,7 +393,10 @@ void main() {
           ],
         );
 
-        final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'clock_test');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'clock_test',
+        );
         final connections = ConnectionDiscoveryService.discoverConnections([
           routing,
         ]);
@@ -438,7 +441,10 @@ void main() {
           ],
         );
 
-        final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'euclidean_test');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'euclidean_test',
+        );
         final connections = ConnectionDiscoveryService.discoverConnections([
           routing,
         ]);
@@ -474,11 +480,12 @@ void main() {
 
     group('ES-5 Encoder Input Mirroring', () {
       test('enabled channels mirror to corresponding ES-5 ports', () {
-        final slot = createEs5EncoderSlot(
-          enabledChannels: [1, 3, 5],
-        );
+        final slot = createEs5EncoderSlot(enabledChannels: [1, 3, 5]);
 
-        final routing = AlgorithmRouting.fromSlot(slot, algorithmUuid: 'es5e_test');
+        final routing = AlgorithmRouting.fromSlot(
+          slot,
+          algorithmUuid: 'es5e_test',
+        );
         final connections = ConnectionDiscoveryService.discoverConnections([
           routing,
         ]);
@@ -517,9 +524,7 @@ void main() {
       });
 
       test('ES-5 node appears when ES-5 Encoder is present', () {
-        final slot = createEs5EncoderSlot(
-          enabledChannels: [1],
-        );
+        final slot = createEs5EncoderSlot(enabledChannels: [1]);
 
         expect(routingEditorCubit.shouldShowEs5Node([slot]), isTrue);
       });
@@ -528,11 +533,7 @@ void main() {
     group('ES-5 Node Conditional Display', () {
       test('ES-5 node does not appear when no ES-5 algorithms present', () {
         final slot = Slot(
-          algorithm: Algorithm(
-            algorithmIndex: 0,
-            guid: 'poly',
-            name: 'Poly',
-          ),
+          algorithm: Algorithm(algorithmIndex: 0, guid: 'poly', name: 'Poly'),
           routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
           pages: ParameterPages(algorithmIndex: 0, pages: []),
           parameters: const [],
@@ -564,11 +565,7 @@ void main() {
 
       test('ES-5 node disappears when all ES-5 algorithms removed', () {
         final polySlot = Slot(
-          algorithm: Algorithm(
-            algorithmIndex: 0,
-            guid: 'poly',
-            name: 'Poly',
-          ),
+          algorithm: Algorithm(algorithmIndex: 0, guid: 'poly', name: 'Poly'),
           routing: RoutingInfo(algorithmIndex: 0, routingInfo: []),
           pages: ParameterPages(algorithmIndex: 0, pages: []),
           parameters: const [],
@@ -625,7 +622,10 @@ void main() {
         final routings = [
           AlgorithmRouting.fromSlot(usbSlot, algorithmUuid: 'usb_test'),
           AlgorithmRouting.fromSlot(clockSlot, algorithmUuid: 'clock_test'),
-          AlgorithmRouting.fromSlot(euclideanSlot, algorithmUuid: 'euclidean_test'),
+          AlgorithmRouting.fromSlot(
+            euclideanSlot,
+            algorithmUuid: 'euclidean_test',
+          ),
           AlgorithmRouting.fromSlot(es5EncoderSlot, algorithmUuid: 'es5e_test'),
         ];
         final connections = ConnectionDiscoveryService.discoverConnections(
@@ -633,14 +633,8 @@ void main() {
         );
 
         // Verify USB connections (L/R)
-        expect(
-          connections.any((c) => c.destinationPortId == 'es5_L'),
-          isTrue,
-        );
-        expect(
-          connections.any((c) => c.destinationPortId == 'es5_R'),
-          isTrue,
-        );
+        expect(connections.any((c) => c.destinationPortId == 'es5_L'), isTrue);
+        expect(connections.any((c) => c.destinationPortId == 'es5_R'), isTrue);
 
         // Verify Clock connections (ports 1, 2)
         expect(

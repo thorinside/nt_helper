@@ -145,9 +145,7 @@ void main() {
       });
 
       test('should filter by category', () async {
-        final result = await tools.listAlgorithms({
-          'category': 'Clock',
-        });
+        final result = await tools.listAlgorithms({'category': 'Clock'});
 
         final decoded = jsonDecode(result);
         expect(decoded, isList);
@@ -162,17 +160,16 @@ void main() {
       });
 
       test('should filter by query text', () async {
-        final result = await tools.listAlgorithms({
-          'query': 'clock',
-        });
+        final result = await tools.listAlgorithms({'query': 'clock'});
 
         final decoded = jsonDecode(result);
         expect(decoded, isList);
 
         // Should find algorithms with 'clock' in name or description
-        final hasClockRelated = decoded.any((alg) =>
-          alg['name'].toString().toLowerCase().contains('clock') ||
-          alg['description'].toString().toLowerCase().contains('clock')
+        final hasClockRelated = decoded.any(
+          (alg) =>
+              alg['name'].toString().toLowerCase().contains('clock') ||
+              alg['description'].toString().toLowerCase().contains('clock'),
         );
         expect(hasClockRelated, isTrue);
       });

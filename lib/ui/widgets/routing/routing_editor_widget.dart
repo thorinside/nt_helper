@@ -1422,11 +1422,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
           es5ChannelToggles: es5Data?.toggles,
           es5ExpanderParameterNumbers: es5Data?.parameterNumbers,
           onEs5ToggleChanged: es5Data != null
-              ? (channel, enabled) => _handleEs5ToggleChange(
-                    algorithm.index,
-                    channel,
-                    enabled,
-                  )
+              ? (channel, enabled) =>
+                    _handleEs5ToggleChange(algorithm.index, channel, enabled)
               : null,
           // onTap: () => _handleNodeTap(nodeId), // Disable selection for now
         ),
@@ -1511,7 +1508,8 @@ class _RoutingEditorWidgetState extends State<RoutingEditorWidget> {
     Map<int, bool> toggles,
     Map<int, int> parameterNumbers,
     List<int> channelNumbers,
-  })? _extractEs5ToggleData(RoutingAlgorithm algorithm) {
+  })?
+  _extractEs5ToggleData(RoutingAlgorithm algorithm) {
     // Check if this is a Clock or Euclidean algorithm
     final guid = algorithm.algorithm.guid;
     if (guid != 'clck' && guid != 'eucp') {

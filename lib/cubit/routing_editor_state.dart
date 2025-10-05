@@ -71,7 +71,8 @@ sealed class RoutingEditorState with _$RoutingEditorState {
   const factory RoutingEditorState.loaded({
     required List<Port> physicalInputs, // 12 physical input ports
     required List<Port> physicalOutputs, // 8 physical output ports
-    @Default([]) List<Port> es5Inputs, // ES-5 expander input ports (conditional)
+    @Default([])
+    List<Port> es5Inputs, // ES-5 expander input ports (conditional)
     required List<RoutingAlgorithm> algorithms, // Algorithms with their ports
     required List<Connection> connections, // All routing connections
     @Default([]) List<RoutingBus> buses, // Available routing buses

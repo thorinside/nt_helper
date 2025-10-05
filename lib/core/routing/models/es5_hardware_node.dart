@@ -49,40 +49,46 @@ class ES5HardwareNode {
     final ports = <Port>[];
 
     // Create L port (audio, bus 29)
-    ports.add(Port(
-      id: 'es5_L',
-      name: 'L',
-      type: PortType.audio,
-      direction: PortDirection.input,
-      description: 'ES-5 Left (Silent Way)',
-      busValue: leftAudioBus,
-      isPhysical: true,
-      nodeId: id,
-    ));
+    ports.add(
+      Port(
+        id: 'es5_L',
+        name: 'L',
+        type: PortType.audio,
+        direction: PortDirection.input,
+        description: 'ES-5 Left (Silent Way)',
+        busValue: leftAudioBus,
+        isPhysical: true,
+        nodeId: id,
+      ),
+    );
 
     // Create R port (audio, bus 30)
-    ports.add(Port(
-      id: 'es5_R',
-      name: 'R',
-      type: PortType.audio,
-      direction: PortDirection.input,
-      description: 'ES-5 Right (Silent Way)',
-      busValue: rightAudioBus,
-      isPhysical: true,
-      nodeId: id,
-    ));
+    ports.add(
+      Port(
+        id: 'es5_R',
+        name: 'R',
+        type: PortType.audio,
+        direction: PortDirection.input,
+        description: 'ES-5 Right (Silent Way)',
+        busValue: rightAudioBus,
+        isPhysical: true,
+        nodeId: id,
+      ),
+    );
 
     // Create numbered ports 1-8 (gate, no fixed bus)
     for (int i = 1; i <= 8; i++) {
-      ports.add(Port(
-        id: 'es5_$i',
-        name: '$i',
-        type: PortType.gate,
-        direction: PortDirection.input,
-        description: 'ES-5 Output $i',
-        isPhysical: true,
-        nodeId: id,
-      ));
+      ports.add(
+        Port(
+          id: 'es5_$i',
+          name: '$i',
+          type: PortType.gate,
+          direction: PortDirection.input,
+          description: 'ES-5 Output $i',
+          isPhysical: true,
+          nodeId: id,
+        ),
+      );
     }
 
     debugPrint('[ES5HardwareNode] Created ${ports.length} ES-5 input ports');

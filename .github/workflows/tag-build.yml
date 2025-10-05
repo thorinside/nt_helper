@@ -5,6 +5,9 @@ on:
     tags:
       - "v*" # e.g., v1.0, v1.2.3, etc.
 
+env:
+  FLUTTER_VERSION: "3.35.5"
+
 permissions:
   contents: write # Needed for creating/updating GitHub releases
 
@@ -53,7 +56,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.35.1"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -103,7 +106,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.35.1"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -160,7 +163,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.35.1"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -204,7 +207,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.35.1"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install dependencies
         run: |

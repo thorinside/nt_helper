@@ -139,7 +139,10 @@ class DistingTools {
 
             // Add mapping information (performance page, MIDI, CV, etc.)
             try {
-              final mapping = await _controller.getParameterMapping(i, paramIndex);
+              final mapping = await _controller.getParameterMapping(
+                i,
+                paramIndex,
+              );
               if (mapping != null) {
                 final perfPageIndex = mapping.packedMappingData.perfPageIndex;
                 if (perfPageIndex > 0) {
@@ -147,7 +150,9 @@ class DistingTools {
                 }
               }
             } catch (e) {
-              debugPrint('Error getting mapping for slot $i param $paramIndex: $e');
+              debugPrint(
+                'Error getting mapping for slot $i param $paramIndex: $e',
+              );
             }
 
             parametersJsonList.add(paramData);

@@ -1167,9 +1167,7 @@ class MockDistingMidiManager implements IDistingMidiManager {
           updatedMappings[parameterNumber] = updatedMapping;
 
           // Create updated slot using copyWith
-          final updatedSlot = slot.copyWith(
-            mappings: updatedMappings,
-          );
+          final updatedSlot = slot.copyWith(mappings: updatedMappings);
 
           // Replace in state
           _state.presetSlots[slotIndex] = updatedSlot;

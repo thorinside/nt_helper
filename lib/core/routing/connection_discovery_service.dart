@@ -324,7 +324,9 @@ class ConnectionDiscoveryService {
             sourcePortId: outputPort.id,
             destinationPortId: es5PortId,
             connectionType: ConnectionType.algorithmToAlgorithm,
-            algorithmId: routing.algorithmUuid ?? ES5EncoderAlgorithmRouting.defaultAlgorithmUuid,
+            algorithmId:
+                routing.algorithmUuid ??
+                ES5EncoderAlgorithmRouting.defaultAlgorithmUuid,
             signalType: SignalType.gate,
             description: 'ES-5 Encoder mirror connection',
           ),

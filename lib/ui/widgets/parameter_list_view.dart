@@ -27,7 +27,7 @@ class ParameterListView extends StatelessWidget {
         // Note: valueString and enumStrings can be empty/filler for many parameters
         if (parameter == null || value == null) {
           debugPrint(
-            '[ParameterListView] Missing essential data for parameter $index in slot ${slot.algorithm.algorithmIndex}'
+            '[ParameterListView] Missing essential data for parameter $index in slot ${slot.algorithm.algorithmIndex}',
           );
           return const SizedBox.shrink();
         }
@@ -38,7 +38,8 @@ class ParameterListView extends StatelessWidget {
 
         // For string-type parameters (units 13, 14, 17), don't fetch unit
         // These parameters rely entirely on value strings or raw values
-        final shouldShowUnit = parameter.unit != 13 &&
+        final shouldShowUnit =
+            parameter.unit != 13 &&
             parameter.unit != 14 &&
             parameter.unit != 17;
         final unit = shouldShowUnit ? parameter.getUnitString(units) : null;

@@ -444,10 +444,14 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       for (final algo in currentState.algorithms) {
         debugPrint('  Algorithm ${algo.index}: ${algo.algorithm}');
         for (final port in algo.inputPorts) {
-          debugPrint('    Input: ${port.id} - "${port.name}" (direction: ${port.direction})');
+          debugPrint(
+            '    Input: ${port.id} - "${port.name}" (direction: ${port.direction})',
+          );
         }
         for (final port in algo.outputPorts) {
-          debugPrint('    Output: ${port.id} - "${port.name}" (direction: ${port.direction})');
+          debugPrint(
+            '    Output: ${port.id} - "${port.name}" (direction: ${port.direction})',
+          );
         }
       }
 
@@ -464,8 +468,12 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         throw ArgumentError('Target port not found: $targetPortId');
       }
 
-      debugPrint('Found source port: ${sourcePort.name} (${sourcePort.id}) - direction: ${sourcePort.direction}');
-      debugPrint('Found target port: ${targetPort.name} (${targetPort.id}) - direction: ${targetPort.direction}');
+      debugPrint(
+        'Found source port: ${sourcePort.name} (${sourcePort.id}) - direction: ${sourcePort.direction}',
+      );
+      debugPrint(
+        'Found target port: ${targetPort.name} (${targetPort.id}) - direction: ${targetPort.direction}',
+      );
 
       // Validate connection is valid (output -> input)
       debugPrint(
@@ -639,7 +647,8 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     } else if (hardwareOutputPortId == 'es5_R') {
       busNumber = 30; // ES-5 R
       debugPrint('Assigning bus 30 for ES-5 R');
-    } else if (hardwareOutputPortId.startsWith('es5_') && hardwareOutputPortId.length == 5) {
+    } else if (hardwareOutputPortId.startsWith('es5_') &&
+        hardwareOutputPortId.length == 5) {
       // ES-5 direct output ports (es5_1 through es5_8)
       final es5PortNumber = int.tryParse(hardwareOutputPortId.substring(4));
       if (es5PortNumber != null && es5PortNumber >= 1 && es5PortNumber <= 8) {
@@ -714,7 +723,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       algorithmOutputPort.id,
     );
     if (algorithmIndex == null) {
-      debugPrint('Could not find algorithm for port: ${algorithmOutputPort.id}');
+      debugPrint(
+        'Could not find algorithm for port: ${algorithmOutputPort.id}',
+      );
       return null;
     }
 
@@ -733,9 +744,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final slot = distingState.slots[algorithmIndex];
 
     // Extract channel number from port ID (format: {uuid}_channel_{N}_es5_output or similar)
-    final channelMatch = RegExp(r'_channel_(\d+)_').firstMatch(algorithmOutputPort.id);
+    final channelMatch = RegExp(
+      r'_channel_(\d+)_',
+    ).firstMatch(algorithmOutputPort.id);
     if (channelMatch == null) {
-      debugPrint('Could not extract channel number from port ID: ${algorithmOutputPort.id}');
+      debugPrint(
+        'Could not extract channel number from port ID: ${algorithmOutputPort.id}',
+      );
       return null;
     }
 
@@ -782,14 +797,18 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
       algorithmOutputPort.id,
     );
     if (algorithmIndex == null) {
-      debugPrint('Could not find algorithm for port: ${algorithmOutputPort.id}');
+      debugPrint(
+        'Could not find algorithm for port: ${algorithmOutputPort.id}',
+      );
       return null;
     }
 
     // Get the slot from DistingCubit
     final distingState = _distingCubit?.state;
     if (distingState is! DistingStateSynchronized) {
-      debugPrint('Cannot assign ES-5 Encoder output - Disting not synchronized');
+      debugPrint(
+        'Cannot assign ES-5 Encoder output - Disting not synchronized',
+      );
       return null;
     }
 
@@ -801,9 +820,13 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     final slot = distingState.slots[algorithmIndex];
 
     // Extract channel number from port ID (format: {uuid}_channel_{N}_output)
-    final channelMatch = RegExp(r'_channel_(\d+)_output').firstMatch(algorithmOutputPort.id);
+    final channelMatch = RegExp(
+      r'_channel_(\d+)_output',
+    ).firstMatch(algorithmOutputPort.id);
     if (channelMatch == null) {
-      debugPrint('Could not extract channel number from port ID: ${algorithmOutputPort.id}');
+      debugPrint(
+        'Could not extract channel number from port ID: ${algorithmOutputPort.id}',
+      );
       return null;
     }
 
@@ -901,7 +924,9 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
     if (sourceBusValue != null && sourceBusValue > 0) {
       // Source already has a bus - reuse it for fan-out
       busToUse = sourceBusValue;
-      debugPrint('Using existing source bus $busToUse for algorithm connection (fan-out)');
+      debugPrint(
+        'Using existing source bus $busToUse for algorithm connection (fan-out)',
+      );
     } else {
       // Source has no bus - allocate a new one
       // Prefer aux buses first, then fall back to any free internal bus.
@@ -913,12 +938,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
         );
       }
       busToUse = availableBus;
-      debugPrint('Allocated new internal bus $busToUse for algorithm connection');
+      debugPrint(
+        'Allocated new internal bus $busToUse for algorithm connection',
+      );
     }
 
     // Note: We're intentionally ignoring targetBusValue to allow easy overwriting
     if (targetBusValue != null && targetBusValue > 0) {
-      debugPrint('Overwriting target\'s existing bus $targetBusValue with bus $busToUse');
+      debugPrint(
+        'Overwriting target\'s existing bus $targetBusValue with bus $busToUse',
+      );
     }
 
     // Update both source output and target input bus parameters
@@ -2503,9 +2532,11 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
     // Clamp zoom level between 0.1x and 2.0x
     final clampedZoom = zoomLevel.clamp(0.1, 2.0);
-    
+
     emit(currentState.copyWith(zoomLevel: clampedZoom));
-    debugPrint('[RoutingEditor] Zoom level updated to ${(clampedZoom * 100).round()}%');
+    debugPrint(
+      '[RoutingEditor] Zoom level updated to ${(clampedZoom * 100).round()}%',
+    );
   }
 
   /// Zoom in by a factor
@@ -2543,8 +2574,16 @@ class RoutingEditorCubit extends Cubit<RoutingEditorState> {
 
   /// Get available zoom levels for dropdown
   static List<double> get availableZoomLevels => [
-        0.25, 0.33, 0.5, 0.67, 0.75, 1.0, 1.25, 1.5, 2.0
-      ];
+    0.25,
+    0.33,
+    0.5,
+    0.67,
+    0.75,
+    1.0,
+    1.25,
+    1.5,
+    2.0,
+  ];
 
   /// Get zoom percentage as integer
   int get zoomPercentage {

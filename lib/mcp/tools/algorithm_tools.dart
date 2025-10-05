@@ -27,7 +27,6 @@ class MCPAlgorithmTools {
     final String? algorithmName = params['algorithm_name'];
     final bool expandFeatures = params['expand_features'] ?? false;
 
-
     // Use shared algorithm resolver
     List<AlgorithmMetadata> algorithms;
     try {

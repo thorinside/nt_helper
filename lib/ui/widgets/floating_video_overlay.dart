@@ -51,7 +51,9 @@ class _FloatingVideoOverlayState extends State<FloatingVideoOverlay> {
   void _connectVideoFrameCubit() {
     // Don't reconnect if already connected
     if (_isConnected) {
-      debugPrint('[FloatingVideoOverlay] Already connected, skipping reconnection');
+      debugPrint(
+        '[FloatingVideoOverlay] Already connected, skipping reconnection',
+      );
       return;
     }
 

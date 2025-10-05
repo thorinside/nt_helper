@@ -712,7 +712,9 @@ class OfflineDistingMidiManager implements IDistingMidiManager {
         );
       }
     } catch (e) {
-      debugPrint('[OfflineDistingMidiManager] Error persisting perfPageIndex: $e');
+      debugPrint(
+        '[OfflineDistingMidiManager] Error persisting perfPageIndex: $e',
+      );
     }
   }
 

@@ -44,9 +44,6 @@ class ClockAlgorithmRouting extends Es5DirectOutputAlgorithmRouting {
       debugName: 'ClockAlgorithmRouting',
     );
 
-    return ClockAlgorithmRouting(
-      slot: slot,
-      config: configData.config,
-    );
+    return ClockAlgorithmRouting(slot: slot, config: configData.config);
   }
 }

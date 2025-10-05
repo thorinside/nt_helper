@@ -19,8 +19,11 @@ void main() {
       expect(file.existsSync(), isTrue, reason: 'clck.json file should exist');
 
       final jsonString = await file.readAsString();
-      expect(() => json.decode(jsonString), returnsNormally,
-          reason: 'clck.json should be valid JSON');
+      expect(
+        () => json.decode(jsonString),
+        returnsNormally,
+        reason: 'clck.json should be valid JSON',
+      );
 
       final jsonData = json.decode(jsonString);
       expect(jsonData['guid'], equals('clck'));
@@ -57,12 +60,14 @@ void main() {
         final tools = MCPAlgorithmTools(cubit);
 
         // Test with timeout to catch any hanging
-        final resultFuture = tools.getAlgorithmDetails({
-          'algorithm_guid': 'clck',
-        }).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => throw TimeoutException('getAlgorithmDetails timed out for clck'),
-        );
+        final resultFuture = tools
+            .getAlgorithmDetails({'algorithm_guid': 'clck'})
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => throw TimeoutException(
+                'getAlgorithmDetails timed out for clck',
+              ),
+            );
 
         final result = await resultFuture;
         final decoded = json.decode(result);
@@ -80,31 +85,38 @@ void main() {
       }
     });
 
-    test('Check for circular references or infinite loops in clck data', () async {
-      final file = File('docs/algorithms/clck.json');
-      final jsonString = await file.readAsString();
-      final jsonData = json.decode(jsonString);
+    test(
+      'Check for circular references or infinite loops in clck data',
+      () async {
+        final file = File('docs/algorithms/clck.json');
+        final jsonString = await file.readAsString();
+        final jsonData = json.decode(jsonString);
 
-      // Check if parameters have any suspicious patterns
-      final parameters = jsonData['parameters'] as List;
+        // Check if parameters have any suspicious patterns
+        final parameters = jsonData['parameters'] as List;
 
-      for (var i = 0; i < parameters.length; i++) {
-        final page = parameters[i];
-        expect(page, isA<Map>(), reason: 'Each parameter page should be a map');
+        for (var i = 0; i < parameters.length; i++) {
+          final page = parameters[i];
+          expect(
+            page,
+            isA<Map>(),
+            reason: 'Each parameter page should be a map',
+          );
 
-        if (page['params'] != null) {
-          final params = page['params'] as List;
-          for (var param in params) {
-            // Check for any self-referential fields
-            expect(param, isA<Map>(), reason: 'Each param should be a map');
+          if (page['params'] != null) {
+            final params = page['params'] as List;
+            for (var param in params) {
+              // Check for any self-referential fields
+              expect(param, isA<Map>(), reason: 'Each param should be a map');
 
-            // Check any enum_values for issues
-            if (param['enum_values'] != null) {
-              // Parameter ${param['name']} has enum_values: ${param['enum_values']}
+              // Check any enum_values for issues
+              if (param['enum_values'] != null) {
+                // Parameter ${param['name']} has enum_values: ${param['enum_values']}
+              }
             }
           }
         }
-      }
-    });
+      },
+    );
   });
 }

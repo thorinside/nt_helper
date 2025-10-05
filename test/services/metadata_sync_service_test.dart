@@ -10,7 +10,6 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
 
   TestMockDistingMidiManager({required this.testAlgorithms});
 
-  
   Future<List<AlgorithmInfo>> scanAlgorithms({
     Function(String algorithmName, double progress)? onProgress,
     bool Function()? isCancelled,
@@ -18,7 +17,6 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
     return testAlgorithms;
   }
 
-  
   Future<Map<String, dynamic>> scanSpecs({
     required String algorithmGuid,
     Function(String specName, double progress)? onProgress,
@@ -26,37 +24,32 @@ class TestMockDistingMidiManager implements IDistingMidiManager {
     return {};
   }
 
-  
   Future<List<int>> scanUnits() async {
     return [];
   }
 
-  
   Stream<Map<String, dynamic>> get slotUpdateStream =>
       Stream<Map<String, dynamic>>.empty();
 
-  
   Stream<Map<String, dynamic>> get parameterUpdateStream =>
       Stream<Map<String, dynamic>>.empty();
 
-  
   @override
   Future<void> dispose() async {}
 
-  
   Future<void> initialize() async {}
 
-  
   bool get isConnected => true;
 
-  
   @override
   void noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 // Helper to get parameters for an algorithm
 Future<List<ParameterEntry>> getParametersForAlgorithm(
-  AppDatabase db, String algorithmGuid) async {
+  AppDatabase db,
+  String algorithmGuid,
+) async {
   final query = db.select(db.parameters)
     ..where((p) => p.algorithmGuid.equals(algorithmGuid))
     ..orderBy([(p) => OrderingTerm.asc(p.parameterNumber)]);

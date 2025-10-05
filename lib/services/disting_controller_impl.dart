@@ -3,7 +3,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:nt_helper/cubit/disting_cubit.dart';
 import 'package:nt_helper/domain/disting_nt_sysex.dart'
-    show Algorithm, ParameterInfo, ParameterValue, ParameterEnumStrings, Mapping;
+    show
+        Algorithm,
+        ParameterInfo,
+        ParameterValue,
+        ParameterEnumStrings,
+        Mapping;
 import 'package:nt_helper/domain/i_disting_midi_manager.dart';
 import 'package:nt_helper/services/disting_controller.dart';
 import 'package:nt_helper/models/cpu_usage.dart';

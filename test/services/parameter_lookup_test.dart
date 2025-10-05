@@ -24,27 +24,31 @@ void main() {
 
     test('should find parameters with full names including prefixes', () async {
       // Insert test parameters with channel prefixes
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'test-algo',
-          parameterNumber: 0,
-          name: '1: Frequency',
-          minValue: const Value(0),
-          maxValue: const Value(100),
-          defaultValue: const Value(50),
-        ),
-      );
+      await database
+          .into(database.parameters)
+          .insert(
+            ParametersCompanion.insert(
+              algorithmGuid: 'test-algo',
+              parameterNumber: 0,
+              name: '1: Frequency',
+              minValue: const Value(0),
+              maxValue: const Value(100),
+              defaultValue: const Value(50),
+            ),
+          );
 
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'test-algo',
-          parameterNumber: 1,
-          name: '2: Frequency',
-          minValue: const Value(0),
-          maxValue: const Value(100),
-          defaultValue: const Value(50),
-        ),
-      );
+      await database
+          .into(database.parameters)
+          .insert(
+            ParametersCompanion.insert(
+              algorithmGuid: 'test-algo',
+              parameterNumber: 1,
+              name: '2: Frequency',
+              minValue: const Value(0),
+              maxValue: const Value(100),
+              defaultValue: const Value(50),
+            ),
+          );
 
       // Query parameters and verify we can find them by full name
       final query = database.select(database.parameters)
@@ -56,74 +60,85 @@ void main() {
       expect(params.any((p) => p.name == '2: Frequency'), isTrue);
     });
 
-    test('should distinguish between channels when looking up parameters', () async {
-      // Insert test parameters with same base name but different channels
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'multi-channel-algo',
-          parameterNumber: 0,
-          name: 'A: Level',
-          minValue: const Value(0),
-          maxValue: const Value(100),
-          defaultValue: const Value(75),
-        ),
-      );
+    test(
+      'should distinguish between channels when looking up parameters',
+      () async {
+        // Insert test parameters with same base name but different channels
+        await database
+            .into(database.parameters)
+            .insert(
+              ParametersCompanion.insert(
+                algorithmGuid: 'multi-channel-algo',
+                parameterNumber: 0,
+                name: 'A: Level',
+                minValue: const Value(0),
+                maxValue: const Value(100),
+                defaultValue: const Value(75),
+              ),
+            );
 
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'multi-channel-algo',
-          parameterNumber: 1,
-          name: 'B: Level',
-          minValue: const Value(0),
-          maxValue: const Value(100),
-          defaultValue: const Value(75),
-        ),
-      );
+        await database
+            .into(database.parameters)
+            .insert(
+              ParametersCompanion.insert(
+                algorithmGuid: 'multi-channel-algo',
+                parameterNumber: 1,
+                name: 'B: Level',
+                minValue: const Value(0),
+                maxValue: const Value(100),
+                defaultValue: const Value(75),
+              ),
+            );
 
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'multi-channel-algo',
-          parameterNumber: 2,
-          name: 'C: Level',
-          minValue: const Value(0),
-          maxValue: const Value(100),
-          defaultValue: const Value(75),
-        ),
-      );
+        await database
+            .into(database.parameters)
+            .insert(
+              ParametersCompanion.insert(
+                algorithmGuid: 'multi-channel-algo',
+                parameterNumber: 2,
+                name: 'C: Level',
+                minValue: const Value(0),
+                maxValue: const Value(100),
+                defaultValue: const Value(75),
+              ),
+            );
 
-      // Query and verify each parameter is distinct
-      final query = database.select(database.parameters)
-        ..where((p) => p.algorithmGuid.equals('multi-channel-algo'))
-        ..orderBy([(p) => OrderingTerm.asc(p.parameterNumber)]);
+        // Query and verify each parameter is distinct
+        final query = database.select(database.parameters)
+          ..where((p) => p.algorithmGuid.equals('multi-channel-algo'))
+          ..orderBy([(p) => OrderingTerm.asc(p.parameterNumber)]);
 
-      final params = await query.get();
+        final params = await query.get();
 
-      expect(params.length, equals(3));
+        expect(params.length, equals(3));
 
-      // Each should have unique parameter number
-      final paramNumbers = params.map((p) => p.parameterNumber).toSet();
-      expect(paramNumbers.length, equals(3));
+        // Each should have unique parameter number
+        final paramNumbers = params.map((p) => p.parameterNumber).toSet();
+        expect(paramNumbers.length, equals(3));
 
-      // Each should have unique name
-      final paramNames = params.map((p) => p.name).toSet();
-      expect(paramNames.length, equals(3));
+        // Each should have unique name
+        final paramNames = params.map((p) => p.name).toSet();
+        expect(paramNames.length, equals(3));
 
-      // Verify specific names exist
-      expect(paramNames, containsAll(['A: Level', 'B: Level', 'C: Level']));
-    });
+        // Verify specific names exist
+        expect(paramNames, containsAll(['A: Level', 'B: Level', 'C: Level']));
+      },
+    );
 
     test('should handle parameter queries by parameter number', () async {
       // Insert test parameters
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'test-algo-2',
-          parameterNumber: 5,
-          name: '1: Input Gain',
-          minValue: const Value(-60),
-          maxValue: const Value(12),
-          defaultValue: const Value(0),
-        ),
-      );
+      await database
+          .into(database.parameters)
+          .insert(
+            ParametersCompanion.insert(
+              algorithmGuid: 'test-algo-2',
+              parameterNumber: 5,
+              name: '1: Input Gain',
+              minValue: const Value(-60),
+              maxValue: const Value(12),
+              defaultValue: const Value(0),
+            ),
+          );
 
       // Query by parameter number
       final query = database.select(database.parameters)
@@ -139,18 +154,20 @@ void main() {
 
     test('should preserve parameter metadata with prefixed names', () async {
       // Insert parameter with full metadata
-      await database.into(database.parameters).insert(
-        ParametersCompanion.insert(
-          algorithmGuid: 'metadata-test',
-          parameterNumber: 10,
-          name: '2: Resonance',
-          minValue: const Value(0),
-          maxValue: const Value(100),
-          defaultValue: const Value(25),
-          powerOfTen: const Value(2),
-          rawUnitIndex: const Value(3),
-        ),
-      );
+      await database
+          .into(database.parameters)
+          .insert(
+            ParametersCompanion.insert(
+              algorithmGuid: 'metadata-test',
+              parameterNumber: 10,
+              name: '2: Resonance',
+              minValue: const Value(0),
+              maxValue: const Value(100),
+              defaultValue: const Value(25),
+              powerOfTen: const Value(2),
+              rawUnitIndex: const Value(3),
+            ),
+          );
 
       // Query and verify all metadata is preserved
       final query = database.select(database.parameters)

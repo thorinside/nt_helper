@@ -86,15 +86,17 @@ class MidiListenerCubit extends Cubit<MidiListenerState> {
         _midiCommand.disconnectDevice(currentState.selectedDevice!);
       }
       // Update the state to show disconnected
-      emit(currentState.copyWith(
-        selectedDevice: null,
-        isConnected: false,
-        lastDetectedType: null,
-        lastDetectedChannel: null,
-        lastDetectedCc: null,
-        lastDetectedNote: null,
-        lastDetectedTime: null,
-      ));
+      emit(
+        currentState.copyWith(
+          selectedDevice: null,
+          isConnected: false,
+          lastDetectedType: null,
+          lastDetectedChannel: null,
+          lastDetectedCc: null,
+          lastDetectedNote: null,
+          lastDetectedTime: null,
+        ),
+      );
     }
 
     // Reset consecutive count and signature

@@ -11,7 +11,8 @@ class DebugMetadataExportDialog extends StatefulWidget {
   const DebugMetadataExportDialog({super.key, required this.database});
 
   @override
-  State<DebugMetadataExportDialog> createState() => _DebugMetadataExportDialogState();
+  State<DebugMetadataExportDialog> createState() =>
+      _DebugMetadataExportDialogState();
 }
 
 class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
@@ -120,10 +121,7 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
             ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 10),
-            action: SnackBarAction(
-              label: 'Dismiss',
-              onPressed: () {},
-            ),
+            action: SnackBarAction(label: 'Dismiss', onPressed: () {}),
           ),
         );
       }
@@ -225,11 +223,13 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
                       ),
                       const SizedBox(height: 4),
                       ...(_previewData!['tableCounts'] as Map<String, dynamic>)
-                        .entries
-                        .map((e) => Text(
-                          '  • ${e.key}: ${e.value} entries',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        )),
+                          .entries
+                          .map(
+                            (e) => Text(
+                              '  • ${e.key}: ${e.value} entries',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
                       const SizedBox(height: 8),
                     ],
                     if (_previewData!['estimatedSizeKB'] != null)
@@ -248,7 +248,9 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.5),
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -272,7 +274,9 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -307,7 +311,9 @@ class _DebugMetadataExportDialogState extends State<DebugMetadataExportDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(

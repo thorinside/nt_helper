@@ -38,7 +38,9 @@ class MetadataImportService {
       await _importParameters(tables['parameters'] as List<dynamic>?);
       await _importParameterEnums(tables['parameterEnums'] as List<dynamic>?);
       await _importParameterPages(tables['parameterPages'] as List<dynamic>?);
-      await _importParameterPageItems(tables['parameterPageItems'] as List<dynamic>?);
+      await _importParameterPageItems(
+        tables['parameterPageItems'] as List<dynamic>?,
+      );
       await _importMetadataCache(tables['metadataCache'] as List<dynamic>?);
 
       // Log import summary
@@ -74,10 +76,12 @@ class MetadataImportService {
     final entries = <UnitsCompanion>[];
 
     for (final unitData in unitsList) {
-      entries.add(UnitsCompanion.insert(
-        id: Value(unitData['id'] as int),
-        unitString: unitData['unitString'] as String,
-      ));
+      entries.add(
+        UnitsCompanion.insert(
+          id: Value(unitData['id'] as int),
+          unitString: unitData['unitString'] as String,
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -100,12 +104,14 @@ class MetadataImportService {
     final entries = <AlgorithmsCompanion>[];
 
     for (final algoData in algorithmsList) {
-      entries.add(AlgorithmsCompanion(
-        guid: Value(algoData['guid'] as String),
-        name: Value(algoData['name'] as String),
-        numSpecifications: Value(algoData['numSpecifications'] as int),
-        pluginFilePath: Value(algoData['pluginFilePath'] as String?),
-      ));
+      entries.add(
+        AlgorithmsCompanion(
+          guid: Value(algoData['guid'] as String),
+          name: Value(algoData['name'] as String),
+          numSpecifications: Value(algoData['numSpecifications'] as int),
+          pluginFilePath: Value(algoData['pluginFilePath'] as String?),
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -128,15 +134,17 @@ class MetadataImportService {
     final entries = <SpecificationsCompanion>[];
 
     for (final specData in specsList) {
-      entries.add(SpecificationsCompanion(
-        algorithmGuid: Value(specData['algorithmGuid'] as String),
-        specIndex: Value(specData['specIndex'] as int),
-        name: Value(specData['name'] as String),
-        minValue: Value(specData['minValue'] as int),
-        maxValue: Value(specData['maxValue'] as int),
-        defaultValue: Value(specData['defaultValue'] as int),
-        type: Value(specData['type'] as int),
-      ));
+      entries.add(
+        SpecificationsCompanion(
+          algorithmGuid: Value(specData['algorithmGuid'] as String),
+          specIndex: Value(specData['specIndex'] as int),
+          name: Value(specData['name'] as String),
+          minValue: Value(specData['minValue'] as int),
+          maxValue: Value(specData['maxValue'] as int),
+          defaultValue: Value(specData['defaultValue'] as int),
+          type: Value(specData['type'] as int),
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -159,17 +167,19 @@ class MetadataImportService {
     final entries = <ParametersCompanion>[];
 
     for (final paramData in paramsList) {
-      entries.add(ParametersCompanion(
-        algorithmGuid: Value(paramData['algorithmGuid'] as String),
-        parameterNumber: Value(paramData['parameterNumber'] as int),
-        name: Value(paramData['name'] as String),
-        minValue: Value(paramData['minValue'] as int?),
-        maxValue: Value(paramData['maxValue'] as int?),
-        defaultValue: Value(paramData['defaultValue'] as int?),
-        unitId: Value(paramData['unitId'] as int?),
-        powerOfTen: Value(paramData['powerOfTen'] as int?),
-        rawUnitIndex: Value(paramData['rawUnitIndex'] as int?),
-      ));
+      entries.add(
+        ParametersCompanion(
+          algorithmGuid: Value(paramData['algorithmGuid'] as String),
+          parameterNumber: Value(paramData['parameterNumber'] as int),
+          name: Value(paramData['name'] as String),
+          minValue: Value(paramData['minValue'] as int?),
+          maxValue: Value(paramData['maxValue'] as int?),
+          defaultValue: Value(paramData['defaultValue'] as int?),
+          unitId: Value(paramData['unitId'] as int?),
+          powerOfTen: Value(paramData['powerOfTen'] as int?),
+          rawUnitIndex: Value(paramData['rawUnitIndex'] as int?),
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -192,12 +202,14 @@ class MetadataImportService {
     final entries = <ParameterEnumsCompanion>[];
 
     for (final enumData in enumsList) {
-      entries.add(ParameterEnumsCompanion(
-        algorithmGuid: Value(enumData['algorithmGuid'] as String),
-        parameterNumber: Value(enumData['parameterNumber'] as int),
-        enumIndex: Value(enumData['enumIndex'] as int),
-        enumString: Value(enumData['enumString'] as String),
-      ));
+      entries.add(
+        ParameterEnumsCompanion(
+          algorithmGuid: Value(enumData['algorithmGuid'] as String),
+          parameterNumber: Value(enumData['parameterNumber'] as int),
+          enumIndex: Value(enumData['enumIndex'] as int),
+          enumString: Value(enumData['enumString'] as String),
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -220,11 +232,13 @@ class MetadataImportService {
     final entries = <ParameterPagesCompanion>[];
 
     for (final pageData in pagesList) {
-      entries.add(ParameterPagesCompanion(
-        algorithmGuid: Value(pageData['algorithmGuid'] as String),
-        pageIndex: Value(pageData['pageIndex'] as int),
-        name: Value(pageData['name'] as String),
-      ));
+      entries.add(
+        ParameterPagesCompanion(
+          algorithmGuid: Value(pageData['algorithmGuid'] as String),
+          pageIndex: Value(pageData['pageIndex'] as int),
+          name: Value(pageData['name'] as String),
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -247,11 +261,13 @@ class MetadataImportService {
     final entries = <ParameterPageItemsCompanion>[];
 
     for (final itemData in itemsList) {
-      entries.add(ParameterPageItemsCompanion(
-        algorithmGuid: Value(itemData['algorithmGuid'] as String),
-        pageIndex: Value(itemData['pageIndex'] as int),
-        parameterNumber: Value(itemData['parameterNumber'] as int),
-      ));
+      entries.add(
+        ParameterPageItemsCompanion(
+          algorithmGuid: Value(itemData['algorithmGuid'] as String),
+          pageIndex: Value(itemData['pageIndex'] as int),
+          parameterNumber: Value(itemData['parameterNumber'] as int),
+        ),
+      );
     }
 
     await database.batch((batch) {
@@ -274,10 +290,12 @@ class MetadataImportService {
     final entries = <MetadataCacheCompanion>[];
 
     for (final cacheData in cacheList) {
-      entries.add(MetadataCacheCompanion(
-        cacheKey: Value(cacheData['cacheKey'] as String),
-        cacheValue: Value(cacheData['cacheValue'] as String),
-      ));
+      entries.add(
+        MetadataCacheCompanion(
+          cacheKey: Value(cacheData['cacheKey'] as String),
+          cacheValue: Value(cacheData['cacheValue'] as String),
+        ),
+      );
     }
 
     await database.batch((batch) {

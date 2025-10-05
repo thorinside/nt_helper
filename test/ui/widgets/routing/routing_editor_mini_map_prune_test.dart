@@ -42,9 +42,11 @@ void main() {
       await controller.close();
     }); */
 
-    testWidgets('old algorithm nodes are removed and new ones initialized', (
-      tester,
-    ) async {}, skip: true); // Flaky: pumpAndSettle timeout on complex routing widget
+    testWidgets(
+      'old algorithm nodes are removed and new ones initialized',
+      (tester) async {},
+      skip: true,
+    ); // Flaky: pumpAndSettle timeout on complex routing widget
 
     // Skipped test due to pumpAndSettle timeout
     /*testWidgets('old algorithm nodes are removed and new ones initialized - DISABLED', (

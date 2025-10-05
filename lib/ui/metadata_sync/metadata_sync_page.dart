@@ -256,11 +256,14 @@ class MetadataSyncPage extends StatelessWidget {
                                     enabled: !isBusy,
                                     child: Row(
                                       children: [
-                                        Icon(Icons.bug_report,
+                                        Icon(
+                                          Icons.bug_report,
                                           size: 20,
-                                          color: Colors.orange.shade600),
+                                          color: Colors.orange.shade600,
+                                        ),
                                         const SizedBox(width: 12),
-                                        Text('DEBUG: Export Full Metadata',
+                                        Text(
+                                          'DEBUG: Export Full Metadata',
                                           style: TextStyle(
                                             color: Colors.orange.shade700,
                                           ),

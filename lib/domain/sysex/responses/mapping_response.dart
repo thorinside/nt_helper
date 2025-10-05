@@ -23,10 +23,7 @@ class MappingResponse extends SysexResponse {
     return Mapping(
       algorithmIndex: algorithmIndex,
       parameterNumber: parameterNumber,
-      packedMappingData: PackedMappingData.fromBytes(
-        version,
-        mappingData,
-      ),
+      packedMappingData: PackedMappingData.fromBytes(version, mappingData),
     );
   }
 }

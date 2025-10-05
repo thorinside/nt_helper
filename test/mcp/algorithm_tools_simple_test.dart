@@ -12,11 +12,13 @@ void main() {
       // which is the suspected cause of the timeout
       expect(
         () => service.getAllAlgorithms(),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('not initialized'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('not initialized'),
+          ),
+        ),
       );
     });
 
@@ -25,11 +27,13 @@ void main() {
 
       expect(
         () => service.getAlgorithmByGuid('clck'),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('not initialized'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('not initialized'),
+          ),
+        ),
       );
     });
   });

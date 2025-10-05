@@ -50,8 +50,7 @@ class ParameterValueDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final textStyle =
-        widescreen ? textTheme.labelLarge : textTheme.labelSmall;
+    final textStyle = widescreen ? textTheme.labelLarge : textTheme.labelSmall;
 
     // If BPM or file editor, hide default display (handled elsewhere)
     if (isBpmUnit || hasFileEditor) {
@@ -74,18 +73,13 @@ class ParameterValueDisplay extends StatelessWidget {
         requestFocusOnTap: false,
         initialSelection: dropdownItems![currentValue],
         inputDecorationTheme: const InputDecorationTheme(
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 12.0,
-            vertical: 8.0,
-          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           border: OutlineInputBorder(),
           isDense: true,
         ),
         textStyle: widescreen ? textTheme.labelLarge : textTheme.labelMedium,
         dropdownMenuEntries: dropdownItems!
-            .map(
-              (item) => DropdownMenuEntry(value: item, label: item),
-            )
+            .map((item) => DropdownMenuEntry(value: item, label: item))
             .toList(),
         onSelected: (value) {
           final newValue = dropdownItems!.indexOf(value!).clamp(min, max);
@@ -96,10 +90,7 @@ class ParameterValueDisplay extends StatelessWidget {
 
     // MIDI note parameters (but not percentages)
     if (name.toLowerCase().contains("note") && unit != "%") {
-      return Text(
-        midiNoteToNoteString(currentValue),
-        style: textStyle,
-      );
+      return Text(midiNoteToNoteString(currentValue), style: textStyle);
     }
 
     // MIDI channel parameters
@@ -138,9 +129,6 @@ class ParameterValueDisplay extends StatelessWidget {
     }
 
     // Default: raw integer value
-    return Text(
-      currentValue.toString(),
-      style: textStyle,
-    );
+    return Text(currentValue.toString(), style: textStyle);
   }
 }

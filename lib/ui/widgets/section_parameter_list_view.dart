@@ -73,8 +73,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     perfParams.sort((a, b) {
       final mappingA = widget.slot.mappings[a];
       final mappingB = widget.slot.mappings[b];
-      final pageCompare = mappingA.packedMappingData.perfPageIndex
-          .compareTo(mappingB.packedMappingData.perfPageIndex);
+      final pageCompare = mappingA.packedMappingData.perfPageIndex.compareTo(
+        mappingB.packedMappingData.perfPageIndex,
+      );
       if (pageCompare != 0) return pageCompare;
       return a.compareTo(b);
     });
@@ -110,8 +111,12 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     final value = widget.slot.values.elementAtOrNull(parameterNumber);
     final enumStrings = widget.slot.enums.elementAtOrNull(parameterNumber);
     final mapping = widget.slot.mappings.elementAtOrNull(parameterNumber);
-    final valueString = widget.slot.valueStrings.elementAtOrNull(parameterNumber);
-    final parameterInfo = widget.slot.parameters.elementAtOrNull(parameterNumber);
+    final valueString = widget.slot.valueStrings.elementAtOrNull(
+      parameterNumber,
+    );
+    final parameterInfo = widget.slot.parameters.elementAtOrNull(
+      parameterNumber,
+    );
 
     // Skip if missing essential data
     if (value == null || parameterInfo == null || mapping == null) {
@@ -121,10 +126,13 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
     final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
     final safeValueString = valueString ?? ParameterValueString.filler();
     // For string-type parameters (units 13, 14, 17), don't fetch unit
-    final shouldShowUnit = parameterInfo.unit != 13 &&
+    final shouldShowUnit =
+        parameterInfo.unit != 13 &&
         parameterInfo.unit != 14 &&
         parameterInfo.unit != 17;
-    final unit = shouldShowUnit ? parameterInfo.getUnitString(widget.units) : null;
+    final unit = shouldShowUnit
+        ? parameterInfo.getUnitString(widget.units)
+        : null;
     final perfPageIndex = mapping.packedMappingData.perfPageIndex;
 
     return Padding(
@@ -175,12 +183,17 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         );
       }
     } catch (e) {
-      debugPrint('[SectionParameterListView] Error removing from performance page: $e');
+      debugPrint(
+        '[SectionParameterListView] Error removing from performance page: $e',
+      );
     }
   }
 
   // Assign parameter to performance page
-  Future<void> _assignToPerformancePage(int parameterNumber, int pageIndex) async {
+  Future<void> _assignToPerformancePage(
+    int parameterNumber,
+    int pageIndex,
+  ) async {
     // Optimistically update the UI immediately
     setState(() {
       _optimisticPerfPageAssignments[parameterNumber] = pageIndex;
@@ -211,7 +224,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
         }
       }
     } catch (e) {
-      debugPrint('[SectionParameterListView] Error assigning to performance page: $e');
+      debugPrint(
+        '[SectionParameterListView] Error assigning to performance page: $e',
+      );
       // Revert optimistic update on error
       if (mounted) {
         setState(() {
@@ -233,7 +248,8 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
   }) {
     // Use optimistic value if available, otherwise use actual mapping data
     final actualPerfPageIndex = mapping?.packedMappingData.perfPageIndex ?? 0;
-    final perfPageIndex = _optimisticPerfPageAssignments[parameterNumber] ?? actualPerfPageIndex;
+    final perfPageIndex =
+        _optimisticPerfPageAssignments[parameterNumber] ?? actualPerfPageIndex;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -257,7 +273,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
             value: perfPageIndex,
             isDense: true,
             underline: const SizedBox.shrink(),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 11),
             hint: const Text('Page'),
             padding: const EdgeInsets.symmetric(horizontal: 4),
             onChanged: (newValue) {
@@ -266,10 +284,7 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               }
             },
             items: [
-              const DropdownMenuItem(
-                value: 0,
-                child: Text('Not Assigned'),
-              ),
+              const DropdownMenuItem(value: 0, child: Text('Not Assigned')),
               ...List.generate(15, (i) {
                 return DropdownMenuItem(
                   value: i + 1,
@@ -292,9 +307,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
       initiallyExpanded: !isEmpty,
       title: Text(
         'Performance Parameters (${perfParams.length})',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
       ),
       children: isEmpty
           ? [
@@ -302,9 +317,9 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   'No parameters assigned to performance pages',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                 ),
               ),
             ]
@@ -406,56 +421,60 @@ class _SectionParameterListViewState extends State<SectionParameterListView> {
               return Padding(
                 padding: const EdgeInsets.only(left: 8, right: 8),
                 child: ExpansionTile(
-                    initiallyExpanded: !_isCollapsed,
-                    controller: _tileControllers.elementAt(index),
-                    title: Text(page.name),
-                    children: page.parameters.map((parameterNumber) {
-                      // Use safe access with bounds checking
-                      final value = widget.slot.values.elementAtOrNull(
-                        parameterNumber,
-                      );
-                      final enumStrings = widget.slot.enums.elementAtOrNull(
-                        parameterNumber,
-                      );
-                      final mapping = widget.slot.mappings.elementAtOrNull(
-                        parameterNumber,
-                      );
-                      final valueString = widget.slot.valueStrings.elementAtOrNull(
-                        parameterNumber,
-                      );
-                      var parameterInfo = widget.slot.parameters.elementAtOrNull(
-                        parameterNumber,
-                      );
+                  initiallyExpanded: !_isCollapsed,
+                  controller: _tileControllers.elementAt(index),
+                  title: Text(page.name),
+                  children: page.parameters.map((parameterNumber) {
+                    // Use safe access with bounds checking
+                    final value = widget.slot.values.elementAtOrNull(
+                      parameterNumber,
+                    );
+                    final enumStrings = widget.slot.enums.elementAtOrNull(
+                      parameterNumber,
+                    );
+                    final mapping = widget.slot.mappings.elementAtOrNull(
+                      parameterNumber,
+                    );
+                    final valueString = widget.slot.valueStrings
+                        .elementAtOrNull(parameterNumber);
+                    var parameterInfo = widget.slot.parameters.elementAtOrNull(
+                      parameterNumber,
+                    );
 
-                      // Skip this parameter if we don't have essential data
-                      // Note: valueString and enumStrings can be empty/filler for many parameters
-                      if (value == null || parameterInfo == null) {
-                        debugPrint(
-                          '[SectionParameterListView] Missing essential data for parameter $parameterNumber in slot ${widget.slot.algorithm.algorithmIndex}'
-                        );
-                        return const SizedBox.shrink();
-                      }
-
-                      // Use filler/empty data if not available
-                      final safeEnumStrings = enumStrings ?? ParameterEnumStrings.filler();
-                      final safeValueString = valueString ?? ParameterValueString.filler();
-
-                      // For string-type parameters (units 13, 14, 17), don't fetch unit
-                      final shouldShowUnit = parameterInfo.unit != 13 &&
-                          parameterInfo.unit != 14 &&
-                          parameterInfo.unit != 17;
-                      final unit = shouldShowUnit ? parameterInfo.getUnitString(widget.units) : null;
-
-                      return _buildParameterRowWithPageSelector(
-                        parameterNumber: parameterNumber,
-                        parameterInfo: parameterInfo,
-                        value: value,
-                        enumStrings: safeEnumStrings,
-                        mapping: mapping,
-                        valueString: safeValueString,
-                        unit: unit,
+                    // Skip this parameter if we don't have essential data
+                    // Note: valueString and enumStrings can be empty/filler for many parameters
+                    if (value == null || parameterInfo == null) {
+                      debugPrint(
+                        '[SectionParameterListView] Missing essential data for parameter $parameterNumber in slot ${widget.slot.algorithm.algorithmIndex}',
                       );
-                    }).toList(),
+                      return const SizedBox.shrink();
+                    }
+
+                    // Use filler/empty data if not available
+                    final safeEnumStrings =
+                        enumStrings ?? ParameterEnumStrings.filler();
+                    final safeValueString =
+                        valueString ?? ParameterValueString.filler();
+
+                    // For string-type parameters (units 13, 14, 17), don't fetch unit
+                    final shouldShowUnit =
+                        parameterInfo.unit != 13 &&
+                        parameterInfo.unit != 14 &&
+                        parameterInfo.unit != 17;
+                    final unit = shouldShowUnit
+                        ? parameterInfo.getUnitString(widget.units)
+                        : null;
+
+                    return _buildParameterRowWithPageSelector(
+                      parameterNumber: parameterNumber,
+                      parameterInfo: parameterInfo,
+                      value: value,
+                      enumStrings: safeEnumStrings,
+                      mapping: mapping,
+                      valueString: safeValueString,
+                      unit: unit,
+                    );
+                  }).toList(),
                 ),
               );
             }),

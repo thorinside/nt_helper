@@ -1934,14 +1934,12 @@ class DistingCubit extends Cubit<DistingState> {
     );
 
     // 2. Send update to hardware (non-blocking)
-    disting.setPerformancePageMapping(
-      slotIndex,
-      parameterNumber,
-      perfPageIndex,
-    ).catchError((e, s) {
-      debugPrint("Error sending performance page mapping to hardware: $e");
-      debugPrintStack(stackTrace: s);
-    });
+    disting
+        .setPerformancePageMapping(slotIndex, parameterNumber, perfPageIndex)
+        .catchError((e, s) {
+          debugPrint("Error sending performance page mapping to hardware: $e");
+          debugPrintStack(stackTrace: s);
+        });
 
     // 3. Verify by reading back the specific parameter mapping with retry
     const maxRetries = 4; // Try up to 4 times
@@ -2215,7 +2213,9 @@ class DistingCubit extends Cubit<DistingState> {
     final slotIndex = _programRefreshSlot;
     if (slotIndex == null) return;
 
-    debugPrint('[ProgramRefresh] Executing refresh for slot $slotIndex (attempt ${_programRefreshRetries + 1})');
+    debugPrint(
+      '[ProgramRefresh] Executing refresh for slot $slotIndex (attempt ${_programRefreshRetries + 1})',
+    );
 
     final currentState = state;
     if (currentState is! DistingStateSynchronized) {
@@ -2249,7 +2249,6 @@ class DistingCubit extends Cubit<DistingState> {
       _programRefreshTimer = null;
       _programRefreshSlot = null;
       _programRefreshRetries = 0;
-
     } catch (e, stackTrace) {
       debugPrint('[ProgramRefresh] Error refreshing slot $slotIndex: $e');
 
@@ -2258,7 +2257,9 @@ class DistingCubit extends Cubit<DistingState> {
         _programRefreshRetries++;
         final delaySeconds = _programRefreshRetries; // 1s, 2s, 3s
 
-        debugPrint('[ProgramRefresh] Retrying in ${delaySeconds}s (attempt ${_programRefreshRetries + 1}/4)');
+        debugPrint(
+          '[ProgramRefresh] Retrying in ${delaySeconds}s (attempt ${_programRefreshRetries + 1}/4)',
+        );
 
         _programRefreshTimer = Timer(
           Duration(seconds: delaySeconds),
@@ -2288,32 +2289,32 @@ class DistingCubit extends Cubit<DistingState> {
       case DistingStateSynchronized():
         // return a list of parameters that have performance page assignments
         // from the state.
-        return state.slots.fold(
-          List<MappedParameter>.empty(growable: true),
-          (acc, slot) {
-            acc.addAll(
-              slot.mappings
-                  .where(
-                    (mapping) =>
-                        mapping.parameterNumber != -1 &&
-                        mapping.packedMappingData.isPerformance(),
-                  )
-                  .map((mapping) {
-                    var parameterNumber = mapping.parameterNumber;
-                    return MappedParameter(
-                      parameter: slot.parameters[parameterNumber],
-                      value: slot.values[parameterNumber],
-                      enums: slot.enums[parameterNumber],
-                      valueString: slot.valueStrings[parameterNumber],
-                      mapping: mapping,
-                      algorithm: slot.algorithm,
-                    );
-                  })
-                  .toList(),
-            );
-            return acc;
-          },
-        );
+        return state.slots.fold(List<MappedParameter>.empty(growable: true), (
+          acc,
+          slot,
+        ) {
+          acc.addAll(
+            slot.mappings
+                .where(
+                  (mapping) =>
+                      mapping.parameterNumber != -1 &&
+                      mapping.packedMappingData.isPerformance(),
+                )
+                .map((mapping) {
+                  var parameterNumber = mapping.parameterNumber;
+                  return MappedParameter(
+                    parameter: slot.parameters[parameterNumber],
+                    value: slot.values[parameterNumber],
+                    enums: slot.enums[parameterNumber],
+                    valueString: slot.valueStrings[parameterNumber],
+                    mapping: mapping,
+                    algorithm: slot.algorithm,
+                  );
+                })
+                .toList(),
+          );
+          return acc;
+        });
       default:
         return [];
     }

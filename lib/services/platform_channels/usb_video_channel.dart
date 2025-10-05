@@ -94,13 +94,17 @@ class UsbVideoChannel {
     _videoStream = _eventChannel.receiveBroadcastStream({'deviceId': deviceId});
 
     // Add error handling and debugging to the stream
-    _videoStream = _videoStream!.handleError((error) {
-      _debugLog('Stream error: $error');
-      _debugLog('Stream error type: ${error.runtimeType}');
-    }).map((data) {
-      _debugLog('Received data: ${data.runtimeType}, size: ${data is List ? data.length : 'unknown'}');
-      return data;
-    });
+    _videoStream = _videoStream!
+        .handleError((error) {
+          _debugLog('Stream error: $error');
+          _debugLog('Stream error type: ${error.runtimeType}');
+        })
+        .map((data) {
+          _debugLog(
+            'Received data: ${data.runtimeType}, size: ${data is List ? data.length : 'unknown'}',
+          );
+          return data;
+        });
 
     // Then call the method channel to start the capture (after event channel is ready)
     _channel

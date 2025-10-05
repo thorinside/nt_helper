@@ -77,9 +77,13 @@ class MobileDrillDownNavigator extends StatelessWidget {
                               segment,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isLast
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                                 color: isLast
-                                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant
                                     : Theme.of(context).colorScheme.primary,
                               ),
                             ),
@@ -121,11 +125,15 @@ class MobileDrillDownNavigator extends StatelessWidget {
                       // Clean up the display name
                       String displayName = item.name;
                       if (displayName.endsWith('/')) {
-                        displayName = displayName.substring(0, displayName.length - 1);
+                        displayName = displayName.substring(
+                          0,
+                          displayName.length - 1,
+                        );
                       }
 
                       final isJsonPreset =
-                          !item.isDirectory && item.name.toLowerCase().endsWith('.json');
+                          !item.isDirectory &&
+                          item.name.toLowerCase().endsWith('.json');
                       final isParentDir = item.name == '..';
 
                       return ListTile(
@@ -135,22 +143,26 @@ class MobileDrillDownNavigator extends StatelessWidget {
                               : item.isDirectory
                               ? Icons.folder
                               : isJsonPreset
-                                  ? Icons.music_note
-                                  : Icons.insert_drive_file,
+                              ? Icons.music_note
+                              : Icons.insert_drive_file,
                           size: 28,
                           color: isParentDir
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.7)
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.7)
                               : item.isDirectory
                               ? Theme.of(context).colorScheme.primary
                               : isJsonPreset
-                                  ? Theme.of(context).colorScheme.tertiary
-                                  : Theme.of(context).colorScheme.secondary,
+                              ? Theme.of(context).colorScheme.tertiary
+                              : Theme.of(context).colorScheme.secondary,
                         ),
                         title: Text(
                           displayName,
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                         subtitle: !item.isDirectory
@@ -162,11 +174,15 @@ class MobileDrillDownNavigator extends StatelessWidget {
                         trailing: item.isDirectory
                             ? Icon(
                                 Icons.chevron_right,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               )
                             : null,
                         selected: isSelected,
-                        selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+                        selectedTileColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
                         onTap: () => onItemTap(item),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16.0,

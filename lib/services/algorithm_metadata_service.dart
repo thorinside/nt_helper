@@ -52,7 +52,9 @@ class AlgorithmMetadataService {
 
       // Check if the asset exists
       try {
-        final manifestContent = await rootBundle.loadString('AssetManifest.json');
+        final manifestContent = await rootBundle.loadString(
+          'AssetManifest.json',
+        );
         final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
         if (!manifestMap.containsKey(bundledMetadataPath)) {
@@ -61,9 +63,13 @@ class AlgorithmMetadataService {
         }
 
         // Import the bundled metadata
-        debugPrint('Found bundled metadata, importing to enable offline mode...');
+        debugPrint(
+          'Found bundled metadata, importing to enable offline mode...',
+        );
         final importService = MetadataImportService(database);
-        final success = await importService.importFromAsset(bundledMetadataPath);
+        final success = await importService.importFromAsset(
+          bundledMetadataPath,
+        );
 
         if (success) {
           debugPrint('Successfully imported bundled metadata for offline mode');

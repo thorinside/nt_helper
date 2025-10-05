@@ -221,65 +221,70 @@ void main() {
       expect(es5Conn.isOutput, isTrue);
     });
 
-    test('mixed USB outputs (ES-5 and standard) create correct connections', () {
-      final usbFromHost = _FakeRouting(
-        id: 'usb_from_host',
-        outputs: [
-          _outPort('usb_ch1', 13), // Standard output 1
-          _outPort('usb_ch2', 29), // ES-5 L
-          _outPort('usb_ch3', 30), // ES-5 R
-          _outPort('usb_ch4', 14), // Standard output 2
-        ],
-      );
+    test(
+      'mixed USB outputs (ES-5 and standard) create correct connections',
+      () {
+        final usbFromHost = _FakeRouting(
+          id: 'usb_from_host',
+          outputs: [
+            _outPort('usb_ch1', 13), // Standard output 1
+            _outPort('usb_ch2', 29), // ES-5 L
+            _outPort('usb_ch3', 30), // ES-5 R
+            _outPort('usb_ch4', 14), // Standard output 2
+          ],
+        );
 
-      final conns = ConnectionDiscoveryService.discoverConnections([usbFromHost]);
+        final conns = ConnectionDiscoveryService.discoverConnections([
+          usbFromHost,
+        ]);
 
-      // Standard output to hw_out_1 (bus 13)
-      expect(
-        conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.hardwareOutput &&
-              c.busNumber == 13 &&
-              c.destinationPortId == 'hw_out_1',
-        ),
-        isTrue,
-      );
+        // Standard output to hw_out_1 (bus 13)
+        expect(
+          conns.any(
+            (c) =>
+                c.connectionType == ConnectionType.hardwareOutput &&
+                c.busNumber == 13 &&
+                c.destinationPortId == 'hw_out_1',
+          ),
+          isTrue,
+        );
 
-      // ES-5 L connection (bus 29)
-      expect(
-        conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.hardwareOutput &&
-              c.busNumber == 29 &&
-              c.destinationPortId == 'es5_L' &&
-              c.signalType == SignalType.audio,
-        ),
-        isTrue,
-      );
+        // ES-5 L connection (bus 29)
+        expect(
+          conns.any(
+            (c) =>
+                c.connectionType == ConnectionType.hardwareOutput &&
+                c.busNumber == 29 &&
+                c.destinationPortId == 'es5_L' &&
+                c.signalType == SignalType.audio,
+          ),
+          isTrue,
+        );
 
-      // ES-5 R connection (bus 30)
-      expect(
-        conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.hardwareOutput &&
-              c.busNumber == 30 &&
-              c.destinationPortId == 'es5_R' &&
-              c.signalType == SignalType.audio,
-        ),
-        isTrue,
-      );
+        // ES-5 R connection (bus 30)
+        expect(
+          conns.any(
+            (c) =>
+                c.connectionType == ConnectionType.hardwareOutput &&
+                c.busNumber == 30 &&
+                c.destinationPortId == 'es5_R' &&
+                c.signalType == SignalType.audio,
+          ),
+          isTrue,
+        );
 
-      // Standard output to hw_out_2 (bus 14)
-      expect(
-        conns.any(
-          (c) =>
-              c.connectionType == ConnectionType.hardwareOutput &&
-              c.busNumber == 14 &&
-              c.destinationPortId == 'hw_out_2',
-        ),
-        isTrue,
-      );
-    });
+        // Standard output to hw_out_2 (bus 14)
+        expect(
+          conns.any(
+            (c) =>
+                c.connectionType == ConnectionType.hardwareOutput &&
+                c.busNumber == 14 &&
+                c.destinationPortId == 'hw_out_2',
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('ES-5 connections do not affect standard output routing', () {
       final a = _FakeRouting(
@@ -315,7 +320,10 @@ void main() {
 
       // No ES-5 connections should exist
       expect(
-        conns.any((c) => c.destinationPortId == 'es5_L' || c.destinationPortId == 'es5_R'),
+        conns.any(
+          (c) =>
+              c.destinationPortId == 'es5_L' || c.destinationPortId == 'es5_R',
+        ),
         isFalse,
       );
     });

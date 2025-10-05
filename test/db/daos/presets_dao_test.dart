@@ -88,7 +88,9 @@ void main() {
       final presetId = await database.presetsDao.saveFullPreset(presetDetails);
 
       // 5. Load the preset back
-      final loadedPreset = await database.presetsDao.getFullPresetDetails(presetId);
+      final loadedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
 
       // 6. Verify perfPageIndex was persisted correctly
       expect(loadedPreset, isNotNull);
@@ -96,8 +98,11 @@ void main() {
 
       final loadedMapping = loadedPreset.slots[0].mappings[10];
       expect(loadedMapping, isNotNull);
-      expect(loadedMapping!.perfPageIndex, equals(5),
-        reason: 'perfPageIndex should be persisted to database');
+      expect(
+        loadedMapping!.perfPageIndex,
+        equals(5),
+        reason: 'perfPageIndex should be persisted to database',
+      );
     });
 
     test('saves mapping with perfPageIndex = 0 (not assigned)', () async {
@@ -168,11 +173,16 @@ void main() {
       final presetId = await database.presetsDao.saveFullPreset(presetDetails);
 
       // 4. Load and verify
-      final loadedPreset = await database.presetsDao.getFullPresetDetails(presetId);
+      final loadedPreset = await database.presetsDao.getFullPresetDetails(
+        presetId,
+      );
       final loadedMapping = loadedPreset!.slots[0].mappings[5];
 
-      expect(loadedMapping!.perfPageIndex, equals(0),
-        reason: 'perfPageIndex = 0 should be persisted correctly');
+      expect(
+        loadedMapping!.perfPageIndex,
+        equals(0),
+        reason: 'perfPageIndex = 0 should be persisted correctly',
+      );
     });
   });
 }

@@ -657,7 +657,10 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
                 onTimeout: () => jsonEncode({
                   'success': false,
                   'error': 'Tool execution timed out after 5 seconds',
-                  'requested_algorithm': args?['algorithm_guid'] ?? args?['algorithm_name'] ?? 'unknown',
+                  'requested_algorithm':
+                      args?['algorithm_guid'] ??
+                      args?['algorithm_name'] ??
+                      'unknown',
                 }),
               );
           return CallToolResult.fromContent(
@@ -1263,9 +1266,13 @@ The Disting NT includes 44 algorithm categories organizing hundreds of algorithm
           });
 
           // Count non-empty slots
-          final nonEmptySlots = distingState.slots.where(
-            (slot) => slot.algorithm.guid.isNotEmpty && slot.algorithm.guid != 'ERROR',
-          ).length;
+          final nonEmptySlots = distingState.slots
+              .where(
+                (slot) =>
+                    slot.algorithm.guid.isNotEmpty &&
+                    slot.algorithm.guid != 'ERROR',
+              )
+              .length;
           stateInfo['num_loaded_slots'] = nonEmptySlots;
         }
 

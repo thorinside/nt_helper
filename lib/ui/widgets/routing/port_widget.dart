@@ -369,7 +369,11 @@ class _PortWidgetState extends State<PortWidget> {
       // Convert to global first, then let the callback convert to canvas coordinates
       final globalCenter = render.localToGlobal(center);
 
-      widget.onPortPositionResolved!(widget.portId!, globalCenter, widget.isInput);
+      widget.onPortPositionResolved!(
+        widget.portId!,
+        globalCenter,
+        widget.isInput,
+      );
     });
   }
 }

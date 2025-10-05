@@ -79,8 +79,10 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       }
 
       // Within the same page, sort by parameter page order
-      final keyA = '${a.parameter.algorithmIndex}_${a.parameter.parameterNumber}';
-      final keyB = '${b.parameter.algorithmIndex}_${b.parameter.parameterNumber}';
+      final keyA =
+          '${a.parameter.algorithmIndex}_${a.parameter.parameterNumber}';
+      final keyB =
+          '${b.parameter.algorithmIndex}_${b.parameter.parameterNumber}';
       final orderA = orderMap[keyA] ?? 999999;
       final orderB = orderMap[keyB] ?? 999999;
 
@@ -123,9 +125,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: Colors.white, width: 2)
-              : null,
+          border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
         ),
         child: Text(
           'P$pageIndex',
@@ -153,9 +153,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
           const SizedBox(height: 8),
           Text(
             'Assign parameters in the property editor',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
           ),
         ],
       ),
@@ -173,7 +173,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               index == 0 ||
-                      (item.algorithm.name != parameters[index - 1].algorithm.name)
+                      (item.algorithm.name !=
+                          parameters[index - 1].algorithm.name)
                   ? Padding(
                       padding: EdgeInsets.only(
                         top: (index == 0 ? 0.0 : 16.0),
@@ -181,12 +182,11 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       ),
                       child: Text(
                         item.algorithm.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.color
-                                  ?.withAlpha(200),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.color?.withAlpha(200),
                             ),
                       ),
                     )
@@ -251,7 +251,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       body: BlocBuilder<DistingCubit, DistingState>(
         builder: (context, state) {
           if (state is DistingStateSynchronized) {
-            final mappedParameters = DistingCubit.buildMappedParameterList(state);
+            final mappedParameters = DistingCubit.buildMappedParameterList(
+              state,
+            );
 
             // If no parameters, show empty state
             if (mappedParameters.isEmpty) {
@@ -267,8 +269,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   setState(() {
-                    _selectedPageIndex =
-                        populatedPages.isNotEmpty ? populatedPages.first : null;
+                    _selectedPageIndex = populatedPages.isNotEmpty
+                        ? populatedPages.first
+                        : null;
                   });
                 }
               });
@@ -312,9 +315,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                 ),
                 const VerticalDivider(thickness: 1, width: 1),
                 // Parameter list for selected page
-                Expanded(
-                  child: _buildParameterList(sortedParameters),
-                ),
+                Expanded(child: _buildParameterList(sortedParameters)),
               ],
             );
           }

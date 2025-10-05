@@ -134,8 +134,5 @@ abstract class DistingController {
   /// Returns null if the slot/parameter is invalid.
   /// Throws StateError if the Disting is not in a synchronized state.
   /// Throws ArgumentError if the slot index or parameterNumber is invalid.
-  Future<Mapping?> getParameterMapping(
-    int slotIndex,
-    int parameterNumber,
-  );
+  Future<Mapping?> getParameterMapping(int slotIndex, int parameterNumber);
 }

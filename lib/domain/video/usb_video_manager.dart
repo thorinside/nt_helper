@@ -52,7 +52,9 @@ class UsbVideoManager {
       final devices = await _channel.listUsbCameras();
       debugPrint('[USB_VIDEO] Found ${devices.length} devices');
       for (var device in devices) {
-        debugPrint('[USB_VIDEO]   - ${device.productName} (ID: ${device.deviceId})');
+        debugPrint(
+          '[USB_VIDEO]   - ${device.productName} (ID: ${device.deviceId})',
+        );
       }
       return devices;
     } catch (e) {
@@ -91,7 +93,9 @@ class UsbVideoManager {
 
       // Add debug monitoring to the stream
       final monitoredStream = videoStream.map((data) {
-        _debugLog('Received frame data: ${data?.runtimeType} ${data is Uint8List ? data.length : 'unknown'} bytes');
+        _debugLog(
+          'Received frame data: ${data?.runtimeType} ${data is Uint8List ? data.length : 'unknown'} bytes',
+        );
         return data;
       });
 
@@ -152,7 +156,9 @@ class UsbVideoManager {
     if (!supported) {
       debugPrint('[USB_VIDEO] Platform does not support USB video');
       _updateState(
-        const VideoStreamState.error('USB video not supported on this platform'),
+        const VideoStreamState.error(
+          'USB video not supported on this platform',
+        ),
       );
       return;
     }
@@ -167,7 +173,9 @@ class UsbVideoManager {
       debugPrint('[USB_VIDEO] Total devices found: ${devices.length}');
 
       if (devices.isNotEmpty) {
-        debugPrint('[USB_VIDEO] Connecting to first device: ${devices.first.deviceId}');
+        debugPrint(
+          '[USB_VIDEO] Connecting to first device: ${devices.first.deviceId}',
+        );
         await connectToDevice(devices.first.deviceId);
       } else {
         debugPrint('[USB_VIDEO] No devices found - setting error state');

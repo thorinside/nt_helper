@@ -95,10 +95,7 @@ void main() {
       });
 
       test('all ports have correct nodeId', () {
-        expect(
-          ports.every((p) => p.nodeId == 'es5_hardware_node'),
-          isTrue,
-        );
+        expect(ports.every((p) => p.nodeId == 'es5_hardware_node'), isTrue);
       });
     });
 
@@ -226,10 +223,7 @@ void main() {
 
         // Check numbered ports match getters
         for (int i = 1; i <= 8; i++) {
-          expect(
-            allPorts[i + 1],
-            equals(ES5HardwareNode.getNumberedPort(i)),
-          );
+          expect(allPorts[i + 1], equals(ES5HardwareNode.getNumberedPort(i)));
         }
       });
 

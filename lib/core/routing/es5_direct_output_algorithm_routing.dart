@@ -12,7 +12,8 @@ import 'models/port.dart';
 ///
 /// When ES-5 Expander is active (1-6), the Output parameter is completely ignored
 /// and the ES-5 Output parameter (1-8) determines which ES-5 port receives the signal.
-abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRouting {
+abstract class Es5DirectOutputAlgorithmRouting
+    extends MultiChannelAlgorithmRouting {
   /// Special marker for ES-5 direct output connections
   static const String es5DirectBusParam = 'es5_direct';
 
@@ -28,9 +29,7 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
     required super.config,
     super.validator,
   }) {
-    debugPrint(
-      '$algorithmName: Initialized for ${slot.algorithm.name}',
-    );
+    debugPrint('$algorithmName: Initialized for ${slot.algorithm.name}');
   }
 
   /// Generates output ports based on ES-5 configuration for each channel.
@@ -48,17 +47,20 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
 
       if (es5ExpanderValue != null && es5ExpanderValue > 0) {
         // ES-5 MODE: Ignore Output parameter completely
-        final es5OutputValue = getChannelParameter(channel, 'ES-5 Output') ?? channel;
+        final es5OutputValue =
+            getChannelParameter(channel, 'ES-5 Output') ?? channel;
 
-        ports.add(Port(
-          id: '${algorithmUuid}_channel_${channel}_es5_output',
-          name: 'Ch$channel → ES-5 $es5OutputValue',
-          type: PortType.gate,
-          direction: PortDirection.output,
-          description: 'Direct to ES-5 Output $es5OutputValue',
-          busParam: es5DirectBusParam,  // Special marker
-          channelNumber: es5OutputValue,  // ES-5 port number
-        ));
+        ports.add(
+          Port(
+            id: '${algorithmUuid}_channel_${channel}_es5_output',
+            name: 'Ch$channel → ES-5 $es5OutputValue',
+            type: PortType.gate,
+            direction: PortDirection.output,
+            description: 'Direct to ES-5 Output $es5OutputValue',
+            busParam: es5DirectBusParam, // Special marker
+            channelNumber: es5OutputValue, // ES-5 port number
+          ),
+        );
 
         debugPrint(
           '$algorithmName: Channel $channel → ES-5 direct output $es5OutputValue',
@@ -68,15 +70,17 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
         final outputBus = getChannelParameter(channel, 'Output') ?? 0;
 
         if (outputBus > 0) {
-          ports.add(Port(
-            id: '${algorithmUuid}_channel_${channel}_output',
-            name: 'Channel $channel',
-            type: PortType.gate,
-            direction: PortDirection.output,
-            description: 'Gate output for channel $channel',
-            busValue: outputBus,
-            channelNumber: channel,
-          ));
+          ports.add(
+            Port(
+              id: '${algorithmUuid}_channel_${channel}_output',
+              name: 'Channel $channel',
+              type: PortType.gate,
+              direction: PortDirection.output,
+              description: 'Gate output for channel $channel',
+              busValue: outputBus,
+              channelNumber: channel,
+            ),
+          );
 
           debugPrint(
             '$algorithmName: Channel $channel → normal output bus $outputBus',
@@ -89,9 +93,7 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
       }
     }
 
-    debugPrint(
-      '$algorithmName: Generated ${ports.length} output ports',
-    );
+    debugPrint('$algorithmName: Generated ${ports.length} output ports');
     return ports;
   }
 
@@ -115,9 +117,7 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
     );
 
     if (param.parameterNumber < 0) {
-      debugPrint(
-        '$algorithmName: Parameter "$prefixedName" not found',
-      );
+      debugPrint('$algorithmName: Parameter "$prefixedName" not found');
       return null;
     }
 
@@ -133,9 +133,7 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
         )
         .value;
 
-    debugPrint(
-      '$algorithmName: Found $prefixedName = $value',
-    );
+    debugPrint('$algorithmName: Found $prefixedName = $value');
     return value;
   }
 
@@ -149,7 +147,8 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
     int channelCount,
     List inputPorts,
     MultiChannelAlgorithmConfig config,
-  }) createConfigFromSlot(
+  })
+  createConfigFromSlot(
     Slot slot, {
     required Map<String, int> ioParameters,
     Map<String, int>? modeParameters,
@@ -169,9 +168,7 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
       }
     }
 
-    debugPrint(
-      '$debugName: Creating with $channelCount channels',
-    );
+    debugPrint('$debugName: Creating with $channelCount channels');
 
     // Use base class to process normal inputs (non-channel-prefixed parameters)
     final baseRouting = MultiChannelAlgorithmRouting.createFromSlot(
@@ -188,18 +185,18 @@ abstract class Es5DirectOutputAlgorithmRouting extends MultiChannelAlgorithmRout
     // Create configuration, preserving inputs
     final config = MultiChannelAlgorithmConfig(
       channelCount: channelCount > 0 ? channelCount : 1,
-      supportsStereoChannels: false,  // Gate outputs, not stereo
+      supportsStereoChannels: false, // Gate outputs, not stereo
       allowsIndependentChannels: true,
       supportedPortTypes: [PortType.gate],
       portNamePrefix: 'Channel',
-      createMasterMix: false,  // No master mix for gate outputs
+      createMasterMix: false, // No master mix for gate outputs
       algorithmProperties: {
         'algorithmGuid': slot.algorithm.guid,
         'algorithmName': slot.algorithm.name,
         'algorithmUuid': algorithmUuid,
         'channelCount': channelCount,
-        'inputs': inputPorts,  // Preserve normal input ports
-        'outputs': [],  // Will be generated by generateOutputPorts()
+        'inputs': inputPorts, // Preserve normal input ports
+        'outputs': [], // Will be generated by generateOutputPorts()
       },
     );
 

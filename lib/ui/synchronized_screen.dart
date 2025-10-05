@@ -322,7 +322,8 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                         // Zoom controls
                         if (state is RoutingEditorStateLoaded) ...[
                           IconButton(
-                            onPressed: () => context.read<RoutingEditorCubit>().zoomOut(),
+                            onPressed: () =>
+                                context.read<RoutingEditorCubit>().zoomOut(),
                             icon: const Icon(Icons.zoom_out),
                             tooltip: 'Zoom out (Ctrl/Cmd + -)',
                           ),
@@ -332,26 +333,32 @@ class _SynchronizedScreenState extends State<SynchronizedScreen>
                               value: _findClosestZoomLevel(state.zoomLevel),
                               onChanged: (value) {
                                 if (value != null) {
-                                  context.read<RoutingEditorCubit>().setZoomLevel(value);
+                                  context
+                                      .read<RoutingEditorCubit>()
+                                      .setZoomLevel(value);
                                 }
                               },
-                              items: RoutingEditorCubit.availableZoomLevels.map((zoom) {
-                                return DropdownMenuItem<double>(
-                                  value: zoom,
-                                  child: Text('${(zoom * 100).round()}%'),
-                                );
-                              }).toList(),
+                              items: RoutingEditorCubit.availableZoomLevels.map(
+                                (zoom) {
+                                  return DropdownMenuItem<double>(
+                                    value: zoom,
+                                    child: Text('${(zoom * 100).round()}%'),
+                                  );
+                                },
+                              ).toList(),
                               underline: const SizedBox.shrink(),
                               isDense: true,
                             ),
                           ),
                           IconButton(
-                            onPressed: () => context.read<RoutingEditorCubit>().zoomIn(),
+                            onPressed: () =>
+                                context.read<RoutingEditorCubit>().zoomIn(),
                             icon: const Icon(Icons.zoom_in),
                             tooltip: 'Zoom in (Ctrl/Cmd + +)',
                           ),
                           IconButton(
-                            onPressed: () => context.read<RoutingEditorCubit>().resetZoom(),
+                            onPressed: () =>
+                                context.read<RoutingEditorCubit>().resetZoom(),
                             icon: const Icon(Icons.zoom_out_map),
                             tooltip: 'Reset zoom (100%)',
                           ),

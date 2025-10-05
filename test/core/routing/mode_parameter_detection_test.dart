@@ -13,16 +13,30 @@ void main() {
       final ioParams = AlgorithmRouting.extractIOParameters(slot);
 
       // Verify that outputs with mode parameters are detected
-      expect(ioParams.containsKey('Gate Out'), isTrue,
-          reason: 'Gate Out should be detected as IO parameter (has Gate Out mode)');
-      expect(ioParams.containsKey('Pitch CV'), isTrue,
-          reason: 'Pitch CV should be detected as IO parameter (has Pitch CV mode)');
+      expect(
+        ioParams.containsKey('Gate Out'),
+        isTrue,
+        reason:
+            'Gate Out should be detected as IO parameter (has Gate Out mode)',
+      );
+      expect(
+        ioParams.containsKey('Pitch CV'),
+        isTrue,
+        reason:
+            'Pitch CV should be detected as IO parameter (has Pitch CV mode)',
+      );
 
       // Verify that inputs without mode parameters are also detected if they match bus criteria
-      expect(ioParams.containsKey('Clock In'), isTrue,
-          reason: 'Clock In should be detected as IO parameter (bus parameter)');
-      expect(ioParams.containsKey('Reset'), isTrue,
-          reason: 'Reset should be detected as IO parameter (bus parameter)');
+      expect(
+        ioParams.containsKey('Clock In'),
+        isTrue,
+        reason: 'Clock In should be detected as IO parameter (bus parameter)',
+      );
+      expect(
+        ioParams.containsKey('Reset'),
+        isTrue,
+        reason: 'Reset should be detected as IO parameter (bus parameter)',
+      );
     });
 
     test('should correctly identify mode parameters', () {
@@ -30,7 +44,8 @@ void main() {
 
       // Extract mode parameters
       final modeParams = AlgorithmRouting.extractModeParameters(slot);
-      final modeParamsWithNumbers = AlgorithmRouting.extractModeParametersWithNumbers(slot);
+      final modeParamsWithNumbers =
+          AlgorithmRouting.extractModeParametersWithNumbers(slot);
 
       // Verify mode parameters are detected
       expect(modeParams.containsKey('Gate Out mode'), isTrue);
@@ -38,9 +53,15 @@ void main() {
 
       // Verify mode parameters have correct structure
       expect(modeParamsWithNumbers['Gate Out mode'], isNotNull);
-      expect(modeParamsWithNumbers['Gate Out mode']?.parameterNumber, equals(4));
+      expect(
+        modeParamsWithNumbers['Gate Out mode']?.parameterNumber,
+        equals(4),
+      );
       expect(modeParamsWithNumbers['Pitch CV mode'], isNotNull);
-      expect(modeParamsWithNumbers['Pitch CV mode']?.parameterNumber, equals(6));
+      expect(
+        modeParamsWithNumbers['Pitch CV mode']?.parameterNumber,
+        equals(6),
+      );
     });
 
     test('should handle algorithms without mode parameters', () {
@@ -67,14 +88,23 @@ void main() {
       final ioParams = AlgorithmRouting.extractIOParameters(slot);
 
       // Outputs with mode parameters should be detected
-      expect(ioParams.containsKey('Main Out'), isTrue,
-          reason: 'Main Out should be detected (has Main Out mode)');
+      expect(
+        ioParams.containsKey('Main Out'),
+        isTrue,
+        reason: 'Main Out should be detected (has Main Out mode)',
+      );
 
       // Regular bus parameters should also be detected
-      expect(ioParams.containsKey('Aux Out'), isTrue,
-          reason: 'Aux Out should be detected as regular bus parameter');
-      expect(ioParams.containsKey('Input 1'), isTrue,
-          reason: 'Input 1 should be detected as regular bus parameter');
+      expect(
+        ioParams.containsKey('Aux Out'),
+        isTrue,
+        reason: 'Aux Out should be detected as regular bus parameter',
+      );
+      expect(
+        ioParams.containsKey('Input 1'),
+        isTrue,
+        reason: 'Input 1 should be detected as regular bus parameter',
+      );
     });
 
     test('should create proper routing from Lua Script slot', () {
@@ -87,17 +117,29 @@ void main() {
       );
 
       // Should have both inputs and outputs
-      expect(routing.inputPorts, isNotEmpty,
-          reason: 'Lua Script should have input ports');
-      expect(routing.outputPorts, isNotEmpty,
-          reason: 'Lua Script should have output ports');
+      expect(
+        routing.inputPorts,
+        isNotEmpty,
+        reason: 'Lua Script should have input ports',
+      );
+      expect(
+        routing.outputPorts,
+        isNotEmpty,
+        reason: 'Lua Script should have output ports',
+      );
 
       // Check for specific output ports
       final outputNames = routing.outputPorts.map((p) => p.name).toSet();
-      expect(outputNames.any((name) => name.contains('Gate')), isTrue,
-          reason: 'Should have a Gate output port');
-      expect(outputNames.any((name) => name.contains('Pitch')), isTrue,
-          reason: 'Should have a Pitch output port');
+      expect(
+        outputNames.any((name) => name.contains('Gate')),
+        isTrue,
+        reason: 'Should have a Gate output port',
+      );
+      expect(
+        outputNames.any((name) => name.contains('Pitch')),
+        isTrue,
+        reason: 'Should have a Pitch output port',
+      );
     });
   });
 }
@@ -185,11 +227,15 @@ Slot _createLuaScriptSlot() {
   ];
 
   // Create values (all defaults)
-  final values = parameters.map((p) => ParameterValue(
-    algorithmIndex: 0,
-    parameterNumber: p.parameterNumber,
-    value: p.defaultValue,
-  )).toList();
+  final values = parameters
+      .map(
+        (p) => ParameterValue(
+          algorithmIndex: 0,
+          parameterNumber: p.parameterNumber,
+          value: p.defaultValue,
+        ),
+      )
+      .toList();
 
   // Create enums for mode parameters
   final enums = [
@@ -255,11 +301,15 @@ Slot _createSimpleAlgorithmSlot() {
     ),
   ];
 
-  final values = parameters.map((p) => ParameterValue(
-    algorithmIndex: 0,
-    parameterNumber: p.parameterNumber,
-    value: p.defaultValue,
-  )).toList();
+  final values = parameters
+      .map(
+        (p) => ParameterValue(
+          algorithmIndex: 0,
+          parameterNumber: p.parameterNumber,
+          value: p.defaultValue,
+        ),
+      )
+      .toList();
 
   return Slot(
     algorithm: algorithm,
@@ -331,11 +381,15 @@ Slot _createMixedAlgorithmSlot() {
     ),
   ];
 
-  final values = parameters.map((p) => ParameterValue(
-    algorithmIndex: 0,
-    parameterNumber: p.parameterNumber,
-    value: p.defaultValue,
-  )).toList();
+  final values = parameters
+      .map(
+        (p) => ParameterValue(
+          algorithmIndex: 0,
+          parameterNumber: p.parameterNumber,
+          value: p.defaultValue,
+        ),
+      )
+      .toList();
 
   final enums = [
     ParameterEnumStrings(

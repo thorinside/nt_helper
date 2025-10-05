@@ -40,7 +40,9 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
         emit(const VideoFrameState.initial());
       },
       onDone: () {
-        _debugLog('Stream ended - this means the native side cancelled the stream');
+        _debugLog(
+          'Stream ended - this means the native side cancelled the stream',
+        );
         emit(const VideoFrameState.initial());
       },
       cancelOnError: false, // Don't cancel on errors, keep trying
@@ -51,7 +53,9 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
 
   /// Handle incoming video frame
   void _onFrameReceived(dynamic data) {
-    _debugLog('Frame received: ${data.runtimeType}, size: ${data is Uint8List ? data.length : 'unknown'}');
+    _debugLog(
+      'Frame received: ${data.runtimeType}, size: ${data is Uint8List ? data.length : 'unknown'}',
+    );
 
     // Handle FlutterStandardTypedData from iOS
     Uint8List frameData;
@@ -63,7 +67,9 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
         // Extract bytes from FlutterStandardTypedData
         final typedData = data as dynamic;
         frameData = typedData.data as Uint8List;
-        _debugLog('Extracted Uint8List from FlutterStandardTypedData, length: ${frameData.length}');
+        _debugLog(
+          'Extracted Uint8List from FlutterStandardTypedData, length: ${frameData.length}',
+        );
       } else {
         _debugLog('ERROR: Unexpected data type: ${data.runtimeType}');
         return;
@@ -71,18 +77,23 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
 
       // Validate BMP data format
       if (frameData.length < 54) {
-        _debugLog('ERROR: Frame data too small for BMP (${frameData.length} bytes, need at least 54)');
+        _debugLog(
+          'ERROR: Frame data too small for BMP (${frameData.length} bytes, need at least 54)',
+        );
         return;
       }
 
       // Check BMP header
       if (frameData[0] != 0x42 || frameData[1] != 0x4D) {
-        _debugLog('ERROR: Invalid BMP header: [${frameData[0]}, ${frameData[1]}] (expected [66, 77])');
+        _debugLog(
+          'ERROR: Invalid BMP header: [${frameData[0]}, ${frameData[1]}] (expected [66, 77])',
+        );
         return;
       }
 
-      _debugLog('BMP validation passed - header: [${frameData[0]}, ${frameData[1]}], size: ${frameData.length}');
-
+      _debugLog(
+        'BMP validation passed - header: [${frameData[0]}, ${frameData[1]}], size: ${frameData.length}',
+      );
     } catch (e) {
       _debugLog('ERROR: Failed to extract or validate frame data: $e');
       _debugLog('Error stack trace: ${StackTrace.current}');
@@ -122,7 +133,9 @@ class VideoFrameCubit extends Cubit<VideoFrameState> {
           fps: currentFps,
         ),
       );
-      _debugLog('Frame #$_frameCounter processed successfully, FPS: ${currentFps.toStringAsFixed(1)}');
+      _debugLog(
+        'Frame #$_frameCounter processed successfully, FPS: ${currentFps.toStringAsFixed(1)}',
+      );
     } catch (e) {
       _debugLog('ERROR: Failed to emit frame state: $e');
       _debugLog('Emit error stack trace: ${StackTrace.current}');

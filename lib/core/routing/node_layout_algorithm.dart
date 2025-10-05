@@ -180,7 +180,8 @@ class NodeLayoutAlgorithm {
     if (physicalInputs.isEmpty || algorithmPositions.isEmpty) return positions;
 
     const double gridSize = 50.0;
-    const double physicalNodeWidthInGrids = 3.0; // Physical I/O nodes are narrower ~150px
+    const double physicalNodeWidthInGrids =
+        3.0; // Physical I/O nodes are narrower ~150px
     const double gapInGrids =
         1.0; // 1.0 * 50 = 50px gap to algorithms (1 grid square)
 
@@ -240,7 +241,8 @@ class NodeLayoutAlgorithm {
 
     const double gridSize = 50.0;
     const double gapInGrids = 1.0;
-    const double verticalGapBetweenNodes = 100.0; // Gap between physical outputs and ES-5
+    const double verticalGapBetweenNodes =
+        100.0; // Gap between physical outputs and ES-5
 
     // Calculate algorithm bounding box
     double minX = double.infinity;
@@ -263,7 +265,9 @@ class NodeLayoutAlgorithm {
     // Position ES-5 at same X as physical outputs (right side)
     // Use similar logic as physical outputs positioning
     final algorithmWidth = 250.0; // Default estimate
-    final physicalOutputsX = ((maxX + algorithmWidth + gapInGrids * gridSize) / gridSize).round() * gridSize;
+    final physicalOutputsX =
+        ((maxX + algorithmWidth + gapInGrids * gridSize) / gridSize).round() *
+        gridSize;
 
     final x = physicalOutputsX;
 
@@ -271,9 +275,16 @@ class NodeLayoutAlgorithm {
     // Estimate physical outputs height and add gap
     final physicalOutputsEstimatedHeight = 8 * 30.0 + 60.0; // 8 outputs typical
     final algorithmCenterY = (minY + maxY) / 2;
-    final physicalOutputsY = algorithmCenterY - physicalOutputsEstimatedHeight / 2;
+    final physicalOutputsY =
+        algorithmCenterY - physicalOutputsEstimatedHeight / 2;
 
-    final y = ((physicalOutputsY + physicalOutputsEstimatedHeight + verticalGapBetweenNodes) / gridSize).round() * gridSize;
+    final y =
+        ((physicalOutputsY +
+                    physicalOutputsEstimatedHeight +
+                    verticalGapBetweenNodes) /
+                gridSize)
+            .round() *
+        gridSize;
 
     positions['es5_node'] = NodePosition(x: x, y: y);
 
@@ -530,8 +541,10 @@ class NodeLayoutAlgorithm {
 
     // Grid-based spacing (compact + non-overlapping using estimated sizes)
     const double gridSize = 50.0;
-    const double colGapPx = 50.0; // min horizontal gap between columns (1 grid square)
-    const double rowGapPx = 50.0; // min vertical gap between algorithms (1 grid square)
+    const double colGapPx =
+        50.0; // min horizontal gap between columns (1 grid square)
+    const double rowGapPx =
+        50.0; // min vertical gap between algorithms (1 grid square)
 
     // Estimate node sizes from port counts and algorithm name
     double estimateWidth(RoutingAlgorithm a) {
@@ -540,7 +553,8 @@ class NodeLayoutAlgorithm {
       // Port area has: labels on both sides + ports + padding
 
       // Estimate based on algorithm name with typical font metrics
-      final titleWidth = a.algorithm.name.length * 8.0 + 150.0; // name + icons/buttons
+      final titleWidth =
+          a.algorithm.name.length * 8.0 + 150.0; // name + icons/buttons
 
       // Estimate based on longest port label
       double maxLabelWidth = 100.0; // minimum for short labels
@@ -557,6 +571,7 @@ class NodeLayoutAlgorithm {
       // Use the larger of title width or port area width
       return math.max(math.max(titleWidth, portAreaWidth), 200.0);
     }
+
     double estimateHeight(RoutingAlgorithm a) {
       const header = 52.0;
       const padding = 16.0;

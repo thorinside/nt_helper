@@ -13,7 +13,7 @@ void main() {
     Slot createClockSlot({
       required int channelCount,
       required List<({int channel, int es5Expander, int es5Output, int output})>
-          channelConfigs,
+      channelConfigs,
       int algorithmIndex = 0,
     }) {
       final pages = <ParameterPage>[];
@@ -114,7 +114,7 @@ void main() {
     Slot createEuclideanSlot({
       required int channelCount,
       required List<({int channel, int es5Expander, int es5Output, int output})>
-          channelConfigs,
+      channelConfigs,
       int algorithmIndex = 0,
     }) {
       final pages = <ParameterPage>[];
@@ -252,7 +252,12 @@ void main() {
             channelCount: 3,
             channelConfigs: [
               (channel: 1, es5Expander: 0, es5Output: 1, output: 13),
-              (channel: 2, es5Expander: 0, es5Output: 2, output: 0),  // No output
+              (
+                channel: 2,
+                es5Expander: 0,
+                es5Output: 2,
+                output: 0,
+              ), // No output
               (channel: 3, es5Expander: 0, es5Output: 3, output: 15),
             ],
           );
@@ -267,10 +272,7 @@ void main() {
           expect(routing.outputPorts.length, equals(2));
 
           // Verify channel 2 is not present
-          expect(
-            routing.outputPorts.any((p) => p.channelNumber == 2),
-            isFalse,
-          );
+          expect(routing.outputPorts.any((p) => p.channelNumber == 2), isFalse);
         });
       });
 
@@ -279,10 +281,30 @@ void main() {
           final slot = createClockSlot(
             channelCount: 4,
             channelConfigs: [
-              (channel: 1, es5Expander: 1, es5Output: 1, output: 13),  // Output ignored
-              (channel: 2, es5Expander: 1, es5Output: 2, output: 14),  // Output ignored
-              (channel: 3, es5Expander: 1, es5Output: 3, output: 15),  // Output ignored
-              (channel: 4, es5Expander: 1, es5Output: 4, output: 16),  // Output ignored
+              (
+                channel: 1,
+                es5Expander: 1,
+                es5Output: 1,
+                output: 13,
+              ), // Output ignored
+              (
+                channel: 2,
+                es5Expander: 1,
+                es5Output: 2,
+                output: 14,
+              ), // Output ignored
+              (
+                channel: 3,
+                es5Expander: 1,
+                es5Output: 3,
+                output: 15,
+              ), // Output ignored
+              (
+                channel: 4,
+                es5Expander: 1,
+                es5Output: 4,
+                output: 16,
+              ), // Output ignored
             ],
           );
 
@@ -304,8 +326,8 @@ void main() {
             expect(port.type, equals(PortType.gate));
             expect(port.direction, equals(PortDirection.output));
             expect(port.busParam, equals('es5_direct'));
-            expect(port.channelNumber, equals(channel));  // ES-5 Output value
-            expect(port.busValue, isNull);  // No normal bus assignment
+            expect(port.channelNumber, equals(channel)); // ES-5 Output value
+            expect(port.busValue, isNull); // No normal bus assignment
           }
         });
 
@@ -313,8 +335,18 @@ void main() {
           final slot = createClockSlot(
             channelCount: 2,
             channelConfigs: [
-              (channel: 1, es5Expander: 1, es5Output: 5, output: 0),  // Output=0 ignored
-              (channel: 2, es5Expander: 1, es5Output: 7, output: 999),  // Output=999 ignored
+              (
+                channel: 1,
+                es5Expander: 1,
+                es5Output: 5,
+                output: 0,
+              ), // Output=0 ignored
+              (
+                channel: 2,
+                es5Expander: 1,
+                es5Output: 7,
+                output: 999,
+              ), // Output=999 ignored
             ],
           );
 
@@ -367,10 +399,10 @@ void main() {
           final slot = createClockSlot(
             channelCount: 4,
             channelConfigs: [
-              (channel: 1, es5Expander: 0, es5Output: 1, output: 13),  // Normal
-              (channel: 2, es5Expander: 1, es5Output: 5, output: 14),  // ES-5
-              (channel: 3, es5Expander: 0, es5Output: 3, output: 15),  // Normal
-              (channel: 4, es5Expander: 1, es5Output: 2, output: 16),  // ES-5
+              (channel: 1, es5Expander: 0, es5Output: 1, output: 13), // Normal
+              (channel: 2, es5Expander: 1, es5Output: 5, output: 14), // ES-5
+              (channel: 3, es5Expander: 0, es5Output: 3, output: 15), // Normal
+              (channel: 4, es5Expander: 1, es5Output: 2, output: 16), // ES-5
             ],
           );
 
@@ -488,9 +520,9 @@ void main() {
         final slot = createEuclideanSlot(
           channelCount: 3,
           channelConfigs: [
-            (channel: 1, es5Expander: 0, es5Output: 1, output: 13),  // Normal
-            (channel: 2, es5Expander: 1, es5Output: 4, output: 14),  // ES-5
-            (channel: 3, es5Expander: 1, es5Output: 8, output: 15),  // ES-5
+            (channel: 1, es5Expander: 0, es5Output: 1, output: 13), // Normal
+            (channel: 2, es5Expander: 1, es5Output: 4, output: 14), // ES-5
+            (channel: 3, es5Expander: 1, es5Output: 8, output: 15), // ES-5
           ],
         );
 

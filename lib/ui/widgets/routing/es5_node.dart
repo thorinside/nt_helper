@@ -78,7 +78,8 @@ class ES5Node extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: 'ES-5 Expander',
-      hint: 'ES-5 Eurorack expander jacks. Receives signals from algorithms and outputs to hardware.',
+      hint:
+          'ES-5 Eurorack expander jacks. Receives signals from algorithms and outputs to hardware.',
       child: MovablePhysicalIONode(
         ports: ports,
         connectedPorts: connectedPorts,

@@ -733,21 +733,27 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           // Get the actual width value from parameter values
           // Width is an enum: 0 = Mono, 1 = Stereo
           final widthValue = slot.values
-              .firstWhere((v) => v.parameterNumber == param.parameterNumber,
-                  orElse: () => ParameterValue(
-                      algorithmIndex: 0,
-                      parameterNumber: param.parameterNumber,
-                      value: param.defaultValue))
+              .firstWhere(
+                (v) => v.parameterNumber == param.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: 0,
+                  parameterNumber: param.parameterNumber,
+                  value: param.defaultValue,
+                ),
+              )
               .value;
           sendGroups[sendPage]!['width'] = widthValue;
         } else if (lowerName.contains('output mode')) {
           // Get the actual mode value
           final modeValue = slot.values
-              .firstWhere((v) => v.parameterNumber == param.parameterNumber,
-                  orElse: () => ParameterValue(
-                      algorithmIndex: 0,
-                      parameterNumber: param.parameterNumber,
-                      value: param.defaultValue))
+              .firstWhere(
+                (v) => v.parameterNumber == param.parameterNumber,
+                orElse: () => ParameterValue(
+                  algorithmIndex: 0,
+                  parameterNumber: param.parameterNumber,
+                  value: param.defaultValue,
+                ),
+              )
               .value;
           sendGroups[sendPage]!['outputMode'] = modeValue;
           sendGroups[sendPage]!['modeParameterNumber'] = param.parameterNumber;
@@ -783,7 +789,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       // Determine if this is an input or output based on parameter name
       final lowerName = paramName.toLowerCase();
       // Check if this parameter has a matching mode parameter (definitive output indicator)
-      final hasMatchingModeParameter = modeParameters?.containsKey('$paramName mode') ?? false;
+      final hasMatchingModeParameter =
+          modeParameters?.containsKey('$paramName mode') ?? false;
       final isOutput =
           hasMatchingModeParameter ||
           (lowerName.contains('output') && !lowerName.contains('mode')) ||
@@ -815,7 +822,7 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       final port = {
         'id': '${algorithmUuid ?? 'algo'}_${sanitizedName}_$paramNumber',
         // Use algorithm UUID, sanitized name, and parameter number for uniqueness
-        'name': paramName,  // Keep original name for display
+        'name': paramName, // Keep original name for display
         'type': portType,
         'busParam': paramName,
         'busValue': busValue,
@@ -924,7 +931,8 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       final destination = sendData['destination'] as int?;
       final width = sendData['width'] as int? ?? 0; // Default to 0 (Mono)
       final outputMode = sendData['outputMode'] as int? ?? 0;
-      final destinationParam = sendData['destinationParam'] as String? ?? sendName;
+      final destinationParam =
+          sendData['destinationParam'] as String? ?? sendName;
       final destinationNumber = sendData['destinationNumber'] as int? ?? 0;
       final modeParamNumber = sendData['modeParameterNumber'] as int?;
 
@@ -974,7 +982,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
           'modeParameterNumber': modeParamNumber,
         });
       }
-
     }
 
     // Check for Width parameter to determine channel count
@@ -1049,7 +1056,6 @@ class MultiChannelAlgorithmRouting extends AlgorithmRouting {
       'channelCount': channelCount,
       'isMultiChannel': isMultiChannel,
     };
-
 
     return MultiChannelAlgorithmRouting(
       config: MultiChannelAlgorithmConfig(

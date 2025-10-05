@@ -8,7 +8,8 @@ class DebugService {
   DebugService._internal();
 
   final UsbVideoDebugChannel _debugChannel = UsbVideoDebugChannel();
-  final StreamController<String> _debugController = StreamController.broadcast();
+  final StreamController<String> _debugController =
+      StreamController.broadcast();
   final List<String> _debugMessages = [];
   StreamSubscription<String>? _debugSubscription;
 

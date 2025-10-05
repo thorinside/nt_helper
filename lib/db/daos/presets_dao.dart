@@ -344,13 +344,9 @@ class PresetsDao extends DatabaseAccessor<AppDatabase> with _$PresetsDaoMixin {
   }) async {
     // Update the perfPageIndex column in the presetMappings table
     await (update(presetMappings)
-      ..where((m) => m.presetSlotId.equals(presetSlotId))
-      ..where((m) => m.parameterNumber.equals(parameterNumber)))
-    .write(
-      PresetMappingsCompanion(
-        perfPageIndex: Value(perfPageIndex),
-      ),
-    );
+          ..where((m) => m.presetSlotId.equals(presetSlotId))
+          ..where((m) => m.parameterNumber.equals(parameterNumber)))
+        .write(PresetMappingsCompanion(perfPageIndex: Value(perfPageIndex)));
 
     debugPrint(
       '[PresetsDao] Updated perfPageIndex to $perfPageIndex for presetSlotId=$presetSlotId param=$parameterNumber',

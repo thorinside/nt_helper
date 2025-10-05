@@ -510,7 +510,8 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
         if (!entry.isDirectory) return;
 
         try {
-          final currentDrillPath = currentState.drillPath ?? currentState.currentPath;
+          final currentDrillPath =
+              currentState.drillPath ?? currentState.currentPath;
 
           // Handle parent directory navigation
           String newPath;
@@ -576,7 +577,9 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
         try {
           // Build path up to the selected segment
           final pathSegments = breadcrumbs.take(index + 1).toList();
-          final newPath = pathSegments.isEmpty ? '/' : '/${pathSegments.join('/')}';
+          final newPath = pathSegments.isEmpty
+              ? '/'
+              : '/${pathSegments.join('/')}';
 
           // Check cache first
           List<DirectoryEntry>? entries = _directoryCache[newPath];
@@ -621,11 +624,7 @@ class PresetBrowserCubit extends Cubit<PresetBrowserState> {
   void selectDrillItem(DirectoryEntry entry) {
     state.maybeMap(
       loaded: (currentState) {
-        emit(
-          currentState.copyWith(
-            selectedDrillItem: entry,
-          ),
-        );
+        emit(currentState.copyWith(selectedDrillItem: entry));
 
         // Add to history if it's a JSON preset file
         if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.json')) {

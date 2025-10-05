@@ -22,10 +22,7 @@ void main() {
 
   Widget createTestWidget({required Widget child}) {
     return MaterialApp(
-      home: BlocProvider<DistingCubit>.value(
-        value: mockCubit,
-        child: child,
-      ),
+      home: BlocProvider<DistingCubit>.value(value: mockCubit, child: child),
     );
   }
 
@@ -114,7 +111,9 @@ void main() {
     final algorithmIndex = params.first.parameter.algorithmIndex;
 
     // Find the maximum parameter number to size our arrays
-    final maxParamNum = params.map((p) => p.parameter.parameterNumber).reduce((a, b) => a > b ? a : b);
+    final maxParamNum = params
+        .map((p) => p.parameter.parameterNumber)
+        .reduce((a, b) => a > b ? a : b);
     final arraySize = maxParamNum + 1;
 
     // Create properly indexed arrays (filled with filler values)
@@ -130,10 +129,7 @@ void main() {
       arraySize,
       ParameterEnumStrings.filler(),
     );
-    final mappings = List<Mapping>.filled(
-      arraySize,
-      Mapping.filler(),
-    );
+    final mappings = List<Mapping>.filled(arraySize, Mapping.filler());
     final valueStrings = List<ParameterValueString>.filled(
       arraySize,
       ParameterValueString.filler(),
@@ -150,15 +146,11 @@ void main() {
     }
 
     // Create parameter pages with parameters in order by parameter number
-    final paramNums = params.map((p) => p.parameter.parameterNumber).toList()..sort();
+    final paramNums = params.map((p) => p.parameter.parameterNumber).toList()
+      ..sort();
     final parameterPages = ParameterPages(
       algorithmIndex: algorithmIndex,
-      pages: [
-        ParameterPage(
-          name: 'Page 1',
-          parameters: paramNums,
-        ),
-      ],
+      pages: [ParameterPage(name: 'Page 1', parameters: paramNums)],
     );
 
     return Slot(
@@ -174,7 +166,9 @@ void main() {
   }
 
   group('PerformanceScreen', () {
-    testWidgets('displays empty state when no parameters assigned', (tester) async {
+    testWidgets('displays empty state when no parameters assigned', (
+      tester,
+    ) async {
       when(() => mockCubit.state).thenReturn(
         DistingStateSynchronized(
           disting: MockDistingMidiManager(),
@@ -189,13 +183,14 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-        ),
+        createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
       expect(find.text('No performance parameters assigned'), findsOneWidget);
-      expect(find.text('Assign parameters in the property editor'), findsOneWidget);
+      expect(
+        find.text('Assign parameters in the property editor'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.music_note_outlined), findsOneWidget);
     });
 
@@ -231,9 +226,7 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-        ),
+        createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
       // Wait for post-frame callback to set initial page selection
@@ -259,7 +252,9 @@ void main() {
       expect(find.text('Param 2'), findsOneWidget);
     });
 
-    testWidgets('sorts parameters by parameter page order within same page', (tester) async {
+    testWidgets('sorts parameters by parameter page order within same page', (
+      tester,
+    ) async {
       // Create parameters where alphabetical order would differ from parameter number order
       // Zebra (param 0) should come before Apple (param 1) because param 0 < param 1
       final algo0Params = [
@@ -267,15 +262,15 @@ void main() {
           perfPageIndex: 1,
           algorithmName: 'Algo 1',
           algorithmIndex: 0,
-          parameterName: 'Zebra',  // Alphabetically last
-          parameterNumber: 0,      // But parameter page order first
+          parameterName: 'Zebra', // Alphabetically last
+          parameterNumber: 0, // But parameter page order first
         ),
         createMappedParameter(
           perfPageIndex: 1,
           algorithmName: 'Algo 1',
           algorithmIndex: 0,
-          parameterName: 'Apple',  // Alphabetically first
-          parameterNumber: 1,      // But parameter page order second
+          parameterName: 'Apple', // Alphabetically first
+          parameterNumber: 1, // But parameter page order second
         ),
       ];
 
@@ -284,9 +279,7 @@ void main() {
           disting: MockDistingMidiManager(),
           distingVersion: 'v1.0',
           firmwareVersion: FirmwareVersion('1.0.0'),
-          slots: [
-            createSlotFromMappedParameters(algo0Params),
-          ],
+          slots: [createSlotFromMappedParameters(algo0Params)],
           algorithms: const [],
           unitStrings: const [],
           presetName: 'Test',
@@ -295,9 +288,7 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-        ),
+        createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
       // Wait for post-frame callback
@@ -312,8 +303,12 @@ void main() {
       final zebraY = tester.getTopLeft(find.text('Zebra')).dy;
       final appleY = tester.getTopLeft(find.text('Apple')).dy;
 
-      expect(zebraY < appleY, true,
-        reason: 'Zebra (param 0) should appear before Apple (param 1) due to parameter page order');
+      expect(
+        zebraY < appleY,
+        true,
+        reason:
+            'Zebra (param 0) should appear before Apple (param 1) due to parameter page order',
+      );
     });
 
     testWidgets('shows only parameters for selected page', (tester) async {
@@ -343,9 +338,7 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-        ),
+        createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
       // Wait for post-frame callback
@@ -397,9 +390,7 @@ void main() {
       when(() => mockCubit.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-        ),
+        createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
       // Wait for post-frame callback
@@ -435,9 +426,7 @@ void main() {
       when(() => mockCubit.stopPollingMappedParameters()).thenReturn(null);
 
       await tester.pumpWidget(
-        createTestWidget(
-          child: const PerformanceScreen(units: []),
-        ),
+        createTestWidget(child: const PerformanceScreen(units: [])),
       );
 
       // Should find polling control button
