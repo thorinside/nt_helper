@@ -48,6 +48,14 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        externalNativeBuild {
+          // For ndk-build, instead use the ndkBuild block.
+          cmake {
+            // Passes optional arguments to CMake.
+            arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+          }
+       }
     }
 
     signingConfigs {
