@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for MethodChannel
@@ -102,7 +103,9 @@ void main() async {
     return null;
   });
 
-  doWhenWindowReady(() async {
+  // Only initialize window management on desktop platforms
+  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+    doWhenWindowReady(() async {
     // SettingsService().init() is already called above, so SharedPreferences should be initialized.
     final prefs = await SharedPreferences.getInstance();
     double? x, y, width, height;
@@ -142,5 +145,6 @@ void main() async {
     }
 
     appWindow.show();
-  });
+    });
+  }
 }

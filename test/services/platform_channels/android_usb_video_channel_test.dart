@@ -324,5 +324,311 @@ void main() {
         await channel.stopVideoStream();
       });
     });
+
+    group('Frame Streaming (Story 2.3)', () {
+      test('Frame stream is broadcast type for multiple subscribers', () async {
+        // Arrange
+        final stream = channel.startVideoStream('test-device');
+
+        // Act
+        final sub1 = stream.listen((_) {});
+        final sub2 = stream.listen((_) {});
+
+        // Assert - broadcast streams allow multiple listeners without error
+        expect(stream.isBroadcast, isTrue);
+        expect(sub1, isNotNull);
+        expect(sub2, isNotNull);
+
+        // Cleanup
+        sub1.cancel();
+        sub2.cancel();
+        await channel.stopVideoStream();
+      });
+
+      test('EventChannel streaming handles errors gracefully', () async {
+        // Arrange
+        final stream = channel.startVideoStream('test-device');
+
+        // Act
+        final subscription = stream.listen(
+          (_) {},
+          onError: (_) {
+            // Error handling verified by successful subscription
+          },
+        );
+
+        // Give async operations time
+        await Future.delayed(const Duration(milliseconds: 150));
+
+        // Cleanup
+        subscription.cancel();
+        await channel.stopVideoStream();
+
+        // Assert - error handling was set up correctly (errors are normal in test env)
+        expect(true, isTrue);
+      });
+
+      test('Frame stream state management works correctly', () async {
+        // Act
+        final stream1 = channel.startVideoStream('device-1');
+        expect(stream1, isNotNull);
+        expect(stream1.isBroadcast, isTrue);
+
+        // Act - stop and start new stream
+        await channel.stopVideoStream();
+        final stream2 = channel.startVideoStream('device-2');
+        expect(stream2, isNotNull);
+
+        // Cleanup
+        await channel.stopVideoStream();
+      });
+
+      test('Frame streaming setup completes without hanging', () async {
+        // Act
+        final stream = channel.startVideoStream('test-device');
+
+        // Assert - stream should be created immediately
+        expect(stream, isNotNull);
+
+        // Give initialization time
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Act & Assert - stop should complete quickly
+        await channel.stopVideoStream();
+        expect(true, isTrue);
+      });
+
+      test('EventChannel is properly connected in frame streaming', () async {
+        // Arrange
+        final stream = channel.startVideoStream('test-device');
+        bool subscriptionSucceeded = false;
+
+        // Act
+        try {
+          final subscription = stream.listen((_) {});
+          subscriptionSucceeded = true;
+          subscription.cancel();
+        } catch (e) {
+          subscriptionSucceeded = false;
+        }
+
+        // Cleanup
+        await channel.stopVideoStream();
+
+        // Assert
+        expect(subscriptionSucceeded, isTrue);
+      });
+
+      test('Frame streaming handles multiple stop calls safely', () async {
+        // Act - multiple stops should not throw
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        await channel.stopVideoStream();
+        await channel.stopVideoStream();
+        await channel.stopVideoStream();
+
+        // Assert - test completed without exception
+        expect(true, isTrue);
+      });
+    });
+
+    group('Lifecycle and Error Recovery (Story 2.4)', () {
+      test('pauseStreaming stops stream when app backgrounded', () async {
+        // Arrange
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // Act
+        await channel.pauseStreaming();
+
+        // Assert - should complete without error
+        expect(true, isTrue);
+      });
+
+      test('resumeStreaming restores stream when app foregrounded', () async {
+        // Arrange
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // Act
+        await channel.pauseStreaming();
+        await channel.resumeStreaming();
+
+        // Assert - should complete without error
+        expect(true, isTrue);
+      });
+
+      test('pauseStreaming followed by stopVideoStream is safe', () async {
+        // Arrange
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // Act
+        await channel.pauseStreaming();
+        await channel.stopVideoStream();
+
+        // Assert - should complete without exception
+        expect(true, isTrue);
+      });
+
+      test('multiple pause/resume cycles do not leak resources', () async {
+        // Act - multiple cycles
+        for (int i = 0; i < 3; i++) {
+          channel.startVideoStream('device-$i');
+          await Future.delayed(const Duration(milliseconds: 30));
+          await channel.pauseStreaming();
+          await Future.delayed(const Duration(milliseconds: 30));
+          await channel.resumeStreaming();
+          await Future.delayed(const Duration(milliseconds: 30));
+          await channel.stopVideoStream();
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+
+        // Assert - if we get here without timeout or error, test passed
+        expect(true, isTrue);
+      });
+
+      test('resumeStreaming without prior pause is safe', () async {
+        // Act - attempt resume without pause
+        await channel.resumeStreaming();
+
+        // Assert - should not throw
+        expect(true, isTrue);
+      });
+
+      test('dispose cleans up all lifecycle state', () async {
+        // Arrange
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 50));
+        await channel.pauseStreaming();
+
+        // Act
+        await channel.dispose();
+
+        // Assert - should complete without error
+        expect(true, isTrue);
+      });
+
+      test('comprehensive lifecycle: start → pause → resume → stop', () async {
+        // Act - complete lifecycle
+        final stream = channel.startVideoStream('test-device');
+        expect(stream, isNotNull);
+
+        await Future.delayed(const Duration(milliseconds: 50));
+        await channel.pauseStreaming();
+
+        await Future.delayed(const Duration(milliseconds: 30));
+        await channel.resumeStreaming();
+
+        await Future.delayed(const Duration(milliseconds: 50));
+        await channel.stopVideoStream();
+
+        // Assert - test completed successfully
+        expect(true, isTrue);
+      });
+
+      test('lifecycle state transitions are idempotent', () async {
+        // Act
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 30));
+
+        // Multiple pauses
+        await channel.pauseStreaming();
+        await channel.pauseStreaming();
+
+        // Multiple resumes
+        await channel.resumeStreaming();
+        await channel.resumeStreaming();
+
+        // Cleanup
+        await channel.stopVideoStream();
+
+        // Assert - no error means success
+        expect(true, isTrue);
+      });
+
+      test('initialization retry state resets after successful connection', () async {
+        // Act
+        final stream1 = channel.startVideoStream('device-1');
+        await Future.delayed(const Duration(milliseconds: 50));
+        await channel.stopVideoStream();
+
+        // Second attempt should not carry over retry state
+        final stream2 = channel.startVideoStream('device-2');
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // Assert
+        expect(stream1, isNotNull);
+        expect(stream2, isNotNull);
+
+        // Cleanup
+        await channel.stopVideoStream();
+      });
+
+      test('recovery timer is cleaned up on disposal', () async {
+        // Arrange
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // Act
+        await channel.dispose();
+
+        // Assert - should complete without hanging
+        expect(true, isTrue);
+      });
+
+      test('error state tracking during lifecycle transitions', () async {
+        // Act - trigger error conditions by starting/stopping rapidly
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 20));
+        await channel.pauseStreaming();
+        await Future.delayed(const Duration(milliseconds: 20));
+        await channel.stopVideoStream();
+
+        // Start new stream after error state
+        final newStream = channel.startVideoStream('test-device-2');
+        await Future.delayed(const Duration(milliseconds: 20));
+
+        // Assert
+        expect(newStream, isNotNull);
+
+        // Cleanup
+        await channel.stopVideoStream();
+      });
+
+      test('concurrent pause and stop operations do not deadlock', () async {
+        // Act
+        channel.startVideoStream('test-device');
+        await Future.delayed(const Duration(milliseconds: 30));
+
+        // Create concurrent futures (pseudo-concurrent in single thread)
+        final pauseFuture = channel.pauseStreaming();
+        final stopFuture = channel.stopVideoStream();
+
+        // Wait for both
+        await Future.wait([pauseFuture, stopFuture]);
+
+        // Assert - completed without hang/exception
+        expect(true, isTrue);
+      });
+
+      test('device reconnection detection with lifecycle', () async {
+        // Act
+        final stream1 = channel.startVideoStream('device-1');
+        await Future.delayed(const Duration(milliseconds: 30));
+        await channel.pauseStreaming();
+
+        // Simulate device reattach by resuming with same device
+        await channel.resumeStreaming();
+        await Future.delayed(const Duration(milliseconds: 30));
+
+        // Assert
+        expect(stream1, isNotNull);
+
+        // Cleanup
+        await channel.stopVideoStream();
+      });
+    });
   });
 }

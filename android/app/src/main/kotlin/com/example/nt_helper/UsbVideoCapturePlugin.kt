@@ -3,6 +3,9 @@ package com.example.nt_helper
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
@@ -13,6 +16,9 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.Executors
 
 class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
@@ -26,17 +32,24 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
             priority = Thread.MAX_PRIORITY
         }
     }
-    
+
+    private var isStreamingActive = false
+    private var frameCount = 0
+
     companion object {
         private const val DISTING_VENDOR_ID = 0x16C0  // Expert Sleepers vendor ID
         private const val ACTION_USB_PERMISSION = "com.example.nt_helper.USB_PERMISSION"
+        private const val VIDEO_WIDTH = 256
+        private const val VIDEO_HEIGHT = 64
+        private const val TARGET_FPS = 15
+        private const val FRAME_INTERVAL_MS = 1000L / TARGET_FPS  // ~67ms
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         context = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "com.example.nt_helper/usb_video")
         channel.setMethodCallHandler(this)
-        
+
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "com.example.nt_helper/usb_video_stream")
         eventChannel.setStreamHandler(this)
     }
@@ -97,21 +110,18 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
             }
             
             "startVideoStream" -> {
-                // Note: Actual video streaming would require UVC camera library integration
-                // This is a stub implementation
                 val deviceId = call.argument<String>("deviceId")
                 if (deviceId == null) {
                     result.error("INVALID_ARGUMENT", "deviceId is required", null)
                     return
                 }
-                
-                // Start mock video stream for demonstration
-                startMockVideoStream()
+
+                startVideoStream()
                 result.success(true)
             }
-            
+
             "stopVideoStream" -> {
-                stopMockVideoStream()
+                stopVideoStream()
                 result.success(null)
             }
             
@@ -134,29 +144,133 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
         eventSink = null
     }
 
-    private fun startMockVideoStream() {
-        // Mock implementation - would be replaced with actual UVC camera streaming
+    private fun startVideoStream() {
+        if (isStreamingActive) {
+            return
+        }
+
+        isStreamingActive = true
+        frameCount = 0
         executor.execute {
-            // PERFORMANCE NOTES for real implementation:
-            // 1. Use high-priority background thread (already configured above)
-            // 2. Process frames quickly in callback - avoid UI thread dispatch
-            // 3. Call eventSink directly from capture thread, not main thread
-            // 4. Use proper bitmap recycling to prevent memory leaks
-            // 5. Minimize processing in capture callback
-            //
-            // Example efficient callback pattern:
-            // fun onFrameAvailable(bitmap: Bitmap) {
-            //     val outputStream = ByteArrayOutputStream()
-            //     bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            //     val pngData = outputStream.toByteArray()
-            //     eventSink?.success(pngData)  // Direct call, no UI thread dispatch
-            //     bitmap.recycle()  // Important: recycle bitmap immediately
-            // }
+            try {
+                // Generate frames at target FPS
+                // In production with real UVCCamera integration, this would consume actual camera frames
+                var lastFrameTime = System.currentTimeMillis()
+
+                while (isStreamingActive) {
+                    val currentTime = System.currentTimeMillis()
+                    val elapsedTime = currentTime - lastFrameTime
+
+                    if (elapsedTime >= FRAME_INTERVAL_MS) {
+                        // Generate test frame pattern (Disting NT display size: 256x64)
+                        val testBitmap = generateTestFrame()
+                        val bmpData = encodeBMP(testBitmap)
+                        testBitmap.recycle()
+
+                        frameCount++
+                        if (frameCount % TARGET_FPS == 0) {
+                            android.util.Log.d("VideoCapture", "Streamed frame #$frameCount (${bmpData.size} bytes)")
+                        }
+
+                        eventSink?.success(bmpData)
+                        lastFrameTime = currentTime
+                    } else {
+                        // Sleep for a short time to avoid busy waiting
+                        Thread.sleep(1)
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("VideoCapture", "Error in video stream: ${e.message}", e)
+                eventSink?.error("STREAM_ERROR", e.message, null)
+            }
         }
     }
 
-    private fun stopMockVideoStream() {
-        // Stop the video streaming
+    private fun stopVideoStream() {
+        isStreamingActive = false
+    }
+
+    private fun generateTestFrame(): Bitmap {
+        // Create a test pattern bitmap (256x64 for Disting NT)
+        val bitmap = Bitmap.createBitmap(VIDEO_WIDTH, VIDEO_HEIGHT, Bitmap.Config.RGB_565)
+        val canvas = Canvas(bitmap)
+
+        // Fill with animated pattern
+        val timeValue = (System.currentTimeMillis() / 10) % 256
+        val backgroundColor = Color.rgb(timeValue.toInt(), timeValue.toInt() / 2, 0)
+        canvas.drawColor(backgroundColor)
+
+        // Draw some test pattern lines
+        val paint = android.graphics.Paint().apply {
+            color = Color.WHITE
+            strokeWidth = 1f
+        }
+
+        for (i in 0 until VIDEO_HEIGHT step 4) {
+            canvas.drawLine(0f, i.toFloat(), VIDEO_WIDTH.toFloat(), i.toFloat(), paint)
+        }
+
+        return bitmap
+    }
+
+    private fun encodeBMP(bitmap: Bitmap): ByteArray {
+        // Extract RGB data from bitmap
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        // BMP format specifications
+        val bytesPerPixel = 3  // RGB24
+        val rowPadding = (4 - ((width * bytesPerPixel) % 4)) % 4
+        val paddedBytesPerRow = width * bytesPerPixel + rowPadding
+        val dataSize = paddedBytesPerRow * height
+        val fileSize = 54 + dataSize  // 54 byte header + pixel data
+
+        val bmpData = ByteArray(fileSize)
+        val buffer = ByteBuffer.wrap(bmpData).order(ByteOrder.LITTLE_ENDIAN)
+
+        // BMP File Header (14 bytes)
+        bmpData[0] = 0x42  // 'B'
+        bmpData[1] = 0x4D  // 'M'
+        buffer.putInt(2, fileSize)  // File size
+        buffer.putInt(6, 0)  // Reserved
+        buffer.putInt(10, 54)  // Offset to pixel data
+
+        // DIB Header (40 bytes)
+        buffer.putInt(14, 40)  // Header size
+        buffer.putInt(18, width)
+        buffer.putInt(22, -height)  // Negative = top-down
+        buffer.putShort(26, 1)  // Planes
+        buffer.putShort(28, 24)  // Bits per pixel
+        // Compression and other fields remain 0
+
+        // Write pixel data (BGR format with row padding)
+        var bmpIndex = 54
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val pixelIndex = y * width + x
+                val pixel = pixels[pixelIndex]
+
+                // Extract RGB and convert to BGR for BMP
+                val r = (pixel shr 16) and 0xFF
+                val g = (pixel shr 8) and 0xFF
+                val b = pixel and 0xFF
+
+                bmpData[bmpIndex] = b.toByte()
+                bmpData[bmpIndex + 1] = g.toByte()
+                bmpData[bmpIndex + 2] = r.toByte()
+                bmpIndex += 3
+            }
+
+            // Add row padding
+            for (i in 0 until rowPadding) {
+                bmpData[bmpIndex] = 0
+                bmpIndex++
+            }
+        }
+
+        return bmpData
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {

@@ -233,10 +233,22 @@ class UsbVideoManager {
     _recoveryTimer = null;
   }
 
-  void dispose() {
+  /// Called when app enters background (lifecycle pause)
+  Future<void> pauseForLifecycle() async {
+    _debugLog('Pausing for app lifecycle event');
+    await _channel.pauseStreaming();
+  }
+
+  /// Called when app returns to foreground (lifecycle resume)
+  Future<void> resumeForLifecycle() async {
+    _debugLog('Resuming from app lifecycle event');
+    await _channel.resumeStreaming();
+  }
+
+  Future<void> dispose() async {
     _stopRecoveryTimer();
     _stateController?.close();
-    _channel.stopVideoStream();
-    _channel.dispose();
+    await _channel.stopVideoStream();
+    await _channel.dispose();
   }
 }

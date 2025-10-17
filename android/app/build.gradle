@@ -67,6 +67,10 @@ android {
         }
     }
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
         release {
             signingConfig signingConfigs.release
             // optionally 'minifyEnabled true' / 'proguardRules' etc.

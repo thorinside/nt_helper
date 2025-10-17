@@ -152,10 +152,26 @@ class UsbVideoChannel {
     }
   }
 
-  void dispose() {
+  /// Called when app enters background
+  Future<void> pauseStreaming() async {
+    _debugLog('Pausing video streaming');
+    if (_useAndroidImplementation) {
+      await _androidChannel?.pauseStreaming();
+    }
+  }
+
+  /// Called when app returns to foreground
+  Future<void> resumeStreaming() async {
+    _debugLog('Resuming video streaming');
+    if (_useAndroidImplementation) {
+      await _androidChannel?.resumeStreaming();
+    }
+  }
+
+  Future<void> dispose() async {
     _debugLog('Disposing UsbVideoChannel');
-    _androidChannel?.dispose();
+    await _androidChannel?.dispose();
     _androidChannel = null;
-    stopVideoStream();
+    await stopVideoStream();
   }
 }
