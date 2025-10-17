@@ -247,14 +247,14 @@ class AndroidUsbVideoChannel {
               }
             },
             onError: (error) {
-              _debugLog('ERROR in frame stream: $error');
+              _debugLog('ERROR during frame streaming: $error');
               controller?.addError('Frame streaming error: $error');
             },
           );
 
       _debugLog('Frame capture started successfully');
     } catch (e) {
-      _debugLog('ERROR starting frame capture: $e');
+      _debugLog('ERROR during frame capture setup: $e');
       _frameStreamController?.addError('Failed to start frame capture: $e');
     }
   }
