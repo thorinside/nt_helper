@@ -228,9 +228,11 @@ class AndroidUsbVideoChannel {
 
       // Subscribe to EventChannel for actual frame data from native side
       // The native platform channel intercepts frames from UVCCamera
+      // Capture stream controller in a local variable to avoid race condition
+      final controller = _frameStreamController;
       _frameSubscription = frameChannel.receiveBroadcastStream().listen(
             (dynamic frameData) {
-              if (_frameStreamController == null || _frameStreamController!.isClosed) {
+              if (controller == null || controller.isClosed) {
                 return;
               }
 
@@ -239,14 +241,14 @@ class AndroidUsbVideoChannel {
                 if (_frameCount % 15 == 0) {
                   _debugLog('Streaming frame #$_frameCount (${frameData.length} bytes)');
                 }
-                _frameStreamController?.add(frameData);
+                controller.add(frameData);
               } else {
                 _debugLog('WARNING: Received non-Uint8List frame data');
               }
             },
             onError: (error) {
               _debugLog('ERROR in frame stream: $error');
-              _frameStreamController?.addError('Frame streaming error: $error');
+              controller?.addError('Frame streaming error: $error');
             },
           );
 
