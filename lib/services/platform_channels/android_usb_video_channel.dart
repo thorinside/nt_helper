@@ -223,9 +223,8 @@ class AndroidUsbVideoChannel {
             _debugLog('Camera status: $status');
           });
         } catch (e) {
-          _debugLog('ERROR subscribing to camera events: $e');
-          _frameStreamController?.addError('Failed to subscribe to camera events: $e');
-          return;
+          _debugLog('WARNING: Could not subscribe to camera events: $e');
+          // Don't return here - frame capture can continue without event streams
         }
       } else {
         _debugLog('WARNING: Controller became null during frame capture setup');
