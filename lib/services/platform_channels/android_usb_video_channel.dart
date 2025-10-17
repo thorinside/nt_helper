@@ -207,7 +207,7 @@ class AndroidUsbVideoChannel {
       _debugLog('Starting frame capture...');
 
       // Subscribe to camera error events
-      _errorEventSubscription = _controller!.cameraErrorEvents.listen((error) {
+      _errorEventSubscription = _controller?.cameraErrorEvents.listen((error) {
         _debugLog('Camera error: ${error.error}');
         // Check for preview interruption error type
         if (error.error.toString().contains('previewInterrupted')) {
@@ -217,7 +217,7 @@ class AndroidUsbVideoChannel {
       });
 
       // Subscribe to camera status events for state tracking
-      _statusEventSubscription = _controller!.cameraStatusEvents.listen((status) {
+      _statusEventSubscription = _controller?.cameraStatusEvents.listen((status) {
         _debugLog('Camera status: $status');
       });
 
