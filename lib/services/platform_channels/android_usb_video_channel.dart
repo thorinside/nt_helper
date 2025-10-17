@@ -207,19 +207,24 @@ class AndroidUsbVideoChannel {
       _debugLog('Starting frame capture...');
 
       // Subscribe to camera error events
-      _errorEventSubscription = _controller?.cameraErrorEvents.listen((error) {
-        _debugLog('Camera error: ${error.error}');
-        // Check for preview interruption error type
-        if (error.error.toString().contains('previewInterrupted')) {
-          _debugLog('Preview interrupted - attempting recovery');
-          _handlePreviewInterruptionRecovery();
-        }
-      });
+      if (_controller != null) {
+        _errorEventSubscription = _controller!.cameraErrorEvents.listen((error) {
+          _debugLog('Camera error: ${error.error}');
+          // Check for preview interruption error type
+          if (error.error.toString().contains('previewInterrupted')) {
+            _debugLog('Preview interrupted - attempting recovery');
+            _handlePreviewInterruptionRecovery();
+          }
+        });
 
-      // Subscribe to camera status events for state tracking
-      _statusEventSubscription = _controller?.cameraStatusEvents.listen((status) {
-        _debugLog('Camera status: $status');
-      });
+        // Subscribe to camera status events for state tracking
+        _statusEventSubscription = _controller!.cameraStatusEvents.listen((status) {
+          _debugLog('Camera status: $status');
+        });
+      } else {
+        _debugLog('WARNING: Controller became null during frame capture setup');
+        return;
+      }
 
       // Subscribe to EventChannel for actual frame data from native side
       // The native platform channel intercepts frames from UVCCamera
