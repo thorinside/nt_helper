@@ -208,19 +208,25 @@ class AndroidUsbVideoChannel {
 
       // Subscribe to camera error events
       if (_controller != null) {
-        _errorEventSubscription = _controller!.cameraErrorEvents.listen((error) {
-          _debugLog('Camera error: ${error.error}');
-          // Check for preview interruption error type
-          if (error.error.toString().contains('previewInterrupted')) {
-            _debugLog('Preview interrupted - attempting recovery');
-            _handlePreviewInterruptionRecovery();
-          }
-        });
+        try {
+          _errorEventSubscription = _controller!.cameraErrorEvents.listen((error) {
+            _debugLog('Camera error: ${error.error}');
+            // Check for preview interruption error type
+            if (error.error.toString().contains('previewInterrupted')) {
+              _debugLog('Preview interrupted - attempting recovery');
+              _handlePreviewInterruptionRecovery();
+            }
+          });
 
-        // Subscribe to camera status events for state tracking
-        _statusEventSubscription = _controller!.cameraStatusEvents.listen((status) {
-          _debugLog('Camera status: $status');
-        });
+          // Subscribe to camera status events for state tracking
+          _statusEventSubscription = _controller!.cameraStatusEvents.listen((status) {
+            _debugLog('Camera status: $status');
+          });
+        } catch (e) {
+          _debugLog('ERROR subscribing to camera events: $e');
+          _frameStreamController?.addError('Failed to subscribe to camera events: $e');
+          return;
+        }
       } else {
         _debugLog('WARNING: Controller became null during frame capture setup');
         return;
