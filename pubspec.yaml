@@ -86,7 +86,11 @@ dependencies:
   universal_ble: ^0.9.11
   vector_math: ^2.1.4
   webview_flutter: ^4.10.0
-  uvccamera: ^0.0.13
+  uvccamera:
+    git:
+      url: https://github.com/DigifinityLtd/UVCCamera
+      ref: feature/16kb-page-size-compliance
+      path: flutter
 
 dev_dependencies:
   flutter_test:

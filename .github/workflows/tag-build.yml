@@ -52,11 +52,26 @@ jobs:
           VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Clone and Build UVCCamera Native Library
+        run: |
+          cd /tmp
+          git clone https://github.com/DigifinityLtd/UVCCamera.git
+          cd UVCCamera
+          git checkout feature/16kb-page-size-compliance
+          ./gradlew :lib:assembleRelease
+          ./gradlew :lib:publishToMavenLocal
 
       - name: Install dependencies
         run: flutter pub get
@@ -72,6 +87,16 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
+
+      - name: Verify 16KB Page Size Compliance
+        run: |
+          # Find zipalign tool
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | head -1)
+
+          # Verify APK alignment
+          $ZIPALIGN -c -P 16 -v 4 build/app/outputs/flutter-apk/app-release.apk
+
+          echo "✅ 16KB page size compliance verified!"
 
       - name: List build output (debug)
         run: ls -R build/app/outputs/flutter-apk
@@ -102,11 +127,26 @@ jobs:
           VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Clone and Build UVCCamera Native Library
+        run: |
+          cd /tmp
+          git clone https://github.com/DigifinityLtd/UVCCamera.git
+          cd UVCCamera
+          git checkout feature/16kb-page-size-compliance
+          ./gradlew :lib:assembleRelease
+          ./gradlew :lib:publishToMavenLocal
 
       - name: Install dependencies
         run: flutter pub get
@@ -122,6 +162,16 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build appbundle --release
+
+      - name: Verify 16KB Page Size Compliance
+        run: |
+          # Find zipalign tool
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | head -1)
+
+          # Verify AAB alignment
+          $ZIPALIGN -c -P 16 -v 4 build/app/outputs/bundle/release/app-release.aab
+
+          echo "✅ 16KB page size compliance verified!"
 
       - name: List build output (debug)
         run: ls -R build/app/outputs/bundle/release

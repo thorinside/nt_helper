@@ -1306,11 +1306,12 @@ packages:
   uvccamera:
     dependency: "direct main"
     description:
-      name: uvccamera
-      sha256: d47266897e71923f9a52bbcd4aa55cc891776441cd72257df69df453697e8917
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.13"
+      path: flutter
+      ref: "feature/16kb-page-size-compliance"
+      resolved-ref: d1f483f1dcd21d98c2beb5e3422233edc7244154
+      url: "https://github.com/DigifinityLtd/UVCCamera"
+    source: git
+    version: "0.0.0-SNAPSHOT"
   vector_math:
     dependency: "direct main"
     description:
