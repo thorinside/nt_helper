@@ -206,25 +206,33 @@ class AndroidUsbVideoChannel {
     try {
       _debugLog('Starting frame capture...');
 
-      // Subscribe to camera error events
+      // Subscribe to camera error and status events (optional - may not be available)
       if (_controller != null) {
         try {
-          _errorEventSubscription = _controller!.cameraErrorEvents.listen((error) {
-            _debugLog('Camera error: ${error.error}');
-            // Check for preview interruption error type
-            if (error.error.toString().contains('previewInterrupted')) {
-              _debugLog('Preview interrupted - attempting recovery');
-              _handlePreviewInterruptionRecovery();
-            }
-          });
+          // Attempt to subscribe to error events
+          try {
+            _errorEventSubscription = _controller!.cameraErrorEvents.listen((error) {
+              _debugLog('Camera error: ${error.error}');
+              if (error.error.toString().contains('previewInterrupted')) {
+                _debugLog('Preview interrupted - attempting recovery');
+                _handlePreviewInterruptionRecovery();
+              }
+            });
+          } catch (e) {
+            _debugLog('WARNING: Camera error events not available: $e');
+          }
 
-          // Subscribe to camera status events for state tracking
-          _statusEventSubscription = _controller!.cameraStatusEvents.listen((status) {
-            _debugLog('Camera status: $status');
-          });
+          // Attempt to subscribe to status events
+          try {
+            _statusEventSubscription = _controller!.cameraStatusEvents.listen((status) {
+              _debugLog('Camera status: $status');
+            });
+          } catch (e) {
+            _debugLog('WARNING: Camera status events not available: $e');
+          }
         } catch (e) {
-          _debugLog('WARNING: Could not subscribe to camera events: $e');
-          // Don't return here - frame capture can continue without event streams
+          _debugLog('WARNING: Camera event subscription failed: $e');
+          // Continue anyway - frame capture doesn't depend on these events
         }
       } else {
         _debugLog('WARNING: Controller became null during frame capture setup');
