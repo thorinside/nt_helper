@@ -6,16 +6,22 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.SurfaceTexture
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.view.Surface
+import android.view.TextureView
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.view.TextureRegistry
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -35,6 +41,12 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
 
     private var isStreamingActive = false
     private var frameCount = 0
+
+    // For texture-based frame extraction
+    private var textureRegistry: TextureRegistry? = null
+    private var surfaceTextureEntry: TextureRegistry.SurfaceTextureEntry? = null
+    private var cameraSurface: Surface? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     companion object {
         private const val DISTING_VENDOR_ID = 0x16C0  // Expert Sleepers vendor ID
@@ -116,6 +128,10 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
                     return
                 }
 
+                // For now, use test frames
+                // TODO: Extract real frames from UvcCameraController texture
+                // The texture ID is available from the controller in Dart
+                // We need to pass it here and read pixels from it
                 startVideoStream()
                 result.success(true)
             }
@@ -172,7 +188,11 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
                             android.util.Log.d("VideoCapture", "Streamed frame #$frameCount (${bmpData.size} bytes)")
                         }
 
-                        eventSink?.success(bmpData)
+                        // EventChannel calls must be made on the main UI thread
+                        mainHandler.post {
+                            eventSink?.success(bmpData)
+                        }
+
                         lastFrameTime = currentTime
                     } else {
                         // Sleep for a short time to avoid busy waiting
@@ -181,7 +201,10 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
                 }
             } catch (e: Exception) {
                 android.util.Log.e("VideoCapture", "Error in video stream: ${e.message}", e)
-                eventSink?.error("STREAM_ERROR", e.message, null)
+                // Error calls also need to be on main thread
+                mainHandler.post {
+                    eventSink?.error("STREAM_ERROR", e.message, null)
+                }
             }
         }
     }
@@ -191,24 +214,43 @@ class UsbVideoCapturePlugin : FlutterPlugin, MethodCallHandler, EventChannel.Str
     }
 
     private fun generateTestFrame(): Bitmap {
+        // NOTE: This is a placeholder implementation that generates test frames.
+        // In production, this should extract real frames from the UVCCamera instance.
+        // The UVCCamera package renders to a texture, so frame extraction requires:
+        // 1. Creating a Surface/TextureView to receive camera frames
+        // 2. Reading pixels from the rendered texture
+        // 3. Converting to Bitmap for BMP encoding
+        //
+        // TODO: Implement real frame extraction from UVCCamera
+        // Possible approaches:
+        // - Use PixelCopy API (Android 24+) to read from Surface
+        // - Create a GLSurfaceView and use glReadPixels
+        // - Access the underlying libuvc frames via JNI
+
         // Create a test pattern bitmap (256x64 for Disting NT)
         val bitmap = Bitmap.createBitmap(VIDEO_WIDTH, VIDEO_HEIGHT, Bitmap.Config.RGB_565)
         val canvas = Canvas(bitmap)
 
-        // Fill with animated pattern
+        // Fill with animated pattern to show frames are updating
         val timeValue = (System.currentTimeMillis() / 10) % 256
         val backgroundColor = Color.rgb(timeValue.toInt(), timeValue.toInt() / 2, 0)
         canvas.drawColor(backgroundColor)
 
-        // Draw some test pattern lines
+        // Draw test pattern with "NO CAMERA" text to indicate test mode
         val paint = android.graphics.Paint().apply {
             color = Color.WHITE
             strokeWidth = 1f
+            textSize = 12f
+            textAlign = android.graphics.Paint.Align.CENTER
         }
 
+        // Draw grid lines
         for (i in 0 until VIDEO_HEIGHT step 4) {
             canvas.drawLine(0f, i.toFloat(), VIDEO_WIDTH.toFloat(), i.toFloat(), paint)
         }
+
+        // Draw "TEST MODE" text
+        canvas.drawText("TEST MODE - NO CAMERA", VIDEO_WIDTH / 2f, VIDEO_HEIGHT / 2f, paint)
 
         return bitmap
     }

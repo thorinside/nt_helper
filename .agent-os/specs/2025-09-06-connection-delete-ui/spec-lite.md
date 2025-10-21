@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Implement platform-specific connection deletion UI in the routing editor - desktop hover-based delete icons and mobile tap-based confirmation dialogs. Both approaches use smart bus assignment updates through existing DistingCubit patterns to disconnect algorithm ports appropriately (both for algorithm-to-algorithm, only algorithm port for physical IO) and provide instant visual feedback.

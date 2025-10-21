@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Add simple hover and tap functionality to connection labels using existing UI patterns (~60 lines of code). Users can hover (mouse or stylus) to see visual feedback, then tap to toggle the connected output's mode between Add (0) and Replace (1) using the existing `setPortOutputMode()` method. Reuses existing MouseRegion and GestureDetector patterns for minimal invasive changes.

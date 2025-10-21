@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Implement interactive connection creation in the routing editor by enabling drag-and-drop from output to input ports, synchronizing bus numbers to establish connections using the same optimistic update pattern as connection deletion. The preview line during dragging uses identical math to existing connection rendering, ensuring visual consistency when connections are created.

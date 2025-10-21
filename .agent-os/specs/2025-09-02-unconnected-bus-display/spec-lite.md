@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Enhance the routing editor to visually indicate ports assigned to buses without matching connections, displaying short connection lines with bus labels positioned to show signal flow direction (outward from outputs, inward to inputs) as warnings to help users identify potentially incomplete signal routing. The system intelligently handles zero-value ports as unconnected without visual representation, providing clear feedback without treating unconnected buses as errors.

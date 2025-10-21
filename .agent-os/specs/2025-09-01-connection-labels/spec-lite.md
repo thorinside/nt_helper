@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Add bus identifier labels to routing visualization connections, displaying I# for inputs (buses 1-12), O# for outputs (buses 13-20), and A# for aux buses (21-28) at the center of each connection line. This enhancement provides immediate visual identification of which bus carries each signal, improving routing clarity and troubleshooting efficiency without requiring examination of parameter details.

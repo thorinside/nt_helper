@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:nt_helper/domain/video/usb_device_info.dart';
 import 'package:nt_helper/services/debug_service.dart';
 import 'package:nt_helper/services/platform_channels/android_usb_video_channel.dart';
+import 'package:uvccamera/uvccamera.dart';
 
 class UsbVideoChannel {
   static const _channel = MethodChannel('com.example.nt_helper/usb_video');
@@ -173,5 +174,14 @@ class UsbVideoChannel {
     await _androidChannel?.dispose();
     _androidChannel = null;
     await stopVideoStream();
+  }
+
+  /// Get the Android UvcCameraController for direct widget access
+  /// Returns null on non-Android platforms
+  UvcCameraController? getAndroidCameraController() {
+    if (_useAndroidImplementation && _androidChannel != null) {
+      return _androidChannel!.cameraController;
+    }
+    return null;
   }
 }

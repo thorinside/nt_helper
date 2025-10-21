@@ -6,6 +6,7 @@ import 'package:nt_helper/domain/video/usb_device_info.dart';
 import 'package:nt_helper/domain/video/video_stream_state.dart';
 import 'package:nt_helper/services/platform_channels/usb_video_channel.dart';
 import 'package:nt_helper/services/debug_service.dart';
+import 'package:uvccamera/uvccamera.dart';
 
 class UsbVideoManager {
   final UsbVideoChannel _channel;
@@ -136,6 +137,12 @@ class UsbVideoManager {
       streaming: (stream, width, height, fps) => stream,
       orElse: () => null,
     );
+  }
+
+  /// Get the Android UvcCameraController for direct widget access
+  /// Returns null on non-Android platforms
+  UvcCameraController? getAndroidCameraController() {
+    return _channel.getAndroidCameraController();
   }
 
   Future<void> disconnect() async {

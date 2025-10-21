@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Enhance routing editor connection labels to display output mode information by appending " R" for replace mode outputs. The system will automatically detect mode parameters (ending with 'mode', unit=1, enum values 'Add'/'Replace') and pass them to AlgorithmRouting subclasses, enabling the connection painter to show labels like "O1 R" for outputs that replace rather than mix with lower slot outputs.
