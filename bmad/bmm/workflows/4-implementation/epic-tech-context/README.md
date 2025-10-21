@@ -2,7 +2,7 @@
 
 ## Overview
 
-Generate a comprehensive Technical Specification for a single epic from PRD, Epics file and Architecture to produce a document with full acceptance criteria and traceability mapping. Creates detailed implementation guidance that bridges business requirements with technical execution.
+Generate a comprehensive Technical Specification for a single epic from PRD, Epics file and Solution Architecture to produce a document with full acceptance criteria and traceability mapping. Creates detailed implementation guidance that bridges business requirements with technical execution.
 
 ## Key Features
 
@@ -25,10 +25,10 @@ workflow tech-spec
 
 ```bash
 # With specific PRD and architecture
-workflow tech-spec --input PRD.md --input solution-architecture.md
+workflow tech-spec --input PRD.md --input architecture.md
 
 # With comprehensive inputs
-workflow tech-spec --input PRD.md --input solution-architecture.md --input front-end-spec.md
+workflow tech-spec --input PRD.md --input architecture.md --input front-end-spec.md
 ```
 
 ### Configuration

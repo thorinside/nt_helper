@@ -11,15 +11,16 @@ document_output_language: "{config_source}:document_output_language"
 user_skill_level: "{config_source}:user_skill_level"
 date: system-generated
 
-# Inputs expected (ask user if missing)
+# Inputs expected ( check output_folder or ask user if missing)
 recommended_inputs:
-  - prd: "{project-root}/docs/PRD.md"
-  - architecture: "{project-root}/docs/solution-architecture.md"
-  - frontend_spec: "{project-root}/docs/front-end-spec.md"
-  - brownfield_notes: "{project-root}/docs/brownfield-notes.md"
+  - prd
+  - gdd
+  - spec
+  - architecture
+  - ux_spec
 
 # Workflow components
-installed_path: "{project-root}/bmad/bmm/workflows/3-solutioning/tech-spec"
+installed_path: "{project-root}/bmad/bmm/workflows/4-implementation/epic-tech-context"
 template: "{installed_path}/template.md"
 instructions: "{installed_path}/instructions.md"
 validation: "{installed_path}/checklist.md"

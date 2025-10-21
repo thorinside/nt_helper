@@ -1,7 +1,7 @@
 # Implementation Ready Check - Workflow Instructions
 
 <critical>The workflow execution engine is governed by: {project-root}/bmad/core/tasks/workflow.xml</critical>
-<critical>You MUST have already loaded and processed: {project-root}/bmad/bmm/workflows/3-solutioning/implementation-ready-check/workflow.yaml</critical>
+<critical>You MUST have already loaded and processed: {project-root}/bmad/bmm/workflows/3-solutioning/solutioning-gate-check/workflow.yaml</critical>
 <critical>Communicate all findings and analysis in {communication_language} throughout the assessment</critical>
 
 <workflow>
@@ -32,7 +32,7 @@ After setup, return here to validate implementation readiness.
 
 - Level 0-1: Tech spec and simple stories only (no PRD, minimal solutioning)
 - Level 2: PRD, tech spec, epics/stories (no separate architecture doc)
-- Level 3-4: Full suite - PRD, solution architecture, epics/stories, possible UX artifacts
+- Level 3-4: Full suite - PRD, architecture document, epics/stories, possible UX artifacts
   </action>
 
 <critical>The validation approach must adapt to the project level - don't look for documents that shouldn't exist at lower levels</critical>
@@ -54,7 +54,7 @@ After setup, return here to validate implementation readiness.
 <action>For Level 2-4 projects, locate:
 
 - Product Requirements Document (PRD)
-- Solution Architecture document (Level 3-4 only)
+- Architecture document (architecture.md) (Level 3-4 only)
 - Technical Specification (Level 2 includes architecture within)
 - Epic and story breakdowns
 - UX artifacts if the active path includes UX workflow
@@ -119,9 +119,10 @@ After setup, return here to validate implementation readiness.
 <action>PRD ↔ Architecture Alignment (Level 3-4):
 
 - Verify every PRD requirement has corresponding architectural support
-- Check that architecture decisions don't contradict PRD constraints
-- Identify any architecture additions beyond PRD scope (potential gold-plating)
-- Ensure non-functional requirements from PRD are addressed in architecture
+- Check that architectural decisions don't contradict PRD constraints
+- Identify any architectural additions beyond PRD scope (potential gold-plating)
+- Ensure non-functional requirements from PRD are addressed in architecture document
+- If using new architecture workflow: verify implementation patterns are defined
   </action>
 
 <action>PRD ↔ Stories Coverage (Level 2-4):
