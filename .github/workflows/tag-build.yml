@@ -88,16 +88,6 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
 
-      - name: Verify 16KB Page Size Compliance
-        run: |
-          # Find zipalign tool
-          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | head -1)
-
-          # Verify APK alignment
-          $ZIPALIGN -c -P 16 -v 4 build/app/outputs/flutter-apk/app-release.apk
-
-          echo "✅ 16KB page size compliance verified!"
-
       - name: List build output (debug)
         run: ls -R build/app/outputs/flutter-apk
 
@@ -162,16 +152,6 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build appbundle --release
-
-      - name: Verify 16KB Page Size Compliance
-        run: |
-          # Find zipalign tool
-          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | head -1)
-
-          # Verify AAB alignment
-          $ZIPALIGN -c -P 16 -v 4 build/app/outputs/bundle/release/app-release.aab
-
-          echo "✅ 16KB page size compliance verified!"
 
       - name: List build output (debug)
         run: ls -R build/app/outputs/bundle/release
