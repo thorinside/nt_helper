@@ -1,0 +1,70 @@
+{
+  "guid": "enfo",
+  "name": "Envelope Follower",
+  "description": "This algorithm is a simple envelope follower. It outputs a CV according to the volume envelope of the input audio.\nWhen operating on stereo (or multichannel) signals, it tracks the maximum of the various signals and outputs a single CV. If you want to separately track the left and right sides of a stereo signal, use this algorithm configured as two mono channels.",
+  "categories": [
+    "CV Processing",
+    "Dynamics"
+  ],
+  "short_description": "\"Tracks the volume envelope of a signal\"",
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 12
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the channel."
+    },
+    {
+      "name": "Input",
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "description": "The input bus to process."
+    },
+    {
+      "name": "Width",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "The number of busses to process, starting from the Input. For example, for a stereo signal, set this to 2."
+    },
+    {
+      "name": "Output",
+      "min": 1,
+      "max": 28,
+      "default": 15,
+      "description": "The output bus. If set to ‘None’, the input bus is used as output, and the mode is always ‘Replace'."
+    },
+    {
+      "name": "Output<br>mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
+    },
+    {
+      "name": "Attack",
+      "min": 0,
+      "max": 1023,
+      "default": 100,
+      "description": "The follower attack time. Exponential scale from 0.1ms to 1000ms."
+    },
+    {
+      "name": "Release",
+      "min": 0,
+      "max": 1023,
+      "default": 100,
+      "description": "The follower release time. Ex exponential scale from 1.0ms to 3000ms."
+    }
+  ],
+  "input_ports": [],
+  "output_ports": []
+}

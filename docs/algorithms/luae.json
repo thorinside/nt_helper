@@ -1,306 +1,70 @@
 {
   "guid": "luae",
   "name": "Lua Expression",
+  "description": "This algorithm allows you to define an arbitrary CV or audio process by simply entering a line of text on the module, for example \"a + b\" to add two signals together. It is designed to catch those little corner cases where stringing together, say, a bunch of attenuverters would be tedious, and writing a full blown Lua script seems like overkill (or, if you’re out and about without a computer on which to write the script). For more extensive discussion of Lua on the disting NT, see the Lua Script algorithm (below) and the UI Scripts (below).",
   "categories": [
-    "Utility",
-    "Scripting"
+    "utility",
+    "mixing",
+    "CV processing"
   ],
-  "description": "Evaluates a single line of Lua code to process CV or audio signals. Useful for simple math operations or custom signal manipulation without needing a full script.",
+  "short_description": "\"A single line of Lua\"",
   "specifications": [
     {
       "name": "Expressions",
-      "unit": null,
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 8,
-      "description": "The number of independent expressions to evaluate."
+      "min": 1,
+      "max": 8
     }
   ],
   "parameters": [
     {
-      "name": "Input a",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable a."
-    },
-    {
-      "name": "Input a mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input b",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable b."
-    },
-    {
-      "name": "Input b mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input c",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable c."
-    },
-    {
-      "name": "Input c mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input d",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable d."
-    },
-    {
-      "name": "Input d mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input e",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable e."
-    },
-    {
-      "name": "Input e mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input f",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable f."
-    },
-    {
-      "name": "Input f mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input g",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable g."
-    },
-    {
-      "name": "Input g mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
-    },
-    {
-      "name": "Input h",
-      "unit": "bus",
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use for variable h."
-    },
-    {
-      "name": "Input h mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Voltage",
-        "Logic"
-      ],
-      "scope": "global",
-      "description": "Whether the input is interpreted as a voltage (a floating point number in the expression) or a logic input (a boolean value in the expression)."
+      "name": "Input A-H",
+      "min": 1,
+      "max": 28,
+      "default": "",
+      "type": "bus",
+      "parameterNumber": 0
     },
     {
       "name": "Output",
-      "unit": "bus",
-      "defaultValue": 15,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "expression",
-      "description": "The bus to use for the expression output.",
       "min": 1,
       "max": 28,
-      "default": 15
+      "default": "15",
+      "type": "bus",
+      "parameterNumber": 0
     },
     {
       "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "expression",
-      "description": "The standard Add/Replace mode selector."
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "bus",
+      "parameterNumber": 0
     },
     {
       "name": "Enable",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "expression",
-      "description": "Enables evaluation of the expression."
+      "min": 0,
+      "max": 1,
+      "default": "",
+      "type": "bus",
+      "parameterNumber": 0
     },
     {
       "name": "Expression",
-      "unit": null,
-      "defaultValue": "",
-      "scope": "expression",
-      "description": "The Lua expression to evaluate. Inputs are available as variables a-h.",
-      "type": "string"
+      "min": null,
+      "max": null,
+      "default": "",
+      "type": "string",
+      "parameterNumber": 0
     },
     {
       "name": "Rate",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "expression",
-      "description": "Whether the expression is evaluated at control rate or audio rate."
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "bus",
+      "parameterNumber": 0
     }
   ],
-  "input_ports": [
-    {
-      "id": "in_a",
-      "name": "Input A",
-      "description": "Input signal for variable 'a'.",
-      "busIdRef": "Input a"
-    },
-    {
-      "id": "in_b",
-      "name": "Input B",
-      "description": "Input signal for variable 'b'.",
-      "busIdRef": "Input b"
-    },
-    {
-      "id": "in_c",
-      "name": "Input C",
-      "description": "Input signal for variable 'c'.",
-      "busIdRef": "Input c"
-    },
-    {
-      "id": "in_d",
-      "name": "Input D",
-      "description": "Input signal for variable 'd'.",
-      "busIdRef": "Input d"
-    },
-    {
-      "id": "in_e",
-      "name": "Input E",
-      "description": "Input signal for variable 'e'.",
-      "busIdRef": "Input e"
-    },
-    {
-      "id": "in_f",
-      "name": "Input F",
-      "description": "Input signal for variable 'f'.",
-      "busIdRef": "Input f"
-    },
-    {
-      "id": "in_g",
-      "name": "Input G",
-      "description": "Input signal for variable 'g'.",
-      "busIdRef": "Input g"
-    },
-    {
-      "id": "in_h",
-      "name": "Input H",
-      "description": "Input signal for variable 'h'.",
-      "busIdRef": "Input h"
-    }
-  ],
-  "output_ports": [
-    {
-      "id": "out",
-      "name": "Output",
-      "description": "Result of the evaluated Lua expression.",
-      "busIdRef": "Output"
-    }
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

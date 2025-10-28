@@ -1,804 +1,226 @@
 {
   "guid": "spsq",
   "name": "Step Sequencer",
+  "description": "This algorithm is a 16-step note sequencer, based on the sequencers in the Expert Sleepers FH-2 (https://expert-sleepers.co.uk/fh2.html) [107] module. It can output CVs and/or MIDI. Each step has pitch, velocity, and a general-purpose “modulation” value. It also has a “Division”, which can either be a repeat count (the step is repeated a number of times on subsequent clocks) or a ratchet count (the step fires a number of gates within the duration of one clock). Each substep (either repeat or ratchet) can be on or off – this is set by the “Pattern” parameter. Furthermore each step or substep can be a tie – this is set by the “Ties” parameter. A tie means a note which continues until just after the beginning of the next (sub)step. When outputting MIDI, this means the note off will follow the next note on i.e. the notes are played legato. When outputting CV, a tie means that the gate will not go low between the notes, and that the pitch CV will glide (if the glide time is non-zero). The algorithm has a function for randomising the pitches, rhythm, or both. Each Step Sequencer has internal storage for 32 sequences, which you can use like ‘snapshots’ or ‘patterns’ to prepare a number of sequences and then switch between them (manually, or under CV control) to build up songs. Remember that every pitch etc. is a parameter and therefore mappable. Something as simple as an LFO modulating a sequence step’s pitch can produce fascinating evolving patterns. If you need to constrain the sequencer to a scale/key, follow it with a Quantizer.",
   "categories": [
-    "Sequencer"
+    "sequencing",
+    "randomization",
+    "triggers",
+    "MIDI"
   ],
-  "description": "A 16-step note sequencer based on the Expert Sleepers FH-2. Outputs CVs and/or MIDI. Each step has pitch, velocity, and modulation values. Features repeats, ratchets, ties, and glide. Includes 32 sequence snapshots and randomization functions.",
+  "short_description": "A simple note sequencer",
   "specifications": [],
   "parameters": [
     {
       "name": "Sequence",
-      "unit": null,
       "min": 1,
       "max": 32,
       "default": 1,
-      "scope": "sequencer",
-      "description": "Selects the current sequence (1-32)."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Start",
-      "unit": "step",
       "min": 1,
       "max": 16,
       "default": 1,
-      "scope": "sequencer",
-      "description": "The first step to play (1-16). Reset jumps here."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "End",
-      "unit": "step",
       "min": 1,
       "max": 16,
       "default": 16,
-      "scope": "sequencer",
-      "description": "The last step to play (1-16)."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Direction",
-      "unit": "enum",
       "min": 0,
       "max": 6,
       "default": 0,
-      "scope": "sequencer",
-      "description": "Sequencer direction."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Permutation",
-      "unit": "enum",
       "min": 0,
       "max": 3,
       "default": 0,
-      "scope": "sequencer",
-      "description": "Sequencer permutation."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Gate type",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "% of clock",
-        "Trigger"
-      ],
-      "scope": "sequencer",
-      "description": "Sets the gate output type."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Gate length",
-      "unit": "%",
       "min": 1,
       "max": 99,
       "default": 50,
-      "scope": "sequencer",
-      "description": "Sets the gate length if type is ' of clock'."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
-      "name": "Trigger length",
-      "unit": "ms",
+      "name": "Trigger<br>length",
       "min": 1,
       "max": 100,
       "default": 10,
-      "scope": "sequencer",
-      "description": "Sets the gate length if type is 'Trigger'."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Glide",
-      "unit": "ms",
       "min": 0,
       "max": 1000,
       "default": 100,
-      "scope": "sequencer",
-      "description": "Sets the glide time for tied notes."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Pitch",
-      "unit": "MIDI note",
       "min": 0,
       "max": 127,
       "default": 48,
-      "scope": "step",
-      "description": "Sets the step pitch (MIDI note number)."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Division",
-      "unit": null,
       "min": 0,
       "max": 14,
       "default": 7,
-      "scope": "step",
-      "description": "Sets the step repeat or ratchet count."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Pattern",
-      "unit": null,
       "min": 0,
       "max": 255,
       "default": 0,
-      "scope": "step",
-      "description": "Sets which substeps are on or off (binary pattern)."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Ties",
-      "unit": null,
       "min": 0,
       "max": 255,
       "default": 0,
-      "scope": "step",
-      "description": "Sets which substeps are ties (binary pattern)."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Velocity",
-      "unit": "MIDI velocity",
       "min": 1,
       "max": 127,
       "default": 64,
-      "scope": "step",
-      "description": "Sets the step velocity."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Mod",
-      "unit": "V",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "scope": "step",
-      "description": "Sets the step modulation value."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Mute",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "step",
-      "description": "Probability that the step will be muted."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Skip",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "step",
-      "description": "Probability that the step will be skipped."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Reset",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "step",
-      "description": "Probability that the step causes a reset."
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Repeat",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 0,
-      "scope": "step",
-      "description": "Probability that the step will be repeated."
-    },
-    {
-      "name": "Randomise",
-      "unit": "trigger",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "randomise",
-      "description": "Trigger randomisation of steps between Start and End."
-    },
-    {
-      "name": "Randomise what",
-      "unit": "enum",
-      "min": 0,
-      "max": 3,
-      "default": 3,
-      "values": [
-        "Nothing",
-        "Pitches",
-        "Rhythm",
-        "Both"
-      ],
-      "scope": "randomise",
-      "description": "What to randomise."
-    },
-    {
-      "name": "Note distribution",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "values": [
-        "Uniform",
-        "Normal"
-      ],
-      "scope": "randomise",
-      "description": "Probability distribution for random note pitches."
-    },
-    {
-      "name": "Min note",
-      "unit": "MIDI note",
-      "min": 0,
-      "max": 127,
-      "default": 36,
-      "scope": "randomise",
-      "description": "Minimum random note pitch (Uniform distribution)."
-    },
-    {
-      "name": "Max note",
-      "unit": "MIDI note",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "scope": "randomise",
-      "description": "Maximum random note pitch (Uniform distribution)."
-    },
-    {
-      "name": "Mean note",
-      "unit": "MIDI note",
-      "min": 0,
-      "max": 127,
-      "default": 48,
-      "scope": "randomise",
-      "description": "Mean random note pitch (Normal distribution)."
-    },
-    {
-      "name": "Note deviation",
-      "unit": "MIDI note",
-      "min": 0,
-      "max": 127,
-      "default": 12,
-      "scope": "randomise",
-      "description": "Note pitch deviation (Normal distribution)."
-    },
-    {
-      "name": "Min repeat",
-      "unit": null,
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "scope": "randomise",
-      "description": "Minimum repeat count if step is a repeat."
-    },
-    {
-      "name": "Max repeat",
-      "unit": null,
-      "min": 2,
-      "max": 8,
-      "default": 8,
-      "scope": "randomise",
-      "description": "Maximum repeat count if step is a repeat."
-    },
-    {
-      "name": "Min ratchet",
-      "unit": null,
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "scope": "randomise",
-      "description": "Minimum ratchet count if step is a ratchet."
-    },
-    {
-      "name": "Max ratchet",
-      "unit": null,
-      "min": 2,
-      "max": 8,
-      "default": 8,
-      "scope": "randomise",
-      "description": "Maximum ratchet count if step is a ratchet."
-    },
-    {
-      "name": "Note probability",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 50,
-      "scope": "randomise",
-      "description": "Probability that a random note will be on."
-    },
-    {
-      "name": "Tie probability",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "description": "Probability that a random step will be a tie."
-    },
-    {
-      "name": "Accent probability",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "description": "Probability that a random step will be accented."
-    },
-    {
-      "name": "Repeat probability",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "description": "Probability that a random step will be a repeat."
-    },
-    {
-      "name": "Ratchet probability",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "scope": "randomise",
-      "description": "Probability that a random step will be a ratchet."
-    },
-    {
-      "name": "Unaccented velocity",
-      "unit": "MIDI velocity",
-      "min": 1,
-      "max": 127,
-      "default": 1,
-      "scope": "randomise",
-      "description": "Velocity for unaccented random steps (accented = 127)."
-    },
-    {
-      "name": "Clock input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": "Bus for clock input."
-    },
-    {
-      "name": "Reset input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": "Bus for reset input."
-    },
-    {
-      "name": "Reset mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "values": [
-        "Reset trigger",
-        "Run/stop signal",
-        "One shot trigger"
-      ],
-      "scope": "routing",
-      "description": "Mode for the reset input."
-    },
-    {
-      "name": "Pitch output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "scope": "routing",
-      "description": "Output bus for pitch CV."
-    },
-    {
-      "name": "Pitch output mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for pitch CV output."
-    },
-    {
-      "name": "Gate output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 16,
-      "scope": "routing",
-      "description": "Output bus for gate."
-    },
-    {
-      "name": "Gate output mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for gate output."
-    },
-    {
-      "name": "Velocity output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": "Output bus for velocity CV."
-    },
-    {
-      "name": "Velocity output mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for velocity output."
-    },
-    {
-      "name": "Mod output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": "Output bus for modulation CV."
-    },
-    {
-      "name": "Mod output mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for modulation output."
-    },
-    {
-      "name": "Sequence CV input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": "Bus to select the sequence via CV."
-    },
-    {
-      "name": "Sequence trigger input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": "Bus for sequence select trigger."
-    },
-    {
-      "name": "Sequence change mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "values": [
-        "Switch",
-        "Load"
-      ],
-      "scope": "routing",
-      "description": "How sequence CV changes sequences: 'Switch' or 'Load'."
-    },
-    {
-      "name": "Follow MIDI clock",
-      "unit": "toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "MIDI",
-      "description": "Sets whether the sequencer follows MIDI clock."
-    },
-    {
-      "name": "Divisor",
-      "unit": null,
-      "min": 0,
-      "max": 19,
-      "default": 4,
-      "scope": "MIDI",
-      "description": "Sets the clock divisor when following MIDI clock."
-    },
-    {
-      "name": "MIDI channel (out)",
-      "unit": "MIDI channel",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "scope": "MIDI",
-      "description": "Sets the output MIDI channel."
-    },
-    {
-      "name": "Output to breakout",
-      "unit": "toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "MIDI",
-      "description": "Enables MIDI output to the breakout."
-    },
-    {
-      "name": "Output to Select Bus",
-      "unit": "toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "MIDI",
-      "description": "Enables MIDI output to the Select Bus."
-    },
-    {
-      "name": "Output to USB",
-      "unit": "toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "MIDI",
-      "description": "Enables MIDI output to USB."
-    },
-    {
-      "name": "MIDI channel (in)",
-      "unit": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "scope": "MIDI",
-      "description": "MIDI channel for programming pitches (0=off)."
-    },
-    {
-      "name": "Step output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "clock\". Trigger length",
-      "unit": "ms",
-      "min": 1,
-      "max": 100,
-      "default": 10,
-      "description": "Sets the length of the gate output if the type is"
-    },
-    {
-      "name": "\"Trigger\". Glide",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "description": "Sets the glide time for tied notes."
-    },
-    {
-      "name": "0 1 0 Chooses the probability distribution for the note pitches - \"Uniform\" or \"Normal\". Min note",
-      "min": 0,
-      "max": 127,
-      "default": 36,
-      "description": "The minimum note pitch, if the distribution is"
-    },
-    {
-      "name": "\"Uniform\". Max note",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "description": "The maximum note pitch, if the distribution is"
-    },
-    {
-      "name": "\"Uniform\". Mean note",
-      "min": 0,
-      "max": 127,
-      "default": 48,
-      "description": "The mean note pitch, if the distribution is \"Normal\"."
-    },
-    {
-      "name": "0 127 12 The note pitch deviation, if the distribution is \"Normal\". Min repeat",
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "description": "The minimum repeat count, if a step is a repeat."
-    },
-    {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the velocity output. Mod output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the modulation CV output.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the modulation CV output. Step output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the step CV output. This",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the step CV output. Sequence CV input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use to select the sequence. See above.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 Sets whether the sequencer follows MIDI clock. Divisor",
-      "min": 0,
-      "max": 19,
-      "default": 4,
-      "description": "Sets the clock divisor when following MIDI clock."
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables internal MIDI output - that is, MIDI is sent",
-      "scope": "routing"
-    },
-    {
-      "name": "to the other algorithms. Mod CC",
-      "min": 0,
-      "max": 127,
-      "default": 1,
-      "description": "The MIDI CC to generate from the modulation lane."
-    },
-    {
-      "name": "1 100 10 ms Sets the length of the gate output if the type is \"Trigger\". Glide",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 100,
-      "description": "Sets the glide time for tied notes.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 Chooses the probability distribution for the note pitches - \"Uniform\" or \"Normal\". Min note",
-      "min": 0,
-      "max": 127,
-      "default": 36,
-      "description": "The minimum note pitch, if the distribution is"
-    },
-    {
-      "name": "\"Uniform\". Max note",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "description": "The maximum note pitch, if the distribution is"
-    },
-    {
-      "name": "\"Uniform\". Mean note",
-      "min": 0,
-      "max": 127,
-      "default": 48,
-      "description": "The mean note pitch, if the distribution is \"Normal\"."
-    },
-    {
-      "name": "\"Normal\". Min repeat",
-      "min": 2,
-      "max": 8,
-      "default": 2,
-      "description": "The minimum repeat count, if a step is a repeat."
-    },
-    {
-      "name": " the input is a reset trigger.  the input is a run/stop signal.  the input is a 'one shot' trigger. Pitch output",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "description": "The bus to use for the pitch CV output.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 1 The standard Add/Replace mode selector as described above, for the pitch CV output. Gate output",
-      "min": 0,
-      "max": 28,
-      "default": 16,
-      "description": "The bus to use for the gate output.",
-      "scope": "routing"
-    },
-    {
-      "name": "described above, for the velocity output. Mod output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the modulation CV output.",
-      "scope": "routing"
-    },
-    {
-      "name": "Output to internal",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables internal MIDI output - that is, MIDI is sent",
-      "scope": "routing"
-    },
-    {
-      "name": "to the other algorithms. Mod CC",
-      "min": 0,
-      "max": 127,
-      "default": 1,
-      "description": "The MIDI CC to generate from the modulation lane."
-    },
-    {
-      "name": "0 16 0 Sets the input MIDI channel for assigning step pitches from MIDI notes. Record velocity",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "If on, record velocity from input MIDI notes as well",
-      "scope": "routing"
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     }
   ],
-  "input_ports": [
-    {
-      "name": "Clock"
-    },
-    {
-      "name": "Reset"
-    },
-    {
-      "name": "CV (Sequence Select)"
-    },
-    {
-      "name": "Gate (Sequence Trigger)"
-    },
-    {
-      "name": "MIDI"
-    },
-    {
-      "name": "Clock input",
-      "busIdRef": "Clock input"
-    },
-    {
-      "name": "Reset input",
-      "busIdRef": "Reset input"
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "CV (Pitch)"
-    },
-    {
-      "name": "Gate"
-    },
-    {
-      "name": "CV (Velocity)"
-    },
-    {
-      "name": "CV (Mod)"
-    },
-    {
-      "name": "MIDI"
-    },
-    {
-      "name": "Pitch output",
-      "busIdRef": "Pitch output"
-    },
-    {
-      "name": "Gate output",
-      "busIdRef": "Gate output"
-    },
-    {
-      "name": "Mod output",
-      "busIdRef": "Mod output"
-    },
-    {
-      "name": "Step output",
-      "busIdRef": "Step output"
-    }
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

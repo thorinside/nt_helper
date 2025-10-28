@@ -25,3 +25,5 @@ recommended_inputs:
   - game_brief: "{output_folder}/game-brief.md"
   - gdd: "{output_folder}/GDD.md"
   - product_brief: "{output_folder}/product-brief.md"
+
+standalone: true

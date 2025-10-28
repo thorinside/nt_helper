@@ -1,274 +1,184 @@
 {
   "guid": "pycv",
   "name": "Poly CV",
+  "description": "This algorithm takes the polysynth control logic from the other polysynths and uses it not to produce sound, but to output CVs and gates. This makes it most obviously useful as a MIDI/CV converter, but it can also be used as a chord/arpeggio engine controlled by CV/gate inputs. Please refer to the section “Common polysynth features” above.",
   "categories": [
-    "CV",
-    "Utility",
-    "Polysynth"
+    "utility",
+    "CV processing",
+    "MIDI"
   ],
-  "description": "A polyphonic MIDI/CV converter that takes polysynth control logic (MIDI, I2C, CV/Gate, Chord/Arp) and outputs CVs/gates instead of sound. Supports microtuning.",
+  "short_description": "A polyphonic MIDI/CV converter",
   "specifications": [
     {
       "name": "Voices",
-      "value": {
-        "minValue": 1,
-        "maxValue": 14,
-        "defaultValue": 1
-      },
-      "description": "The number of simultaneous voices."
+      "min": 1,
+      "max": 14
+    },
+    {
+      "name": "First output",
+      "min": 1,
+      "max": 28
+    },
+    {
+      "name": "Gate outputs",
+      "min": 0,
+      "max": 2
+    },
+    {
+      "name": "Pitch outputs",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Velocity outputs",
+      "min": 0,
+      "max": 1
     }
   ],
   "parameters": [
     {
       "name": "MIDI channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 16,
-      "description": "The MIDI channel to listen on (0=Omni).",
-      "scope": "global"
+      "min": 0,
+      "max": 16,
+      "default": 1,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "MPE channels",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 16,
-      "description": "Controls how the algorithm responds to MPE.",
-      "scope": "global"
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "I2C channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 255,
-      "description": "Sets the I2C channel (0=Off).",
-      "scope": "global"
+      "min": 0,
+      "max": 255,
+      "default": 1,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Transpose",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -60,
-      "maxValue": 60,
-      "description": "Coarse tuning control.",
-      "scope": "global"
+      "min": -60,
+      "max": 60,
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Fine tuning control.",
-      "scope": "global",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Bend range",
-      "unit": null,
-      "defaultValue": 2,
-      "minValue": 0,
-      "maxValue": 48,
-      "description": "The MIDI pitch bend range in semitones.",
-      "scope": "global",
       "min": 0,
       "max": 48,
-      "default": 2
+      "default": 2,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Min vel gate",
-      "unit": "V",
-      "defaultValue": 1.0,
-      "minValue": 0.0,
-      "maxValue": 5.0,
-      "description": "Minimum gate voltage if gates are scaled by velocity (Velocity=0). Max is 5V (Velocity=127).",
-      "scope": "global",
-      "min": 0,
-      "max": 5,
-      "default": 1
+      "min": 0.0,
+      "max": 5.0,
+      "default": 1.0,
+      "type": "string",
+      "is_common": true
+    }
+  ],
+  "input_ports": [
+    {
+      "name": "MIDI channel",
+      "description": "The MIDI channel to listen on."
     },
     {
+      "name": "MPE channels",
+      "description": "Controls how the algorithm will respond to MPE."
+    },
+    {
+      "name": "I2C channel",
+      "description": "Sets the I2C channel."
+    },
+    {
+      "name": "Sustain mode",
+      "description": "The standard polysynth sustain mode parameter. See above."
+    },
+    {
+      "name": "Sustain",
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
+    },
+    {
+      "name": "Transpose",
+      "description": "Coarse tuning control."
+    },
+    {
+      "name": "Fine tune",
+      "description": "Fine tuning control."
+    },
+    {
+      "name": "Bend range",
+      "description": "The MIDI pitch bend range."
+    },
+    {
+      "name": "Min vel gate",
+      "description": "Sets the minimum gate voltage, if the gates are set to be scaled by velocity. Velocity gates range from this voltage (for MIDI velocity 0) up to 5V (for MIDI velocity 127)."
+    }
+  ],
+  "output_ports": [
+    {
       "name": "Voices",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 14,
-      "description": "The number of voices to use (up to the specification limit).",
-      "scope": "global",
-      "min": 1,
-      "max": 14,
-      "default": 1
+      "description": "The number of voices to use (up to the maximum set by the specification."
     },
     {
       "name": "First output",
-      "unit": "bus",
-      "defaultValue": 15,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The first output bus to use for voice allocation (gate, pitch, velocity).",
-      "scope": "global"
+      "description": "The first output bus to use."
     },
     {
       "name": "Gate outputs",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 2,
-      "enumValues": [
-        "Off",
-        "On",
-        "Velocity"
-      ],
-      "description": "Whether to include gate outputs, and if they are scaled by velocity.",
-      "scope": "global"
+      "description": "Whether to include gate outputs. If set to ‘Velocity’, the gate outputs are scaled by the note velocity."
     },
     {
       "name": "Pitch outputs",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Whether to include pitch CV outputs.",
-      "scope": "global"
+      "description": "Whether to include pitch CV outputs."
     },
     {
       "name": "Velocity outputs",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Whether to include velocity outputs.",
-      "scope": "global"
+      "description": "Whether to include velocity outputs."
     },
     {
       "name": "Gate mode",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Add/Replace mode for gate outputs.",
-      "scope": "global",
-      "min": 0,
-      "max": 1,
-      "default": 1
+      "description": "The standard Add/Replace mode selector as described above for gate outputs."
     },
     {
       "name": "Pitch mode",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Add/Replace mode for pitch CV outputs.",
-      "scope": "global",
-      "min": 0,
-      "max": 1,
-      "default": 1
+      "description": "The standard Add/Replace mode selector as described above for pitch CV outputs."
     },
     {
       "name": "Velocity mode",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Add/Replace mode for velocity outputs.",
-      "scope": "global"
-    },
-    {
-      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 1,
-      "description": "Sets the I2C channel."
-    },
-    {
-      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "pedal). Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Coarse tuning control."
-    },
-    {
-      "name": "set by the specification). First output",
-      "min": 1,
-      "max": 28,
-      "default": 15,
-      "description": "The first output bus to use.",
-      "scope": "routing"
-    },
-    {
-      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 1,
-      "description": "Sets the I2C channel."
-    },
-    {
-      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "pedal). Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Coarse tuning control."
-    },
-    {
-      "name": "set by the specification). First output",
-      "min": 1,
-      "max": 28,
-      "default": 15,
-      "description": "The first output bus to use.",
-      "scope": "routing"
-    }
-  ],
-  "features": [
-    "feat_poly_params"
-  ],
-  "input_ports": [],
-  "output_ports": [
-    {
-      "id": "gate",
-      "name": "Gate Output",
-      "description": "Gate output for a voice. Bus determined by 'First output' and voice index."
-    },
-    {
-      "id": "pitch",
-      "name": "Pitch Output",
-      "description": "Pitch CV output for a voice. Bus determined by 'First output' and voice index."
-    },
-    {
-      "id": "velocity",
-      "name": "Velocity Output",
-      "description": "Velocity CV output for a voice. Bus determined by 'First output' and voice index."
+      "description": "The standard Add/Replace mode selector as described above for velocity outputs."
     }
   ]
 }

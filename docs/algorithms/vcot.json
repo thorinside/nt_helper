@@ -1,152 +1,110 @@
 {
   "guid": "vcot",
-  "name": "VCO - wavetable",
+  "name": "VCO - Wavetable",
+  "description": "This algorithm is a simple VCO which uses wavetables for its wave shapes. Please see the section above on how wavetables are formatted and arranged on the MicroSD card.",
   "categories": [
-    "VCO",
-    "Oscillator"
+    "synthesis",
+    "wavetable"
   ],
-  "description": "Simple VCO using wavetables for wave shapes. Wavetables are loaded from the MicroSD card.",
-  "specifications": [],
+  "short_description": "A wavetable VCO",
   "parameters": [
     {
       "name": "Wavetable",
-      "unit": null,
       "min": 0,
       "max": null,
-      "default": 0,
-      "scope": "VCO",
-      "description": "Chooses the wavetable file from the MicroSD card."
+      "default": "",
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Wave offset",
-      "unit": "%",
       "min": -100.0,
       "max": 100.0,
       "default": 0.0,
-      "scope": "VCO",
-      "description": "Sets the position within the selected wavetable."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Octave",
-      "unit": null,
       "min": -16,
       "max": 8,
       "default": 0,
-      "scope": "VCO",
-      "description": "Adjusts the VCO tuning in octaves."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Transpose",
-      "unit": "ST",
       "min": -60,
       "max": 60,
       "default": 0,
-      "scope": "VCO",
-      "description": "Adjusts the VCO tuning in semitones."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "VCO",
-      "description": "Adjusts the VCO tuning in cents."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Amplitude",
-      "unit": "V",
       "min": 0.0,
       "max": 10.0,
       "default": 10.0,
-      "scope": "gain",
-      "description": "Sets the amplitude of the output (pre-gain)."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Gain",
-      "unit": "dB",
       "min": -40,
       "max": 6,
       "default": 0,
-      "scope": "gain",
-      "description": "Sets the level of the output."
+      "type": "string",
+      "is_common": true
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Pitch input",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": "The pitch CV input (1V/octave)."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Wave input",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "Input bus to modulate the wave offset."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 13,
-      "scope": "routing",
-      "description": "The output bus."
+      "type": "string",
+      "is_common": true
     },
     {
       "name": "Output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "The standard Add/Replace mode selector."
-    },
-    {
-      "name": "Wavetable 0 Chooses the wavetable. Wave offset",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Sets the position within the wavetable."
-    },
-    {
-      "name": "0 28 0 Sets an input bus to modulate the wave offset. Output",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "description": "The output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "Wavetable 0 Chooses the wavetable. Wave offset",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "Sets the position within the wavetable."
+      "type": "string",
+      "is_common": true
     }
   ],
-  "input_ports": [
-    "CV (Pitch)",
-    "CV (Wave Offset)"
-  ],
-  "output_ports": [
-    {
-      "name": "Audio"
-    },
-    {
-      "name": "Output",
-      "busIdRef": "Output"
-    }
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

@@ -1,0 +1,90 @@
+{
+  "guid": "midt",
+  "name": "MIDI Triggers",
+  "description": "This algorithm generates gates and triggers from MIDI or I2C note messages.",
+  "categories": [
+    "triggers",
+    "MIDI"
+  ],
+  "short_description": "Generates triggers from MIDI/I2C",
+  "specifications": [
+    {
+      "name": "Channels",
+      "min": 1,
+      "max": 12
+    },
+    {
+      "name": "Output",
+      "min": 1,
+      "max": 28
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the trigger."
+    },
+    {
+      "name": "Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether to generate a trigger from note on messages, or a gate from note on/off messages."
+    },
+    {
+      "name": "Length",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
+    },
+    {
+      "name": "Level",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 5.0,
+      "description": "The magnitude of the trigger/gate."
+    },
+    {
+      "name": "Velocity",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether to apply velocity scaling to the trigger/gate magnitude."
+    },
+    {
+      "name": "Min level",
+      "min": -10.0,
+      "max": 10.0,
+      "default": 1.0,
+      "description": "If applying velocity scaling, the voltage corresponding to minimum velocity."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 0,
+      "max": 16,
+      "default": 0,
+      "description": "The MIDI channel, or ‘Off’."
+    },
+    {
+      "name": "I2C channel",
+      "min": 0,
+      "max": 255,
+      "default": 0,
+      "description": "The I2C channel, or ‘Off’."
+    },
+    {
+      "name": "Note number",
+      "min": -1,
+      "max": 127,
+      "default": -1,
+      "description": "The note number to respond to, or ‘Any'"
+    }
+  ]
+}

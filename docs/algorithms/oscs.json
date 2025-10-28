@@ -1,219 +1,97 @@
 {
   "guid": "oscs",
   "name": "Oscilloscope",
+  "description": "This algorithm implements a simple but useful 2-channel oscilloscope.",
   "categories": [
-    "Utility",
-    "Visualization"
+    "utility",
+    "analysis"
   ],
-  "description": "A simple 2-channel oscilloscope for viewing waveforms.",
+  "short_description": "\"Oscilloscope for viewing waveforms\"",
   "specifications": [],
   "parameters": [
     {
       "name": "Input 1",
-      "unit": "bus",
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The bus for input 1.",
-      "scope": "global"
+      "min": 1,
+      "max": 28,
+      "default": 1,
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 0
     },
     {
       "name": "Input 2",
-      "unit": "bus",
-      "defaultValue": 2,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The bus for input 2.",
-      "scope": "global"
+      "min": 1,
+      "max": 28,
+      "default": 2,
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 1
     },
     {
       "name": "Trigger type",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 4,
-      "enumValues": [
-        "Free running",
-        "1 rising",
-        "1 falling",
-        "2 rising",
-        "2 falling"
-      ],
-      "description": "The type of trigger to synchronize the display.",
-      "scope": "global"
+      "min": 0,
+      "max": 4,
+      "default": 0,
+      "type": "trigger",
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Trigger voltage",
-      "unit": "V",
-      "defaultValue": 0.0,
-      "minValue": -11.0,
-      "maxValue": 11.0,
-      "description": "Set the trigger voltage threshold.",
-      "scope": "global"
-    },
-    {
-      "name": "Time range",
-      "unit": null,
-      "defaultValue": 7,
-      "minValue": 0,
-      "maxValue": 13,
-      "description": "Sets the time range corresponding to the full width of the display. 'Auto' sets based on trigger frequency.",
-      "scope": "global"
+      "min": -11.0,
+      "max": 11.0,
+      "default": 0.0,
+      "type": "trigger",
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Display mode",
-      "unit": null,
-      "defaultValue": 2,
-      "minValue": 0,
-      "maxValue": 4,
-      "enumValues": [
-        "Overlaid",
-        "Split",
-        "Channel 1",
-        "Channel 2",
-        "XY"
-      ],
-      "description": "Sets which waveforms are displayed and how.",
-      "scope": "global",
       "min": 0,
       "max": 4,
-      "default": 2
+      "default": 2,
+      "type": "trigger",
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Draw mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 2,
-      "enumValues": [
-        "Lines (antialiased)",
-        "Lines",
-        "Points"
-      ],
-      "description": "Sets how the waveform signals are drawn.",
-      "scope": "global"
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "trigger",
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Vertical scale 1",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "enumValues": [
-        "10V",
-        "5V",
-        "2V",
-        "1V"
-      ],
-      "description": "Sets the vertical scale (volts per division) for channel 1.",
-      "scope": "global"
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "type": "trigger",
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "Vertical scale 2",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "enumValues": [
-        "10V",
-        "5V",
-        "2V",
-        "1V"
-      ],
-      "description": "Sets the vertical scale (volts per division) for channel 2.",
-      "scope": "global"
-    },
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 1,
-      "default": 28,
-      "description": "1 The bus for input 1.",
-      "scope": "routing"
-    },
-    {
-      "name": "Input",
-      "min": 2,
-      "max": 1,
-      "default": 28,
-      "description": "2 The bus for input 2.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 4 0 The type of trigger, to synchronise the display to the waveform. The options are:  Free running.  \"1 rising\" - trigger on the rising edge of input 1.  \"1 falling\" - trigger on the falling edge of input 1.  \"2 rising\" - trigger on the rising edge of input 2.  \"2 falling\" - trigger on the falling edge of input 2. Trigger",
-      "unit": "V",
-      "min": -11,
-      "max": 11,
-      "default": 0,
-      "description": "Set the trigger voltage - the voltage the input signal",
-      "scope": "routing"
-    },
-    {
-      "name": "voltage has to cross to trigger the oscilloscope. Time range",
-      "min": 0,
-      "max": 13,
-      "default": 7,
-      "description": "Sets the time range corresponding to the full width"
-    },
-    {
-      "name": "0 4 2 Sets which waveforms are displayed and how. The options are \"Overlaid\", \"Split\", \"Channel 1\", \"Channel 2\", and \"XY\". In \"XY\" mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Sets how the waveform signals are drawn. The",
-      "scope": "routing"
-    },
-    {
-      "name": "0 3 0 Sets the vertical scale for channel 1. The options are 10V, 5V, 2V, and 1V. Vertical scale 2",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "Sets the vertical scale for channel 2."
-    },
-    {
-      "name": "Input",
-      "min": 1,
-      "max": 1,
-      "default": 28,
-      "description": "1 The bus for input 1.",
-      "scope": "routing"
-    },
-    {
-      "name": "Input",
-      "min": 2,
-      "max": 1,
-      "default": 28,
-      "description": "2 The bus for input 2.",
-      "scope": "routing"
-    },
-    {
-      "name": "options are \"Overlaid\", \"Split\", \"Channel 1\", \"Channel 2\", and \"XY\". In \"XY\" mode, inputs 1 & 2 are used as the coordinates to draw, instead of using time as the abscissa. Draw mode",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Sets how the waveform signals are drawn. The",
-      "scope": "routing"
-    },
-    {
-      "name": "options are \"Lines (antialiased)\", \"Lines\", and \"Points\". Vertical scale 1",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Sets the vertical scale for channel 1. The options are"
+      "type": "trigger",
+      "is_bus": false,
+      "parameterNumber": 7
     }
   ],
   "input_ports": [
     {
-      "id": "in_1",
       "name": "Input 1",
-      "description": "Channel 1 input.",
-      "busIdRef": "Input 1"
+      "busIdRef": "1",
+      "isPerChannel": true
     },
     {
-      "id": "in_2",
       "name": "Input 2",
-      "description": "Channel 2 input.",
-      "busIdRef": "Input 2"
+      "busIdRef": "2",
+      "isPerChannel": true
     }
   ],
   "output_ports": []

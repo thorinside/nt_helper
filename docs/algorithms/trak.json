@@ -1,389 +1,266 @@
 {
   "guid": "trak",
   "name": "Tracker",
+  "description": "This algorithm is based on the disting EX algorithm of the same name. You may like to review the [video on that algorithm, here](https://www.youtube.com/watch?v=wSjuOA9yMBk) [114] . The pitch shifter part of the EX algorithm was split out into a separate algorithm on the NT (above), which you can combine with this algorithm if it suits your needs.\nThe algorithm tracks the pitch and envelope of an audio signal, which are output as CVs. It can also generate chords to harmonise with the tracked pitch – either as pitch CVs (to drive VCOs etc.) or as pitch shifter CVs (to drive the Pitch Shifter, to make harmony copies of the tracked audio).\nThe chords can be tuned microtonally using Scala or MTS.\n\n### GUI\nThe display shows the tracked note at the bottom of the screen, as a MIDI note number plus cents, and as a frequency in Hz. To the right of this is a bar that shows the envelope, and the tuning as a deviation from the true pitch of the tracked note.\nAbove this is the closest note to the tracked note that lies within the current scale (on the left), and the four harmony notes (on the right).\n\n### Tracker parameters\n|Name|Min|Max|Default|Unit|Description|\n|---|---|---|---|---|---|\n|Range|1|20|9||Sets the range of pitches which can be tracked. Set<br>this appropriately for the lowest note that you need<br>to track.\n|Track bias|0|100|10|%|An internal parameter of the pitch tracking\nalgorithm, which can help it avoid errors of octave in\nsome circumstances. The default value is\nrecommended in most cases.|",
   "categories": [
-    "Sequencer",
-    "Sampler"
+    "audio effects",
+    "CV processing",
+    "utility"
   ],
-  "description": "Tracks pitch and envelope of an audio signal, outputting as CVs. Can generate harmony chords (as pitch CVs or pitch shift CVs). Supports microtonal tuning (Scala/MTS). Based on disting EX algorithm.",
+  "short_description": "A pitch and envelope tracker",
   "specifications": [],
   "parameters": [
     {
       "name": "Range",
-      "unit": null,
       "min": 1,
       "max": 20,
       "default": 9,
-      "scope": "tracker",
-      "description": "Sets the range of pitches which can be tracked. Set appropriately for the lowest expected note."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Track bias",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 10,
-      "scope": "tracker",
-      "description": "Internal pitch tracking parameter to help avoid octave errors."
-    },
-    {
-      "name": "Track bias",
-      "unit": "dB",
-      "min": -80,
-      "max": 0,
-      "default": -40,
-      "scope": "tracker",
-      "description": "Signal threshold (dB) below which pitch tracking is disabled."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Harmony mode",
-      "unit": "enum",
       "min": 0,
       "max": 2,
       "default": 0,
-      "values": [
-        "Shape",
-        "SATB",
-        "MIDI"
-      ],
-      "scope": "harmony",
-      "description": "Sets the harmony generation mode. 'MIDI' uses external MIDI notes."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "MIDI channel",
-      "unit": "MIDI channel",
       "min": 0,
       "max": 16,
       "default": 0,
-      "scope": "harmony",
-      "description": "MIDI channel for receiving notes if Harmony mode is 'MIDI' (0=off)."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Force in tune",
-      "unit": "toggle",
       "min": 0,
       "max": 1,
       "default": 0,
-      "scope": "harmony",
-      "description": "If on, chord pitches are absolutely in tune. If off, they follow tracked audio pitch bends."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": "The audio input bus."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Pitch output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 15,
-      "scope": "routing",
-      "description": "The pitch CV output bus."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Pitch output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the pitch CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Env output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 16,
-      "scope": "routing",
-      "description": "The envelope CV output bus."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Env output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the envelope CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
+    },
+    {
+      "name": "Change trigger out",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 1 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch CV output bus for the first chord note."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 1 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the first chord note CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 2 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch CV output bus for the second chord note."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 2 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the second chord note CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 3 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch CV output bus for the third chord note."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 3 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the third chord note CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 4 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch CV output bus for the fourth chord note."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Chord 4 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the fourth chord note CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Shift 1 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch shift CV output bus for the first pitch shifter."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Shift 1 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the first pitch shifter CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Shift 2 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch shift CV output bus for the second pitch shifter."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Shift 2 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the second pitch shifter CV output."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Shift 3 output",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The pitch shift CV output bus for the third pitch shifter."
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Shift 3 output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "Add/Replace mode for the third pitch shifter CV output."
-    },
-    {
-      "name": "this appropriately for the lowest note that you need to track. Track bias",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "description": "An internal parameter of the pitch tracking"
-    },
-    {
-      "name": "0 2 0 Sets the harmony mode - one of 'Shape', 'SATB', or 'MIDI'. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes. MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "description": "Sets the MIDI channel on which to receive notes if"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the pitch CV output. Env output",
-      "min": 0,
-      "max": 28,
-      "default": 16,
-      "description": "The envelope CV output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the envelope CV output. Change trigger out",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The change trigger output bus - emits a trigger pulse",
-      "scope": "routing"
-    },
-    {
-      "name": "this appropriately for the lowest note that you need to track. Track bias",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "description": "An internal parameter of the pitch tracking"
-    },
-    {
-      "name": "0 2 0 Sets the harmony mode - one of 'Shape', 'SATB', or 'MIDI'. The first two are the standard modes described in the polysynth documentation. The last uses MIDI notes provided to the algorithm to directly set the chord notes. MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 0,
-      "description": "Sets the MIDI channel on which to receive notes if"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the pitch CV output. Env output",
-      "min": 0,
-      "max": 28,
-      "default": 16,
-      "description": "The envelope CV output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the envelope CV output. Chord 1 output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The pitch CV output bus for the first chord note.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     }
   ],
-  "input_ports": [
-    {
-      "name": "Audio"
-    },
-    {
-      "name": "MIDI (for Harmony mode)"
-    },
-    {
-      "name": "Input",
-      "busIdRef": "Input"
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "CV (Pitch)"
-    },
-    {
-      "name": "CV (Envelope)"
-    },
-    {
-      "name": "CV (Chord 1)"
-    },
-    {
-      "name": "CV (Chord 2)"
-    },
-    {
-      "name": "CV (Chord 3)"
-    },
-    {
-      "name": "CV (Chord 4)"
-    },
-    {
-      "name": "CV (Shift 1)"
-    },
-    {
-      "name": "CV (Shift 2)"
-    },
-    {
-      "name": "CV (Shift 3)"
-    },
-    {
-      "name": "Pitch output",
-      "busIdRef": "Pitch output"
-    },
-    {
-      "name": "Env output",
-      "busIdRef": "Env output"
-    }
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

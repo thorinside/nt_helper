@@ -1,150 +1,99 @@
 {
   "guid": "revc",
   "name": "Reverb (Clouds)",
+  "description": "This algorithm implements the reverb and diffuser parts of the Clouds module by Émilie Gillet. The diffuser is a simple network of all-pass filters which ‘smears’ the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
   "categories": [
-    "Effect",
-    "Reverb",
-    "Granular"
+    "reverb",
+    "audio effects"
   ],
-  "description": "This algorithm implements the reverb and diffuser parts of the Clouds^86 module by Emilie Gillet. The diffuser is a simple network of all-pass filters which 'smears' the sound slightly. It is effective at turning a mono source into something that sounds stereo.",
+  "short_description": "The reverb from Clouds",
   "specifications": [],
   "parameters": [
     {
       "name": "Diffuser mix",
-      "unit": "%",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "The diffuser wet/dry mix."
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "string",
+      "parameterNumber": 1
     },
     {
       "name": "Reverb mix",
-      "unit": "%",
-      "defaultValue": 100,
-      "minValue": 0,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "The reverb wet/dry mix.",
       "min": 0,
       "max": 100,
-      "default": 100
+      "default": 100,
+      "type": "string",
+      "parameterNumber": 2
     },
     {
       "name": "Reverb time",
-      "unit": "%",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "The reverb time."
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "type": "string",
+      "parameterNumber": 3
     },
     {
       "name": "Reverb diffusion",
-      "unit": "%",
-      "defaultValue": 70,
-      "minValue": 0,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "The reverb diffusion. (In Clouds this is fixed at 70%).",
       "min": 0,
       "max": 100,
-      "default": 70
+      "default": 70,
+      "type": "string",
+      "parameterNumber": 4
     },
     {
       "name": "Reverb low pass",
-      "unit": "%",
-      "defaultValue": 50,
-      "minValue": 0,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "The cut-off frequency of a low-pass filter within the reverb."
+      "min": 0,
+      "max": 100,
+      "default": 50,
+      "type": "string",
+      "parameterNumber": 5
     },
     {
       "name": "Reverb input gain",
-      "unit": "dB",
-      "defaultValue": -14,
-      "minValue": -40,
-      "maxValue": 0,
-      "scope": "global",
-      "description": "The input gain to the reveberator."
+      "min": -40,
+      "max": 0,
+      "default": -14,
+      "type": "string",
+      "parameterNumber": 6
     },
     {
       "name": "Sample rate",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "Allows you to run the algorithm at the disting NT's own sample rate ('Native') or the sample rate of a real Clouds module ('Authentic (32kHz)').",
-      "enumValues": [
-        "Native",
-        "Authentic (32kHz)"
-      ],
       "min": 0,
       "max": 1,
-      "default": 0
-    },
-    {
-      "name": "Left input",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Right input",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 2,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Left output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": ""
+      "default": 0,
+      "type": "string",
+      "parameterNumber": 7
     }
   ],
   "input_ports": [
     {
-      "id": "left_input",
       "name": "Left input",
-      "description": "The left audio input bus.",
-      "busIdRef": "1"
+      "id": "1",
+      "description": "The left audio input bus."
     },
     {
-      "id": "right_input",
       "name": "Right input",
-      "description": "The right audio input bus.",
-      "busIdRef": "2"
+      "id": "2",
+      "description": "The right audio input bus."
     }
   ],
   "output_ports": [
     {
-      "id": "left_output",
       "name": "Left output",
+      "id": "13",
       "description": "The left audio output bus.",
-      "busIdRef": "13"
+      "channelCountRef": "Col5"
     },
     {
-      "id": "right_output",
       "name": "Right output",
-      "description": "The right audio output bus.",
-      "busIdRef": "14"
+      "id": "14",
+      "description": "The right audio output bus."
     },
     {
-      "id": "output_mode",
       "name": "Output mode",
-      "description": "The standard Add/Replace mode selector as described above.",
-      "busIdRef": "0"
+      "id": "0",
+      "description": "The standard Add/Replace mode selector as described above."
     }
   ]
 }

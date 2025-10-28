@@ -1,336 +1,172 @@
 {
   "guid": "ssjw",
   "name": "Seaside Jawari",
+  "description": "This algorithm is based on the open source Jawari (https://github.com/abluenautilus/SeasideModularVCV) [102] VCV Rack module by Seaside Modular. It is a simulation of the tanpura, the Indian drone instrument. The tanpura is a four-stringed instrument, without frets. The four strings are typically played in sequence, in a continuous loop, and this is what this algorithm does. Each time it gets a strum (from the strum input bus, or via the strum parameter) it advances to and plays the next string. The second, third, and fourth strings of the tanpura are generally tuned in octaves, with the fourth string an octave below the other two. The first string is tuned to another note of the scale, very often the fifth. For a completely authentic sound, you might consider using the microtuning support to tune the strings to just intervals.",
   "categories": [
-    "Effect",
-    "Resonator",
-    "Physical-Modeling"
+    "synthesis",
+    "sequencing",
+    "triggers"
   ],
-  "description": "This algorithm is based on the open source Jawari^89 VCV Rack module by Seaside Modular. It is a simulation of the tanpura, the Indian drone instrument. The tanpura is a four-stringed instrument, without frets. The four strings are typically played in sequence, in a continuos loop, and this is what this algorithm does. Each time it gets a strum (from the strum input bus, or via the strum parameter) it advances to and plays the next string. The second, third, and fourth strings of the tanpura are generally tuned in octaves, with the fourth string an octave below the other two. The first string is tuned to another note of the scale, very often the fifth. For a completely authentic sound, you might consider using the microtuning support to tune the strings to just intervals.",
+  "short_description": "\"Tanpura synth by Seaside Modular\"",
   "specifications": [],
   "parameters": [
     {
-      "name": "Bridge shape",
-      "unit": null,
-      "defaultValue": 0.5,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "Sets the blend between the raw string pluck and a comb filtered version.",
-      "min": 0,
-      "max": 1,
-      "default": 0.5
+      "name": "Bridge<br>shape",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
-      "name": "Tuning (1st string)",
-      "unit": null,
-      "defaultValue": 7,
-      "minValue": 0,
-      "maxValue": 11,
-      "scope": "global",
-      "description": "Sets the tuning of the first string, in semitones above the fourth string."
+      "name": "Tuning (1st<br>string",
+      "min": 0,
+      "max": 11,
+      "default": 7,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Transpose",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -36,
-      "maxValue": 36,
-      "scope": "global",
-      "description": "Transposes the whole instrument."
+      "min": -36,
+      "max": 36,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "Fine tuning control for the whole instrument.",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Strum",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "Causes a strum when changed from 0 to 1.",
       "min": 0,
-      "max": 28,
-      "default": 0
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Reset",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "Resets the sequence so that the next strum plays the first string.",
       "min": 0,
-      "max": 28,
-      "default": 0
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "Velocity",
-      "unit": null,
-      "defaultValue": 127,
-      "minValue": 1,
-      "maxValue": 127,
-      "scope": "global",
-      "description": "Sets the strum velocity."
+      "min": 1,
+      "max": 127,
+      "default": 127,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
       "name": "Damping",
-      "unit": null,
-      "defaultValue": 0.995,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "The damping factor for the string model."
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.995,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
       "name": "Length",
-      "unit": "s",
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 2,
-      "scope": "global",
-      "description": "The decay time for the string model."
+      "min": 0.0,
+      "max": 2.0,
+      "default": 1.0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 9
     },
     {
-      "name": "Bounce count",
-      "unit": null,
-      "defaultValue": 1200,
-      "minValue": 1,
-      "maxValue": 10000,
-      "scope": "global",
-      "description": "The number of bridge bounces after the initial strum."
+      "name": "Bounce<br>count",
+      "min": 1,
+      "max": 10000,
+      "default": 1200,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 10
     },
     {
       "name": "Strum level",
-      "unit": "%",
-      "defaultValue": 25,
-      "minValue": 0,
-      "maxValue": 100,
-      "scope": "global",
-      "description": "The relative strength of the strum vs the bounces."
+      "min": 0.0,
+      "max": 100.0,
+      "default": 25.0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 11
     },
     {
-      "name": "Bounce level",
-      "unit": "%",
-      "defaultValue": 150,
-      "minValue": 0,
-      "maxValue": 1000,
-      "scope": "global",
-      "description": "The relative strength of the bounces vs the strum."
+      "name": "Bounce<br>level",
+      "min": 0.0,
+      "max": 1000.0,
+      "default": 150.0,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 12
     },
     {
-      "name": "Start harmonic",
-      "unit": null,
-      "defaultValue": 3,
-      "minValue": 1,
-      "maxValue": 20,
-      "scope": "global",
-      "description": "The emphasised harmonic at the start of the bounces.",
+      "name": "Start<br>harmonic",
       "min": 1,
       "max": 20,
-      "default": 3
+      "default": 3,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 13
     },
     {
-      "name": "End harmonic",
-      "unit": null,
-      "defaultValue": 10,
-      "minValue": 1,
-      "maxValue": 20,
-      "scope": "global",
-      "description": "The emphasised harmonic at the end of the bounces."
+      "name": "End<br>harmonic",
+      "min": 1,
+      "max": 20,
+      "default": 10,
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 14
     },
     {
       "name": "Strum type",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "The shape of the initial strum applied to the string model: Flat or Ramped.",
-      "enumValues": [
-        "Flat",
-        "Ramped"
-      ],
       "min": 0,
       "max": 1,
-      "default": 0
-    },
-    {
-      "name": "V/oct main",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "V/oct 1st",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": ""
-    },
-    {
-      "name": "0 11 7 Sets the tuning of the first string, in semitones above the fourth string. Transpose",
-      "unit": "ST",
-      "min": -36,
-      "max": 36,
-      "default": 0,
-      "description": "Transposes the whole instrument."
-    },
-    {
-      "name": "first string. Velocity",
-      "min": 1,
-      "max": 127,
-      "default": 127,
-      "description": "Sets the strum velocity."
-    },
-    {
-      "name": "1 10000 1200 The number of bridge bounces after the initial strum. Strum level",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 25,
-      "description": "The relative strength of the strum vs the bounces."
-    },
-    {
-      "name": "bounces. End harmonic",
-      "min": 1,
-      "max": 20,
-      "default": 10,
-      "description": "The emphasised harmonic at the end of the bounces."
-    },
-    {
-      "name": "0 28 0 The bus to use for CV control over the 'bridge shape'. Reset",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for a reset trigger."
-    },
-    {
-      "name": "as a whole. V/oct 1st",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for pitch control over the tuning of"
-    },
-    {
-      "name": "0 11 7 Sets the tuning of the first string, in semitones above the fourth string. Transpose",
-      "unit": "ST",
-      "min": -36,
-      "max": 36,
-      "default": 0,
-      "description": "Transposes the whole instrument."
-    },
-    {
-      "name": "first string. Velocity",
-      "min": 1,
-      "max": 127,
-      "default": 127,
-      "description": "Sets the strum velocity."
-    },
-    {
-      "name": "1 10000 1200 The number of bridge bounces after the initial strum. Strum level",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 25,
-      "description": "The relative strength of the strum vs the bounces."
-    },
-    {
-      "name": "bounces. End harmonic",
-      "min": 1,
-      "max": 20,
-      "default": 10,
-      "description": "The emphasised harmonic at the end of the bounces."
-    },
-    {
-      "name": "0 28 0 The bus to use for CV control over the 'bridge shape'. Reset",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for a reset trigger."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 15
     }
   ],
-  "input_ports": [
-    {
-      "id": "Strum",
-      "name": "Strum",
-      "description": "The bus to use for a strum trigger.",
-      "busIdRef": "0"
-    },
-    {
-      "id": "Bridge shape",
-      "name": "Bridge shape",
-      "description": "The bus to use for CV control over the 'bridge shape'.",
-      "busIdRef": "0"
-    },
-    {
-      "id": "Reset",
-      "name": "Reset",
-      "description": "The bus to use for a reset trigger.",
-      "busIdRef": "0"
-    },
-    {
-      "id": "V/oct main",
-      "name": "V/oct main",
-      "description": "The bus to use for pitch control over the instrument as a whole.",
-      "busIdRef": "0"
-    },
-    {
-      "id": "V/oct 1st string",
-      "name": "V/oct 1st string",
-      "description": "The bus to use for pitch control over the tuning of the first string.",
-      "busIdRef": "0"
-    }
-  ],
+  "input_ports": [],
   "output_ports": [
     {
-      "id": "Output",
       "name": "Output",
-      "description": "The output bus.",
-      "busIdRef": "13"
-    },
-    {
-      "id": "Output mode",
-      "name": "Output mode",
-      "description": "The standard Add/Replace mode selector as described above.",
-      "busIdRef": "0"
-    },
-    {
-      "name": "Strum",
-      "busIdRef": "Strum"
-    },
-    {
-      "name": "Reset",
-      "busIdRef": "Reset"
-    },
-    {
-      "name": "V/oct 1st",
-      "busIdRef": "V/oct 1st"
+      "id": "1",
+      "description": "The output bus."
     }
   ]
 }

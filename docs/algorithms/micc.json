@@ -1,0 +1,75 @@
+{
+  "guid": "micc",
+  "name": "MIDI CC Generator",
+  "description": "This simple utility generates MIDI CCs. These can be sent to the various external MIDI destinations, and/or routed to other algorithms within the module. Some example uses include: CV to MIDI conversion: by mapping the Value parameter to a CV, you can generate a MIDI CC from a control voltage. Macro control: you can send the CCs from this algorithm to other algorithms, and map parameters in those algorithms to be controlled by the CC. Then, by changing the Value parameter in this algorithm, you can change many parameters in other algorithms at once. This is particularly useful in combination with the Performance Page.",
+  "categories": [
+    "MIDI",
+    "utility"
+  ],
+  "short_description": "Generates MIDI CCs",
+  "specifications": [
+    {
+      "name": "CCs",
+      "min": 1,
+      "max": 8
+    }
+  ],
+  "parameters": [
+    {
+      "name": "Output to breakout",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the breakout."
+    },
+    {
+      "name": "Output to Select Bus",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to the Select Bus."
+    },
+    {
+      "name": "Output to USB",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables MIDI output to USB."
+    },
+    {
+      "name": "Output to internal",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables internal MIDI output – that is, MIDI is sent to the other algorithms."
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Enables the CC generator."
+    },
+    {
+      "name": "MIDI channel",
+      "min": 1,
+      "max": 16,
+      "default": 1,
+      "description": "The MIDI channel for the CC."
+    },
+    {
+      "name": "MIDI CC",
+      "min": 0,
+      "max": 127,
+      "default": 1,
+      "description": "The CC number to generate."
+    },
+    {
+      "name": "Value",
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "description": "The CC value."
+    }
+  ]
+}

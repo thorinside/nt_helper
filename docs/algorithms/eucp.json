@@ -1,178 +1,127 @@
 {
   "guid": "eucp",
   "name": "Euclidean patterns",
+  "description": "This algorithm generates rhythmic patterns of output pulses known as Euclidean patterns. For a detailed description of these patterns and how they are commonly found in music around the world [see e.g. here](https://en.wikipedia.org/wiki/Euclidean_rhythm) [68] or [here](https://www.hisschemoller.com/blog/2011/euclidean-rhythms/) [69]. A pattern is described by the total number of steps and the number of pulses (i.e. the number steps on which a pulse is output). The patterns can also be rotated. At zero rotation, the first step in the pattern will always be a pulse, and the remaining pulses distributed according to the algorithm. The rotation setting moves the first pulse later by a number of steps.",
   "categories": [
-    "Sequencer",
-    "Rhythm"
+    "sequencing",
+    "triggers"
   ],
-  "description": "Generates Euclidean rhythmic patterns based on steps, pulses, and rotation. Output can be triggers or clock pulses.",
+  "short_description": "Generates Euclidean rhythm patterns",
   "specifications": [
     {
       "name": "Channels",
-      "unit": null,
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 8,
-      "description": "The number of simultaneous patterns to generate."
+      "min": 1,
+      "max": 8
+    },
+    {
+      "name": "Steps",
+      "min": 1,
+      "max": 32
+    },
+    {
+      "name": "Pulses",
+      "min": 1,
+      "max": 32
     }
   ],
   "parameters": [
     {
       "name": "Clock input",
-      "unit": "bus",
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The clock input bus. A rising edge advances the patterns by one step.",
       "min": 1,
       "max": 28,
-      "default": 1
+      "default": 1,
+      "description": "The clock input bus. A rising edge advances the patterns by one step."
     },
     {
       "name": "Reset input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The reset input bus. A high level resets the patterns to step 1 (and holds them there).",
       "min": 0,
       "max": 28,
-      "default": 0
+      "default": 0,
+      "description": "The reset input bus. A high level resets the patterns to step 1 (and holds them there)."
     },
     {
       "name": "Enable",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Off",
-        "On"
-      ],
-      "scope": "channel",
+      "min": 0,
+      "max": 1,
+      "default": 0,
       "description": "Enables the channel."
     },
     {
       "name": "Steps",
-      "unit": null,
-      "defaultValue": 16,
-      "minValue": 1,
-      "maxValue": 32,
-      "scope": "channel",
+      "min": 1,
+      "max": 32,
+      "default": 16,
       "description": "The number of steps in the pattern."
     },
     {
       "name": "Pulses",
-      "unit": null,
-      "defaultValue": 4,
-      "minValue": 1,
-      "maxValue": 32,
-      "scope": "channel",
+      "min": 1,
+      "max": 32,
+      "default": 4,
       "description": "The number of pulses in the pattern."
     },
     {
       "name": "Rotation",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 32,
-      "scope": "channel",
+      "min": 0,
+      "max": 32,
+      "default": 0,
       "description": "The rotation of the pattern."
     },
     {
       "name": "Repeat",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 128,
-      "scope": "channel",
-      "description": "The overall repeat count (number of clocks until pattern repeats). 0 uses Steps value. > Steps extends with silence."
+      "min": 0,
+      "max": 128,
+      "default": 0,
+      "description": "The overall repeat count i.e. the number of clocks until the pattern repeats. If this is zero, the number of steps is used as the repeat. If the repeat count is greater than the number of steps, the pattern is extended with silence."
     },
     {
       "name": "Output type",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Trigger",
-        "% of clock"
-      ],
-      "scope": "channel",
-      "description": "Sets whether the output is a fixed length trigger or a clock pulse related to the input clock period."
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Sets whether the output is a fixed length trigger, or a clock pulse related to the period of the input clocks."
     },
     {
-      "name": "Length (Trigger)",
-      "unit": "ms",
-      "defaultValue": 10,
-      "minValue": 1,
-      "maxValue": 100,
-      "scope": "channel",
-      "description": "Sets the trigger length (if Output type is Trigger).",
-      "relevance": "Output type == 0"
+      "name": "Length",
+      "min": 1,
+      "max": 100,
+      "default": 10,
+      "description": "Sets the trigger length, if the ‘Output type’ is ‘Trigger'."
     },
     {
-      "name": "Length (% of clock)",
-      "unit": "%",
-      "defaultValue": 50,
-      "minValue": 1,
-      "maxValue": 99,
-      "scope": "channel",
-      "description": "Sets the output clock pulse width (if Output type is % of clock).",
-      "relevance": "Output type == 1"
+      "name": "Length",
+      "min": 1,
+      "max": 100,
+      "default": 50,
+      "description": "Sets the output clock pulse width, if the ‘Output type’ is ‘% of clock'."
     },
     {
       "name": "Output",
-      "unit": "bus",
-      "defaultValue": 15,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "channel",
-      "description": "The output bus for the channel.",
       "min": 1,
       "max": 28,
-      "default": 15
+      "default": 15,
+      "description": "The output bus for the channel."
     },
     {
       "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel",
-      "description": "The standard Add/Replace mode selector as described above.",
       "min": 0,
       "max": 1,
-      "default": 0
-    }
-  ],
-  "input_ports": [
-    {
-      "id": "clock",
-      "name": "Clock",
-      "description": "Global clock input.",
-      "busIdRef": "Clock input"
+      "default": 0,
+      "description": "The standard Add/Replace mode selector as described above."
     },
     {
-      "id": "reset",
-      "name": "Reset",
-      "description": "Global reset input.",
-      "busIdRef": "Reset input"
-    }
-  ],
-  "output_ports": [
+      "name": "ES-5 Expander",
+      "min": 0,
+      "max": 6,
+      "default": 0,
+      "description": "If set, the ES-5 expander header to use for output instead of the bus specified by the Output parameter. \"1\" means the ES-5 itself."
+    },
     {
-      "id": "output",
-      "name": "Output",
-      "description": "Output bus for each channel.",
-      "busIdRef": "Output",
-      "isPerChannel": true
+      "name": "ES-5 Output",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "If using an ES-5 expander output, sets which of the 8 outputs on the expander to use."
     }
   ]
 }

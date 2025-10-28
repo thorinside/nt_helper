@@ -35,3 +35,5 @@ epics_file: "{output_folder}/epics.md"
 recommended_inputs:
   - bug_report: "Bug description or issue ticket"
   - feature_request: "Brief feature description"
+
+standalone: true

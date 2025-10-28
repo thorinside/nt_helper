@@ -1,160 +1,136 @@
 {
   "guid": "comp",
   "name": "Compressor",
+  "description": "This algorithm is a multi-channel compressor. Each channel is fully independent – this being a multichannel algorithm is simply a convenience so that if you, say, want a compressor on all 12 module inputs, you don’t need to add 12 copies of the algorithm to do so.\nA sidechain input is available, to compress one signal according to the envelope of another.\nThe algorithm always works as an insert effect i.e. the output replaces the input.",
   "categories": [
-    "Dynamics",
-    "Effect"
+    "audio effects",
+    "dynamics"
   ],
-  "description": "Multichannel compressor with optional sidechain; operates as an insert effect (output replaces input).",
+  "short_description": "\"A simple compressor\"",
   "specifications": [
     {
       "name": "Channels",
-      "value": {
-        "minValue": 1,
-        "maxValue": 12,
-        "defaultValue": 1
-      },
-      "description": "Number of bus channels to process."
+      "min": 1,
+      "max": 12
+    },
+    {
+      "name": "Per-channel parameters",
+      "min": 0,
+      "max": 1023
     }
   ],
   "parameters": [
     {
-      "name": "Input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 1,
-      "scope": "channel",
-      "description": "Channel input bus (0=None)."
-    },
-    {
-      "name": "Sidechain input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel",
-      "description": "Optional sidechain detector input (0=None)."
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "scope": "channel",
-      "description": "Channel output bus (0=None)."
-    },
-    {
-      "name": "Output mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel",
-      "description": "Add/Replace mode for the output bus."
-    },
-    {
-      "name": "Right input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "routing",
-      "description": ""
-    },
-    {
       "name": "Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables the channel."
+      "scope": "per-channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Threshold",
-      "unit": "dB",
-      "min": -60,
-      "max": 0,
-      "default": -12,
-      "description": "The threshold at which gain reduction starts."
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Ratio",
-      "min": 0,
-      "max": 1023,
-      "default": 100,
-      "description": "The compression ratio. Exponential scaling from"
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
-      "name": "1:1 up to 1000:1. Attack",
-      "min": 0,
-      "max": 1023,
-      "default": 100,
-      "description": "The attack time of the compressor. Exponential"
+      "name": "Attack",
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Release",
-      "min": 0,
-      "max": 1023,
-      "default": 100,
-      "description": "The release time of the compressor. Exponential"
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
-      "name": "0 1 0 Enables auto make-up gain, raising the gain automatically according to the threshold and ratio. Make-up gain The make-up gain, if \"Auto make-up\" is off. Lookahead",
-      "unit": "ms",
-      "min": 0,
-      "max": 10,
-      "default": 1,
-      "description": "The lookahead time. Increase this to prevent the"
+      "name": "Auto make-up",
+      "scope": "per-channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
-      "name": "-40.0 12.0 -40.0 dB Sets the amount of the sidechain signal mixed into the output. Sidechain solo",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "If enabled, the sidechain signal is passed through to",
-      "scope": "routing"
+      "name": "Make-up gain",
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
-      "name": "1 28 The left or mono input bus. Right input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The right input bus, if stereo.",
-      "scope": "routing"
+      "name": "Lookahead",
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
-      "name": "0 28 0 The bus to use for the gain reduction output, scaled as 1V per 6dB of gain reduction. Reduction mode",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "The standard Add/Replace mode selector as",
-      "scope": "routing"
+      "name": "Sidechain mix",
+      "scope": "per-channel",
+      "type": "file",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 9
+    },
+    {
+      "name": "Sidechain solo",
+      "scope": "per-channel",
+      "type": "enum",
+      "is_per_channel": true,
+      "is_bus": false,
+      "parameterNumber": 10
     }
   ],
-  "features": [],
   "input_ports": [
     {
-      "name": "Input",
-      "busIdRef": "Input"
-    },
-    {
-      "name": "Sidechain input",
-      "busIdRef": "Sidechain input"
+      "name": "Left/mono input",
+      "busIdRef": "1",
+      "channelCountRef": "28",
+      "isPerChannel": false
     },
     {
       "name": "Right input",
-      "busIdRef": "Right input"
-    }
-  ],
-  "output_ports": [
+      "busIdRef": "0",
+      "channelCountRef": "28",
+      "isPerChannel": false
+    },
     {
-      "name": "Output",
-      "busIdRef": "Output"
+      "name": "Sidechain input",
+      "busIdRef": "0",
+      "channelCountRef": "28",
+      "isPerChannel": false
+    },
+    {
+      "name": "Reduction output",
+      "busIdRef": "0",
+      "channelCountRef": "28",
+      "isPerChannel": false
+    },
+    {
+      "name": "Reduction mode",
+      "busIdRef": "0",
+      "channelCountRef": "28",
+      "isPerChannel": false
     }
   ]
 }

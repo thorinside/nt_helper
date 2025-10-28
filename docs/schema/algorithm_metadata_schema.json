@@ -97,17 +97,31 @@
           "description": "Unit of measurement"
         },
         "value": {
-          "description": "Specification value - can be various types"
+          "description": "Specification value - can be various types",
+          "anyOf": [
+            {"type": "string"},
+            {"type": "number"},
+            {"type": "boolean"},
+            {"type": "null"}
+          ]
         },
         "description": {
           "type": "string",
           "description": "Specification description"
         },
         "min": {
-          "description": "Minimum value (for older format)"
+          "description": "Minimum value (for older format)",
+          "anyOf": [
+            {"type": "number"},
+            {"type": "null"}
+          ]
         },
         "max": {
-          "description": "Maximum value (for older format)"
+          "description": "Maximum value (for older format)",
+          "anyOf": [
+            {"type": "number"},
+            {"type": "null"}
+          ]
         }
       }
     },
@@ -141,16 +155,36 @@
           "description": "Parameter unit"
         },
         "min": {
-          "description": "Minimum value - can be number or null"
+          "description": "Minimum value - can be number or null",
+          "anyOf": [
+            {"type": "number"},
+            {"type": "null"}
+          ]
         },
         "max": {
-          "description": "Maximum value - can be number or null"
+          "description": "Maximum value - can be number or null",
+          "anyOf": [
+            {"type": "number"},
+            {"type": "null"}
+          ]
         },
         "default": {
-          "description": "Default value - can be various types"
+          "description": "Default value - can be various types",
+          "anyOf": [
+            {"type": "string"},
+            {"type": "number"},
+            {"type": "boolean"},
+            {"type": "null"}
+          ]
         },
         "defaultValue": {
-          "description": "Default value (alternative field name)"
+          "description": "Default value (alternative field name)",
+          "anyOf": [
+            {"type": "string"},
+            {"type": "number"},
+            {"type": "boolean"},
+            {"type": "null"}
+          ]
         },
         "scope": {
           "type": "string",

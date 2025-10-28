@@ -1,284 +1,118 @@
 {
-  "name": "Clock divider",
   "guid": "clkd",
-  "short_description": "Divides clocks",
-  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks. There is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
-  "use_cases": [
-    "Generating slower clock divisions",
-    "Creating polyrhythms by using different divisors on multiple channels",
-    "Synchronizing multiple sequencers or modules at different subdivisions"
+  "name": "Clock divider",
+  "description": "This algorithm is a simple clock divider, outputting slower clocks from a faster one. The channels can use completely independent clocks, or share clocks.\nThere is a shared reset input and a per-channel reset input. If either is active, the channel is reset.",
+  "categories": [
+    "clocking"
   ],
-  "gui_description": null,
+  "short_description": "\"Divides clocks\"",
   "specifications": [
     {
       "name": "Channels",
       "min": 1,
-      "max": 8,
-      "description": "The number of clock channels to process."
+      "max": 8
     }
   ],
   "parameters": [
     {
-      "page": "Common",
-      "params": [
-        {
-          "name": "Reset input",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The shared reset input bus. 0 = None.",
-          "is_bus": true
-        }
-      ]
-    },
-    {
-      "page": "Channel {i+1}",
-      "is_per_channel": true,
-      "params": [
-        {
-          "name": "Type",
-          "min": 0,
-          "max": 2,
-          "default": 0,
-          "unit": null,
-          "description": "The divisor type.",
-          "enum_values": [
-            "Free",
-            "Metrical (2)",
-            "Metrical (2,3)"
-          ]
-        },
-        {
-          "name": "Divisor",
-          "min": 1,
-          "max": 32,
-          "default": 2,
-          "unit": null,
-          "description": "The divisor, if the type is 'Free'. The divisor value is simply the parameter value."
-        },
-        {
-          "name": "Divisor (Metrical 2)",
-          "min": 0,
-          "max": 5,
-          "default": 1,
-          "unit": null,
-          "description": "The divisor, if the type is 'Metrical (2)'.",
-          "enum_values": [
-            "1",
-            "2",
-            "4",
-            "8",
-            "16",
-            "32"
-          ]
-        },
-        {
-          "name": "Divisor (Metrical 2,3)",
-          "min": 0,
-          "max": 9,
-          "default": 1,
-          "unit": null,
-          "description": "The divisor, if the type is 'Metrical (2,3)'.",
-          "enum_values": [
-            "1",
-            "2",
-            "3",
-            "4",
-            "6",
-            "8",
-            "12",
-            "16",
-            "24",
-            "32"
-          ]
-        },
-        {
-          "name": "Enable",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Enables the channel. A disabled channel outputs nothing.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Input",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "The clock input bus to divide.",
-          "is_bus": true
-        },
-        {
-          "name": "Reset input",
-          "min": 0,
-          "max": 28,
-          "default": 0,
-          "unit": null,
-          "description": "The reset input bus for this channel. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "Output",
-          "min": 1,
-          "max": 28,
-          "default": 15,
-          "unit": null,
-          "description": "The clock output bus.",
-          "is_bus": true
-        },
-        {
-          "name": "Output mode",
-          "min": 0,
-          "max": 1,
-          "default": 1,
-          "unit": null,
-          "description": "The standard Add/Replace mode selector.",
-          "enum_values": [
-            "Replace",
-            "Add"
-          ],
-          "is_common": true
-        }
-      ]
-    },
-    {
       "name": "Reset input",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": ""
+      "type": "bus",
+      "is_per_channel": false
+    },
+    {
+      "name": "Type",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Divisor",
+      "min": 1,
+      "max": 32,
+      "default": 2,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 5,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Divisor",
+      "min": 0,
+      "max": 9,
+      "default": 1,
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Enable",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_per_channel": true
     },
     {
       "name": "Input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": ""
+      "type": "bus",
+      "is_per_channel": true
+    },
+    {
+      "name": "Reset input",
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "bus",
+      "is_per_channel": true
     },
     {
       "name": "Output",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 15,
-      "scope": "routing",
-      "description": ""
+      "type": "bus",
+      "is_per_channel": true
     },
     {
-      "name": "Type",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "The divisor type. The options are \"Free\", \"Metrical"
-    },
-    {
-      "name": "(2)\", and \"Metrical (2,3)\". Divisor",
-      "min": 1,
-      "max": 32,
-      "default": 2,
-      "description": "The divisor, if the type is \"Free\". The divisor value"
-    },
-    {
-      "name": "is simply the parameter value. Divisor",
-      "min": 0,
-      "max": 5,
-      "default": 1,
-      "description": "The divisor, if the type is \"Metrical (2)\". Chooses"
-    },
-    {
-      "name": "between 1, 2, 4, 8, 16, & 32. Divisor",
-      "min": 0,
-      "max": 9,
-      "default": 1,
-      "description": "The divisor, if the type is \"Metrical (2,3)\". Chooses"
-    },
-    {
-      "name": "between 1, 2, 3, 4, 6, 8, 12, 16, 24, & 32. Enable",
+      "name": "Output",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "description": "Enables the channel. A disabled channel outputs"
-    },
-    {
-      "name": "nothing. Input",
-      "min": 1,
-      "max": 28,
       "default": 1,
-      "description": "The clock input bus to divide.",
-      "scope": "routing"
-    },
-    {
-      "name": "Type",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "The divisor type. The options are \"Free\", \"Metrical"
-    },
-    {
-      "name": "(2)\", and \"Metrical (2,3)\". Divisor",
-      "min": 1,
-      "max": 32,
-      "default": 2,
-      "description": "The divisor, if the type is \"Free\". The divisor value"
-    },
-    {
-      "name": "is simply the parameter value. Divisor",
-      "min": 0,
-      "max": 5,
-      "default": 1,
-      "description": "The divisor, if the type is \"Metrical (2)\". Chooses"
-    },
-    {
-      "name": "between 1, 2, 4, 8, 16, & 32. Divisor",
-      "min": 0,
-      "max": 9,
-      "default": 1,
-      "description": "The divisor, if the type is \"Metrical (2,3)\". Chooses"
-    },
-    {
-      "name": "between 1, 2, 3, 4, 6, 8, 12, 16, 24, & 32. Enable",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Enables the channel. A disabled channel outputs"
-    },
-    {
-      "name": "nothing. Input",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "description": "The clock input bus to divide.",
-      "scope": "routing"
+      "type": "enum",
+      "is_per_channel": true
     }
-  ],
-  "categories": [
-    "Clock",
-    "Utility"
   ],
   "input_ports": [
     {
-      "name": "Reset input",
-      "busIdRef": "Reset input"
+      "name": "Clock input bus",
+      "description": "The clock input bus to divide."
     },
     {
-      "name": "Input",
-      "busIdRef": "Input"
+      "name": "Reset input bus",
+      "description": "The reset input bus for this channel."
+    },
+    {
+      "name": "Shared reset input bus",
+      "description": "The shared reset input bus."
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "busIdRef": "Output"
+      "name": "Clock output bus",
+      "description": "The clock output bus."
     }
   ]
 }

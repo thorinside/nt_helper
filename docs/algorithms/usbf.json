@@ -1,223 +1,30 @@
 {
   "guid": "usbf",
   "name": "USB audio (from host)",
+  "description": "This algorithm exposes the USB audio from the host, if one is connected.\nThe host sees 8 output channels. Each one of these can be output to any of the disting NT’s busses.\nNote that the signals from the USB host don’t just have to emerge directly from the module’s outputs;\nthey could just as well be the inputs to other algorithms, allowing you to process audio from the host through the disting.\nNote also that \"USB audio\" doesn’t mean that the signals have to be audio; they could also be CVs, if you’d like to exchange signals with, say, VCV Rack or similar.",
   "categories": [
-    "Utility",
-    "Audio-IO"
+    "utility",
+    "routing",
+    "external control"
   ],
-  "description": "Exposes the 8 USB audio output channels from the host to the Disting NT's internal busses. Allows processing host audio/CV within the Disting NT or outputting directly.",
-  "specifications": [],
   "parameters": [
     {
-      "name": "Channel 1 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 13,
-      "scope": "channel 1",
-      "description": "The bus on which to output USB channel 1 (0=disabled)."
-    },
-    {
-      "name": "Channel 1 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 1",
-      "description": "Add/Replace mode for channel 1 output."
-    },
-    {
-      "name": "Channel 2 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 2",
-      "description": "The bus on which to output USB channel 2 (0=disabled)."
-    },
-    {
-      "name": "Channel 2 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 2",
-      "description": "Add/Replace mode for channel 2 output."
-    },
-    {
-      "name": "Channel 3 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 3",
-      "description": "The bus on which to output USB channel 3 (0=disabled)."
-    },
-    {
-      "name": "Channel 3 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 3",
-      "description": "Add/Replace mode for channel 3 output."
-    },
-    {
-      "name": "Channel 4 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 4",
-      "description": "The bus on which to output USB channel 4 (0=disabled)."
-    },
-    {
-      "name": "Channel 4 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 4",
-      "description": "Add/Replace mode for channel 4 output."
-    },
-    {
-      "name": "Channel 5 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 5",
-      "description": "The bus on which to output USB channel 5 (0=disabled)."
-    },
-    {
-      "name": "Channel 5 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 5",
-      "description": "Add/Replace mode for channel 5 output."
-    },
-    {
-      "name": "Channel 6 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 6",
-      "description": "The bus on which to output USB channel 6 (0=disabled)."
-    },
-    {
-      "name": "Channel 6 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 6",
-      "description": "Add/Replace mode for channel 6 output."
-    },
-    {
-      "name": "Channel 7 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 7",
-      "description": "The bus on which to output USB channel 7 (0=disabled)."
-    },
-    {
-      "name": "Channel 7 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 7",
-      "description": "Add/Replace mode for channel 7 output."
-    },
-    {
-      "name": "Channel 8 to",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "channel 8",
-      "description": "The bus on which to output USB channel 8 (0=disabled)."
-    },
-    {
-      "name": "Channel 8 mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel 8",
-      "description": "Add/Replace mode for channel 8 output."
-    },
-    {
       "name": "to",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 13,
-      "scope": "routing",
-      "description": ""
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 1
     },
     {
       "name": "mode",
       "min": 0,
       "max": 1,
       "default": 1,
-      "description": "The standard Add/Replace mode selector as"
-    },
-    {
-      "name": "mode",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "The standard Add/Replace mode selector as"
-    }
-  ],
-  "input_ports": [
-    "USB Audio/CV (from Host)"
-  ],
-  "output_ports": [
-    {
-      "name": "Audio/CV (to Busses)"
-    },
-    {
-      "name": "to",
-      "busIdRef": "to"
+      "type": "enum",
+      "is_bus": false,
+      "parameterNumber": 2
     }
   ]
 }

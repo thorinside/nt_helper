@@ -1,377 +1,73 @@
 {
   "guid": "midp",
   "name": "MIDI Player",
+  "description": "This algorithm plays standard MIDI files, outputting the MIDI messages, and converting the MIDI to CVs and gates. It will use an internal clock (using the file's tempo, if specified), or sync to analogue clocks or incoming MIDI clock.\n\nSee the MicroSD card section above for information on supported MIDI file formats, and how to arrange the files on the card.\n\nOptionally, this algorithm will also process live MIDI.\n\nWhile the MIDI/CV converters built into this algorithm are convenient for simple monophonic use, you may like to pair this algorithm with Poly CV (below) for more flexibility.",
   "categories": [
     "MIDI",
-    "Sequencer"
+    "Utility",
+    "CV Processing"
   ],
-  "description": "Plays standard MIDI files from the MicroSD card, outputting MIDI messages and converting MIDI to CV/gates. Can sync to internal clock, analogue clock, or MIDI clock.",
+  "short_description": "\"Plays MIDI files from the MicroSD card\"",
   "specifications": [],
   "parameters": [
     {
       "name": "Folder",
-      "unit": null,
-      "description": "Chooses the folder of MIDI files on the card.",
-      "scope": "global",
-      "type": "folder"
+      "min": null,
+      "max": null,
+      "default": "Chooses the folder of MIDI files on the card."
     },
     {
       "name": "File",
-      "unit": null,
-      "description": "Chooses the MIDI file within the folder.",
-      "scope": "global",
-      "type": "file"
+      "min": null,
+      "max": null,
+      "default": "Chooses the MIDI file within the folder."
     },
     {
       "name": "Play",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Starts/stops playback using the internal timebase.",
-      "scope": "global"
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "Starts/stops playback using the internal timebase."
     },
     {
-      "name": "Start from bar",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 256,
-      "description": "Sets the bar number within the file from which to start playback.",
-      "scope": "global"
+      "name": "Start from<br>bar",
+      "min": 1,
+      "max": 256,
+      "default": 1,
+      "description": "Sets the bar number within the file from which to\nstart playback."
     },
     {
       "name": "File change",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 2,
-      "enumValues": [
-        "End of bar",
-        "End of file",
-        "Immediately"
-      ],
-      "description": "Sets the behaviour when a new file is chosen.",
-      "scope": "global"
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "description": "Sets the behaviour when a new file is chosen. The options are:\n●\nWait until the end of the bar and then change\nto the new file.\n●\nWait until the end of the file and then change\nto the new file.\n●\nChange immediately."
     },
     {
       "name": "File restart",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Start from beginning",
-        "Start from current position"
-      ],
-      "description": "Sets how the file position changes when switching to a new file.",
-      "scope": "global"
-    },
-    {
-      "name": "Track mode 1-24",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Normal",
-        "Muted"
-      ],
-      "description": "Set the playback mode for the track (1-24).",
-      "scope": "track",
-      "min": 0,
-      "max": 1,
-      "default": 0
-    },
-    {
-      "name": "1-4 MIDI channel",
-      "unit": null,
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 16,
-      "description": "MIDI channel for the MIDI/CV converter (1-4).",
-      "scope": "converter",
-      "min": 1,
-      "max": 16,
-      "default": 1
-    },
-    {
-      "name": "1-4 Pitch output",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Bus for the MIDI/CV converter pitch output (1-4). (0=None)",
-      "scope": "converter",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "1-4 Gate output",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Bus for the MIDI/CV converter gate output (1-4). (0=None)",
-      "scope": "converter"
-    },
-    {
-      "name": "Drum first note",
-      "unit": null,
-      "defaultValue": 36,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "The first (lowest) note for the drum converter.",
-      "scope": "converter"
-    },
-    {
-      "name": "Drum channel",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 16,
-      "description": "MIDI channel for the drum converter (0=Off).",
-      "scope": "converter",
-      "min": 0,
-      "max": 16,
-      "default": 0
-    },
-    {
-      "name": "Trigger length",
-      "unit": "ms",
-      "defaultValue": 10,
-      "minValue": 1,
-      "maxValue": 100,
-      "description": "Sets the length of output trigger pulses.",
-      "scope": "converter",
-      "min": 1,
-      "max": 100,
-      "default": 10
-    },
-    {
-      "name": "Convert live MIDI",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "If enabled, MIDI sent to the algorithm is converted by its MIDI/CV converters.",
-      "scope": "global"
-    },
-    {
-      "name": "Clock multiplier",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 4,
-      "enumValues": [
-        "24ppqn",
-        "1/32",
-        "1/16",
-        "1/8",
-        "1/4"
-      ],
-      "description": "Sets the multiplier for incoming analogue clock pulses.",
-      "scope": "global"
-    },
-    {
-      "name": "Clock input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The bus to use as the analogue clock input (0=None).",
-      "scope": "global"
-    },
-    {
-      "name": "Reset input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "The bus to use as the reset input (0=None).",
-      "scope": "global",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "Reset mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Reset trigger",
-        "Run/Stop signal"
-      ],
-      "description": "Sets the mode for the reset input.",
-      "scope": "global",
-      "min": 0,
-      "max": 1,
-      "default": 0
-    },
-    {
-      "name": "Follow MIDI clock",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Sets whether the algorithm follows incoming MIDI clock.",
-      "scope": "global"
-    },
-    {
-      "name": "Output MIDI clock",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Set whether the algorithm outputs MIDI clock.",
-      "scope": "global"
-    },
-    {
-      "name": "Output to breakout",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Enables MIDI output to the breakout.",
-      "scope": "global"
-    },
-    {
-      "name": "Output to Select Bus",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Enables MIDI output to the Select Bus.",
-      "scope": "global"
-    },
-    {
-      "name": "Output to USB",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Enables MIDI output to USB.",
-      "scope": "global"
-    },
-    {
-      "name": "Output to internal",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Enables internal MIDI output (sent to other algorithms).",
-      "scope": "global"
-    },
-    {
-      "name": "1 256 1 Sets the bar number within the file from which to start playback. File change",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Sets the behaviour when a new file is chosen. The"
-    },
-    {
-      "name": "options are:  Wait until the end of the bar and then change to the new file.  Wait until the end of the file and then change to the new file.  Change immediately. File restart",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Sets how the file position changes when switching to"
-    },
-    {
-      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are:  clock is interpreted as 24ppqn.  clock is interpreted as 1/32 notes.  clock is interpreted as 1/16 notes.  clock is interpreted as 1/8 notes.  clock is interpreted as 1/4 notes. Clock input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use as the clock input.",
-      "scope": "routing"
-    },
-    {
-      "name": "1 256 1 Sets the bar number within the file from which to start playback. File change",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Sets the behaviour when a new file is chosen. The"
-    },
-    {
-      "name": "options are:  Wait until the end of the bar and then change to the new file.  Wait until the end of the file and then change to the new file.  Change immediately. File restart",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Sets how the file position changes when switching to"
-    },
-    {
-      "name": "0 4 0 Sets the multiplier for incoming clock pulses. The options are:  clock is interpreted as 24ppqn.  clock is interpreted as 1/32 notes.  clock is interpreted as 1/16 notes.  clock is interpreted as 1/8 notes.  clock is interpreted as 1/4 notes. Clock input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use as the clock input.",
-      "scope": "routing"
+      "description": "Sets how the file position changes when switching to\na new file. The options are:\n●\nThe new file starts from the beginning.\n●\nThe new file starts from the current position\nin the old file (modulo the length of the new\nfile)."
     }
   ],
-  "input_ports": [
-    {
-      "id": "clock_in",
-      "name": "Clock In",
-      "description": "Analogue clock input.",
-      "busIdRef": "Clock input"
-    },
-    {
-      "id": "reset_in",
-      "name": "Reset In",
-      "description": "Reset input.",
-      "busIdRef": "Reset input"
-    }
-  ],
+  "input_ports": [],
   "output_ports": [
     {
-      "id": "pitch_1",
-      "name": "Pitch Out 1",
-      "description": "Pitch CV output for converter 1.",
-      "busIdRef": "1-4 Pitch output"
+      "name": "Output to<br>breakout",
+      "description": "Enables MIDI output to the breakout."
     },
     {
-      "id": "gate_1",
-      "name": "Gate Out 1",
-      "description": "Gate output for converter 1.",
-      "busIdRef": "1-4 Gate output"
+      "name": "Output to<br>Select Bus",
+      "description": "Enables MIDI output to the Select Bus."
     },
     {
-      "id": "pitch_2",
-      "name": "Pitch Out 2",
-      "description": "Pitch CV output for converter 2.",
-      "busIdRef": "1-4 Pitch output"
+      "name": "Output to<br>USB",
+      "description": "Enables MIDI output to USB."
     },
     {
-      "id": "gate_2",
-      "name": "Gate Out 2",
-      "description": "Gate output for converter 2.",
-      "busIdRef": "1-4 Gate output"
-    },
-    {
-      "id": "pitch_3",
-      "name": "Pitch Out 3",
-      "description": "Pitch CV output for converter 3.",
-      "busIdRef": "1-4 Pitch output"
-    },
-    {
-      "id": "gate_3",
-      "name": "Gate Out 3",
-      "description": "Gate output for converter 3.",
-      "busIdRef": "1-4 Gate output"
-    },
-    {
-      "id": "pitch_4",
-      "name": "Pitch Out 4",
-      "description": "Pitch CV output for converter 4.",
-      "busIdRef": "1-4 Pitch output"
-    },
-    {
-      "id": "gate_4",
-      "name": "Gate Out 4",
-      "description": "Gate output for converter 4.",
-      "busIdRef": "1-4 Gate output"
+      "name": "Output to<br>internal",
+      "description": "Enables internal MIDI output – that is, MIDI is\nsent to the other algorithms."
     }
   ]
 }

@@ -1,481 +1,101 @@
 {
   "guid": "samp",
-  "name": "Sample player",
+  "name": "Sample Player",
+  "description": "This algorithm plays samples from the MicroSD card. It is loosely based on the “SD 6 Triggers” algorithm on the disting EX.\nWhereas the “Poly Multisample” algorithm is aimed more at playing pitched instruments, this\nalgorithm is mainly designed for playing simple one-shot samples e.g. drums.\nIt supports both velocity switches and round robins per sample.\nThe trigger inputs are velocity sensitive – the voltage of the gate signal is used like the velocity of a\nMIDI note. 5V corresponds to maximum velocity.",
   "categories": [
-    "Sampler"
+    "sampling",
+    "triggers"
   ],
-  "description": "A simple sample player designed for playing one-shot samples (e.g., drums) from the MicroSD card. Supports velocity switches and round robins. Trigger inputs are velocity-sensitive (5V = max velocity). Loosely based on the disting EX \"SD 6 Triggers\" algorithm.",
+  "short_description": "A simple sample player",
   "specifications": [
     {
-      "name": "Triggers",
-      "unit": null,
-      "min": 1,
-      "max": 8,
-      "description": "The number of individual sample triggers."
+      "name": "Gain",
+      "min": -40,
+      "max": 24
+    },
+    {
+      "name": "Round robin mode",
+      "min": 0,
+      "max": 3
     }
   ],
   "parameters": [
     {
-      "name": "Gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "scope": "global",
-      "description": "An overall gain to apply in addition to the per-trigger gain."
-    },
-    {
-      "name": "Round robin mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "scope": "global",
-      "description": "The round-robin mode."
-    },
-    {
       "name": "Folder",
-      "unit": null,
-      "min": 1,
-      "max": null,
-      "default": 1,
-      "scope": "per-trigger",
-      "description": "Sets the folder from which to choose a sample."
+      "min": 1
     },
     {
       "name": "Sample",
-      "unit": null,
-      "min": 1,
-      "max": null,
-      "default": 1,
-      "scope": "per-trigger",
-      "description": "Sets the sample within the folder."
+      "min": 1
     },
     {
       "name": "Transpose",
-      "unit": "ST",
       "min": -60,
-      "max": 60,
-      "default": 0,
-      "scope": "per-trigger",
-      "description": "Sets the sample tuning in semitones."
+      "max": 60
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
       "min": -100,
-      "max": 100,
-      "default": 0,
-      "scope": "per-trigger",
-      "description": "Sets the sample fine tuning."
+      "max": 100
     },
     {
       "name": "Gain",
-      "unit": "dB",
       "min": -40,
-      "max": 24,
-      "default": 0,
-      "scope": "per-trigger",
-      "description": "The output level."
+      "max": 24
     },
     {
       "name": "Pan",
-      "unit": "%",
       "min": -100,
-      "max": 100,
-      "default": 0,
-      "scope": "per-trigger",
-      "description": "The stereo pan position."
+      "max": 100
     },
     {
-      "name": "Vel(ocity) depth",
-      "unit": "%",
+      "name": "Vel(velocity) depth",
       "min": 0,
-      "max": 100,
-      "default": 100,
-      "scope": "per-trigger",
-      "description": "Sets the amount by which the velocity affects the playback level."
+      "max": 100
     },
     {
       "name": "Choke group",
-      "unit": "enum",
       "min": 0,
-      "max": 8,
-      "default": 0,
-      "scope": "per-trigger",
-      "description": "Voice's choke group. Triggering ends playback of other voices in the same group."
+      "max": 8
     },
     {
       "name": "Play",
-      "unit": "trigger",
       "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-trigger",
-      "description": "Manually triggers sample playback."
+      "max": 1
     },
     {
       "name": "Velocity",
-      "unit": "MIDI velocity",
       "min": 1,
-      "max": 127,
-      "default": 127,
-      "scope": "per-trigger",
-      "description": "The velocity to use when 'Play' triggers playback."
+      "max": 127
     },
     {
       "name": "Loop",
-      "unit": "enum",
       "min": 0,
-      "max": 2,
-      "default": 0,
-      "values": [
-        "From WAV file",
-        "Off",
-        "On"
-      ],
-      "scope": "per-trigger",
-      "description": "Sets whether the sample will loop."
-    },
-    {
-      "name": "Left output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "per-trigger setup",
-      "description": "The left audio output bus."
-    },
-    {
-      "name": "Right output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 14,
-      "scope": "per-trigger setup",
-      "description": "The right audio output bus."
-    },
-    {
-      "name": "MIDI channel",
-      "unit": "MIDI channel",
-      "min": 0,
-      "max": 16,
-      "default": 1,
-      "scope": "per-trigger setup",
-      "description": "The MIDI channel to respond to (0=none)."
-    },
-    {
-      "name": "MIDI note",
-      "unit": "MIDI note",
-      "min": -1,
-      "max": 127,
-      "default": 48,
-      "scope": "per-trigger setup",
-      "description": "The MIDI note to respond to, or -1 for 'Any'."
-    },
-    {
-      "name": "Trigger input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "scope": "per-trigger setup",
-      "description": "The input bus to use as the gate/trigger."
-    },
-    {
-      "name": "Envelope",
-      "unit": "toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "per-trigger envelope",
-      "description": "Enables an ADSR volume envelope."
-    },
-    {
-      "name": "Attack",
-      "unit": "scaled",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "scope": "per-trigger envelope",
-      "description": "Sets the envelope attack time."
-    },
-    {
-      "name": "Decay",
-      "unit": "scaled",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "scope": "per-trigger envelope",
-      "description": "Sets the envelope decay time."
-    },
-    {
-      "name": "Sustain",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "scope": "per-trigger envelope",
-      "description": "Sets the envelope sustain level."
-    },
-    {
-      "name": "Release",
-      "unit": "scaled",
-      "min": 0,
-      "max": 127,
-      "default": 77,
-      "scope": "per-trigger envelope",
-      "description": "Sets the envelope release time."
-    },
-    {
-      "name": "gain. Round robin mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "The round-robin mode. See above."
-    },
-    {
-      "name": "Folder 1 Sets the folder from which to choose a sample. Sample 1 Sets the sample within the folder. Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Sets the sample tuning in semitones."
-    },
-    {
-      "name": "0 8 0 The voice's \"choke group\". When a voice in a choke group is triggered, it ends the playback of any other voices in the same choke group. Play",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Manually triggers sample playback."
-    },
-    {
-      "name": "0 16 1 The MIDI channel to respond to. MIDI note",
-      "min": -1,
-      "max": 127,
-      "default": 48,
-      "description": "The MIDI note to respond to, or \"Any\"."
-    },
-    {
-      "name": "Folder 1 Sets the folder from which to choose a sample. Sample 1 Sets the sample within the folder. Gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "description": "The output level."
-    },
-    {
-      "name": "0 100 100 % Sets the amount by which the velocity affects the playback level. Play",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Manually triggers sample playback."
-    },
-    {
-      "name": "file' will loop if the sample has loop points defined in the file - see above - and not otherwise. 'Off' and 'On' force the sample to loop or not. Vel(ocity) depth",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the amount by which the velocity affects the"
-    },
-    {
-      "name": "playback level. Confirm change",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Sets whether the folder and/or sample changes"
-    },
-    {
-      "name": "Start trim coarse",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 0,
-      "description": "Sets an amount to trim off the start, as a percentage"
-    },
-    {
-      "name": "0.0 100.0 0.0 % Sets an amount to trim off the end, as a percentage of the sample length. End trim fine",
-      "min": -500,
-      "max": 500,
-      "default": 0,
-      "description": "Adjusts the amount to trim off the end, in sample"
-    },
-    {
-      "name": "frames. Offset type",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Sets how the start offset will be determined."
-    },
-    {
-      "name": "Offset ms",
-      "unit": "ms",
-      "min": 0,
-      "max": 32767,
-      "default": 0,
-      "description": "The start offset, if the type is 'Milliseconds'."
-    },
-    {
-      "name": "Offset %",
-      "unit": "%",
-      "min": 0,
-      "max": 99.9,
-      "default": 0,
-      "description": "The start offset, if the type is 'Percent'."
-    },
-    {
-      "name": "Offset div",
-      "min": 0,
-      "max": 19,
-      "default": 4,
-      "description": "The start offset divisor, if the type is 'Division'."
-    },
-    {
-      "name": "Offset mult",
-      "min": 0,
-      "max": 128,
-      "default": 0,
-      "description": "The start offset multiplier, if the type is 'Division'."
-    },
-    {
-      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "Sets the envelope attack time."
-    },
-    {
-      "name": "Record",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Set to 'On' to activate recording and 'Off' to stop"
-    },
-    {
-      "name": "Record gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "description": "A gain to apply when recording."
-    },
-    {
-      "name": "Use recording",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Set to 'On' to use the recording instead of a sample"
-    },
-    {
-      "name": "0 28 0 The input bus to use as the gate/trigger. Left output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "description": "The left audio output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "gain. Round robin mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "The round-robin mode. See above."
-    },
-    {
-      "name": "Folder 1 Sets the folder from which to choose a sample. Sample 1 Sets the sample within the folder. Transpose",
-      "unit": "ST",
-      "min": -60,
-      "max": 60,
-      "default": 0,
-      "description": "Sets the sample tuning in semitones."
-    },
-    {
-      "name": "0 8 0 The voice's \"choke group\". When a voice in a choke group is triggered, it ends the playback of any other voices in the same choke group. Play",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Manually triggers sample playback."
-    },
-    {
-      "name": "0 16 1 The MIDI channel to respond to. MIDI note",
-      "min": -1,
-      "max": 127,
-      "default": 48,
-      "description": "The MIDI note to respond to, or \"Any\"."
-    },
-    {
-      "name": "file' will loop if the sample has loop points defined in the file - see above - and not otherwise. 'Off' and 'On' force the sample to loop or not. Vel(ocity) depth",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the amount by which the velocity affects the"
-    },
-    {
-      "name": "playback level. Confirm change",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Sets whether the folder and/or sample changes"
-    },
-    {
-      "name": "Trim",
-      "unit": "ms",
-      "min": 0,
-      "max": 32767,
-      "default": 0,
-      "description": "Sets an amount to trim off the start of the sample."
-    },
-    {
-      "name": "Offset type",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Sets how the start offset will be determined."
-    },
-    {
-      "name": "Offset ms",
-      "unit": "ms",
-      "min": 0,
-      "max": 32767,
-      "default": 0,
-      "description": "The start offset, if the type is 'Milliseconds'."
-    },
-    {
-      "name": "Offset %",
-      "unit": "%",
-      "min": 0,
-      "max": 99.9,
-      "default": 0,
-      "description": "The start offset, if the type is 'Percent'."
-    },
-    {
-      "name": "Offset div",
-      "min": 0,
-      "max": 19,
-      "default": 4,
-      "description": "The start offset divisor, if the type is 'Division'."
-    },
-    {
-      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "Sets the envelope attack time."
+      "max": 2
     }
   ],
   "input_ports": [
-    "Gate/Trigger",
-    "MIDI"
+    {
+      "name": "Trigger input",
+      "busIdRef": "0"
+    },
+    {
+      "name": "MIDI channel",
+      "busIdRef": "0"
+    },
+    {
+      "name": "MIDI note",
+      "busIdRef": "-1"
+    }
   ],
   "output_ports": [
     {
-      "name": "Audio (Stereo)"
+      "name": "Left output",
+      "busIdRef": "1"
     },
     {
-      "name": "Left output",
-      "busIdRef": "Left output"
+      "name": "Right output",
+      "busIdRef": "0"
     }
   ]
 }

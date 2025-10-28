@@ -1,188 +1,99 @@
 {
-  "name": "Audio recorder",
   "guid": "wavr",
-  "short_description": "Records audio to the MicroSD card",
-  "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module's inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms - for example, you could run a mixer and record the stereo mix-down. The algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording. Since the module is fully DC-coupled, it can also record and play CVs. Up to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
-  "use_cases": [
-    "Recording module inputs",
-    "Recording algorithm outputs (e.g., mixer output)",
-    "Recording and playing back CVs",
-    "Multi-track recording (up to 10 simultaneous files)"
-  ],
-  "gui_description": "The display shows a level meter for each file. This will be grayed out if the file is disabled. The meters show the input levels when idle or recording, and the playback levels when playing. While recording, the display shows the name of the current recording, and the elapsed time. It also shows a gauge of the pressure on the MicroSD card. When idle, the display shows the name of the last recording completed or played. During playback, the display shows the name of the recording being played, and the elapsed time.",
+  "name": "Audio recorder",
+  "description": "This algorithm records WAV files to the MicroSD card. A typical use for this would be to record the module’s inputs, but any bus can be the source for a recording, so you could also record the output of other algorithms – for example, you could run a mixer and record the stereo mix-down.\n\nThe algorithm can also play back its recordings. It does so to the same bus channels as are chosen for recording.\n\nSince the module is fully DC-coupled, it can also record and play CVs.\n\nUp to 10 files can be recorded simultaneously, each mono or stereo. It goes without saying that the more files you record, and the larger the chosen bit depth, the more demands are placed on the MicroSD card. You would be advised to check your card performance before relying on the algorithm for any crucial recordings.",
   "categories": [
-    "Utility",
-    "Sampler"
+    "utility",
+    "audio effects"
   ],
+  "short_description": "Records audio to the MicroSD card",
   "specifications": [
     {
       "name": "Max files",
       "min": 1,
-      "max": 10,
-      "description": "The maximum number of simultaneous files to record."
+      "max": 10
     }
   ],
   "parameters": [
     {
-      "page": "Recording",
-      "params": [
-        {
-          "name": "Record",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Starts/stops recording.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Play",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Starts/stops playback.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Record lock",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "If on, changes to the Record parameter are ignored.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Play lock",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "If on, changes to the Play parameter are ignored.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Bit depth",
-          "min": 0,
-          "max": 2,
-          "default": 0,
-          "unit": null,
-          "description": "Chooses the bit depth for recording. The options are 16, 24, or 32 bit.",
-          "enum_values": [
-            "16 bit",
-            "24 bit",
-            "32 bit"
-          ]
-        },
-        {
-          "name": "Normalisation",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Sets the voltage that corresponds to full-scale in the recorded files. The options are 10V or 12V. Applies to both recording and playback.",
-          "enum_values": [
-            "10V",
-            "12V"
-          ]
-        },
-        {
-          "name": "Which recording",
-          "min": 0,
-          "max": 9999,
-          "default": 0,
-          "unit": null,
-          "description": "Selects the recording to play."
-        },
-        {
-          "name": "Gain",
-          "min": -40,
-          "max": 24,
-          "default": 0,
-          "unit": "dB",
-          "description": "Sets the playback level."
-        }
-      ]
+      "name": "Record",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true
     },
     {
-      "page": "Per-file",
-      "params": [
-        {
-          "name": "Enable",
-          "min": 0,
-          "max": 1,
-          "default": 0,
-          "unit": null,
-          "description": "Enables the file for recording and playback.",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        },
-        {
-          "name": "Left/mono input",
-          "min": 1,
-          "max": 28,
-          "default": 1,
-          "unit": null,
-          "description": "Sets the left or mono channel to record.",
-          "is_bus": true
-        },
-        {
-          "name": "Right input",
-          "min": 0,
-          "max": 28,
-          "default": 2,
-          "unit": null,
-          "description": "Sets the right channel to record. 0 = None.",
-          "is_bus": true
-        },
-        {
-          "name": "Playback",
-          "min": 0,
-          "max": 1,
-          "default": 1,
-          "unit": null,
-          "description": "Enables the file for playback. (Both 'Enable' and 'Playback' must be on for the file to be included in playback.)",
-          "enum_values": [
-            "Off",
-            "On"
-          ]
-        }
-      ]
+      "name": "Play",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true
+    },
+    {
+      "name": "Record lock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true
+    },
+    {
+      "name": "Play lock",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true
+    },
+    {
+      "name": "Bit depth",
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "enum",
+      "is_common": true,
+      "parameterNumber": 3
+    },
+    {
+      "name": "Normalisati<br>on",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "toggle",
+      "is_common": true,
+      "parameterNumber": 4
+    },
+    {
+      "name": "Which<br>recording",
+      "min": null,
+      "max": null,
+      "default": null,
+      "type": "string",
+      "is_common": false,
+      "parameterNumber": 5
+    },
+    {
+      "name": "Gain",
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "type": "scaled",
+      "is_common": true,
+      "parameterNumber": 6
     }
   ],
   "input_ports": [
     {
-      "name": "Left/mono input",
-      "busIdRef": "Left/mono input"
-    },
-    {
-      "name": "Right input",
-      "busIdRef": "Right input"
+      "name": "Input",
+      "description": "Input bus"
     }
   ],
   "output_ports": [
     {
-      "name": "Left/mono output",
-      "busIdRef": "Left/mono input"
-    },
-    {
-      "name": "Right output",
-      "busIdRef": "Right input"
+      "name": "Output",
+      "description": "Output bus"
     }
   ]
 }

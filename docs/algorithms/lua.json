@@ -1,0 +1,11 @@
+{
+  "guid": "lua ",
+  "name": "Lua Script",
+  "description": "This algorithm allows you to run what are effectively scripted “plug‑ins”, loaded from the MicroSD card. Such scripts are ideal for CV processing, especially for quirky little sequencers or generative things that are never going to be implemented as official algorithms because they’re so specific to your particular use case. Scripts are not intended for audio processing. If you want to implement custom DSP code, look at the Three Pot algorithm (below).",
+  "categories": [
+    "utility",
+    "CV processing",
+    "sequencing",
+    "randomization"
+  ]
+}

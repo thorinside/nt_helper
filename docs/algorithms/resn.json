@@ -1,488 +1,238 @@
 {
   "guid": "resn",
   "name": "Resonator",
+  "description": "This algorithm is an implementation of the open source Rings (https://github.com/pichenettes/eurorack/tree/master/rings) [97] module by Émilie Gillet. It can be played via MIDI or I2C, or simply via CV/gate as the original. Any demos or tutorials you may find online should apply just as well to this implementation. The user manual for the original module is here (https://pichenettes.github.io/mutable-instruments-documentation/modules/rings/manual/) [98]. The documentation below assumes some familiarity with this.",
   "categories": [
-    "Effect",
-    "Resonator"
+    "synthesis",
+    "audio effects",
+    "filtering",
+    "MIDI",
+    "CV processing"
   ],
-  "description": "An implementation of the open-source Rings module by Emilie Gillet. Can be played via MIDI, I2C, or CV/gate.",
+  "short_description": "\"It's Rings!\"",
   "specifications": [],
   "parameters": [
     {
       "name": "Mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 6,
-      "description": "Selects the resonator mode.",
-      "scope": "global",
       "min": 0,
       "max": 6,
-      "default": 0
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Synth effect",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 5,
-      "description": "Selects the audio effect applied if Mode is 'Synth'.",
-      "scope": "global",
       "min": 0,
       "max": 5,
-      "default": 0
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Polyphony",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 4,
-      "description": "Sets the number of simultaneous voices.",
-      "scope": "global"
+      "min": 1,
+      "max": 4,
+      "default": 1,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Coarse tune",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -36,
-      "maxValue": 24,
-      "description": "Coarse tuning control.",
-      "scope": "global",
       "min": -36,
       "max": 24,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": false
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Fine tuning control.",
-      "scope": "global",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_common": false
     },
     {
       "name": "Structure",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Controls the resonator 'structure'.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Brightness",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Controls the resonator 'brightness'.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Damping",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Controls the resonator 'damping'.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Position",
-      "unit": null,
-      "defaultValue": 64,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Controls the resonator 'position'.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 64
+      "default": 64,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Chord",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 10,
-      "description": "Chooses the chord for resonator modes that use one.",
-      "scope": "global",
       "min": 0,
       "max": 10,
-      "default": 0
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Noise gate",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Enables a noise gate on the audio input.",
-      "scope": "global"
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "type": "enum",
+      "is_common": true
     },
     {
       "name": "Input gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 12,
-      "description": "Gain applied to the input audio before the resonator.",
-      "scope": "global"
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "type": "string",
+      "is_common": false
     },
     {
       "name": "Strum input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for 'strum' trigger (0=None, internal strum).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "V/Oct input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for V/octave pitch CV (0=None).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Audio input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Input bus for audio exciter (0=None).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Brightness input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "CV input bus for 'brightness' (0=None).",
-      "scope": "global",
       "min": 0,
       "max": 28,
-      "default": 0
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Frequency input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "CV input bus for 'frequency' (0=None).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Damping input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "CV input bus for 'damping' (0=None).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Structure input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "CV input bus for 'structure' (0=None).",
-      "scope": "global",
       "min": 0,
       "max": 28,
-      "default": 0
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Position input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "CV input bus for 'position' (0=None).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Odd output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Output bus for the Odd output (0=None).",
-      "scope": "global",
       "min": 0,
       "max": 28,
-      "default": 13
+      "default": 13,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Odd output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Add/Replace mode for the Odd output.",
-      "scope": "global"
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Even output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Output bus for the Even output (0=None).",
-      "scope": "global"
+      "min": 0,
+      "max": 28,
+      "default": 13,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Even output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Add/Replace mode for the Even output.",
-      "scope": "global"
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "enum",
+      "is_common": false
     },
     {
       "name": "Output gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 12,
-      "description": "Output level for both Odd and Even outputs.",
-      "scope": "global"
+      "min": -40,
+      "max": 12,
+      "default": 0,
+      "type": "string",
+      "is_common": false
     },
     {
       "name": "Dry gain",
-      "unit": "dB",
-      "defaultValue": -40,
-      "minValue": -40,
-      "maxValue": 12,
-      "description": "Level of the dry input audio mixed into the output(s).",
-      "scope": "global"
-    },
-    {
-      "name": "MIDI mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "enumValues": [
-        "Off",
-        "Pitch",
-        "Strum",
-        "Pitch & strum"
-      ],
-      "description": "Controls MIDI note response.",
-      "scope": "global"
-    },
-    {
-      "name": "I2C mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "enumValues": [
-        "Off",
-        "Pitch",
-        "Strum",
-        "Pitch & strum"
-      ],
-      "description": "Controls I2C note response.",
-      "scope": "global"
-    },
-    {
-      "name": "MIDI channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 16,
-      "description": "MIDI channel to receive on (0=Omni).",
-      "scope": "global"
-    },
-    {
-      "name": "I2C channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 255,
-      "description": "I2C channel to receive on (0=Off).",
-      "scope": "global",
-      "min": 0,
-      "max": 255,
-      "default": 1
-    },
-    {
-      "name": "to the synth output. Polyphony",
-      "min": 1,
-      "max": 4,
-      "default": 1,
-      "description": "Sets the number of simultaneous voices.",
-      "scope": "routing"
-    },
-    {
-      "name": "use one. In the original, set from the Structure knob. Noise gate",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "Enables a noise gate on the audio input. Always"
-    },
-    {
-      "name": "enabled in the original Rings. Input gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 12,
-      "default": 0,
-      "description": "A gain applied to the input audio, before it hits the",
-      "scope": "routing"
-    },
-    {
-      "name": "-40 12 0 dB The output level (of both the Odd and Even outputs). Dry gain",
-      "unit": "dB",
       "min": -40,
       "max": 12,
       "default": -40,
-      "description": "The level of the input audio mixed into the",
-      "scope": "routing"
-    },
-    {
-      "name": "0 3 0 Controls the algorithm's response to MIDI. See below. I2C mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Controls the algorithm's response to I2C. See"
-    },
-    {
-      "name": "to the synth output. Polyphony",
-      "min": 1,
-      "max": 4,
-      "default": 1,
-      "description": "Sets the number of simultaneous voices.",
-      "scope": "routing"
-    },
-    {
-      "name": "use one. In the original, set from the Structure knob. Noise gate",
-      "min": 0,
-      "max": 1,
-      "default": 1,
-      "description": "Enables a noise gate on the audio input. Always"
-    },
-    {
-      "name": "enabled in the original Rings. Input gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 12,
-      "default": 0,
-      "description": "A gain applied to the input audio, before it hits the",
-      "scope": "routing"
-    },
-    {
-      "name": "-40 12 0 dB The output level (of both the Odd and Even outputs). Dry gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 12,
-      "default": -40,
-      "description": "The level of the input audio mixed into the",
-      "scope": "routing"
-    },
-    {
-      "name": "0 3 0 Controls the algorithm's response to MIDI. See below. I2C mode",
-      "min": 0,
-      "max": 3,
-      "default": 0,
-      "description": "Controls the algorithm's response to I2C. See"
+      "type": "string",
+      "is_common": false
     }
-  ],
-  "features": [
-    "feat_poly_params"
   ],
   "input_ports": [
     {
-      "id": "strum_in",
-      "name": "Strum Input",
-      "description": "Trigger input to strum the resonator.",
-      "busIdRef": "Strum input"
-    },
-    {
-      "id": "v_oct_in",
-      "name": "V/Oct Input",
-      "description": "V/octave pitch CV input.",
-      "busIdRef": "V/Oct input"
-    },
-    {
-      "id": "audio_in",
-      "name": "Audio Input",
-      "description": "Audio input to excite the resonator.",
-      "busIdRef": "Audio input"
-    },
-    {
-      "id": "brightness_cv",
-      "name": "Brightness CV",
-      "description": "CV input for brightness modulation.",
-      "busIdRef": "Brightness input"
-    },
-    {
-      "id": "frequency_cv",
-      "name": "Frequency CV",
-      "description": "CV input for frequency modulation.",
-      "busIdRef": "Frequency input"
-    },
-    {
-      "id": "damping_cv",
-      "name": "Damping CV",
-      "description": "CV input for damping modulation.",
-      "busIdRef": "Damping input"
-    },
-    {
-      "id": "structure_cv",
-      "name": "Structure CV",
-      "description": "CV input for structure modulation.",
-      "busIdRef": "Structure input"
-    },
-    {
-      "id": "position_cv",
-      "name": "Position CV",
-      "description": "CV input for position modulation.",
-      "busIdRef": "Position input"
+      "name": "Strum input",
+      "id": "1",
+      "description": "Chooses which input bus to use for 'strum'"
     }
   ],
   "output_ports": [
     {
-      "id": "out_odd",
-      "name": "Odd Output",
-      "description": "Audio output for odd harmonics.",
-      "busIdRef": "Odd output"
-    },
-    {
-      "id": "out_even",
-      "name": "Even Output",
-      "description": "Audio output for even harmonics.",
-      "busIdRef": "Even output"
+      "name": "Odd output",
+      "id": "1",
+      "description": "The bus to use for the Odd output."
     }
   ]
 }

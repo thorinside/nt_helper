@@ -1,269 +1,79 @@
 {
   "guid": "spin",
   "name": "Three Pot",
+  "description": "This algorithm allows you to run what are effectively DSP \"plug‑ins\", loaded from the MicroSD card. It was designed particularly to support programs written for the Spin Semiconductor (http://www.spinsemi.com/) FV-1 chip. The popular IC has ended up in numerous products including some Eurorack modules (e.g. the FX, Aid and the Timiszoara). Its popularity and the relative ease of developing for it has led to a large number of (generally open source) DSP programs being available, and this that the Three Pot algorithm was designed to leverage. The name \"Three Pot\" comes from the FV-1 hardware design – all it has are stereo inputs and outputs, and connections for three pots for user controls. Although the focus is on converted FV‑1 programs, the conversion works by translating the programs to C++ and then compiling them for the disting NT – so you can if you like actually write C++ directly and use this algorithm to run it on the module.",
   "categories": [
-    "Effect",
-    "Modulation",
-    "Reverb",
-    "Delay"
+    "audio effects",
+    "utility"
   ],
-  "description": "Runs DSP code (plug-ins) loaded from the MicroSD card, particularly designed for Spin Semiconductor FV-1 programs. Translates programs to C++ and compiles them for the Disting NT. Allows direct C++ coding as well. Uses the module's three pots for direct control, unique UI interaction.",
+  "short_description": "Runs DSP code from the SD card",
   "specifications": [
     {
       "name": "Code memory",
-      "unit": "512 byte multiples",
       "min": 1,
-      "max": 24,
-      "description": "The amount of code memory to assign to the algorithm."
+      "max": 24
+    },
+    {
+      "name": "Code memory",
+      "unit": "512 bytes"
     }
   ],
   "parameters": [
     {
       "name": "Program",
-      "unit": null,
       "min": 0,
       "max": 999,
       "default": 0,
-      "scope": "program",
-      "description": "Selects the program to run (.3pot file from SD card)."
+      "description": "Selects the program to run."
     },
     {
       "name": "Pot 1",
-      "unit": "%",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "program",
-      "description": "The first program 'pot' parameter."
+      "description": "The first program ‘pot’ parameter."
     },
     {
       "name": "Pot 2",
-      "unit": "%",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "program",
-      "description": "The second program 'pot' parameter."
+      "description": "The second program ‘pot’ parameter."
     },
     {
       "name": "Pot 3",
-      "unit": "%",
       "min": 0.0,
       "max": 100.0,
       "default": 50.0,
-      "scope": "program",
-      "description": "The third program 'pot' parameter."
+      "description": "The third program ‘pot’ parameter."
     },
     {
       "name": "Pre/post gain",
-      "unit": "dB",
       "min": -36,
       "max": 0,
       "default": -20,
-      "scope": "mix",
-      "description": "Sets gain adjustment applied before/after program DSP for headroom management."
+      "description": "Sets the gain adjustment applied before the program’s DSP code."
     },
     {
       "name": "Mix style",
-      "unit": "enum",
       "min": 0,
       "max": 2,
       "default": 0,
-      "values": [
-        "None",
-        "Wet/dry",
-        "Independent"
-      ],
-      "scope": "mix",
-      "description": "Chooses the dry/wet mix style."
-    },
-    {
-      "name": "Mix",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "scope": "mix",
-      "description": "Sets the mix if the style is 'Wet/dry'."
-    },
-    {
-      "name": "Dry gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": -40,
-      "scope": "mix",
-      "description": "Sets the dry gain if the mix style is 'Independent'."
-    },
-    {
-      "name": "Wet gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "scope": "mix",
-      "description": "Sets the wet gain if the mix style is 'Independent'."
-    },
-    {
-      "name": "Rate conversion",
-      "unit": "toggle",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "scope": "sample rate",
-      "description": "Enables sample rate conversion."
-    },
-    {
-      "name": "Sample rate",
-      "unit": "kHz",
-      "min": 8.0,
-      "max": 40.0,
-      "default": 32.0,
-      "scope": "sample rate",
-      "description": "The sample rate (in kHz) at which to run the program."
-    },
-    {
-      "name": "Left input",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 1,
-      "scope": "routing",
-      "description": "The left audio input bus."
-    },
-    {
-      "name": "Right input",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 2,
-      "scope": "routing",
-      "description": "The right audio input bus."
-    },
-    {
-      "name": "Left output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": "The left audio output bus."
-    },
-    {
-      "name": "Right output",
-      "unit": "bus",
-      "min": 1,
-      "max": 28,
-      "default": 14,
-      "scope": "routing",
-      "description": "The right audio output bus."
-    },
-    {
-      "name": "Output mode",
-      "unit": "enum",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "The standard Add/Replace mode selector."
-    },
-    {
-      "name": "Pot",
-      "min": 1,
-      "max": 0,
-      "default": 100,
-      "description": "50.0 % The first program 'pot' parameter."
-    },
-    {
-      "name": "Pot",
-      "min": 2,
-      "max": 0,
-      "default": 100,
-      "description": "50.0 % The second program 'pot' parameter."
-    },
-    {
-      "name": "Pot",
-      "min": 3,
-      "max": 0,
-      "default": 100,
-      "description": "50.0 % The third program 'pot' parameter."
-    },
-    {
-      "name": "-36 0 -20 dB Sets the gain adjustment applied before the program's DSP code. See above. Mix style",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Chooses the dry/wet mix style: 'None', 'Wet/dry', or"
-    },
-    {
-      "name": "'Independent'. Mix",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the mix if the style is 'Wet/dry'."
-    },
-    {
-      "name": "Pot",
-      "min": 1,
-      "max": 0,
-      "default": 100,
-      "description": "50.0 % The first program 'pot' parameter."
-    },
-    {
-      "name": "Pot",
-      "min": 2,
-      "max": 0,
-      "default": 100,
-      "description": "50.0 % The second program 'pot' parameter."
-    },
-    {
-      "name": "Pot",
-      "min": 3,
-      "max": 0,
-      "default": 100,
-      "description": "50.0 % The third program 'pot' parameter."
-    },
-    {
-      "name": "-36 0 -20 dB Sets the gain adjustment applied before the program's DSP code. See above. Mix style",
-      "min": 0,
-      "max": 2,
-      "default": 0,
-      "description": "Chooses the dry/wet mix style: 'None', 'Wet/dry', or"
-    },
-    {
-      "name": "'Independent'. Mix",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the mix if the style is 'Wet/dry'."
+      "description": "Chooses the dry/wet mix style: ‘None’, ‘Wet/dry’, or ‘Independent'"
     }
   ],
   "input_ports": [
     {
-      "name": "Audio (L/R)"
-    },
-    {
       "name": "Left input",
-      "busIdRef": "Left input"
-    },
-    {
-      "name": "Right input",
-      "busIdRef": "Right input"
+      "busIdRef": "1",
+      "isPerChannel": true
     }
   ],
   "output_ports": [
     {
-      "name": "Audio (L/R)"
-    },
-    {
-      "name": "Left output",
-      "busIdRef": "Left output"
+      "name": "Right output",
+      "busIdRef": "14",
+      "isPerChannel": true
     }
   ]
 }

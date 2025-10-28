@@ -1,218 +1,146 @@
 {
   "guid": "wfan",
   "name": "Waveform Animator",
+  "description": "This algorithm is version of the disting mk4 algorithm of the same name. You may like to watch the [video on that algorithm here](https://www.youtube.com/watch?v=htkdsLm0oa8) [117] . From the disting mk4 manual: \"This algorithm recreates a popular analogue circuit variously known as a waveform animator or wave multiplier. Such a circuit, when given (typically) a sawtooth waveform as input, uses a comparator to generate a square wave of suitable phase and pulsewidth such that when the square and saw waves are added together the result is a phase shifted saw waveform. This is usually done a number of times and the results added with the overall effect of turning the original, rather plain, waveform into a much richer one which to all intents and purposes is the same as if you'd started with a number of VCOs rather than just one, and so sounds \"fatter\". In combination with LFOs varying the comparator thresholds, very rich textures can be generated. Here, four comparators and four LFOs are used.\"",
   "categories": [
-    "LFO",
-    "Modulation"
+    "synthesis",
+    "logic",
+    "CV Processing"
   ],
-  "description": "Embiggens simple waveforms. Recreates a popular analogue wave multiplier circuit using comparators and LFOs to turn simple inputs (e.g., sawtooth) into richer, fatter sounds. Based on disting mk4 algorithm.",
+  "short_description": "Embiggens simple waveforms",
   "specifications": [],
   "parameters": [
     {
       "name": "Threshold",
-      "unit": "V",
       "min": -10.0,
       "max": 10.0,
       "default": 0.0,
-      "scope": "animate",
-      "description": "Sets the comparator threshold."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Track",
-      "unit": "toggle",
       "min": 0,
       "max": 1,
       "default": 1,
-      "scope": "animate",
-      "description": "Whether to track the input signal amplitude for square wave generation."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Amplitude",
-      "unit": "V",
       "min": 0.0,
       "max": 10.0,
       "default": 5.0,
-      "scope": "animate",
-      "description": "The square wave amplitude, if tracking is not being used."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Squares",
-      "unit": null,
       "min": 1,
       "max": 4,
       "default": 4,
-      "scope": "animate",
-      "description": "The number of square waves (comparators) to generate."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Separation",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 50,
-      "scope": "animate",
-      "description": "The spread of the actual comparator thresholds around the value set by 'Threshold'."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Mix",
-      "unit": "%",
       "min": -100,
       "max": 100,
       "default": 0,
-      "scope": "animate",
-      "description": "Output mix (-100% = input only, 0% = full input & squares, 100% = squares only)."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "LFO rate",
-      "unit": "scaled",
       "min": 0,
       "max": 1000,
       "default": 699,
-      "scope": "animate",
-      "description": "The LFO rate, scaled exponentially from 0.2Hz to 20Hz."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
       "name": "LFO depth",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 10,
-      "scope": "animate",
-      "description": "The LFO depth modulating comparator thresholds."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
       "name": "Input",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 1,
-      "scope": "routing",
-      "description": "The first input bus to process."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 9
     },
     {
       "name": "Width",
-      "unit": null,
       "min": 1,
       "max": 8,
       "default": 1,
-      "scope": "routing",
-      "description": "The number of busses to process, starting from the Input (e.g., 2 for stereo)."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 10
     },
     {
       "name": "Output",
-      "unit": "bus",
       "min": 1,
       "max": 28,
       "default": 13,
-      "scope": "routing",
-      "description": "The first output bus."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 11
     },
     {
       "name": "Output mode",
-      "unit": "enum",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "The standard Add/Replace mode selector."
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 12
     },
     {
       "name": "Threshold input",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "routing",
-      "description": "The CV input bus for the comparator threshold."
-    },
-    {
-      "name": "around the value set by 'Threshold'. Mix",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "The output mix, from -100% (only the input signal)"
-    },
-    {
-      "name": "to 100% (only the squares). At 0% both the input and squares are at full amplitude. LFO rate",
-      "min": 0,
-      "max": 1000,
-      "default": 699,
-      "description": "The LFO rate, scaled exponentially from 0.2Hz to",
-      "scope": "routing"
-    },
-    {
-      "name": "20Hz. LFO depth",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "description": "The LFO depth."
-    },
-    {
-      "name": "Input. For example, for a stereo signal, set this to 2. Output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "description": "The first output bus.",
-      "scope": "routing"
-    },
-    {
-      "name": "around the value set by 'Threshold'. Mix",
-      "unit": "%",
-      "min": -100,
-      "max": 100,
-      "default": 0,
-      "description": "The output mix, from -100% (only the input signal)"
-    },
-    {
-      "name": "to 100% (only the squares). At 0% both the input and squares are at full amplitude. LFO rate",
-      "min": 0,
-      "max": 1000,
-      "default": 699,
-      "description": "The LFO rate, scaled exponentially from 0.2Hz to",
-      "scope": "routing"
-    },
-    {
-      "name": "20Hz. LFO depth",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "description": "The LFO depth."
-    },
-    {
-      "name": "Input. For example, for a stereo signal, set this to 2. Output",
-      "min": 1,
-      "max": 28,
-      "default": 13,
-      "description": "The first output bus.",
-      "scope": "routing"
+      "type": "string",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 13
     }
   ],
-  "input_ports": [
-    {
-      "name": "Audio/CV"
-    },
-    {
-      "name": "CV (Threshold)"
-    },
-    {
-      "name": "Input",
-      "busIdRef": "Input"
-    }
-  ],
-  "output_ports": [
-    {
-      "name": "Audio/CV"
-    },
-    {
-      "name": "Output",
-      "busIdRef": "Output"
-    }
-  ]
+  "input_ports": [],
+  "output_ports": []
 }

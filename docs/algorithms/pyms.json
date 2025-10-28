@@ -1,384 +1,198 @@
 {
   "guid": "pyms",
-  "name": "Poly Multisample",
+  "name": "Poly Multisample (legacy)",
+  "description": "This algorithm is inspired by the original “SD Multisample” algorithm on the disting EX. It is a polyphonic, multitimbral, sample playback instrument, playing WAV files from the MicroSD card. It can be played via CV/gate, MIDI, or I2C. It supports both velocity switches and round robins per sample.\nPlease refer to the section “Common polysynth features” above, and to the section on samples on the MicroSD card, also above.\nThis algorithm was the “Poly Multisample” up until firmware version 1.10, in which it was replaced by the current “Poly Multisample”, which allows audio recording.",
   "categories": [
-    "Sampler",
-    "Polysynth"
+    "polyphonic",
+    "sampling",
+    "CV processing",
+    "MIDI"
   ],
-  "description": "A polyphonic, multitimbral sample playback instrument based on the disting EX algorithm. Supports velocity switches and round robins. Can be controlled via CV/Gate, MIDI, or I2C.",
+  "short_description": "A polyphonic sample player",
   "specifications": [
     {
       "name": "Timbres",
-      "value": {
-        "minValue": 1,
-        "maxValue": 4,
-        "defaultValue": 1
-      },
-      "description": "The number of distinct sample sets (timbres) that can be loaded and assigned."
+      "min": 1,
+      "max": 4
     },
     {
       "name": "Voices",
-      "value": {
-        "minValue": 1,
-        "maxValue": 16,
-        "defaultValue": 1
-      },
-      "description": "The number of simultaneous voices shared across all timbres."
+      "min": 1,
+      "max": 16
     }
   ],
   "parameters": [
     {
       "name": "Global gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "Overall gain applied to all timbres.",
-      "scope": "global"
+      "min": -40,
+      "max": 6,
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Sustain mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Sustain",
-        "Sostenuto"
-      ],
-      "description": "Standard polysynth sustain mode.",
-      "scope": "global"
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Gate offset",
-      "unit": "ms",
-      "defaultValue": 0.2,
-      "minValue": 0.0,
-      "maxValue": 10.0,
-      "description": "Delays gate inputs relative to pitch inputs (useful for CV settle time).",
-      "scope": "global"
+      "min": 0.0,
+      "max": 10.0,
+      "default": 0.2,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Round robin mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 3,
-      "description": "Round-robin mode for sample selection.",
-      "scope": "global"
+      "min": 0,
+      "max": 3,
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Folder",
-      "unit": null,
-      "description": "Sample folder selection.",
-      "scope": "timbre",
-      "type": "folder"
+      "min": 1,
+      "max": null,
+      "default": 1,
+      "type": "toggle",
+      "is_common": false,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Gain",
-      "unit": "dB",
-      "defaultValue": 0,
-      "minValue": -40,
-      "maxValue": 24,
-      "description": "Output level for the timbre.",
-      "scope": "timbre"
+      "min": -40,
+      "max": 24,
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "Pan",
-      "unit": "%",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Stereo pan position for the timbre.",
-      "scope": "timbre",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
       "name": "Transpose",
-      "unit": "ST",
-      "defaultValue": 0,
-      "minValue": -60,
-      "maxValue": 60,
-      "description": "Coarse tuning for the timbre.",
-      "scope": "timbre",
       "min": -60,
       "max": 60,
-      "default": 0
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
       "name": "Fine tune",
-      "unit": "cents",
-      "defaultValue": 0,
-      "minValue": -100,
-      "maxValue": 100,
-      "description": "Fine tuning for the timbre.",
-      "scope": "timbre",
       "min": -100,
       "max": 100,
-      "default": 0
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 9
     },
     {
       "name": "Envelope",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Enables ADSR volume envelope for the timbre (0=Off, 1=On). If off, sample plays fully.",
-      "scope": "timbre",
       "min": 0,
       "max": 1,
-      "default": 0
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 10
     },
     {
       "name": "Attack",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Envelope attack time (1ms-15s, exp).",
-      "scope": "timbre"
+      "min": 0,
+      "max": 127,
+      "default": 0,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 11
     },
     {
       "name": "Decay",
-      "unit": null,
-      "defaultValue": 60,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Envelope decay time (20ms-15s, exp).",
-      "scope": "timbre"
+      "min": 0,
+      "max": 127,
+      "default": 60,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 12
     },
     {
       "name": "Sustain",
-      "unit": "%",
-      "defaultValue": 100,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Envelope sustain level.",
-      "scope": "timbre"
+      "min": 0,
+      "max": 100,
+      "default": 100,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 13
     },
     {
       "name": "Release",
-      "unit": null,
-      "defaultValue": 77,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Envelope release time (10ms-30s, exp).",
-      "scope": "timbre",
       "min": 0,
       "max": 127,
-      "default": 77
+      "default": 77,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 14
     },
     {
       "name": "Velocity",
-      "unit": "%",
-      "defaultValue": 100,
-      "minValue": 0,
-      "maxValue": 100,
-      "description": "Amount velocity affects volume.",
-      "scope": "timbre",
       "min": 0,
       "max": 100,
-      "default": 100
+      "default": 100,
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 15
     },
     {
       "name": "Sustain",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "description": "Direct sustain control (like MIDI pedal).",
-      "scope": "timbre"
-    },
-    {
-      "name": "Left/mono output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "Left or mono output bus for the timbre.",
-      "scope": "timbre",
-      "min": 1,
-      "max": 28,
-      "default": 13
-    },
-    {
-      "name": "Right output",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "description": "Right output bus for the timbre (0=None).",
-      "scope": "timbre",
-      "min": 0,
-      "max": 28,
-      "default": 0
-    },
-    {
-      "name": "MIDI channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 16,
-      "description": "MIDI channel for the timbre (0=Omni).",
-      "scope": "timbre",
-      "min": 0,
-      "max": 16,
-      "default": 1
-    },
-    {
-      "name": "MPE channels",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 16,
-      "description": "MPE response mode for the timbre.",
-      "scope": "timbre"
-    },
-    {
-      "name": "I2C channel",
-      "unit": null,
-      "defaultValue": 1,
-      "minValue": 0,
-      "maxValue": 255,
-      "description": "I2C channel for the timbre (0=Off).",
-      "scope": "timbre"
-    },
-    {
-      "name": "Bend range",
-      "unit": "ST",
-      "defaultValue": 2,
-      "minValue": 0,
-      "maxValue": 48,
-      "description": "MIDI pitch bend range for the timbre.",
-      "scope": "timbre",
-      "min": 0,
-      "max": 48,
-      "default": 2
-    },
-    {
-      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Gate offset",
-      "unit": "ms",
-      "min": 0,
-      "max": 10,
-      "default": 0.2,
-      "description": "Offsets (delays) the gate inputs relative to the pitch"
-    },
-    {
-      "name": "Folder 1 1 Sets the sample folder to use. Gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "description": "Sets the output level."
-    },
-    {
-      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "Sets the envelope attack time (from 1ms to 15s,"
-    },
-    {
-      "name": "exponential response). Decay",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "description": "Sets the envelope decay time (from 20ms to 15s,"
-    },
-    {
-      "name": "exponential response). Sustain",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the envelope sustain level."
-    },
-    {
-      "name": "exponential response). Velocity",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the amount by which the note velocity affects"
-    },
-    {
-      "name": "the note volume. Sustain",
       "min": 0,
       "max": 1,
       "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Gate offset",
-      "unit": "ms",
-      "min": 0,
-      "max": 10,
-      "default": 0.2,
-      "description": "Offsets (delays) the gate inputs relative to the pitch"
-    },
-    {
-      "name": "Folder 1 1 Sets the sample folder to use. Gain",
-      "unit": "dB",
-      "min": -40,
-      "max": 24,
-      "default": 0,
-      "description": "Sets the output level."
-    },
-    {
-      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
-      "min": 0,
-      "max": 127,
-      "default": 0,
-      "description": "Sets the envelope attack time (from 1ms to 15s,"
-    },
-    {
-      "name": "exponential response). Decay",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "description": "Sets the envelope decay time (from 20ms to 15s,"
-    },
-    {
-      "name": "exponential response). Sustain",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the envelope sustain level."
-    },
-    {
-      "name": "the note volume. Sustain",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "1 16 1 Controls how the algorithm will respond to MPE. See above. I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 1,
-      "description": "Sets the I2C channel."
+      "type": "bus",
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 16
     }
   ],
-  "features": [
-    "feat_poly_params"
+  "input_ports": [
+    {
+      "name": "CV",
+      "description": "CV input"
+    }
   ],
-  "input_ports": [],
   "output_ports": [
     {
-      "id": "out_l_mono",
-      "name": "Left/Mono Output",
-      "description": "Audio output for the timbre (Left or Mono).",
-      "busIdRef": "Left/mono output"
-    },
-    {
-      "id": "out_r",
-      "name": "Right Output",
-      "description": "Audio output for the timbre (Right, if stereo).",
-      "busIdRef": "Right output"
+      "name": "Output",
+      "description": "Output"
     }
   ]
 }

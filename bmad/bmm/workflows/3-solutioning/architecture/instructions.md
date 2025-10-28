@@ -8,7 +8,7 @@
 <critical>The goal is ARCHITECTURAL DECISIONS that prevent AI agent conflicts, not detailed implementation specs</critical>
 <critical>Communicate all responses in {communication_language} and tailor to {user_skill_level}</critical>
 <critical>Generate all documents in {document_output_language}</critical>
-<critical>This workflow replaces solution-architecture with a conversation-driven approach</critical>
+<critical>This workflow replaces architecture with a conversation-driven approach</critical>
 
 <step n="0" goal="Validate workflow and extract project configuration">
 
@@ -668,10 +668,8 @@ Enforcement: "All agents MUST follow this pattern"
   <check if="success == true">
     <output>✅ Decision Architecture workflow complete!
 
-    Status updated. Next steps:
-    - Review the architecture.md document
-    - {{next_workflow_suggestion}} ({{next_agent}} agent)
-    </output>
+Status updated.
+</output>
 
   </check>
 
@@ -686,6 +684,13 @@ Enforcement: "All agents MUST follow this pattern"
   {{/if_starter_template}}
 
 The architecture is ready to guide AI agents through consistent implementation.
+
+**Next Steps:**
+
+- **Next required:** {{next_workflow}} ({{next_agent}} agent)
+- Review the architecture.md document before proceeding
+
+Check status anytime with: `workflow-status`
 </output>
 
 <template-output>completion_summary</template-output>

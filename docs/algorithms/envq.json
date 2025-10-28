@@ -1,81 +1,64 @@
 {
   "guid": "envq",
   "name": "Envelope (DAHDSR)",
+  "description": "This algorithm is based on the disting EX “Quad Envelope” algorithm. You may like to review the [video on that algorithm, which is here](https://www.youtube.com/watch?v=PIRCsGBi8Es) [67] . It is a complex (DAHDSR) envelope generator. Various trigger modes include gated, triggered (oneshot) and looping. The envelopes can be synced to clocks (analogue pulses, or MIDI).",
   "categories": [
-    "Envelope",
-    "Modulation"
+    "CV Processing",
+    "Utility",
+    "Triggers",
+    "Clocking"
   ],
-  "description": "Complex DAHDSR envelope generator with multiple trigger modes, clock sync, and shared shapes across channels.",
+  "short_description": "A versatile envelope generator",
   "specifications": [
     {
       "name": "Channels",
-      "value": {
-        "minValue": 1,
-        "maxValue": 8,
-        "defaultValue": 1
-      },
-      "description": "Number of envelopes to generate."
+      "min": 1,
+      "max": 8
     },
     {
       "name": "Shapes",
-      "value": {
-        "minValue": 1,
-        "maxValue": 8,
-        "defaultValue": 1
-      },
-      "description": "Number of envelope shapes shared across channels."
+      "min": 1,
+      "max": 8
     }
   ],
   "parameters": [
     {
-      "name": "Trigger input",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 1,
-      "scope": "channel",
-      "description": "Trigger input bus for the envelope (0=None)."
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 15,
-      "scope": "channel",
-      "description": "Envelope output bus (0=None)."
-    },
-    {
-      "name": "Output mode",
-      "unit": "enum",
+      "name": "Enable",
       "min": 0,
       "max": 1,
       "default": 0,
-      "values": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "channel",
-      "description": "Add/Replace mode for the output bus."
+      "description": "Enables the envelope."
     },
     {
-      "name": "Clock input",
-      "unit": "bus",
+      "name": "Shape",
+      "min": 1,
+      "max": 8,
+      "default": 1,
+      "description": "Chooses the shape used by the envelope generator."
+    },
+    {
+      "name": "Trigger<br>mode",
       "min": 0,
-      "max": 28,
+      "max": 5,
       "default": 0,
-      "scope": "routing",
-      "description": ""
+      "description": "See ‘Trigger modes’, below."
     },
     {
       "name": "Clock mode",
       "min": 0,
       "max": 3,
       "default": 0,
-      "description": "See 'Clock modes', below."
+      "description": "See ‘Clock modes’, below."
     },
     {
-      "name": "MIDI divisor",
+      "name": "Clock<br>source",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "description": "The clock source, one of ‘Input’ or ‘MIDI’."
+    },
+    {
+      "name": "MIDI<br>divisor",
       "min": 0,
       "max": 19,
       "default": 4,
@@ -83,122 +66,75 @@
     },
     {
       "name": "Scale",
-      "unit": "V",
-      "min": -10,
-      "max": 10,
-      "default": 8,
+      "min": -10.0,
+      "max": 10.0,
+      "default": 8.0,
       "description": "The magnitude of the output envelope."
     },
     {
       "name": "Offset",
-      "unit": "V",
-      "min": -10,
-      "max": 10,
-      "default": 0,
+      "min": -10.0,
+      "max": 10.0,
+      "default": 0.0,
       "description": "The offset (starting/ending value) of the envelope."
     },
     {
       "name": "Vel -> scale",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 100,
-      "description": "The amount by which the trigger velocity affects the"
+      "description": "The amount by which the trigger velocity affects the<br>envelope scale."
     },
     {
-      "name": "Trigger input 0 28 The bus to use for the envelope's trigger input. Clock input",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the envelope's clock input.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above, for the envelope's end of cycle output. Active output",
-      "min": 0,
-      "max": 28,
-      "default": 0,
-      "description": "The bus to use for the envelope's active output.",
-      "scope": "routing"
-    },
-    {
-      "name": "0 16 0 The MIDI channel on which notes can trigger the envelope. I2C channel",
-      "min": 0,
-      "max": 255,
-      "default": 0,
-      "description": "The I2C channel on which notes can trigger the"
-    },
-    {
-      "name": "Delay",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 0,
-      "description": "Sets the delay time. In milliseconds, multiplied by"
-    },
-    {
-      "name": "the Range parameter. Attack",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 500,
-      "description": "Sets the attack time."
-    },
-    {
-      "name": "Hold",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 0,
-      "description": "Sets the hold time."
-    },
-    {
-      "name": "Decay",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 500,
-      "description": "Sets the decay time."
-    },
-    {
-      "name": "Sustain",
-      "unit": "%",
+      "name": "Vel -><br>attack",
       "min": -100,
       "max": 100,
       "default": 0,
-      "description": "Sets the sustain level."
-    },
-    {
-      "name": "Release",
-      "unit": "ms",
-      "min": 0,
-      "max": 1000,
-      "default": 500,
-      "description": "Sets the release time."
-    },
-    {
-      "name": "0 127 64 Sets the decay and release curve shapes. Low values are more exponential; high values more linear. Range",
-      "min": 0,
-      "max": 4,
-      "default": 2,
-      "description": "The time range (multiplier), from 'x 0.01' to 'x 100'."
+      "description": "The amount by which the trigger velocity affects the<br>envelope attack time."
     }
   ],
-  "features": [],
   "input_ports": [
     {
-      "name": "Trigger input",
-      "busIdRef": "Trigger input"
+      "name": "Trigger<br>input",
+      "busIdRef": "0",
+      "isPerChannel": true
     },
     {
       "name": "Clock input",
-      "busIdRef": "Clock input"
+      "busIdRef": "0",
+      "isPerChannel": true
+    },
+    {
+      "name": "Output",
+      "busIdRef": "0",
+      "isPerChannel": true
+    },
+    {
+      "name": "Output<br>mode",
+      "busIdRef": "0",
+      "isPerChannel": true
     }
   ],
   "output_ports": [
     {
-      "name": "Output",
-      "busIdRef": "Output"
+      "name": "End of<br>cycle<br>output",
+      "busIdRef": "0",
+      "isPerChannel": true
+    },
+    {
+      "name": "End of<br>cycle mode",
+      "busIdRef": "0",
+      "isPerChannel": true
+    },
+    {
+      "name": "Active<br>output",
+      "busIdRef": "0",
+      "isPerChannel": true
+    },
+    {
+      "name": "Active<br>mode",
+      "busIdRef": "0",
+      "isPerChannel": true
     }
   ]
 }

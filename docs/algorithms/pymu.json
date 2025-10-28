@@ -1,181 +1,162 @@
 {
   "guid": "pymu",
   "name": "Poly Multisample",
+  "description": "This algorithm is inspired by the original “SD Multisample” algorithm on the disting EX, with hints of the Crossfade Loop Synth (https://www.expert-sleepers.co.uk/xfadelooper.html) [91] VST plug-in, and the “Audio Playback with Crossfade” algorithm on the disting mk4 (video here https://www.youtube.com/watch?v=x3bmglh36mE) [92]. It is a polyphonic sample playback instrument, playing WAV files from the MicroSD card. It can also record audio (i.e., sample in the traditional sense) and play that. It can apply crossfade looping to make smooth looping pads out of any sample material. It can be played via CV/gate, MIDI, or I2C. It supports both velocity switches and round robins per sample.",
   "categories": [
-    "Sampler",
-    "Polyphonic"
+    "sampling",
+    "polyphonic",
+    "mixing",
+    "CV processing",
+    "MIDI"
   ],
-  "description": "Polyphonic sample player (records and plays WAV files), controllable via CV/gate, MIDI, or I2C.",
+  "short_description": "A polyphonic sample player",
   "specifications": [
     {
       "name": "Voices",
-      "value": {
-        "minValue": 1,
-        "maxValue": 16,
-        "defaultValue": 8
-      },
-      "description": "Number of simultaneous voices."
+      "min": 1,
+      "max": 16
     },
     {
       "name": "Record time",
-      "unit": "s",
-      "value": {
-        "minValue": 0,
-        "maxValue": 60,
-        "defaultValue": 0
-      },
-      "description": "Maximum audio length for recording."
+      "min": 0,
+      "max": 60
     }
   ],
   "parameters": [
     {
-      "name": "Left/mono output",
-      "unit": "bus",
+      "name": "Folder",
       "min": 0,
-      "max": 28,
-      "default": 13,
-      "scope": "routing",
-      "description": "Left or mono output bus (0=None)."
+      "max": 0,
+      "default": "0",
+      "description": "Sets the sample folder to use."
     },
     {
-      "name": "Right output",
-      "unit": "bus",
-      "min": 0,
-      "max": 28,
-      "default": 14,
-      "scope": "routing",
-      "description": "Right output bus for stereo (0=None)."
+      "name": "Sample",
+      "min": -1,
+      "max": -1,
+      "default": "-1",
+      "description": "Allows you to choose a single sample within the<br>folder to play, or \"<MULTISAMPLE>\" for the usual case where you want the algorithm to choose\nthe sample automatically based on the note pitch."
     },
     {
-      "name": "Sample -1 -1 Allows you to choose a single sample within the folder to play, or \"<MULTISAMPLE>\" for the usual case where you want the algorithm to choose the sample automatically based on the note pitch. Gain",
-      "unit": "dB",
+      "name": "Gain",
       "min": -40,
       "max": 24,
-      "default": 0,
+      "default": "0",
       "description": "Sets the output level."
     },
     {
       "name": "Pan",
-      "unit": "%",
       "min": -100,
       "max": 100,
-      "default": 0,
+      "default": "0",
       "description": "Sets the stereo pan position."
     },
     {
       "name": "Transpose",
-      "unit": "ST",
       "min": -60,
       "max": 60,
-      "default": 0,
+      "default": "0",
       "description": "Adjusts the tuning in semitones."
     },
     {
       "name": "Fine tune",
       "min": -100,
       "max": 100,
-      "default": 0,
-      "description": "cents Adjusts the tuning in cents."
+      "default": "0",
+      "description": "Adjusts the tuning in cents."
     },
     {
-      "name": "0 1 0 The standard polysynth sustain mode parameter. See above. Sustain",
-      "min": 0,
-      "max": 1,
-      "default": 0,
-      "description": "Directly controls the sustain (like a MIDI sustain"
-    },
-    {
-      "name": "pedal). Gate offset",
-      "unit": "ms",
-      "min": 0,
-      "max": 10,
-      "default": 0.2,
-      "description": "Offsets (delays) the gate inputs relative to the pitch"
-    },
-    {
-      "name": "0 3 0 The round-robin mode. See above. Loop",
+      "name": "Crossfade",
       "min": 0,
       "max": 2,
-      "default": 0,
-      "description": "Sets whether the sample will loop. 'From WAV file'"
+      "default": "0",
+      "description": "Sets the crossfade looping mode: Off, Forwards, or\nAlternating."
     },
     {
-      "name": "will loop if the sample has loop points defined in the file - see above - and not otherwise. 'Off' and 'On' force the sample to loop or not. Bend range",
-      "unit": "ST",
+      "name": "Crossfade",
+      "min": 0.1,
+      "max": 100.0,
+      "default": "50.0",
+      "description": "Sets the length of the crossfade, as a percentage of\nthe loop time (the difference between the loop point and end trim point)."
+    },
+    {
+      "name": "Loop point coarse",
+      "min": 0.0,
+      "max": 100.0,
+      "default": "0.0",
+      "description": "Sets the loop point, as a percentage of the sample\nlength."
+    },
+    {
+      "name": "Loop point fine",
+      "min": -500,
+      "max": 500,
+      "default": "0",
+      "description": "Adjusts the loop point, in sample frames."
+    },
+    {
+      "name": "Sustain mode",
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "description": "The standard polysynth sustain mode parameter. See above."
+    },
+    {
+      "name": "Sustain",
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "description": "Directly controls the sustain (like a MIDI sustain pedal)."
+    },
+    {
+      "name": "Gate offset",
+      "min": 0.0,
+      "max": 10.0,
+      "default": "0.2",
+      "description": "Offsets (delays) the gate inputs relative to the pitch\ninputs."
+    },
+    {
+      "name": "Round robin mode",
+      "min": 0,
+      "max": 3,
+      "default": "0",
+      "description": "The round-robin mode. See above."
+    },
+    {
+      "name": "Loop",
+      "min": 0,
+      "max": 2,
+      "default": "0",
+      "description": "Sets whether the sample will loop. ‘From WAV file’<br>will loop if the sample has loop points defined in the<br>file – see above – and not otherwise. ‘Off’ and ‘On’<br>force the sample to loop or not."
+    },
+    {
+      "name": "Bend range",
       "min": 0,
       "max": 48,
-      "default": 2,
+      "default": "2",
       "description": "The MIDI pitch bend range."
     },
     {
       "name": "Confirm change",
       "min": 0,
       "max": 3,
-      "default": 0,
-      "description": "Sets whether the folder and/or sample changes"
+      "default": "0",
+      "description": "Sets whether the folder and/or sample changes\nimmediately or requires confirmation."
     },
     {
       "name": "Envelope",
       "min": 0,
       "max": 1,
-      "default": 0,
-      "description": "Enables an ADSR volume envelope. If the"
+      "default": "0",
+      "description": "Enables an ADSR volume envelope. If the\nenvelope is disabled, the sample simply plays once\nuntil the end."
     },
     {
-      "name": "envelope is disabled, the sample simply plays once until the end. Attack",
+      "name": "Attack",
       "min": 0,
       "max": 127,
-      "default": 0,
-      "description": "Sets the envelope attack time (from 1ms to 15s,"
-    },
-    {
-      "name": "exponential response). Decay",
-      "min": 0,
-      "max": 127,
-      "default": 60,
-      "description": "Sets the envelope decay time (from 20ms to 15s,"
-    },
-    {
-      "name": "exponential response). Sustain",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the envelope sustain level."
-    },
-    {
-      "name": "Release",
-      "min": 0,
-      "max": 127,
-      "default": 77,
-      "description": "Sets the envelope release time (from 10ms to 30s,"
-    },
-    {
-      "name": "exponential response). Velocity",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 100,
-      "description": "Sets the amount by which the note velocity affects"
-    },
-    {
-      "name": "MPE channels",
-      "min": 1,
-      "max": 16,
-      "default": 1,
-      "description": "Controls how the algorithm will respond to MPE."
+      "default": "0",
+      "description": "Sets the envelope attack time (from 1ms to 15s,<exponential response)."
     }
   ],
-  "features": [],
   "input_ports": [],
-  "output_ports": [
-    {
-      "name": "Left/Mono Output",
-      "busIdRef": "Left/mono output"
-    },
-    {
-      "name": "Right Output",
-      "busIdRef": "Right output"
-    }
-  ]
+  "output_ports": []
 }

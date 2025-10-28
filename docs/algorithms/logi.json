@@ -1,143 +1,102 @@
 {
   "guid": "logi",
   "name": "Logic",
+  "description": "This algorithm is based on the disting mk4 algorithm of the same name. You may like to review the [video on that algorithm, which is here. It also includes comparator functions, thus fulfilling the role of](https://www.youtube.com/watch?v=xmPFQmb91uI) [the disting mk4 Comparator algorithm, the video for which is here](https://www.youtube.com/watch?v=Ttp7RCtofg0) [76] . Each channel of the algorithm is independent and performs logical operations on its X & Y inputs. The following operations are available: |‘Operation’ value|Operation|---|---|0|AND|1|OR|2|XOR|3|NAND|4|NOR|5|XNOR|6|SR flip-flop|7|D flip-flop|8|> (greater than)|9|< (less than)| The SR flip-flop is set high by a rising edge on input X, and cleared low by a rising edge on input Y. The D flip-flop takes the level of input X on a rising edge on input Y. The global parameters set the threshold and hysteresis of the input comparators which generate logical signals from arbitrary CVs (for an explanation of hysteresis see here](http://en.wikipedia.org/wiki/Hysteresis#Electronic_circuits) [77] ). Complex logical operations can be constructed by combining operations. The inputs of each channel can be set to the outputs of other channels, allowing you to chain them internally to the algorithm. 76 https://www.youtube.com/watch?v=Ttp7RCtofg0 77 http://en.wikipedia.org/wiki/Hysteresis#Electronic_circuits Page 167",
   "categories": [
-    "Logic",
-    "Utility",
-    "Digital"
+    "logic"
   ],
-  "description": "Performs logical operations (AND, OR, XOR, NAND, NOR, XNOR, SR flip-flop, D flip-flop) on pairs of inputs. Each channel operates independently with configurable input thresholds and hysteresis.",
+  "short_description": "Performs various logical operations",
   "specifications": [
     {
       "name": "Channels",
-      "unit": null,
-      "defaultValue": null,
-      "minValue": 1,
-      "maxValue": 8,
-      "description": "The number of channels to process."
+      "min": 1,
+      "max": 8
     }
   ],
   "parameters": [
     {
-      "name": "Threshold",
-      "unit": "V",
-      "defaultValue": 1.0,
-      "minValue": 0.0,
-      "maxValue": 10.0,
-      "scope": "global",
-      "description": "Sets the input threshold. Signals above this voltage are treated as a logic '1'/true."
-    },
-    {
-      "name": "Hysteresis",
-      "unit": "V",
-      "defaultValue": 0.5,
-      "minValue": 0.0,
-      "maxValue": 10.0,
-      "scope": "global",
-      "description": "Sets the input hysteresis. Once over the threshold, signals must fall by this amount before being treated as a logic '0'/false."
-    },
-    {
-      "name": "Output true",
-      "unit": "V",
-      "defaultValue": 5.0,
-      "minValue": -10.0,
-      "maxValue": 10.0,
-      "scope": "global",
-      "description": "The output voltage for logic '1'/true. Logic '0'/false is always output as 0V."
-    },
-    {
       "name": "Enable",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Off",
-        "On"
-      ],
-      "scope": "channel",
-      "description": "Enables the channel."
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "enum",
+      "is_per_channel": true
     },
     {
       "name": "Operation",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 7,
-      "enumValues": [
-        "AND",
-        "OR",
-        "XOR",
-        "NAND",
-        "NOR",
-        "XNOR",
-        "SR flip-flop",
-        "D flip-flop"
-      ],
-      "scope": "channel",
-      "description": "Selects the logical operation from the table above."
+      "min": 0,
+      "max": 9,
+      "default": "0",
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Invert X",
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Invert Y",
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "enum",
+      "is_per_channel": true
+    },
+    {
+      "name": "Invert output",
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "enum",
+      "is_per_channel": true
     },
     {
       "name": "Input X",
-      "unit": "bus",
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "routing",
-      "description": "Chooses the X input bus for the operation."
+      "min": 1,
+      "max": 1,
+      "default": "1",
+      "type": "enum",
+      "is_per_channel": true
     },
     {
       "name": "Input Y",
-      "unit": "bus",
-      "defaultValue": 2,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "routing",
-      "description": "Chooses the Y input bus for the operation."
+      "min": 1,
+      "max": 2,
+      "default": "2",
+      "type": "enum",
+      "is_per_channel": true
     },
     {
       "name": "Output",
-      "unit": "bus",
-      "defaultValue": 15,
-      "minValue": 1,
-      "maxValue": 28,
-      "scope": "routing",
-      "description": "Chooses the output bus."
+      "min": 0,
+      "max": 28,
+      "default": "15",
+      "type": "enum",
+      "is_per_channel": true
     },
     {
       "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "scope": "routing",
-      "description": "The standard Add/Replace mode selector as described above."
+      "min": 0,
+      "max": 1,
+      "default": "0",
+      "type": "enum",
+      "is_per_channel": true
     }
   ],
   "input_ports": [
     {
-      "id": "input_x",
-      "name": "Input X",
-      "description": "First logic input (X).",
-      "busIdRef": "Input X"
-    },
-    {
-      "id": "input_y",
-      "name": "Input Y",
-      "description": "Second logic input (Y).",
-      "busIdRef": "Input Y"
+      "name": "X",
+      "description": "Input X"
     }
   ],
   "output_ports": [
     {
-      "id": "output",
       "name": "Output",
-      "description": "Logic function result.",
-      "busIdRef": "Output"
+      "description": "Output"
     }
   ]
 }

@@ -1,132 +1,146 @@
 {
   "guid": "samc",
   "name": "Sample Player (Clocked)",
+  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here https://www.youtube.com/watch?v=9wZHqDfXvGg 100 . Please review the section on the features common to the various Sample Players, above.",
   "categories": [
-    "Sampler"
+    "sampling",
+    "clocking",
+    "MIDI"
   ],
-  "description": "This algorithm plays samples, stretching or shrinking them to fit the tempo provided by a clock input, or MIDI. It is the spiritual successor to the disting mk4 Clocked Audio Playback algorithm, but works somewhat differently. Still, it might be fun to review the video (actually for the disting mk3) here^87. Please review the section on the features common to the various Sample Players, above. To use the algorithm, first give it a clock, either from an input bus, or by telling it to follow MIDI clock. You also need to trigger the sample - you can do this via a bus, or via MIDI, or manually, but it's also possible to have the algorithm continuously trigger the sample in a loop via the 'Auto trigger' parameter. The algorithm looks at the length of the chosen sample, and uses the current tempo and time signature to figure out a number of bars that best fits. It then adjusts the playback speed so that the sample will fit that number of bars. You can use the 'Speed tune' parameter to adjust the speed - this is particularly useful if the sample is not actually a full number of bars long.",
-  "specifications": [],
+  "short_description": "Plays samples synced to a clock",
+  "specifications": [
+    {
+      "name": "Record time",
+      "min": 0,
+      "max": 60
+    },
+    {
+      "name": "Time signature",
+      "min": 1,
+      "max": 99
+    }
+  ],
   "parameters": [
     {
       "name": "Speed tune",
-      "unit": "%",
-      "defaultValue": 100.0,
-      "minValue": 50.0,
-      "maxValue": 200.0,
-      "scope": "global",
-      "description": "Adjusts the playback speed, relative to the one calculated by the algorithm.",
-      "min": 50,
-      "max": 200,
-      "default": 100
+      "min": 50.0,
+      "max": 200.0,
+      "default": 100.0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 0
     },
     {
       "name": "Input clock div",
-      "unit": null,
-      "defaultValue": 4,
-      "minValue": 0,
-      "maxValue": 19,
-      "scope": "global",
-      "description": "Sets the interpretation of the input clock pulse."
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 1
     },
     {
       "name": "Time sig num",
-      "unit": null,
-      "defaultValue": 4,
-      "minValue": 1,
-      "maxValue": 99,
-      "scope": "global",
-      "description": "The time signature numerator.",
       "min": 1,
       "max": 99,
-      "default": 4
+      "default": 4,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 2
     },
     {
       "name": "Time sig denom",
-      "unit": null,
-      "defaultValue": 2,
-      "minValue": 0,
-      "maxValue": 4,
-      "scope": "global",
-      "description": "The time signature denominator: one of 1, 2, 4, 8, or 16."
+      "min": 0,
+      "max": 4,
+      "default": 2,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 3
     },
     {
       "name": "Auto trigger",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 2,
-      "scope": "global",
-      "description": "Sets whether the sample will automatically be triggered by the clock. This can be at a fixed interval, or set automatically by the length of the loop."
+      "min": 0,
+      "max": 2,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 4
     },
     {
       "name": "Auto divisor",
-      "unit": null,
-      "defaultValue": 15,
-      "minValue": 0,
-      "maxValue": 19,
-      "scope": "global",
-      "description": "Sets how often the sample will be triggered, if 'Auto trigger' is 'Fixed'."
+      "min": 0,
+      "max": 19,
+      "default": 15,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Clock",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "Whether to follow MIDI clock.",
       "min": 0,
       "max": 1,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "Clock divisor",
-      "unit": null,
-      "defaultValue": 4,
-      "minValue": 0,
-      "maxValue": 19,
-      "scope": "global",
-      "description": "Sets how often the MIDI clock will cause an internal clock event. This should normally match the 'Input clock div' parameter."
+      "min": 0,
+      "max": 19,
+      "default": 4,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 7
     },
     {
       "name": "Clock input",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use as the clock input.",
       "min": 0,
       "max": 28,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 8
     },
     {
       "name": "Reset input",
-      "unit": "bus",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 28,
-      "scope": "global",
-      "description": "The bus to use as the reset input.",
       "min": 0,
       "max": 28,
-      "default": 0
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 9
     },
     {
       "name": "Reset mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "scope": "global",
-      "description": "Sets the type of reset signal: 'Trigger' or 'Run/stop'."
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "type": "string",
+      "is_per_channel": false,
+      "is_common": true,
+      "is_bus": false,
+      "parameterNumber": 10
     }
-  ],
-  "input_ports": [
-    {
-      "name": "Reset input",
-      "busIdRef": "Reset input"
-    }
-  ],
-  "output_ports": []
+  ]
 }

@@ -1,117 +1,57 @@
 {
   "guid": "ptch",
   "name": "Pitch reference",
+  "description": "This algorithm simply generates a sine wave tone at a particular pitch or frequency. Note that if using a note to specify the pitch, it respects the global tuning setting.",
   "categories": [
-    "Utility",
-    "Tuning"
+    "synthesis"
   ],
-  "description": "Generates a sine wave reference tone at a specified pitch or frequency.",
+  "short_description": "Generates a pitch reference tone",
   "specifications": [],
   "parameters": [
     {
       "name": "Pitch mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Pitch",
-        "Frequency"
-      ],
-      "description": "Sets the mode for specifying the reference tone.",
-      "scope": "global",
       "min": 0,
       "max": 1,
-      "default": 0
+      "default": 0,
+      "type": "enum",
+      "is_common": true
     },
     {
       "name": "Note",
-      "unit": null,
-      "defaultValue": 69,
-      "minValue": 0,
-      "maxValue": 127,
-      "description": "Sets the note pitch (MIDI note number) if Pitch mode is 'Pitch'. Respects global tuning.",
-      "scope": "global",
       "min": 0,
       "max": 127,
-      "default": 69
+      "default": 69,
+      "type": "enum",
+      "is_common": true
     },
     {
       "name": "Frequency",
-      "unit": "Hz",
-      "defaultValue": 440.0,
-      "minValue": 27.0,
-      "maxValue": 880.0,
-      "description": "Sets the frequency if Pitch mode is 'Frequency'.",
-      "scope": "global"
-    },
-    {
-      "name": "Output",
-      "unit": "bus",
-      "defaultValue": 13,
-      "minValue": 1,
-      "maxValue": 28,
-      "description": "The output bus.",
-      "scope": "global",
-      "min": 1,
-      "max": 28,
-      "default": 13
-    },
-    {
-      "name": "Output mode",
-      "unit": null,
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 1,
-      "enumValues": [
-        "Add",
-        "Replace"
-      ],
-      "description": "Output mode (Add/Replace).",
-      "scope": "global"
-    },
-    {
-      "name": "Amplitude",
-      "unit": "V",
-      "defaultValue": 10.0,
-      "minValue": 0.0,
-      "maxValue": 10.0,
-      "description": "The amplitude of the signal (before gain is applied).",
-      "scope": "global"
-    },
-    {
-      "name": "Gain",
-      "unit": "dB",
-      "defaultValue": -40,
-      "minValue": -40,
-      "maxValue": 6,
-      "description": "The level of the output signal.",
-      "scope": "global"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. Amplitude",
-      "unit": "V",
-      "min": 0,
-      "max": 10,
-      "default": 10,
-      "description": "The amplitude of the signal (before the gain is"
-    },
-    {
-      "name": "0 1 0 The standard Add/Replace mode selector as described above. Amplitude",
-      "unit": "V",
-      "min": 0,
-      "max": 10,
-      "default": 10,
-      "description": "The amplitude of the signal (before the gain is"
+      "min": 27.0,
+      "max": 880.0,
+      "default": 440.0,
+      "type": "enum",
+      "is_common": true
     }
   ],
   "input_ports": [],
   "output_ports": [
     {
-      "id": "out",
-      "name": "Reference Tone Output",
-      "description": "Sine wave output at the specified pitch/frequency.",
-      "busIdRef": "Output"
+      "name": "Output",
+      "id": "1",
+      "description": "The output bus.",
+      "isPerChannel": false
+    },
+    {
+      "name": "Output mode",
+      "id": "0",
+      "description": "The standard Add/Replace mode selector as described above.",
+      "isPerChannel": false
+    },
+    {
+      "name": "Amplitude",
+      "id": "0.00",
+      "description": "The amplitude of the signal (before the gain is applied).",
+      "isPerChannel": false
     }
   ]
 }

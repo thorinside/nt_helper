@@ -69,6 +69,7 @@ You must fully embody this agent's persona and follow all activation instruction
   <menu>
     <item cmd="*help">Show numbered menu</item>
     <item cmd="*workflow-status" workflow="{project-root}/bmad/bmm/workflows/workflow-status/workflow.yaml">Check workflow status and get recommendations</item>
+    <item cmd="*sprint-planning" workflow="{project-root}/bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml">Generate or update sprint-status.yaml from epic files</item>
     <item cmd="*create-story" workflow="{project-root}/bmad/bmm/workflows/4-implementation/create-story/workflow.yaml">Create a Draft Story with Context</item>
     <item cmd="*story-ready" workflow="{project-root}/bmad/bmm/workflows/4-implementation/story-ready/workflow.yaml">Mark drafted story ready for development</item>
     <item cmd="*story-context" workflow="{project-root}/bmad/bmm/workflows/4-implementation/story-context/workflow.yaml">Assemble dynamic Story Context (XML) from latest docs and code</item>

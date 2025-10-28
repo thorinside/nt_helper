@@ -1,170 +1,78 @@
 {
   "guid": "tunf",
   "name": "Tuner (fancy)",
+  "description": "This algorithm provides four simultaneous tuners. It uses an autocorrelation pitch detection method which is fairly CPU heavy, but which provides reliable pitch detection for most signals. For simpler tones, you may prefer the “Tuner (simple)” algorithm. Microtuning via Scala or MTS is supported.",
   "categories": [
-    "Utility",
-    "Tuning"
+    "analysis",
+    "utility"
   ],
-  "description": "Provides four simultaneous tuners using an autocorrelation pitch detection method. CPU heavy but reliable for most signals. Supports microtuning via Scala/MTS.",
+  "short_description": "A sophisticated tuner",
   "specifications": [],
   "parameters": [
     {
       "name": "Channel 1",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 1,
-      "scope": "global",
-      "description": "The input bus for tuner number 1 (0=disabled)."
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 1
     },
     {
       "name": "Channel 2",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
-      "description": "The input bus for tuner number 2 (0=disabled)."
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 2
     },
     {
       "name": "Channel 3",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
-      "description": "The input bus for tuner number 3 (0=disabled)."
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 3
     },
     {
       "name": "Channel 4",
-      "unit": "bus",
       "min": 0,
       "max": 28,
       "default": 0,
-      "scope": "global",
-      "description": "The input bus for tuner number 4 (0=disabled)."
+      "type": "bus",
+      "is_bus": true,
+      "parameterNumber": 4
     },
     {
       "name": "Range",
-      "unit": null,
       "min": 1,
       "max": 20,
       "default": 9,
-      "scope": "global",
-      "description": "Sets the range of pitches which can be tracked. Set appropriately for the lowest note."
+      "type": "scaled",
+      "is_bus": false,
+      "parameterNumber": 5
     },
     {
       "name": "Track bias",
-      "unit": "%",
       "min": 0,
       "max": 100,
       "default": 10,
-      "scope": "global",
-      "description": "Internal pitch tracking parameter to help avoid octave errors."
+      "type": "scaled",
+      "is_bus": false,
+      "parameterNumber": 6
     },
     {
       "name": "Env threshold",
-      "unit": "dB",
       "min": -80,
       "max": 0,
       "default": -40,
-      "scope": "global",
-      "description": "Signal threshold (dB) below which pitch tracking is disabled."
-    },
-    {
-      "name": "Channel",
-      "min": 1,
-      "max": 0,
-      "default": 28,
-      "description": "1 The input bus for tuner number 1."
-    },
-    {
-      "name": "Channel",
-      "min": 2,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 2."
-    },
-    {
-      "name": "Channel",
-      "min": 3,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 3."
-    },
-    {
-      "name": "Channel",
-      "min": 4,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 4."
-    },
-    {
-      "name": "this appropriately for the lowest note that you need to tune. Track bias",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "description": "An internal parameter of the pitch tracking"
-    },
-    {
-      "name": "recommended in most cases. Env threshold",
-      "unit": "dB",
-      "min": -80,
-      "max": 0,
-      "default": -40,
-      "description": "Sets a signal threshold below which no attempt is"
-    },
-    {
-      "name": "Channel",
-      "min": 1,
-      "max": 0,
-      "default": 28,
-      "description": "1 The input bus for tuner number 1."
-    },
-    {
-      "name": "Channel",
-      "min": 2,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 2."
-    },
-    {
-      "name": "Channel",
-      "min": 3,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 3."
-    },
-    {
-      "name": "Channel",
-      "min": 4,
-      "max": 0,
-      "default": 28,
-      "description": "0 The input bus for tuner number 4."
-    },
-    {
-      "name": "this appropriately for the lowest note that you need to tune. Track bias",
-      "unit": "%",
-      "min": 0,
-      "max": 100,
-      "default": 10,
-      "description": "An internal parameter of the pitch tracking"
-    },
-    {
-      "name": "recommended in most cases. Env threshold",
-      "unit": "dB",
-      "min": -80,
-      "max": 0,
-      "default": -40,
-      "description": "Sets a signal threshold below which no attempt is"
+      "type": "scaled",
+      "is_bus": false,
+      "parameterNumber": 7
     }
   ],
-  "input_ports": [
-    "Audio (Channel 1)",
-    "Audio (Channel 2)",
-    "Audio (Channel 3)",
-    "Audio (Channel 4)"
-  ],
+  "input_ports": [],
   "output_ports": []
 }
