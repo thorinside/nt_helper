@@ -1,0 +1,43 @@
+# generated: 2025-10-27
+# project: nt_helper
+# project_key: nt_helper
+# tracking_system: file-system
+# story_location: {project-root}/docs/stories
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic exists in epic file but not contexted
+#   - contexted: Epic tech context created (required before drafting stories)
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder
+#   - ready-for-dev: Draft approved and story context created
+#   - in-progress: Developer actively working on implementation
+#   - review: Under SM review (via review-story workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epics should be 'contexted' before stories can be 'drafted'
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically drafts next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
+
+generated: 2025-10-27
+project: nt_helper
+project_key: nt_helper
+tracking_system: file-system
+story_location: "{project-root}/docs/stories"
+
+development_status:
+  epic-2: contexted
+  e2-1-extend-midimappingtype-enum-and-data-model: done
+  e2-2-update-mapping-editor-ui-for-14-bit-cc-selection: done
+  e2-3-sysex-compatibility-and-hardware-sync: done
+  epic-2-retrospective: optional

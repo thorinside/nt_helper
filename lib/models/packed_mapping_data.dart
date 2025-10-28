@@ -4,9 +4,14 @@ import 'package:flutter/material.dart' show debugPrint;
 import 'package:nt_helper/domain/sysex/sysex_utils.dart';
 
 enum MidiMappingType {
-  cc, // 0
-  noteMomentary, // 1
-  noteToggle, // 2
+  cc(0),
+  noteMomentary(1),
+  noteToggle(2),
+  cc14BitLow(3),
+  cc14BitHigh(4);
+
+  final int value;
+  const MidiMappingType(this.value);
 }
 
 class PackedMappingData {
@@ -168,16 +173,19 @@ class PackedMappingData {
     final midiChannel = (midiFlags >> 3) & 0xF;
     final isMidiEnabled = (midiFlags & 1) != 0;
     final isMidiSymmetric = (midiFlags & 2) != 0;
-    final isMidiRelative = (midiFlags2 & 1) != 0;
-    final isNoteMapping = (midiFlags2 & 4) != 0;
-    final isToggleNote = (midiFlags2 & 2) != 0;
 
+    // Extract relative flag (bit 0) and type value (bits 2-6) using bit-shift
+    final isMidiRelative = (midiFlags2 & 0x01) != 0;
+    final typeValue = midiFlags2 >> 2; // Extract type from bits 2-6
+
+    // Map type value to MidiMappingType enum (supports 0-4)
     final MidiMappingType midiMappingType;
-    if (isNoteMapping) {
-      midiMappingType = isToggleNote
-          ? MidiMappingType.noteToggle
-          : MidiMappingType.noteMomentary;
+    if (typeValue >= 0 && typeValue < MidiMappingType.values.length) {
+      midiMappingType = MidiMappingType.values[typeValue];
     } else {
+      debugPrint(
+        'Warning: Unknown MIDI mapping type value $typeValue in flags2=$midiFlags2. Defaulting to cc.',
+      );
       midiMappingType = MidiMappingType.cc;
     }
 
@@ -268,11 +276,8 @@ class PackedMappingData {
         (isMidiSymmetric ? 2 : 0) |
         ((midiChannel & 0xF) << 3);
 
-    // Encode midiFlags2 based on type and relative setting
-    bool isNote = midiMappingType != MidiMappingType.cc;
-    bool isToggle = midiMappingType == MidiMappingType.noteToggle;
-    int midiFlags2 =
-        (isMidiRelative ? 1 : 0) | (isToggle ? 2 : 0) | (isNote ? 4 : 0);
+    // Encode midiFlags2 using bit-shift: relative flag (bit 0) and type value (bits 2-6)
+    int midiFlags2 = (isMidiRelative ? 1 : 0) | (midiMappingType.value << 2);
 
     // Adjust the CC number and flags if necessary (for Aftertouch)
     if (adjustedCC == 128) {

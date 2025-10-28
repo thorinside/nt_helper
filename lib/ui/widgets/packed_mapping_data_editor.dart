@@ -375,6 +375,14 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
                   value: MidiMappingType.noteToggle,
                   label: 'Note - Toggle',
                 ),
+                DropdownMenuEntry<MidiMappingType>(
+                  value: MidiMappingType.cc14BitLow,
+                  label: '14 bit CC - low',
+                ),
+                DropdownMenuEntry<MidiMappingType>(
+                  value: MidiMappingType.cc14BitHigh,
+                  label: '14 bit CC - high',
+                ),
               ],
             ),
           ),
@@ -429,7 +437,7 @@ class PackedMappingDataEditorState extends State<PackedMappingDataEditor>
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Text(
-                '(N/A for Notes)',
+                '(N/A for Notes and 14-bit CC)',
                 style: TextStyle(
                   color: Theme.of(context).disabledColor,
                   fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
